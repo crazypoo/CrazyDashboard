@@ -80,7 +80,7 @@ class ViewController: UIViewController {
             make.top.equalTo(self.mapView)
             make.left.equalTo(self.speedometer.snp.centerX).offset(20)
             make.right.equalTo(self.musicNowPlaying.snp.centerX).offset(-20)
-            make.height.equalTo(54)
+            make.height.equalTo(72)
         }
         
         gForceView.snp.makeConstraints { make in
@@ -90,8 +90,8 @@ class ViewController: UIViewController {
         }
         
         bumpMeter.snp.makeConstraints { make in
-            make.left.right.equalTo(tripStatsView)
-            make.top.equalTo(tripStatsView.snp.bottom)
+            make.left.right.equalTo(compassRoller)
+            make.bottom.equalTo(compassRoller.snp.top)
             make.height.equalTo(20)
         }
 
@@ -99,7 +99,7 @@ class ViewController: UIViewController {
             make.right.equalTo(gForceView)
             make.bottom.equalTo(self.mapView)
             make.height.equalTo(64)
-            make.width.equalTo(150)
+            make.width.equalTo(170)
         }
         
         crashOverlay.snp.makeConstraints { make in
@@ -117,7 +117,6 @@ class ViewController: UIViewController {
             self?.speedometer.updateEnvironment(altitude: tripData.altitude, pressureKpa: nil)
             self?.tripStatsView.updateStats(with: tripData)
             PTMotion.shared.currentSpeedKmh = tripData.speedKmh
-//            self?.mapView.mapView.setCenter(CLLocationCoordinate2D(latitude: tripData.currentLocation?.coordinate.latitude ?? 0, longitude: tripData.currentLocation?.coordinate.longitude ?? 0), animated: true)
         }
         PTMotion.shared.startMotion()
         PTMotion.shared.motionBlock = { [weak self] motionData in

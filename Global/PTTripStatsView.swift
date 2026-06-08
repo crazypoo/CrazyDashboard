@@ -16,7 +16,8 @@ public class PTTripStatsView: UIView {
     
     // 使用 StackView 让文字横向整齐排列
     private let stackView = UIStackView()
-    
+    private let bottomStackView = UIStackView()
+
     // 各项数据的展示 Label
     private let timeLabel = UILabel()       // 当前时间
     private lazy var runTimeLabel = {
@@ -40,6 +41,15 @@ public class PTTripStatsView: UIView {
         return view
     }()   // 最低速度
     
+    private lazy var idleLabel = {
+        let view = baseLabel(image: UIImage(.parkingsign.circle).withTintColor(.white, renderingMode: .alwaysOriginal))
+        return view
+    }()   // 怠速时间
+    private lazy var bestLabel = {
+        let view = baseLabel(image: UIImage(.hand.thumbsup).withTintColor(.white, renderingMode: .alwaysOriginal))
+        return view
+    }()   // 0_100时间
+    
     private var clockTimer: Timer?
     private let dateFormatter = DateFormatter()
     
@@ -61,7 +71,12 @@ public class PTTripStatsView: UIView {
         stackView.axis = .horizontal
         stackView.distribution = .equalSpacing // 自动等距散开
         stackView.alignment = .center
-        addSubviews([timeLabel,stackView])
+        
+        bottomStackView.axis = .horizontal
+        bottomStackView.distribution = .equalSpacing // 自动等距散开
+        bottomStackView.alignment = .center
+        
+        addSubviews([timeLabel,stackView,bottomStackView])
         timeLabel.textAlignment = .center
         timeLabel.textColor = .white
         timeLabel.snp.makeConstraints { make in
@@ -72,13 +87,25 @@ public class PTTripStatsView: UIView {
         stackView.snp.makeConstraints { make in
             make.top.equalTo(self.timeLabel.snp.bottom)
             make.left.right.equalToSuperview().inset(15)
-            make.bottom.equalToSuperview()
+            make.height.equalTo(24)
+        }
+        
+        bottomStackView.snp.makeConstraints { make in
+            make.top.equalTo(self.stackView.snp.bottom)
+            make.width.equalTo(150)
+            make.centerX.equalToSuperview()
+            make.height.equalTo(24)
         }
         
         // 配置所有 Label 基础样式并添加到 StackView
         let labels = [runTimeLabel, distanceLabel, avgSpeedLabel, maxSpeedLabel, minSpeedLabel]
         for label in labels {
             stackView.addArrangedSubview(label)
+        }
+        
+        let labels_bottom = [idleLabel,bestLabel]
+        for label in labels_bottom {
+            bottomStackView.addArrangedSubview(label)
         }
         
         // 设置初始默认文本
@@ -88,6 +115,9 @@ public class PTTripStatsView: UIView {
         avgSpeedLabel.setTitle("0.00 km", state: .normal)
         maxSpeedLabel.setTitle("0.00 km", state: .normal)
         minSpeedLabel.setTitle("0.00 km", state: .normal)
+        
+        idleLabel.setTitle("00:00:00", state: .normal)
+        bestLabel.setTitle("0s", state: .normal)
 
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm" // 设置当前时间的格式
     }
@@ -119,6 +149,14 @@ public class PTTripStatsView: UIView {
         avgSpeedLabel.setTitle("\(Int(data.avgSpeed)) km/h", state: .normal)
         maxSpeedLabel.setTitle("\(Int(data.maxSpeed)) km/h", state: .normal)
         minSpeedLabel.setTitle("\(Int(data.minSpeed)) km/h", state: .normal)
+        
+        let totalSeconds_idle = Int(data.idleTime)
+        let hours_idle = totalSeconds_idle / 3600
+        let minutes_idle = (totalSeconds_idle % 3600) / 60
+        let seconds_idle = totalSeconds_idle % 60
+        idleLabel.setTitle(String(format: "%02d:%02d:%02d", hours_idle, minutes_idle, seconds_idle), state: .normal)
+
+        bestLabel.setTitle("\(data.best0To100Time ?? 0)s", state: .normal)
     }
     
     private func baseLabel(image:UIImage) -> PTActionLayoutButton {
