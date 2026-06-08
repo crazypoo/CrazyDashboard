@@ -55,7 +55,7 @@ PODS:
     - LookinServer/Core (= 1.2.8)
   - LookinServer/Core (1.2.8)
   - lottie-ios (4.6.0)
-  - PooTools/Core (4.3.8):
+  - PooTools/Core (4.3.9):
     - AttributedString
     - CocoaLumberjack/Swift
     - DeviceKit
@@ -71,37 +71,37 @@ PODS:
     - SnapKit
     - SwiftDate
     - SwifterSwift
-  - PooTools/CustomerLabel (4.3.8):
+  - PooTools/CustomerLabel (4.3.9):
     - PooTools/Core
-  - PooTools/DEBUG (4.3.8):
+  - PooTools/DEBUG (4.3.9):
     - PooTools/Core
     - PooTools/NetWork
     - PooTools/PDF
     - PooTools/SearchBar
     - PooTools/Share
-  - PooTools/Flag (4.3.8):
+  - PooTools/Flag (4.3.9):
     - FlagKit
     - PooTools/Core
-  - PooTools/Loading (4.3.8):
+  - PooTools/Loading (4.3.9):
     - PooTools/Core
-  - PooTools/LocationPermission (4.3.8):
+  - PooTools/LocationPermission (4.3.9):
     - PooTools/Core
-  - PooTools/Motion (4.3.8):
+  - PooTools/Motion (4.3.9):
     - PooTools/Core
     - PooTools/MotionPermission
-  - PooTools/MotionPermission (4.3.8):
+  - PooTools/MotionPermission (4.3.9):
     - PooTools/Core
-  - PooTools/NetWork (4.3.8):
+  - PooTools/NetWork (4.3.9):
     - Alamofire
     - PooTools/Core
     - PooTools/Loading
-  - PooTools/PDF (4.3.8):
+  - PooTools/PDF (4.3.9):
     - PooTools/Core
-  - PooTools/SearchBar (4.3.8):
+  - PooTools/SearchBar (4.3.9):
     - PooTools/Core
-  - PooTools/Share (4.3.8):
+  - PooTools/Share (4.3.9):
     - PooTools/CustomerLabel
-  - PooTools/WhatsNewsKit (4.3.8):
+  - PooTools/WhatsNewsKit (4.3.9):
     - PooTools/Core
   - pop (1.0.12)
   - SafeSFSymbols (2.0.0)
@@ -199,7 +199,7 @@ EXTERNAL SOURCES:
 
 CHECKOUT OPTIONS:
   PooTools:
-    :commit: 1d92df956772ac246e000aed3e365eb7a3fa5873
+    :commit: c8c33d474ea09446ea9aa0177675898bb0e18389
     :git: https://github.com/crazypoo/PTools.git
 
 SPEC CHECKSUMS:
@@ -221,7 +221,7 @@ SPEC CHECKSUMS:
   Kingfisher: 90f3a3c2871a71e01d5493c1c196fc2d3ff132cf
   LookinServer: 1b2b61c6402ae29fa22182d48f5cd067b4e99e80
   lottie-ios: 8f959969761e9c45d70353667d00af0e5b9cadb3
-  PooTools: b9f97dacdaa30605d6848131f27c175bcbef9f60
+  PooTools: a1d333bb149a185db7afbf45b7a290ed39db9662
   pop: d582054913807fd11fd50bfe6a539d91c7e1a55a
   SafeSFSymbols: c57c8752149b2ddc0213d3d519a3a31a8bd76340
   SmartCodable: db7f9dc94eb9022ede18adf5052772432c5286c7
@@ -230,6 +230,6 @@ SPEC CHECKSUMS:
   SwifterSwift: 517fa61daf5b4c5e3ed13b9f35f4c26b310cfb97
   SwiftyUserDefaults: 63f80248cf5bfb3458825d9a78f2eb7e1293a040
 
-PODFILE CHECKSUM: 0cd6d24e23ac0e9ba5f4ec34a4725f0af12a9d65
+PODFILE CHECKSUM: f3fa02183e0f5faed304325c39995c20b7a7585d
 
 COCOAPODS: 1.16.2

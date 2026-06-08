@@ -21,8 +21,8 @@ class ViewController: UIViewController {
     let compassRoller = PTCompassRollerView(frame: .zero)
     let mapView = PTMapView(frame: .zero)
     let tripStatsView = PTTripStatsView(frame: .zero)
-
-    
+    let gForceView = PTGForceView(frame: .zero)
+        
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
@@ -34,7 +34,7 @@ class ViewController: UIViewController {
     private func setupDashboardUI() {
         // 实例化你封装好的仪表盘视图
 
-        self.view.addSubviews([mapView,speedometer,musicNowPlaying,compassRoller,tripStatsView])
+        self.view.addSubviews([mapView,speedometer,musicNowPlaying,compassRoller,tripStatsView,gForceView])
         mapView.snp.makeConstraints { make in
             make.top.equalToSuperview().inset(10)
             make.bottom.equalToSuperview().inset(CGFloat.kTabbarSaveAreaHeight)
@@ -73,6 +73,12 @@ class ViewController: UIViewController {
             make.right.equalTo(self.musicNowPlaying.snp.centerX).offset(-20)
             make.height.equalTo(54)
         }
+        
+        gForceView.snp.makeConstraints { make in
+            make.right.equalTo(self.musicNowPlaying)
+            make.top.equalTo(self.mapView)
+            make.width.height.equalTo(64)
+        }
     }
     
     private func startPootoolsEngines() {
@@ -84,9 +90,10 @@ class ViewController: UIViewController {
             self?.speedometer.updateEnvironment(altitude: tripData.altitude, pressureKpa: nil)
             self?.tripStatsView.updateStats(with: tripData)
         }
-        
+        PTMotion.shared.startMotion()
         PTMotion.shared.motionBlock = { [weak self] motionData in
             self?.speedometer.updateEnvironment(altitude: nil, pressureKpa: motionData.pressure) // 再更新气压
+            self?.gForceView.updateGForce(x: motionData.gForceX, y: motionData.gForceY)
         }
     }
 }

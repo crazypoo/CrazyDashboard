@@ -130,6 +130,7 @@ public class PTTripStatsView: UIView {
         view.isUserInteractionEnabled = false
         view.setImage(image, state: .normal)
         view.setTitleColor(.white, state: .normal)
+        view.progressLayerBorderColor = .clear
         return view
     }
 }

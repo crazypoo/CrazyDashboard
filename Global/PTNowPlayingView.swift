@@ -12,12 +12,94 @@ import SwifterSwift
 import PooTools
 import SafeSFSymbols
 
+import UIKit
+
+@objcMembers
+public class PTMarqueeLabel: UIView {
+
+    private let label = UILabel()
+
+    // 暴露核心的 Label 属性，方便外部设置
+    public var text: String? {
+        didSet {
+            label.text = text
+            triggerMarquee()
+        }
+    }
+
+    public var textColor: UIColor = .white {
+        didSet { label.textColor = textColor }
+    }
+
+    public var font: UIFont = UIFont.systemFont(ofSize: 14) {
+        didSet { label.font = font }
+    }
+
+    public var textAlignment: NSTextAlignment = .center {
+        didSet { label.textAlignment = textAlignment }
+    }
+
+    public override init(frame: CGRect) {
+        super.init(frame: frame)
+        self.clipsToBounds = true // 核心：超出的文字直接裁切掉
+        addSubview(label)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    // 当 Auto Layout 确定了父视图宽度后，重新计算是否需要滚动
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+        triggerMarquee()
+    }
+
+    private func triggerMarquee() {
+        // 每次触发前，先重置之前的状态和动画
+        label.layer.removeAllAnimations()
+        label.transform = .identity
+
+        // 让 label 自动计算出其实际所需的宽度
+        label.sizeToFit()
+        let textWidth = label.bounds.width
+        let viewWidth = self.bounds.width
+
+        guard viewWidth > 0, let text = text, !text.isEmpty else { return }
+
+        if textWidth > viewWidth {
+            // 🌟 文本超长，启动乒乓跑马灯
+            // 设定 frame，高度撑满，宽度等于文字真实宽度
+            label.frame = CGRect(x: 0, y: 0, width: textWidth, height: self.bounds.height)
+            label.textAlignment = .left // 跑马灯时强制左对齐，视觉更合理
+
+            let overstep = textWidth - viewWidth + 20 // 多留 20pt 的缓冲空间，不会贴得太死
+
+            // 智能速度控制：每 25pt 滚动 1 秒，保证不论字数多少，滚动速度始终一致
+            let duration = TimeInterval(overstep) / 25.0
+
+            UIView.animate(withDuration: duration,
+                           delay: 1.5, // 等待 1.5 秒让用户看清开头，再开始滚
+                           options: [.autoreverse, .repeat, .curveEaseInOut], // 乒乓来回、无限重复、平滑加减速
+                           animations: {
+                // 向左移动超出的距离
+                self.label.transform = CGAffineTransform(translationX: -overstep, y: 0)
+            }, completion: nil)
+
+        } else {
+            // 🌟 文本够短，乖乖按原样对齐显示
+            label.frame = self.bounds
+            label.textAlignment = self.textAlignment
+        }
+    }
+}
+
 @objcMembers
 public class PTNowPlayingView: UIView {
     
     private let artworkImageView = UIImageView()
-    private let titleLabel = UILabel()
-    private let artistLabel = UILabel()
+    private let titleLabel = PTMarqueeLabel()
+    private let artistLabel = PTMarqueeLabel()
     private let timeLabel = UILabel()
     // 获取系统的音乐播放器
     private let musicPlayer = MPMusicPlayerController.systemMusicPlayer
@@ -134,7 +216,7 @@ public class PTNowPlayingView: UIView {
             // 顶部挨着封面的底部，往下偏移 15
             make.bottom.equalTo(artworkImageView.snp.top).offset(-8)
             // 左右留白 10，防止文字太长贴边
-            make.left.right.equalToSuperview().inset(30)
+            make.left.right.equalToSuperview().inset(50)
             make.height.equalTo(24)
         }
         
@@ -239,7 +321,6 @@ public class PTNowPlayingView: UIView {
             if let item = self.musicPlayer.nowPlayingItem {
                 self.titleLabel.text = item.title ?? "未知歌曲"
                 self.artistLabel.text = item.artist ?? "未知歌手"
-                
                 // 提取专辑封面图片
                 self.fetchArtwork(for: item)
                 self.updateProgress()
