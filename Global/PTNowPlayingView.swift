@@ -1,0 +1,240 @@
+//
+//  PTNowPlayingView.swift
+//  CrazyDashboard
+//
+//  Created by 邓杰豪 on 7/6/2026.
+//
+
+import UIKit
+import MediaPlayer
+import SnapKit // 别忘了引入 SnapKit
+import SwifterSwift
+import PooTools
+
+@objcMembers
+public class PTNowPlayingView: UIView {
+    
+    private let artworkImageView = UIImageView()
+    private let titleLabel = UILabel()
+    private let artistLabel = UILabel()
+    private let timeLabel = UILabel()
+    // 获取系统的音乐播放器
+    private let musicPlayer = MPMusicPlayerController.systemMusicPlayer
+    
+    private var progressTimer: Timer?
+    
+    private let trackLayer = CAShapeLayer()
+    private let progressLayer = CAShapeLayer()
+
+    public override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupUI()
+        setupNotifications()
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    deinit {
+        // 记得结束监听并移除通知
+        musicPlayer.endGeneratingPlaybackNotifications()
+        NotificationCenter.default.removeObserver(self)
+        stopTimer()
+    }
+    
+    // MARK: - 生命周期绘图 (当视图大小确定时绘制圆弧)
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+        
+        let center = CGPoint(x: bounds.width / 2, y: bounds.height / 2)
+        let radius = bounds.width / 2 - 4
+        
+        // 1. 起点：7点半位置 (135度 -> 3π/4)
+        let startAngle = CGFloat.pi * 3 / 4
+        
+        // 2. 终点：逆时针减去 270度后，停在 10点半位置 (-135度 -> -3π/4)
+        let endAngle = -CGFloat.pi * 3 / 4
+        
+        // 3. 画出路径：clockwise 设为 false (逆时针)
+        let path = UIBezierPath(arcCenter: center,
+                                radius: radius,
+                                startAngle: startAngle,
+                                endAngle: endAngle,
+                                clockwise: false) // 逆时针！
+        
+        trackLayer.path = path.cgPath
+        progressLayer.path = path.cgPath
+    }
+
+    private func setupUI() {
+        self.backgroundColor = UIColor.black.withAlphaComponent(0.6)
+        
+        trackLayer.fillColor = UIColor.clear.cgColor
+        trackLayer.strokeColor = UIColor.darkGray.withAlphaComponent(0.5).cgColor
+        trackLayer.lineWidth = 10
+        trackLayer.lineCap = .round // 让线段的两端是圆角
+        layer.addSublayer(trackLayer)
+        
+        // 2. 设置进度层 (红色的高亮线)
+        progressLayer.fillColor = UIColor.clear.cgColor
+        progressLayer.strokeColor = UIColor.systemRed.cgColor // 匹配你截图里的红色
+        progressLayer.lineWidth = 10
+        progressLayer.lineCap = .round
+        progressLayer.strokeEnd = 0 // 初始进度为 0
+        layer.addSublayer(progressLayer)
+
+        // 1. 专辑封面
+        artworkImageView.layer.cornerRadius = 10
+        artworkImageView.clipsToBounds = true
+        artworkImageView.contentMode = .scaleAspectFill
+        artworkImageView.backgroundColor = .darkGray // 占位色
+        
+        // 2. 歌名
+        titleLabel.textColor = .white
+        titleLabel.textAlignment = .center
+        titleLabel.font = UIFont.boldSystemFont(ofSize: 18)
+        titleLabel.text = "暂无播放"
+        
+        // 3. 歌手
+        artistLabel.textColor = .lightGray
+        artistLabel.textAlignment = .center
+        artistLabel.font = UIFont.systemFont(ofSize: 14)
+        artistLabel.text = "--"
+        
+        timeLabel.textColor = .lightGray
+        timeLabel.textAlignment = .center
+        timeLabel.font = UIFont.systemFont(ofSize: 12)
+        timeLabel.text = "-00:00"
+
+        addSubviews([artworkImageView,titleLabel,artistLabel,timeLabel])
+
+        // MARK: - SnapKit 布局
+        
+        artworkImageView.snp.makeConstraints { make in
+            make.width.equalToSuperview().multipliedBy(0.5)
+            make.centerY.centerX.equalToSuperview()
+            make.height.equalTo(self.artworkImageView.snp.width)
+        }
+        
+        titleLabel.snp.makeConstraints { make in
+            // 顶部挨着封面的底部，往下偏移 15
+            make.bottom.equalTo(artworkImageView.snp.top).offset(-8)
+            // 左右留白 10，防止文字太长贴边
+            make.left.right.equalToSuperview().inset(30)
+            make.height.equalTo(24)
+        }
+        
+        artistLabel.snp.makeConstraints { make in
+            // 顶部挨着歌名的底部，往下偏移 5
+            make.top.equalTo(artworkImageView.snp.bottom).offset(8)
+            make.left.right.height.equalTo(self.titleLabel)
+        }
+        
+        timeLabel.snp.makeConstraints { make in
+            // 时间显示在进度条下方
+            make.left.equalTo(self.artworkImageView.snp.right).offset(2)
+            make.right.equalToSuperview().inset(2)
+            make.centerY.equalTo(self.artworkImageView)
+        }
+    }
+    
+    private func setupNotifications() {
+        // 开启系统播放通知
+        musicPlayer.beginGeneratingPlaybackNotifications()
+        
+        // 监听切歌事件
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(updateNowPlayingInfo),
+                                               name: .MPMusicPlayerControllerNowPlayingItemDidChange,
+                                               object: musicPlayer)
+        
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(playbackStateDidChange),
+                                               name: .MPMusicPlayerControllerPlaybackStateDidChange,
+                                               object: musicPlayer)
+        // 首次初始化时手动拉取一次
+        updateNowPlayingInfo()
+        playbackStateDidChange()
+    }
+    
+    @objc private func updateNowPlayingInfo() {
+        // 必须切回主线程更新 UI
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            if let item = self.musicPlayer.nowPlayingItem {
+                self.titleLabel.text = item.title ?? "未知歌曲"
+                self.artistLabel.text = item.artist ?? "未知歌手"
+                
+                // 提取专辑封面图片 (设置一个合理的清晰度，比如 300x300)
+                if let artwork = item.artwork, let image = artwork.image(at: CGSize(width: 300, height: 300)) {
+                    self.artworkImageView.image = image
+                } else {
+                    self.artworkImageView.image = nil // 也可以放一张你默认的占位图
+                }
+                self.updateProgress()
+            } else {
+                self.titleLabel.text = "暂无播放"
+                self.artistLabel.text = "--"
+                self.artworkImageView.image = nil
+                self.progressLayer.strokeEnd = 0
+                self.timeLabel.text = "-00:00" // 修改这里：归零状态
+            }
+        }
+    }
+    
+    @objc private func playbackStateDidChange() {
+        // 根据当前的播放状态决定是否启动定时器
+        if musicPlayer.playbackState == .playing {
+            startTimer()
+        } else {
+            stopTimer()
+        }
+    }
+    
+    // MARK: - 进度条与时间计算核心逻辑
+        
+    private func startTimer() {
+        stopTimer() // 防止重复创建
+        // 每 0.5 秒刷新一次进度条，保证流畅度
+        progressTimer = Timer.scheduledTimer(timeInterval: 0.5, target: self, selector: #selector(updateProgress), userInfo: nil, repeats: true)
+        RunLoop.main.add(progressTimer!, forMode: .common)
+    }
+    
+    private func stopTimer() {
+        progressTimer?.invalidate()
+        progressTimer = nil
+    }
+    
+    @objc private func updateProgress() {
+        guard let item = musicPlayer.nowPlayingItem else { return }
+                
+        let duration = item.playbackDuration
+        let currentPlaybackTime = musicPlayer.currentPlaybackTime
+        guard duration > 0 else { return }
+        
+        let progress = CGFloat(currentPlaybackTime / duration)
+        let remainingTime = duration - currentPlaybackTime
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            // 更新 CAShapeLayer 的进度，系统自带极其平滑的过渡动画！
+            self.progressLayer.strokeEnd = progress
+            self.timeLabel.text = "-\(self.formatTime(remainingTime))"
+        }
+    }
+    
+    // MARK: - 辅助方法：将秒数格式化为 分:秒
+    private func formatTime(_ timeInSeconds: TimeInterval) -> String {
+        // 防止出现负数或非数字的异常情况
+        guard !timeInSeconds.isNaN && timeInSeconds >= 0 else { return "00:00" }
+        
+        let totalSeconds = Int(timeInSeconds)
+        let minutes = totalSeconds / 60
+        let seconds = totalSeconds % 60
+        
+        // 格式化为 00:00
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+}
