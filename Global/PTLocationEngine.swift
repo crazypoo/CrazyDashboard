@@ -23,6 +23,8 @@ public struct PTTripData: Sendable {
     // 🌟 新增：怠速时长与 0-100 最佳成绩
     public var idleTime: TimeInterval = 0.0       // 怠速/拥堵时长 (秒)
     public var best0To100Time: TimeInterval? = nil // 0-100 最佳加速成绩 (秒)
+    
+    public var currentLocation: CLLocation?
 }
 
 public typealias PTLocationTripBlock = (_ data: PTTripData) -> Void
@@ -184,7 +186,8 @@ public class PTLocationEngine: NSObject, CLLocationManagerDelegate {
             // 保证 UI 初始显示为 0 而不是 999
             minSpeed: minSpeed == 999.0 ? 0.0 : minSpeed,
             idleTime: idleTime,           // 传出怠速时间
-            best0To100Time: best0To100    // 传出最佳加速成绩
+            best0To100Time: best0To100,    // 传出最佳加速成绩
+            currentLocation: location
         )
         
         DispatchQueue.main.async { [weak self] in

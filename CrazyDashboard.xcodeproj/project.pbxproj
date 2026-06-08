@@ -22,6 +22,14 @@
 		5577E6D22FD680730004733F /* PTTripStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6D02FD680730004733F /* PTTripStatsView.swift */; };
 		5577E7802FD6EEEF0004733F /* PTGForceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E77F2FD6EEEF0004733F /* PTGForceView.swift */; };
 		5577E7812FD6EEEF0004733F /* PTGForceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E77F2FD6EEEF0004733F /* PTGForceView.swift */; };
+		5577E7C92FD6FC8C0004733F /* PTCrashWarningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7C82FD6FC8C0004733F /* PTCrashWarningView.swift */; };
+		5577E7CA2FD6FC8C0004733F /* PTCrashWarningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7C82FD6FC8C0004733F /* PTCrashWarningView.swift */; };
+		5577E7CC2FD6FF890004733F /* PTLeanAngleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7CB2FD6FF890004733F /* PTLeanAngleView.swift */; };
+		5577E7CD2FD6FF890004733F /* PTLeanAngleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7CB2FD6FF890004733F /* PTLeanAngleView.swift */; };
+		5577E7CF2FD704790004733F /* PTBumpMeterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7CE2FD704790004733F /* PTBumpMeterView.swift */; };
+		5577E7D02FD704790004733F /* PTBumpMeterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7CE2FD704790004733F /* PTBumpMeterView.swift */; };
+		5577E7D22FD704AD0004733F /* PTPitchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7D12FD704AD0004733F /* PTPitchView.swift */; };
+		5577E7D32FD704AD0004733F /* PTPitchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7D12FD704AD0004733F /* PTPitchView.swift */; };
 		5A200D40EF300920887AD052 /* Pods_PTSpeed.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 33464FDDE31899C7F87FB6EC /* Pods_PTSpeed.framework */; };
 		611EE02BED86EDA626884233 /* Pods_CrazyDashboard.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 561E4C337C3165E9409BE2DF /* Pods_CrazyDashboard.framework */; };
 /* End PBXBuildFile section */
@@ -39,6 +47,10 @@
 		5577E6AA2FD662C20004733F /* PTMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMapView.swift; sourceTree = "<group>"; };
 		5577E6D02FD680730004733F /* PTTripStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTripStatsView.swift; sourceTree = "<group>"; };
 		5577E77F2FD6EEEF0004733F /* PTGForceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTGForceView.swift; sourceTree = "<group>"; };
+		5577E7C82FD6FC8C0004733F /* PTCrashWarningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCrashWarningView.swift; sourceTree = "<group>"; };
+		5577E7CB2FD6FF890004733F /* PTLeanAngleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLeanAngleView.swift; sourceTree = "<group>"; };
+		5577E7CE2FD704790004733F /* PTBumpMeterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBumpMeterView.swift; sourceTree = "<group>"; };
+		5577E7D12FD704AD0004733F /* PTPitchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPitchView.swift; sourceTree = "<group>"; };
 		561E4C337C3165E9409BE2DF /* Pods_CrazyDashboard.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CrazyDashboard.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
@@ -133,6 +145,10 @@
 				5577E6AA2FD662C20004733F /* PTMapView.swift */,
 				5577E6D02FD680730004733F /* PTTripStatsView.swift */,
 				5577E77F2FD6EEEF0004733F /* PTGForceView.swift */,
+				5577E7C82FD6FC8C0004733F /* PTCrashWarningView.swift */,
+				5577E7CB2FD6FF890004733F /* PTLeanAngleView.swift */,
+				5577E7CE2FD704790004733F /* PTBumpMeterView.swift */,
+				5577E7D12FD704AD0004733F /* PTPitchView.swift */,
 			);
 			path = Global;
 			sourceTree = "<group>";
@@ -358,9 +374,13 @@
 				5577E62F2FD656D20004733F /* PTLocationEngine.swift in Sources */,
 				5577E6302FD656D20004733F /* PTNowPlayingView.swift in Sources */,
 				5577E6AB2FD662C20004733F /* PTMapView.swift in Sources */,
+				5577E7D22FD704AD0004733F /* PTPitchView.swift in Sources */,
 				5577E6312FD656D20004733F /* PTSpeedometerView.swift in Sources */,
 				5577E6D12FD680730004733F /* PTTripStatsView.swift in Sources */,
 				5577E7802FD6EEEF0004733F /* PTGForceView.swift in Sources */,
+				5577E7CF2FD704790004733F /* PTBumpMeterView.swift in Sources */,
+				5577E7C92FD6FC8C0004733F /* PTCrashWarningView.swift in Sources */,
+				5577E7CD2FD6FF890004733F /* PTLeanAngleView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -370,10 +390,14 @@
 			files = (
 				5577E6502FD6572E0004733F /* PTNowPlayingView.swift in Sources */,
 				5577E64E2FD657250004733F /* PTCompassRollerView.swift in Sources */,
+				5577E7CC2FD6FF890004733F /* PTLeanAngleView.swift in Sources */,
+				5577E7D32FD704AD0004733F /* PTPitchView.swift in Sources */,
 				5577E6D22FD680730004733F /* PTTripStatsView.swift in Sources */,
 				5577E64F2FD6572A0004733F /* PTLocationEngine.swift in Sources */,
+				5577E7CA2FD6FC8C0004733F /* PTCrashWarningView.swift in Sources */,
 				5577E7812FD6EEEF0004733F /* PTGForceView.swift in Sources */,
 				5577E6512FD657330004733F /* PTSpeedometerView.swift in Sources */,
+				5577E7D02FD704790004733F /* PTBumpMeterView.swift in Sources */,
 				5577E6AC2FD662C20004733F /* PTMapView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

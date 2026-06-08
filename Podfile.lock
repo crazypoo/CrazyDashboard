@@ -55,7 +55,7 @@ PODS:
     - LookinServer/Core (= 1.2.8)
   - LookinServer/Core (1.2.8)
   - lottie-ios (4.6.0)
-  - PooTools/Core (4.3.9):
+  - PooTools/Core (4.3.11):
     - AttributedString
     - CocoaLumberjack/Swift
     - DeviceKit
@@ -71,37 +71,37 @@ PODS:
     - SnapKit
     - SwiftDate
     - SwifterSwift
-  - PooTools/CustomerLabel (4.3.9):
+  - PooTools/CustomerLabel (4.3.11):
     - PooTools/Core
-  - PooTools/DEBUG (4.3.9):
+  - PooTools/DEBUG (4.3.11):
     - PooTools/Core
     - PooTools/NetWork
     - PooTools/PDF
     - PooTools/SearchBar
     - PooTools/Share
-  - PooTools/Flag (4.3.9):
+  - PooTools/Flag (4.3.11):
     - FlagKit
     - PooTools/Core
-  - PooTools/Loading (4.3.9):
+  - PooTools/Loading (4.3.11):
     - PooTools/Core
-  - PooTools/LocationPermission (4.3.9):
+  - PooTools/LocationPermission (4.3.11):
     - PooTools/Core
-  - PooTools/Motion (4.3.9):
+  - PooTools/Motion (4.3.11):
     - PooTools/Core
     - PooTools/MotionPermission
-  - PooTools/MotionPermission (4.3.9):
+  - PooTools/MotionPermission (4.3.11):
     - PooTools/Core
-  - PooTools/NetWork (4.3.9):
+  - PooTools/NetWork (4.3.11):
     - Alamofire
     - PooTools/Core
     - PooTools/Loading
-  - PooTools/PDF (4.3.9):
+  - PooTools/PDF (4.3.11):
     - PooTools/Core
-  - PooTools/SearchBar (4.3.9):
+  - PooTools/SearchBar (4.3.11):
     - PooTools/Core
-  - PooTools/Share (4.3.9):
+  - PooTools/Share (4.3.11):
     - PooTools/CustomerLabel
-  - PooTools/WhatsNewsKit (4.3.9):
+  - PooTools/WhatsNewsKit (4.3.11):
     - PooTools/Core
   - pop (1.0.12)
   - SafeSFSymbols (2.0.0)
@@ -199,7 +199,7 @@ EXTERNAL SOURCES:
 
 CHECKOUT OPTIONS:
   PooTools:
-    :commit: c8c33d474ea09446ea9aa0177675898bb0e18389
+    :commit: f65e3baf6b60a270d312a2fb112924439491f9c1
     :git: https://github.com/crazypoo/PTools.git
 
 SPEC CHECKSUMS:
@@ -221,7 +221,7 @@ SPEC CHECKSUMS:
   Kingfisher: 90f3a3c2871a71e01d5493c1c196fc2d3ff132cf
   LookinServer: 1b2b61c6402ae29fa22182d48f5cd067b4e99e80
   lottie-ios: 8f959969761e9c45d70353667d00af0e5b9cadb3
-  PooTools: a1d333bb149a185db7afbf45b7a290ed39db9662
+  PooTools: a252c2acc778081fda340f6f8662f02468e99b80
   pop: d582054913807fd11fd50bfe6a539d91c7e1a55a
   SafeSFSymbols: c57c8752149b2ddc0213d3d519a3a31a8bd76340
   SmartCodable: db7f9dc94eb9022ede18adf5052772432c5286c7

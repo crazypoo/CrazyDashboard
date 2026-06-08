@@ -9,6 +9,7 @@ import UIKit
 import PooTools
 import SnapKit
 import SwifterSwift
+import CoreLocation
 
 class ViewController: UIViewController {
 
@@ -19,10 +20,14 @@ class ViewController: UIViewController {
     let speedometer = PTSpeedometerView(frame: .zero)
     let musicNowPlaying = PTNowPlayingView(frame: .zero)
     let compassRoller = PTCompassRollerView(frame: .zero)
+    let leanAngleGauge = PTLeanAngleView() // 🌟 新增压弯表
     let mapView = PTMapView(frame: .zero)
     let tripStatsView = PTTripStatsView(frame: .zero)
     let gForceView = PTGForceView(frame: .zero)
-        
+    let crashOverlay = PTCrashWarningView()
+    let bumpMeter = PTBumpMeterView()
+    let pitchGauge = PTPitchView()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
@@ -34,23 +39,22 @@ class ViewController: UIViewController {
     private func setupDashboardUI() {
         // 实例化你封装好的仪表盘视图
 
-        self.view.addSubviews([mapView,speedometer,musicNowPlaying,compassRoller,tripStatsView,gForceView])
+        self.view.addSubviews([mapView,speedometer,musicNowPlaying,leanAngleGauge,compassRoller,tripStatsView,gForceView,bumpMeter, pitchGauge,crashOverlay])
         mapView.snp.makeConstraints { make in
             make.top.equalToSuperview().inset(10)
-            make.bottom.equalToSuperview().inset(CGFloat.kTabbarSaveAreaHeight)
+            make.bottom.equalToSuperview().inset(10)
             make.width.equalToSuperview().multipliedBy(0.65)
             make.centerX.equalToSuperview()
         }
         
         speedometer.snp.makeConstraints { make in
             make.top.equalTo(self.mapView.snp.top).offset(44)
-            make.bottom.equalTo(self.mapView.snp.bottom).offset(-44)
+            make.bottom.equalTo(self.mapView.snp.bottom).offset(-64)
             make.width.equalTo(self.speedometer.snp.height)
             make.centerX.equalTo(self.mapView.snp.left)
         }
         speedometer.layoutIfNeeded()
         speedometer.viewCorner(radius: speedometer.bounds.size.height / 2)
-
         
         musicNowPlaying.snp.makeConstraints { make in
             make.top.bottom.width.equalTo(speedometer)
@@ -59,11 +63,16 @@ class ViewController: UIViewController {
         musicNowPlaying.layoutIfNeeded()
         musicNowPlaying.viewCorner(radius: musicNowPlaying.bounds.size.height / 2)
 
-        
-        compassRoller.snp.makeConstraints { make in
+        leanAngleGauge.snp.makeConstraints { make in
+            make.bottom.equalTo(self.mapView)
             make.left.equalTo(speedometer.snp.right).offset(10)
             make.right.equalTo(musicNowPlaying.snp.left).offset(-10)
-            make.bottom.equalTo(self.mapView)
+            make.height.equalTo(35)
+        }
+        
+        compassRoller.snp.makeConstraints { make in
+            make.left.right.equalTo(leanAngleGauge)
+            make.bottom.equalTo(self.leanAngleGauge.snp.top)
             make.height.equalTo(54)
         }
         
@@ -79,6 +88,24 @@ class ViewController: UIViewController {
             make.top.equalTo(self.mapView)
             make.width.height.equalTo(64)
         }
+        
+        bumpMeter.snp.makeConstraints { make in
+            make.left.right.equalTo(tripStatsView)
+            make.top.equalTo(tripStatsView.snp.bottom)
+            make.height.equalTo(20)
+        }
+
+        pitchGauge.snp.makeConstraints { make in
+            make.right.equalTo(gForceView)
+            make.bottom.equalTo(self.mapView)
+            make.height.equalTo(64)
+            make.width.equalTo(150)
+        }
+        
+        crashOverlay.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+        crashOverlay.isHidden = true // 初始隐藏
     }
     
     private func startPootoolsEngines() {
@@ -89,12 +116,30 @@ class ViewController: UIViewController {
             self?.compassRoller.updateHeading(tripData.courseDegree)
             self?.speedometer.updateEnvironment(altitude: tripData.altitude, pressureKpa: nil)
             self?.tripStatsView.updateStats(with: tripData)
+            PTMotion.shared.currentSpeedKmh = tripData.speedKmh
+//            self?.mapView.mapView.setCenter(CLLocationCoordinate2D(latitude: tripData.currentLocation?.coordinate.latitude ?? 0, longitude: tripData.currentLocation?.coordinate.longitude ?? 0), animated: true)
         }
         PTMotion.shared.startMotion()
         PTMotion.shared.motionBlock = { [weak self] motionData in
             self?.speedometer.updateEnvironment(altitude: nil, pressureKpa: motionData.pressure) // 再更新气压
             self?.gForceView.updateGForce(x: motionData.gForceX, y: motionData.gForceY)
+            self?.leanAngleGauge.updateLean(current: motionData.roll, leftMax: motionData.maxLeftLean, rightMax: motionData.maxRightLean)
+            self?.bumpMeter.updateBump(zForce: motionData.gForceZ)
+            self?.pitchGauge.updatePitch(degrees: motionData.pitch)
+            // 🌟处理机车事故警报 UI
+            if motionData.isTipOverDetected {
+                self?.showEmergencyOverlay(true) // 事故弹出全屏红色警告
+            } else {
+                self?.showEmergencyOverlay(false)
+            }
         }
+    }
+    
+    // 辅助方法：显示/隐藏摔车警告
+    private func showEmergencyOverlay(_ show: Bool) {
+        UIView.transition(with: crashOverlay, duration: 0.3, options: .transitionCrossDissolve, animations: {
+            self.crashOverlay.isHidden = !show
+        }, completion: nil)
     }
 }
 
