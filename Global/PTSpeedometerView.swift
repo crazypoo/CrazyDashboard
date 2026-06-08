@@ -105,10 +105,12 @@ public class PTSpeedometerView: UIView {
         
         altitudeLabel.textColor = .white
         altitudeLabel.font = UIFont.systemFont(ofSize: 13, weight: .medium)
+        altitudeLabel.textAlignment = .right
         altitudeLabel.text = "海拔: -- m"
         
         pressureLabel.textColor = UIColor.white.withAlphaComponent(0.7)
         pressureLabel.font = UIFont.systemFont(ofSize: 13, weight: .medium)
+        pressureLabel.textAlignment = .right
         pressureLabel.text = "气压: -- hPa"
         addSubviews([speedLabel,unitLabel,altitudeLabel,pressureLabel])
         

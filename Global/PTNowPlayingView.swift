@@ -7,9 +7,10 @@
 
 import UIKit
 import MediaPlayer
-import SnapKit // 别忘了引入 SnapKit
+import SnapKit 
 import SwifterSwift
 import PooTools
+import SafeSFSymbols
 
 @objcMembers
 public class PTNowPlayingView: UIView {
@@ -26,6 +27,18 @@ public class PTNowPlayingView: UIView {
     private let trackLayer = CAShapeLayer()
     private let progressLayer = CAShapeLayer()
 
+    private lazy var batteryLevel = {
+        let view = PTActionLayoutButton()
+        view.layoutStyle = .upImageDownTitle
+        view.imageSize = .init(width: 24, height: 24)
+        view.midSpacing = 0
+        view.setTitleColor(.white, state: .normal)
+        view.setTitleFont(UIFont.systemFont(ofSize: 14), state: .normal)
+        view.setImage(UIImage(.bolt.circle).withTintColor(.white, renderingMode: .alwaysOriginal), state: .normal)
+        view.isUserInteractionEnabled = false
+        return view
+    }()
+    
     public override init(frame: CGRect) {
         super.init(frame: frame)
         setupUI()
@@ -69,7 +82,7 @@ public class PTNowPlayingView: UIView {
 
     private func setupUI() {
         self.backgroundColor = UIColor.black.withAlphaComponent(0.6)
-        
+                
         trackLayer.fillColor = UIColor.clear.cgColor
         trackLayer.strokeColor = UIColor.darkGray.withAlphaComponent(0.5).cgColor
         trackLayer.lineWidth = 10
@@ -107,7 +120,7 @@ public class PTNowPlayingView: UIView {
         timeLabel.font = UIFont.systemFont(ofSize: 12)
         timeLabel.text = "-00:00"
 
-        addSubviews([artworkImageView,titleLabel,artistLabel,timeLabel])
+        addSubviews([artworkImageView,titleLabel,artistLabel,timeLabel,batteryLevel])
 
         // MARK: - SnapKit 布局
         
@@ -134,7 +147,14 @@ public class PTNowPlayingView: UIView {
         timeLabel.snp.makeConstraints { make in
             // 时间显示在进度条下方
             make.left.equalTo(self.artworkImageView.snp.right).offset(2)
-            make.right.equalToSuperview().inset(2)
+            make.right.equalToSuperview().inset(5)
+            make.centerY.equalTo(self.artworkImageView)
+        }
+        
+        batteryLevel.snp.makeConstraints { make in
+            make.left.equalToSuperview().inset(5)
+            make.right.equalTo(self.artworkImageView.snp.left).offset(-2)
+            make.height.equalTo(40)
             make.centerY.equalTo(self.artworkImageView)
         }
     }
@@ -142,7 +162,18 @@ public class PTNowPlayingView: UIView {
     private func setupNotifications() {
         // 开启系统播放通知
         musicPlayer.beginGeneratingPlaybackNotifications()
+        UIDevice.current.isBatteryMonitoringEnabled = true
+        // 监听电量百分比变化 (通常是每掉 1% 触发一次)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(updateBatteryInfo),
+                                               name: UIDevice.batteryLevelDidChangeNotification,
+                                               object: nil)
         
+        // 监听充电状态变化 (插拔充电线时触发)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(updateBatteryInfo),
+                                               name: UIDevice.batteryStateDidChangeNotification,
+                                               object: nil)
         // 监听切歌事件
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(updateNowPlayingInfo),
@@ -156,8 +187,50 @@ public class PTNowPlayingView: UIView {
         // 首次初始化时手动拉取一次
         updateNowPlayingInfo()
         playbackStateDidChange()
+        updateBatteryInfo() // 🌟 初始化时获取一次电池状态
     }
     
+    @objc private func updateBatteryInfo() {
+        // 为了避免 DeviceKit 的版本差异，直接用原生 UIDevice 获取更稳妥
+        let state = UIDevice.current.batteryState
+        let level = UIDevice.current.batteryLevel
+        
+        // level 是 0.0 到 1.0 的浮点数，转换为 0 到 100 的整数
+        // 如果模拟器获取不到电量，level 会是 -1.0
+        let percentage = level >= 0 ? Int(level * 100) : 0
+        let levelText = level >= 0 ? "\(percentage)%" : "--%"
+        
+        batteryLevel.setTitle(levelText, state: .normal)
+        
+        // 根据状态智能切换图标和颜色
+        switch state {
+        case .charging, .full:
+            // 正在充电或充满：显示实心闪电，系统绿色
+            let chargingImage = UIImage(.bolt.circle).withTintColor(.systemGreen, renderingMode: .alwaysOriginal)
+            batteryLevel.setImage(chargingImage, state: .normal)
+            batteryLevel.setTitleColor(.systemGreen, state: .normal)
+            
+        case .unplugged:
+            // 未插电：检查是否低电量 (< 20%)
+            let isLowPower = percentage <= 20
+            let color: UIColor = isLowPower ? .systemRed : .white
+            
+            // 未插电用空心图标，低电量时变红
+            let unpluggedImage = UIImage(.bolt.circle).withTintColor(color, renderingMode: .alwaysOriginal)
+            batteryLevel.setImage(unpluggedImage, state: .normal)
+            batteryLevel.setTitleColor(color, state: .normal)
+            
+        case .unknown:
+            // 模拟器或无法获取状态
+            let unknownImage = UIImage(.bolt.circle).withTintColor(.lightGray, renderingMode: .alwaysOriginal)
+            batteryLevel.setImage(unknownImage, state: .normal)
+            batteryLevel.setTitleColor(.lightGray, state: .normal)
+            
+        @unknown default:
+            break
+        }
+    }
+
     @objc private func updateNowPlayingInfo() {
         // 必须切回主线程更新 UI
         DispatchQueue.main.async { [weak self] in
@@ -167,12 +240,8 @@ public class PTNowPlayingView: UIView {
                 self.titleLabel.text = item.title ?? "未知歌曲"
                 self.artistLabel.text = item.artist ?? "未知歌手"
                 
-                // 提取专辑封面图片 (设置一个合理的清晰度，比如 300x300)
-                if let artwork = item.artwork, let image = artwork.image(at: CGSize(width: 300, height: 300)) {
-                    self.artworkImageView.image = image
-                } else {
-                    self.artworkImageView.image = nil // 也可以放一张你默认的占位图
-                }
+                // 提取专辑封面图片
+                self.fetchArtwork(for: item)
                 self.updateProgress()
             } else {
                 self.titleLabel.text = "暂无播放"
@@ -184,6 +253,47 @@ public class PTNowPlayingView: UIView {
         }
     }
     
+    // MARK: - 增强版封面获取器
+    private func fetchArtwork(for item: MPMediaItem) {
+        // 每次切歌先给个默认色/占位图，防止上一首歌的封面残留
+        self.artworkImageView.backgroundColor = .darkGray
+        
+        guard let artwork = item.artwork else {
+            self.artworkImageView.image = nil
+            return
+        }
+        
+        // 1. 第一波尝试：拿 300x300，如果拿不到，尝试拿原始大小
+        let targetSize = CGSize(width: 300, height: 300)
+        if let image = artwork.image(at: targetSize) ?? artwork.image(at: artwork.bounds.size) {
+            self.artworkImageView.image = image
+        } else {
+            // 2. 第二波尝试 (核心黑科技)：
+            // 如果走到这里，说明是流媒体歌曲，系统抛出了通知但图片还在解码。
+            // 我们给它 0.5 秒的缓冲时间再次拉取。
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                guard let self = self else { return }
+                
+                // 确保在这 0.5 秒内用户没有再次切歌 (比对当前的播放对象)
+                guard self.musicPlayer.nowPlayingItem == item else { return }
+                
+                if let delayedArtwork = self.musicPlayer.nowPlayingItem?.artwork,
+                   let delayedImage = delayedArtwork.image(at: targetSize) ?? delayedArtwork.image(at: delayedArtwork.bounds.size) {
+                    
+                    // 加上一个平滑的渐现动画，让封面的出现不那么突兀
+                    UIView.transition(with: self.artworkImageView,
+                                      duration: 0.3,
+                                      options: .transitionCrossDissolve,
+                                      animations: {
+                                          self.artworkImageView.image = delayedImage
+                                      }, completion: nil)
+                } else {
+                    self.artworkImageView.image = nil
+                }
+            }
+        }
+    }
+
     @objc private func playbackStateDidChange() {
         // 根据当前的播放状态决定是否启动定时器
         if musicPlayer.playbackState == .playing {

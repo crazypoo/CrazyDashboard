@@ -18,6 +18,8 @@ public class PTMapView: UIView, MKMapViewDelegate {
     // 用于标记是否已经完成了首次中心点放大
     private var isFirstLocationUpdate = true
     
+    private let gradientMaskLayer = CAGradientLayer()
+    
     public override init(frame: CGRect) {
         super.init(frame: frame)
         setupUI()
@@ -25,6 +27,23 @@ public class PTMapView: UIView, MKMapViewDelegate {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    // MARK: - 生命周期绘图 (处理渐变和剔除 Logo)
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+        
+        // 1. 设置渐变蒙版的大小
+        gradientMaskLayer.frame = self.bounds
+        
+        // 2. 强行隐藏苹果 Logo 和 Legal 文字 (仅限个人极客项目，上架会被拒！)
+        for subview in mapView.subviews {
+            let className = String(describing: type(of: subview))
+            // 苹果 Logo 通常是一个内部的 ImageView，Legal 通常是内部的 Label
+            if className.contains("ImageView") || className.contains("Label") {
+                subview.isHidden = true
+            }
+        }
     }
     
     private func setupUI() {
@@ -49,26 +68,43 @@ public class PTMapView: UIView, MKMapViewDelegate {
         mapView.overrideUserInterfaceStyle = .dark // 强制暗黑模式
 
         mapView.delegate = self
+        
+        setupGradientMask()
     }
     
-    // MARK: - 进阶功能：手动定位聚焦
-    // MapKit 通常会自动处理定位和视角跟随，但你可以用这个方法强制地图飞到某个坐标
-    public func focus(on location: CLLocation, zoomLevelMeters: CLLocationDistance = 300, animated: Bool = true) {
-        let region = MKCoordinateRegion(center: location.coordinate,
-                                        latitudinalMeters: zoomLevelMeters,
-                                        longitudinalMeters: zoomLevelMeters)
-        mapView.setRegion(region, animated: animated)
+    // MARK: - 边缘羽化渐变特效
+    private func setupGradientMask() {
+        // 配置渐变的颜色：透明 -> 纯黑 -> 纯黑 -> 透明
+        // 在蒙版中，纯黑代表完全显示，透明代表完全不可见
+        gradientMaskLayer.colors = [
+            UIColor.clear.cgColor,
+            UIColor.black.cgColor,
+            UIColor.black.cgColor,
+            UIColor.clear.cgColor
+        ]
+        
+        // 配置渐变的位置：0.0 到 0.15 是左侧渐变，0.85 到 1.0 是右侧渐变
+        gradientMaskLayer.locations = [0.0, 0.15, 0.85, 1.0]
+        
+        // 设置渐变方向：横向 (从左到右)
+        gradientMaskLayer.startPoint = CGPoint(x: 0.0, y: 0.5)
+        gradientMaskLayer.endPoint = CGPoint(x: 1.0, y: 0.5)
+        
+        // 将这个渐变层作为当前 View 的蒙版
+        self.layer.mask = gradientMaskLayer
     }
-    
+
     // MARK: - MKMapViewDelegate
     
     public func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
         // 当首次获取到用户的 GPS 坐标时，给地图一个平滑的缩放动画
-        if isFirstLocationUpdate, let location = userLocation.location {
+        if isFirstLocationUpdate, let _ = userLocation.location {
             isFirstLocationUpdate = false
-            // 设定视角高度为 300 米
-            focus(on: location, zoomLevelMeters: 300, animated: true)
-            // 再次确保追踪模式是 3D 车头向上
+            let zoomRange = MKMapView.CameraZoomRange(
+                            minCenterCoordinateDistance: 250,
+                            maxCenterCoordinateDistance: 250
+                        )
+            mapView.setCameraZoomRange(zoomRange, animated: true)
             mapView.setUserTrackingMode(.followWithHeading, animated: true)
         }
     }

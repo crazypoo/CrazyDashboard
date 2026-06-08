@@ -38,7 +38,6 @@ public class PTCompassRollerView: UIView {
     
     private func setupUI() {
         self.clipsToBounds = true
-        self.backgroundColor = UIColor.black.withAlphaComponent(0.6)
         
         // 1. 标尺容器 (承载刻度和滚动的方向文字)
         insertSubview(scaleContainer, at: 0)

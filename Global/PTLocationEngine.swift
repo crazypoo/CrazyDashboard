@@ -9,7 +9,20 @@ import Foundation
 import CoreLocation
 import PooTools
 
-public typealias PTLocationSpeedBlock = (_ speedKmh: Double, _ courseDegree: Double, _ altitude: Double) -> Void
+public struct PTTripData: Sendable {
+    public var speedKmh: Double = 0.0
+    public var courseDegree: Double = 0.0
+    public var altitude: Double = 0.0
+    
+    // 新增的行程统计数据
+    public var runTime: TimeInterval = 0.0    // 运行时长 (秒)
+    public var totalDistance: Double = 0.0    // 总行驶距离 (米)
+    public var avgSpeed: Double = 0.0         // 平均速度 (km/h)
+    public var maxSpeed: Double = 0.0         // 最高速度 (km/h)
+    public var minSpeed: Double = 0.0         // 最低速度 (km/h)
+}
+
+public typealias PTLocationSpeedBlock = (_ data:PTTripData) -> Void
 
 @objcMembers
 public class PTLocationEngine: NSObject, CLLocationManagerDelegate {
@@ -25,6 +38,12 @@ public class PTLocationEngine: NSObject, CLLocationManagerDelegate {
     private var currentSpeedKmh: Double = 0.0
     private var currentAltitude: Double = 0.0 // 🌟 新增：缓存海拔高度
     
+    private var startTime: Date?
+    private var lastLocation: CLLocation?
+    private var totalDistance: Double = 0.0
+    private var maxSpeed: Double = 0.0
+    private var minSpeed: Double = 999.0 // 初始设为极大值方便找最小值
+
     private override init() {
         super.init()
         setupManager()
@@ -45,6 +64,12 @@ public class PTLocationEngine: NSObject, CLLocationManagerDelegate {
         locationManager.startUpdatingLocation()
         // 启动方向罗盘更新 (调用磁力计)
         locationManager.startUpdatingHeading()
+        
+        startTime = Date()
+        lastLocation = nil
+        totalDistance = 0.0
+        maxSpeed = 0.0
+        minSpeed = 999.0
     }
     
     public func stopTracking() {
@@ -64,6 +89,16 @@ public class PTLocationEngine: NSObject, CLLocationManagerDelegate {
         if rawSpeed < 0 { rawSpeed = 0 }
         currentSpeedKmh = rawSpeed * 3.6
         
+        // 统计极值
+        if currentSpeedKmh > maxSpeed { maxSpeed = currentSpeedKmh }
+        // 忽略静止状态(0)对最低速度的干扰，只记录移动中的最低速度
+        if currentSpeedKmh > 5.0 && currentSpeedKmh < minSpeed { minSpeed = currentSpeedKmh }
+        
+        // 计算运行时长和平均速度
+        let runTime = Date().timeIntervalSince(startTime ?? Date())
+        // 平均速度 = (总距离 / 总时间) 转 km/h
+        let avgSpeed = runTime > 0 ? (totalDistance / runTime) * 3.6 : 0.0
+        
         // 【核心融合逻辑】：处理 course 为 -1 的情况
         var finalCourse = location.course
         
@@ -74,32 +109,29 @@ public class PTLocationEngine: NSObject, CLLocationManagerDelegate {
         }
         
         currentAltitude = location.altitude
+        let tripData = PTTripData(
+                    speedKmh: currentSpeedKmh,
+                    courseDegree: finalCourse,
+                    altitude: currentAltitude,
+                    runTime: runTime,
+                    totalDistance: totalDistance,
+                    avgSpeed: avgSpeed,
+                    maxSpeed: maxSpeed,
+                    minSpeed: minSpeed == 999.0 ? 0.0 : minSpeed
+                )
         
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            self.locationBlock?(self.currentSpeedKmh, finalCourse, currentAltitude)
+            self.locationBlock?(tripData)
         }
     }
     
-    // MARK: - 2. 磁力计罗盘更新 (专治停车时找不到北)
-    
+    // MARK: 磁力计罗盘更新 (专治停车时找不到北)
     public func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
-        // 确保罗盘数据有效
         guard newHeading.headingAccuracy >= 0 else { return }
-        
-        // trueHeading 代表真北 (需 GPS 辅助)，magneticHeading 代表磁北
-        // 优先使用真北，拿不到就用磁北
-        let heading = newHeading.trueHeading > 0 ? newHeading.trueHeading : newHeading.magneticHeading
-        currentHeading = heading
-        
-        // 如果当前车停着 (速度很低)，位置回调可能不会频繁触发，我们需要靠转动手机来实时刷新罗盘 UI
-        if currentSpeedKmh < 5.0 {
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                self.locationBlock?(self.currentSpeedKmh, self.currentHeading, self.currentAltitude)
-            }
-        }
+        currentHeading = newHeading.trueHeading > 0 ? newHeading.trueHeading : newHeading.magneticHeading
     }
+
     
     // MARK: - 权限处理
     

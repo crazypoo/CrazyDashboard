@@ -20,6 +20,7 @@ class ViewController: UIViewController {
     let musicNowPlaying = PTNowPlayingView(frame: .zero)
     let compassRoller = PTCompassRollerView(frame: .zero)
     let mapView = PTMapView(frame: .zero)
+    let tripStatsView = PTTripStatsView(frame: .zero)
 
     
     override func viewDidLoad() {
@@ -33,7 +34,7 @@ class ViewController: UIViewController {
     private func setupDashboardUI() {
         // 实例化你封装好的仪表盘视图
 
-        self.view.addSubviews([mapView,speedometer,musicNowPlaying,compassRoller])
+        self.view.addSubviews([mapView,speedometer,musicNowPlaying,compassRoller,tripStatsView])
         mapView.snp.makeConstraints { make in
             make.top.equalToSuperview().inset(10)
             make.bottom.equalToSuperview().inset(CGFloat.kTabbarSaveAreaHeight)
@@ -65,15 +66,23 @@ class ViewController: UIViewController {
             make.bottom.equalTo(self.mapView)
             make.height.equalTo(54)
         }
+        
+        tripStatsView.snp.makeConstraints { make in
+            make.top.equalTo(self.mapView)
+            make.left.equalTo(self.speedometer.snp.centerX).offset(20)
+            make.right.equalTo(self.musicNowPlaying.snp.centerX).offset(-20)
+            make.height.equalTo(54)
+        }
     }
     
     private func startPootoolsEngines() {
         // 调用你 pootools 里的引擎
         PTLocationEngine.shared.startTracking()
-        PTLocationEngine.shared.locationBlock = { speed, course, altitude in
-            self.speedometer.updateSpeed(speed)
-            self.compassRoller.updateHeading(course)
-            self.speedometer.updateEnvironment(altitude: altitude, pressureKpa: nil)
+        PTLocationEngine.shared.locationBlock = { [weak self] tripData in
+            self?.speedometer.updateSpeed(tripData.speedKmh)
+            self?.compassRoller.updateHeading(tripData.courseDegree)
+            self?.speedometer.updateEnvironment(altitude: tripData.altitude, pressureKpa: nil)
+            self?.tripStatsView.updateStats(with: tripData)
         }
         
         PTMotion.shared.motionBlock = { [weak self] motionData in

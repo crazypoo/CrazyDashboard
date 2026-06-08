@@ -18,6 +18,8 @@
 		5577E6762FD657F30004733F /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5577E6752FD657D20004733F /* libz.tbd */; };
 		5577E6AB2FD662C20004733F /* PTMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6AA2FD662C20004733F /* PTMapView.swift */; };
 		5577E6AC2FD662C20004733F /* PTMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6AA2FD662C20004733F /* PTMapView.swift */; };
+		5577E6D12FD680730004733F /* PTTripStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6D02FD680730004733F /* PTTripStatsView.swift */; };
+		5577E6D22FD680730004733F /* PTTripStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6D02FD680730004733F /* PTTripStatsView.swift */; };
 		5A200D40EF300920887AD052 /* Pods_PTSpeed.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 33464FDDE31899C7F87FB6EC /* Pods_PTSpeed.framework */; };
 		611EE02BED86EDA626884233 /* Pods_CrazyDashboard.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 561E4C337C3165E9409BE2DF /* Pods_CrazyDashboard.framework */; };
 /* End PBXBuildFile section */
@@ -33,6 +35,7 @@
 		5577E6382FD657030004733F /* PTSpeed.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PTSpeed.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5577E6752FD657D20004733F /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		5577E6AA2FD662C20004733F /* PTMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMapView.swift; sourceTree = "<group>"; };
+		5577E6D02FD680730004733F /* PTTripStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTripStatsView.swift; sourceTree = "<group>"; };
 		561E4C337C3165E9409BE2DF /* Pods_CrazyDashboard.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CrazyDashboard.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
@@ -125,6 +128,7 @@
 				5577E6222FD656D20004733F /* PTNowPlayingView.swift */,
 				5577E6232FD656D20004733F /* PTSpeedometerView.swift */,
 				5577E6AA2FD662C20004733F /* PTMapView.swift */,
+				5577E6D02FD680730004733F /* PTTripStatsView.swift */,
 			);
 			path = Global;
 			sourceTree = "<group>";
@@ -351,6 +355,7 @@
 				5577E6302FD656D20004733F /* PTNowPlayingView.swift in Sources */,
 				5577E6AB2FD662C20004733F /* PTMapView.swift in Sources */,
 				5577E6312FD656D20004733F /* PTSpeedometerView.swift in Sources */,
+				5577E6D12FD680730004733F /* PTTripStatsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -360,6 +365,7 @@
 			files = (
 				5577E6502FD6572E0004733F /* PTNowPlayingView.swift in Sources */,
 				5577E64E2FD657250004733F /* PTCompassRollerView.swift in Sources */,
+				5577E6D22FD680730004733F /* PTTripStatsView.swift in Sources */,
 				5577E64F2FD6572A0004733F /* PTLocationEngine.swift in Sources */,
 				5577E6512FD657330004733F /* PTSpeedometerView.swift in Sources */,
 				5577E6AC2FD662C20004733F /* PTMapView.swift in Sources */,
@@ -595,7 +601,7 @@
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -732,7 +738,7 @@
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
