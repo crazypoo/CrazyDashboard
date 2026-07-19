@@ -43,6 +43,7 @@ class PTMotoInfoViewController: PTBaseViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        PTBluetoothServerManager.shared.autoStartIfRemembered()
         setupUI()
         NotificationCenter.default.addObserver(self, selector: #selector(handleAuthSuccess), name: NSNotification.Name("MotorcycleAuthSuccess"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: NSNotification.Name("MotorcycleDATA1"), object: nil)
@@ -120,7 +121,7 @@ class PTMotoInfoViewController: PTBaseViewController {
         statusLabel.text = "正在启动 TIO 广播...\n请打开摩托车电门并靠近手机"
         
         // 2. 唤醒单例，触发 peripheralManagerDidUpdateState，开始广播
-        _ = PTBluetoothServerManager.shared.peripheralManager
+        PTBluetoothServerManager.shared.startBaseStationAndScan()
         PTProgressHUD.show(text: "基站已激活，等待连接")
     }
     
