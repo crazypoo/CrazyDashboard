@@ -32,6 +32,20 @@
 		5577E7D02FD704790004733F /* PTBumpMeterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7CE2FD704790004733F /* PTBumpMeterView.swift */; };
 		5577E7D22FD704AD0004733F /* PTPitchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7D12FD704AD0004733F /* PTPitchView.swift */; };
 		5577E7D32FD704AD0004733F /* PTPitchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7D12FD704AD0004733F /* PTPitchView.swift */; };
+		55FE295B300CA4E8000E741F /* PTBluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE295A300CA4E8000E741F /* PTBluetoothManager.swift */; };
+		55FE295C300CA4E8000E741F /* PTBluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE295A300CA4E8000E741F /* PTBluetoothManager.swift */; };
+		55FE2966300CA5E0000E741F /* PTDashboardConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2965300CA5E0000E741F /* PTDashboardConfig.swift */; };
+		55FE2967300CA5E0000E741F /* PTDashboardConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2965300CA5E0000E741F /* PTDashboardConfig.swift */; };
+		55FE2995300CBCB4000E741F /* PTMotoBaseTabbarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2994300CBCB4000E741F /* PTMotoBaseTabbarController.swift */; };
+		55FE2996300CBCB4000E741F /* PTMotoBaseTabbarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2994300CBCB4000E741F /* PTMotoBaseTabbarController.swift */; };
+		55FE29A0300CC1F1000E741F /* PTMotoInfoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE299F300CC1F1000E741F /* PTMotoInfoViewController.swift */; };
+		55FE29A1300CC1F1000E741F /* PTMotoInfoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE299F300CC1F1000E741F /* PTMotoInfoViewController.swift */; };
+		55FE29A3300CC258000E741F /* PTMotoNavigationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE29A2300CC258000E741F /* PTMotoNavigationViewController.swift */; };
+		55FE29A4300CC258000E741F /* PTMotoNavigationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE29A2300CC258000E741F /* PTMotoNavigationViewController.swift */; };
+		55FE29A6300CC2E2000E741F /* PTMotoSettingViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE29A5300CC2E2000E741F /* PTMotoSettingViewController.swift */; };
+		55FE29A7300CC2E2000E741F /* PTMotoSettingViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE29A5300CC2E2000E741F /* PTMotoSettingViewController.swift */; };
+		55FE2A0A300CE2B0000E741F /* PTMapKitNavigationHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2A09300CE2B0000E741F /* PTMapKitNavigationHelper.swift */; };
+		55FE2A0B300CE2B0000E741F /* PTMapKitNavigationHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2A09300CE2B0000E741F /* PTMapKitNavigationHelper.swift */; };
 		5A200D40EF300920887AD052 /* Pods_PTSpeed.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 33464FDDE31899C7F87FB6EC /* Pods_PTSpeed.framework */; };
 		611EE02BED86EDA626884233 /* Pods_CrazyDashboard.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 561E4C337C3165E9409BE2DF /* Pods_CrazyDashboard.framework */; };
 /* End PBXBuildFile section */
@@ -54,6 +68,13 @@
 		5577E7CB2FD6FF890004733F /* PTLeanAngleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLeanAngleView.swift; sourceTree = "<group>"; };
 		5577E7CE2FD704790004733F /* PTBumpMeterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBumpMeterView.swift; sourceTree = "<group>"; };
 		5577E7D12FD704AD0004733F /* PTPitchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPitchView.swift; sourceTree = "<group>"; };
+		55FE295A300CA4E8000E741F /* PTBluetoothManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBluetoothManager.swift; sourceTree = "<group>"; };
+		55FE2965300CA5E0000E741F /* PTDashboardConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashboardConfig.swift; sourceTree = "<group>"; };
+		55FE2994300CBCB4000E741F /* PTMotoBaseTabbarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoBaseTabbarController.swift; sourceTree = "<group>"; };
+		55FE299F300CC1F1000E741F /* PTMotoInfoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoInfoViewController.swift; sourceTree = "<group>"; };
+		55FE29A2300CC258000E741F /* PTMotoNavigationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoNavigationViewController.swift; sourceTree = "<group>"; };
+		55FE29A5300CC2E2000E741F /* PTMotoSettingViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoSettingViewController.swift; sourceTree = "<group>"; };
+		55FE2A09300CE2B0000E741F /* PTMapKitNavigationHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMapKitNavigationHelper.swift; sourceTree = "<group>"; };
 		561E4C337C3165E9409BE2DF /* Pods_CrazyDashboard.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CrazyDashboard.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
@@ -141,18 +162,25 @@
 		5577E64D2FD657110004733F /* Global */ = {
 			isa = PBXGroup;
 			children = (
-				5577E6202FD656D20004733F /* PTCompassRollerView.swift */,
-				5577E6212FD656D20004733F /* PTLocationEngine.swift */,
-				5577E6222FD656D20004733F /* PTNowPlayingView.swift */,
-				5577E6232FD656D20004733F /* PTSpeedometerView.swift */,
-				5577E6AA2FD662C20004733F /* PTMapView.swift */,
-				5577E6D02FD680730004733F /* PTTripStatsView.swift */,
-				5577E77F2FD6EEEF0004733F /* PTGForceView.swift */,
-				5577E7C82FD6FC8C0004733F /* PTCrashWarningView.swift */,
-				5577E7CB2FD6FF890004733F /* PTLeanAngleView.swift */,
+				55FE295A300CA4E8000E741F /* PTBluetoothManager.swift */,
 				5577E7CE2FD704790004733F /* PTBumpMeterView.swift */,
-				5577E7D12FD704AD0004733F /* PTPitchView.swift */,
+				5577E6202FD656D20004733F /* PTCompassRollerView.swift */,
+				5577E7C82FD6FC8C0004733F /* PTCrashWarningView.swift */,
 				55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */,
+				55FE2965300CA5E0000E741F /* PTDashboardConfig.swift */,
+				5577E77F2FD6EEEF0004733F /* PTGForceView.swift */,
+				5577E7CB2FD6FF890004733F /* PTLeanAngleView.swift */,
+				5577E6212FD656D20004733F /* PTLocationEngine.swift */,
+				55FE2A09300CE2B0000E741F /* PTMapKitNavigationHelper.swift */,
+				5577E6AA2FD662C20004733F /* PTMapView.swift */,
+				55FE2994300CBCB4000E741F /* PTMotoBaseTabbarController.swift */,
+				55FE299F300CC1F1000E741F /* PTMotoInfoViewController.swift */,
+				55FE29A2300CC258000E741F /* PTMotoNavigationViewController.swift */,
+				55FE29A5300CC2E2000E741F /* PTMotoSettingViewController.swift */,
+				5577E6222FD656D20004733F /* PTNowPlayingView.swift */,
+				5577E7D12FD704AD0004733F /* PTPitchView.swift */,
+				5577E6232FD656D20004733F /* PTSpeedometerView.swift */,
+				5577E6D02FD680730004733F /* PTTripStatsView.swift */,
 			);
 			path = Global;
 			sourceTree = "<group>";
@@ -375,7 +403,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				5577E62E2FD656D20004733F /* PTCompassRollerView.swift in Sources */,
+				55FE29A0300CC1F1000E741F /* PTMotoInfoViewController.swift in Sources */,
 				55028F2D2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */,
+				55FE295B300CA4E8000E741F /* PTBluetoothManager.swift in Sources */,
+				55FE29A7300CC2E2000E741F /* PTMotoSettingViewController.swift in Sources */,
+				55FE2A0A300CE2B0000E741F /* PTMapKitNavigationHelper.swift in Sources */,
 				5577E62F2FD656D20004733F /* PTLocationEngine.swift in Sources */,
 				5577E6302FD656D20004733F /* PTNowPlayingView.swift in Sources */,
 				5577E6AB2FD662C20004733F /* PTMapView.swift in Sources */,
@@ -384,7 +416,10 @@
 				5577E6D12FD680730004733F /* PTTripStatsView.swift in Sources */,
 				5577E7802FD6EEEF0004733F /* PTGForceView.swift in Sources */,
 				5577E7CF2FD704790004733F /* PTBumpMeterView.swift in Sources */,
+				55FE29A4300CC258000E741F /* PTMotoNavigationViewController.swift in Sources */,
 				5577E7C92FD6FC8C0004733F /* PTCrashWarningView.swift in Sources */,
+				55FE2967300CA5E0000E741F /* PTDashboardConfig.swift in Sources */,
+				55FE2996300CBCB4000E741F /* PTMotoBaseTabbarController.swift in Sources */,
 				5577E7CD2FD6FF890004733F /* PTLeanAngleView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -393,6 +428,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				55FE2995300CBCB4000E741F /* PTMotoBaseTabbarController.swift in Sources */,
+				55FE29A6300CC2E2000E741F /* PTMotoSettingViewController.swift in Sources */,
 				5577E6502FD6572E0004733F /* PTNowPlayingView.swift in Sources */,
 				5577E64E2FD657250004733F /* PTCompassRollerView.swift in Sources */,
 				55028F2C2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */,
@@ -401,8 +438,13 @@
 				5577E6D22FD680730004733F /* PTTripStatsView.swift in Sources */,
 				5577E64F2FD6572A0004733F /* PTLocationEngine.swift in Sources */,
 				5577E7CA2FD6FC8C0004733F /* PTCrashWarningView.swift in Sources */,
+				55FE295C300CA4E8000E741F /* PTBluetoothManager.swift in Sources */,
+				55FE2966300CA5E0000E741F /* PTDashboardConfig.swift in Sources */,
+				55FE2A0B300CE2B0000E741F /* PTMapKitNavigationHelper.swift in Sources */,
 				5577E7812FD6EEEF0004733F /* PTGForceView.swift in Sources */,
 				5577E6512FD657330004733F /* PTSpeedometerView.swift in Sources */,
+				55FE29A1300CC1F1000E741F /* PTMotoInfoViewController.swift in Sources */,
+				55FE29A3300CC258000E741F /* PTMotoNavigationViewController.swift in Sources */,
 				5577E7D02FD704790004733F /* PTBumpMeterView.swift in Sources */,
 				5577E6AC2FD662C20004733F /* PTMapView.swift in Sources */,
 			);
@@ -633,12 +675,13 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "我要用AM";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "我要用蓝牙";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "我要用L";
 				INFOPLIST_KEY_NSMotionUsageDescription = "我要用Motion";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -771,12 +814,13 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "我要用AM";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "我要用蓝牙";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "我要用L";
 				INFOPLIST_KEY_NSMotionUsageDescription = "我要用Motion";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (

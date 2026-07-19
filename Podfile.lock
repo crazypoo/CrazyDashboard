@@ -36,13 +36,13 @@ PODS:
   - IQKeyboardNotification (1.0.7)
   - IQKeyboardReturnManager (1.0.6):
     - IQKeyboardCore
-  - IQKeyboardToolbar (1.1.4):
-    - IQKeyboardToolbar/Core (= 1.1.4)
-  - IQKeyboardToolbar/Core (1.1.4):
+  - IQKeyboardToolbar (1.1.5):
+    - IQKeyboardToolbar/Core (= 1.1.5)
+  - IQKeyboardToolbar/Core (1.1.5):
     - IQKeyboardCore
     - IQKeyboardToolbar/Placeholderable
-  - IQKeyboardToolbar/Placeholderable (1.1.4)
-  - IQKeyboardToolbarManager (1.1.5):
+  - IQKeyboardToolbar/Placeholderable (1.1.5)
+  - IQKeyboardToolbarManager (1.1.6):
     - IQKeyboardToolbar
     - IQTextInputViewNotification
   - IQTextInputViewNotification (1.0.9):
@@ -54,8 +54,8 @@ PODS:
   - LookinServer/Core (1.2.8)
   - LookinServer/Swift (1.2.8):
     - LookinServer/Core
-  - lottie-ios (4.6.0)
-  - PooTools/Core (4.4.4):
+  - lottie-ios (4.6.1)
+  - PooTools/Core (4.5.2):
     - AttributedString
     - CocoaLumberjack/Swift
     - DeviceKit
@@ -71,37 +71,42 @@ PODS:
     - SnapKit
     - SwiftDate
     - SwifterSwift
-  - PooTools/CustomerLabel (4.4.4):
+  - PooTools/CustomerLabel (4.5.2):
     - PooTools/Core
-  - PooTools/DEBUG (4.4.4):
+  - PooTools/DEBUG (4.5.2):
     - PooTools/Core
     - PooTools/NetWork
     - PooTools/PDF
     - PooTools/SearchBar
     - PooTools/Share
-  - PooTools/Flag (4.4.4):
+  - PooTools/Flag (4.5.2):
     - FlagKit
     - PooTools/Core
-  - PooTools/Loading (4.4.4):
+  - PooTools/Hud (4.5.2):
     - PooTools/Core
-  - PooTools/LocationPermission (4.4.4):
+    - PooTools/ProgressBar
+  - PooTools/Loading (4.5.2):
     - PooTools/Core
-  - PooTools/Motion (4.4.4):
+  - PooTools/LocationPermission (4.5.2):
+    - PooTools/Core
+  - PooTools/Motion (4.5.2):
     - PooTools/Core
     - PooTools/MotionPermission
-  - PooTools/MotionPermission (4.4.4):
+  - PooTools/MotionPermission (4.5.2):
     - PooTools/Core
-  - PooTools/NetWork (4.4.4):
+  - PooTools/NetWork (4.5.2):
     - Alamofire
     - PooTools/Core
     - PooTools/Loading
-  - PooTools/PDF (4.4.4):
+  - PooTools/PDF (4.5.2):
     - PooTools/Core
-  - PooTools/SearchBar (4.4.4):
+  - PooTools/ProgressBar (4.5.2):
     - PooTools/Core
-  - PooTools/Share (4.4.4):
+  - PooTools/SearchBar (4.5.2):
+    - PooTools/Core
+  - PooTools/Share (4.5.2):
     - PooTools/CustomerLabel
-  - PooTools/WhatsNewsKit (4.4.4):
+  - PooTools/WhatsNewsKit (4.5.2):
     - PooTools/Core
   - pop (1.0.12)
   - SafeSFSymbols (2.0.0)
@@ -159,6 +164,7 @@ DEPENDENCIES:
   - PooTools/Core (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/DEBUG (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/Flag (from `https://github.com/crazypoo/PTools.git`)
+  - PooTools/Hud (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/LocationPermission (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/Motion (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/NetWork (from `https://github.com/crazypoo/PTools.git`)
@@ -199,7 +205,7 @@ EXTERNAL SOURCES:
 
 CHECKOUT OPTIONS:
   PooTools:
-    :commit: ff04a4ba833453b09f22ef30eb41741df2dc7f7a
+    :commit: 85b082dfa1ed851a607ca221ece590cb517ea185
     :git: https://github.com/crazypoo/PTools.git
 
 SPEC CHECKSUMS:
@@ -213,15 +219,15 @@ SPEC CHECKSUMS:
   IQKeyboardManagerSwift: 7f6a9a1e2285732d3ff5f485ff921215253ea77e
   IQKeyboardNotification: 3b9bc812a5af2cf97df08a363d9daa9fc0dc1848
   IQKeyboardReturnManager: fcbf51fc68d7536fc1fbcca5231c4e82576b12ac
-  IQKeyboardToolbar: 8e3c1360d11f9edb16a64494761674eccb053fe9
-  IQKeyboardToolbarManager: d449479b5843d4a3fb902d03bf62d6ca031ac20e
+  IQKeyboardToolbar: b0f26e43b9e806e961fde2344fe379ae193236b9
+  IQKeyboardToolbarManager: 242e858cc74e06e00aa989bea1355b24d4397854
   IQTextInputViewNotification: 3b9fb27a16e7ee8958cc9092cfb07a1a9e1fd559
   IQTextView: ae13b4922f22e6f027f62c557d9f4f236b19d5c7
   KakaJSON: cc5ff50a8c1cfbb09413db8496cb709a209e6137
   Kingfisher: db468f911dd666c9134dcbeec4db8bed52e4132d
   LookinServer: 1b2b61c6402ae29fa22182d48f5cd067b4e99e80
-  lottie-ios: 8f959969761e9c45d70353667d00af0e5b9cadb3
-  PooTools: 907305b136bf127888b45ecbbcdf40b257ca62a9
+  lottie-ios: 6467ca7035120c5b0e0acee58bb679cf15875686
+  PooTools: 9f16fdbf4accdc18bf3c42c2c8a4262f031a7f50
   pop: d582054913807fd11fd50bfe6a539d91c7e1a55a
   SafeSFSymbols: c57c8752149b2ddc0213d3d519a3a31a8bd76340
   SmartCodable: db7f9dc94eb9022ede18adf5052772432c5286c7
@@ -230,6 +236,6 @@ SPEC CHECKSUMS:
   SwifterSwift: 517fa61daf5b4c5e3ed13b9f35f4c26b310cfb97
   SwiftyUserDefaults: 63f80248cf5bfb3458825d9a78f2eb7e1293a040
 
-PODFILE CHECKSUM: 813beed9b970fd14532200faba6cd030d01f94e4
+PODFILE CHECKSUM: 85556a6ae9acb4e9a3a15192eba15f95350a0640
 
 COCOAPODS: 1.16.2

@@ -8,5 +8,9 @@
 import UIKit
 
 class ViewController: PTDashBoardBaseBoardViewController {
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+    }
 }
 
