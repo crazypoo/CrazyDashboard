@@ -186,9 +186,13 @@ class PTScooterAuth {
         for k in 0..<5 {
             let c1 = numbersList[Int(r[k] & 0x7FF)]
             let c2 = numbersList[Int(r[k + 5] & 0x7FF)]
-            let sum = (c1 + c2) & 0xFFFF
+            
+            // 🚨 核心修复：Swift 防溢出处理！
+            // 必须先将 UInt16 提升为 UInt32，相加后再进行掩码，防止程序在这里静默崩溃
+            let sum = (UInt32(c1) + UInt32(c2)) & 0xFFFF
+            
             // 写入 16-bit Big-Endian (大端序)[cite: 1]
-            var bigEndianSum = sum.bigEndian
+            var bigEndianSum = UInt16(sum).bigEndian
             data.append(Data(bytes: &bigEndianSum, count: MemoryLayout<UInt16>.size))
         }
         // 后 10 字节填充随机数防嗅探[cite: 1]
@@ -430,7 +434,12 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
         PTProgressHUD.show(text: "⚡️ 发现设备连接！正在订阅通道: \(characteristic.uuid)")
         PTNSLogConsole("⚡️ [雷达响应] 中心设备 \(central.identifier) 订阅了通道: \(characteristic.uuid)")
         if characteristic.uuid == UART_TX { isTioSubscribed = true }
-        if characteristic.uuid == UART_TX_CREDITS { isCreditsSubscribed = true }
+        if characteristic.uuid == UART_TX_CREDITS {
+            isCreditsSubscribed = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.grantScooterCredits()
+            }
+        }
         
         if isTioSubscribed && isCreditsSubscribed {
             PTProgressHUD.show(text:"🔗 摩托车订阅完毕，开启身份验证握手...")
@@ -447,6 +456,12 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
             
             PTProgressHUD.show(text:"⚡️ [雷达响应] 收到设备写入请求，通道: \(request.characteristic.uuid)，数据包: \(data.map { String(format: "%02hhx", $0) }.joined())")
             if request.characteristic.uuid == UART_RX {
+                if localCredits > 0 {
+                    localCredits -= 1
+                }
+                if localCredits <= 4 {
+                    grantScooterCredits()
+                }
                 handleIncoming(data: data)
             } else if request.characteristic.uuid == UART_RX_CREDITS {
                 PTProgressHUD.show(text:"💰 收到摩托车发来的 Credit")
@@ -492,16 +507,22 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
             if data.count >= 20 {
                 PTProgressHUD.show(text:"✅ Step 3: 收到摩托车的随机数，返回最终握手...")
                 var r = [UInt16](repeating: 0, count: 10)
+                
+                // 更安全的位运算提取大端序整数，防止 Swift 切片越界闪退
                 for i in 0..<10 {
                     let start = i * 2
-                    let beVal = data[start...start+1].withUnsafeBytes { $0.load(as: UInt16.self) }
-                    r[i] = UInt16(bigEndian: beVal)
+                    if start + 1 < data.count {
+                        let byte0 = UInt16(data[start])
+                        let byte1 = UInt16(data[start+1])
+                        r[i] = (byte0 << 8) | byte1
+                    }
                 }
+                
                 let authMsg = auth.createAuthenticationMessage(r: r)
                 sendChunkedData(data: authMsg, to: txChar)
                 authState = .waitConnectionFrame
             }
-            
+
         case .waitConnectionFrame:
             
             PTProgressHUD.show(text: "🎉 认证全流程完毕，蓝牙蓝灯应长亮。解锁数据通道！")
@@ -521,28 +542,63 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
     
     // 下发 Credit (解锁摩托车接收端)[cite: 3]
     private func grantScooterCredits() {
-        guard let central = connectedCentral else { return }
-        let refill: UInt8 = 25
-        localCredits = 25
-        let data = Data([refill])
-        peripheralManager.updateValue(data, for: txCreditsChar, onSubscribedCentrals: [central])
+        let refill = 25 - localCredits
+        if refill <= 0 { return }
+        localCredits += refill
+        let data = Data([UInt8(refill)])
+        sendChunkedData(data: data, to: txCreditsChar)
         PTProgressHUD.show(text:"💸 已向摩托车下发 25 个 Credit 额度")
     }
     
+    // 这是苹果特有的回调：当底层通道恢复空闲时，会调用此方法
+    func peripheralManagerIsReady(toUpdateSubscribers peripheral: CBPeripheralManager) {
+        // 通道空闲了，恢复发送状态，继续泵送队列
+        isSending = false
+        pumpQueue()
+    }
+
+    struct PTNotifyJob {
+        let data: Data
+        let characteristic: CBMutableCharacteristic
+    }
+    private var sendQueue: [PTNotifyJob] = []
+    private var isSending = false
+
     // BLE 单次最多发 20 字节，超长数据需分块发送[cite: 3]
     private func sendChunkedData(data: Data, to characteristic: CBMutableCharacteristic) {
-        guard let central = connectedCentral else { return }
         var offset = 0
         let chunkSize = 20
-        
         while offset < data.count {
             let end = min(offset + chunkSize, data.count)
             let chunk = data.subdata(in: offset..<end)
-            peripheralManager.updateValue(chunk, for: characteristic, onSubscribedCentrals: [central])
+            // 将切片加入队列，而不是直接发送
+            sendQueue.append(PTNotifyJob(data: chunk, characteristic: characteristic))
             offset = end
         }
+        // 触发队列引擎
+        pumpQueue()
     }
     
+    private func pumpQueue() {
+        // 如果正在发送，或者队列为空，则等待
+        guard !isSending, !sendQueue.isEmpty else { return }
+        
+        let job = sendQueue[0]
+        // 尝试发送给所有订阅了该通道的设备
+        let success = peripheralManager.updateValue(job.data, for: job.characteristic, onSubscribedCentrals: nil)
+        
+        if success {
+            // 发送成功，移出队列
+            sendQueue.removeFirst()
+            // 使用异步继续泵送下一个，防止阻塞主线程
+            DispatchQueue.main.async { self.pumpQueue() }
+        } else {
+            // 🚨 发送失败 (底层通道已满)！标记为正在发送，耐心等待系统回调
+            isSending = true
+            PTProgressHUD.show(text:"⏳ 底层通道繁忙，等待系统就绪回调...")
+        }
+    }
+
     // 供外部调用的指令发送入口
     func sendConfiguration(color: UInt8, unit: UInt8, language: UInt8) {
         guard authenticated else {
