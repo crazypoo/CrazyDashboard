@@ -15,9 +15,8 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "5577E6372FD657030004733F"
-               BuildableName = "PTSpeed.app"
-               BlueprintName = "PTSpeed"
+               BlueprintIdentifier = "5577E5BC2FD5C1DB0004733F"
+               BuildableName = "CrazyDashboard.app"
                ReferencedContainer = "container:CrazyDashboard.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -32,22 +31,21 @@
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
-      selectedDebuggerIdentifier = ""
-      selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"
+      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES"
-      queueDebuggingEnableBacktraceRecording = "Yes">
+      queueDebuggingEnabled = "No">
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "5577E6372FD657030004733F"
-            BuildableName = "PTSpeed.app"
-            BlueprintName = "PTSpeed"
+            BlueprintIdentifier = "5577E5BC2FD5C1DB0004733F"
+            BuildableName = "CrazyDashboard.app"
             ReferencedContainer = "container:CrazyDashboard.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -62,9 +60,8 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "5577E6372FD657030004733F"
-            BuildableName = "PTSpeed.app"
-            BlueprintName = "PTSpeed"
+            BlueprintIdentifier = "5577E5BC2FD5C1DB0004733F"
+            BuildableName = "CrazyDashboard.app"
             ReferencedContainer = "container:CrazyDashboard.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

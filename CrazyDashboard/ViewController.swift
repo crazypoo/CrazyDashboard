@@ -6,14 +6,12 @@
 //
 
 import UIKit
+import SwifterSwift
 
-class ViewController: UIViewController {
-
+class ViewController: PTDashBoardBaseBoardViewController {
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
     }
-
-
 }
 

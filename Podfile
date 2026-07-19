@@ -1,4 +1,4 @@
-platform :ios, '16.0'
+platform :ios, '17.0'
 source 'https://github.com/CocoaPods/Specs.git'
 use_frameworks!
 
@@ -17,36 +17,27 @@ post_install do |installer|
   end
 end
 
+def shared_pods
+  ### DEBUG
+  pod 'LookinServer', :subspecs => ['Swift'], :configurations => ['Debug']
+  pod 'Bugly'
+
+  ## PooTools (极客专属工具箱)
+  pod 'PooTools/Core', :git => 'https://github.com/crazypoo/PTools.git'
+  pod 'PooTools/DEBUG', :git => 'https://github.com/crazypoo/PTools.git'
+  pod 'PooTools/WhatsNewsKit', :git => 'https://github.com/crazypoo/PTools.git'
+  pod 'PooTools/LocationPermission', :git => 'https://github.com/crazypoo/PTools.git'
+  pod 'PooTools/Flag', :git => 'https://github.com/crazypoo/PTools.git'
+  pod 'PooTools/Motion', :git => 'https://github.com/crazypoo/PTools.git'
+  pod 'PooTools/NetWork', :git => 'https://github.com/crazypoo/PTools.git'
+  
+  pod 'SwiftyUserDefaults'
+end
+
 target 'CrazyDashboard' do
-
-###DEBUG
-pod 'LookinServer', :configurations => ['Debug']
-pod 'Bugly'
-
-##PooTools
-pod 'PooTools/Core', :git => 'https://github.com/crazypoo/PTools.git'
-pod 'PooTools/DEBUG', :git => 'https://github.com/crazypoo/PTools.git'
-pod 'PooTools/WhatsNewsKit', :git => 'https://github.com/crazypoo/PTools.git'
-pod 'PooTools/LocationPermission', :git => 'https://github.com/crazypoo/PTools.git'
-pod 'PooTools/Flag', :git => 'https://github.com/crazypoo/PTools.git'
-pod 'PooTools/Motion', :git => 'https://github.com/crazypoo/PTools.git'
-pod 'PooTools/NetWork', :git => 'https://github.com/crazypoo/PTools.git'
-pod 'SwiftyUserDefaults'
+  shared_pods
 end
 
 target 'PTSpeed' do
-
-###DEBUG
-pod 'LookinServer', :configurations => ['Debug']
-pod 'Bugly'
-
-##PooTools
-pod 'PooTools/Core', :git => 'https://github.com/crazypoo/PTools.git'
-pod 'PooTools/DEBUG', :git => 'https://github.com/crazypoo/PTools.git'
-pod 'PooTools/WhatsNewsKit', :git => 'https://github.com/crazypoo/PTools.git'
-pod 'PooTools/LocationPermission', :git => 'https://github.com/crazypoo/PTools.git'
-pod 'PooTools/Flag', :git => 'https://github.com/crazypoo/PTools.git'
-pod 'PooTools/Motion', :git => 'https://github.com/crazypoo/PTools.git'
-pod 'PooTools/NetWork', :git => 'https://github.com/crazypoo/PTools.git'
-pod 'SwiftyUserDefaults'
+  shared_pods
 end

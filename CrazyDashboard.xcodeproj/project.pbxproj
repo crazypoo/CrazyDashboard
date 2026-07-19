@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		55028F2C2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */; };
+		55028F2D2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */; };
 		5577E62E2FD656D20004733F /* PTCompassRollerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6202FD656D20004733F /* PTCompassRollerView.swift */; };
 		5577E62F2FD656D20004733F /* PTLocationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6212FD656D20004733F /* PTLocationEngine.swift */; };
 		5577E6302FD656D20004733F /* PTNowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6222FD656D20004733F /* PTNowPlayingView.swift */; };
@@ -37,6 +39,7 @@
 /* Begin PBXFileReference section */
 		2567A83A06A2B2498B880D19 /* Pods-CrazyDashboard.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.release.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.release.xcconfig"; sourceTree = "<group>"; };
 		33464FDDE31899C7F87FB6EC /* Pods_PTSpeed.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_PTSpeed.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashBoardBaseBoardViewController.swift; sourceTree = "<group>"; };
 		5577E5BD2FD5C1DB0004733F /* CrazyDashboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CrazyDashboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5577E6202FD656D20004733F /* PTCompassRollerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCompassRollerView.swift; sourceTree = "<group>"; };
 		5577E6212FD656D20004733F /* PTLocationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLocationEngine.swift; sourceTree = "<group>"; };
@@ -149,6 +152,7 @@
 				5577E7CB2FD6FF890004733F /* PTLeanAngleView.swift */,
 				5577E7CE2FD704790004733F /* PTBumpMeterView.swift */,
 				5577E7D12FD704AD0004733F /* PTPitchView.swift */,
+				55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */,
 			);
 			path = Global;
 			sourceTree = "<group>";
@@ -229,7 +233,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2650;
-				LastUpgradeCheck = 2650;
+				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					5577E5BC2FD5C1DB0004733F = {
 						CreatedOnToolsVersion = 26.5;
@@ -285,9 +289,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -302,9 +310,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -363,6 +375,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5577E62E2FD656D20004733F /* PTCompassRollerView.swift in Sources */,
+				55028F2D2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */,
 				5577E62F2FD656D20004733F /* PTLocationEngine.swift in Sources */,
 				5577E6302FD656D20004733F /* PTNowPlayingView.swift in Sources */,
 				5577E6AB2FD662C20004733F /* PTMapView.swift in Sources */,
@@ -382,6 +395,7 @@
 			files = (
 				5577E6502FD6572E0004733F /* PTNowPlayingView.swift in Sources */,
 				5577E64E2FD657250004733F /* PTCompassRollerView.swift in Sources */,
+				55028F2C2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */,
 				5577E7CC2FD6FF890004733F /* PTLeanAngleView.swift in Sources */,
 				5577E7D32FD704AD0004733F /* PTPitchView.swift in Sources */,
 				5577E6D22FD680730004733F /* PTTripStatsView.swift in Sources */,
@@ -410,6 +424,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CrazyDashboard/Info.plist;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "我要调用AM";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = hi;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "我要用L";
 				INFOPLIST_KEY_NSMotionUsageDescription = "我要用Motion";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -417,7 +432,7 @@
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -452,6 +467,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CrazyDashboard/Info.plist;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "我要调用AM";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = hi;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "我要用L";
 				INFOPLIST_KEY_NSMotionUsageDescription = "我要用Motion";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -459,7 +475,7 @@
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -610,6 +626,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5U99J43536;
@@ -623,7 +640,7 @@
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -747,6 +764,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5U99J43536;
@@ -760,7 +778,7 @@
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
