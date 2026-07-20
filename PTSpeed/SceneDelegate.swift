@@ -15,7 +15,13 @@ class SceneDelegate: PTWindowSceneDelegate {
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
         guard let scene = (scene as? UIWindowScene) else { return }
-        makeKeyAndVisible(in: scene, viewController: PTMotoBaseTabbarController(), tint: .white)
+        let vc = PTBLEConnectViewController()
+        vc.bleSuccessCallback = {
+            PTGCDManager.shared.runOnMain {
+                self.makeKeyAndVisible(in: scene, viewController: PTMotoBaseTabbarController(), tint: .white)
+            }
+        }
+        makeKeyAndVisible(in: scene, viewController: vc, tint: .white)
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {

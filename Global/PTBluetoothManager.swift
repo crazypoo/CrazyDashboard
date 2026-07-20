@@ -9,9 +9,14 @@ import UIKit
 import CoreBluetooth
 import PooTools
 
-// MARK: - 导航与状态数据模型
-// MARK: - 摩托车仪表盘状态模型[cite: 2]
+let BLEConnectSuccess = NSNotification.Name("MotorcycleAuthSuccess")
+let MotorcycleDATA1 = NSNotification.Name("MotorcycleDATA1")
+let MotorcycleDATA2 = NSNotification.Name("MotorcycleDATA2")
+let MotorcycleDATA3 = NSNotification.Name("MotorcycleDATA3")
+let MotorcycleCONTROL = NSNotification.Name("MotorcycleCONTROL")
+let MotorcycleABS = NSNotification.Name("MotorcycleABS")
 
+// MARK: - 导航与状态数据模型
 struct PTDashboardControl {
     let vehicleSpeedKmh: Double
     let engineRpm: Int
@@ -341,54 +346,38 @@ extension PTFrameBuilder {
 enum PTAuthState {
     case waitKeyId      // 等待车机发送 8758
     case waitAuthMsg    // 等待车机返回加密后的验证数据
+    case waitRandomNums     // 3. 恢复：等车机发 20 字节挑战码 (即 27b21814...)
+    case waitConnectionFrame// 4. 恢复：等车机最终的 0x16 0x01 确认信号
     case success        // 验证完成，数据流通
 }
 
-class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralManagerDelegate {
+// 只保留外设管理器，做纯粹的服务器
+class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     
     static let shared = PTBluetoothServerManager()
     
-    var onLogUpdated: ((String) -> Void)?
-        
-    private func ptLog(_ message: String) {
-        // 1. 依然保留 Xcode 控制台打印
-        PTNSLogConsole(message)
-        
-        // 2. 确保在主线程将文本回调给外部 UI
-        DispatchQueue.main.async {
-            self.onLogUpdated?(message)
-        }
-    }
-
-    private let kHasPairedKey = "PT_HasPairedWithScooter"
-    private let kScooterUUIDKey = "PT_ScooterUUID_Key" // 👈 新增：用于保存车机的系统唯一标识
-    var hasRememberedScooter: Bool {
-        return UserDefaults.standard.bool(forKey: kHasPairedKey)
-    }
-    var peripheralManager: CBPeripheralManager!
-    var centralManager: CBCentralManager!
-    let auth = PTScooterAuth()
+    // 🚨 核心修复 1：必须使用 16-bit 短标识！否则会撑爆 iOS 的 31 字节广播包，导致摩托车看不见！
+    let TIO_SERVICE = CBUUID(string: "FEFB")
     
-    // UUID 定义[cite: 3]
-    let TIO_SERVICE = CBUUID(string: "0000FEFB-0000-1000-8000-00805F9B34FB")
     let UART_RX = CBUUID(string: "00000001-0000-1000-8000-008025000000")
     let UART_TX = CBUUID(string: "00000002-0000-1000-8000-008025000000")
     let UART_RX_CREDITS = CBUUID(string: "00000003-0000-1000-8000-008025000000")
     let UART_TX_CREDITS = CBUUID(string: "00000004-0000-1000-8000-008025000000")
     
+    var peripheralManager: CBPeripheralManager!
+    let auth = PTScooterAuth()
+    
     var txChar: CBMutableCharacteristic!
     var txCreditsChar: CBMutableCharacteristic!
     
-    // 状态记录[cite: 3]
     private var authState: PTAuthState = .waitKeyId
     private var authenticated = false
     private var isTioSubscribed = false
     private var isCreditsSubscribed = false
     private var localCredits = 0
-    
-    // 订阅的中心设备 (摩托车)
     private var connectedCentral: CBCentral?
-    private var activeScooter: CBPeripheral? // 记录被我们主动抓取的摩托车
+    
+    var onLogUpdated: ((String) -> Void)?
     
     struct PTNotifyJob {
         let data: Data
@@ -396,85 +385,69 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
     }
     private var sendQueue: [PTNotifyJob] = []
     private var isSending = false
-
+    
     override init() {
         super.init()
+        ptLog("🛠️ [DEBUG] 初始化基站 (移除所有多余扫描干扰)")
         peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
-        centralManager = CBCentralManager(delegate: self, queue: nil)
     }
     
-    // MARK: - 启动双擎
+    private func ptLog(_ message: String) {
+        print(message)
+        DispatchQueue.main.async { self.onLogUpdated?(message) }
+    }
+    
+    // MARK: - 启动基站
     func startBaseStationAndScan() {
-        ptLog("🛠️ [步骤 1] 请求启动双擎 (基站 + 扫描/重连)")
-        tryStartModules()
+        if peripheralManager.state == .poweredOn {
+            if peripheralManager.isAdvertising {
+                ptLog("⚠️ [状态] 基站已经在广播中了")
+                return
+            }
+            setupServices()
+            
+            // 🚨 核心修复 1 延续：只广播服务，不带名字，保证 FEFB 绝对暴露给摩托车！
+            peripheralManager.startAdvertising([
+                CBAdvertisementDataServiceUUIDsKey: [TIO_SERVICE]
+            ])
+            ptLog("📡 [状态] 信号发射！车机可以直接发现我们了...")
+        } else {
+            ptLog("❌ [错误] 蓝牙未开启，状态: \(peripheralManager.state.rawValue)")
+        }
     }
     
-    // 统一的状态检测与启动中心
-    private func tryStartModules() {
-        // 1. 启动基站 (必须等状态为 poweredOn)
-        if peripheralManager.state == .poweredOn && !peripheralManager.isAdvertising {
-            setupServices()
-            peripheralManager.startAdvertising([
-                CBAdvertisementDataServiceUUIDsKey: [TIO_SERVICE],
-                CBAdvertisementDataLocalNameKey: "iPhone-TIO" // 加个名字增强广播穿透力
-            ])
-            ptLog("📡 [状态] 基站已开启并广播")
-        }
-        
-        // 2. 启动连接寻找摩托车 (必须等状态为 poweredOn)
-        if centralManager.state == .poweredOn {
-            if activeScooter != nil { return } // 如果已经在处理中，则跳过
-            
-            // 🚨 核心修复 1：记忆寻址提取！解决重启 App 扫不到的问题
-            if let savedUUIDString = UserDefaults.standard.string(forKey: kScooterUUIDKey),
-               let savedUUID = UUID(uuidString: savedUUIDString) {
-                
-                let knownDevices = centralManager.retrievePeripherals(withIdentifiers: [savedUUID])
-                if let scooter = knownDevices.first {
-                    ptLog("🔄 [重连] 在系统记录中找到目标摩托车，跳过扫描，直接物理唤醒...")
-                    activeScooter = scooter
-                    centralManager.connect(scooter, options: nil)
-                    return // 捞到了就结束，不需要再调用扫描
-                }
-            }
-            
-            // 如果没捞到，说明是新车或者系统彻底断开了，开启主动扫描
-            if !centralManager.isScanning {
-                centralManager.scanForPeripherals(withServices: nil, options: nil)
-                ptLog("🔎 [状态] 主动雷达已开启，正在扫描标致摩托车...")
-            }
-        }
-    }
-
-    // MARK: - PeripheralManager Delegate
     func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
-        if peripheral.state == .poweredOn { tryStartModules() }
+        ptLog("🛠️ [DEBUG] 硬件状态: \(peripheral.state.rawValue)")
     }
     
     private func setupServices() {
-        // 确保使用无拦截的普通权限，防止配对弹窗卡死物理连接
         let rxChar = CBMutableCharacteristic(
             type: UART_RX,
-            properties: [.write,.writeWithoutResponse],
+            properties: [.writeWithoutResponse],
             value: nil,
             permissions: [.writeEncryptionRequired]
         )
         
+        // 🚨 核心修复 2：使用 notifyEncryptionRequired！
+        // 强迫车机在订阅这一刻就弹出系统配对框，否则后续的 8758 会被 iOS 丢弃！
         txChar = CBMutableCharacteristic(
             type: UART_TX,
-            properties: [.notify, .indicate],
+            properties: [.notifyEncryptionRequired], // 👈 最关键的一步
             value: nil,
             permissions: [.readEncryptionRequired]
         )
+        
         let rxCreditsChar = CBMutableCharacteristic(
             type: UART_RX_CREDITS,
-            properties: [.write,.writeWithoutResponse],
+            properties: [.write],
             value: nil,
             permissions: [.writeEncryptionRequired]
         )
+        
+        // 🚨 核心修复 2 延续：使用 indicateEncryptionRequired
         txCreditsChar = CBMutableCharacteristic(
             type: UART_TX_CREDITS,
-            properties: [.notify,.indicate],  // 必须是 Indicate，否则摩托车订阅失败并中止握手！
+            properties: [.indicateEncryptionRequired], // 👈 最关键的一步
             value: nil,
             permissions: [.readEncryptionRequired]
         )
@@ -482,33 +455,41 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
         let service = CBMutableService(type: TIO_SERVICE, primary: true)
         service.characteristics = [rxChar, txChar, rxCreditsChar, txCreditsChar]
         peripheralManager.add(service)
+        ptLog("🛠️ [DEBUG] 通道搭建完毕 (iOS 强制加密挂载完成)")
     }
     
-    // 监听通道订阅[cite: 3]
+    // MARK: - 监听订阅
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
         connectedCentral = central
-        ptLog("⚡️ 发现设备连接！正在订阅通道: \(characteristic.uuid)")
-        ptLog("⚡️ [雷达响应] 中心设备 \(central.identifier) 订阅了通道: \(characteristic.uuid)")
+        ptLog("⚡️ [雷达] 摩托车订阅成功: \(characteristic.uuid.uuidString)")
+        
         if characteristic.uuid == UART_TX { isTioSubscribed = true }
         if characteristic.uuid == UART_TX_CREDITS { isCreditsSubscribed = true }
         
         if isTioSubscribed && isCreditsSubscribed {
-            ptLog("🔗 摩托车订阅完毕，开启身份验证握手...")
+            ptLog("🔗 [状态] 通道订阅完毕！等待车机写入 8758...")
             authState = .waitKeyId
             authenticated = false
-        } else {
-            ptLog("🔗 摩托车订阅完毕，失败")
         }
     }
     
-    // 监听数据写入请求[cite: 3]
+    func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didUnsubscribeFrom characteristic: CBCharacteristic) {
+        ptLog("⚠️ [状态] 摩托车断开了通道")
+        authenticated = false
+        isTioSubscribed = false
+        isCreditsSubscribed = false
+        authState = .waitKeyId
+    }
+    
+    // MARK: - 监听写入
     func peripheralManager(_ peripheral: CBPeripheralManager, didReceiveWrite requests: [CBATTRequest]) {
-        if let firstRequest = requests.first, firstRequest.characteristic.properties.contains(.write) {
-            peripheralManager.respond(to: firstRequest, withResult: .success)
+        if let first = requests.first, first.characteristic.properties.contains(.write) {
+            peripheralManager.respond(to: first, withResult: .success)
         }
+        
         for request in requests {
             guard let data = request.value else { continue }
-            ptLog("⚡️ [雷达响应] 收到设备写入请求，通道: \(request.characteristic.uuid)，数据包: \(data.map { String(format: "%02hhx", $0) }.joined())")
+            
             if request.characteristic.uuid == UART_RX {
                 if authenticated && localCredits > 0 {
                     localCredits -= 1
@@ -519,9 +500,10 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
         }
     }
     
-    // MARK: - 身份验证状态机[cite: 3]
+    // MARK: - 身份验证状态机
     private func handleIncoming(data: Data) {
         if authenticated {
+            ptLog("🔄 [DEBUG] 解析仪表盘数据包...")
             parseDashboardFrame(data)
             return
         }
@@ -532,7 +514,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
             if data.count >= 4 {
                 let productId = (Int(bytes[0]) << 24) | (Int(bytes[1]) << 16) | (Int(bytes[2]) << 8) | Int(bytes[3])
                 if productId == 8758 {
-                    ptLog("✅ Step 1: 收到正确 Product ID (8758)")
+                    ptLog("✅ [握手 1/4] 收到 8758！下发挑战码...")
                     let challenge = auth.createChallenge()
                     var challengeData = Data()
                     for num in challenge {
@@ -541,38 +523,67 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
                     }
                     sendChunkedData(data: challengeData, to: txChar)
                     authState = .waitAuthMsg
-                } else {
-                    ptLog("✅ Step 1: 收到其他 Product ID (\(productId))")
                 }
-            } else {
-                ptLog("✅ Step 1: data error")
             }
+            
         case .waitAuthMsg:
             if auth.checkAuthMsg(scooterResponse: data) {
-                ptLog("✅ 验证通过！下发 KeyID 并充值额度...")
-
-                // 发送 KeyID (App凭证)
+                ptLog("✅ [握手 2/4] 车机答题正确！发送 KeyID，等待车机出题...")
                 sendChunkedData(data: auth.getScooterKeyId(), to: txChar)
                 
-                // 步骤 5：验证完成，蓝灯长亮，立即为钱包充值 25 额度！
-                grantScooterCredits()
+                // 🚨 核心修复：握手还没完，进入下半场！
+                authState = .waitRandomNums
+            } else {
+                ptLog("❌ [错误] 密码本校验失败")
+            }
+            
+        case .waitRandomNums:
+            // 🚨 核心修复：这就是你抓到的 27b21814... (车机的考题)
+            if data.count >= 20 {
+                ptLog("✅ [握手 3/4] 收到车机挑战码！正在计算答案并回复...")
+                var r = [UInt16](repeating: 0, count: 10)
+                let n = min(10, data.count / 2)
+                for i in 0..<n {
+                    let start = i * 2
+                    let byte0 = UInt16(data[start])
+                    let byte1 = UInt16(data[start+1])
+                    r[i] = (byte0 << 8) | byte1
+                }
                 
-                // 彻底打通！状态变为 success
+                // 计算答案发给车机
+                let authMsg = auth.createAuthenticationMessage(r: r)
+                sendChunkedData(data: authMsg, to: txChar)
+                
+                // 答完题，等待车机的 0x16 确认信
+                authState = .waitConnectionFrame
+            } else {
+                ptLog("⚠️ [握手干扰] 期待 20 字节挑战码，实际收到: \(data.count) 字节")
+            }
+            
+        case .waitConnectionFrame:
+            // 收到车机认可后的第一个真实数据帧 (以 0x16 开头)
+            if data.count >= 4 && data[0] == 0x16 {
+                ptLog("🎉 [握手 4/4] 互信认证全部打通！蓝灯长亮！解锁数据通道！")
+                
                 authState = .success
                 authenticated = true
-                UserDefaults.standard.set(true, forKey: kHasPairedKey)
+                
+                // 必须在互信彻底完成后，再发钱解锁仪表盘！
+                grantScooterCredits()
                 NotificationCenter.default.post(name: NSNotification.Name("MotorcycleAuthSuccess"), object: nil)
+                
+                // 别浪费这第一包数据，立刻丢给仪表盘解析器
+                parseDashboardFrame(data)
             } else {
-                ptLog("❌ Step 2: 验证失败，密码本可能有误。")
+                ptLog("⚠️ [握手干扰] 期待 0x16 确认帧，收到了其他数据")
             }
         case .success:
             break
         }
+
     }
     
-    // MARK: - 数据发送逻辑
-    
-    // 下发 Credit (解锁摩托车接收端)[cite: 3]
+    // MARK: - 发送逻辑 (队列保持不变)
     private func grantScooterCredits() {
         let refill = 25 - localCredits
         if refill <= 0 { return }
@@ -581,25 +592,18 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
         sendChunkedData(data: data, to: txCreditsChar)
     }
     
-    // 这是苹果特有的回调：当底层通道恢复空闲时，会调用此方法
     func peripheralManagerIsReady(toUpdateSubscribers peripheral: CBPeripheralManager) {
-        // 通道空闲了，恢复发送状态，继续泵送队列
         isSending = false
         pumpQueue()
     }
 
-    // BLE 单次最多发 20 字节，超长数据需分块发送[cite: 3]
     private func sendChunkedData(data: Data, to characteristic: CBMutableCharacteristic) {
         var offset = 0
-        let chunkSize = 20
         while offset < data.count {
-            let end = min(offset + chunkSize, data.count)
-            let chunk = data.subdata(in: offset..<end)
-            // 将切片加入队列，而不是直接发送
-            sendQueue.append(PTNotifyJob(data: chunk, characteristic: characteristic))
+            let end = min(offset + 20, data.count)
+            sendQueue.append(PTNotifyJob(data: data.subdata(in: offset..<end), characteristic: characteristic))
             offset = end
         }
-        // 触发队列引擎
         pumpQueue()
     }
     
@@ -615,103 +619,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
             isSending = true
         }
     }
-
-    // 供外部调用的指令发送入口
-    func sendConfiguration(color: UInt8, unit: UInt8, language: UInt8) {
-        guard authenticated else {
-            ptLog("⚠️ 尚未完成认证，无法发送指令")
-            return
-        }
-        let frame = PTFrameBuilder.buildConfigurationFrame(color: color, unit: unit, language: language)
-        sendChunkedData(data: frame, to: txChar)
-    }
-    
-    @objc func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        if central.state == .poweredOn { tryStartModules() }
-    }
-
-    func autoStartIfRemembered() {
-        if hasRememberedScooter {
-            ptLog("🔍 发现历史配对记录，自动静默开启蓝牙基站等待摩托车...")
-            // 只要调用这个，就会触发 peripheralManagerDidUpdateState 从而开始广播
-            startBaseStationAndScan()
-        } else {
-            ptLog("首次使用，需等待用户手动点击按钮开启连接流程")
-        }
-    }
-    
-    // 如果用户想要解绑换车
-    func forgetScooter() {
-        UserDefaults.standard.set(false, forKey: kHasPairedKey)
-        ptLog("🗑️ 已清除记住的摩托车")
-        // 这里可以加上断开连接的逻辑
-    }
 }
-
-extension PTBluetoothServerManager {
-    // 发现设备
-    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
-        let peripheralName = peripheral.name ?? (advertisementData[CBAdvertisementDataLocalNameKey] as? String) ?? ""
-        guard !peripheralName.isEmpty else { return }
-        
-        // 2. 将名称转换为大写，精准匹配 "PEUGEOT"
-        if peripheralName.uppercased().contains("PEUGEOT") {
-            
-            // 3. 结合信号强度判断 (>-60 代表大约在 1~3 米范围内)
-            // 如果你确信周围只有你这一台车，可以把 `&& RSSI.intValue > -60` 这个条件删掉
-            if RSSI.intValue > -60 {
-                ptLog("🎯 锁定标致摩托车，正在建立连接...")
-                centralManager.stopScan()
-                activeScooter = peripheral
-                centralManager.connect(peripheral, options: nil)
-            } else {
-                ptLog("🎯 锁定标致摩托车失败")
-            }
-        }
-    }
-    
-    // 物理连接成功
-    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        ptLog("✅ [状态] 物理连接建立！执行底层敲门唤醒...")
-                
-        // 保存车机的 UUID，下次 App 启动直接从系统里捞，不用再扫描！
-        UserDefaults.standard.set(peripheral.identifier.uuidString, forKey: kScooterUUIDKey)
-        
-        // 🚨 核心修复 2：物理层敲门唤醒 (Doorbell Hack)
-        // 车机此时可能处于休眠装死状态，我们假装要去查询它的服务，
-        // 强迫底层硬件产生数据交互，从而“惊醒”车机来订阅我们的基站！
-        peripheral.delegate = self
-        peripheral.discoverServices(nil)
-    }
-    
-    // 意外断开连接
-    func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        let reason = error?.localizedDescription ?? "正常断电"
-        ptLog("⚠️ [状态] 物理连接已断开: \(reason)")
-        
-        // 彻底清空所有状态机，防止死锁
-        activeScooter = nil
-        authenticated = false
-        isTioSubscribed = false
-        isCreditsSubscribed = false
-        authState = .waitKeyId
-        
-        if hasRememberedScooter {
-            ptLog("🔄 [重连] 2 秒后自动重启雷达...")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                self.tryStartModules()
-            }
-        }
-    }
-}
-
-extension PTBluetoothServerManager: CBPeripheralDelegate {
-    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        ptLog("🔔 [唤醒] 车机底层硬件已响应敲门，正在等待其反向订阅基站通道...")
-        // 这里什么都不用做，我们只是利用这个回声，迫使车机的 GATT 逻辑跑起来
-    }
-}
-
 extension PTBluetoothServerManager {
     
     // MARK: - 发送导航与控制指令
@@ -733,55 +641,89 @@ extension PTBluetoothServerManager {
         sendChunkedData(data: frame, to: txChar)
     }
     
+    
+    func sendConfiguration(color: UInt8, unit: UInt8, language: UInt8) {
+        guard authenticated else { return }
+        let frame = PTFrameBuilder.buildConfigurationFrame(color: color, unit: unit, language: language)
+        sendChunkedData(data: frame, to: txChar)
+    }
+
     // MARK: - 解析摩托车回传状态
     /// 解析摩托车仪表盘的实时状态帧[cite: 2]
     func parseDashboardFrame(_ value: Data) {
-        // 校验包头 0x16 并且长度至少足够提取 ID 和 Payload[cite: 2]
-        guard value.count >= 4, value[0] == 0x16 else { return }
+        let hexString = value.map { String(format: "%02hhx", $0) }.joined()
+        ptLog("📦 [原始包] 收到帧数据: \(hexString)")
+        
+        // 1. 校验最基本长度 (包头1字节 + ID 1字节 + 包尾1字节 = 至少3字节)
+        guard value.count >= 3, value[0] == 0x16 else {
+            ptLog("⚠️ [解析拦截] 包头不匹配或长度不足")
+            return
+        }
+        
+        // 2. 校验包尾 (安卓协议定义最后 1 字节必须是 0x00)
+        guard value.last == 0x00 else {
+            ptLog("⚠️ [解析拦截] 结尾不是 0x00")
+            return
+        }
         
         let id = value[1]
+        
+        // 3. 🚨 核心修复：摩托车的上行状态帧没有长度字段！
+        // Payload 直接从索引 2 开始，到倒数第二个字节结束
         let payload = value.subdata(in: 2..<(value.count - 1))
         let bytes = [UInt8](payload)
         
         switch id {
         case 1:
-            ptLog( "🔗 收到连接状态包 (CONNECTION)")
-        case 2:
+            ptLog("🔗 [状态] 车机报告连接正常 (CONNECTION)")
+            
+        case 2: // DATA1
+            guard bytes.count >= 8 else { return }
             let fuelRaw = Double(bytes[0])
             let fuel = min(max(Int(round(fuelRaw * 0.3937)), 0), 100)
             let avg = Double(bytes[2]) * 0.1
             let tripRaw = (Int(bytes[3]) << 8) | Int(bytes[4])
             let odoRaw = (Int(bytes[5]) << 16) | (Int(bytes[6]) << 8) | Int(bytes[7])
             let data1 = PTDashboardData1(tripKm: Double(tripRaw) * 0.1, odoKm: Double(odoRaw) * 0.1, fuelLevelPct: fuel, avgConsumptionLt: avg)
-            NotificationCenter.default.post(name: NSNotification.Name("MotorcycleDATA1"), object: data1)
-        case 3:
+            NotificationCenter.default.post(name: MotorcycleDATA1, object: data1)
+            ptLog("📊 [DATA1] 油量: \(fuel)%, 消耗: \(avg)L, 总里程: \(Double(odoRaw) * 0.1)km")
+            
+        case 3: // DATA2
             guard bytes.count >= 6 else { return }
             let engine = Int(bytes[1])
             let maint = Int(bytes[3])
             let temp = Int(bytes[4]) - 50
             let batt = Double(bytes[5]) * 0.1
             let data2 = PTDashboardData2(batteryVolt: batt, outsideTempC: temp, engineStatus: engine, maintenance: maint)
-            NotificationCenter.default.post(name: NSNotification.Name("MotorcycleDATA2"), object: data2)
-        case 4:
+            NotificationCenter.default.post(name: MotorcycleDATA2, object: data2)
+            ptLog("🔋 [DATA2] 引擎: \(PTDashboardLabels.engineStatusLabel(raw: engine)), 电压: \(batt)V")
+            
+        case 4: // DATA3
             guard bytes.count >= 6 else { return }
             let autoRaw = (Int(bytes[0]) << 8) | Int(bytes[1])
             let col = Int(bytes[2])
             let dist = (Int(bytes[3]) << 8) | Int(bytes[4])
             let lang = Int(bytes[5])
             let data3 = PTDashboardData3(autonomyKm: Double(autoRaw) * 0.1, distToMaintenance: dist, colorMeasur: col, language: lang)
-            NotificationCenter.default.post(name: NSNotification.Name("MotorcycleDATA3"), object: data3)
-        case 5:
+            NotificationCenter.default.post(name: MotorcycleDATA3, object: data3)
+            ptLog("🛣️ [DATA3] 剩余续航: \(Double(autoRaw) * 0.1)km")
+            
+        case 5: // CONTROL
             guard bytes.count >= 8 else { return }
             let engineRaw = (Int(bytes[4]) << 8) | Int(bytes[5])
             let vehicleRaw = (Int(bytes[6]) << 8) | Int(bytes[7])
             let control = PTDashboardControl(vehicleSpeedKmh: Double(vehicleRaw) * 0.01, engineRpm: Int(Double(engineRaw) * 0.25))
-            NotificationCenter.default.post(name: NSNotification.Name("MotorcycleCONTROL"), object: control)
-        case 6: // RxId.ABS[cite: 2]
+            NotificationCenter.default.post(name: MotorcycleCONTROL, object: control)
+            ptLog("🏍️ [CONTROL] 车速: \(Double(vehicleRaw) * 0.01) km/h, 转速: \(Int(Double(engineRaw) * 0.25)) rpm")
+            
+        case 6: // ABS
             guard bytes.count >= 3 else { return }
             let absStatus = PTAbsStatus(absRaw: Int(bytes[2]))
-            NotificationCenter.default.post(name: NSNotification.Name("MotorcycleABS"), object: absStatus)
+            NotificationCenter.default.post(name: MotorcycleABS, object: absStatus)
+            ptLog("🛑 [ABS] 状态: \(PTDashboardLabels.absLabel(raw: Int(bytes[2])))")
+            
         default:
-            break
+            ptLog("❓ [未知数据] 收到未定义 ID: \(id)")
         }
     }
 }

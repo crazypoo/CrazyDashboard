@@ -26,13 +26,21 @@ class PTMotoInfoViewController: PTBaseViewController {
     let statusLabel = UILabel()
     // 发送指令测试按钮
     let sendCommandButton = UIButton(type: .system)
-    let statusLabel1 = UILabel()
-    let statusLabel2 = UILabel()
-    let statusLabel3 = UILabel()
-    let statusLabelControl = UILabel()
-    let statusLabelABS = UILabel()
+    lazy var statusLabel1 = baseDataLabel()
+    lazy var statusLabel2 = baseDataLabel()
+    lazy var statusLabel3 = baseDataLabel()
+    lazy var statusLabelControl = baseDataLabel()
+    lazy var statusLabelABS = baseDataLabel()
 
     let logTextView = UITextView()
+    
+    func baseDataLabel() ->UILabel {
+        let view = UILabel()
+        view.numberOfLines = 0
+        view.font = .appfont(size: 14)
+        view.textColor = .black
+        return view
+    }
     
     open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
         return .solid(.clear)
@@ -45,38 +53,14 @@ class PTMotoInfoViewController: PTBaseViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        PTBluetoothServerManager.shared.autoStartIfRemembered()
         setupUI()
-        NotificationCenter.default.addObserver(self, selector: #selector(handleAuthSuccess), name: NSNotification.Name("MotorcycleAuthSuccess"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: NSNotification.Name("MotorcycleDATA1"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: NSNotification.Name("MotorcycleDATA2"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: NSNotification.Name("MotorcycleDATA3"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: NSNotification.Name("MotorcycleCONTROL"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: NSNotification.Name("MotorcycleABS"), object: nil)
-        
-        PTBluetoothServerManager.shared.onLogUpdated = { [weak self] newLog in
-            self?.appendLog(newLog)
-        }
     }
     
-    // MARK: - 追加日志并自动滚动到底部
-        private func appendLog(_ text: String) {
-            // 获取当前时间，方便观察时序
-            let formatter = DateFormatter()
-            formatter.dateFormat = "HH:mm:ss.SSS"
-            let timeString = formatter.string(from: Date())
-            
-            let currentText = logTextView.text ?? ""
-            let formattedNewLog = "[\(timeString)] \(text)\n"
-            
-            // 追加新文本
-            logTextView.text = currentText + formattedNewLog
-            
-            // 自动滚动到最后一行
-            let range = NSRange(location: logTextView.text.count - 1, length: 1)
-            logTextView.scrollRangeToVisible(range)
-        }
-
     // MARK: - 界面布局
     private func setupUI() {
         view.backgroundColor = .white
@@ -138,6 +122,7 @@ class PTMotoInfoViewController: PTBaseViewController {
             make.top.equalTo(self.statusLabelControl.snp.bottom).offset(8)
         }
         
+        logTextView.backgroundColor = .clear
         logTextView.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.top.equalTo(self.sendCommandButton.snp.bottom).offset(8)
@@ -151,6 +136,7 @@ class PTMotoInfoViewController: PTBaseViewController {
         statusLabel.text = "正在启动 TIO 广播...\n请打开摩托车电门并靠近手机"
         
         // 2. 唤醒单例，触发 peripheralManagerDidUpdateState，开始广播
+//        PTBluetoothServerManager.shared.startBaseStationAndScan()
         PTBluetoothServerManager.shared.startBaseStationAndScan()
     }
     
