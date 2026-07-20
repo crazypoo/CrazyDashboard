@@ -1,5 +1,12 @@
 PODS:
   - Alamofire (5.11.2)
+  - AMapFoundation-NO-IDFA (1.9.0)
+  - AMapLocation-NO-IDFA (2.12.0):
+    - AMapFoundation-NO-IDFA (>= 1.9.0)
+  - AMapNavi-NO-IDFA (11.2.000):
+    - AMapFoundation-NO-IDFA (>= 1.9.0)
+  - AMapSearch-NO-IDFA (9.8.0):
+    - AMapFoundation-NO-IDFA (>= 1.9.0)
   - AttributedString (3.4.2):
     - AttributedString/Privacy (= 3.4.2)
   - AttributedString/Privacy (3.4.2)
@@ -159,6 +166,9 @@ PODS:
   - SwiftyUserDefaults (5.3.0)
 
 DEPENDENCIES:
+  - AMapLocation-NO-IDFA
+  - AMapNavi-NO-IDFA
+  - AMapSearch-NO-IDFA
   - Bugly
   - LookinServer/Swift
   - PooTools/Core (from `https://github.com/crazypoo/PTools.git`)
@@ -175,6 +185,10 @@ DEPENDENCIES:
 SPEC REPOS:
   https://github.com/CocoaPods/Specs.git:
     - Alamofire
+    - AMapFoundation-NO-IDFA
+    - AMapLocation-NO-IDFA
+    - AMapNavi-NO-IDFA
+    - AMapSearch-NO-IDFA
     - AttributedString
     - Bugly
     - CocoaLumberjack
@@ -211,6 +225,10 @@ CHECKOUT OPTIONS:
 
 SPEC CHECKSUMS:
   Alamofire: 400275dd1c6d87d95a041861d2a59da4b520a203
+  AMapFoundation-NO-IDFA: a2e3c895398d7ee757278e1a0a8f9359da4b146e
+  AMapLocation-NO-IDFA: 7cd8fc837ea41edfbf4d937cd20572e277b77d18
+  AMapNavi-NO-IDFA: d55b9b138c6e540f737c689975cae2c9dbd1026a
+  AMapSearch-NO-IDFA: c0afd2a69a076d4228becda4401dbe4a279a03ef
   AttributedString: 48343fcecea107c89319e09436b6d19e90e69981
   Bugly: 217ac2ce5f0f2626d43dbaa4f70764c953a26a31
   CocoaLumberjack: e4ba3b414dfca8c1916c6303d37f63b3a95134c6
@@ -237,6 +255,6 @@ SPEC CHECKSUMS:
   SwifterSwift: 517fa61daf5b4c5e3ed13b9f35f4c26b310cfb97
   SwiftyUserDefaults: 63f80248cf5bfb3458825d9a78f2eb7e1293a040
 
-PODFILE CHECKSUM: b3e85e535b9542ca3bfba1d1ac34e985474b2d05
+PODFILE CHECKSUM: 46ea2d71464464f242a584014f86fb394e18cbca
 
 COCOAPODS: 1.16.2

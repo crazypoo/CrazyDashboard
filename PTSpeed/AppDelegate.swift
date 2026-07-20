@@ -6,14 +6,32 @@
 //
 
 import UIKit
+import AMapFoundationKit
+import AMapNaviKit
+import IQKeyboardToolbarManager
+import IQKeyboardManagerSwift
+import PooTools
+import IQKeyboardToolbar
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
-
-
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        AMapNaviManagerConfig.shared().updatePrivacyShow(AMapPrivacyShowStatus.didShow, privacyInfo: AMapPrivacyInfoStatus.didContain)
+        AMapNaviManagerConfig.shared().updatePrivacyAgree(.didAgree)
+        AMapServices.shared().apiKey = "b634e7bfe8637676248d4360bd6ee65c"
+        AMapServices.shared().enableHTTPS = true
+        
+        IQKeyboardManager.shared.isEnabled = true
+        IQKeyboardToolbarManager.shared.isEnabled = true
+        IQKeyboardToolbarManager.shared.toolbarConfiguration.placeholderConfiguration.font = .appfont(size: 14)
+        IQKeyboardToolbarManager.shared.toolbarConfiguration.placeholderConfiguration.color = .lightGray
+        IQKeyboardToolbarManager.shared.toolbarConfiguration.useTextInputViewTintColor = false
+        IQKeyboardToolbarManager.shared.toolbarConfiguration.doneBarButtonConfiguration = IQBarButtonItemConfiguration(
+            title: PTDashboardConfig.languageFunc(text: "完成")
+        )
+
         return true
     }
 

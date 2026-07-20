@@ -34,6 +34,11 @@ def shared_pods
   pod 'PooTools/ProgressBar', :git => 'https://github.com/crazypoo/PTools.git'
 
   pod 'SwiftyUserDefaults'
+  
+  pod 'AMapSearch-NO-IDFA'
+  pod 'AMapLocation-NO-IDFA'
+  pod 'AMapNavi-NO-IDFA'
+#  pod 'AMap3DMap-NO-IDFA'
 end
 
 target 'CrazyDashboard' do
