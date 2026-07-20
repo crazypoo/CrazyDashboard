@@ -31,6 +31,7 @@ def shared_pods
   pod 'PooTools/Motion', :git => 'https://github.com/crazypoo/PTools.git'
   pod 'PooTools/NetWork', :git => 'https://github.com/crazypoo/PTools.git'
   pod 'PooTools/Hud', :git => 'https://github.com/crazypoo/PTools.git'
+  pod 'PooTools/ProgressBar', :git => 'https://github.com/crazypoo/PTools.git'
 
   pod 'SwiftyUserDefaults'
 end

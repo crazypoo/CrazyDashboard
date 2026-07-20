@@ -570,7 +570,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
                 
                 // 必须在互信彻底完成后，再发钱解锁仪表盘！
                 grantScooterCredits()
-                NotificationCenter.default.post(name: NSNotification.Name("MotorcycleAuthSuccess"), object: nil)
+                NotificationCenter.default.post(name: BLEConnectSuccess, object: nil)
                 
                 // 别浪费这第一包数据，立刻丢给仪表盘解析器
                 parseDashboardFrame(data)

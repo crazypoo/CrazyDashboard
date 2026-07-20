@@ -7,19 +7,35 @@
 
 import UIKit
 import PooTools
+import SnapKit
+import SwifterSwift
 
 class PTBLEConnectViewController: PTBaseViewController {
 
     var bleSuccessCallback:PTActionTask?
     
+    lazy var tap:UIButton = {
+        let view = UIButton(type: .custom)
+        view.addActionHandlers { sender in
+            PTBluetoothServerManager.shared.startBaseStationAndScan()
+        }
+        view.backgroundColor = .systemBlue
+        return view
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        PTBluetoothServerManager.shared.startBaseStationAndScan()
+        view.addSubviews([tap])
+        tap.snp.makeConstraints { make in
+            make.size.equalTo(64)
+            make.center.equalToSuperview()
+        }
         NotificationCenter.default.addObserver(self, selector: #selector(handleAuthSuccess), name: BLEConnectSuccess, object: nil)
     }
     
     @objc func handleAuthSuccess() {
+        view.backgroundColor = .systemRed
         bleSuccessCallback?()
     }
     

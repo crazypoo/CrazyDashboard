@@ -11,26 +11,123 @@ import SafeSFSymbols
 import SwifterSwift
 import SnapKit
 
+fileprivate extension String {
+    static let TRIPSECTION = "TRIPSECTION"
+    static let MOTOSECTION = "MOTOSECTION"
+}
+
 class PTMotoInfoViewController: PTBaseViewController {
 
-    lazy var bleButton:UIButton = {
-        let view = UIButton(type: .custom)
-        view.setImage(UIImage(.gear), for: .normal)
-        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
-        view.addActionHandlers(handler: { _ in
-        })
+    let buttonCount:Int = 4
+    let stackHeight:CGFloat = 54.adapter
+    
+    lazy var actionStack:UIStackView = {
+        let stackView = UIStackView()
+        stackView.axis = .horizontal
+        stackView.alignment = .center // 或 .fill，看你是否要垂直方向撑满
+        stackView.distribution = .fill
+        stackView.spacing = CGFloat.GlobalItemSpacing
+        return stackView
+    }()
+    
+    lazy var voltageLabel:PTMainProgressView = {
+        let view = baseStackSubView()
         return view
     }()
+    
+    lazy var distToMaintenanceLabel:PTMainProgressView = {
+        let view = baseStackSubView()
+        return view
+    }()
+
+    func baseStackSubView() ->PTMainProgressView {
+        let view = PTMainProgressView()
+        view.bounds = .init(origin: .zero, size: .init(width: (CGFloat.kSCREEN_WIDTH - PTAppBaseConfig.share.defaultViewSpace * 2) / 2, height: stackHeight))
+        return view
+    }
+    
+    lazy var speedometer:PTSpeedometerView = {
+        let view = PTSpeedometerView(frame: .zero)
+        view.altitudeLabel.isHidden = true
+        view.pressureLabel.isHidden = true
+        return view
+    }()
+    
+    lazy var speedometerReversed:PTReversedSpeedometerView = {
+        let view = PTReversedSpeedometerView(frame: .zero)
+        view.altitudeLabel.isHidden = true
+        view.pressureLabel.isHidden = true
+        view.unitLabel.text = "RPM"
+        view.maxSpeed = 9000
+        return view
+    }()
+    
+    var tripModels:[PTFusionCellModel] {
+        get {
+            let oilModel = PTDashboardConfig.baseNormalCellModel(name: "油量",desc: "0%")
+            let oilTrip = PTDashboardConfig.baseNormalCellModel(name: "油量里程",desc: "0KM")
+            let littleTrip = PTDashboardConfig.baseNormalCellModel(name: "小计里程",desc: "0KM")
+            let ODOTrip = PTDashboardConfig.baseNormalCellModel(name: "总里程",desc: "0KM")
+            return [oilModel,oilTrip,littleTrip,ODOTrip]
+        } set{ }
+    }
+    
+    var motoModels:[PTFusionCellModel] {
+        get {
+            let motoModel = PTDashboardConfig.baseNormalCellModel(name: "发动机",desc: "-")
+            let absModel = PTDashboardConfig.baseNormalCellModel(name: "ABS",desc: "-")
+            let temModel = PTDashboardConfig.baseNormalCellModel(name: "温度",desc: "0°C")
+            let lanTrip = PTDashboardConfig.baseNormalCellModel(name: "语言",desc: "EN")
+            return [motoModel,absModel,temModel,lanTrip]
+        } set{ }
+    }
+
+    lazy var detailCollection:PTCollectionView = {
+                                
+        let collectionConfig = PTCollectionViewConfig()
+        collectionConfig.viewType = .Custom
+        collectionConfig.footerRefresh = false
+        collectionConfig.topRefresh = false
+
+        let view = PTCollectionView(viewConfig: collectionConfig)
+        view.registerClassCells(classs: [PTFusionCell.ID:PTFusionCell.self])
+        view.registerHeaderIdsNClasss(ids: [.TRIPSECTION,.MOTOSECTION], viewClass: PTGlobalActionHeader.self, kind: UICollectionView.elementKindSectionHeader)
+        view.headerInCollection = { kind,collectionView,model,index in
+            if let headerID = model.headerID,!headerID.stringIsEmpty() {
+                if let header = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: headerID, for: index) as? PTGlobalActionHeader {
+                    header.titleName.text = model.headerTitle
+                    header.titleName.snp.updateConstraints { make in
+                        make.left.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+                    }
+                    return header
+                }
+            }
+            return nil
+        }
+        view.customerLayout = { sectionIndex,section in
+            return UICollectionView.girdCollectionLayout(data: section.rows, itemHeight: 64,cellRowCount: 2,originalX: PTAppBaseConfig.share.defaultViewSpace,cellLeadingSpace: CGFloat.GlobalItemSpacing,cellTrailingSpace: CGFloat.GlobalItemSpacing)
+        }
+        view.cellInCollection = { collectionView,sectionModel,indexPath in
+            if let itemRow = sectionModel.rows?[indexPath.row] {
+                let getCell = collectionView.dequeueReusableCell(withReuseIdentifier: itemRow.ID, for: indexPath)
+                if let cell = getCell as? PTFusionCell,let cellModel = itemRow.dataModel as? PTFusionCellModel {
+                    cell.cellModel = cellModel
+                    cell.backgroundColor = .lightGray
+                    return cell
+                }
+            }
+            return nil
+        }
+        view.collectionDidSelect = { collectionView,sectionModel,indexPath in
+        }
+        return view
+    }()
+
     
     // 状态提示标签
     let statusLabel = UILabel()
     // 发送指令测试按钮
     let sendCommandButton = UIButton(type: .system)
-    lazy var statusLabel1 = baseDataLabel()
-    lazy var statusLabel2 = baseDataLabel()
-    lazy var statusLabel3 = baseDataLabel()
-    lazy var statusLabelControl = baseDataLabel()
-    lazy var statusLabelABS = baseDataLabel()
 
     let logTextView = UITextView()
     
@@ -48,7 +145,7 @@ class PTMotoInfoViewController: PTBaseViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        setCustomRightButtons(buttons: [bleButton])
+//        setCustomRightButtons(buttons: [bleButton])
     }
     
     override func viewDidLoad() {
@@ -63,71 +160,86 @@ class PTMotoInfoViewController: PTBaseViewController {
     
     // MARK: - 界面布局
     private func setupUI() {
-        view.backgroundColor = .white
-        pt_Title = "摩托车蓝牙测试"
+        view.backgroundColor = .black
         
-        // 状态标签配置
-        statusLabel.text = "等待操作..."
-        statusLabel.textAlignment = .center
-        statusLabel.numberOfLines = 0
-        statusLabel.textColor = .darkGray
-        statusLabel.frame = CGRect(x: 20, y: 150, width: view.bounds.width - 40, height: 60)
-        view.addSubview(statusLabel)
-        
-        // 启动广播按钮
-        let startServerButton = UIButton(type: .system)
-        startServerButton.setTitle("1. 启动手机蓝牙基站", for: .normal)
-        startServerButton.titleLabel?.font = .boldSystemFont(ofSize: 18)
-        startServerButton.addTarget(self, action: #selector(startServerTapped), for: .touchUpInside)
-        startServerButton.frame = CGRect(x: 50, y: 250, width: view.bounds.width - 100, height: 50)
-        startServerButton.backgroundColor = .systemBlue
-        startServerButton.setTitleColor(.white, for: .normal)
-        startServerButton.layer.cornerRadius = 10
-        view.addSubview(startServerButton)
-        
-        // 发送测试指令按钮
-        sendCommandButton.setTitle("2. 发送仪表盘配置指令", for: .normal)
-        sendCommandButton.titleLabel?.font = .boldSystemFont(ofSize: 18)
-        sendCommandButton.addTarget(self, action: #selector(sendTestCommandTapped), for: .touchUpInside)
-        sendCommandButton.frame = CGRect(x: 50, y: 330, width: view.bounds.width - 100, height: 50)
-        sendCommandButton.backgroundColor = .systemGray // 默认灰色，连接成功后变色
-        sendCommandButton.setTitleColor(.white, for: .normal)
-        sendCommandButton.layer.cornerRadius = 10
-        sendCommandButton.isEnabled = false // 默认禁用，直到认证成功
-        view.addSubview(sendCommandButton)
-        
-        view.addSubviews([statusLabel1,statusLabel2,statusLabel3,statusLabelControl,statusLabelABS,logTextView])
-        statusLabel1.snp.makeConstraints { make in
-            make.left.right.height.equalTo(statusLabel)
-            make.top.equalTo(self.sendCommandButton.snp.bottom).offset(8)
-        }
-        
-        statusLabel2.snp.makeConstraints { make in
-            make.left.right.height.equalTo(statusLabel)
-            make.top.equalTo(self.statusLabel1.snp.bottom).offset(8)
-        }
-        
-        statusLabel3.snp.makeConstraints { make in
-            make.left.right.height.equalTo(statusLabel)
-            make.top.equalTo(self.statusLabel2.snp.bottom).offset(8)
-        }
-        
-        statusLabelControl.snp.makeConstraints { make in
-            make.left.right.height.equalTo(statusLabel)
-            make.top.equalTo(self.statusLabel3.snp.bottom).offset(8)
-        }
-        
-        statusLabelABS.snp.makeConstraints { make in
-            make.left.right.height.equalTo(statusLabel)
-            make.top.equalTo(self.statusLabelControl.snp.bottom).offset(8)
-        }
-        
-        logTextView.backgroundColor = .clear
-        logTextView.snp.makeConstraints { make in
+        let collectionInset:CGFloat = CGFloat.kTabbarHeight_Total
+        detailCollection.contentCollectionView.contentInsetAdjustmentBehavior = .never
+        detailCollection.contentCollectionView.contentInset.bottom = collectionInset
+        detailCollection.contentCollectionView.verticalScrollIndicatorInsets.bottom = collectionInset
+
+        view.addSubviews([actionStack,speedometer,speedometerReversed,detailCollection])
+        actionStack.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.top.equalTo(self.sendCommandButton.snp.bottom).offset(8)
-            make.bottom.equalToSuperview().inset(CGFloat.kTabbarHeight_Total + 8)
+            make.height.equalTo(54)
+            make.top.equalToSuperview().inset(CGFloat.GlobalItemSpacing + CGFloat.kNavBarHeight_Total)
         }
+        
+        actionStack.addArrangedSubview(voltageLabel)
+        actionStack.addArrangedSubview(distToMaintenanceLabel)
+        actionStack.arrangedSubviews.forEach { value in
+            value.snp.makeConstraints { make in
+                make.size.equalTo(value.bounds.size)
+                make.centerY.equalToSuperview()
+            }
+        }
+        
+        let modelvoltage = PTMainProgressViewModel()
+        modelvoltage.name = PTDashboardConfig.languageFunc(text: "casa_batt")
+        modelvoltage.currentValue = 0
+        modelvoltage.maxValue = 14.5
+        modelvoltage.uni = "V"
+        self.voltageLabel.modelSet = modelvoltage
+
+        let distToMaintenancemodel = PTMainProgressViewModel()
+        distToMaintenancemodel.name = PTDashboardConfig.languageFunc(text: "保养")
+        distToMaintenancemodel.currentValue = 0
+        distToMaintenancemodel.maxValue = 0
+        distToMaintenancemodel.uni = "km"
+        self.distToMaintenanceLabel.modelSet = distToMaintenancemodel
+
+        speedometer.snp.makeConstraints { make in
+            make.top.equalTo(self.actionStack.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.left.equalToSuperview()
+            make.right.equalTo(self.view.snp.centerX)
+            make.height.equalTo(self.speedometer.snp.width)
+        }
+        speedometer.layoutIfNeeded()
+        speedometer.viewCorner(radius: speedometer.bounds.size.height / 2)
+        
+        speedometerReversed.snp.makeConstraints { make in
+            make.top.height.equalTo(self.speedometer)
+            make.right.equalToSuperview()
+            make.left.equalTo(self.view.snp.centerX)
+        }
+        speedometerReversed.layoutIfNeeded()
+        speedometerReversed.viewCorner(radius: speedometerReversed.bounds.size.height / 2)
+        
+        detailCollection.snp.makeConstraints { make in
+            make.left.right.equalToSuperview()
+            make.top.equalTo(self.speedometer.snp.bottom)
+            make.bottom.equalToSuperview()
+        }
+        
+        listSet()
+    }
+    
+    func listSet(finishTask:PTCollectionCallback? = nil) {
+        var sections = [PTSection]()
+        let rowsTrip = tripModels.map { value in
+            let row = PTRows(ID:PTFusionCell.ID,dataModel: value)
+            return row
+        }
+        let sectionTrip = PTSection(headerTitle: PTDashboardConfig.languageFunc(text: "里程"),headerID: .TRIPSECTION,headerHeight: 44,rows: rowsTrip)
+        sections.append(sectionTrip)
+        
+        let rowsMoto = motoModels.map { value in
+            let row = PTRows(ID:PTFusionCell.ID,dataModel: value)
+            return row
+        }
+        let sectionMoto = PTSection(headerTitle: PTDashboardConfig.languageFunc(text: "MOTO"),headerID: .MOTOSECTION,headerHeight: 44,rows: rowsMoto)
+        sections.append(sectionMoto)
+
+        detailCollection.showCollectionDetail(collectionData: sections,finishTask: finishTask)
     }
     
     // MARK: - 按钮交互逻辑
@@ -176,13 +288,12 @@ class PTMotoInfoViewController: PTBaseViewController {
             
             // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
             DispatchQueue.main.async {
-                // 假设你有一个 label 叫 statusLabel
-                self.statusLabel1.text = """
-                里程: \(tripKm)km
-                总里程: \(odoKm)km
-                fuelLevelPct: \(fuelLevelPct)
-                avgConsumptionLt: \(avgConsumptionLt)
-                """
+                let sectionTrip = 0
+                let rows = self.detailCollection.getAllRows(in: sectionTrip)
+                rows[0].dataModel = PTDashboardConfig.baseNormalCellModel(name: "油量",desc: "\(fuelLevelPct)%")
+                rows[2].dataModel = PTDashboardConfig.baseNormalCellModel(name: "小计里程",desc: "\(tripKm)KM")
+                rows[3].dataModel = PTDashboardConfig.baseNormalCellModel(name: "总里程",desc: "\(odoKm)KM")
+                self.detailCollection.reloadRows(rows, in: sectionTrip)
             }
         } else if let data2 = notification.object as? PTDashboardData2 {
             
@@ -193,12 +304,18 @@ class PTMotoInfoViewController: PTBaseViewController {
             
             // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
             DispatchQueue.main.async {
-                // 假设你有一个 label 叫 statusLabel
-                self.statusLabel2.text = """
-                电池电压: \(volt)V
-                外部温度: \(temp)°C
-                引擎状态: \(PTDashboardLabels.engineStatusLabel(raw: engineStatus))
-                """
+                let sectionTrip = 1
+                let rows = self.detailCollection.getAllRows(in: sectionTrip)
+                rows[0].dataModel = PTDashboardConfig.baseNormalCellModel(name: "发动机",desc: PTDashboardLabels.engineStatusLabel(raw: engineStatus))
+                rows[2].dataModel = PTDashboardConfig.baseNormalCellModel(name: "温度",desc: "\(temp)°C")
+                self.detailCollection.reloadRows(rows, in: sectionTrip)
+
+                let modelvoltage = PTMainProgressViewModel()
+                modelvoltage.name = PTDashboardConfig.languageFunc(text: "casa_batt")
+                modelvoltage.currentValue = volt
+                modelvoltage.maxValue = 14.5
+                modelvoltage.uni = "V"
+                self.voltageLabel.modelSet = modelvoltage
             }
         } else if let data3 = notification.object as? PTDashboardData3 {
             
@@ -209,13 +326,30 @@ class PTMotoInfoViewController: PTBaseViewController {
             
             // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
             DispatchQueue.main.async {
-                // 假设你有一个 label 叫 statusLabel
-                self.statusLabel3.text = """
-                autonomyKm: \(autonomyKm)km
-                distToMaintenance: \(distToMaintenance)km
-                colorMeasur: \(colorMeasur)
-                language: \(language)
-                """
+                if let row = self.detailCollection.getRow(at: IndexPath.SubSequence(row: 1, section: 0)) {
+                    row.dataModel = PTDashboardConfig.baseNormalCellModel(name: "油量里程",desc: "\(autonomyKm)KM")
+                    self.detailCollection.reloadRows([row], in: 0)
+                }
+                let sectionTrip = 1
+                let rows = self.detailCollection.getAllRows(in: sectionTrip)
+                rows[3].dataModel = PTDashboardConfig.baseNormalCellModel(name: "语言",desc: PTDashboardLabels.languageLabel(r: language))
+                self.detailCollection.reloadRows(rows, in: sectionTrip)
+                
+                let distToMaintenancemodel = PTMainProgressViewModel()
+                distToMaintenancemodel.name = PTDashboardConfig.languageFunc(text: "保养")
+                distToMaintenancemodel.currentValue = Double(distToMaintenance)
+                distToMaintenancemodel.maxValue = 2500
+                distToMaintenancemodel.uni = "km"
+                self.distToMaintenanceLabel.modelSet = distToMaintenancemodel
+
+//
+//                // 假设你有一个 label 叫 statusLabel
+//                self.statusLabel3.text = """
+//                autonomyKm: \(autonomyKm)km
+//                distToMaintenance: \(distToMaintenance)km
+//                colorMeasur: \(colorMeasur)
+//                language: \(language)
+//                """
             }
         } else if let control = notification.object as? PTDashboardControl {
             
@@ -224,11 +358,8 @@ class PTMotoInfoViewController: PTBaseViewController {
 
             // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
             DispatchQueue.main.async {
-                // 假设你有一个 label 叫 statusLabel
-                self.statusLabelControl.text = """
-                vehicleSpeedKmh: \(vehicleSpeedKmh)km
-                engineRpm: \(engineRpm)rpm
-                """
+                self.speedometer.updateSpeed(vehicleSpeedKmh)
+                self.speedometerReversed.updateSpeed(CGFloat(engineRpm))
             }
         } else if let abs = notification.object as? PTAbsStatus {
             
@@ -236,10 +367,10 @@ class PTMotoInfoViewController: PTBaseViewController {
 
             // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
             DispatchQueue.main.async {
-                // 假设你有一个 label 叫 statusLabel
-                self.statusLabelABS.text = """
-                abs: \(absRaw)
-                """
+                let sectionTrip = 1
+                let rows = self.detailCollection.getAllRows(in: sectionTrip)
+                rows[1].dataModel = PTDashboardConfig.baseNormalCellModel(name: "ABS",desc: PTDashboardLabels.absLabel(raw: absRaw))
+                self.detailCollection.reloadRows(rows, in: sectionTrip)
             }
         }
     }

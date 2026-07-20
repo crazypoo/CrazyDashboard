@@ -7,6 +7,15 @@
 
 import UIKit
 import PooTools
+import AttributedString
+
+extension UIColor {
+    static let MainColor = DynamicColor(hexString: "FF6200")!
+}
+
+extension CGFloat {
+    static let GlobalItemSpacing:CGFloat = 8.adapter
+}
 
 extension PTProgressHUD {
     class func show(text:String,delay: TimeInterval = 1.5,showedFinish:PTActionTask? = nil) {
@@ -62,6 +71,99 @@ extension PTProgressHUD {
     }
 }
 
-class PTDashboardConfig: NSObject {
+class PTDashboardConfig: NSObject,@unchecked Sendable  {
     static let shared = PTDashboardConfig()
+    
+    @MainActor class func baseNormalCellModel(leftSpacing:CGFloat? = nil,
+                                              contentLeftSpacing:CGFloat = 0,
+                                              name:String = "",
+                                              nameFont:UIFont = .appfont(size: 13),
+                                              nameColor:DynamicColor? = .gray,
+                                              nameAtt:ASAttributedString? = nil,
+                                              desc:String = "",
+                                              descTextColor:DynamicColor = .white,
+                                              descFont:UIFont = .appfont(size: 16),
+                                              content:String = "",
+                                              contentTextColor:DynamicColor = .lightGray,
+                                              contentFont:UIFont = .appfont(size: 16),
+                                              contentAtt:ASAttributedString? = nil,
+                                              leftIcon:Any? = nil,
+                                              imageTopOffset:CGFloat = 0,
+                                              imageBottomOffset:CGFloat = 0,
+                                              accessoryType:PTFusionShowAccessoryType = .NoneAccessoryView,
+                                              accessoryImage:Any? = nil,
+                                              accessorySize:CGSize = CGSizeMake(14, 14),
+                                              switchThumbTintColor:DynamicColor = .MainColor,
+                                              switchOnTinColor:DynamicColor = .lightGray,
+                                              switchTintColor:DynamicColor = .lightGray,
+                                              rightSapcing:CGFloat = 0,
+                                              contentRightSpacing:CGFloat = 0,
+                                              lineType:PTFusionLineType = .NO,
+                                              bottomColor:DynamicColor = .lightGray,
+                                              bottomlineHeight:CGFloat = 1) -> PTFusionCellModel {
+        let model = PTFusionCellModel()
+        model.leftSpace = leftSpacing ?? PTAppBaseConfig.share.defaultViewSpace
+        if let nameAtt = nameAtt {
+            model.nameAttr = nameAtt
+        } else if !name.stringIsEmpty() {
+            model.name = name
+            model.cellFont = nameFont
+            model.nameColor = nameColor ?? .white
+        }
+        
+        if !desc.stringIsEmpty() {
+            model.cellDescFont = descFont
+            model.desc = desc
+            model.descColor = descTextColor
+        }
+        
+        if let contentAtt = contentAtt {
+            model.contentAttr = contentAtt
+        } else if !content.stringIsEmpty() {
+            model.contentFont = contentFont
+            model.content = content
+            model.contentTextColor = contentTextColor
+        }
+            
+        if let leftIcon = leftIcon {
+            model.leftImage = leftIcon
+            model.contentLeftSpace = contentLeftSpacing
+        }
+        model.imageTopOffset = imageTopOffset
+        model.imageBottomOffset = imageBottomOffset
+        
+        model.accessoryType = accessoryType
+        switch accessoryType {
+        case .Switch:
+            model.switchThumbTintColor = switchThumbTintColor
+            model.switchOnTinColor = switchOnTinColor
+            model.switchTintColor = switchTintColor
+        case .DisclosureIndicator:
+            model.disclosureIndicatorImage = accessoryImage
+            model.moreDisclosureIndicatorSize = accessorySize
+        default:
+            break
+        }
+        
+        model.rightSpace = rightSapcing
+        model.contentRightSpace = contentRightSpacing
+
+        model.haveLine = lineType
+        model.bottomLineColor = bottomColor
+        model.bottomLineHeight = bottomlineHeight
+
+        return model
+    }
+
+}
+
+//MARK: Language
+extension PTDashboardConfig {
+    class func languageFunc(text:String) ->String {
+        return text.localized(using: nil,in: Bundle.main)
+    }
+    
+    static func language(key:String, _ args: CVarArg...) ->String {
+        String(format: PTDashboardConfig.languageFunc(text: key), args)
+    }
 }

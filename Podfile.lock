@@ -168,6 +168,7 @@ DEPENDENCIES:
   - PooTools/LocationPermission (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/Motion (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/NetWork (from `https://github.com/crazypoo/PTools.git`)
+  - PooTools/ProgressBar (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/WhatsNewsKit (from `https://github.com/crazypoo/PTools.git`)
   - SwiftyUserDefaults
 
@@ -236,6 +237,6 @@ SPEC CHECKSUMS:
   SwifterSwift: 517fa61daf5b4c5e3ed13b9f35f4c26b310cfb97
   SwiftyUserDefaults: 63f80248cf5bfb3458825d9a78f2eb7e1293a040
 
-PODFILE CHECKSUM: 85556a6ae9acb4e9a3a15192eba15f95350a0640
+PODFILE CHECKSUM: b3e85e535b9542ca3bfba1d1ac34e985474b2d05
 
 COCOAPODS: 1.16.2

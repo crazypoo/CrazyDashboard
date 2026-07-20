@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		55028F2C2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */; };
 		55028F2D2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */; };
+		555C0FF9300E06630079D94F /* PTGlobalActionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */; };
+		555C0FFA300E06630079D94F /* PTGlobalActionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */; };
 		5577E62E2FD656D20004733F /* PTCompassRollerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6202FD656D20004733F /* PTCompassRollerView.swift */; };
 		5577E62F2FD656D20004733F /* PTLocationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6212FD656D20004733F /* PTLocationEngine.swift */; };
 		5577E6302FD656D20004733F /* PTNowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6222FD656D20004733F /* PTNowPlayingView.swift */; };
@@ -50,6 +52,8 @@
 		55FE2A5E300DF42A000E741F /* PTBLEConnectViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2A5C300DF42A000E741F /* PTBLEConnectViewController.swift */; };
 		55FE2A6F300DF836000E741F /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 55FE2A6D300DF836000E741F /* Localizable.strings */; };
 		55FE2A70300DF836000E741F /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 55FE2A6D300DF836000E741F /* Localizable.strings */; };
+		55FE2A77300DF95C000E741F /* PTMainProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2A76300DF95C000E741F /* PTMainProgressView.swift */; };
+		55FE2A78300DF95C000E741F /* PTMainProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2A76300DF95C000E741F /* PTMainProgressView.swift */; };
 		5A200D40EF300920887AD052 /* Pods_PTSpeed.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 33464FDDE31899C7F87FB6EC /* Pods_PTSpeed.framework */; };
 		611EE02BED86EDA626884233 /* Pods_CrazyDashboard.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 561E4C337C3165E9409BE2DF /* Pods_CrazyDashboard.framework */; };
 /* End PBXBuildFile section */
@@ -58,6 +62,7 @@
 		2567A83A06A2B2498B880D19 /* Pods-CrazyDashboard.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.release.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.release.xcconfig"; sourceTree = "<group>"; };
 		33464FDDE31899C7F87FB6EC /* Pods_PTSpeed.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_PTSpeed.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashBoardBaseBoardViewController.swift; sourceTree = "<group>"; };
+		555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTGlobalActionHeader.swift; sourceTree = "<group>"; };
 		5577E5BD2FD5C1DB0004733F /* CrazyDashboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CrazyDashboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5577E6202FD656D20004733F /* PTCompassRollerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCompassRollerView.swift; sourceTree = "<group>"; };
 		5577E6212FD656D20004733F /* PTLocationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLocationEngine.swift; sourceTree = "<group>"; };
@@ -83,6 +88,7 @@
 		55FE2A6E300DF836000E741F /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		55FE2A73300DF870000E741F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		55FE2A74300DF876000E741F /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/Localizable.strings; sourceTree = "<group>"; };
+		55FE2A76300DF95C000E741F /* PTMainProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMainProgressView.swift; sourceTree = "<group>"; };
 		561E4C337C3165E9409BE2DF /* Pods_CrazyDashboard.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CrazyDashboard.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
@@ -170,6 +176,7 @@
 		5577E64D2FD657110004733F /* Global */ = {
 			isa = PBXGroup;
 			children = (
+				55FE2A75300DF93F000E741F /* Views */,
 				55FE295A300CA4E8000E741F /* PTBluetoothManager.swift */,
 				5577E7CE2FD704790004733F /* PTBumpMeterView.swift */,
 				5577E6202FD656D20004733F /* PTCompassRollerView.swift */,
@@ -193,6 +200,15 @@
 				55FE2A6D300DF836000E741F /* Localizable.strings */,
 			);
 			path = Global;
+			sourceTree = "<group>";
+		};
+		55FE2A75300DF93F000E741F /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				55FE2A76300DF95C000E741F /* PTMainProgressView.swift */,
+				555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 		59D3A021EFE75A7BF8504B6F /* Pods */ = {
@@ -429,11 +445,13 @@
 				5577E6312FD656D20004733F /* PTSpeedometerView.swift in Sources */,
 				55FE2A5D300DF42A000E741F /* PTBLEConnectViewController.swift in Sources */,
 				5577E6D12FD680730004733F /* PTTripStatsView.swift in Sources */,
+				55FE2A78300DF95C000E741F /* PTMainProgressView.swift in Sources */,
 				5577E7802FD6EEEF0004733F /* PTGForceView.swift in Sources */,
 				5577E7CF2FD704790004733F /* PTBumpMeterView.swift in Sources */,
 				55FE29A4300CC258000E741F /* PTMotoNavigationViewController.swift in Sources */,
 				5577E7C92FD6FC8C0004733F /* PTCrashWarningView.swift in Sources */,
 				55FE2967300CA5E0000E741F /* PTDashboardConfig.swift in Sources */,
+				555C0FFA300E06630079D94F /* PTGlobalActionHeader.swift in Sources */,
 				55FE2996300CBCB4000E741F /* PTMotoBaseTabbarController.swift in Sources */,
 				5577E7CD2FD6FF890004733F /* PTLeanAngleView.swift in Sources */,
 			);
@@ -446,6 +464,7 @@
 				55FE2995300CBCB4000E741F /* PTMotoBaseTabbarController.swift in Sources */,
 				55FE29A6300CC2E2000E741F /* PTMotoSettingViewController.swift in Sources */,
 				5577E6502FD6572E0004733F /* PTNowPlayingView.swift in Sources */,
+				555C0FF9300E06630079D94F /* PTGlobalActionHeader.swift in Sources */,
 				5577E64E2FD657250004733F /* PTCompassRollerView.swift in Sources */,
 				55028F2C2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */,
 				5577E7CC2FD6FF890004733F /* PTLeanAngleView.swift in Sources */,
@@ -460,6 +479,7 @@
 				5577E7812FD6EEEF0004733F /* PTGForceView.swift in Sources */,
 				5577E6512FD657330004733F /* PTSpeedometerView.swift in Sources */,
 				55FE29A1300CC1F1000E741F /* PTMotoInfoViewController.swift in Sources */,
+				55FE2A77300DF95C000E741F /* PTMainProgressView.swift in Sources */,
 				55FE29A3300CC258000E741F /* PTMotoNavigationViewController.swift in Sources */,
 				5577E7D02FD704790004733F /* PTBumpMeterView.swift in Sources */,
 				5577E6AC2FD662C20004733F /* PTMapView.swift in Sources */,
