@@ -24,6 +24,10 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
+		<string>fetch</string>
+		<string>processing</string>
+		<string>bluetooth-peripheral</string>
+		<string>bluetooth-central</string>
 	</array>
 </dict>
 </plist>

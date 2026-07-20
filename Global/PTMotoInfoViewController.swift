@@ -241,29 +241,7 @@ class PTMotoInfoViewController: PTBaseViewController {
 
         detailCollection.showCollectionDetail(collectionData: sections,finishTask: finishTask)
     }
-    
-    // MARK: - 按钮交互逻辑
-    
-    @objc func startServerTapped() {
-        statusLabel.text = "正在启动 TIO 广播...\n请打开摩托车电门并靠近手机"
         
-        // 2. 唤醒单例，触发 peripheralManagerDidUpdateState，开始广播
-//        PTBluetoothServerManager.shared.startBaseStationAndScan()
-        PTBluetoothServerManager.shared.startBaseStationAndScan()
-    }
-    
-    @objc func sendTestCommandTapped() {
-        // 3. 构造并发送指令[cite: 2]
-        // 假设你要发送的配置为：颜色(Blue=0), 单位(KM=0), 语言(EN=1)[cite: 2]
-        let color: UInt8 = 0
-        let unit: UInt8 = 0
-        let language: UInt8 = 1
-        
-        PTBluetoothServerManager.shared.sendConfiguration(color: color, unit: unit, language: language)
-        statusLabel.text = "配置指令已发送！请观察仪表盘是否发生变化。"
-        PTProgressHUD.show(text: "指令发送成功")
-    }
-    
     // MARK: - 状态回调
     
     @objc func handleAuthSuccess() {

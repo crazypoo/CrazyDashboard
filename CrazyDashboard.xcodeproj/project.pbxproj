@@ -727,6 +727,8 @@
 				INFOPLIST_FILE = PTSpeed/Info.plist;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "我要用AM";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "我要用蓝牙";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "我要用L";
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "我要用L";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "我要用L";
 				INFOPLIST_KEY_NSMotionUsageDescription = "我要用Motion";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -866,6 +868,8 @@
 				INFOPLIST_FILE = PTSpeed/Info.plist;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "我要用AM";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "我要用蓝牙";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "我要用L";
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "我要用L";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "我要用L";
 				INFOPLIST_KEY_NSMotionUsageDescription = "我要用Motion";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
