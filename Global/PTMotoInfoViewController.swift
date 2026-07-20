@@ -32,6 +32,8 @@ class PTMotoInfoViewController: PTBaseViewController {
     let statusLabelControl = UILabel()
     let statusLabelABS = UILabel()
 
+    let logTextView = UITextView()
+    
     open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
         return .solid(.clear)
     }
@@ -51,8 +53,30 @@ class PTMotoInfoViewController: PTBaseViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: NSNotification.Name("MotorcycleDATA3"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: NSNotification.Name("MotorcycleCONTROL"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: NSNotification.Name("MotorcycleABS"), object: nil)
+        
+        PTBluetoothServerManager.shared.onLogUpdated = { [weak self] newLog in
+            self?.appendLog(newLog)
+        }
     }
     
+    // MARK: - 追加日志并自动滚动到底部
+        private func appendLog(_ text: String) {
+            // 获取当前时间，方便观察时序
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm:ss.SSS"
+            let timeString = formatter.string(from: Date())
+            
+            let currentText = logTextView.text ?? ""
+            let formattedNewLog = "[\(timeString)] \(text)\n"
+            
+            // 追加新文本
+            logTextView.text = currentText + formattedNewLog
+            
+            // 自动滚动到最后一行
+            let range = NSRange(location: logTextView.text.count - 1, length: 1)
+            logTextView.scrollRangeToVisible(range)
+        }
+
     // MARK: - 界面布局
     private func setupUI() {
         view.backgroundColor = .white
@@ -88,7 +112,7 @@ class PTMotoInfoViewController: PTBaseViewController {
         sendCommandButton.isEnabled = false // 默认禁用，直到认证成功
         view.addSubview(sendCommandButton)
         
-        view.addSubviews([statusLabel1,statusLabel2,statusLabel3,statusLabelControl,statusLabelABS])
+        view.addSubviews([statusLabel1,statusLabel2,statusLabel3,statusLabelControl,statusLabelABS,logTextView])
         statusLabel1.snp.makeConstraints { make in
             make.left.right.height.equalTo(statusLabel)
             make.top.equalTo(self.sendCommandButton.snp.bottom).offset(8)
@@ -113,6 +137,12 @@ class PTMotoInfoViewController: PTBaseViewController {
             make.left.right.height.equalTo(statusLabel)
             make.top.equalTo(self.statusLabelControl.snp.bottom).offset(8)
         }
+        
+        logTextView.snp.makeConstraints { make in
+            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.top.equalTo(self.sendCommandButton.snp.bottom).offset(8)
+            make.bottom.equalToSuperview().inset(CGFloat.kTabbarHeight_Total + 8)
+        }
     }
     
     // MARK: - 按钮交互逻辑
@@ -122,7 +152,6 @@ class PTMotoInfoViewController: PTBaseViewController {
         
         // 2. 唤醒单例，触发 peripheralManagerDidUpdateState，开始广播
         PTBluetoothServerManager.shared.startBaseStationAndScan()
-        PTProgressHUD.show(text: "基站已激活，等待连接")
     }
     
     @objc func sendTestCommandTapped() {

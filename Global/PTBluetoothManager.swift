@@ -348,7 +348,20 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
     
     static let shared = PTBluetoothServerManager()
     
+    var onLogUpdated: ((String) -> Void)?
+        
+    private func ptLog(_ message: String) {
+        // 1. 依然保留 Xcode 控制台打印
+        PTNSLogConsole(message)
+        
+        // 2. 确保在主线程将文本回调给外部 UI
+        DispatchQueue.main.async {
+            self.onLogUpdated?(message)
+        }
+    }
+
     private let kHasPairedKey = "PT_HasPairedWithScooter"
+    private let kScooterUUIDKey = "PT_ScooterUUID_Key" // 👈 新增：用于保存车机的系统唯一标识
     var hasRememberedScooter: Bool {
         return UserDefaults.standard.bool(forKey: kHasPairedKey)
     }
@@ -392,24 +405,51 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
     
     // MARK: - 启动双擎
     func startBaseStationAndScan() {
-        // 1. 启动基站
-        if peripheralManager.state == .poweredOn {
+        ptLog("🛠️ [步骤 1] 请求启动双擎 (基站 + 扫描/重连)")
+        tryStartModules()
+    }
+    
+    // 统一的状态检测与启动中心
+    private func tryStartModules() {
+        // 1. 启动基站 (必须等状态为 poweredOn)
+        if peripheralManager.state == .poweredOn && !peripheralManager.isAdvertising {
             setupServices()
-            peripheralManager.startAdvertising([CBAdvertisementDataServiceUUIDsKey: [TIO_SERVICE]])
-            PTProgressHUD.show(text: "🚀 基站服务已广播...")
+            peripheralManager.startAdvertising([
+                CBAdvertisementDataServiceUUIDsKey: [TIO_SERVICE],
+                CBAdvertisementDataLocalNameKey: "iPhone-TIO" // 加个名字增强广播穿透力
+            ])
+            ptLog("📡 [状态] 基站已开启并广播")
         }
         
-        // 2. 启动扫描 (贴近连接法)
+        // 2. 启动连接寻找摩托车 (必须等状态为 poweredOn)
         if centralManager.state == .poweredOn {
-            centralManager.scanForPeripherals(withServices: nil, options: nil)
-            PTProgressHUD.show(text: "🚀 基站已激活，正在主动雷达扫描摩托车(请贴近)...")
-        } else {
-            PTProgressHUD.show(text: "❌ 蓝牙未准备好")
+            if activeScooter != nil { return } // 如果已经在处理中，则跳过
+            
+            // 🚨 核心修复 1：记忆寻址提取！解决重启 App 扫不到的问题
+            if let savedUUIDString = UserDefaults.standard.string(forKey: kScooterUUIDKey),
+               let savedUUID = UUID(uuidString: savedUUIDString) {
+                
+                let knownDevices = centralManager.retrievePeripherals(withIdentifiers: [savedUUID])
+                if let scooter = knownDevices.first {
+                    ptLog("🔄 [重连] 在系统记录中找到目标摩托车，跳过扫描，直接物理唤醒...")
+                    activeScooter = scooter
+                    centralManager.connect(scooter, options: nil)
+                    return // 捞到了就结束，不需要再调用扫描
+                }
+            }
+            
+            // 如果没捞到，说明是新车或者系统彻底断开了，开启主动扫描
+            if !centralManager.isScanning {
+                centralManager.scanForPeripherals(withServices: nil, options: nil)
+                ptLog("🔎 [状态] 主动雷达已开启，正在扫描标致摩托车...")
+            }
         }
     }
 
     // MARK: - PeripheralManager Delegate
-    func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {}
+    func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
+        if peripheral.state == .poweredOn { tryStartModules() }
+    }
     
     private func setupServices() {
         // 确保使用无拦截的普通权限，防止配对弹窗卡死物理连接
@@ -447,15 +487,17 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
     // 监听通道订阅[cite: 3]
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
         connectedCentral = central
-        PTProgressHUD.show(text: "⚡️ 发现设备连接！正在订阅通道: \(characteristic.uuid)")
-        PTNSLogConsole("⚡️ [雷达响应] 中心设备 \(central.identifier) 订阅了通道: \(characteristic.uuid)")
+        ptLog("⚡️ 发现设备连接！正在订阅通道: \(characteristic.uuid)")
+        ptLog("⚡️ [雷达响应] 中心设备 \(central.identifier) 订阅了通道: \(characteristic.uuid)")
         if characteristic.uuid == UART_TX { isTioSubscribed = true }
         if characteristic.uuid == UART_TX_CREDITS { isCreditsSubscribed = true }
         
         if isTioSubscribed && isCreditsSubscribed {
-            PTProgressHUD.show(text:"🔗 摩托车订阅完毕，开启身份验证握手...")
+            ptLog("🔗 摩托车订阅完毕，开启身份验证握手...")
             authState = .waitKeyId
             authenticated = false
+        } else {
+            ptLog("🔗 摩托车订阅完毕，失败")
         }
     }
     
@@ -466,8 +508,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
         }
         for request in requests {
             guard let data = request.value else { continue }
-            
-            PTProgressHUD.show(text:"⚡️ [雷达响应] 收到设备写入请求，通道: \(request.characteristic.uuid)，数据包: \(data.map { String(format: "%02hhx", $0) }.joined())")
+            ptLog("⚡️ [雷达响应] 收到设备写入请求，通道: \(request.characteristic.uuid)，数据包: \(data.map { String(format: "%02hhx", $0) }.joined())")
             if request.characteristic.uuid == UART_RX {
                 if authenticated && localCredits > 0 {
                     localCredits -= 1
@@ -491,7 +532,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
             if data.count >= 4 {
                 let productId = (Int(bytes[0]) << 24) | (Int(bytes[1]) << 16) | (Int(bytes[2]) << 8) | Int(bytes[3])
                 if productId == 8758 {
-                    PTProgressHUD.show(text:"✅ Step 1: 收到正确 Product ID (8758)")
+                    ptLog("✅ Step 1: 收到正确 Product ID (8758)")
                     let challenge = auth.createChallenge()
                     var challengeData = Data()
                     for num in challenge {
@@ -500,13 +541,16 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
                     }
                     sendChunkedData(data: challengeData, to: txChar)
                     authState = .waitAuthMsg
+                } else {
+                    ptLog("✅ Step 1: 收到其他 Product ID (\(productId))")
                 }
+            } else {
+                ptLog("✅ Step 1: data error")
             }
-            
         case .waitAuthMsg:
             if auth.checkAuthMsg(scooterResponse: data) {
-                PTProgressHUD.show(text:"✅ 验证通过！下发 KeyID 并充值额度...")
-                
+                ptLog("✅ 验证通过！下发 KeyID 并充值额度...")
+
                 // 发送 KeyID (App凭证)
                 sendChunkedData(data: auth.getScooterKeyId(), to: txChar)
                 
@@ -519,7 +563,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
                 UserDefaults.standard.set(true, forKey: kHasPairedKey)
                 NotificationCenter.default.post(name: NSNotification.Name("MotorcycleAuthSuccess"), object: nil)
             } else {
-                PTProgressHUD.show(text:"❌ Step 2: 验证失败，密码本可能有误。")
+                ptLog("❌ Step 2: 验证失败，密码本可能有误。")
             }
         case .success:
             break
@@ -575,7 +619,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
     // 供外部调用的指令发送入口
     func sendConfiguration(color: UInt8, unit: UInt8, language: UInt8) {
         guard authenticated else {
-            PTProgressHUD.show(text:"⚠️ 尚未完成认证，无法发送指令")
+            ptLog("⚠️ 尚未完成认证，无法发送指令")
             return
         }
         let frame = PTFrameBuilder.buildConfigurationFrame(color: color, unit: unit, language: language)
@@ -583,23 +627,23 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate,CBCentralM
     }
     
     @objc func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        // 保持空即可，我们在 startBaseStationAndScan 中判断
+        if central.state == .poweredOn { tryStartModules() }
     }
 
     func autoStartIfRemembered() {
         if hasRememberedScooter {
-            PTProgressHUD.show(text:"🔍 发现历史配对记录，自动静默开启蓝牙基站等待摩托车...")
+            ptLog("🔍 发现历史配对记录，自动静默开启蓝牙基站等待摩托车...")
             // 只要调用这个，就会触发 peripheralManagerDidUpdateState 从而开始广播
-            _ = self.peripheralManager
+            startBaseStationAndScan()
         } else {
-            PTProgressHUD.show(text:"首次使用，需等待用户手动点击按钮开启连接流程")
+            ptLog("首次使用，需等待用户手动点击按钮开启连接流程")
         }
     }
     
     // 如果用户想要解绑换车
     func forgetScooter() {
         UserDefaults.standard.set(false, forKey: kHasPairedKey)
-        PTProgressHUD.show(text:"🗑️ 已清除记住的摩托车")
+        ptLog("🗑️ 已清除记住的摩托车")
         // 这里可以加上断开连接的逻辑
     }
 }
@@ -616,24 +660,55 @@ extension PTBluetoothServerManager {
             // 3. 结合信号强度判断 (>-60 代表大约在 1~3 米范围内)
             // 如果你确信周围只有你这一台车，可以把 `&& RSSI.intValue > -60` 这个条件删掉
             if RSSI.intValue > -60 {
-                PTProgressHUD.show(text:"🎯 锁定标致摩托车，正在建立连接...")
+                ptLog("🎯 锁定标致摩托车，正在建立连接...")
                 centralManager.stopScan()
                 activeScooter = peripheral
                 centralManager.connect(peripheral, options: nil)
+            } else {
+                ptLog("🎯 锁定标致摩托车失败")
             }
         }
     }
     
     // 物理连接成功
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        PTProgressHUD.show(text: "✅ 物理连接成功！等待车机订阅基站通道...")
+        ptLog("✅ [状态] 物理连接建立！执行底层敲门唤醒...")
+                
+        // 保存车机的 UUID，下次 App 启动直接从系统里捞，不用再扫描！
+        UserDefaults.standard.set(peripheral.identifier.uuidString, forKey: kScooterUUIDKey)
+        
+        // 🚨 核心修复 2：物理层敲门唤醒 (Doorbell Hack)
+        // 车机此时可能处于休眠装死状态，我们假装要去查询它的服务，
+        // 强迫底层硬件产生数据交互，从而“惊醒”车机来订阅我们的基站！
+        peripheral.delegate = self
+        peripheral.discoverServices(nil)
     }
     
     // 意外断开连接
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        PTProgressHUD.show(text: "⚠️ 摩托车物理连接已断开")
+        let reason = error?.localizedDescription ?? "正常断电"
+        ptLog("⚠️ [状态] 物理连接已断开: \(reason)")
+        
+        // 彻底清空所有状态机，防止死锁
         activeScooter = nil
         authenticated = false
+        isTioSubscribed = false
+        isCreditsSubscribed = false
+        authState = .waitKeyId
+        
+        if hasRememberedScooter {
+            ptLog("🔄 [重连] 2 秒后自动重启雷达...")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                self.tryStartModules()
+            }
+        }
+    }
+}
+
+extension PTBluetoothServerManager: CBPeripheralDelegate {
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+        ptLog("🔔 [唤醒] 车机底层硬件已响应敲门，正在等待其反向订阅基站通道...")
+        // 这里什么都不用做，我们只是利用这个回声，迫使车机的 GATT 逻辑跑起来
     }
 }
 
@@ -644,7 +719,7 @@ extension PTBluetoothServerManager {
     // 发送导航定位信息[cite: 3]
     func sendNavigation(info: PTNavigationInfo) {
         guard authenticated else {
-            PTProgressHUD.show(text:"⚠️ 尚未完成认证，无法发送导航数据")
+            ptLog( "⚠️ 尚未完成认证，无法发送导航数据")
             return
         }
         let frame = PTFrameBuilder.buildNavigationFrame(info: info)
@@ -670,7 +745,7 @@ extension PTBluetoothServerManager {
         
         switch id {
         case 1:
-            PTProgressHUD.show(text:"🔗 收到连接状态包 (CONNECTION)")
+            ptLog( "🔗 收到连接状态包 (CONNECTION)")
         case 2:
             let fuelRaw = Double(bytes[0])
             let fuel = min(max(Int(round(fuelRaw * 0.3937)), 0), 100)
