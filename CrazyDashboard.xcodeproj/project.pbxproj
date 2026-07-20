@@ -176,7 +176,8 @@
 		5577E64D2FD657110004733F /* Global */ = {
 			isa = PBXGroup;
 			children = (
-				55FE2A75300DF93F000E741F /* Views */,
+				55FE2A6D300DF836000E741F /* Localizable.strings */,
+				55FE2A5C300DF42A000E741F /* PTBLEConnectViewController.swift */,
 				55FE295A300CA4E8000E741F /* PTBluetoothManager.swift */,
 				5577E7CE2FD704790004733F /* PTBumpMeterView.swift */,
 				5577E6202FD656D20004733F /* PTCompassRollerView.swift */,
@@ -196,8 +197,7 @@
 				5577E7D12FD704AD0004733F /* PTPitchView.swift */,
 				5577E6232FD656D20004733F /* PTSpeedometerView.swift */,
 				5577E6D02FD680730004733F /* PTTripStatsView.swift */,
-				55FE2A5C300DF42A000E741F /* PTBLEConnectViewController.swift */,
-				55FE2A6D300DF836000E741F /* Localizable.strings */,
+				55FE2A75300DF93F000E741F /* Views */,
 			);
 			path = Global;
 			sourceTree = "<group>";

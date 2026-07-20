@@ -10,10 +10,51 @@ import MapKit
 import CoreLocation
 import PooTools
 
+// MARK: - 1. 字符串扩展：摩托车仪表盘 ASCII 兼容处理
+extension String {
+    /// 将包含中文的字符串转换为无声调的拼音，并自动优化常用导航词汇为英文
+    func toMotorcycleCompatiblePinyin() -> String {
+        let mutableString = NSMutableString(string: self)
+        
+        // 1. 汉字转带声调拉丁字母
+        CFStringTransform(mutableString, nil, kCFStringTransformToLatin, false)
+        // 2. 剥离声调
+        CFStringTransform(mutableString, nil, kCFStringTransformStripDiacritics, false)
+        
+        var result = String(mutableString)
+        
+        // 3. 常用导航术语与路名的体验优化字典
+        let optimizeDictionary: [String: String] = [
+            "dao da": "Arrive",
+            "zhong dian": "Destination",
+            "zhi xing": "Straight",
+            "ji xu": "Continue",
+            "zuo zhuan": "Turn Left",
+            "xiang zuo": "Turn Left",
+            "you zhuan": "Turn Right",
+            "xiang you": "Turn Right",
+            "diao tou": "U-Turn",
+            "kao zuo": "Keep Left",
+            "kao you": "Keep Right",
+            "da dao": "Blvd",
+            "lu": "Rd",
+            "jie": "St",
+            "qiao": "Bridge"
+        ]
+        
+        // 4. 执行关键词英文润色
+        for (pinyin, english) in optimizeDictionary {
+            result = result.replacingOccurrences(of: pinyin, with: english, options: .caseInsensitive)
+        }
+        
+        return result
+    }
+}
+
+// MARK: - 2. 核心导航助手类
 class PTMapKitNavigationHelper: NSObject {
     
     static let shared = PTMapKitNavigationHelper()
-    
     private let locationManager = CLLocationManager()
     
     // 当前导航状态
@@ -28,6 +69,8 @@ class PTMapKitNavigationHelper: NSObject {
         locationManager.distanceFilter = 5 // 每移动 5 米更新一次
     }
     
+    // MARK: - 导航控制
+    
     /// 开始导航到指定坐标
     func startNavigation(to destinationCoordinate: CLLocationCoordinate2D) {
         guard let currentLocation = locationManager.location else {
@@ -40,7 +83,7 @@ class PTMapKitNavigationHelper: NSObject {
         let request = MKDirections.Request()
         request.source = MKMapItem(placemark: MKPlacemark(coordinate: currentLocation.coordinate))
         request.destination = MKMapItem(placemark: MKPlacemark(coordinate: destinationCoordinate))
-        request.transportType = .automobile // 摩托车通常使用汽车路线
+        request.transportType = .automobile // 摩托车通常使用汽车路线计算
         
         let directions = MKDirections(request: request)
         directions.calculate { [weak self] response, error in
@@ -49,7 +92,7 @@ class PTMapKitNavigationHelper: NSObject {
                 return
             }
             
-            PTProgressHUD.show(text: "✅ 路线规划成功！总距离: \(route.distance)米，预计耗时: \(route.expectedTravelTime)秒")
+            PTProgressHUD.show(text: "✅ 路线规划成功！总距: \(route.distance)m, 耗时: \(Int(route.expectedTravelTime))s")
             self?.currentRoute = route
             self?.currentStepIndex = 0 // 从第一个动作开始 (通常是起步)
             self?.isNavigating = true
@@ -64,6 +107,7 @@ class PTMapKitNavigationHelper: NSObject {
         isNavigating = false
         locationManager.stopUpdatingLocation()
         currentRoute = nil
+        // 可以在这里发送一个断开导航或清空仪表盘的蓝牙指令
     }
     
     // MARK: - 核心转换：提取 MapKit 数据给摩托车
@@ -74,43 +118,42 @@ class PTMapKitNavigationHelper: NSObject {
         
         let currentStep = route.steps[currentStepIndex]
         
-        // 1. 判断是否需要切换到下一个指令 (简单逻辑：距离目标点小于 15 米则认为已通过)
-        // 实际开发中，需要更复杂的坐标系投影判断，这里用最简单的距离逼近法
+        // 1. 判断是否需要切换到下一个指令 (距离目标点小于 15 米则认为已通过)
         let stepCoordinate = currentStep.polyline.coordinate
         let stepLocation = CLLocation(latitude: stepCoordinate.latitude, longitude: stepCoordinate.longitude)
         let distanceToNextTurn = currentLocation.distance(from: stepLocation)
         
+        // 步进逻辑：如果距离下一转弯点足够近，且不是最后一步，则切换到下一指令
         if distanceToNextTurn < 15 && currentStepIndex < route.steps.count - 1 {
-            currentStepIndex += 1 // 进入下一个指令
+            currentStepIndex += 1
             return buildNavigationInfo(currentLocation: currentLocation)
         }
         
-        // 2. 提取下一条道路名称和当前道路名称
-        // MapKit 并不直接区分当前路和下一条路，通常 step.instructions 就是下一条路的提示
-        let nextRoad = currentStep.instructions
-        let currentRoad = "导航中" // 或者使用 CLGeocoder 逆地理编码获取当前路名
+        // 2. 提取文本指令并安全地转换为拼音/英文
+        let rawNextRoad = currentStep.instructions
+        let nextRoadSafeText = rawNextRoad.toMotorcycleCompatiblePinyin()
+        let currentRoadSafeText = "Navigating" // 可以通过逆地理编码获取当前路名，这里为了性能直接使用固定英文
         
-        // 3. 将 MapKit 文字指令转为摩托车的转弯图标码
-        let maneuverCode = mapInstructionToManeuverCode(instruction: currentStep.instructions)
+        // 3. 提取转弯图标码 (传入原始中文或英文进行匹配)
+        let maneuverCode = mapInstructionToManeuverCode(instruction: rawNextRoad)
         
-        // 4. 计算剩余总距离和时间 (减去已经走过的步骤)
+        // 4. 计算剩余总距离和时间
         var remainingDistance = distanceToNextTurn
         for i in (currentStepIndex + 1)..<route.steps.count {
             remainingDistance += route.steps[i].distance
         }
         
-        // 简单的剩余时间估算 (假设平均速度，或按照总时间比例)
         let totalDistance = route.distance
         let progress = 1.0 - (remainingDistance / totalDistance)
         let remainingTimeSec = Int(route.expectedTravelTime * (1.0 - progress))
         
-        // 5. 组装最终发给摩托车的数据
+        // 5. 组装最终发给摩托车的数据 (严格确保不含中文字符)
         let info = PTNavigationInfo(
             nextManeuver: maneuverCode,
             metersToNextManeuver: UInt32(max(0, distanceToNextTurn)),
-            nameNextRoad: nextRoad,
-            nameCurrentRoad: currentRoad,
-            currentSpeedLimit: 50, // MapKit 无法直接提供，默认 50
+            nameNextRoad: nextRoadSafeText,
+            nameCurrentRoad: currentRoadSafeText,
+            currentSpeedLimit: 50, // MapKit SDK 无法直接提供限速，默认给 50
             distanceToDestination: UInt32(max(0, remainingDistance)),
             estimatedTimeToDestinationSec: max(0, remainingTimeSec)
         )
@@ -118,19 +161,38 @@ class PTMapKitNavigationHelper: NSObject {
         return info
     }
     
-    // 关键字匹配器：将文字翻译成车机图标
+    // MARK: - 转弯指令图标签译
+    
+    /// 将 MapKit 的中文/英文文本指令转换为摩托车仪表盘的枚举代码
     private func mapInstructionToManeuverCode(instruction: String) -> UInt8 {
         let text = instruction.lowercased()
         
-        if text.contains("直行") || text.contains("继续") {
+        if text.contains("straight") || text.contains("continue") || text.contains("keep on") ||
+           text.contains("直行") || text.contains("继续") {
             return PTManeuverMap.straight
-        } else if text.contains("左转") || text.contains("向左") {
-            return PTManeuverMap.quiteLeft
-        } else if text.contains("右转") || text.contains("向右") {
-            return PTManeuverMap.quiteRight
-        } else if text.contains("掉头") {
+        }
+        else if text.contains("u-turn") || text.contains("掉头") {
             return PTManeuverMap.uTurnLeft // 国内一般是左掉头
-        } else if text.contains("到达") || text.contains("终点") {
+        }
+        else if text.contains("keep left") || text.contains("靠左") {
+            return PTManeuverMap.keepLeft
+        }
+        else if text.contains("keep right") || text.contains("靠右") {
+            return PTManeuverMap.keepRight
+        }
+        else if text.contains("slight left") || text.contains("左前方") || text.contains("偏左") {
+            return PTManeuverMap.lightLeft
+        }
+        else if text.contains("slight right") || text.contains("右前方") || text.contains("偏右") {
+            return PTManeuverMap.lightRight
+        }
+        else if text.contains("turn left") || text.contains("left") || text.contains("左转") || text.contains("向左") {
+            return PTManeuverMap.quiteLeft
+        }
+        else if text.contains("turn right") || text.contains("right") || text.contains("右转") || text.contains("向右") {
+            return PTManeuverMap.quiteRight
+        }
+        else if text.contains("arrive") || text.contains("destination") || text.contains("到达") || text.contains("终点") {
             return PTManeuverMap.arrive
         }
         
@@ -138,7 +200,7 @@ class PTMapKitNavigationHelper: NSObject {
     }
 }
 
-// MARK: - CLLocationManagerDelegate
+// MARK: - 3. CoreLocation 代理实现
 extension PTMapKitNavigationHelper: CLLocationManagerDelegate {
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
@@ -147,10 +209,10 @@ extension PTMapKitNavigationHelper: CLLocationManagerDelegate {
         // 当 GPS 位置更新时，生成最新的导航数据包
         if let navInfo = buildNavigationInfo(currentLocation: currentLocation) {
             
-            // 打印调试信息
-            PTProgressHUD.show(text: "🚀 更新导航 -> 动作: \(navInfo.nextManeuver), 距离转弯: \(navInfo.metersToNextManeuver)m, 下一条路: \(navInfo.nameNextRoad), 剩余总距: \(navInfo.distanceToDestination)m")
+            // 可视化调试日志，方便开发时确认生成的数据
+            PTProgressHUD.show(text: "🚀 导航更新 -> 动作: \(navInfo.nextManeuver), 距离: \(navInfo.metersToNextManeuver)m, 下一条路: \(navInfo.nameNextRoad)")
             
-            // 核心调用：通过你之前写的蓝牙基站发送给摩托车！
+            // 核心调用：通过蓝牙基站将纯净的导航数据发送给摩托车！
             PTBluetoothServerManager.shared.sendNavigation(info: navInfo)
         }
     }

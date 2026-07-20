@@ -272,69 +272,76 @@ class PTFrameBuilder {
         let payload = Data([color, unit, language])
         return wrapTxFrame(idFrame: ID_CONFIGURATION, payload: payload)
     }
+    
+    // 生成主动断开连接帧[cite: 1]
+    static func buildDisconnectFrame() -> Data {
+        let payload = Data([1, 1])
+        return wrapTxFrame(idFrame: ID_DISCONNECT, payload: payload)
+    }
 }
 
 // 补充 PTFrameBuilder 内部方法
 extension PTFrameBuilder {
     
-    // 生成导航数据帧[cite: 2]
+    // 生成导航数据帧[cite: 1]
     static func buildNavigationFrame(info: PTNavigationInfo) -> Data {
         var payload = Data()
         
-        // 1. Maneuver Type (机动动作): [Hdr=1][Maneuver][cite: 2]
-        payload.append(contentsOf: [1, info.nextManeuver])
+        // 1. Maneuver Type (机动动作): [Hdr=1][Maneuver][cite: 1]
+        payload.append(1)
+        payload.append(info.nextManeuver)
         
-        // 2. Maneuver Distance (距下一动作距离): [Hdr=4][4-byte Dist 大端序][cite: 2]
+        // 2. Maneuver Distance (距下一动作距离): [Hdr=4][4-byte Dist 大端序][cite: 1]
         payload.append(4)
         var dist = info.metersToNextManeuver.bigEndian
-        payload.append(Data(bytes: &dist, count: 4))
+        payload.append(Data(bytes: &dist, count: MemoryLayout<UInt32>.size))
         
-        // 3. Next Road (下一道路): [Size][Text] (最大 50 字节)[cite: 2]
+        // 3. Next Road (下一道路): [Size][Text] (最大 50 字节，注意这里没有 Hdr)[cite: 1]
         let nextRoadData = encodeString(info.nameNextRoad)
         payload.append(UInt8(nextRoadData.count))
         payload.append(nextRoadData)
         
-        // 4. Current Road (当前道路): [Size][Text][cite: 2]
+        // 4. Current Road (当前道路): [Size][Text] (最大 50 字节，注意这里没有 Hdr)[cite: 1]
         let curRoadData = encodeString(info.nameCurrentRoad)
         payload.append(UInt8(curRoadData.count))
         payload.append(curRoadData)
         
-        // 5. Speed Limit (当前限速): [Hdr=1][Speed][cite: 2]
-        payload.append(contentsOf: [1, info.currentSpeedLimit])
+        // 5. Speed Limit (当前限速): [Hdr=1][Speed][cite: 1]
+        payload.append(1)
+        payload.append(info.currentSpeedLimit)
         
-        // 6. Total Distance (剩余总距离): [Hdr=4][4-byte Dist 大端序][cite: 2]
+        // 6. Total Distance (剩余总距离): [Hdr=4][4-byte Dist 大端序][cite: 1]
         payload.append(4)
         var totalDist = info.distanceToDestination.bigEndian
-        payload.append(Data(bytes: &totalDist, count: 4))
+        payload.append(Data(bytes: &totalDist, count: MemoryLayout<UInt32>.size))
         
-        // 7. ETA (预计到达时间): [Hdr=7][7-byte Date/Time 大端序][cite: 2]
+        // 7. ETA (预计到达时间): [Hdr=7][7-byte Date/Time 大端序][cite: 1]
         payload.append(7)
-        // 通过当前时间 + 剩余秒数，计算出预计到达的真实时间[cite: 2]
+        
+        // 通过当前时间 + 剩余秒数，计算出预计到达的真实时间[cite: 1]
         let etaDate = Calendar.current.date(byAdding: .second, value: info.estimatedTimeToDestinationSec, to: Date()) ?? Date()
         let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: etaDate)
         
+        // 写入年份 (Short, 2字节)[cite: 1]
         var year = UInt16(comps.year ?? 2026).bigEndian
-        payload.append(Data(bytes: &year, count: 2))
+        payload.append(Data(bytes: &year, count: MemoryLayout<UInt16>.size))
+        
+        // 写入月、日、时、分、秒 (Byte, 各1字节)
+        // Swift 的 month 是 1-12，完美对应自然月，不需要像 Android 的 Calendar 那样 +1[cite: 1]
         payload.append(UInt8(comps.month ?? 1))
         payload.append(UInt8(comps.day ?? 1))
         payload.append(UInt8(comps.hour ?? 0))
         payload.append(UInt8(comps.minute ?? 0))
         payload.append(UInt8(comps.second ?? 0))
         
-        // 封装成完整的传输帧 (ID = 1)[cite: 2]
+        // 封装成完整的传输帧 (ID = 1)[cite: 1]
         return wrapTxFrame(idFrame: ID_NAVIGATION, payload: payload)
     }
-    
-    // 生成主动断开连接帧[cite: 2]
-    static func buildDisconnectFrame() -> Data {
-        let payload = Data([1, 1])
-        return wrapTxFrame(idFrame: ID_DISCONNECT, payload: payload)
-    }
-    
+
     // 字符串截断与编码辅助方法[cite: 2]
     private static func encodeString(_ text: String) -> Data {
         // Android 中采用了 ISO_8859_1 或 UTF_8 编码，并限制最大 50 字节[cite: 2]
-        let data = text.data(using: .utf8) ?? Data()
+        let data = text.data(using: .isoLatin1) ?? text.data(using: .utf8) ?? Data()
         if data.count > 50 {
             return data.prefix(50)
         }
