@@ -160,10 +160,11 @@ class PreferenceView: UIView {
     }
 }
 
-class PTMotoNavigationViewController: PTBaseViewController,AMapNaviDriveDataRepresentable {
+class PTMotoNavigationViewController: PTBaseViewController {
 
     var routeIndicatorInfoArray = [RouteCollectionViewInfo]()
 
+    var currentSpeedLimit:UInt8 = 0
 //    lazy var tap:UIButton = {
 //        let view = UIButton(type: .custom)
 //        view.addActionHandlers { sender in
@@ -224,8 +225,28 @@ class PTMotoNavigationViewController: PTBaseViewController,AMapNaviDriveDataRepr
         view.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
         return view
     }()
-    private let homeButton = UIButton(type: .system)
-    private let officeButton = UIButton(type: .system)
+    private lazy var homeButton:UIButton = {
+        let view = UIButton(type: .system)
+        view.setTitle("🏠 回家", for: .normal)
+        view.backgroundColor = .systemBlue
+        view.setTitleColor(.white, for: .normal)
+        view.layer.cornerRadius = 8
+        view.addActionHandlers(handler: { _ in
+            self.routeToSavedLocation(key: "PT_HomeLocation")
+        })
+        return view
+    }()
+    private lazy var officeButton:UIButton = {
+        let view = UIButton(type: .system)
+        view.setTitle("🏢 去公司", for: .normal)
+        view.backgroundColor = .systemOrange
+        view.setTitleColor(.white, for: .normal)
+        view.layer.cornerRadius = 8
+        view.addActionHandlers(handler: { _ in
+            self.routeToSavedLocation(key: "PT_OfficeLocation")
+        })
+        return view
+    }()
     private lazy var startNavigationButton:UIButton = {
         let view = UIButton(type: .system)
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -237,6 +258,7 @@ class PTMotoNavigationViewController: PTBaseViewController,AMapNaviDriveDataRepr
         view.isHidden = true // 只有规划好路线才显示
         view.addActionHandlers(handler: { _ in
             self.startNavigationTapped()
+            self.driveView.isHidden = false
             AMapNaviDriveManager.sharedInstance().startGPSNavi()
         })
         return view
@@ -262,6 +284,7 @@ class PTMotoNavigationViewController: PTBaseViewController,AMapNaviDriveDataRepr
         view.autoZoomMapLevel = true
         view.trackingMode = AMapNaviViewTrackingMode.carNorth
         view.mapViewModeType = AMapNaviViewMapModeType.night
+        view.isHidden = true
         return view
     }()
 
@@ -275,8 +298,6 @@ class PTMotoNavigationViewController: PTBaseViewController,AMapNaviDriveDataRepr
     override func viewDidLoad() {
         super.viewDidLoad()
         setupLocationManager()
-//        self.compositeManager = AMapNaviCompositeManager.init()
-//        self.compositeManager.delegate = self
         AMapNaviDriveManager.sharedInstance().delegate = self
         AMapNaviDriveManager.sharedInstance().allowsBackgroundLocationUpdates = true
         AMapNaviDriveManager.sharedInstance().pausesLocationUpdatesAutomatically = false
@@ -284,8 +305,6 @@ class PTMotoNavigationViewController: PTBaseViewController,AMapNaviDriveDataRepr
         //将driveView添加为导航数据的Representative，使其可以接收到导航诱导数据
         AMapNaviDriveManager.sharedInstance().addDataRepresentative(driveView)
         AMapNaviDriveManager.sharedInstance().addDataRepresentative(self)
-
-//        self.compositeManager.presentRoutePlanViewController(withOptions: nil)
     }
     
     // MARK: - 初始化配置
@@ -301,19 +320,6 @@ class PTMotoNavigationViewController: PTBaseViewController,AMapNaviDriveDataRepr
         buttonStackView.axis = .horizontal
         buttonStackView.distribution = .fillEqually
         buttonStackView.spacing = 10
-
-        homeButton.setTitle("🏠 回家", for: .normal)
-        homeButton.backgroundColor = .systemBlue
-        homeButton.setTitleColor(.white, for: .normal)
-        homeButton.layer.cornerRadius = 8
-        homeButton.addTarget(self, action: #selector(homeButtonTapped), for: .touchUpInside)
-        
-        officeButton.setTitle("🏢 去公司", for: .normal)
-        officeButton.backgroundColor = .systemOrange
-        officeButton.setTitleColor(.white, for: .normal)
-        officeButton.layer.cornerRadius = 8
-        officeButton.addTarget(self, action: #selector(officeButtonTapped), for: .touchUpInside)
-        
         buttonStackView.addArrangedSubview(homeButton)
         buttonStackView.addArrangedSubview(officeButton)
 
@@ -358,18 +364,7 @@ class PTMotoNavigationViewController: PTBaseViewController,AMapNaviDriveDataRepr
             make.height.equalTo(300)
         }
     }
-    
-    // MARK: - 按钮交互逻辑
-    @objc private func homeButtonTapped() {
-        searchBar.resignFirstResponder()
-        routeToSavedLocation(key: "PT_HomeLocation")
-    }
-    
-    @objc private func officeButtonTapped() {
-        searchBar.resignFirstResponder()
-        routeToSavedLocation(key: "PT_OfficeLocation")
-    }
-    
+        
     @objc private func startNavigationTapped() {
         guard let destination = currentDestination else { return }
         // 核心调用：触发底层蓝牙发送逻辑
@@ -392,11 +387,10 @@ class PTMotoNavigationViewController: PTBaseViewController,AMapNaviDriveDataRepr
         }
         PTProgressHUD.show(text: "正在为您规划高德路线...")
         let endPoint = AMapNaviPoint.location(withLatitude: destination.latitude, longitude: destination.longitude)!
-        let value = AMapNaviDriveManager.sharedInstance().calculateDriveRoute(withStart: [userCurrentLocation],
-                                                                  end: [endPoint],
-                                                                  wayPoints: nil,
-                                                                  drivingStrategy: preferenceView.strategy(isMultiple: isMultipleRoutePlan))
-        PTNSLogConsole(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\(value)")
+        let _ = AMapNaviDriveManager.sharedInstance().calculateDriveRoute(withStart: [userCurrentLocation],
+                                                                          end: [endPoint],
+                                                                          wayPoints: nil,
+                                                                          drivingStrategy: preferenceView.strategy(isMultiple: isMultipleRoutePlan))
     }
     
     // MARK: - 数据持久化管理
@@ -411,6 +405,7 @@ class PTMotoNavigationViewController: PTBaseViewController,AMapNaviDriveDataRepr
     }
     
     private func routeToSavedLocation(key: String) {
+        searchBar.resignFirstResponder()
         guard let dict = UserDefaults.standard.dictionary(forKey: key) as? [String: Double],
               let lat = dict["lat"], let lon = dict["lon"] else {
             let alert = UIAlertController(title: "提示", message: "您尚未设置该地址，请先在搜索列表中长按或选择地址进行保存。", preferredStyle: .alert)
@@ -422,6 +417,7 @@ class PTMotoNavigationViewController: PTBaseViewController,AMapNaviDriveDataRepr
         let coordinate = CLLocationCoordinate2D(latitude: lat, longitude: lon)
         let name = key.contains("Home") ? "家" : "公司"
         planRoute(to: coordinate, title: name)
+        setPointPin(location: coordinate)
     }
 }
 
@@ -489,20 +485,7 @@ extension PTMotoNavigationViewController: UISearchBarDelegate, UITableViewDelega
     // 解析具体的坐标并路线规划
     private func performSearchAndRoute(completion: MAPointAnnotation) {
         self.planRoute(to: completion.coordinate, title: completion.title)
-        amapView.removeAnnotations(amapView.annotations)
-        let beginAnnotation = NaviPointAnnotation()
-        beginAnnotation.coordinate = CLLocationCoordinate2D(latitude: Double(userCurrentLocation.latitude), longitude: Double(userCurrentLocation.longitude))
-        beginAnnotation.title = "起始点"
-        beginAnnotation.naviPointType = .start
-        
-        amapView.addAnnotation(beginAnnotation)
-        
-        let endAnnotation = NaviPointAnnotation()
-        endAnnotation.coordinate = CLLocationCoordinate2D(latitude: Double(completion.coordinate.latitude), longitude: Double(completion.coordinate.longitude))
-        endAnnotation.title = "终点"
-        endAnnotation.naviPointType = .end
-        
-        amapView.addAnnotation(endAnnotation)
+        setPointPin(location: completion.coordinate)
     }
     
     // 解析具体的坐标并保存
@@ -512,6 +495,23 @@ extension PTMotoNavigationViewController: UISearchBarDelegate, UITableViewDelega
 }
 
 extension PTMotoNavigationViewController:MAMapViewDelegate {
+    func setPointPin(location: CLLocationCoordinate2D) {
+        amapView.removeAnnotations(amapView.annotations)
+        let beginAnnotation = NaviPointAnnotation()
+        beginAnnotation.coordinate = CLLocationCoordinate2D(latitude: Double(userCurrentLocation.latitude), longitude: Double(userCurrentLocation.longitude))
+        beginAnnotation.title = "起始点"
+        beginAnnotation.naviPointType = .start
+        
+        amapView.addAnnotation(beginAnnotation)
+        
+        let endAnnotation = NaviPointAnnotation()
+        endAnnotation.coordinate = location
+        endAnnotation.title = "终点"
+        endAnnotation.naviPointType = .end
+        
+        amapView.addAnnotation(endAnnotation)
+    }
+    
     func mapView(_ mapView: MAMapView!, rendererFor overlay: MAOverlay!) -> MAOverlayRenderer! {
         
         if let selectableOverlay = overlay as? SelectableOverlay {
@@ -714,6 +714,7 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
             
     func driveManager(_ manager: AMapNaviDriveManager?, onUpdateNaviSpeedLimitSection speed: Int) {
         PTNSLogConsole(">>>>>>>>>>>>>>>>>>>>>>>>>>>>\(speed)")
+        self.currentSpeedLimit = UInt8(speed)
     }
         
     private func convertAMapIconToPTManeuver(iconType: AMapNaviIconType) -> UInt8 {
@@ -765,28 +766,16 @@ extension PTMotoNavigationViewController : AMapNaviDriveViewDelegate {
     func driveView(_ view: AMapNaviDriveView, didChangeTo state: AMapNaviDriveViewState) {
         
     }
-    
 }
 
-extension PTMotoNavigationViewController {
-    func normalizedRemainDistance(_ remainDistance: Int) -> String {
-        guard remainDistance >= 0 else {
-            return ""
-        }
-        
-        if remainDistance >= 1000 {
-            var kiloMeter = Double(remainDistance) / 1000.0
-            
-            if remainDistance % 1000 >= 1000 {
-                kiloMeter -= 0.05
-                return String(format: "%.1f公里", kiloMeter)
+extension PTMotoNavigationViewController:AMapNaviDriveDataRepresentable {
+         
+    func driveManager(_ driveManager: AMapNaviDriveManager, update cameraInfos: [AMapNaviCameraInfo]?) {
+        if let firstCamera = cameraInfos?.first {
+            // cameraSpeed 通常代表该路段限速，为 0 时表示无限速或未知
+            if firstCamera.cameraSpeed > 0 {
+                self.currentSpeedLimit = UInt8(firstCamera.cameraSpeed)
             }
-            else {
-                return String(format: "%.0f公里", kiloMeter)
-            }
-        }
-        else {
-            return String(format: "%d米", remainDistance)
         }
     }
     
@@ -794,8 +783,34 @@ extension PTMotoNavigationViewController {
         guard let naviInfo = naviInfo else {
             return
         }
-        let remainDis = normalizedRemainDistance(naviInfo.routeRemainDistance)
-        PTNSLogConsole(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\(remainDis)")
-//        PTBluetoothServerManager.shared.sendNavigation(info: navInfo)
+        // --- 核心逻辑开始 ---
+        // 1. 获取距离下一个转弯动作的剩余距离 (米)
+        let distanceToNextManeuver = naviInfo.segmentRemainDistance
+        
+        // 2. 提取路名，并强制转为无声调拼音/英文，防止车机乱码
+        let rawNextRoad = naviInfo.nextRoadName ?? ""
+        let rawCurrentRoad = naviInfo.currentRoadName ?? ""
+        let safeNextRoad = rawNextRoad.toMotorcycleCompatiblePinyin()
+        let safeCurrentRoad = rawCurrentRoad.toMotorcycleCompatiblePinyin()
+        
+        // 3. 将高德的转向图标枚举转换为车机的动作码
+        let maneuverCode = convertAMapIconToPTManeuver(iconType: naviInfo.iconType)
+        
+        // 4. 组装车机数据模型 (限速字段使用全局变量 currentSpeedLimit)
+        let info = PTNavigationInfo(
+            nextManeuver: maneuverCode,
+            metersToNextManeuver: UInt32(max(0, distanceToNextManeuver)),
+            nameNextRoad: safeNextRoad,
+            nameCurrentRoad: safeCurrentRoad,
+            currentSpeedLimit: self.currentSpeedLimit,
+            distanceToDestination: UInt32(max(0, naviInfo.routeRemainDistance)),
+            estimatedTimeToDestinationSec: max(0, naviInfo.routeRemainTime)
+        )
+        
+        // 打印调试日志
+//        PTProgressHUD.show(text: "🚀 高德诱导 -> 动作: \(maneuverCode), 距转弯: \(distanceToNextManeuver)m, 限速: \(self.currentSpeedLimit)km/h")
+        
+        // 5. 核心动作：通过蓝牙将数据泵送给摩托车！
+        PTBluetoothServerManager.shared.sendNavigation(info: info)
     }
 }

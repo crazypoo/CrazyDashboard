@@ -12,6 +12,7 @@ import IQKeyboardToolbarManager
 import IQKeyboardManagerSwift
 import PooTools
 import IQKeyboardToolbar
+import DeviceKit
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -31,6 +32,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         IQKeyboardToolbarManager.shared.toolbarConfiguration.doneBarButtonConfiguration = IQBarButtonItemConfiguration(
             title: PTDashboardConfig.languageFunc(text: "完成")
         )
+        
+        PTAppBaseConfig.share.tab26Mode = true
+        PTAppBaseConfig.share.tabbarMetailMode = true
+        PTAppBaseConfig.share.tabSelectedMetailColor = .grayCA
+        PTAppBaseConfig.share.tabTopSpacing = Gobal_device_info.isFaceIDCapable ? 12 : 2.5
+        PTAppBaseConfig.share.tabBottomSpacing = Gobal_device_info.isFaceIDCapable ? 12 : 2.5
+        PTAppBaseConfig.share.tab26BottomSpacing = Gobal_device_info.isFaceIDCapable ? PTAppBaseConfig.share.tab26BottomSpacing : 0
+        PTAppBaseConfig.share.tabContentSpacing = 2
+        PTAppBaseConfig.share.tabNormalFont = .appfont(size: 10.adapter)
+        PTAppBaseConfig.share.tabSelectedFont = .appfont(size: 10.adapter,bold:true)
+        PTAppBaseConfig.share.tabNormalColor = .gray7F
+        PTAppBaseConfig.share.tabSelectedColor = .MainColor
 
         return true
     }

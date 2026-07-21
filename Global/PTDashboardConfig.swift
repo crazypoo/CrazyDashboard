@@ -11,6 +11,8 @@ import AttributedString
 
 extension UIColor {
     static let MainColor = DynamicColor(hexString: "FF6200")!
+    static let grayCA = DynamicColor(hexString: "cacaca")!
+    static let gray7F = DynamicColor(hexString: "7f7f7f")!
 }
 
 extension CGFloat {
