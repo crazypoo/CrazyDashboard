@@ -12,6 +12,15 @@ import SnapKit
 
 class PTMotoSettingViewController: PTBaseViewController {
 
+    lazy var appLogo:UIImageView = {
+        let view = UIImageView()
+        view.image = UIImage(named: "app_inside_logo")
+        view.bounds = .init(origin: .zero, size: .init(width: 108.adapter, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.contentMode = .scaleAspectFit
+        view.clipsToBounds = false
+        return view
+    }()
+
     open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
         return .solid(.clear)
     }
@@ -139,7 +148,8 @@ class PTMotoSettingViewController: PTBaseViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        PTGCDManager.shared.delayOnMain(time: 0.35) {
+        setLeftButtons(views: [appLogo])
+        PTGCDManager.shared.delayOnMain(time: 0.3) {
             self.changeStatusBar(type: .Dark)
         }
     }
@@ -220,10 +230,14 @@ class PTMotoSettingViewController: PTBaseViewController {
     
     func dashBoardSetResult(finish:Bool) {
         if finish {
-            PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "设置成功"))
-            self.globalChangeDashBoardData()
+            PTGCDManager.shared.delayOnMain(time: 0.55) {
+                PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "设置成功"))
+                self.globalChangeDashBoardData()
+            }
         } else {
-            PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "设置失败"))
+            PTGCDManager.shared.delayOnMain(time: 0.55) {
+                PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "设置失败"))
+            }
         }
     }
     

@@ -19,7 +19,7 @@ class PTBLEConnectViewController: PTBaseViewController {
         view.titleLabel?.font = .appfont(size: 14)
         view.titleLabel?.numberOfLines = 0
         view.setTitleColor(.white, for: .normal)
-        view.setTitle(PTDashboardConfig.languageFunc(text: "1.如果手机没连接摩托仪表盘的蓝牙，请先点击我去连接,摩托车仪表盘蓝牙名字大致有PEUGEOT字样"), for: .normal)
+        view.setTitle(PTDashboardConfig.languageFunc(text: "1.如果手机没连接摩托仪表盘的蓝牙，请先点击我去连接摩托车仪表盘蓝牙,名字大致有PEUGEOT字样,连接成功后返回该APP继续下一步。"), for: .normal)
         view.addActionHandlers(handler: { _ in
             let config = PTOpenSystemConfig()
             config.types = .Setting
@@ -45,8 +45,16 @@ class PTBLEConnectViewController: PTBaseViewController {
     
     lazy var appLogo:UIImageView = {
         let view = UIImageView()
-        view.backgroundColor = .random
+        view.image = UIImage(named: "app_inside_logo")
         view.bounds = .init(origin: .zero, size: .init(width: 108.adapter, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.contentMode = .scaleAspectFit
+        view.clipsToBounds = false
+        return view
+    }()
+    
+    lazy var appMotoLogo:UIImageView = {
+        let view = UIImageView()
+        view.image = UIImage(named: "app_connect_logo")
         view.contentMode = .scaleAspectFit
         view.clipsToBounds = false
         return view
@@ -79,10 +87,15 @@ class PTBLEConnectViewController: PTBaseViewController {
 
         view.backgroundColor = .black
         let buttonWidth = CGFloat.kSCREEN_WIDTH - PTAppBaseConfig.share.defaultViewSpace * 2
-        view.addSubviews([stepInfo,connectBLE,bleScanButton])
-        stepInfo.snp.makeConstraints { make in
+        view.addSubviews([appMotoLogo,stepInfo,connectBLE,bleScanButton])
+        appMotoLogo.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing)
+            make.height.equalTo(200.adapter)
+        }
+        stepInfo.snp.makeConstraints { make in
+            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.top.equalTo(self.appMotoLogo.snp.bottom).offset(CGFloat.GlobalItemSpacing)
         }
         connectBLE.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)

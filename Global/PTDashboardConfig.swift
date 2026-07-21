@@ -8,6 +8,7 @@
 import UIKit
 import PooTools
 import AttributedString
+import FlagKit
 
 extension UIColor {
     static let grayCA = DynamicColor(hexString: "cacaca")!
@@ -176,6 +177,38 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
         model.bottomLineHeight = bottomlineHeight
 
         return model
+    }
+
+    var lauguageModels:[PTLanguageModel] {
+        let cn = PTLanguageModel()
+        cn.name = "简体中文"
+        cn.keyName = "zh"
+        cn.localozableName = "zh-Hans"
+        cn.isSelected = PTMotoUserDefaultStruct.userSetLanguage == cn.keyName
+        cn.flag = Flag(countryCode: "CN")!.originalImage
+        
+        let cn_tw = PTLanguageModel()
+        cn_tw.name = "繁體中文"
+        cn_tw.keyName = "tw"
+        cn_tw.localozableName = "zh-Hant"
+        cn_tw.isSelected = PTMotoUserDefaultStruct.userSetLanguage == cn_tw.keyName
+        cn_tw.flag = Flag(countryCode: "TW")!.originalImage
+
+        let en = PTLanguageModel()
+        en.name = "English"
+        en.keyName = "en"
+        en.localozableName = "en"
+        en.isSelected = PTMotoUserDefaultStruct.userSetLanguage == en.keyName
+        en.flag = Flag(countryCode: "US")!.originalImage
+
+        let tr = PTLanguageModel()
+        tr.name = "Turkish"
+        tr.keyName = "tr"
+        tr.localozableName = "tr"
+        tr.isSelected = PTMotoUserDefaultStruct.userSetLanguage == tr.keyName
+        tr.flag = Flag(countryCode: "TR")!.originalImage
+
+        return [cn,cn_tw,tr,en]
     }
 
 }

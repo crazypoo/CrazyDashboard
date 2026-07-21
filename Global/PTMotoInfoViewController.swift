@@ -66,7 +66,7 @@ class PTMotoInfoViewController: PTBaseViewController {
         view.direction = .counterClockwise
         view.altitudeLabel.isHidden = true
         view.pressureLabel.isHidden = true
-        view.unitLabel.text = "RPM"
+        view.unitLabel.text = "x1000 r/min"
         view.maxSpeed = 10000
         view.tickStep = 400
         view.progressColor = PTDashboardConfig.shared.appMainColor
@@ -168,7 +168,7 @@ class PTMotoInfoViewController: PTBaseViewController {
     
     lazy var appLogo:UIImageView = {
         let view = UIImageView()
-        view.backgroundColor = .random
+        view.image = UIImage(named: "app_inside_logo")
         view.bounds = .init(origin: .zero, size: .init(width: 108.adapter, height: PTAppBaseConfig.share.navBarButtonSize))
         view.contentMode = .scaleAspectFit
         view.clipsToBounds = false

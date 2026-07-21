@@ -210,7 +210,6 @@ public class PTSpeedometerView: UIView {
     
     // MARK: - 绘制刻度
     private func drawScaleMarks(center: CGPoint, radius: CGFloat) {
-        // 防止除数为 0
         let safeStep = tickStep > 0 ? tickStep : 10.0
         let tickCount = Int(maxSpeed / safeStep)
         
@@ -218,7 +217,6 @@ public class PTSpeedometerView: UIView {
             let currentSpeed = CGFloat(i) * safeStep
             let speedRatio = currentSpeed / maxSpeed
             
-            // 根据方向决定角度是递增还是递减
             let angle: CGFloat
             if direction == .clockwise {
                 angle = arcStartAngle + (speedRatio * totalSweepAngle)
@@ -226,8 +224,6 @@ public class PTSpeedometerView: UIView {
                 angle = arcStartAngle - (speedRatio * totalSweepAngle)
             }
             
-            // 为了保证显示效果，建议主刻度逻辑也依赖于 step 的倍数，或者保持原有的 % 30 逻辑。
-            // 这里为了通用，当 step 为 10 或类似小值时，每 3 个 step 作为一个大刻度。
             let isMajorTick = (i % 3 == 0) || i == tickCount
             let tickLength: CGFloat = isMajorTick ? 14.0 : 6.0
             
@@ -248,18 +244,29 @@ public class PTSpeedometerView: UIView {
             
             // 绘制文字 (只在主刻度绘制)
             if isMajorTick {
-                let textRadius = radius - tickLength - 16
+                let textRadius = radius - tickLength - 22
                 let textCenter = CGPoint(x: center.x + textRadius * cos(angle),
                                          y: center.y + textRadius * sin(angle))
                 
                 let textLayer = CATextLayer()
-                textLayer.string = "\(Int(currentSpeed))"
+                
+                // 🚨 核心优化：智能数值换算器
+                // 如果满表数值 >= 1000，刻度盘自动除以 1000 显示 (例如 12000 -> 12)
+                let displayValue: Int
+                if maxSpeed >= 1000 {
+                    displayValue = Int(currentSpeed) / 1000
+                } else {
+                    displayValue = Int(currentSpeed)
+                }
+                
+                textLayer.string = "\(displayValue)"
                 textLayer.font = UIFont.systemFont(ofSize: 14, weight: .bold)
                 textLayer.fontSize = 14
                 textLayer.foregroundColor = UIColor.white.cgColor
                 textLayer.alignmentMode = .center
                 textLayer.contentsScale = UIScreen.main.scale
                 
+                // 文本框宽度可以恢复到 36，因为除以 1000 后，最大的数字也就是两位数 (如 12)
                 let textWidth: CGFloat = 36
                 let textHeight: CGFloat = 16
                 textLayer.frame = CGRect(x: textCenter.x - textWidth/2,
@@ -270,7 +277,7 @@ public class PTSpeedometerView: UIView {
             }
         }
     }
-    
+
     // MARK: - 更新数据
     public func updateSpeed(_ currentSpeed: CGFloat, animated: Bool = true) {
         currentSpeedRaw = currentSpeed

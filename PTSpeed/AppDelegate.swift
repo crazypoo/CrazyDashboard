@@ -19,6 +19,24 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        
+        if PTMotoUserDefaultStruct.appFirst {
+            PTLanguage.share.language = PTLocale.en.rawValue
+            let currentPhoneLanguage = PTLanguage.defaultLanguage()
+            let keyName = PTLocale.en.rawValue
+            let localozableName = PTLocale.en.rawValue
+            
+            if let findModel = PTDashboardConfig.shared.lauguageModels.first(where: { $0.localozableName == currentPhoneLanguage }) {
+                PTLanguage.share.language = findModel.localozableName
+                PTMotoUserDefaultStruct.userSetLanguage = findModel.keyName
+            } else {
+                PTLanguage.share.language = localozableName
+                PTMotoUserDefaultStruct.userSetLanguage = keyName
+            }
+            
+            PTMotoUserDefaultStruct.appFirst.toggle()
+        }
+        
         AMapNaviManagerConfig.shared().updatePrivacyShow(AMapPrivacyShowStatus.didShow, privacyInfo: AMapPrivacyInfoStatus.didContain)
         AMapNaviManagerConfig.shared().updatePrivacyAgree(.didAgree)
         AMapServices.shared().apiKey = "b634e7bfe8637676248d4360bd6ee65c"
