@@ -10,7 +10,6 @@ import PooTools
 import AttributedString
 
 extension UIColor {
-    static let MainColor = DynamicColor(hexString: "FF6200")!
     static let grayCA = DynamicColor(hexString: "cacaca")!
     static let gray7F = DynamicColor(hexString: "7f7f7f")!
 }
@@ -76,6 +75,28 @@ extension PTProgressHUD {
 class PTDashboardConfig: NSObject,@unchecked Sendable  {
     static let shared = PTDashboardConfig()
     
+    var appMainColor:DynamicColor {
+        return PTBluetoothServerManager.shared.latestData3?.dashboardColor.getColor() ?? PTDashboardColor.blue.getColor()
+    }
+    
+    var appUniIsMetric:Bool {
+        return PTBluetoothServerManager.shared.latestData3?.isMetric ?? true
+    }
+    
+    var appShowUniLabel:String {
+        return PTDashboardConfig.shared.appUniIsMetric ? PTConfigUnit.imperial.getTypeName() : PTConfigUnit.metric.getTypeName()
+    }
+    
+    func appShowMileage(_ km:Double) -> Double {
+        let value = appUniIsMetric ? km * kmToMilOffset : km
+        return value
+    }
+    
+    func appShowMileageValueString(_ km:Double) -> String{
+        let value = PTDashboardConfig.shared.appShowMileage(km)
+        return String(format: "%.2f", value)
+    }
+    
     @MainActor class func baseNormalCellModel(leftSpacing:CGFloat? = nil,
                                               contentLeftSpacing:CGFloat = 0,
                                               name:String = "",
@@ -95,7 +116,7 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
                                               accessoryType:PTFusionShowAccessoryType = .NoneAccessoryView,
                                               accessoryImage:Any? = nil,
                                               accessorySize:CGSize = CGSizeMake(14, 14),
-                                              switchThumbTintColor:DynamicColor = .MainColor,
+                                              switchThumbTintColor:DynamicColor? = nil,
                                               switchOnTinColor:DynamicColor = .lightGray,
                                               switchTintColor:DynamicColor = .lightGray,
                                               rightSapcing:CGFloat = 0,
@@ -137,7 +158,7 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
         model.accessoryType = accessoryType
         switch accessoryType {
         case .Switch:
-            model.switchThumbTintColor = switchThumbTintColor
+            model.switchThumbTintColor = switchThumbTintColor ?? PTDashboardConfig.shared.appMainColor
             model.switchOnTinColor = switchOnTinColor
             model.switchTintColor = switchTintColor
         case .DisclosureIndicator:

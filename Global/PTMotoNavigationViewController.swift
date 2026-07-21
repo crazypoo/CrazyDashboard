@@ -149,7 +149,7 @@ class PreferenceView: UIView {
         reBtn.layer.cornerRadius = 5
         reBtn.setTitle(title, for: .normal)
         reBtn.setTitleColor(UIColor.white, for: .normal)
-        reBtn.setTitleColor(.MainColor, for: .selected)
+        reBtn.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .selected)
         reBtn.titleLabel?.font = .appfont(size: 13)
         
         return reBtn
@@ -157,7 +157,7 @@ class PreferenceView: UIView {
     
     private func changeButtonState(_ button: UIButton, selected: Bool) {
         button.isSelected = selected
-        button.layer.borderColor = button.isSelected ? UIColor.MainColor.cgColor : UIColor.lightGray.cgColor
+        button.layer.borderColor = button.isSelected ? PTDashboardConfig.shared.appMainColor.cgColor : UIColor.lightGray.cgColor
     }
 }
 
@@ -206,7 +206,7 @@ class PTMotoNavigationViewController: PTBaseViewController {
         view.searchBarTextFieldBorderColor = .clear
         view.searchBarTextFieldCornerRadius = PTAppBaseConfig.share.navBarButtonSize / 2
         view.searchBarTextFieldBorderWidth = 0
-        view.cursorColor = .MainColor
+        view.cursorColor = PTDashboardConfig.shared.appMainColor
         view.searchTextColor = .black
         view.bounds = .init(origin: .zero, size: .init(width: 100, height: PTAppBaseConfig.share.navBarButtonSize))
         return view
@@ -289,7 +289,7 @@ class PTMotoNavigationViewController: PTBaseViewController {
         let baseImage = UIImage(.testtube._2)
         let view = UIButton(type: .custom)
         view.setImage(baseImage.withTintColor(.lightGray, renderingMode: .alwaysOriginal), for: .normal)
-        view.setImage(baseImage.withTintColor(.MainColor, renderingMode: .alwaysOriginal), for: .selected)
+        view.setImage(baseImage.withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal), for: .selected)
         view.isSelected = false
         view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers(handler: { sender in
@@ -750,17 +750,24 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
         case .rightFront:
             return PTManeuverMap.lightRight
         case .leftBack:
-            return PTManeuverMap.heavyLeft
+            return PTManeuverMap.heavyLeft // 0x0C 急左转
         case .rightBack:
-            return PTManeuverMap.heavyRight
+            return PTManeuverMap.heavyRight // 0x07 急右转[cite: 2]
         case .entryLeftRingUTurn:
             return PTManeuverMap.uTurnLeft
         case .entryLeftRingRight:
             return PTManeuverMap.uTurnRight
         case .arrivedWayPoint:
-            return PTManeuverMap.straight // 到达途经点，通常保持直行即可
+            return PTManeuverMap.straight
         case .arrivedDestination:
-            return PTManeuverMap.arrive
+            return PTManeuverMap.arrive // 0x2C 到达[cite: 2]
+        // 🚨 新增：环岛处理逻辑
+        case .enterRoundabout:
+            // 协议规定右侧环岛 1 号出口为 0x13[cite: 2]。
+            // 如果高德在 AMapNaviInfo 中提供了环岛出口编号 (ringRoundaboutExitCount)，你可以动态加上该编号减 1。
+            // 这里提供基础的 1 号出口映射作为安全回退机制。
+            return PTManeuverMap.roundaboutRightBase
+            
         default:
             return PTManeuverMap.straight
         }

@@ -17,7 +17,7 @@ class PTGlobalActionHeader: PTBaseCollectionReusableView {
         let view = UILabel()
         view.font = .appfont(size: 14)
         view.textAlignment = .left
-        view.textColor = .MainColor
+        view.textColor = PTDashboardConfig.shared.appMainColor
         return view
     }()
     

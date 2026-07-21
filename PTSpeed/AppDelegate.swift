@@ -43,7 +43,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         PTAppBaseConfig.share.tabNormalFont = .appfont(size: 10.adapter)
         PTAppBaseConfig.share.tabSelectedFont = .appfont(size: 10.adapter,bold:true)
         PTAppBaseConfig.share.tabNormalColor = .gray7F
-        PTAppBaseConfig.share.tabSelectedColor = .MainColor
+        PTAppBaseConfig.share.tabSelectedColor = PTDashboardConfig.shared.appMainColor
 
         return true
     }

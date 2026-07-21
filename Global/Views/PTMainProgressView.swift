@@ -36,7 +36,7 @@ class PTMainProgressView: UIView {
     
     lazy var dataProgress:PTProgressBar = {
         let view = PTProgressBar(showType: .Horizontal)
-        view.barColor = .MainColor
+        view.barColor = PTDashboardConfig.shared.appMainColor
         return view
     }()
     

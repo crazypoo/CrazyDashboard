@@ -13,21 +13,21 @@ class PTMotoBaseTabbarController: PTBaseTabBarViewController {
     
     func tabbarItems() -> [PTTabBarItemConfig] {
         let homeNormalImage = UIImage(.car).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
-        let homeSelectedImage = UIImage(.car).withTintColor(.MainColor, renderingMode: .alwaysOriginal)
+        let homeSelectedImage = UIImage(.car).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
         let homeTitle = "Moto"
         let home = PTMotoInfoViewController()
         let homeNav = PTBaseNavControl(rootViewController: home)
         let homeTab = PTTabBarItemConfig(title: homeTitle, content: PTTabBarImageContent(normal: homeNormalImage, selected: homeSelectedImage),viewController: homeNav)
         
         let navigationNormalImage = UIImage(.map).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
-        let navigationSelectedImage = UIImage(.map).withTintColor(.MainColor, renderingMode: .alwaysOriginal)
+        let navigationSelectedImage = UIImage(.map).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
         let navigationTitle = "Navigation"
         let navigation = PTMotoNavigationViewController()
         let navigationNav = PTBaseNavControl(rootViewController: navigation)
         let navigationTab = PTTabBarItemConfig(title: navigationTitle, content: PTTabBarImageContent(normal: navigationNormalImage, selected: navigationSelectedImage),viewController: navigationNav)
                 
         let settingNormalImage = UIImage(.gear).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
-        let settingSelectedImage = UIImage(.gear).withTintColor(.MainColor, renderingMode: .alwaysOriginal)
+        let settingSelectedImage = UIImage(.gear).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
         let settingTitle = "Setting"
         let setting = PTMotoSettingViewController()
         let settingNav = PTBaseNavControl(rootViewController: setting)

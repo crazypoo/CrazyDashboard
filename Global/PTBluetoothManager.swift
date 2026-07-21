@@ -16,34 +16,137 @@ let MotorcycleDATA3 = NSNotification.Name("MotorcycleDATA3")
 let MotorcycleCONTROL = NSNotification.Name("MotorcycleCONTROL")
 let MotorcycleABS = NSNotification.Name("MotorcycleABS")
 
+let kmToMilOffset:Double = 0.621371
+
+enum PTDashboardColor: String {
+    case blue = "Blue"
+    case gold = "Gold"
+    case red = "Red"
+    
+    func getColor() -> UIColor {
+        switch self {
+        case .blue:
+            return .systemBlue
+        case .gold:
+            return .GoldColor
+        case .red:
+            return .systemRed
+        }
+    }
+}
+
+// MARK: - 主动配置指令模型
+/// 车机下发配置的枚举参数 (注意：这里的颜色值与状态回传帧的位掩码值不同)[cite: 2]
+enum PTConfigColor: UInt8 {
+    case red = 1
+    case blue = 2
+    case gold = 3
+}
+
+enum PTConfigUnit: UInt8 {
+    case metric = 1   // 公制 (Km)[cite: 2]
+    case imperial = 2 // 英制 (Mil)[cite: 2]
+    
+    func getTypeName() -> String {
+        switch self {
+        case .metric:
+            return "Km"
+        case .imperial:
+            return "Mil"
+        }
+    }
+}
+
+enum PTConfigLanguage: UInt8 {
+    case english = 1
+    case french = 2
+    case german = 3
+    case spanish = 4
+    case italian = 5
+}
+
+// MARK: - ANCS 通知数据模型
+/// 映射来电、短信等系统通知
+struct PTAncsNotif {
+    let uid: UInt32
+    let title: String
+    let message: String
+    let category: UInt8 // 例如：1 代表 Call，4 代表 Social
+    let appId: String
+}
+
 // MARK: - 导航与状态数据模型
 struct PTDashboardControl {
+    /// 当前车速 (数值取决于仪表盘的单位设置，可能是 km/h 或 mph)
     let vehicleSpeedKmh: Double
+    /// 引擎实时转速 (RPM)
     let engineRpm: Int
 }
 
 struct PTDashboardData1 {
+    /// 单次行程里程 (小计里程 / Trip)
     let tripKm: Double
+    /// 车辆总行驶里程 (总里程 / ODO) - 已完美融合安卓的 odo1 和 odo2
     let odoKm: Double
+    /// 当前油量百分比 (0% - 100%)
     let fuelLevelPct: Int
+    /// 平均油耗 (L/100km)
     let avgConsumptionLt: Double
 }
 
 struct PTDashboardData2 {
+    /// 电瓶电压 (V)
     let batteryVolt: Double
+    /// 车外环境温度 (摄氏度 °C)
     let outsideTempC: Int
+    /// 引擎状态枚举原始值 (需通过 PTDashboardLabels.engineStatusLabel 解析)
+    /// 0:未启动, 1:启动中, 2:运转中, 3:关闭中
     let engineStatus: Int
+    /// 保养状态原始值 (需通过 PTDashboardLabels.maintenanceLabel 解析)
     let maintenance: Int
 }
 
 struct PTDashboardData3 {
+    /// 剩余预估续航里程
     let autonomyKm: Double
+    /// 距离下次保养的剩余里程
     let distToMaintenance: Int
+    /// 仪表盘颜色与测量单位的混合原始值 (Color & Measure)
     let colorMeasur: Int
+    /// 当前系统语言设置原始值
     let language: Int
+    /// [新增] 解析出的里程表单位制：true 为公制(公里/Km)，false 为英制(英里/Mil)
+    var isMetric: Bool {
+        // 如果包含 0x08 标志位，则是英里，否则是公里
+        return (colorMeasur & 0x08) == 0
+    }
+    
+    /// [新增] 直接获取用于 UI 展示的单位字符串 ("Km" 或 "Mil")
+    var unitString: String {
+        return PTDashboardLabels.unitLabel(c: colorMeasur)
+    }
+    
+    var dashboardColor: PTDashboardColor {
+        // 使用 0xC0 掩码提取最高两位
+        let colorMask = colorMeasur & 0xC0
+        
+        switch colorMask {
+        case 0x00:
+            return .blue
+        case 0x40:
+            return .gold
+        case 0x80:
+            return .red
+        case 0xC0:
+            return .blue // 未定义状态，安全回退为 Blue
+        default:
+            return .blue // 兜底保护
+        }
+    }
 }
 
 struct PTAbsStatus {
+    /// ABS 状态原始值 (1:正常, 2:故障)
     let absRaw: Int
 }
 
@@ -72,7 +175,7 @@ struct PTDashboardLabels {
     }
     
     static func unitLabel(c: Int) -> String {
-        return (c & 0x08) != 0 ? "英里 (Mil)" : "公里 (Km)"
+        return (c & 0x08) != 0 ? "Mil" : "Km"
     }
     
     static func languageLabel(r: Int) -> String {
@@ -106,16 +209,23 @@ enum PTManeuverMap {
     static let keepRight: UInt8 = 4
     static let lightRight: UInt8 = 5
     static let quiteRight: UInt8 = 6
-    static let heavyRight: UInt8 = 7
+    static let heavyRight: UInt8 = 7   // 急右转
     static let keepMiddle: UInt8 = 8
     static let keepLeft: UInt8 = 9
     static let lightLeft: UInt8 = 10
     static let quiteLeft: UInt8 = 11
-    static let heavyLeft: UInt8 = 12
-    static let start: UInt8 = 43
-    static let arrive: UInt8 = 44
-    static let ferry: UInt8 = 45
-    static let calculating: UInt8 = 47
+    static let heavyLeft: UInt8 = 12   // 急左转
+    
+    // 🚨 新增：环岛基础动作[cite: 2]
+    static let roundaboutRightBase: UInt8 = 0x13 // 右侧环岛起始 (13~1E 代表 1~12 出口)
+    static let roundaboutLeftBase: UInt8 = 0x1F  // 左侧环岛起始 (1F~2A 代表 1~12 出口)
+    
+    // 🚨 新增：特殊状态指令[cite: 2]
+    static let depart: UInt8 = 43       // 0x2B 出发
+    static let arrive: UInt8 = 44       // 0x2C 到达
+    static let ferry: UInt8 = 45        // 0x2D 轮渡 (推测)
+    static let returnToRoute: UInt8 = 46// 0x2E 回到路线
+    static let noValidAction: UInt8 = 47// 0x2F 无有效动作
 }
 
 // MARK: - 安全认证中心 (完整版)
@@ -292,8 +402,9 @@ extension PTFrameBuilder {
         payload.append(info.nextManeuver)
         
         // 2. Maneuver Distance (距下一动作距离): [Hdr=4][4-byte Dist 大端序][cite: 1]
+        let roundedNextDist = (info.metersToNextManeuver / 5) * 5
         payload.append(4)
-        var dist = info.metersToNextManeuver.bigEndian
+        var dist = roundedNextDist.bigEndian
         payload.append(Data(bytes: &dist, count: MemoryLayout<UInt32>.size))
         
         // 3. Next Road (下一道路): [Size][Text] (最大 50 字节，注意这里没有 Hdr)[cite: 1]
@@ -349,6 +460,54 @@ extension PTFrameBuilder {
     }
 }
 
+// MARK: - ANCS 封包扩展 (补充至 PTFrameBuilder)
+extension PTFrameBuilder {
+    /// 构建 ANCS Notification Source 帧 (通知到达信号)
+    static func buildAncsNotifSourceFrame(notif: PTAncsNotif, eventId: UInt8 = 0) -> Data {
+        var bb = Data()
+        bb.append(eventId) // 0: Added, 1: Modified, 2: Removed
+        bb.append(2)       // EventFlags: Important
+        bb.append(notif.category)
+        bb.append(1)       // CategoryCount
+        
+        // 🚨 注意：ANCS 协议底层强制使用 Little-Endian (小端序)
+        var uidLittleEndian = notif.uid.littleEndian
+        bb.append(Data(bytes: &uidLittleEndian, count: MemoryLayout<UInt32>.size))
+        return bb
+    }
+    
+    /// 构建 ANCS Data Source 帧 (通知详细内容，如来电人姓名、短信内容)
+    static func buildAncsDataSourceFrame(notif: PTAncsNotif, attrId: UInt8) -> Data {
+        let text: String
+        switch attrId {
+        case 0: text = notif.appId
+        case 1: text = notif.title
+        case 3: text = notif.message
+        default: text = ""
+        }
+        
+        // 使用 UTF-8 编码，最大截断 250 字节
+        let textData = text.data(using: .utf8)?.prefix(250) ?? Data()
+        
+        var bb = Data()
+        bb.append(0) // CommandID: GetNotificationAttributes
+        
+        // 写入 UID (小端序)
+        var uidLittleEndian = notif.uid.littleEndian
+        bb.append(Data(bytes: &uidLittleEndian, count: MemoryLayout<UInt32>.size))
+        
+        bb.append(attrId)
+        
+        // 写入字符串长度 (2 字节小端序)
+        var lengthLittleEndian = UInt16(textData.count).littleEndian
+        bb.append(Data(bytes: &lengthLittleEndian, count: MemoryLayout<UInt16>.size))
+        
+        // 写入字符串内容
+        bb.append(textData)
+        return bb
+    }
+}
+
 // MARK: - 3. 核心蓝牙服务端 (复刻 ScooterGattServer.kt)
 enum PTAuthState {
     case waitKeyId      // 等待车机发送 8758
@@ -377,6 +536,20 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     let UART_RX_CREDITS = CBUUID(string: "00000003-0000-1000-8000-008025000000")
     let UART_TX_CREDITS = CBUUID(string: "00000004-0000-1000-8000-008025000000")
     
+    // MARK: - ANCS 风格服务真实 UUID
+    let ANCS_SERVICE = CBUUID(string: "7905F431-B5CE-4E99-A40F-4B1E122D00D0")
+    let ANCS_NOTIF_SOURCE = CBUUID(string: "9FBF120D-6301-42D9-8C58-25E699A21DBD")
+    let ANCS_CONTROL_POINT = CBUUID(string: "69D1D8F3-45E1-49A8-9821-9BBDFDAAD9D9")
+    let ANCS_DATA_SOURCE = CBUUID(string: "22EAC6E9-24D6-4BB5-BE44-B36ACE7C7BFB")
+
+    // ANCS 特征通道
+    var ancsNotifChar: CBMutableCharacteristic!
+    var ancsControlChar: CBMutableCharacteristic! // 新增
+    var ancsDataChar: CBMutableCharacteristic!
+    
+    // 🚨 新增：用于缓存当前活跃的通知，等待车机来主动拉取内容
+    private var activeNotifications = [UInt32: PTAncsNotif]()
+
     var peripheralManager: CBPeripheralManager!
     let auth = PTScooterAuth()
     
@@ -468,6 +641,34 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         let service = CBMutableService(type: TIO_SERVICE, primary: true)
         service.characteristics = [rxChar, txChar, rxCreditsChar, txCreditsChar]
         peripheralManager.add(service)
+        
+        // --- 挂载并行的 ANCS 风格服务 ---
+        ancsNotifChar = CBMutableCharacteristic(
+            type: ANCS_NOTIF_SOURCE,
+            properties: [.notifyEncryptionRequired],
+            value: nil,
+            permissions: [.readEncryptionRequired]
+        )
+        
+        // 🚨 新增：允许车机写入的控制通道 (Android 中使用的是 136，即 Write + ExtendedProps)[cite: 3]
+        ancsControlChar = CBMutableCharacteristic(
+            type: ANCS_CONTROL_POINT,
+            properties: [.write],
+            value: nil,
+            permissions: [.writeEncryptionRequired]
+        )
+        
+        ancsDataChar = CBMutableCharacteristic(
+            type: ANCS_DATA_SOURCE,
+            properties: [.notifyEncryptionRequired],
+            value: nil,
+            permissions: [.readEncryptionRequired]
+        )
+        
+        let ancsService = CBMutableService(type: ANCS_SERVICE, primary: true)
+        ancsService.characteristics = [ancsNotifChar, ancsControlChar, ancsDataChar]
+        peripheralManager.add(ancsService)
+        
         ptLog("🛠️ [DEBUG] 通道搭建完毕 (iOS 强制加密挂载完成)")
     }
     
@@ -509,10 +710,67 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
                     if localCredits <= 4 { grantScooterCredits() }
                 }
                 handleIncoming(data: data)
+            } else if request.characteristic.uuid == ANCS_CONTROL_POINT {
+                handleAncsControlPoint(value: data)
             }
         }
     }
     
+    // MARK: - ANCS 控制点交互逻辑
+    /// 解析车机发来的文本拉取请求，并回传真实的 Data Source 帧
+    private func handleAncsControlPoint(value: Data) {
+        ptLog("ANCS 📲 [交互] 摩托车主动请求获取通知内容！")
+        
+        // 车机发来的请求至少需要 6 个字节 (1 字节 CommandID + 4 字节 UID + 1 字节 AttrID)[cite: 3]
+        guard value.count >= 6 else { return }
+        
+        // Android 校验了 CommandID 必须为 0[cite: 3]
+        let commandId = value[0]
+        if commandId != 0 { return }
+        
+        // 提取小端序的 4 字节 UID
+        let uidData = value.subdata(in: 1..<5)
+        let uid = uidData.withUnsafeBytes { $0.load(as: UInt32.self) }.littleEndian
+        
+        // 提取车机想要的属性 ID (比如 1 是要标题，3 是要正文内容)[cite: 3]
+        let attrId = value[5]
+        
+        // 从我们的缓存字典中找到这条通知
+        if let notif = activeNotifications[uid] {
+            // 使用之前写好的 Builder 组装包含真实文本的帧
+            let resp = PTFrameBuilder.buildAncsDataSourceFrame(notif: notif, attrId: attrId)
+            
+            // 加入发送队列，推给车机的 ANCS_DATA_SOURCE 通道[cite: 3]
+            sendChunkedData(data: resp, to: ancsDataChar)
+        } else {
+            ptLog("⚠️ [ANCS] 找不到 UID 为 \(uid) 的缓存通知")
+        }
+    }
+    
+    /// 模拟推送一个来电通知到摩托车仪表盘
+    func simulateIncomingCall(callerName: String, phoneNumber: String) {
+        guard authenticated else { return }
+        
+        // 1. 生成唯一 UID
+        let uid = UInt32.random(in: 1000...9999)
+        
+        // 2. 构建模型并缓存到字典中
+        let callNotif = PTAncsNotif(
+            uid: uid,
+            title: callerName,
+            message: phoneNumber,
+            category: 1,
+            appId: "com.apple.mobilephone"
+        )
+        activeNotifications[uid] = callNotif
+        
+        // 3. 仅仅发送 Notification Source (铃声响起信号)[cite: 3]
+        let sourceFrame = PTFrameBuilder.buildAncsNotifSourceFrame(notif: callNotif, eventId: 0)
+        sendChunkedData(data: sourceFrame, to: ancsNotifChar)
+        
+        ptLog("📞 [ANCS 测试] 已发送来电信号 UID:\(uid)，等待车机主动拉取内容...")
+    }
+
     // MARK: - 身份验证状态机
     private func handleIncoming(data: Data) {
         if authenticated {
@@ -655,9 +913,9 @@ extension PTBluetoothServerManager {
     }
     
     
-    func sendConfiguration(color: UInt8, unit: UInt8, language: UInt8) {
+    func sendConfiguration(color: PTConfigColor, unit: PTConfigUnit, language: PTConfigLanguage) {
         guard authenticated else { return }
-        let frame = PTFrameBuilder.buildConfigurationFrame(color: color, unit: unit, language: language)
+        let frame = PTFrameBuilder.buildConfigurationFrame(color: color.rawValue, unit: unit.rawValue, language: language.rawValue)
         sendChunkedData(data: frame, to: txChar)
     }
 
