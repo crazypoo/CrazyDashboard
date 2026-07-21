@@ -234,6 +234,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 self.dashLanguageTitle.text = PTDashboardConfig.languageFunc(text: "casa_card_lan")
                 self.dashBoadColorTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_color_set_title")
                 self.dashUniTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_set_title")
+                self.disconnect.setTitle(PTDashboardConfig.languageFunc(text: "button_dis_connect"), for: .normal)
             }
         }
         vcDidLoad = true

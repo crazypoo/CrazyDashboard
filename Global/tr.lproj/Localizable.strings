@@ -1,5 +1,11 @@
 
+"address_empty" = "Henüz adresi belirlemediniz. Kaydetmek için lütfen uzun basın veya arama listesindeki adresi seçin.";
+"address_end" = "Varış noktası";
+"address_option" = "Lütfen gerçekleştirmek istediğiniz işlemi seçin.";
+"address_set_success" = "Adres başarıyla %@ olarak ayarlandı";
+"address_start" = "Başlangıç noktası";
 "alert_loading" = "Yükleniyor......";
+"alert_title" = "OPPS！！！！";
 "button_cancel" = "Iptal etmek";
 "button_confirm" = "Doğrulamak";
 "button_dis_connect" = "Bluetooth bağlantısını kesin";
@@ -23,6 +29,11 @@
 "dashboard_color_set_title" = "Gösterge tablosu renk ayarları";
 "dashboard_set_title" = "Gösterge tablosu kilometre birimi";
 "language_set_title" = "Dil ayarları";
+"route_plan1" = "Trafik sıkışıklığından kaçının";
+"route_plan2" = "Şarj etmekten kaçının";
+"route_plan3" = "Otoyola girme.";
+"route_plan4" = "Yüksek hız önceliği";
+"search_placeholder" = "Arama adresi...";
 "set_bad" = "Ayarlanamadı";
 "set_success" = "Başarılı ayar";
 "tab_navigation" = "Seyrüsefer";

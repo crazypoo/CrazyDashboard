@@ -59,6 +59,13 @@ class PreferenceView: UIView {
         super.init(frame: frame)
         
         buildPreferenceView()
+        
+        pt_viewObserverLanguage {
+            self.avoidCongestion.setTitle(PTDashboardConfig.languageFunc(text: "route_plan1"), for: .normal)
+            self.avoidCost.setTitle(PTDashboardConfig.languageFunc(text: "route_plan2"), for: .normal)
+            self.avoidHighway.setTitle(PTDashboardConfig.languageFunc(text: "route_plan3"), for: .normal)
+            self.prioritiseHighway.setTitle(PTDashboardConfig.languageFunc(text: "route_plan4"), for: .normal)
+        }
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -78,7 +85,7 @@ class PreferenceView: UIView {
         
         let singleWidth = (CGFloat.kSCREEN_WIDTH - PTAppBaseConfig.share.defaultViewSpace * 2 - CGFloat(itemCount + 1) * CGFloat.GlobalItemSpacing - 44 * 2 - CGFloat.GlobalItemSpacing) / CGFloat(itemCount)
         
-        avoidCongestion = buttonForTitle("躲避拥堵")
+        avoidCongestion = buttonForTitle(PTDashboardConfig.languageFunc(text: "route_plan1"))
         avoidCongestion.addTarget(self, action: #selector(self.avoidCongestionAction(sender:)), for: .touchUpInside)
         addSubview(avoidCongestion)
         avoidCongestion.snp.makeConstraints { make in
@@ -87,7 +94,7 @@ class PreferenceView: UIView {
             make.width.equalTo(singleWidth)
         }
         
-        avoidCost = buttonForTitle("避免收费")
+        avoidCost = buttonForTitle(PTDashboardConfig.languageFunc(text: "route_plan2"))
         avoidCost.addTarget(self, action: #selector(self.avoidCostAction(sender:)), for: .touchUpInside)
         addSubview(avoidCost)
         avoidCost.snp.makeConstraints { make in
@@ -95,7 +102,7 @@ class PreferenceView: UIView {
             make.top.bottom.width.equalTo(self.avoidCongestion)
         }
         
-        avoidHighway = buttonForTitle("不走高速")
+        avoidHighway = buttonForTitle(PTDashboardConfig.languageFunc(text: "route_plan3"))
         avoidHighway.addTarget(self, action: #selector(self.avoidHighwayAction(sender:)), for: .touchUpInside)
         addSubview(avoidHighway)
         avoidHighway.snp.makeConstraints { make in
@@ -103,7 +110,7 @@ class PreferenceView: UIView {
             make.top.bottom.width.equalTo(self.avoidCongestion)
         }
 
-        prioritiseHighway = buttonForTitle("高速优先")
+        prioritiseHighway = buttonForTitle(PTDashboardConfig.languageFunc(text: "route_plan4"))
         prioritiseHighway.addTarget(self, action: #selector(self.prioritiseHighwayAction(sender:)), for: .touchUpInside)
         addSubview(prioritiseHighway)
         prioritiseHighway.snp.makeConstraints { make in
@@ -150,7 +157,7 @@ class PreferenceView: UIView {
         reBtn.setTitle(title, for: .normal)
         reBtn.setTitleColor(UIColor.white, for: .normal)
         reBtn.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .selected)
-        reBtn.titleLabel?.font = .appfont(size: 13)
+        reBtn.titleLabel?.font = .appfont(size: 10)
         
         return reBtn
     }
@@ -161,7 +168,7 @@ class PreferenceView: UIView {
     }
 }
 
-class PTMotoNavigationViewController: PTBaseViewController {
+class PTMotoNavigationViewController: PTMotoBaseViewController {
 
     var routeIndicatorInfoArray = [RouteCollectionViewInfo]()
 
@@ -195,7 +202,7 @@ class PTMotoNavigationViewController: PTBaseViewController {
     // MARK: - UI 组件
     private lazy var searchBar:PTSearchBar = {
         let view = PTSearchBar()
-        view.searchPlaceholder = "搜索地址..."
+        view.searchPlaceholder = PTDashboardConfig.languageFunc(text: "search_placeholder")
         view.searchPlaceholderColor = .black
         view.searchPlaceholderFont = .appfont(size: 16)
         view.delegate = self
@@ -207,7 +214,7 @@ class PTMotoNavigationViewController: PTBaseViewController {
         view.searchBarTextFieldCornerRadius = PTAppBaseConfig.share.navBarButtonSize / 2
         view.searchBarTextFieldBorderWidth = 0
         view.cursorColor = PTDashboardConfig.shared.appMainColor
-        view.searchTextColor = .black
+        view.searchTextColor = PTDashboardConfig.shared.appMainColor
         view.bounds = .init(origin: .zero, size: .init(width: 100, height: PTAppBaseConfig.share.navBarButtonSize))
         return view
     }()
@@ -238,7 +245,7 @@ class PTMotoNavigationViewController: PTBaseViewController {
     private lazy var startNavigationButton:UIButton = {
         let view = UIButton(type: .system)
         view.translatesAutoresizingMaskIntoConstraints = false
-        view.setTitle("🚀 开始导航", for: .normal)
+        view.setTitle("🚀", for: .normal)
         view.titleLabel?.font = .appfont(size: 18)
         view.backgroundColor = .systemGreen
         view.setTitleColor(.white, for: .normal)
@@ -317,6 +324,13 @@ class PTMotoNavigationViewController: PTBaseViewController {
         //将driveView添加为导航数据的Representative，使其可以接收到导航诱导数据
         AMapNaviDriveManager.sharedInstance().addDataRepresentative(driveView)
         AMapNaviDriveManager.sharedInstance().addDataRepresentative(self)
+        
+        pt_observerLanguage {
+            if self.vcDidLoad {
+                self.searchBar.searchPlaceholder = PTDashboardConfig.languageFunc(text: "search_placeholder")
+            }
+        }
+        vcDidLoad = true
     }
     
     // MARK: - 初始化配置
@@ -380,7 +394,7 @@ class PTMotoNavigationViewController: PTBaseViewController {
     @objc private func startNavigationTapped() {
         
         // 可以在这里收起按钮，或者进入纯粹的导航视角
-        startNavigationButton.setTitle("导航中...", for: .normal)
+        startNavigationButton.setTitle("🏍️", for: .normal)
         startNavigationButton.backgroundColor = .systemGray
         startNavigationButton.isEnabled = false
     }
@@ -391,10 +405,10 @@ class PTMotoNavigationViewController: PTBaseViewController {
     private func planRoute(to destination: CLLocationCoordinate2D, title: String) {
         currentDestination = destination
         guard userCurrentLocation.latitude != 0, userCurrentLocation.longitude != 0 else {
-            PTProgressHUD.show(text: "正在获取精准定位，请稍后再试...")
+            PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "alert_title"))
             return
         }
-        PTProgressHUD.show(text: "正在为您规划高德路线...")
+        PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "alert_loading"))
         let endPoint = AMapNaviPoint.location(withLatitude: destination.latitude, longitude: destination.longitude)!
         let _ = AMapNaviDriveManager.sharedInstance().calculateDriveRoute(withStart: [userCurrentLocation],
                                                                           end: [endPoint],
@@ -407,9 +421,9 @@ class PTMotoNavigationViewController: PTBaseViewController {
         let dict: [String: Double] = ["lat": coordinate.latitude, "lon": coordinate.longitude]
         UserDefaults.standard.set(dict, forKey: key)
         
-        let name = key.contains("Home") ? "家" : "公司"
-        let alert = UIAlertController(title: "保存成功", message: "已成功将该地址设为\(name)", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "确定", style: .default))
+        let name = key.contains("Home") ? "🏠" : "🏢"
+        let alert = UIAlertController(title: PTDashboardConfig.languageFunc(text: "set_success"), message: PTDashboardConfig.language(key: "address_set_success", name), preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: PTDashboardConfig.languageFunc(text: "button_confirm"), style: .default))
         present(alert, animated: true)
     }
     
@@ -418,14 +432,14 @@ class PTMotoNavigationViewController: PTBaseViewController {
         searchResultsTableView.isHidden = true
         guard let dict = UserDefaults.standard.dictionary(forKey: key) as? [String: Double],
               let lat = dict["lat"], let lon = dict["lon"] else {
-            let alert = UIAlertController(title: "提示", message: "您尚未设置该地址，请先在搜索列表中长按或选择地址进行保存。", preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "确定", style: .default))
+            let alert = UIAlertController(title: PTDashboardConfig.languageFunc(text: "alert_title"), message: PTDashboardConfig.languageFunc(text: "address_empty"), preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: PTDashboardConfig.languageFunc(text: "button_confirm"), style: .default))
             present(alert, animated: true)
             return
         }
         
         let coordinate = CLLocationCoordinate2D(latitude: lat, longitude: lon)
-        let name = key.contains("Home") ? "家" : "公司"
+        let name = key.contains("Home") ? "🏠" : "🏢"
         planRoute(to: coordinate, title: name)
         setPointPin(location: coordinate)
     }
@@ -476,24 +490,24 @@ extension PTMotoNavigationViewController: UISearchBarDelegate, UITableViewDelega
         let completion = amapSearchResults[indexPath.row]
         
         // 弹出交互菜单
-        let actionSheet = UIAlertController(title: completion.title, message: "请选择您要执行的操作", preferredStyle: .actionSheet)
+        let actionSheet = UIAlertController(title: completion.title, message: PTDashboardConfig.languageFunc(text: "address_option"), preferredStyle: .actionSheet)
         
         // 选项 1: 规划路线
-        actionSheet.addAction(UIAlertAction(title: "📍 规划路线", style: .default) { [weak self] _ in
+        actionSheet.addAction(UIAlertAction(title: "📍", style: .default) { [weak self] _ in
             self?.performSearchAndRoute(completion: completion)
         })
         
         // 选项 2: 设为家
-        actionSheet.addAction(UIAlertAction(title: "🏠 设为家", style: .default) { [weak self] _ in
+        actionSheet.addAction(UIAlertAction(title: "🏠", style: .default) { [weak self] _ in
             self?.performSearchAndSave(completion: completion, key: "PT_HomeLocation")
         })
         
         // 选项 3: 设为公司
-        actionSheet.addAction(UIAlertAction(title: "🏢 设为公司", style: .default) { [weak self] _ in
+        actionSheet.addAction(UIAlertAction(title: "🏢", style: .default) { [weak self] _ in
             self?.performSearchAndSave(completion: completion, key: "PT_OfficeLocation")
         })
         
-        actionSheet.addAction(UIAlertAction(title: "取消", style: .cancel))
+        actionSheet.addAction(UIAlertAction(title: PTDashboardConfig.languageFunc(text: "button_cancel"), style: .cancel))
         present(actionSheet, animated: true)
     }
     
@@ -515,14 +529,14 @@ extension PTMotoNavigationViewController:MAMapViewDelegate {
         amapView.removeAnnotations(amapView.annotations)
         let beginAnnotation = NaviPointAnnotation()
         beginAnnotation.coordinate = CLLocationCoordinate2D(latitude: Double(userCurrentLocation.latitude), longitude: Double(userCurrentLocation.longitude))
-        beginAnnotation.title = "起始点"
+        beginAnnotation.title = PTDashboardConfig.languageFunc(text: "address_start")
         beginAnnotation.naviPointType = .start
         
         amapView.addAnnotation(beginAnnotation)
         
         let endAnnotation = NaviPointAnnotation()
         endAnnotation.coordinate = location
-        endAnnotation.title = "终点"
+        endAnnotation.title = PTDashboardConfig.languageFunc(text: "address_end")
         endAnnotation.naviPointType = .end
         
         amapView.addAnnotation(endAnnotation)
@@ -669,7 +683,7 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
         amapView.showAnnotations(amapView.annotations, animated: false)
         
         if let first = routeIndicatorInfoArray.first {
-            self.startNavigationButton.setTitle("🚀 开始导航", for: .normal)
+            self.startNavigationButton.setTitle("🚀", for: .normal)
             selectNaviRouteWithID(routeID: first.routeID)
         }
     }

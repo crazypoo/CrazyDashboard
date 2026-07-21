@@ -1,5 +1,11 @@
 
+"address_empty" = "You have not set the address yet. Please long press or select the address in the search list to save it.";
+"address_end" = "Destination";
+"address_option" = "Please select the operation you want to perform.";
+"address_set_success" = "The address has been successfully set to %@.";
+"address_start" = "Starting point";
 "alert_loading" = "Loading......";
+"alert_title" = "OPPS！！！！";
 "button_cancel" = "Cancel";
 "button_confirm" = "Confirm";
 "button_dis_connect" = "Disconnect Bluetooth";
@@ -23,6 +29,11 @@
 "dashboard_color_set_title" = "Dashboard color settings";
 "dashboard_set_title" = "The mileage unit of the dashboard";
 "language_set_title" = "Language settings";
+"route_plan1" = "Avoid traffic jams";
+"route_plan2" = "Avoid charging";
+"route_plan3" = "Don't take the highway.";
+"route_plan4" = "High speed priority";
+"search_placeholder" = "Search address...";
 "set_bad" = "Failed to set up";
 "set_success" = "Successful setting";
 "tab_navigation" = "Navigation";

@@ -1,5 +1,11 @@
 
+"address_empty" = "您尚未设置该地址，请先在搜索列表中长按或选择地址进行保存。";
+"address_end" = "终点";
+"address_option" = "请选择您要执行的操作";
+"address_set_success" = "已成功将该地址设为%@。";
+"address_start" = "起点";
 "alert_loading" = "正在加载......";
+"alert_title" = "OPPS！！！！";
 "button_cancel" = "取消";
 "button_confirm" = "确认";
 "button_dis_connect" = "断开蓝牙连接";
@@ -23,6 +29,11 @@
 "dashboard_color_set_title" = "仪表盘颜色设置";
 "dashboard_set_title" = "仪表盘里程单位";
 "language_set_title" = "语言设置";
+"route_plan1" = "躲避拥堵";
+"route_plan2" = "避免收费";
+"route_plan3" = "不走高速";
+"route_plan4" = "高速优先";
+"search_placeholder" = "搜索地址...";
 "set_bad" = "设置失败";
 "set_success" = "设置成功";
 "tab_navigation" = "导航";

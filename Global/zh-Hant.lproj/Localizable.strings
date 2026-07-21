@@ -1,5 +1,11 @@
 
+"address_empty" = "您還沒有設定地址。 請長按或在搜尋列表中選擇地址以儲存它。";
+"address_end" = "目的地";
+"address_option" = "請選擇您要執行的操作。";
+"address_set_success" = "地址已成功設定為%@。";
+"address_start" = "起點";
 "alert_loading" = "正在加載......";
+"alert_title" = "OPPS！！！！";
 "button_cancel" = "取消";
 "button_confirm" = "確認";
 "button_dis_connect" = "斷開藍芽";
@@ -23,6 +29,11 @@
 "dashboard_color_set_title" = "儀表板顏色設定";
 "dashboard_set_title" = "儀表板的里程單位";
 "language_set_title" = "語言設定";
+"route_plan1" = "避免交通堵塞";
+"route_plan2" = "避免收費";
+"route_plan3" = "不走高速";
+"route_plan4" = "高速優先";
+"search_placeholder" = "搜尋地址...";
 "set_bad" = "設定失敗";
 "set_success" = "成功設定";
 "tab_navigation" = "導航";
