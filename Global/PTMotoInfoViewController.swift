@@ -21,6 +21,8 @@ class PTMotoInfoViewController: PTBaseViewController {
     let buttonCount:Int = 4
     let stackHeight:CGFloat = 54.adapter
     
+    var isFirstLoad:Bool = true
+    
     lazy var actionStack:UIStackView = {
         let stackView = UIStackView()
         stackView.axis = .horizontal
@@ -48,19 +50,27 @@ class PTMotoInfoViewController: PTBaseViewController {
     
     lazy var speedometer:PTSpeedometerView = {
         let view = PTSpeedometerView(frame: .zero)
+        view.direction = .clockwise
         view.altitudeLabel.isHidden = true
         view.pressureLabel.isHidden = true
         view.unitLabel.text = PTDashboardConfig.shared.appShowUniLabel
-        view.maxSpeed = PTDashboardConfig.shared.appUniIsMetric ? 110 : 180
+        view.maxSpeed = PTDashboardConfig.shared.appUniIsMetric ? 180 : 110
+        view.tickStep = 10
+        view.progressColor = PTDashboardConfig.shared.appMainColor
+        view.needleColor = PTDashboardConfig.shared.appMainColor
         return view
     }()
     
-    lazy var speedometerReversed:PTReversedSpeedometerView = {
-        let view = PTReversedSpeedometerView(frame: .zero)
+    lazy var speedometerReversed:PTSpeedometerView = {
+        let view = PTSpeedometerView(frame: .zero)
+        view.direction = .counterClockwise
         view.altitudeLabel.isHidden = true
         view.pressureLabel.isHidden = true
         view.unitLabel.text = "RPM"
         view.maxSpeed = 10000
+        view.tickStep = 400
+        view.progressColor = PTDashboardConfig.shared.appMainColor
+        view.needleColor = PTDashboardConfig.shared.appMainColor
         return view
     }()
     
@@ -255,6 +265,15 @@ class PTMotoInfoViewController: PTBaseViewController {
         }
         
         listSet()
+        
+        if isFirstLoad {
+            isFirstLoad.toggle()
+            PTGCDManager.shared.delayOnMain(time: 1) {
+                if let tab = self.tabBarController as? PTMotoBaseTabbarController {
+                    tab.dashBoardReload()
+                }
+            }
+        }
     }
     
     func listSet(finishTask:PTCollectionCallback? = nil) {
@@ -278,6 +297,7 @@ class PTMotoInfoViewController: PTBaseViewController {
         
     // MARK: - 状态回调
     @objc func handleDataNotification(_ notification: Notification) {
+        self.bleConnectStatusLabel.isEnabled = true
         // 1. 将广播传递过来的 object 安全地向下转型为我们的数据模型
         if let data1 = notification.object as? PTDashboardData1 {
             
@@ -379,7 +399,11 @@ class PTMotoInfoViewController: PTBaseViewController {
             self.distToMaintenanceLabel.modelSet = distToMaintenancemodel
             
             self.speedometer.unitLabel.text = PTDashboardConfig.shared.appShowUniLabel
-            self.speedometer.maxSpeed = PTDashboardConfig.shared.appUniIsMetric ? 110 : 180
+            self.speedometer.maxSpeed = PTDashboardConfig.shared.appUniIsMetric ? 180 : 110
+            self.speedometer.progressColor = PTDashboardConfig.shared.appMainColor
+            self.speedometer.needleColor = PTDashboardConfig.shared.appMainColor
+            self.speedometerReversed.progressColor = PTDashboardConfig.shared.appMainColor
+            self.speedometerReversed.needleColor = PTDashboardConfig.shared.appMainColor
             self.voltageLabel.dataProgress.barColor = PTDashboardConfig.shared.appMainColor
             self.distToMaintenanceLabel.dataProgress.barColor = PTDashboardConfig.shared.appMainColor
         }

@@ -213,7 +213,6 @@ class PTMotoNavigationViewController: PTBaseViewController {
     }()
     private lazy var searchResultsTableView:UITableView = {
         let view = UITableView()
-        view.translatesAutoresizingMaskIntoConstraints = false
         view.delegate = self
         view.dataSource = self
         view.isHidden = true // 默认隐藏
@@ -328,6 +327,8 @@ class PTMotoNavigationViewController: PTBaseViewController {
     
     // MARK: - UI 布局实现
     private func setupUI() {
+        NotificationCenter.default.addObserver(self, selector: #selector(dashBoardReload), name: MotorcycleDashBoardChange, object: nil)
+
         view.addSubviews([amapView,homeButton,officeButton,searchResultsTableView,startNavigationButton,preferenceView,driveView])
         amapView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
@@ -414,6 +415,7 @@ class PTMotoNavigationViewController: PTBaseViewController {
     
     private func routeToSavedLocation(key: String) {
         searchBar.resignFirstResponder()
+        searchResultsTableView.isHidden = true
         guard let dict = UserDefaults.standard.dictionary(forKey: key) as? [String: Double],
               let lat = dict["lat"], let lon = dict["lon"] else {
             let alert = UIAlertController(title: "提示", message: "您尚未设置该地址，请先在搜索列表中长按或选择地址进行保存。", preferredStyle: .alert)
@@ -426,6 +428,10 @@ class PTMotoNavigationViewController: PTBaseViewController {
         let name = key.contains("Home") ? "家" : "公司"
         planRoute(to: coordinate, title: name)
         setPointPin(location: coordinate)
+    }
+    
+    @objc func dashBoardReload() {
+        self.searchBar.cursorColor = PTDashboardConfig.shared.appMainColor
     }
 }
 
@@ -444,7 +450,6 @@ extension PTMotoNavigationViewController: UISearchBarDelegate, UITableViewDelega
         if text.isEmpty {
             searchResultsTableView.isHidden = true
         } else {
-            searchResultsTableView.isHidden = false
             searchPOI(withKeyword: text)
         }
     }
@@ -494,6 +499,7 @@ extension PTMotoNavigationViewController: UISearchBarDelegate, UITableViewDelega
     
     // 解析具体的坐标并路线规划
     private func performSearchAndRoute(completion: MAPointAnnotation) {
+        self.searchBar.resignFirstResponder()
         self.planRoute(to: completion.coordinate, title: completion.title)
         setPointPin(location: completion.coordinate)
     }
@@ -617,7 +623,13 @@ extension PTMotoNavigationViewController:AMapSearchDelegate {
             anno.subtitle = aPOI.address
             self.amapSearchResults.append(anno)
         }
-        searchResultsTableView.reloadData()
+        if !self.amapSearchResults.isEmpty {
+            searchResultsTableView.isHidden = false
+            searchResultsTableView.reloadData()
+        } else {
+            searchResultsTableView.isHidden = true
+            searchResultsTableView.reloadData()
+        }
     }
 }
 
@@ -657,7 +669,7 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
         amapView.showAnnotations(amapView.annotations, animated: false)
         
         if let first = routeIndicatorInfoArray.first {
-            self.startNavigationButton.setTitle("🚀 开始导航 \(first.subTitle)", for: .normal)
+            self.startNavigationButton.setTitle("🚀 开始导航", for: .normal)
             selectNaviRouteWithID(routeID: first.routeID)
         }
     }

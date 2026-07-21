@@ -60,6 +60,6 @@ class PTMotoBaseTabbarController: PTBaseTabBarViewController {
     
     @objc func dashBoardReload() {
         PTAppBaseConfig.share.tabSelectedColor = PTDashboardConfig.shared.appMainColor
-        configure(items: tabbarItems())
+        ptCustomBar.setup(configs: tabbarItems())
     }
 }

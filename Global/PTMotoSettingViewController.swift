@@ -113,7 +113,26 @@ class PTMotoSettingViewController: PTBaseViewController {
         let view = UIButton()
         view.backgroundColor = PTDashboardConfig.shared.appMainColor
         view.addActionHandlers { sender in
-            PTBluetoothServerManager.shared.simulateIncomingCall(callerName: "AAAA", phoneNumber: "vvvvvvvvvv")
+            PTMessagePusher.pushToDashboard(title: "1111", body: "222222222222")
+        }
+        view.isHidden = true
+        return view
+    }()
+    
+    lazy var disconnect:UIButton = {
+        let view = UIButton(type: .custom)
+        view.titleLabel?.font = .appfont(size: 16)
+        view.setTitleColor(.white, for: .normal)
+        view.setTitle(PTDashboardConfig.languageFunc(text: "断开连接"), for: .normal)
+        view.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
+        view.addActionHandlers { sender in
+            UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "要断开连接吗？"),okBtns: [PTDashboardConfig.languageFunc(text: "好的")],cancelBtn: PTDashboardConfig.languageFunc(text: "取消"), moreBtn:  { index, title in
+                PTBluetoothServerManager.shared.sendDisconnect()
+                let vc = PTBLEConnectViewController()
+                let nav = PTBaseNavControl(rootViewController: vc)
+                nav.modalPresentationStyle = .fullScreen
+                self.navigationController?.present(nav, animated: true)
+            })
         }
         return view
     }()
@@ -129,7 +148,7 @@ class PTMotoSettingViewController: PTBaseViewController {
         super.viewDidLoad()
         
         view.backgroundColor = .black
-        view.addSubviews([dashBoadColorTitle,dashBoardColorButton,dashUniTitle,dashBoardUniButton,dashLanguageTitle,dashBoardLanguageButton,messageTestButton])
+        view.addSubviews([dashBoadColorTitle,dashBoardColorButton,dashUniTitle,dashBoardUniButton,dashLanguageTitle,dashBoardLanguageButton,messageTestButton,disconnect])
         dashBoadColorTitle.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing)
@@ -170,15 +189,24 @@ class PTMotoSettingViewController: PTBaseViewController {
             make.top.equalTo(self.dashBoardLanguageButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
         }
         
+        disconnect.snp.makeConstraints { make in
+            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.height.equalTo(44)
+            make.bottom.equalToSuperview().inset(CGFloat.kTabbarHeight_Total + CGFloat.GlobalItemSpacing)
+        }
+        
         dashBoardColorButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashBoardUniButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashBoardLanguageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
+        disconnect.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashBoardColorButton.layoutIfNeeded()
         dashBoardColorButton.viewCorner(radius: 4)
         dashBoardUniButton.layoutIfNeeded()
         dashBoardUniButton.viewCorner(radius: 4)
         dashBoardLanguageButton.layoutIfNeeded()
         dashBoardLanguageButton.viewCorner(radius: 4)
+        disconnect.layoutIfNeeded()
+        disconnect.viewCorner(radius: 4)
     }
     
     func baseTitle(value:String) -> UILabel {
