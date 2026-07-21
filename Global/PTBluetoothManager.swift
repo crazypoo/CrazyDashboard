@@ -363,6 +363,12 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     
     static let shared = PTBluetoothServerManager()
     
+    public private(set) var latestData1: PTDashboardData1?
+    public private(set) var latestData2: PTDashboardData2?
+    public private(set) var latestData3: PTDashboardData3?
+    public private(set) var latestControl: PTDashboardControl?
+    public private(set) var latestAbsStatus: PTAbsStatus?
+
     // 🚨 核心修复 1：必须使用 16-bit 短标识！否则会撑爆 iOS 的 31 字节广播包，导致摩托车看不见！
     let TIO_SERVICE = CBUUID(string: "FEFB")
     
@@ -692,6 +698,7 @@ extension PTBluetoothServerManager {
             let tripRaw = (Int(bytes[3]) << 8) | Int(bytes[4])
             let odoRaw = (Int(bytes[5]) << 16) | (Int(bytes[6]) << 8) | Int(bytes[7])
             let data1 = PTDashboardData1(tripKm: Double(tripRaw) * 0.1, odoKm: Double(odoRaw) * 0.1, fuelLevelPct: fuel, avgConsumptionLt: avg)
+            self.latestData1 = data1
             NotificationCenter.default.post(name: MotorcycleDATA1, object: data1)
             ptLog("📊 [DATA1] 油量: \(fuel)%, 消耗: \(avg)L, 总里程: \(Double(odoRaw) * 0.1)km")
             
@@ -702,6 +709,7 @@ extension PTBluetoothServerManager {
             let temp = Int(bytes[4]) - 50
             let batt = Double(bytes[5]) * 0.1
             let data2 = PTDashboardData2(batteryVolt: batt, outsideTempC: temp, engineStatus: engine, maintenance: maint)
+            self.latestData2 = data2
             NotificationCenter.default.post(name: MotorcycleDATA2, object: data2)
             ptLog("🔋 [DATA2] 引擎: \(PTDashboardLabels.engineStatusLabel(raw: engine)), 电压: \(batt)V")
             
@@ -712,6 +720,7 @@ extension PTBluetoothServerManager {
             let dist = (Int(bytes[3]) << 8) | Int(bytes[4])
             let lang = Int(bytes[5])
             let data3 = PTDashboardData3(autonomyKm: Double(autoRaw) * 0.1, distToMaintenance: dist, colorMeasur: col, language: lang)
+            self.latestData3 = data3
             NotificationCenter.default.post(name: MotorcycleDATA3, object: data3)
             ptLog("🛣️ [DATA3] 剩余续航: \(Double(autoRaw) * 0.1)km")
             
@@ -720,12 +729,14 @@ extension PTBluetoothServerManager {
             let engineRaw = (Int(bytes[4]) << 8) | Int(bytes[5])
             let vehicleRaw = (Int(bytes[6]) << 8) | Int(bytes[7])
             let control = PTDashboardControl(vehicleSpeedKmh: Double(vehicleRaw) * 0.01, engineRpm: Int(Double(engineRaw) * 0.25))
+            self.latestControl = control
             NotificationCenter.default.post(name: MotorcycleCONTROL, object: control)
             ptLog("🏍️ [CONTROL] 车速: \(Double(vehicleRaw) * 0.01) km/h, 转速: \(Int(Double(engineRaw) * 0.25)) rpm")
             
         case 6: // ABS
             guard bytes.count >= 3 else { return }
             let absStatus = PTAbsStatus(absRaw: Int(bytes[2]))
+            self.latestAbsStatus = absStatus
             NotificationCenter.default.post(name: MotorcycleABS, object: absStatus)
             ptLog("🛑 [ABS] 状态: \(PTDashboardLabels.absLabel(raw: Int(bytes[2])))")
             

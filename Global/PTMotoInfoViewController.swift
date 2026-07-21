@@ -122,7 +122,45 @@ class PTMotoInfoViewController: PTBaseViewController {
         }
         return view
     }()
-
+    
+    var bleStatusConnectImage:UIImage {
+        let imageSize:CGFloat = 5
+        let image = UIColor.systemGreen.createImageWithColor().transformImage(size: .init(width: imageSize, height: imageSize)).withRoundedCorners(radius: imageSize / 2) ?? UIImage()
+        return image
+    }
+    
+    var bleStatusNoConnectImage:UIImage {
+        let imageSize:CGFloat = 5
+        let image = UIColor.systemRed.createImageWithColor().transformImage(size: .init(width: imageSize, height: imageSize)).withRoundedCorners(radius: imageSize / 2) ?? UIImage()
+        return image
+    }
+    
+    lazy var bleConnectStatusLabel:PTActionLayoutButton = {
+        let view = PTActionLayoutButton()
+        view.layoutStyle = .leftImageRightTitle
+        view.midSpacing = CGFloat.GlobalItemSpacing / 2
+        view.imageSize = .init(width: 5, height: 5)
+        view.setImage(bleStatusConnectImage, state: .normal)
+        view.setImage(bleStatusNoConnectImage, state: .disabled)
+        view.isEnabled = false
+        view.setTitleFont(.appfont(size: 14), state: .normal)
+        view.setTitleFont(.appfont(size: 14), state: .disabled)
+        view.setTitleColor(.white, state: .normal)
+        view.setTitleColor(.white, state: .disabled)
+        view.setTitle(PTDashboardConfig.languageFunc(text: "蓝牙连接状态"), state: .normal)
+        view.setTitle(PTDashboardConfig.languageFunc(text: "蓝牙连接状态"), state: .disabled)
+        view.bounds = .init(origin: .zero, size: .init(width:view.getKitCurrentDimension() + 5, height:32))
+        return view
+    }()
+    
+    lazy var appLogo:UIImageView = {
+        let view = UIImageView()
+        view.backgroundColor = .random
+        view.bounds = .init(origin: .zero, size: .init(width: 88.adapter, height: 32))
+        view.contentMode = .scaleAspectFit
+        view.clipsToBounds = false
+        return view
+    }()
     
     // 状态提示标签
     let statusLabel = UILabel()
@@ -130,32 +168,29 @@ class PTMotoInfoViewController: PTBaseViewController {
     let sendCommandButton = UIButton(type: .system)
 
     let logTextView = UITextView()
-    
-    func baseDataLabel() ->UILabel {
-        let view = UILabel()
-        view.numberOfLines = 0
-        view.font = .appfont(size: 14)
-        view.textColor = .black
-        return view
-    }
-    
+        
     open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
         return .solid(.clear)
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-//        setCustomRightButtons(buttons: [bleButton])
+        setLeftButtons(views: [appLogo])
+        setCustomRightButtons(buttons: [bleConnectStatusLabel])
+        PTGCDManager.shared.delayOnMain(time: 0.3) {
+            self.changeStatusBar(type: .Dark)
+        }
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: NSNotification.Name("MotorcycleDATA1"), object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: NSNotification.Name("MotorcycleDATA2"), object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: NSNotification.Name("MotorcycleDATA3"), object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: NSNotification.Name("MotorcycleCONTROL"), object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: NSNotification.Name("MotorcycleABS"), object: nil)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleDATA1, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleDATA2, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleDATA3, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleCONTROL, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleABS, object: nil)
     }
     
     // MARK: - 界面布局
