@@ -84,11 +84,11 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
     }
     
     var appShowUniLabel:String {
-        return PTDashboardConfig.shared.appUniIsMetric ? PTConfigUnit.imperial.getTypeName() : PTConfigUnit.metric.getTypeName()
+        return PTDashboardConfig.shared.appUniIsMetric ? PTConfigUnit.metric.getTypeName() : PTConfigUnit.imperial.getTypeName()
     }
     
     func appShowMileage(_ km:Double) -> Double {
-        let value = appUniIsMetric ? km * kmToMilOffset : km
+        let value = appUniIsMetric ? km : (km * kmToMilOffset)
         return value
     }
     

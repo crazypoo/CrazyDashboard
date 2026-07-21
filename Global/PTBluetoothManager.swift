@@ -15,6 +15,7 @@ let MotorcycleDATA2 = NSNotification.Name("MotorcycleDATA2")
 let MotorcycleDATA3 = NSNotification.Name("MotorcycleDATA3")
 let MotorcycleCONTROL = NSNotification.Name("MotorcycleCONTROL")
 let MotorcycleABS = NSNotification.Name("MotorcycleABS")
+let MotorcycleDashBoardChange = NSNotification.Name("MotorcycleDashBoardChange")
 
 let kmToMilOffset:Double = 0.621371
 
@@ -397,7 +398,11 @@ class PTFrameBuilder {
     
     // 生成配置指令[cite: 2]
     static func buildConfigurationFrame(color: UInt8, unit: UInt8, language: UInt8) -> Data {
-        let payload = Data([color, unit, language])
+        let payload = Data([
+                    0x01, color,
+                    0x01, unit,
+                    0x01, language
+        ])
         return wrapTxFrame(idFrame: ID_CONFIGURATION, payload: payload)
     }
     
@@ -698,7 +703,10 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         
         if characteristic.uuid == UART_TX { isTioSubscribed = true }
         if characteristic.uuid == UART_TX_CREDITS { isCreditsSubscribed = true }
-        
+        // 🚨 补充：观察车机是否主动订阅了 ANCS
+        if characteristic.uuid == ANCS_NOTIF_SOURCE { ptLog("📱 车机已订阅 ANCS 通知源！") }
+        if characteristic.uuid == ANCS_DATA_SOURCE { ptLog("📱 车机已订阅 ANCS 数据源！") }
+
         if isTioSubscribed && isCreditsSubscribed {
             ptLog("🔗 [状态] 通道订阅完毕！等待车机写入 8758...")
             authState = .waitKeyId
@@ -768,12 +776,14 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     
     /// 模拟推送一个来电通知到摩托车仪表盘
     func simulateIncomingCall(callerName: String, phoneNumber: String) {
-        guard authenticated else { return }
+        // 🚨 核心修复 3：安全解包 ancsNotifChar！
+        guard authenticated, let notifChar = ancsNotifChar else {
+            ptLog("⚠️ 尚未完成认证或 ANCS 通道未建立，拦截来电推送")
+            return
+        }
         
-        // 1. 生成唯一 UID
         let uid = UInt32.random(in: 1000...9999)
         
-        // 2. 构建模型并缓存到字典中
         let callNotif = PTAncsNotif(
             uid: uid,
             title: callerName,
@@ -783,9 +793,10 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         )
         activeNotifications[uid] = callNotif
         
-        // 3. 仅仅发送 Notification Source (铃声响起信号)[cite: 3]
         let sourceFrame = PTFrameBuilder.buildAncsNotifSourceFrame(notif: callNotif, eventId: 0)
-        sendChunkedData(data: sourceFrame, to: ancsNotifChar)
+        
+        // 发送到已安全解包的通知通道
+        sendChunkedData(data: sourceFrame, to: notifChar)
         
         ptLog("📞 [ANCS 测试] 已发送来电信号 UID:\(uid)，等待车机主动拉取内容...")
     }
@@ -914,20 +925,35 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     private func pumpQueue() {
         guard !isSending, !sendQueue.isEmpty else { return }
         let job = sendQueue[0]
+        
+        // 🚨 核心修复 1：防死锁拦截器！
+        // 如果当前通道没有任何车机订阅，强行发送会导致队列永久卡死。
+        // 我们必须在这里拦截，丢弃这个没人接的包，并让队列继续往前走！
+        let centrals = job.characteristic.subscribedCentrals
+        if centrals == nil || centrals!.isEmpty {
+            let completedJob = sendQueue.removeFirst()
+            if let callback = completedJob.completion {
+                DispatchQueue.main.async { callback() }
+            }
+            // 抛弃该包，递归处理下一个任务
+            DispatchQueue.main.async { self.pumpQueue() }
+            return
+        }
+        
+        // 正常向订阅者发送数据
         let success = peripheralManager.updateValue(job.data, for: job.characteristic, onSubscribedCentrals: nil)
         
         if success {
             let completedJob = sendQueue.removeFirst()
             
-            // 如果这个 job 带有完成回调，立刻在主线程执行它
+            // 确保在主线程回调，防止 UI 更新导致闪退
             if let callback = completedJob.completion {
                 DispatchQueue.main.async { callback() }
             }
             
-            // 递归泵送下一个
             DispatchQueue.main.async { self.pumpQueue() }
-
         } else {
+            // 只有因为缓冲区满了导致的 false，才进入等待状态
             isSending = true
         }
     }
@@ -955,23 +981,20 @@ extension PTBluetoothServerManager {
     
     
     func sendConfiguration(color: PTConfigColor, unit: PTConfigUnit, language: PTConfigLanguage, completion: @escaping (Bool) -> Void) {
-        guard authenticated else {
-            ptLog("⚠️ 尚未完成认证，无法下发配置")
-            completion(false) // 认证失败，拦截发送
+        guard authenticated, let targetChar = txChar else {
+            ptLog("⚠️ 尚未完成认证或 TX 通道未建立，拦截发送")
+            completion(false)
             return
         }
         
-        // 构建 0x07 帧[cite: 3]
         let frame = PTFrameBuilder.buildConfigurationFrame(
             color: color.rawValue,
             unit: unit.rawValue,
             language: language.rawValue
         )
         
-        // 🚨 升级：利用尾随闭包接收发送成功的通知
-        sendChunkedData(data: frame, to: txChar) {
+        sendChunkedData(data: frame, to: targetChar) {
             self.ptLog("🎨 [配置下发] 指令已成功发射！(不包含应用层 ACK)")
-            // 通知 UI 层发送完毕
             completion(true)
         }
     }

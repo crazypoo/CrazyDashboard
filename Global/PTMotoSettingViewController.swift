@@ -37,10 +37,10 @@ class PTMotoSettingViewController: PTBaseViewController {
             
             UIAlertController.baseCustomActionSheet(titleItem: titleItem, contentItems: contentImtes, otherBlock: { sheet,index,title in
                 let colorCase = PTConfigColor.allCases[index]
-                let uniConfig = PTConfigUnit(rawValue: (PTBluetoothServerManager.shared.latestData3?.isMetric ?? false) ? 1 : 2)!
-                let language = PTConfigLanguage(rawValue: UInt8((PTBluetoothServerManager.shared.latestData3?.language ?? 1)))!
+                let uniConfig = PTBluetoothServerManager.shared.latestData3?.unitType ?? .metric
+                let language = PTBluetoothServerManager.shared.latestData3?.languageType ?? .english
                 PTBluetoothServerManager.shared.sendConfiguration(color: colorCase, unit: uniConfig, language: language) { finish in
-                    
+                    self.dashBoardSetResult(finish: finish)
                 }
             })
         })
@@ -71,7 +71,7 @@ class PTMotoSettingViewController: PTBaseViewController {
                 let uniConfig = PTConfigUnit.allCases[index]
                 let language = PTConfigLanguage(rawValue: UInt8((PTBluetoothServerManager.shared.latestData3?.language ?? 1)))!
                 PTBluetoothServerManager.shared.sendConfiguration(color: colorType, unit: uniConfig, language: language) { finish in
-                    PTProgressHUD.show(text: "?????????????\(finish)")
+                    self.dashBoardSetResult(finish: finish)
                 }
             })
         })
@@ -102,10 +102,19 @@ class PTMotoSettingViewController: PTBaseViewController {
                 let uniConfig = PTBluetoothServerManager.shared.latestData3?.unitType ?? .metric
                 let language = PTConfigLanguage.allCases[index]
                 PTBluetoothServerManager.shared.sendConfiguration(color: colorType, unit: uniConfig, language: language) { finish in
-                    
+                    self.dashBoardSetResult(finish: finish)
                 }
             })
         })
+        return view
+    }()
+    
+    lazy var messageTestButton:UIButton = {
+        let view = UIButton()
+        view.backgroundColor = PTDashboardConfig.shared.appMainColor
+        view.addActionHandlers { sender in
+            PTBluetoothServerManager.shared.simulateIncomingCall(callerName: "AAAA", phoneNumber: "vvvvvvvvvv")
+        }
         return view
     }()
     
@@ -115,12 +124,12 @@ class PTMotoSettingViewController: PTBaseViewController {
             self.changeStatusBar(type: .Dark)
         }
     }
-    
+        
     override func viewDidLoad() {
         super.viewDidLoad()
         
         view.backgroundColor = .black
-        view.addSubviews([dashBoadColorTitle,dashBoardColorButton,dashUniTitle,dashBoardUniButton,dashLanguageTitle,dashBoardLanguageButton])
+        view.addSubviews([dashBoadColorTitle,dashBoardColorButton,dashUniTitle,dashBoardUniButton,dashLanguageTitle,dashBoardLanguageButton,messageTestButton])
         dashBoadColorTitle.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing)
@@ -155,6 +164,12 @@ class PTMotoSettingViewController: PTBaseViewController {
             make.width.equalTo(self.dashBoardLanguageButton.sizeFor().width + 32)
         }
         
+        messageTestButton.snp.makeConstraints { make in
+            make.size.equalTo(34)
+            make.centerX.equalToSuperview()
+            make.top.equalTo(self.dashBoardLanguageButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+        }
+        
         dashBoardColorButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashBoardUniButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashBoardLanguageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
@@ -173,5 +188,34 @@ class PTMotoSettingViewController: PTBaseViewController {
         view.textAlignment = .left
         view.textColor = PTDashboardConfig.shared.appMainColor
         return view
+    }
+    
+    func dashBoardSetResult(finish:Bool) {
+        if finish {
+            PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "设置成功"))
+            self.globalChangeDashBoardData()
+        } else {
+            PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "设置失败"))
+        }
+    }
+    
+    func globalChangeDashBoardData() {
+        PTGCDManager.shared.delayOnMain(time: 0.5) {
+            NotificationCenter.default.post(name: MotorcycleDashBoardChange, object: nil)
+            self.dashBoardColorButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
+            self.dashBoardUniButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
+            self.dashBoardUniButton.setTitle(PTBluetoothServerManager.shared.latestData3?.unitType.getTypeName() ?? PTConfigUnit.metric.getTypeName(), for: .normal)
+            self.dashBoardUniButton.snp.updateConstraints { make in
+                make.width.equalTo(self.dashBoardColorButton.sizeFor().width + 32)
+            }
+            self.dashBoardLanguageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
+            self.dashBoardLanguageButton.setTitle(PTBluetoothServerManager.shared.latestData3?.languageType.getTypeName() ?? PTConfigLanguage.english.getTypeName(), for: .normal)
+            self.dashBoardLanguageButton.snp.updateConstraints { make in
+                make.width.equalTo(self.dashBoardLanguageButton.sizeFor().width + 32)
+            }
+            self.dashBoadColorTitle.textColor = PTDashboardConfig.shared.appMainColor
+            self.dashUniTitle.textColor = PTDashboardConfig.shared.appMainColor
+            self.dashLanguageTitle.textColor = PTDashboardConfig.shared.appMainColor
+        }
     }
 }

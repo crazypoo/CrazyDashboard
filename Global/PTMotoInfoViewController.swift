@@ -189,6 +189,7 @@ class PTMotoInfoViewController: PTBaseViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleDATA3, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleCONTROL, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleABS, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(dashBoardReload), name: MotorcycleDashBoardChange, object: nil)
     }
     
     // MARK: - 界面布局
@@ -292,7 +293,7 @@ class PTMotoInfoViewController: PTBaseViewController {
                 rows[0].dataModel = PTDashboardConfig.baseNormalCellModel(name: "油量",desc: "\(fuelLevelPct)%")
                 rows[2].dataModel = PTDashboardConfig.baseNormalCellModel(name: "小计里程",desc: "\(PTDashboardConfig.shared.appShowMileageValueString(tripKm))\(PTDashboardConfig.shared.appShowUniLabel)")
                 rows[3].dataModel = PTDashboardConfig.baseNormalCellModel(name: "总里程",desc: "\(PTDashboardConfig.shared.appShowMileageValueString(odoKm))\(PTDashboardConfig.shared.appShowUniLabel)")
-                rows[4].dataModel = PTDashboardConfig.baseNormalCellModel(name: "平均油耗",desc: "\(PTDashboardConfig.shared.appShowMileageValueString(avgConsumptionLt))L/\(PTDashboardConfig.shared.appShowMileage(100))\(PTDashboardConfig.shared.appShowUniLabel)")
+                rows[4].dataModel = PTDashboardConfig.baseNormalCellModel(name: "平均油耗",desc: "\(avgConsumptionLt)L/\(PTDashboardConfig.shared.appShowMileageValueString(100))\(PTDashboardConfig.shared.appShowUniLabel)")
                 self.detailCollection.reloadRows(rows, in: sectionTrip)
             }
         } else if let data2 = notification.object as? PTDashboardData2 {
@@ -338,7 +339,7 @@ class PTMotoInfoViewController: PTBaseViewController {
                 let distToMaintenancemodel = PTMainProgressViewModel()
                 distToMaintenancemodel.name = PTDashboardConfig.languageFunc(text: "保养")
                 distToMaintenancemodel.currentValue = PTDashboardConfig.shared.appShowMileage(Double(distToMaintenance))
-                distToMaintenancemodel.maxValue = 2500
+                distToMaintenancemodel.maxValue = PTDashboardConfig.shared.appShowMileage(2500)
                 distToMaintenancemodel.uni = PTDashboardConfig.shared.appShowUniLabel
                 self.distToMaintenanceLabel.modelSet = distToMaintenancemodel
             }
@@ -363,6 +364,24 @@ class PTMotoInfoViewController: PTBaseViewController {
                 rows[1].dataModel = PTDashboardConfig.baseNormalCellModel(name: "ABS",desc: PTDashboardLabels.absLabel(raw: absRaw))
                 self.detailCollection.reloadRows(rows, in: sectionTrip)
             }
+        }
+    }
+    
+    @objc func dashBoardReload() {
+        self.detailCollection.clearAllData { _ in
+            self.detailCollection.reloadAllData()
+            
+            let distToMaintenancemodel = PTMainProgressViewModel()
+            distToMaintenancemodel.name = PTDashboardConfig.languageFunc(text: "保养")
+            distToMaintenancemodel.currentValue = PTDashboardConfig.shared.appShowMileage(Double(PTBluetoothServerManager.shared.latestData3?.distToMaintenance ?? 0))
+            distToMaintenancemodel.maxValue = PTDashboardConfig.shared.appShowMileage(2500)
+            distToMaintenancemodel.uni = PTDashboardConfig.shared.appShowUniLabel
+            self.distToMaintenanceLabel.modelSet = distToMaintenancemodel
+            
+            self.speedometer.unitLabel.text = PTDashboardConfig.shared.appShowUniLabel
+            self.speedometer.maxSpeed = PTDashboardConfig.shared.appUniIsMetric ? 110 : 180
+            self.voltageLabel.dataProgress.barColor = PTDashboardConfig.shared.appMainColor
+            self.distToMaintenanceLabel.dataProgress.barColor = PTDashboardConfig.shared.appMainColor
         }
     }
     

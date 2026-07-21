@@ -11,7 +11,7 @@ import SnapKit
 import SwifterSwift
 
 class PTBLEConnectViewController: PTBaseViewController {
-
+    
     var bleSuccessCallback:PTActionTask?
     lazy var connectBLE:UIButton = {
         let view = UIButton(type: .custom)
@@ -36,6 +36,7 @@ class PTBLEConnectViewController: PTBaseViewController {
         view.setTitleColor(.white, for: .normal)
         view.setTitle(PTDashboardConfig.languageFunc(text: "2.手机连接了摩托车仪表盘蓝牙后，点我开启蓝牙扫描,当该APP连接摩托车仪表盘成功后，则自动跳转到主界面"), for: .normal)
         view.addActionHandlers { sender in
+            PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "加载中，请稍候"))
             PTBluetoothServerManager.shared.startBaseStationAndScan()
         }
         view.backgroundColor = .systemBlue
@@ -101,23 +102,16 @@ class PTBLEConnectViewController: PTBaseViewController {
         bleScanButton.viewCorner(radius: 8)
         
         NotificationCenter.default.addObserver(self, selector: #selector(handleAuthSuccess), name: BLEConnectSuccess, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleDATA3, object: nil)
     }
     
     @objc func handleAuthSuccess() {
-        bleSuccessCallback?()
+        PTGCDManager.shared.delayOnMain(time: 3) {
+            PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "连接成功"))
+            self.bleSuccessCallback?()
+        }
     }
     
     deinit {
         NotificationCenter.default.removeObserver(self)
-    }
-    
-    @objc func handleDataNotification(_ notification: Notification) {
-        if let data3 = notification.object as? PTDashboardData3 {
-            let dashboardColor = data3.dashboardColor
-            DispatchQueue.main.async {
-                self.view.backgroundColor = dashboardColor.getColor()
-            }
-        }
     }
 }

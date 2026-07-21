@@ -44,6 +44,8 @@ class PTMotoBaseTabbarController: PTBaseTabBarViewController {
         ptCustomBar.didSelectIndex = { [weak self] index in
             self?.selectedIndex = index
         }
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(dashBoardReload), name: MotorcycleDashBoardChange, object: nil)
     }
     
     override func configure(items: [PTTabBarItemConfig]) {
@@ -54,5 +56,10 @@ class PTMotoBaseTabbarController: PTBaseTabBarViewController {
     private func setCenter(items: [PTTabBarItemConfig]) {
 //        let centerButton = PTTabBarImageContent(normal: LottieAnimation.named("camera") as Any, selected: LottieAnimation.named("camera"))
         ptCustomBar.setup(configs: items,layoutStyle: .normal)
+    }
+    
+    @objc func dashBoardReload() {
+        PTAppBaseConfig.share.tabSelectedColor = PTDashboardConfig.shared.appMainColor
+        configure(items: tabbarItems())
     }
 }
