@@ -149,24 +149,19 @@ class PTMotoInfoViewController: PTBaseViewController {
         view.setTitleColor(.white, state: .disabled)
         view.setTitle(PTDashboardConfig.languageFunc(text: "蓝牙连接状态"), state: .normal)
         view.setTitle(PTDashboardConfig.languageFunc(text: "蓝牙连接状态"), state: .disabled)
-        view.bounds = .init(origin: .zero, size: .init(width:view.getKitCurrentDimension() + 5, height:32))
+        view.bounds = .init(origin: .zero, size: .init(width:view.getKitCurrentDimension() + 5, height:PTAppBaseConfig.share.navBarButtonSize))
         return view
     }()
     
     lazy var appLogo:UIImageView = {
         let view = UIImageView()
         view.backgroundColor = .random
-        view.bounds = .init(origin: .zero, size: .init(width: 88.adapter, height: 32))
+        view.bounds = .init(origin: .zero, size: .init(width: 108.adapter, height: PTAppBaseConfig.share.navBarButtonSize))
         view.contentMode = .scaleAspectFit
         view.clipsToBounds = false
         return view
     }()
     
-    // 状态提示标签
-    let statusLabel = UILabel()
-    // 发送指令测试按钮
-    let sendCommandButton = UIButton(type: .system)
-
     let logTextView = UITextView()
         
     open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
@@ -278,18 +273,6 @@ class PTMotoInfoViewController: PTBaseViewController {
     }
         
     // MARK: - 状态回调
-    
-    @objc func handleAuthSuccess() {
-        DispatchQueue.main.async {
-            self.statusLabel.text = "✅ 认证成功！数据通道已解锁\n你可以开始发送指令了"
-            self.statusLabel.textColor = .systemGreen
-            
-            // 启用发送指令按钮
-            self.sendCommandButton.isEnabled = true
-            self.sendCommandButton.backgroundColor = .systemOrange
-        }
-    }
-    
     @objc func handleDataNotification(_ notification: Notification) {
         // 1. 将广播传递过来的 object 安全地向下转型为我们的数据模型
         if let data1 = notification.object as? PTDashboardData1 {
@@ -354,15 +337,6 @@ class PTMotoInfoViewController: PTBaseViewController {
                 distToMaintenancemodel.maxValue = 2500
                 distToMaintenancemodel.uni = "km"
                 self.distToMaintenanceLabel.modelSet = distToMaintenancemodel
-
-//
-//                // 假设你有一个 label 叫 statusLabel
-//                self.statusLabel3.text = """
-//                autonomyKm: \(autonomyKm)km
-//                distToMaintenance: \(distToMaintenance)km
-//                colorMeasur: \(colorMeasur)
-//                language: \(language)
-//                """
             }
         } else if let control = notification.object as? PTDashboardControl {
             

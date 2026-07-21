@@ -15,6 +15,7 @@ import AMapNaviKit
 import AMapLocationKit
 import AMapSearchKit
 import CoreMotion
+import SafeSFSymbols
 
 enum NaviPointAnnotationType: Int {
     case start
@@ -73,14 +74,16 @@ class PreferenceView: UIView {
     }
     
     private func buildPreferenceView() {
-        let singleWidth = (CGFloat.kSCREEN_WIDTH - PTAppBaseConfig.share.defaultViewSpace * 2 - 50.0) / 4.0
+        let itemCount:Int = 4
+        
+        let singleWidth = (CGFloat.kSCREEN_WIDTH - PTAppBaseConfig.share.defaultViewSpace * 2 - CGFloat(itemCount + 1) * CGFloat.GlobalItemSpacing - 44 * 2 - CGFloat.GlobalItemSpacing) / CGFloat(itemCount)
         
         avoidCongestion = buttonForTitle("躲避拥堵")
         avoidCongestion.addTarget(self, action: #selector(self.avoidCongestionAction(sender:)), for: .touchUpInside)
         addSubview(avoidCongestion)
         avoidCongestion.snp.makeConstraints { make in
             make.top.bottom.equalToSuperview()
-            make.left.equalToSuperview().inset(10)
+            make.left.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
             make.width.equalTo(singleWidth)
         }
         
@@ -88,7 +91,7 @@ class PreferenceView: UIView {
         avoidCost.addTarget(self, action: #selector(self.avoidCostAction(sender:)), for: .touchUpInside)
         addSubview(avoidCost)
         avoidCost.snp.makeConstraints { make in
-            make.left.equalTo(self.avoidCongestion.snp.right).offset(10)
+            make.left.equalTo(self.avoidCongestion.snp.right).offset(CGFloat.GlobalItemSpacing)
             make.top.bottom.width.equalTo(self.avoidCongestion)
         }
         
@@ -96,7 +99,7 @@ class PreferenceView: UIView {
         avoidHighway.addTarget(self, action: #selector(self.avoidHighwayAction(sender:)), for: .touchUpInside)
         addSubview(avoidHighway)
         avoidHighway.snp.makeConstraints { make in
-            make.left.equalTo(self.avoidCost.snp.right).offset(10)
+            make.left.equalTo(self.avoidCost.snp.right).offset(CGFloat.GlobalItemSpacing)
             make.top.bottom.width.equalTo(self.avoidCongestion)
         }
 
@@ -104,7 +107,7 @@ class PreferenceView: UIView {
         prioritiseHighway.addTarget(self, action: #selector(self.prioritiseHighwayAction(sender:)), for: .touchUpInside)
         addSubview(prioritiseHighway)
         prioritiseHighway.snp.makeConstraints { make in
-            make.left.equalTo(self.avoidHighway.snp.right).offset(10)
+            make.left.equalTo(self.avoidHighway.snp.right).offset(CGFloat.GlobalItemSpacing)
             make.top.bottom.width.equalTo(self.avoidCongestion)
         }
     }
@@ -138,25 +141,23 @@ class PreferenceView: UIView {
         }
     }
     
-    private func buttonForTitle(_ title: String) -> UIButton {
-        let reBtn = UIButton(type: .custom)
+    private func buttonForTitle(_ title: String) -> PTBaseButton {
+        let reBtn = PTBaseButton(type: .custom)
         
         reBtn.layer.borderColor = UIColor.lightGray.cgColor
         reBtn.layer.borderWidth = 1.0
         reBtn.layer.cornerRadius = 5
-        
-        reBtn.bounds = CGRect(x: 0, y: 0, width: 80, height: 30)
         reBtn.setTitle(title, for: .normal)
-        reBtn.setTitleColor(UIColor.black, for: .normal)
-        reBtn.setTitleColor(UIColor.red, for: .selected)
-        reBtn.titleLabel?.font = UIFont.systemFont(ofSize: 13)
+        reBtn.setTitleColor(UIColor.white, for: .normal)
+        reBtn.setTitleColor(.MainColor, for: .selected)
+        reBtn.titleLabel?.font = .appfont(size: 13)
         
         return reBtn
     }
     
     private func changeButtonState(_ button: UIButton, selected: Bool) {
         button.isSelected = selected
-        button.layer.borderColor = button.isSelected ? UIColor.red.cgColor : UIColor.lightGray.cgColor
+        button.layer.borderColor = button.isSelected ? UIColor.MainColor.cgColor : UIColor.lightGray.cgColor
     }
 }
 
@@ -165,24 +166,13 @@ class PTMotoNavigationViewController: PTBaseViewController {
     var routeIndicatorInfoArray = [RouteCollectionViewInfo]()
 
     var currentSpeedLimit:UInt8 = 0
-//    lazy var tap:UIButton = {
-//        let view = UIButton(type: .custom)
-//        view.addActionHandlers { sender in
-//            // 假设你要导航到某个坐标 (比如北京天安门)
-//            let destinationCoordinate = CLLocationCoordinate2D(latitude: 39.9042, longitude: 116.4074)
-//
-//            // 触发导航路线计算。一旦计算成功，它会自动在后台监听 GPS 并向摩托车发数据！
-//            PTMapKitNavigationHelper.shared.startNavigation(to: destinationCoordinate)
-//        }
-//        view.backgroundColor = .systemBlue
-//        return view
-//    }()
     
     private lazy var amapView:MAMapView = {
         let view = MAMapView()
         view.delegate = self
         view.showsUserLocation = true
         view.userTrackingMode = .follow
+        view.mapType = .standardNight
         return view
     }()
     
@@ -206,14 +196,19 @@ class PTMotoNavigationViewController: PTBaseViewController {
     private lazy var searchBar:PTSearchBar = {
         let view = PTSearchBar()
         view.searchPlaceholder = "搜索地址..."
+        view.searchPlaceholderColor = .black
+        view.searchPlaceholderFont = .appfont(size: 16)
         view.delegate = self
         view.searchBarStyle = .minimal
-        view.backgroundColor = .white
+        view.backgroundColor = .clear
         view.searchTextFieldBackgroundColor = .clear
         view.searchBarOutViewColor = .clear
         view.searchBarTextFieldBorderColor = .clear
-        view.searchBarTextFieldCornerRadius = 0
+        view.searchBarTextFieldCornerRadius = PTAppBaseConfig.share.navBarButtonSize / 2
         view.searchBarTextFieldBorderWidth = 0
+        view.cursorColor = .MainColor
+        view.searchTextColor = .black
+        view.bounds = .init(origin: .zero, size: .init(width: 100, height: PTAppBaseConfig.share.navBarButtonSize))
         return view
     }()
     private lazy var searchResultsTableView:UITableView = {
@@ -225,23 +220,17 @@ class PTMotoNavigationViewController: PTBaseViewController {
         view.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
         return view
     }()
-    private lazy var homeButton:UIButton = {
-        let view = UIButton(type: .system)
-        view.setTitle("🏠 回家", for: .normal)
-        view.backgroundColor = .systemBlue
-        view.setTitleColor(.white, for: .normal)
-        view.layer.cornerRadius = 8
+    private lazy var homeButton:PTBaseButton = {
+        let view = PTBaseButton(type: .system)
+        view.setTitle("🏠", for: .normal)
         view.addActionHandlers(handler: { _ in
             self.routeToSavedLocation(key: "PT_HomeLocation")
         })
         return view
     }()
-    private lazy var officeButton:UIButton = {
-        let view = UIButton(type: .system)
-        view.setTitle("🏢 去公司", for: .normal)
-        view.backgroundColor = .systemOrange
-        view.setTitleColor(.white, for: .normal)
-        view.layer.cornerRadius = 8
+    private lazy var officeButton:PTBaseButton = {
+        let view = PTBaseButton(type: .system)
+        view.setTitle("🏢", for: .normal)
         view.addActionHandlers(handler: { _ in
             self.routeToSavedLocation(key: "PT_OfficeLocation")
         })
@@ -251,7 +240,7 @@ class PTMotoNavigationViewController: PTBaseViewController {
         let view = UIButton(type: .system)
         view.translatesAutoresizingMaskIntoConstraints = false
         view.setTitle("🚀 开始导航", for: .normal)
-        view.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
+        view.titleLabel?.font = .appfont(size: 18)
         view.backgroundColor = .systemGreen
         view.setTitleColor(.white, for: .normal)
         view.layer.cornerRadius = 12
@@ -259,7 +248,12 @@ class PTMotoNavigationViewController: PTBaseViewController {
         view.addActionHandlers(handler: { _ in
             self.startNavigationTapped()
             self.driveView.isHidden = false
-            AMapNaviDriveManager.sharedInstance().startGPSNavi()
+            
+            if self.testButton.isSelected {
+                AMapNaviDriveManager.sharedInstance().startEmulatorNavi()
+            } else {
+                AMapNaviDriveManager.sharedInstance().startGPSNavi()
+            }
         })
         return view
     }()
@@ -274,8 +268,11 @@ class PTMotoNavigationViewController: PTBaseViewController {
         let view = PreferenceView()
         return view
     }()
-    var isMultipleRoutePlan = true
+    var isMultipleRoutePlan = false
 
+    var loadCurrentLocation:Bool = false
+    var currentCity:String = ""
+    
     lazy var driveView: AMapNaviDriveView = {
         let view = AMapNaviDriveView()
         view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -287,14 +284,30 @@ class PTMotoNavigationViewController: PTBaseViewController {
         view.isHidden = true
         return view
     }()
-
+    
+    lazy var testButton:UIButton = {
+        let baseImage = UIImage(.testtube._2)
+        let view = UIButton(type: .custom)
+        view.setImage(baseImage.withTintColor(.lightGray, renderingMode: .alwaysOriginal), for: .normal)
+        view.setImage(baseImage.withTintColor(.MainColor, renderingMode: .alwaysOriginal), for: .selected)
+        view.isSelected = false
+        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { sender in
+            sender.isSelected.toggle()
+        })
+        return view
+    }()
     
     open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
         return .solid(.clear)
     }
-    
-    var compositeManager : AMapNaviCompositeManager!
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        setCustomTitleView(searchBar)
+        setCustomRightButtons(buttons: [testButton])
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupLocationManager()
@@ -315,36 +328,34 @@ class PTMotoNavigationViewController: PTBaseViewController {
     
     // MARK: - UI 布局实现
     private func setupUI() {
-        let buttonStackView = UIStackView()
-        buttonStackView.translatesAutoresizingMaskIntoConstraints = false
-        buttonStackView.axis = .horizontal
-        buttonStackView.distribution = .fillEqually
-        buttonStackView.spacing = 10
-        buttonStackView.addArrangedSubview(homeButton)
-        buttonStackView.addArrangedSubview(officeButton)
-
-        view.addSubviews([amapView,searchBar,buttonStackView,searchResultsTableView,startNavigationButton,preferenceView,driveView])
+        view.addSubviews([amapView,homeButton,officeButton,searchResultsTableView,startNavigationButton,preferenceView,driveView])
         amapView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
         
-        searchBar.snp.makeConstraints { make in
-            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.height.equalTo(44)
+        let buttonSize:CGFloat = 44
+        homeButton.snp.makeConstraints { make in
+            make.size.equalTo(buttonSize)
+            make.left.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing)
         }
         
-        buttonStackView.snp.makeConstraints { make in
-            make.height.equalTo(40)
-            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.top.equalTo(self.searchBar.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+        officeButton.snp.makeConstraints { make in
+            make.size.top.equalTo(self.homeButton)
+            make.left.equalTo(self.homeButton.snp.right).offset(CGFloat.GlobalItemSpacing)
         }
-        
+        homeButton.layoutIfNeeded()
+        officeButton.layoutIfNeeded()
+        homeButton.viewCorner(radius: buttonSize / 2)
+        officeButton.viewCorner(radius: buttonSize / 2)
+
         searchResultsTableView.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.top.equalTo(buttonStackView.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.top.equalTo(homeButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
             make.height.equalTo(250.adapter)
         }
+        searchResultsTableView.layoutIfNeeded()
+        searchResultsTableView.viewCorner(radius: 16)
                 
         startNavigationButton.snp.makeConstraints { make in
             make.bottom.equalToSuperview().inset(CGFloat.kTabbarHeight_Total + CGFloat.GlobalItemSpacing)
@@ -353,22 +364,19 @@ class PTMotoNavigationViewController: PTBaseViewController {
         }
         
         preferenceView.snp.makeConstraints { make in
-            make.height.equalTo(30)
-            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.top.equalTo(buttonStackView.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.height.top.equalTo(self.homeButton)
+            make.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.left.equalTo(self.officeButton.snp.right).offset(CGFloat.GlobalItemSpacing)
         }
         
         driveView.snp.makeConstraints { make in
             make.left.right.equalToSuperview()
-            make.top.equalTo(self.searchResultsTableView.snp.bottom)
-            make.height.equalTo(300)
+            make.top.equalTo(self.searchResultsTableView)
+            make.bottom.equalTo(self.startNavigationButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
         }
     }
         
     @objc private func startNavigationTapped() {
-        guard let destination = currentDestination else { return }
-        // 核心调用：触发底层蓝牙发送逻辑
-        PTMapKitNavigationHelper.shared.startNavigation(to: destination)
         
         // 可以在这里收起按钮，或者进入纯粹的导航视角
         startNavigationButton.setTitle("导航中...", for: .normal)
@@ -448,6 +456,8 @@ extension PTMotoNavigationViewController: UISearchBarDelegate, UITableViewDelega
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell(style: .subtitle, reuseIdentifier: "cell")
         let result = amapSearchResults[indexPath.row]
+        cell.textLabel?.font = .appfont(size: 16)
+        cell.detailTextLabel?.font = .appfont(size: 13)
         cell.textLabel?.text = result.title + "\(result.coordinate.latitude)+\(result.coordinate.longitude)"
         cell.detailTextLabel?.text = result.subtitle
         return cell
@@ -571,6 +581,16 @@ extension PTMotoNavigationViewController:AMapLocationManagerDelegate {
     
     func amapLocationManager(_ manager: AMapLocationManager!, didUpdate location: CLLocation!, reGeocode: AMapLocationReGeocode!) {
         userCurrentLocation = AMapNaviPoint.location(withLatitude: location.coordinate.latitude, longitude: location.coordinate.longitude)!
+        if !loadCurrentLocation {
+            let regeo = AMapReGeocodeSearchRequest()
+            regeo.location = AMapGeoPoint.location(withLatitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
+            regeo.requireExtension = true
+            self.search.aMapReGoecodeSearch(regeo)
+        }
+    }
+    
+    func onReGeocodeSearchDone(_ request: AMapReGeocodeSearchRequest!, response: AMapReGeocodeSearchResponse!) {
+        currentCity = response.regeocode.addressComponent.city
     }
 }
 
@@ -584,7 +604,7 @@ extension PTMotoNavigationViewController:AMapSearchDelegate {
         let request = AMapPOIKeywordsSearchRequest()
         request.keywords = keyword
         request.showFieldsType = .all
-        request.city = "江门"
+        request.city = currentCity
         search.aMapPOIKeywordsSearch(request)
     }
     
@@ -675,8 +695,7 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
                     
                     /* 修改overlay覆盖的顺序. */
                     amapView.exchangeOverlay(at: UInt(index), withOverlayAt: UInt(allOverlays.count - 1))
-                }
-                else {
+                } else {
                     /* 设置选中状态. */
                     selectableOverlay.selected = false
                     
@@ -690,7 +709,6 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
         self.startNavigationButton.isHidden = false
         self.startNavigationButton.isEnabled = true
         self.startNavigationButton.backgroundColor = .systemGreen
-        AMapNaviDriveManager.sharedInstance().startEmulatorNavi()
     }
     
     func driveManager(_ driveManager: AMapNaviDriveManager, error: Error) {
@@ -756,7 +774,11 @@ extension PTMotoNavigationViewController : AMapNaviDriveViewDelegate {
         //停止导航
         AMapNaviDriveManager.sharedInstance().stopNavi()
         AMapNaviDriveManager.sharedInstance().removeDataRepresentative(driveView)
-        
+        self.driveView.isHidden = true
+        self.startNavigationButton.isHidden = true
+        self.startNavigationButton.isEnabled = false
+        self.amapView.removeAnnotations(amapView.annotations)
+        self.amapView.removeOverlays(amapView.overlays)
 //        //停止语音
 //        SpeechSynthesizer.Shared.stopSpeak()
 //
