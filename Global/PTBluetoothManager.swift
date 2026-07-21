@@ -18,10 +18,12 @@ let MotorcycleABS = NSNotification.Name("MotorcycleABS")
 
 let kmToMilOffset:Double = 0.621371
 
-enum PTDashboardColor: String {
-    case blue = "Blue"
-    case gold = "Gold"
-    case red = "Red"
+// MARK: - 主动配置指令模型
+/// 车机下发配置的枚举参数 (注意：这里的颜色值与状态回传帧的位掩码值不同)[cite: 2]
+enum PTConfigColor: UInt8,CaseIterable {
+    case red = 1
+    case blue = 2
+    case gold = 3
     
     func getColor() -> UIColor {
         switch self {
@@ -33,17 +35,20 @@ enum PTDashboardColor: String {
             return .systemRed
         }
     }
+    
+    func getColorName() -> String {
+        switch self {
+        case .blue:
+            return "Blue"
+        case .gold:
+            return "Gold"
+        case .red:
+            return "Red"
+        }
+    }
 }
 
-// MARK: - 主动配置指令模型
-/// 车机下发配置的枚举参数 (注意：这里的颜色值与状态回传帧的位掩码值不同)[cite: 2]
-enum PTConfigColor: UInt8 {
-    case red = 1
-    case blue = 2
-    case gold = 3
-}
-
-enum PTConfigUnit: UInt8 {
+enum PTConfigUnit: UInt8,CaseIterable {
     case metric = 1   // 公制 (Km)[cite: 2]
     case imperial = 2 // 英制 (Mil)[cite: 2]
     
@@ -57,12 +62,22 @@ enum PTConfigUnit: UInt8 {
     }
 }
 
-enum PTConfigLanguage: UInt8 {
+enum PTConfigLanguage: UInt8,CaseIterable {
     case english = 1
     case french = 2
     case german = 3
     case spanish = 4
     case italian = 5
+    
+    func getTypeName() -> String {
+        switch self {
+        case .english: return "English"
+        case .french: return "Français"
+        case .german: return "Deutsch"
+        case .spanish: return "Español"
+        case .italian: return "Italiano"
+        }
+    }
 }
 
 // MARK: - ANCS 通知数据模型
@@ -126,7 +141,19 @@ struct PTDashboardData3 {
         return PTDashboardLabels.unitLabel(c: colorMeasur)
     }
     
-    var dashboardColor: PTDashboardColor {
+    var unitType: PTConfigUnit {
+        return (colorMeasur & 0x08) != 0 ? .imperial : .metric
+    }
+    
+    var languageType: PTConfigLanguage {
+        // 1. 将 Int 转换为 UInt8
+        let decodedCode = UInt8((language >> 1) & 0x0F)
+        // 2. 尝试用 rawValue 初始化枚举。
+        // 如果匹配失败（例如传来一个未知的数字 9），则触发 ?? 后面的安全回退机制，默认返回英语[cite: 1]。
+        return PTConfigLanguage(rawValue: decodedCode) ?? .english
+    }
+    
+    var dashboardColor: PTConfigColor {
         // 使用 0xC0 掩码提取最高两位
         let colorMask = colorMeasur & 0xC0
         
@@ -176,16 +203,7 @@ struct PTDashboardLabels {
     
     static func unitLabel(c: Int) -> String {
         return (c & 0x08) != 0 ? "Mil" : "Km"
-    }
-    
-    static func languageLabel(r: Int) -> String {
-        let names = ["英语", "法语", "德语", "西班牙语", "意大利语"]
-        let code = (r >> 1) & 0x0F
-        if code >= 1 && code <= 5 {
-            return names[code - 1]
-        }
-        return "英语"
-    }
+    }    
 }
 
 // 复刻 Android 的 NavigationInfo[cite: 2]
@@ -568,6 +586,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     struct PTNotifyJob {
         let data: Data
         let characteristic: CBMutableCharacteristic
+        let completion: (() -> Void)? // 🚨 新增：该分片成功压入硬件后的回调
     }
     private var sendQueue: [PTNotifyJob] = []
     private var isSending = false
@@ -868,11 +887,25 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         pumpQueue()
     }
 
-    private func sendChunkedData(data: Data, to characteristic: CBMutableCharacteristic) {
+    private func sendChunkedData(data: Data, to characteristic: CBMutableCharacteristic, completion: (() -> Void)? = nil) {
         var offset = 0
+        // 计算总共需要切多少片
+        let totalChunks = Int(ceil(Double(data.count) / 20.0))
+        var currentChunk = 0
+        
         while offset < data.count {
             let end = min(offset + 20, data.count)
-            sendQueue.append(PTNotifyJob(data: data.subdata(in: offset..<end), characteristic: characteristic))
+            currentChunk += 1
+            
+            // 🚨 只有把最后一个分片发出去，才算整个帧发送完毕
+            let isLastChunk = (currentChunk == totalChunks)
+            
+            sendQueue.append(PTNotifyJob(
+                data: data.subdata(in: offset..<end),
+                characteristic: characteristic,
+                completion: isLastChunk ? completion : nil
+            ))
+            
             offset = end
         }
         pumpQueue()
@@ -884,8 +917,16 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         let success = peripheralManager.updateValue(job.data, for: job.characteristic, onSubscribedCentrals: nil)
         
         if success {
-            sendQueue.removeFirst()
+            let completedJob = sendQueue.removeFirst()
+            
+            // 如果这个 job 带有完成回调，立刻在主线程执行它
+            if let callback = completedJob.completion {
+                DispatchQueue.main.async { callback() }
+            }
+            
+            // 递归泵送下一个
             DispatchQueue.main.async { self.pumpQueue() }
+
         } else {
             isSending = true
         }
@@ -913,10 +954,26 @@ extension PTBluetoothServerManager {
     }
     
     
-    func sendConfiguration(color: PTConfigColor, unit: PTConfigUnit, language: PTConfigLanguage) {
-        guard authenticated else { return }
-        let frame = PTFrameBuilder.buildConfigurationFrame(color: color.rawValue, unit: unit.rawValue, language: language.rawValue)
-        sendChunkedData(data: frame, to: txChar)
+    func sendConfiguration(color: PTConfigColor, unit: PTConfigUnit, language: PTConfigLanguage, completion: @escaping (Bool) -> Void) {
+        guard authenticated else {
+            ptLog("⚠️ 尚未完成认证，无法下发配置")
+            completion(false) // 认证失败，拦截发送
+            return
+        }
+        
+        // 构建 0x07 帧[cite: 3]
+        let frame = PTFrameBuilder.buildConfigurationFrame(
+            color: color.rawValue,
+            unit: unit.rawValue,
+            language: language.rawValue
+        )
+        
+        // 🚨 升级：利用尾随闭包接收发送成功的通知
+        sendChunkedData(data: frame, to: txChar) {
+            self.ptLog("🎨 [配置下发] 指令已成功发射！(不包含应用层 ACK)")
+            // 通知 UI 层发送完毕
+            completion(true)
+        }
     }
 
     // MARK: - 解析摩托车回传状态

@@ -80,7 +80,7 @@ class PTMotoInfoViewController: PTBaseViewController {
             let motoModel = PTDashboardConfig.baseNormalCellModel(name: "发动机",desc: "-")
             let absModel = PTDashboardConfig.baseNormalCellModel(name: "ABS",desc: "-")
             let temModel = PTDashboardConfig.baseNormalCellModel(name: "温度",desc: "0°C")
-            let lanTrip = PTDashboardConfig.baseNormalCellModel(name: "语言",desc: "EN")
+            let lanTrip = PTDashboardConfig.baseNormalCellModel(name: "语言",desc: "\(PTConfigLanguage.english.getTypeName())")
             return [motoModel,absModel,temModel,lanTrip]
         } set{ }
     }
@@ -321,7 +321,7 @@ class PTMotoInfoViewController: PTBaseViewController {
             
             let autonomyKm = data3.autonomyKm
             let distToMaintenance = data3.distToMaintenance
-            let language = data3.language
+            let language = data3.languageType.getTypeName()
             
             // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
             DispatchQueue.main.async {
@@ -332,7 +332,7 @@ class PTMotoInfoViewController: PTBaseViewController {
                 }
                 let sectionTrip = 1
                 let rows = self.detailCollection.getAllRows(in: sectionTrip)
-                rows[3].dataModel = PTDashboardConfig.baseNormalCellModel(name: "语言",desc: PTDashboardLabels.languageLabel(r: language))
+                rows[3].dataModel = PTDashboardConfig.baseNormalCellModel(name: "语言",desc: language)
                 self.detailCollection.reloadRows(rows, in: sectionTrip)
                 
                 let distToMaintenancemodel = PTMainProgressViewModel()

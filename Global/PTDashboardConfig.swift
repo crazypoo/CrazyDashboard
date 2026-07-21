@@ -76,7 +76,7 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
     static let shared = PTDashboardConfig()
     
     var appMainColor:DynamicColor {
-        return PTBluetoothServerManager.shared.latestData3?.dashboardColor.getColor() ?? PTDashboardColor.blue.getColor()
+        return PTBluetoothServerManager.shared.latestData3?.dashboardColor.getColor() ?? PTConfigColor.blue.getColor()
     }
     
     var appUniIsMetric:Bool {
