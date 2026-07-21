@@ -9,8 +9,9 @@ import UIKit
 import PooTools
 import SnapKit
 import SwifterSwift
+import SafeSFSymbols
 
-class PTBLEConnectViewController: PTBaseViewController {
+class PTBLEConnectViewController: PTMotoBaseViewController,@unchecked Sendable {
     
     var bleSuccessCallback:PTActionTask?
     lazy var connectBLE:UIButton = {
@@ -19,7 +20,7 @@ class PTBLEConnectViewController: PTBaseViewController {
         view.titleLabel?.font = .appfont(size: 14)
         view.titleLabel?.numberOfLines = 0
         view.setTitleColor(.white, for: .normal)
-        view.setTitle(PTDashboardConfig.languageFunc(text: "1.如果手机没连接摩托仪表盘的蓝牙，请先点击我去连接摩托车仪表盘蓝牙,名字大致有PEUGEOT字样,连接成功后返回该APP继续下一步。"), for: .normal)
+        view.setTitle(PTDashboardConfig.languageFunc(text: "connect_step_1"), for: .normal)
         view.addActionHandlers(handler: { _ in
             let config = PTOpenSystemConfig()
             config.types = .Setting
@@ -34,10 +35,11 @@ class PTBLEConnectViewController: PTBaseViewController {
         view.titleLabel?.font = .appfont(size: 14)
         view.titleLabel?.numberOfLines = 0
         view.setTitleColor(.white, for: .normal)
-        view.setTitle(PTDashboardConfig.languageFunc(text: "2.手机连接了摩托车仪表盘蓝牙后，点我开启蓝牙扫描,当该APP连接摩托车仪表盘成功后，则自动跳转到主界面"), for: .normal)
+        view.setTitle(PTDashboardConfig.languageFunc(text: "connect_step_2"), for: .normal)
         view.addActionHandlers { sender in
-            PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "加载中，请稍候"))
-            PTBluetoothServerManager.shared.startBaseStationAndScan()
+            PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "alert_loading")) {
+                PTBluetoothServerManager.shared.startBaseStationAndScan()
+            }
         }
         view.backgroundColor = .systemBlue
         return view
@@ -66,7 +68,17 @@ class PTBLEConnectViewController: PTBaseViewController {
         view.font = .appfont(size: 16)
         view.textColor = .white
         view.textAlignment = .left
-        view.text = PTDashboardConfig.languageFunc(text: "操作步骤，请务必按照下面的操作步骤，以免出现无法连接摩托车蓝牙")
+        view.text = PTDashboardConfig.languageFunc(text: "connect_step_title")
+        return view
+    }()
+    
+    lazy var globalButton:PTBaseButton = {
+        let view = PTBaseButton(type: .custom)
+        view.setImage(UIImage(.globe), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { _ in
+            PTDashboardConfig.globalLanguageAlert()
+        })
         return view
     }()
 
@@ -77,6 +89,7 @@ class PTBLEConnectViewController: PTBaseViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
+        setCustomRightButtons(buttons: [globalButton])
         PTGCDManager.shared.delayOnMain(time: 0.35) {
             self.changeStatusBar(type: .Dark)
         }
@@ -115,16 +128,32 @@ class PTBLEConnectViewController: PTBaseViewController {
         bleScanButton.viewCorner(radius: 8)
         
         NotificationCenter.default.addObserver(self, selector: #selector(handleAuthSuccess), name: BLEConnectSuccess, object: nil)
+        
+        pt_observerLanguage {
+            if self.vcDidLoad {
+                self.stepInfo.text = PTDashboardConfig.languageFunc(text: "connect_step_title")
+                self.connectBLE.setTitle(PTDashboardConfig.languageFunc(text: "connect_step_1"), for: .normal)
+                self.connectBLE.snp.updateConstraints { make in
+                    make.height.equalTo(self.connectBLE.getButtonHeight(width: buttonWidth) + 16)
+                }
+                self.bleScanButton.setTitle(PTDashboardConfig.languageFunc(text: "connect_step_2"), for: .normal)
+                self.bleScanButton.snp.updateConstraints { make in
+                    make.height.equalTo(self.bleScanButton.getButtonHeight(width: buttonWidth) + 16)
+                }
+            }
+        }
+        self.vcDidLoad = true
     }
     
     @objc func handleAuthSuccess() {
         PTGCDManager.shared.delayOnMain(time: 3) {
-            PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "连接成功"))
-            self.bleSuccessCallback?()
+            PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "connect_success")) {
+                self.bleSuccessCallback?()
+            }
         }
     }
     
-    deinit {
+    @MainActor deinit {
         NotificationCenter.default.removeObserver(self)
     }
 }

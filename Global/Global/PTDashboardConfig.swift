@@ -211,6 +211,17 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
         return [cn,cn_tw,tr,en]
     }
 
+    static func globalLanguageAlert() {
+        let map = PTDashboardConfig.shared.lauguageModels.map { value in
+            return value.name
+        }
+        UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "language_set_title"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: map, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
+            PTMotoUserDefaultStruct.userSetLanguage = PTDashboardConfig.shared.lauguageModels[index].keyName
+            PTLanguage.share.language = PTDashboardConfig.shared.lauguageModels[index].localozableName
+            
+        })
+    }
+    
 }
 
 //MARK: Language

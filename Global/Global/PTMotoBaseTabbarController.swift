@@ -11,9 +11,11 @@ import SafeSFSymbols
 
 class PTMotoBaseTabbarController: PTBaseTabBarViewController {
     
+    var vcLoaded:Bool = false
+    
     func tabbarItems() -> [PTTabBarItemConfig] {
-        let homeNormalImage = UIImage(.car).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
-        let homeSelectedImage = UIImage(.car).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
+        let homeNormalImage = UIImage(.bicycle).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
+        let homeSelectedImage = UIImage(.bicycle).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
         let homeTitle = "Moto"
         let home = PTMotoInfoViewController()
         let homeNav = PTBaseNavControl(rootViewController: home)
@@ -21,14 +23,14 @@ class PTMotoBaseTabbarController: PTBaseTabBarViewController {
         
         let navigationNormalImage = UIImage(.map).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
         let navigationSelectedImage = UIImage(.map).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
-        let navigationTitle = "Navigation"
+        let navigationTitle = PTDashboardConfig.languageFunc(text: "tab_navigation")
         let navigation = PTMotoNavigationViewController()
         let navigationNav = PTBaseNavControl(rootViewController: navigation)
         let navigationTab = PTTabBarItemConfig(title: navigationTitle, content: PTTabBarImageContent(normal: navigationNormalImage, selected: navigationSelectedImage),viewController: navigationNav)
                 
         let settingNormalImage = UIImage(.gear).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
         let settingSelectedImage = UIImage(.gear).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
-        let settingTitle = "Setting"
+        let settingTitle = PTDashboardConfig.languageFunc(text: "tab_setting")
         let setting = PTMotoSettingViewController()
         let settingNav = PTBaseNavControl(rootViewController: setting)
         let settingTab = PTTabBarItemConfig(title: settingTitle, content: PTTabBarImageContent(normal: settingNormalImage, selected: settingSelectedImage),viewController: settingNav)
@@ -46,6 +48,14 @@ class PTMotoBaseTabbarController: PTBaseTabBarViewController {
         }
         
         NotificationCenter.default.addObserver(self, selector: #selector(dashBoardReload), name: MotorcycleDashBoardChange, object: nil)
+        
+        pt_observerLanguage {
+            if self.vcLoaded {
+                PTAppBaseConfig.share.tabSelectedColor = PTDashboardConfig.shared.appMainColor
+                self.setCenter(items: self.tabbarItems())
+            }
+        }
+        vcLoaded = true
     }
     
     override func configure(items: [PTTabBarItemConfig]) {

@@ -13,6 +13,8 @@ import IQKeyboardManagerSwift
 import PooTools
 import IQKeyboardToolbar
 import DeviceKit
+import Bugly
+import BackgroundTasks
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -20,6 +22,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
+        
+        var debugDevice = false
+        let buglyConfig = BuglyConfig()
+        #if DEBUG
+        debugDevice = true
+        buglyConfig.debugMode = debugDevice
+        #else
+        buglyConfig.debugMode = debugDevice
+        #endif
+        buglyConfig.channel = "iOS"
+        buglyConfig.blockMonitorEnable = debugDevice
+        buglyConfig.blockMonitorTimeout = 2
+        buglyConfig.consolelogEnable = !debugDevice
+        buglyConfig.deviceIdentifier = ""
+        buglyConfig.unexpectedTerminatingDetectionEnable = !debugDevice
+        buglyConfig.viewControllerTrackingEnable = !debugDevice
+        Bugly.start(withAppId: "d4ef3cd7ec",
+                    developmentDevice: debugDevice,
+                    config: buglyConfig)
+
         if PTMotoUserDefaultStruct.appFirst {
             PTLanguage.share.language = PTLocale.en.rawValue
             let currentPhoneLanguage = PTLanguage.defaultLanguage()
@@ -48,7 +70,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         IQKeyboardToolbarManager.shared.toolbarConfiguration.placeholderConfiguration.color = .lightGray
         IQKeyboardToolbarManager.shared.toolbarConfiguration.useTextInputViewTintColor = false
         IQKeyboardToolbarManager.shared.toolbarConfiguration.doneBarButtonConfiguration = IQBarButtonItemConfiguration(
-            title: PTDashboardConfig.languageFunc(text: "完成")
+            title: PTDashboardConfig.languageFunc(text: "button_done")
         )
         
         PTAppBaseConfig.share.tab26Mode = true
@@ -63,6 +85,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         PTAppBaseConfig.share.tabNormalColor = .gray7F
         PTAppBaseConfig.share.tabSelectedColor = PTDashboardConfig.shared.appMainColor
 
+        registerBackgroundTasks()
         return true
     }
 
@@ -81,5 +104,30 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
 
+    func registerBackgroundTasks() {
+        // 这里的 "com.yourcompany.yourapp.refresh" 就是你的 Identifier
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: "com.yd.PTSpeed.refresh", using: nil) { task in
+            // 处理后台任务的逻辑
+            self.handleAppRefresh(task: task as! BGAppRefreshTask)
+        }
+    }
+    
+    func handleAppRefresh(task: BGAppRefreshTask) {
+        // 因超时或其他问题而不得不被系统终止时，将调用该回调
+        task.expirationHandler = {
+            task.setTaskCompleted(success: false)
+        }
+
+        // Data Fetching
+
+        DispatchQueue.main.async {
+//            if let currentVC = PTUtils.getCurrentVC() as? PTMotoNavigationViewController {
+//                
+//            }
+        }
+
+        // 告知后台任务调度器任务已完成
+        task.setTaskCompleted(success: true)
+    }
 }
 

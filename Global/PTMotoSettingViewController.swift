@@ -9,8 +9,9 @@ import UIKit
 import PooTools
 import SwifterSwift
 import SnapKit
+import SafeSFSymbols
 
-class PTMotoSettingViewController: PTBaseViewController {
+class PTMotoSettingViewController: PTMotoBaseViewController {
 
     lazy var appLogo:UIImageView = {
         let view = UIImageView()
@@ -26,7 +27,7 @@ class PTMotoSettingViewController: PTBaseViewController {
     }
 
     lazy var dashBoadColorTitle:UILabel = {
-        let view = baseTitle(value: PTDashboardConfig.languageFunc(text: "仪表盘颜色"))
+        let view = baseTitle(value: PTDashboardConfig.languageFunc(text: "dashboard_color_set_title"))
         return view
     }()
     
@@ -34,7 +35,7 @@ class PTMotoSettingViewController: PTBaseViewController {
         let view = UIButton()
         view.addActionHandlers(handler: { _ in
             let titleItem = PTActionSheetTitleItem()
-            titleItem.title = PTDashboardConfig.languageFunc(text: "颜色选择")
+            titleItem.title = PTDashboardConfig.languageFunc(text: "dashboard_color_set_title")
             
             let imageSize:CGSize = .init(width: 54, height: 34)
             let contentImtes = PTConfigColor.allCases.map { value in
@@ -44,7 +45,7 @@ class PTMotoSettingViewController: PTBaseViewController {
                 return model
             }
             
-            UIAlertController.baseCustomActionSheet(titleItem: titleItem, contentItems: contentImtes, otherBlock: { sheet,index,title in
+            UIAlertController.baseCustomActionSheet(titleItem: titleItem,cancelItem: PTActionSheetItem(title: PTDashboardConfig.languageFunc(text: "button_cancel")), contentItems: contentImtes, otherBlock: { sheet,index,title in
                 let colorCase = PTConfigColor.allCases[index]
                 let uniConfig = PTBluetoothServerManager.shared.latestData3?.unitType ?? .metric
                 let language = PTBluetoothServerManager.shared.latestData3?.languageType ?? .english
@@ -57,7 +58,7 @@ class PTMotoSettingViewController: PTBaseViewController {
     }()
     
     lazy var dashUniTitle:UILabel = {
-        let view = baseTitle(value: PTDashboardConfig.languageFunc(text: "仪表盘单位"))
+        let view = baseTitle(value: PTDashboardConfig.languageFunc(text: "dashboard_set_title"))
         return view
     }()
     
@@ -68,14 +69,14 @@ class PTMotoSettingViewController: PTBaseViewController {
         view.setTitle(PTBluetoothServerManager.shared.latestData3?.unitType.getTypeName() ?? PTConfigUnit.metric.getTypeName(), for: .normal)
         view.addActionHandlers(handler: { _ in
             let titleItem = PTActionSheetTitleItem()
-            titleItem.title = PTDashboardConfig.languageFunc(text: "单位选择")
+            titleItem.title = PTDashboardConfig.languageFunc(text: "dashboard_set_title")
             
             let contentImtes = PTConfigUnit.allCases.map { value in
                 let model = PTActionSheetItem(title: value.getTypeName())
                 return model
             }
             
-            UIAlertController.baseCustomActionSheet(titleItem: titleItem, contentItems: contentImtes, otherBlock: { sheet,index,title in
+            UIAlertController.baseCustomActionSheet(titleItem: titleItem,cancelItem: PTActionSheetItem(title: PTDashboardConfig.languageFunc(text: "button_cancel")), contentItems: contentImtes, otherBlock: { sheet,index,title in
                 let colorType:PTConfigColor = PTBluetoothServerManager.shared.latestData3?.dashboardColor ?? .blue
                 let uniConfig = PTConfigUnit.allCases[index]
                 let language = PTConfigLanguage(rawValue: UInt8((PTBluetoothServerManager.shared.latestData3?.language ?? 1)))!
@@ -88,7 +89,7 @@ class PTMotoSettingViewController: PTBaseViewController {
     }()
     
     lazy var dashLanguageTitle:UILabel = {
-        let view = baseTitle(value: PTDashboardConfig.languageFunc(text: "仪表盘语言"))
+        let view = baseTitle(value: PTDashboardConfig.languageFunc(text: "casa_card_lan"))
         return view
     }()
     
@@ -99,14 +100,13 @@ class PTMotoSettingViewController: PTBaseViewController {
         view.setTitle(PTBluetoothServerManager.shared.latestData3?.languageType.getTypeName() ?? PTConfigLanguage.english.getTypeName(), for: .normal)
         view.addActionHandlers(handler: { _ in
             let titleItem = PTActionSheetTitleItem()
-            titleItem.title = PTDashboardConfig.languageFunc(text: "单位选择")
-            
+            titleItem.title = PTDashboardConfig.languageFunc(text: "language_set_title")
             let contentImtes = PTConfigLanguage.allCases.map { value in
                 let model = PTActionSheetItem(title: value.getTypeName())
                 return model
             }
             
-            UIAlertController.baseCustomActionSheet(titleItem: titleItem, contentItems: contentImtes, otherBlock: { sheet,index,title in
+            UIAlertController.baseCustomActionSheet(titleItem: titleItem,cancelItem: PTActionSheetItem(title: PTDashboardConfig.languageFunc(text: "button_cancel")), contentItems: contentImtes, otherBlock: { sheet,index,title in
                 let colorType:PTConfigColor = PTBluetoothServerManager.shared.latestData3?.dashboardColor ?? .blue
                 let uniConfig = PTBluetoothServerManager.shared.latestData3?.unitType ?? .metric
                 let language = PTConfigLanguage.allCases[index]
@@ -132,10 +132,10 @@ class PTMotoSettingViewController: PTBaseViewController {
         let view = UIButton(type: .custom)
         view.titleLabel?.font = .appfont(size: 16)
         view.setTitleColor(.white, for: .normal)
-        view.setTitle(PTDashboardConfig.languageFunc(text: "断开连接"), for: .normal)
+        view.setTitle(PTDashboardConfig.languageFunc(text: "button_dis_connect"), for: .normal)
         view.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         view.addActionHandlers { sender in
-            UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "要断开连接吗？"),okBtns: [PTDashboardConfig.languageFunc(text: "好的")],cancelBtn: PTDashboardConfig.languageFunc(text: "取消"), moreBtn:  { index, title in
+            UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "button_dis_connect") + "?",okBtns: [PTDashboardConfig.languageFunc(text: "button_confirm")],cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
                 PTBluetoothServerManager.shared.sendDisconnect()
                 let vc = PTBLEConnectViewController()
                 let nav = PTBaseNavControl(rootViewController: vc)
@@ -146,9 +146,20 @@ class PTMotoSettingViewController: PTBaseViewController {
         return view
     }()
     
+    lazy var globalButton:PTBaseButton = {
+        let view = PTBaseButton(type: .custom)
+        view.setImage(UIImage(.globe), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { _ in
+            PTDashboardConfig.globalLanguageAlert()
+        })
+        return view
+    }()
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
+        setCustomRightButtons(buttons: [globalButton])
         PTGCDManager.shared.delayOnMain(time: 0.3) {
             self.changeStatusBar(type: .Dark)
         }
@@ -217,6 +228,15 @@ class PTMotoSettingViewController: PTBaseViewController {
         dashBoardLanguageButton.viewCorner(radius: 4)
         disconnect.layoutIfNeeded()
         disconnect.viewCorner(radius: 4)
+        
+        pt_observerLanguage {
+            if self.vcDidLoad {
+                self.dashLanguageTitle.text = PTDashboardConfig.languageFunc(text: "casa_card_lan")
+                self.dashBoadColorTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_color_set_title")
+                self.dashUniTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_set_title")
+            }
+        }
+        vcDidLoad = true
     }
     
     func baseTitle(value:String) -> UILabel {
@@ -231,12 +251,12 @@ class PTMotoSettingViewController: PTBaseViewController {
     func dashBoardSetResult(finish:Bool) {
         if finish {
             PTGCDManager.shared.delayOnMain(time: 0.55) {
-                PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "设置成功"))
+                PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "set_success"))
                 self.globalChangeDashBoardData()
             }
         } else {
             PTGCDManager.shared.delayOnMain(time: 0.55) {
-                PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "设置失败"))
+                PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "set_bad"))
             }
         }
     }

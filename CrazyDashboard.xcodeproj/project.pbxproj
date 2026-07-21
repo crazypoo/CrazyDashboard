@@ -34,6 +34,8 @@
 		5577E7D02FD704790004733F /* PTBumpMeterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7CE2FD704790004733F /* PTBumpMeterView.swift */; };
 		5577E7D22FD704AD0004733F /* PTPitchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7D12FD704AD0004733F /* PTPitchView.swift */; };
 		5577E7D32FD704AD0004733F /* PTPitchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7D12FD704AD0004733F /* PTPitchView.swift */; };
+		55901837300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55901836300FE37100A77571 /* PTMotoBaseViewController.swift */; };
+		55901838300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55901836300FE37100A77571 /* PTMotoBaseViewController.swift */; };
 		55F503AB300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
 		55F503AC300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
 		55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */; };
@@ -83,6 +85,7 @@
 		5577E7CB2FD6FF890004733F /* PTLeanAngleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLeanAngleView.swift; sourceTree = "<group>"; };
 		5577E7CE2FD704790004733F /* PTBumpMeterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBumpMeterView.swift; sourceTree = "<group>"; };
 		5577E7D12FD704AD0004733F /* PTPitchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPitchView.swift; sourceTree = "<group>"; };
+		55901836300FE37100A77571 /* PTMotoBaseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoBaseViewController.swift; sourceTree = "<group>"; };
 		55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = GlobalAssets.xcassets; sourceTree = "<group>"; };
 		55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLanguageModel.swift; sourceTree = "<group>"; };
 		55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoUserDefaultStruct.swift; sourceTree = "<group>"; };
@@ -195,13 +198,11 @@
 				5577E6202FD656D20004733F /* PTCompassRollerView.swift */,
 				5577E7C82FD6FC8C0004733F /* PTCrashWarningView.swift */,
 				55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */,
-				55FE2965300CA5E0000E741F /* PTDashboardConfig.swift */,
 				5577E77F2FD6EEEF0004733F /* PTGForceView.swift */,
 				5577E7CB2FD6FF890004733F /* PTLeanAngleView.swift */,
 				5577E6212FD656D20004733F /* PTLocationEngine.swift */,
 				55FE2A09300CE2B0000E741F /* PTMapKitNavigationHelper.swift */,
 				5577E6AA2FD662C20004733F /* PTMapView.swift */,
-				55FE2994300CBCB4000E741F /* PTMotoBaseTabbarController.swift */,
 				55FE299F300CC1F1000E741F /* PTMotoInfoViewController.swift */,
 				55FE29A2300CC258000E741F /* PTMotoNavigationViewController.swift */,
 				55FE29A5300CC2E2000E741F /* PTMotoSettingViewController.swift */,
@@ -226,7 +227,10 @@
 		55F503B9300FCA1E00C5D085 /* Global */ = {
 			isa = PBXGroup;
 			children = (
+				55FE2994300CBCB4000E741F /* PTMotoBaseTabbarController.swift */,
+				55FE2965300CA5E0000E741F /* PTDashboardConfig.swift */,
 				55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */,
+				55901836300FE37100A77571 /* PTMotoBaseViewController.swift */,
 			);
 			path = Global;
 			sourceTree = "<group>";
@@ -519,6 +523,7 @@
 				5577E6AB2FD662C20004733F /* PTMapView.swift in Sources */,
 				5577E7D22FD704AD0004733F /* PTPitchView.swift in Sources */,
 				5577E6312FD656D20004733F /* PTSpeedometerView.swift in Sources */,
+				55901838300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */,
 				55FE2A5D300DF42A000E741F /* PTBLEConnectViewController.swift in Sources */,
 				5577E6D12FD680730004733F /* PTTripStatsView.swift in Sources */,
 				55FE2A78300DF95C000E741F /* PTMainProgressView.swift in Sources */,
@@ -560,6 +565,7 @@
 				55FE2A77300DF95C000E741F /* PTMainProgressView.swift in Sources */,
 				55FE29A3300CC258000E741F /* PTMotoNavigationViewController.swift in Sources */,
 				55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */,
+				55901837300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */,
 				55F503BB300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift in Sources */,
 				5577E7D02FD704790004733F /* PTBumpMeterView.swift in Sources */,
 				5577E6AC2FD662C20004733F /* PTMapView.swift in Sources */,
