@@ -1,4 +1,6 @@
 
+"abs_error" = "故障";
+"abs_ok" = "正常";
 "address_empty" = "您尚未设置该地址，请先在搜索列表中长按或选择地址进行保存。";
 "address_end" = "终点";
 "address_option" = "请选择您要执行的操作";
@@ -10,6 +12,7 @@
 "button_confirm" = "确认";
 "button_dis_connect" = "断开蓝牙连接";
 "button_done" = "完成";
+"button_pro" = "专业模式";
 "casa_batt" = "电压";
 "casa_bluetooth_status" = "蓝牙连接状态";
 "casa_card_avg_oil" = "平均油耗";
@@ -28,7 +31,12 @@
 "connect_success" = "连接成功";
 "dashboard_color_set_title" = "仪表盘颜色设置";
 "dashboard_set_title" = "仪表盘里程单位";
+"engine_cold" = "未启动";
+"engine_cycling" = "运转中";
+"engine_start" = "启动中";
 "language_set_title" = "语言设置";
+"maintenance_need" = "需要保养";
+"maintenance_need_no" = "无需保养";
 "route_plan1" = "躲避拥堵";
 "route_plan2" = "避免收费";
 "route_plan3" = "不走高速";
@@ -38,4 +46,4 @@
 "set_success" = "设置成功";
 "tab_navigation" = "导航";
 "tab_setting" = "设置";
-"button_pro" = "专业模式";
+"engine_closing" = "关闭中";

@@ -1,4 +1,6 @@
 
+"abs_error" = "故障";
+"abs_ok" = "正常";
 "address_empty" = "您還沒有設定地址。 請長按或在搜尋列表中選擇地址以儲存它。";
 "address_end" = "目的地";
 "address_option" = "請選擇您要執行的操作。";
@@ -10,6 +12,7 @@
 "button_confirm" = "確認";
 "button_dis_connect" = "斷開藍芽";
 "button_done" = "完成";
+"button_pro" = "專業模式";
 "casa_batt" = "電壓";
 "casa_bluetooth_status" = "藍芽連線狀態";
 "casa_card_avg_oil" = "平均油耗";
@@ -28,7 +31,12 @@
 "connect_success" = "連線成功";
 "dashboard_color_set_title" = "儀表板顏色設定";
 "dashboard_set_title" = "儀表板的里程單位";
+"engine_cold" = "未啟動";
+"engine_cycling" = "運轉中";
+"engine_start" = "啟動中";
 "language_set_title" = "語言設定";
+"maintenance_need" = "需要維護";
+"maintenance_need_no" = "無需維護";
 "route_plan1" = "避免交通堵塞";
 "route_plan2" = "避免收費";
 "route_plan3" = "不走高速";
@@ -38,4 +46,4 @@
 "set_success" = "成功設定";
 "tab_navigation" = "導航";
 "tab_setting" = "設置";
-"button_pro" = "專業模式";
+"engine_closing" = "關閉中";

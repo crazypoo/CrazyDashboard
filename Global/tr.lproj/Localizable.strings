@@ -1,4 +1,6 @@
 
+"abs_error" = "Arıza";
+"abs_ok" = "Normal";
 "address_empty" = "Henüz adresi belirlemediniz. Kaydetmek için lütfen uzun basın veya arama listesindeki adresi seçin.";
 "address_end" = "Varış noktası";
 "address_option" = "Lütfen gerçekleştirmek istediğiniz işlemi seçin.";
@@ -10,6 +12,7 @@
 "button_confirm" = "Doğrulamak";
 "button_dis_connect" = "Bluetooth bağlantısını kesin";
 "button_done" = "Bitti";
+"button_pro" = "Profesyonel mod";
 "casa_batt" = "voltage";
 "casa_bluetooth_status" = "Bluetooth bağlantı durumu";
 "casa_card_avg_oil" = "Ortalama yakıt tüketimi";
@@ -28,7 +31,12 @@
 "connect_success" = "Başarılı bağlantı";
 "dashboard_color_set_title" = "Gösterge tablosu renk ayarları";
 "dashboard_set_title" = "Gösterge tablosu kilometre birimi";
+"engine_cold" = "Donmuyor";
+"engine_cycling" = "Çalışıyor";
+"engine_start" = "Başlangıç";
 "language_set_title" = "Dil ayarları";
+"maintenance_need" = "Bakım gerekiyor";
+"maintenance_need_no" = "Bakıma gerek yok";
 "route_plan1" = "Trafik sıkışıklığından kaçının";
 "route_plan2" = "Şarj etmekten kaçının";
 "route_plan3" = "Otoyola girme.";
@@ -38,4 +46,4 @@
 "set_success" = "Başarılı ayar";
 "tab_navigation" = "Seyrüsefer";
 "tab_setting" = "Batma";
-"button_pro" = "Profesyonel mod";
+"engine_closing" = "Kapanma";

@@ -224,22 +224,22 @@ struct PTAbsStatus {
 struct PTDashboardLabels {
     static func engineStatusLabel(raw: Int) -> String {
         switch raw & 0x03 {
-        case 0: return "未启动" // Donmuyor
-        case 1: return "启动中" // Basliyor
-        case 2: return "运转中" // Calisiyor
-        case 3: return "关闭中" // Kapanma
+        case 0: return PTDashboardConfig.languageFunc(text: "engine_cold")
+        case 1: return PTDashboardConfig.languageFunc(text: "engine_start")
+        case 2: return PTDashboardConfig.languageFunc(text: "engine_cycling")
+        case 3: return PTDashboardConfig.languageFunc(text: "engine_closing")
         default: return "-"
         }
     }
     
     static func maintenanceLabel(raw: Int) -> String {
-        return (raw & 0xE0) != 0 ? "需要保养" : "无需保养"
+        return (raw & 0xE0) != 0 ? PTDashboardConfig.languageFunc(text: "maintenance_need") : PTDashboardConfig.languageFunc(text: "maintenance_need_no")
     }
     
     static func absLabel(raw: Int) -> String {
         switch raw & 0x03 {
-        case 1: return "正常 (OK)"
-        case 2: return "故障 (Ariza)"
+        case 1: return PTDashboardConfig.languageFunc(text: "abs_ok")
+        case 2: return PTDashboardConfig.languageFunc(text: "abs_error")
         default: return "-"
         }
     }
