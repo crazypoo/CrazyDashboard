@@ -135,13 +135,17 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         view.setTitle(PTDashboardConfig.languageFunc(text: "button_dis_connect"), for: .normal)
         view.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         view.addActionHandlers { sender in
-            UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "button_dis_connect") + "?",okBtns: [PTDashboardConfig.languageFunc(text: "button_confirm")],cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
-                PTBluetoothServerManager.shared.sendDisconnect()
+            if PTDashboardConfig.shared.blueConnected {
+                UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "button_dis_connect") + "?",okBtns: [PTDashboardConfig.languageFunc(text: "button_confirm")],cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
+                    PTBluetoothServerManager.shared.sendDisconnect()
+                    PTDashboardConfig.shared.blueConnected = false
+                })
+            } else {
                 let vc = PTBLEConnectViewController()
                 let nav = PTBaseNavControl(rootViewController: vc)
                 nav.modalPresentationStyle = .fullScreen
                 self.navigationController?.present(nav, animated: true)
-            })
+            }
         }
         return view
     }()
@@ -173,9 +177,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
         setCustomRightButtons(buttons: [globalButton])
-        PTGCDManager.shared.delayOnMain(time: 0.3) {
-            self.changeStatusBar(type: .Dark)
-        }
     }
         
     override func viewDidLoad() {

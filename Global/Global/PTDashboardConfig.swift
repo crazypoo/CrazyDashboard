@@ -76,6 +76,8 @@ extension PTProgressHUD {
 class PTDashboardConfig: NSObject,@unchecked Sendable  {
     static let shared = PTDashboardConfig()
     
+    var blueConnected:Bool = false
+    
     var appMainColor:DynamicColor {
         return PTBluetoothServerManager.shared.latestData3?.dashboardColor.getColor() ?? PTConfigColor.blue.getColor()
     }
@@ -210,6 +212,15 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
 
         return [cn,cn_tw,tr,en]
     }
+    
+    static func appIsInChinese() ->Bool {
+        switch PTMotoUserDefaultStruct.userSetLanguage {
+        case "zh","tw":
+            return true
+        default:
+            return false
+        }
+    }
 
     static func globalLanguageAlert() {
         let map = PTDashboardConfig.shared.lauguageModels.map { value in
@@ -218,7 +229,6 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
         UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "language_set_title"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: map, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
             PTMotoUserDefaultStruct.userSetLanguage = PTDashboardConfig.shared.lauguageModels[index].keyName
             PTLanguage.share.language = PTDashboardConfig.shared.lauguageModels[index].localozableName
-            
         })
     }
     

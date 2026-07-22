@@ -38,8 +38,8 @@ struct RouteCollectionViewInfo {
 class SelectableOverlay: MABaseOverlay {
     var routeID: Int = 0
     var selected = false
-    var selectedColor = UIColor(red: 0.05, green: 0.39, blue: 0.9, alpha: 0.8)
-    var reguarColor = UIColor(red: 0.5, green: 0.6, blue: 0.9, alpha: 0.8)
+    var selectedColor = PTDashboardConfig.shared.appMainColor
+    var reguarColor = PTDashboardConfig.shared.appMainColor.withAlphaComponent(0.6)
     
     var overlay: MAOverlay
     
@@ -155,7 +155,7 @@ class PreferenceView: UIView {
         
         let nameAttNormal: ASAttributedString = """
                     \(wrap: .embedding("""
-                    \(title,.foreground(.white),.font(.appfont(size: 10)))
+                    \(title,.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 10)))
                     """),.paragraph(.alignment(.left),.lineSpacing(1)))
                     """
         let nameAttSelected: ASAttributedString = """
@@ -184,12 +184,16 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
 
     var currentSpeedLimit:UInt8 = 0
     
+    let homeSize:CGFloat = 44
+    
     private lazy var amapView:MAMapView = {
         let view = MAMapView()
         view.delegate = self
         view.showsUserLocation = true
         view.userTrackingMode = .follow
         view.mapType = .standardNight
+        view.compassOrigin = .init(x: -(CGFloat.kSCREEN_WIDTH - PTAppBaseConfig.share.defaultViewSpace), y: CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing * 2 + homeSize)
+        view.mapLanguage = PTDashboardConfig.appIsInChinese() ? 0 : 1
         return view
     }()
     
@@ -213,7 +217,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     private lazy var searchBar:PTSearchBar = {
         let view = PTSearchBar()
         view.searchPlaceholder = PTDashboardConfig.languageFunc(text: "search_placeholder")
-        view.searchPlaceholderColor = .black
+        view.searchPlaceholderColor = .lightGray
         view.searchPlaceholderFont = .appfont(size: 16)
         view.delegate = self
         view.searchBarStyle = .minimal
@@ -256,8 +260,10 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         let view = UIButton(type: .system)
         view.translatesAutoresizingMaskIntoConstraints = false
         view.setTitle("🚀", for: .normal)
+        view.setTitle("🏍️", for: .disabled)
         view.titleLabel?.font = .appfont(size: 18)
-        view.backgroundColor = .systemGreen
+        view.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
+        view.setBackgroundColor(color: .systemGray, forState: .disabled)
         view.setTitleColor(.white, for: .normal)
         view.layer.cornerRadius = 12
         view.isHidden = true // 只有规划好路线才显示
@@ -378,6 +384,8 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         pt_observerLanguage {
             if self.vcDidLoad {
                 self.searchBar.searchPlaceholder = PTDashboardConfig.languageFunc(text: "search_placeholder")
+                self.amapView.mapLanguage = PTDashboardConfig.appIsInChinese() ? 0 : 1
+                self.amapView.mapType = .standardNight
             }
         }
         vcDidLoad = true
@@ -398,9 +406,8 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
             make.edges.equalToSuperview()
         }
         
-        let buttonSize:CGFloat = 44
         homeButton.snp.makeConstraints { make in
-            make.size.equalTo(buttonSize)
+            make.size.equalTo(self.homeSize)
             make.left.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing)
         }
@@ -411,8 +418,8 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         }
         homeButton.layoutIfNeeded()
         officeButton.layoutIfNeeded()
-        homeButton.viewCorner(radius: buttonSize / 2)
-        officeButton.viewCorner(radius: buttonSize / 2)
+        homeButton.viewCorner(radius: self.homeSize / 2)
+        officeButton.viewCorner(radius: self.homeSize / 2)
 
         searchResultsTableView.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
@@ -461,8 +468,6 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     @objc private func startNavigationTapped() {
         
         // 可以在这里收起按钮，或者进入纯粹的导航视角
-        startNavigationButton.setTitle("🏍️", for: .normal)
-        startNavigationButton.backgroundColor = .systemGray
         startNavigationButton.isEnabled = false
     }
     
@@ -652,6 +657,11 @@ extension PTMotoNavigationViewController:MAMapViewDelegate {
         }
         return nil
     }
+    
+    func mapView(_ mapView: MAMapView!, didLongPressedAt coordinate: CLLocationCoordinate2D) {
+        planRoute(to: coordinate, title: "")
+        setPointPin(location: coordinate)
+    }
 }
 
 extension PTMotoNavigationViewController:AMapLocationManagerDelegate {
@@ -707,6 +717,7 @@ extension PTMotoNavigationViewController:AMapSearchDelegate {
         if !self.amapSearchResults.isEmpty {
             searchResultsTableView.isHidden = false
             searchResultsTableView.reloadData()
+            self.searchBar.text = ""
         } else {
             searchResultsTableView.isHidden = true
             searchResultsTableView.reloadData()
@@ -740,8 +751,8 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
             amapView.add(selectablePolyline)
             
             //更新CollectonView的信息
-            let title = String(format: "路径ID:%d | 路径计算策略:%d", Int( truncating: aNumber), preferenceView.strategy(isMultiple: isMultipleRoutePlan).rawValue)
-            let subtitle = String(format: "长度:%d米 | 预估时间:%d秒 | 分段数:%d", aRoute.routeLength, aRoute.routeTime, aRoute.routeSegments.count)
+            let title = String(format: "Plant:%d", preferenceView.strategy(isMultiple: isMultipleRoutePlan).rawValue)
+            let subtitle = String(format: "Distance:%dKm | Time:%@", aRoute.routeLength / 1000, aRoute.routeTime.timeString)
             let info = RouteCollectionViewInfo(routeID: Int( truncating: aNumber), title: title, subTitle: subtitle,isSelected: false)
             
             routeIndicatorInfoArray.append(info)
@@ -751,7 +762,7 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
         
         if let first = routeIndicatorInfoArray.first {
             routeIndicatorInfoArray[0].isSelected = true
-            self.startNavigationButton.setTitle("🚀", for: .normal)
+            self.startNavigationButton.isEnabled = true
             self.routePlantList.isHidden = false
             self.routePlantList.clearAllData { _ in
                 self.listSet()

@@ -154,15 +154,23 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         view.midSpacing = CGFloat.GlobalItemSpacing / 2
         view.imageSize = .init(width: 5, height: 5)
         view.setImage(bleStatusConnectImage, state: .normal)
-        view.setImage(bleStatusNoConnectImage, state: .disabled)
-        view.isEnabled = false
+        view.setImage(bleStatusNoConnectImage, state: .selected)
         view.setTitleFont(.appfont(size: 14), state: .normal)
-        view.setTitleFont(.appfont(size: 14), state: .disabled)
+        view.setTitleFont(.appfont(size: 14), state: .selected)
         view.setTitleColor(.white, state: .normal)
-        view.setTitleColor(.white, state: .disabled)
+        view.setTitleColor(.white, state: .selected)
         view.setTitle(PTDashboardConfig.languageFunc(text: "casa_bluetooth_status"), state: .normal)
-        view.setTitle(PTDashboardConfig.languageFunc(text: "casa_bluetooth_status"), state: .disabled)
+        view.setTitle(PTDashboardConfig.languageFunc(text: "casa_bluetooth_status"), state: .selected)
         view.bounds = .init(origin: .zero, size: .init(width:view.getKitCurrentDimension() + 5, height:PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers { sender in
+            if !PTDashboardConfig.shared.blueConnected {
+                let vc = PTBLEConnectViewController()
+                let nav = PTBaseNavControl(rootViewController: vc)
+                nav.modalPresentationStyle = .fullScreen
+                self.navigationController?.present(nav, animated: true)
+            }
+        }
+        view.isSelected = false
         return view
     }()
     
@@ -174,9 +182,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         view.clipsToBounds = false
         return view
     }()
-    
-    let logTextView = UITextView()
-        
+            
     open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
         return .solid(.clear)
     }
@@ -185,9 +191,13 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
         setCustomRightButtons(buttons: [bleConnectStatusLabel])
-        PTGCDManager.shared.delayOnMain(time: 0.3) {
-            self.changeStatusBar(type: .Dark)
-        }
+        
+        self.bleConnectStatusLabel.isSelected = !PTDashboardConfig.shared.blueConnected
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        self.bleConnectStatusLabel.isSelected = !PTDashboardConfig.shared.blueConnected
     }
     
     override func viewDidLoad() {
@@ -315,7 +325,6 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         
     // MARK: - 状态回调
     @objc func handleDataNotification(_ notification: Notification) {
-        self.bleConnectStatusLabel.isEnabled = true
         // 1. 将广播传递过来的 object 安全地向下转型为我们的数据模型
         if let data1 = notification.object as? PTDashboardData1 {
             

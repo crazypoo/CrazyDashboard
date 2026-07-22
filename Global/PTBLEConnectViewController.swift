@@ -45,12 +45,15 @@ class PTBLEConnectViewController: PTMotoBaseViewController,@unchecked Sendable {
         return view
     }()
     
-    lazy var appLogo:UIImageView = {
-        let view = UIImageView()
-        view.image = UIImage(named: "app_inside_logo")
+    lazy var appLogo:UIButton = {
+        let view = UIButton(type:.custom)
+        view.imageView?.contentMode = .scaleAspectFit
+        view.imageView?.clipsToBounds = false
+        view.setImage(UIImage(named: "app_inside_logo"), for: .normal)
         view.bounds = .init(origin: .zero, size: .init(width: 108.adapter, height: PTAppBaseConfig.share.navBarButtonSize))
-        view.contentMode = .scaleAspectFit
-        view.clipsToBounds = false
+        view.addActionHandlers { sender in
+            self.dismissAnimated()
+        }
         return view
     }()
     
@@ -90,9 +93,6 @@ class PTBLEConnectViewController: PTMotoBaseViewController,@unchecked Sendable {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
         setCustomRightButtons(buttons: [globalButton])
-        PTGCDManager.shared.delayOnMain(time: 0.35) {
-            self.changeStatusBar(type: .Dark)
-        }
     }
     
     override func viewDidLoad() {
@@ -146,9 +146,11 @@ class PTBLEConnectViewController: PTMotoBaseViewController,@unchecked Sendable {
     }
     
     @objc func handleAuthSuccess() {
+        PTDashboardConfig.shared.blueConnected = true
         PTGCDManager.shared.delayOnMain(time: 3) {
             PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "connect_success")) {
                 self.bleSuccessCallback?()
+                self.dismissAnimated()
             }
         }
     }
