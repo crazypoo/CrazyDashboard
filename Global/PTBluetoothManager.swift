@@ -17,6 +17,7 @@ let MotorcycleDATA3 = NSNotification.Name("MotorcycleDATA3")
 let MotorcycleCONTROL = NSNotification.Name("MotorcycleCONTROL")
 let MotorcycleABS = NSNotification.Name("MotorcycleABS")
 let MotorcycleDashBoardChange = NSNotification.Name("MotorcycleDashBoardChange")
+let MotorcycleDisconnected = NSNotification.Name("MotorcycleDisconnected")
 
 let kmToMilOffset:Double = 0.621371
 
@@ -721,6 +722,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         isTioSubscribed = false
         isCreditsSubscribed = false
         authState = .waitKeyId
+        NotificationCenter.default.post(name: MotorcycleDisconnected, object: nil)
     }
     
     // MARK: - 监听写入

@@ -22,6 +22,7 @@ enum NaviPointAnnotationType: Int {
     case start
     case way
     case end
+    case parking
 }
 
 class NaviPointAnnotation: MAPointAnnotation {
@@ -389,6 +390,14 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
             }
         }
         vcDidLoad = true
+        
+        if let findParking = PTMOTOParkingManager.shared.getLastParkedLocation() {
+            let beginAnnotation = NaviPointAnnotation()
+            beginAnnotation.coordinate = CLLocationCoordinate2D(latitude: Double(findParking.latitude), longitude: Double(findParking.longitude))
+            beginAnnotation.title = PTDashboardConfig.languageFunc(text: "pin_parking")
+            beginAnnotation.naviPointType = .parking
+            amapView.addAnnotation(beginAnnotation)
+        }
     }
     
     // MARK: - 初始化配置
@@ -634,28 +643,54 @@ extension PTMotoNavigationViewController:MAMapViewDelegate {
         
         // 过滤我们自定义的导航大头针
         if let naviAnno = annotation as? NaviPointAnnotation {
-            let annotationIdentifier = "NaviPointAnnotationIdentifier"
-            
-            var pointAnnotationView = mapView.dequeueReusableAnnotationView(withIdentifier: annotationIdentifier) as? MAPinAnnotationView
-            
-            if pointAnnotationView == nil {
-                pointAnnotationView = MAPinAnnotationView(annotation: naviAnno, reuseIdentifier: annotationIdentifier)
+            switch naviAnno.naviPointType {
+            case .parking:
+                let parkID = "PTMOTOParkingAnotationView"
+                var pointAnnotationView = mapView.dequeueReusableAnnotationView(withIdentifier: parkID) as? PTMOTOParkingAnotationView
+                
+                if pointAnnotationView == nil {
+                    pointAnnotationView = PTMOTOParkingAnotationView(annotation: naviAnno, reuseIdentifier: parkID)
+                }
+                pointAnnotationView?.image = UIImage(named: "app_connect_logo")?.transformImage(size: .init(width: 44, height: 24))
+                pointAnnotationView?.canShowCallout = true
+                pointAnnotationView?.isDraggable = false
+                return pointAnnotationView
+            default:
+                let annotationIdentifier = "NaviPointAnnotationIdentifier"
+                
+                var pointAnnotationView = mapView.dequeueReusableAnnotationView(withIdentifier: annotationIdentifier) as? MAPinAnnotationView
+                
+                if pointAnnotationView == nil {
+                    pointAnnotationView = MAPinAnnotationView(annotation: naviAnno, reuseIdentifier: annotationIdentifier)
+                }
+                
+                pointAnnotationView?.animatesDrop = false
+                pointAnnotationView?.canShowCallout = true
+                pointAnnotationView?.isDraggable = false
+                
+                // 🚨 根据类型设置颜色，这里生效后，起点就会变回绿色！
+                if naviAnno.naviPointType == .start {
+                    pointAnnotationView?.pinColor = .green // 起点为绿色
+                } else if naviAnno.naviPointType == .end {
+                    pointAnnotationView?.pinColor = .red   // 终点为红色
+                } else if naviAnno.naviPointType == .parking {
+                    pointAnnotationView?.pinColor = .purple
+                }
+                
+                return pointAnnotationView
             }
-            
-            pointAnnotationView?.animatesDrop = false
-            pointAnnotationView?.canShowCallout = true
-            pointAnnotationView?.isDraggable = false
-            
-            // 🚨 根据类型设置颜色，这里生效后，起点就会变回绿色！
-            if naviAnno.naviPointType == .start {
-                pointAnnotationView?.pinColor = .green // 起点为绿色
-            } else if naviAnno.naviPointType == .end {
-                pointAnnotationView?.pinColor = .red   // 终点为红色
-            }
-            
-            return pointAnnotationView
         }
         return nil
+    }
+    
+    func mapView(_ mapView: MAMapView!, didAnnotationViewCalloutTapped view: MAAnnotationView!) {
+        switch view.reuseIdentifier {
+        case "PTMOTOParkingAnotationView":
+            self.planRoute(to: view.annotation.coordinate, title: view.annotation.title ?? "")
+            setPointPin(location: view.annotation.coordinate)
+        default:
+            break
+        }
     }
     
     func mapView(_ mapView: MAMapView!, didLongPressedAt coordinate: CLLocationCoordinate2D) {

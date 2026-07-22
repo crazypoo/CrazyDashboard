@@ -28,5 +28,15 @@ class PTMotoBaseViewController: PTBaseViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(handleMotorcycleDisconnect), name: MotorcycleDisconnected, object: nil)
+    }
+    
+    func handleMotorcycleDisconnect() {
+        PTMOTOParkingManager.shared.saveCurrentLocationAsParkingSpot()
+    }
+    
+    @MainActor deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 }

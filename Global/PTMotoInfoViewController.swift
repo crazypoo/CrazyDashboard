@@ -209,7 +209,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleDATA3, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleCONTROL, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleABS, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(dashBoardReload), name: MotorcycleDashBoardChange, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(dashBoardReload), name: MotorcycleDashBoardChange, object: nil)        
     }
         
     // MARK: - 界面布局
@@ -419,9 +419,5 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             self.voltageLabel.dataProgress.barColor = PTDashboardConfig.shared.appMainColor
             self.distToMaintenanceLabel.dataProgress.barColor = PTDashboardConfig.shared.appMainColor
         }
-    }
-    
-    @MainActor deinit {
-        NotificationCenter.default.removeObserver(self)
     }
 }
