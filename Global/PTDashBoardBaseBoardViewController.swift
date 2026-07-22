@@ -28,6 +28,23 @@ class PTDashBoardBaseBoardViewController: PTBaseViewController {
     let bumpMeter = PTBumpMeterView()
     let pitchGauge = PTPitchView()
     
+    open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
+        return .solid(.clear)
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        PTRotationManager.shared.rotationToLandscapeRight()
+        PTRotationManager.shared.isLockOrientationWhenDeviceOrientationDidChange = true
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        // 视图即将消失（比如返回上一页）时：强制恢复为竖屏
+        PTRotationManager.shared.rotationToPortrait()
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black

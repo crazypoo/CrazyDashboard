@@ -36,6 +36,8 @@
 		5577E7D32FD704AD0004733F /* PTPitchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7D12FD704AD0004733F /* PTPitchView.swift */; };
 		55901837300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55901836300FE37100A77571 /* PTMotoBaseViewController.swift */; };
 		55901838300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55901836300FE37100A77571 /* PTMotoBaseViewController.swift */; };
+		5590187230107A1C00A77571 /* PTRoutePlantCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5590187130107A1C00A77571 /* PTRoutePlantCell.swift */; };
+		5590187330107A1C00A77571 /* PTRoutePlantCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5590187130107A1C00A77571 /* PTRoutePlantCell.swift */; };
 		55F503AB300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
 		55F503AC300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
 		55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */; };
@@ -86,6 +88,7 @@
 		5577E7CE2FD704790004733F /* PTBumpMeterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBumpMeterView.swift; sourceTree = "<group>"; };
 		5577E7D12FD704AD0004733F /* PTPitchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPitchView.swift; sourceTree = "<group>"; };
 		55901836300FE37100A77571 /* PTMotoBaseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoBaseViewController.swift; sourceTree = "<group>"; };
+		5590187130107A1C00A77571 /* PTRoutePlantCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRoutePlantCell.swift; sourceTree = "<group>"; };
 		55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = GlobalAssets.xcassets; sourceTree = "<group>"; };
 		55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLanguageModel.swift; sourceTree = "<group>"; };
 		55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoUserDefaultStruct.swift; sourceTree = "<group>"; };
@@ -240,6 +243,7 @@
 			children = (
 				55FE2A76300DF95C000E741F /* PTMainProgressView.swift */,
 				555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */,
+				5590187130107A1C00A77571 /* PTRoutePlantCell.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -517,6 +521,7 @@
 				55028F2D2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */,
 				55FE295B300CA4E8000E741F /* PTBluetoothManager.swift in Sources */,
 				55FE29A7300CC2E2000E741F /* PTMotoSettingViewController.swift in Sources */,
+				5590187330107A1C00A77571 /* PTRoutePlantCell.swift in Sources */,
 				55FE2A0A300CE2B0000E741F /* PTMapKitNavigationHelper.swift in Sources */,
 				5577E62F2FD656D20004733F /* PTLocationEngine.swift in Sources */,
 				5577E6302FD656D20004733F /* PTNowPlayingView.swift in Sources */,
@@ -557,6 +562,7 @@
 				55FE2A5E300DF42A000E741F /* PTBLEConnectViewController.swift in Sources */,
 				5577E7CA2FD6FC8C0004733F /* PTCrashWarningView.swift in Sources */,
 				55FE295C300CA4E8000E741F /* PTBluetoothManager.swift in Sources */,
+				5590187230107A1C00A77571 /* PTRoutePlantCell.swift in Sources */,
 				55FE2966300CA5E0000E741F /* PTDashboardConfig.swift in Sources */,
 				55FE2A0B300CE2B0000E741F /* PTMapKitNavigationHelper.swift in Sources */,
 				5577E7812FD6EEEF0004733F /* PTGForceView.swift in Sources */,
@@ -824,7 +830,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -968,7 +974,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (

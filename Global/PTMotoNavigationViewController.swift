@@ -32,6 +32,7 @@ struct RouteCollectionViewInfo {
     var routeID: Int
     var title: String
     var subTitle: String
+    var isSelected:Bool
 }
 
 class SelectableOverlay: MABaseOverlay {
@@ -263,7 +264,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         view.addActionHandlers(handler: { _ in
             self.startNavigationTapped()
             self.driveView.isHidden = false
-            
+            self.routePlantList.isHidden = true
             if self.testButton.isSelected {
                 AMapNaviDriveManager.sharedInstance().startEmulatorNavi()
             } else {
@@ -313,6 +314,46 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         return view
     }()
     
+    let routePlantItemHeight:CGFloat = 64.adapter
+    lazy var routePlantList:PTCollectionView = {
+                                
+        let collectionConfig = PTCollectionViewConfig()
+        collectionConfig.viewType = .Custom
+        collectionConfig.footerRefresh = false
+        collectionConfig.topRefresh = false
+
+        let view = PTCollectionView(viewConfig: collectionConfig)
+        view.registerClassCells(classs: [PTRoutePlantCell.ID:PTRoutePlantCell.self])
+        view.customerLayout = { sectionIndex,section in
+            return UICollectionView.horizontalLayoutSystem(data: section.rows,itemOriginalX: PTAppBaseConfig.share.defaultViewSpace,itemWidth: 130.adapter,itemHeight: self.routePlantItemHeight,topContentSpace: CGFloat.GlobalItemSpacing,bottomContentSpace: CGFloat.GlobalItemSpacing,itemLeadingSpace: CGFloat.GlobalItemSpacing)
+        }
+        view.cellInCollection = { collectionView,sectionModel,indexPath in
+            if let itemRow = sectionModel.rows?[indexPath.row] {
+                let getCell = collectionView.dequeueReusableCell(withReuseIdentifier: itemRow.ID, for: indexPath)
+                if let cell = getCell as? PTRoutePlantCell {
+                    cell.info = self.routeIndicatorInfoArray[indexPath.row]
+                    return cell
+                }
+            }
+            return nil
+        }
+        view.collectionDidSelect = { collectionView,sectionModel,indexPath in
+            for i in self.routeIndicatorInfoArray.indices {
+                self.routeIndicatorInfoArray[i].isSelected = i == indexPath.row
+            }
+            self.routePlantList.reloadAllData() {
+                PTGCDManager.shared.runOnMain(block: {
+                    if let findModel = self.routeIndicatorInfoArray.first(where: { $0.isSelected}) {
+                        self.selectNaviRouteWithID(routeID: findModel.routeID)
+                    }
+                })
+            }
+        }
+        view.isHidden = true
+        return view
+    }()
+
+    
     open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
         return .solid(.clear)
     }
@@ -352,7 +393,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     private func setupUI() {
         NotificationCenter.default.addObserver(self, selector: #selector(dashBoardReload), name: MotorcycleDashBoardChange, object: nil)
 
-        view.addSubviews([amapView,homeButton,officeButton,searchResultsTableView,startNavigationButton,preferenceView,driveView])
+        view.addSubviews([amapView,homeButton,officeButton,searchResultsTableView,startNavigationButton,preferenceView,driveView,routePlantList])
         amapView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
@@ -398,6 +439,23 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
             make.top.equalTo(self.searchResultsTableView)
             make.bottom.equalTo(self.startNavigationButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
         }
+        
+        routePlantList.snp.makeConstraints { make in
+            make.left.right.equalToSuperview()
+            make.bottom.equalTo(self.startNavigationButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
+            make.height.equalTo(self.routePlantItemHeight + CGFloat.GlobalItemSpacing * 2)
+        }
+    }
+    
+    func listSet(finishTask:PTCollectionCallback? = nil) {
+        var sections = [PTSection]()
+        let rowsTrip = routeIndicatorInfoArray.map { value in
+            let row = PTRows(ID:PTRoutePlantCell.ID)
+            return row
+        }
+        let sectionTrip = PTSection(rows: rowsTrip)
+        sections.append(sectionTrip)
+        routePlantList.showCollectionDetail(collectionData: sections,finishTask: finishTask)
     }
         
     @objc private func startNavigationTapped() {
@@ -684,7 +742,7 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
             //更新CollectonView的信息
             let title = String(format: "路径ID:%d | 路径计算策略:%d", Int( truncating: aNumber), preferenceView.strategy(isMultiple: isMultipleRoutePlan).rawValue)
             let subtitle = String(format: "长度:%d米 | 预估时间:%d秒 | 分段数:%d", aRoute.routeLength, aRoute.routeTime, aRoute.routeSegments.count)
-            let info = RouteCollectionViewInfo(routeID: Int( truncating: aNumber), title: title, subTitle: subtitle)
+            let info = RouteCollectionViewInfo(routeID: Int( truncating: aNumber), title: title, subTitle: subtitle,isSelected: false)
             
             routeIndicatorInfoArray.append(info)
         }
@@ -692,7 +750,12 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
         amapView.showAnnotations(amapView.annotations, animated: false)
         
         if let first = routeIndicatorInfoArray.first {
+            routeIndicatorInfoArray[0].isSelected = true
             self.startNavigationButton.setTitle("🚀", for: .normal)
+            self.routePlantList.isHidden = false
+            self.routePlantList.clearAllData { _ in
+                self.listSet()
+            }
             selectNaviRouteWithID(routeID: first.routeID)
         }
     }
@@ -702,7 +765,7 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
         if AMapNaviDriveManager.sharedInstance().selectNaviRoute(withRouteID: routeID) {
             selecteOverlayWithRouteID(routeID: routeID)
         } else {
-            PTNSLogConsole("路径选择失败!")
+            PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "alert_title"))
         }
     }
     

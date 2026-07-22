@@ -155,6 +155,19 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         })
         return view
     }()
+    
+    lazy var proButton:UIButton = {
+        let view = UIButton()
+        view.titleLabel?.font = .appfont(size: 16)
+        view.setTitleColor(.white, for: .normal)
+        view.setTitle(PTDashboardConfig.languageFunc(text: "button_pro"), for: .normal)
+        view.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
+        view.addActionHandlers { sender in
+            let vc = PTDashBoardBaseBoardViewController()
+            self.navigationController?.pushViewController(vc, animated: true)
+        }
+        return view
+    }()
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
@@ -169,7 +182,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         super.viewDidLoad()
         
         view.backgroundColor = .black
-        view.addSubviews([dashBoadColorTitle,dashBoardColorButton,dashUniTitle,dashBoardUniButton,dashLanguageTitle,dashBoardLanguageButton,messageTestButton,disconnect])
+        view.addSubviews([dashBoadColorTitle,dashBoardColorButton,dashUniTitle,dashBoardUniButton,dashLanguageTitle,dashBoardLanguageButton,messageTestButton,disconnect,proButton])
         dashBoadColorTitle.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing)
@@ -216,6 +229,11 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             make.bottom.equalToSuperview().inset(CGFloat.kTabbarHeight_Total + CGFloat.GlobalItemSpacing)
         }
         
+        proButton.snp.makeConstraints { make in
+            make.left.right.height.equalTo(self.disconnect)
+            make.bottom.equalTo(self.disconnect.snp.top).offset(-CGFloat.GlobalItemSpacing)
+        }
+        
         dashBoardColorButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashBoardUniButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashBoardLanguageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
@@ -228,13 +246,16 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         dashBoardLanguageButton.viewCorner(radius: 4)
         disconnect.layoutIfNeeded()
         disconnect.viewCorner(radius: 4)
-        
+        proButton.layoutIfNeeded()
+        proButton.viewCorner(radius: 4)
+
         pt_observerLanguage {
             if self.vcDidLoad {
                 self.dashLanguageTitle.text = PTDashboardConfig.languageFunc(text: "casa_card_lan")
                 self.dashBoadColorTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_color_set_title")
                 self.dashUniTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_set_title")
                 self.disconnect.setTitle(PTDashboardConfig.languageFunc(text: "button_dis_connect"), for: .normal)
+                self.proButton.setTitle(PTDashboardConfig.languageFunc(text: "button_pro"), for: .normal)
             }
         }
         vcDidLoad = true
