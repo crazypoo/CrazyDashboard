@@ -67,6 +67,20 @@ class PTMOTOParkingManager: NSObject {
         locationManager.stopUpdatingHeading()
         locationManager.startUpdatingLocation()
     }
+    
+    // MARK: - 🚨 新增：专供防盗系统使用的后台单次快速定位
+    /// 请求单次高精度定位 (带超时机制，非常适合后台断连瞬间的抓取)
+    public func requestSingleLocationForAntiTheft(completion: @escaping (CLLocation?) -> Void) {
+        // 使用高德提供的单次定位 API，不带逆地理编码以追求极速响应
+        locationManager.requestLocation(withReGeocode: false, completionBlock: { (location, reGeocode, error) in
+            if let error = error {
+                PTNSLogConsole("❌ [单次定位] 获取手机当前位置失败: \(error.localizedDescription)")
+                completion(nil)
+            } else {
+                completion(location)
+            }
+        })
+    }
 }
 
 extension PTMOTOParkingManager:AMapLocationManagerDelegate {

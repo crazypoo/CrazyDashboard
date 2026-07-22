@@ -86,6 +86,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         PTAppBaseConfig.share.tabSelectedColor = PTDashboardConfig.shared.appMainColor
 
         registerBackgroundTasks()
+        
+        _ = PTTripManager.shared
+        _ = PTAntiTheftManager.shared
+        _ = PTMaintenanceManager.shared
+        _ = PTGPXRecorder.shared
+        _ = PTDiagnosticManager.shared
         return true
     }
 

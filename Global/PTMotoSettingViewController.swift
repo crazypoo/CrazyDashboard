@@ -172,18 +172,32 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         }
         return view
     }()
+    
+    lazy var textView:UITextView = {
+        let view = UITextView()
+        view.textColor = .green // 经典黑客绿
+        view.font = .appfont(size: 12)
+        view.isEditable = false
+        view.layoutManager.allowsNonContiguousLayout = false // 优化长文本性能
+        return view
+    }()
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
         setCustomRightButtons(buttons: [globalButton])
     }
-        
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        loadHistoryAndBindUpdates()
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
         view.backgroundColor = .black
-        view.addSubviews([dashBoadColorTitle,dashBoardColorButton,dashUniTitle,dashBoardUniButton,dashLanguageTitle,dashBoardLanguageButton,messageTestButton,disconnect,proButton])
+        view.addSubviews([dashBoadColorTitle,dashBoardColorButton,dashUniTitle,dashBoardUniButton,dashLanguageTitle,dashBoardLanguageButton,messageTestButton,disconnect,proButton,textView])
         dashBoadColorTitle.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing)
@@ -235,6 +249,12 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             make.bottom.equalTo(self.disconnect.snp.top).offset(-CGFloat.GlobalItemSpacing)
         }
         
+        textView.snp.makeConstraints { make in
+            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.top.equalTo(self.dashBoardLanguageButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.bottom.equalTo(self.proButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
+        }
+        
         dashBoardColorButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashBoardUniButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashBoardLanguageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
@@ -262,6 +282,43 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         vcDidLoad = true
     }
     
+    private func loadHistoryAndBindUpdates() {
+        // 先加载缓存的历史记录
+        let history = PTBluetoothServerManager.shared.logHistory.joined(separator: "\n")
+        textView.text = history
+        scrollToBottom()
+        
+        // 绑定实时更新闭包
+        PTBluetoothServerManager.shared.onLogUpdated = { [weak self] newLog in
+            guard let self = self else { return }
+            // 在现有的文本后面追加新日志
+            self.textView.text.append("\n" + newLog)
+            self.scrollToBottom()
+        }
+    }
+    
+    private func scrollToBottom() {
+        guard textView.text.count > 0 else { return }
+        let bottomRange = NSRange(location: textView.text.count - 1, length: 1)
+        textView.scrollRangeToVisible(bottomRange)
+    }
+    
+    @objc private func clearLogs() {
+        textView.text = ""
+        // 注意：如果你希望彻底清空，最好在 Manager 里也加个 clear 方法，这里仅清空 UI 显示
+    }
+    
+    @objc private func copyLogs() {
+        UIPasteboard.general.string = textView.text
+        // 如果引入了 ProgressHUD 可以替换为弹窗提示
+        PTNSLogConsole("✅ 日志已复制到剪贴板")
+    }
+    
+    @objc private func closeConsole() {
+        // 解除绑定以防止内存泄漏或后台多余 UI 刷新
+        PTBluetoothServerManager.shared.onLogUpdated = nil
+    }
+
     func baseTitle(value:String) -> UILabel {
         let view = UILabel()
         view.text = value

@@ -719,6 +719,7 @@ extension PTMotoNavigationViewController:AMapLocationManagerDelegate {
             regeo.requireExtension = true
             self.search.aMapReGoecodeSearch(regeo)
         }
+        PTGPXRecorder.shared.appendLocation(location)
     }
     
     func onReGeocodeSearchDone(_ request: AMapReGeocodeSearchRequest!, response: AMapReGeocodeSearchResponse!) {

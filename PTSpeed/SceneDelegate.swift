@@ -52,5 +52,16 @@ class SceneDelegate: PTWindowSceneDelegate {
         // Use this method to save data, release shared resources, and store enough scene-specific state information
         // to restore the scene back to its current state.
     }
+    
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+            guard let url = URLContexts.first?.url else { return }
+            
+            // 🚨 将系统传进来的 URL 交给我们的路由引擎处理
+            let handled = PTRoutingManager.shared.handle(url: url)
+            
+            if handled {
+                PTNSLogConsole("✅ 成功通过 URL Scheme 唤醒 App 并执行指令")
+            }
+        }
 }
 

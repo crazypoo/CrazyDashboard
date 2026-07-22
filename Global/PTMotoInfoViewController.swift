@@ -183,6 +183,8 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         return view
     }()
             
+    private var snifferOverlay: PTECUSnifferOverlay!
+    
     open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
         return .solid(.clear)
     }
@@ -284,7 +286,11 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                 self.bleConnectStatusLabel.bounds = .init(origin: .zero, size: .init(width:self.bleConnectStatusLabel.getKitCurrentDimension() + 5, height:PTAppBaseConfig.share.navBarButtonSize))
             }
         }
+        
+        setupSnifferOverlay()
+        setupDeveloperGesture()
     }
+    
     
     func modelvoltageSet(currentValue:Double) ->PTMainProgressViewModel {
         let modelvoltage = PTMainProgressViewModel()
@@ -389,6 +395,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             DispatchQueue.main.async {
                 self.speedometer.updateSpeed(vehicleSpeedKmh)
                 self.speedometerReversed.updateSpeed(CGFloat(engineRpm))
+                self.speedometerReversed.applyShiftLightLogic(currentRpm: engineRpm)
             }
         } else if let abs = notification.object as? PTAbsStatus {
             
@@ -418,6 +425,45 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             self.speedometerReversed.needleColor = PTDashboardConfig.shared.appMainColor
             self.voltageLabel.dataProgress.barColor = PTDashboardConfig.shared.appMainColor
             self.distToMaintenanceLabel.dataProgress.barColor = PTDashboardConfig.shared.appMainColor
+        }
+    }
+}
+
+extension PTMotoInfoViewController {
+    private func setupSnifferOverlay() {
+        snifferOverlay = PTECUSnifferOverlay(frame: view.bounds)
+        // 确保它随屏幕旋转或尺寸变化自动调整
+        snifferOverlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(snifferOverlay)
+    }
+
+    private func setupDeveloperGesture() {
+        // 创建长按手势识别器，绑定触发事件
+        let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleDeveloperGesture(_:)))
+        
+        // 🚨 核心配置 1：强制要求 4 根手指同时按下
+        longPressGesture.numberOfTouchesRequired = 4
+        
+        // 🚨 核心配置 2：至少长按 1.5 秒才会触发，完美避开日常操作
+        longPressGesture.minimumPressDuration = 1.5
+        
+        // 将手势添加到最底层的 view 上
+        view.addGestureRecognizer(longPressGesture)
+    }
+    
+    @objc private func handleDeveloperGesture(_ gesture: UILongPressGestureRecognizer) {
+        // UILongPressGestureRecognizer 在其生命周期内会触发多次（began, changed, ended 等）
+        // 我们只需要在它刚判定成功 (.began) 时执行一次即可
+        if gesture.state == .began {
+            PTNSLogConsole("🛠️ [手势触发] 侦测到四指长按，正在唤醒开发者模式！")
+            
+            // 给出厚重的物理震动反馈 (Heavy 级别能穿透机车手套的触感)
+            let impact = UIImpactFeedbackGenerator(style: .heavy)
+            impact.prepare()
+            impact.impactOccurred()
+            
+            // 调用嗅探器的纯动画展示方法
+            snifferOverlay.showSniffer()
         }
     }
 }

@@ -18,6 +18,7 @@ let MotorcycleCONTROL = NSNotification.Name("MotorcycleCONTROL")
 let MotorcycleABS = NSNotification.Name("MotorcycleABS")
 let MotorcycleDashBoardChange = NSNotification.Name("MotorcycleDashBoardChange")
 let MotorcycleDisconnected = NSNotification.Name("MotorcycleDisconnected")
+let MotorcycleRawDataReceived = NSNotification.Name("MotorcycleRawDataReceived")
 
 let kmToMilOffset:Double = 0.621371
 
@@ -594,6 +595,14 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     public private(set) var latestControl: PTDashboardControl?
     public private(set) var latestAbsStatus: PTAbsStatus?
 
+    public private(set) var logHistory: [String] = []
+        
+    private lazy var dateFormatter: DateFormatter = {
+        let df = DateFormatter()
+        df.dateFormat = "HH:mm:ss.SSS"
+        return df
+    }()
+
     // 🚨 核心修复 1：必须使用 16-bit 短标识！否则会撑爆 iOS 的 31 字节广播包，导致摩托车看不见！
     let TIO_SERVICE = CBUUID(string: "FEFB")
     
@@ -635,8 +644,17 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     }
     
     private func ptLog(_ message: String) {
-        print(message)
-        DispatchQueue.main.async { self.onLogUpdated?(message) }
+        let timeString = dateFormatter.string(from: Date())
+        let formattedLog = "[\(timeString)] \(message)"
+        PTNSLogConsole(formattedLog)
+        DispatchQueue.main.async {
+            self.logHistory.append(formattedLog)
+            // 控制数组大小，防止长时间挂机导致内存爆表
+            if self.logHistory.count > 500 {
+                self.logHistory.removeFirst()
+            }
+            self.onLogUpdated?(formattedLog)
+        }
     }
     
     // MARK: - 启动基站

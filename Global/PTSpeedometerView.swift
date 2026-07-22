@@ -331,3 +331,57 @@ public class PTSpeedometerView: UIView {
         }
     }
 }
+
+extension PTSpeedometerView {
+    
+    // MARK: - 动态换挡/红区提示引擎
+    
+    /// 配置红区参数
+    /// - Parameters:
+    ///   - redlineRpm: 危险/换挡转速阈值 (例如 XP400GT 设置为 8000)
+    ///   - normalColor: 正常状态下的进度条颜色
+    ///   - warningColor: 达到红区时的警告颜色 (通常为高亮红色)
+    public func applyShiftLightLogic(currentRpm: Int,
+                                     redlineRpm: Int = 8000,
+                                     normalColor: UIColor = .systemBlue,
+                                     warningColor: UIColor = .systemRed) {
+        
+        let isInRedline = currentRpm >= redlineRpm
+        
+        // 1. 动态切换颜色
+        let targetColor = isInRedline ? warningColor : normalColor
+        if self.progressColor != targetColor {
+            self.progressColor = targetColor
+        }
+        
+        // 2. 赛道级视觉反馈：当突破红区时，给数字标签增加呼吸闪烁动画
+        if isInRedline {
+            startRedlineFlashing()
+        } else {
+            stopRedlineFlashing()
+        }
+    }
+    
+    private func startRedlineFlashing() {
+        // 防止重复添加动画
+        guard unitLabel.layer.animation(forKey: "redlineFlash") == nil else { return }
+        
+        let flash = CABasicAnimation(keyPath: "opacity")
+        flash.fromValue = 1.0
+        flash.toValue = 0.2
+        flash.duration = 0.15 // 极快的高频闪烁
+        flash.autoreverses = true
+        flash.repeatCount = .infinity
+        
+        // 让数字和单位一起疯狂闪烁，提醒骑手换挡或收油
+        speedLabel.layer.add(flash, forKey: "redlineFlash")
+        unitLabel.layer.add(flash, forKey: "redlineFlash")
+    }
+    
+    private func stopRedlineFlashing() {
+        speedLabel.layer.removeAnimation(forKey: "redlineFlash")
+        unitLabel.layer.removeAnimation(forKey: "redlineFlash")
+        speedLabel.alpha = 1.0
+        unitLabel.alpha = 1.0
+    }
+}
