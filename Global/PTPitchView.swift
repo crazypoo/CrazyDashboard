@@ -8,6 +8,8 @@
 import UIKit
 import SnapKit
 import SwifterSwift
+import SafeSFSymbols
+import PooTools
 
 @objcMembers
 public class PTPitchView: UIView {
@@ -32,19 +34,19 @@ public class PTPitchView: UIView {
     }
     
     private func setupUI() {
-        titleLabel.text = "车身姿态 (Pitch)"
+        titleLabel.text = PTDashboardConfig.languageFunc(text: "vechicle_pitch")
         titleLabel.textColor = .lightGray
-        titleLabel.font = UIFont.systemFont(ofSize: 12, weight: .bold)
+        titleLabel.font = .appfont(size: 12,bold:true)
         
-        angleLabel.text = "0° 平路"
+        angleLabel.text = PTDashboardConfig.languageFunc(text: "pitch_normal")
         angleLabel.textColor = .white
-        angleLabel.font = UIFont.systemFont(ofSize: 14, weight: .heavy)
+        angleLabel.font = .appfont(size: 14)
         angleLabel.textAlignment = .right
         
         groundLine.backgroundColor = UIColor.white.withAlphaComponent(0.3)
         
         // ⚠️ 这里用了系统的自行车图标作为默认值，如果你有自己的透明背景机车图片，直接替换 image 即可
-        bikeIcon.image = UIImage(systemName: "bicycle") // 或使用你的 "ADV_SideView"
+        bikeIcon.image = UIImage(.bicycle)
         bikeIcon.tintColor = .white
         bikeIcon.contentMode = .scaleAspectFit
         
@@ -86,13 +88,13 @@ public class PTPitchView: UIView {
         // 1. 更新文字状态
         let intAngle = Int(degrees)
         if intAngle > 3 {
-            angleLabel.text = "▲ \(abs(intAngle))° 上坡"
+            angleLabel.text = PTDashboardConfig.language(key: "pitch_up", abs(intAngle))
             angleLabel.textColor = .systemRed
         } else if intAngle < -3 {
-            angleLabel.text = "▼ \(abs(intAngle))° 下坡"
+            angleLabel.text = PTDashboardConfig.language(key: "pitch_down", abs(intAngle))
             angleLabel.textColor = .systemOrange
         } else {
-            angleLabel.text = "0° 平路"
+            angleLabel.text = PTDashboardConfig.languageFunc(text: "pitch_normal")
             angleLabel.textColor = .systemGreen
         }
         

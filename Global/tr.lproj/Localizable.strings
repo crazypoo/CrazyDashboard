@@ -57,3 +57,11 @@
 "direction_south_west" = "Güneybatı";
 "direction_west" = "Batı";
 "direction_north_west" = "KuzeyBatı";
+"shake_value" = "Bumpinese G";
+"vechicle_pitch" = "Araç Sahası";
+"pitch_normal" = "0° düz yol";
+"pitch_up" = "▲ %d° Uphill";
+"pitch_down" = "▼ %d° Yokuş aşağı";
+"music_not_play" = "Oynama";
+"music_unknow_music" = "Bilinmeyen şarkı";
+"music_unknow_artist" = "Bilinmeyen sanatçı";

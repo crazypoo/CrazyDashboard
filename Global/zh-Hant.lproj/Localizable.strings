@@ -57,3 +57,11 @@
 "direction_south_west" = "西南";
 "direction_west" = "西";
 "direction_north_west" = "西北";
+"shake_value" = "顛簸 G";
+"vechicle_pitch" = "車身姿態(Pitch)";
+"pitch_normal" = "0° 平路";
+"pitch_up" = "▲ %d° 上坡";
+"pitch_down" = "▼ %d° 下坡";
+"music_not_play" = "暫無播放";
+"music_unknow_music" = "未知歌曲";
+"music_unknow_artist" = "未知歌手";

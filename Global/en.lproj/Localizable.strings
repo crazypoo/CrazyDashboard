@@ -57,3 +57,11 @@
 "direction_south_west" = "SouthWest";
 "direction_west" = "West";
 "direction_north_west" = "NorthWest";
+"shake_value" = "Bumpinese G";
+"vechicle_pitch" = "Vehicle Pitch";
+"pitch_normal" = "0° straight path";
+"pitch_up" = "▲ %d° Uphill";
+"pitch_down" = "▼ %d° Downhill";
+"music_not_play" = "Not play";
+"music_unknow_music" = "Unknown song";
+"music_unknow_artist" = "Unknows artist";

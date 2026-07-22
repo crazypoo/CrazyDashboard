@@ -188,18 +188,18 @@ public class PTNowPlayingView: UIView {
         // 2. 歌名
         titleLabel.textColor = .white
         titleLabel.textAlignment = .center
-        titleLabel.font = UIFont.boldSystemFont(ofSize: 18)
-        titleLabel.text = "暂无播放"
+        titleLabel.font = .appfont(size: 18,bold:true)
+        titleLabel.text = PTDashboardConfig.languageFunc(text: "music_not_play")
         
         // 3. 歌手
         artistLabel.textColor = .lightGray
         artistLabel.textAlignment = .center
-        artistLabel.font = UIFont.systemFont(ofSize: 14)
+        artistLabel.font = .appfont(size: 14)
         artistLabel.text = "--"
         
         timeLabel.textColor = .lightGray
         timeLabel.textAlignment = .center
-        timeLabel.font = UIFont.systemFont(ofSize: 12)
+        timeLabel.font = .appfont(size: 12)
         timeLabel.text = "-00:00"
 
         addSubviews([artworkImageView,titleLabel,artistLabel,timeLabel,batteryLevel])
@@ -319,13 +319,13 @@ public class PTNowPlayingView: UIView {
             guard let self = self else { return }
             
             if let item = self.musicPlayer.nowPlayingItem {
-                self.titleLabel.text = item.title ?? "未知歌曲"
-                self.artistLabel.text = item.artist ?? "未知歌手"
+                self.titleLabel.text = item.title ?? PTDashboardConfig.languageFunc(text: "music_unknow_music")
+                self.artistLabel.text = item.artist ?? PTDashboardConfig.languageFunc(text: "music_unknow_artist")
                 // 提取专辑封面图片
                 self.fetchArtwork(for: item)
                 self.updateProgress()
             } else {
-                self.titleLabel.text = "暂无播放"
+                self.titleLabel.text = PTDashboardConfig.languageFunc(text: "music_not_play")
                 self.artistLabel.text = "--"
                 self.artworkImageView.image = nil
                 self.progressLayer.strokeEnd = 0

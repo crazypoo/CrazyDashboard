@@ -29,7 +29,7 @@ public class PTBumpMeterView: UIView {
     }
     
     private func setupUI() {
-        titleLabel.text = "颠簸 G"
+        titleLabel.text = PTDashboardConfig.languageFunc(text: "shake_value")
         titleLabel.textColor = .lightGray
         titleLabel.font = UIFont.systemFont(ofSize: 12, weight: .bold)
         
