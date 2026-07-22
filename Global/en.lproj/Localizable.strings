@@ -13,7 +13,7 @@
 "button_dis_connect" = "Disconnect Bluetooth";
 "button_done" = "Done";
 "button_pro" = "Professional mode";
-"casa_batt" = "voltage";
+"casa_batt" = "Voltage";
 "casa_bluetooth_status" = "Bluetooth connection status";
 "casa_card_avg_oil" = "Average fuel consumption";
 "casa_card_distance_title" = "Mileage-related";
@@ -24,7 +24,7 @@
 "casa_card_oil" = "Amount of oil";
 "casa_card_oil_trip" = "Fuel mileage";
 "casa_card_tem" = "Temperature";
-"casa_dist_to_maintenance" = "Maintain the remaining mileage";
+"casa_dist_to_maintenance" = "Maintenance trip";
 "connect_step_1" = "1. If the mobile phone is not connected to the Bluetooth of the motorcycle dashboard, please click to connect the Bluetooth of the motorcycle dashboard first. The name is roughly PEUGEOT. After the connection is successful, return to the APP to continue the next step.";
 "connect_step_2" = "2. After the mobile phone is connected to the Bluetooth of the motorcycle dashboard, click me to turn on the Bluetooth scanning. When the APP is successfully connected to the motorcycle dashboard, it will automatically jump to the main interface.";
 "connect_step_title" = "Operation steps, please be sure to follow the following steps to avoid the failure to connect to the motorcycle Bluetooth.";
