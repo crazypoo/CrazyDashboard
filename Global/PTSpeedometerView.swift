@@ -59,8 +59,8 @@ public class PTSpeedometerView: UIView {
     
     // 内部状态
     private var currentSpeedRaw: CGFloat = 0
-    private var hasSetupInitialLayout = false
-
+    private var previousSize: CGSize = .zero
+    
     // MARK: - 角度体系动态计算
     private var arcStartAngle: CGFloat {
         return direction == .clockwise ? .pi / 4 : .pi * 3 / 4
@@ -85,10 +85,21 @@ public class PTSpeedometerView: UIView {
     public override func layoutSubviews() {
         super.layoutSubviews()
         
-        // 确保 bounds 确定后，只进行一次初始渲染，后续交由 reloadAppearance 控制
-        guard bounds.width > 0, !hasSetupInitialLayout else { return }
-        hasSetupInitialLayout = true
-        reloadAppearance()
+        // 确保 bounds 已经有实际大小
+        guard bounds.width > 0, bounds.height > 0 else { return }
+        
+        // 🚨 核心修复：只有当视图的实际尺寸发生变化时，才重新渲染底层 Layer 和路径
+        if previousSize != bounds.size {
+            previousSize = bounds.size
+            
+            // 同步更新 CAShapeLayer 和基础 Layer 的 frame，防止它们越界或原点错误
+            trackLayer.frame = bounds
+            progressLayer.frame = bounds
+            scaleLayer.frame = bounds
+            
+            // 重新计算并绘制圆弧和刻度
+            reloadAppearance()
+        }
     }
     
     // MARK: - 基础 UI 设置
@@ -311,12 +322,12 @@ public class PTSpeedometerView: UIView {
     
     public func updateEnvironment(altitude: Double?, pressureKpa: Double?) {
         if let alt = altitude {
-            self.altitudeLabel.text = "海拔: \(Int(alt)) m"
+            self.altitudeLabel.text = PTDashboardConfig.language(key: "elevation_value", Int(alt))
         }
         
         if let kpa = pressureKpa, kpa > 0 {
             let hpa = kpa * 10.0
-            self.pressureLabel.text = String(format: "气压: %.1f hPa", hpa)
+            self.pressureLabel.text = PTDashboardConfig.language(key: "hpa_value", hpa)
         }
     }
 }

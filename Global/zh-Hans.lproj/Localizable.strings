@@ -31,9 +31,12 @@
 "connect_success" = "连接成功";
 "dashboard_color_set_title" = "仪表盘颜色设置";
 "dashboard_set_title" = "仪表盘里程单位";
+"elevation_value" = "海拔:%dm";
+"engine_closing" = "关闭中";
 "engine_cold" = "未启动";
 "engine_cycling" = "运转中";
 "engine_start" = "启动中";
+"hpa_value" = "气压: %.1f hPa";
 "language_set_title" = "语言设置";
 "maintenance_need" = "需要保养";
 "maintenance_need_no" = "无需保养";
@@ -46,4 +49,11 @@
 "set_success" = "设置成功";
 "tab_navigation" = "导航";
 "tab_setting" = "设置";
-"engine_closing" = "关闭中";
+"direction_north" = "北";
+"direction_north_east" = "东北";
+"direction_east" = "东";
+"direction_south_east" = "东南";
+"direction_south" = "南";
+"direction_south_west" = "西南";
+"direction_west" = "西";
+"direction_north_west" = "西北";

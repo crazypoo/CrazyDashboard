@@ -31,9 +31,12 @@
 "connect_success" = "Başarılı bağlantı";
 "dashboard_color_set_title" = "Gösterge tablosu renk ayarları";
 "dashboard_set_title" = "Gösterge tablosu kilometre birimi";
+"elevation_value" = "Rakım:%dm";
+"engine_closing" = "Kapanma";
 "engine_cold" = "Donmuyor";
 "engine_cycling" = "Çalışıyor";
 "engine_start" = "Başlangıç";
+"hpa_value" = "Hava basıncı: %.1f hPa";
 "language_set_title" = "Dil ayarları";
 "maintenance_need" = "Bakım gerekiyor";
 "maintenance_need_no" = "Bakıma gerek yok";
@@ -46,4 +49,11 @@
 "set_success" = "Başarılı ayar";
 "tab_navigation" = "Seyrüsefer";
 "tab_setting" = "Batma";
-"engine_closing" = "Kapanma";
+"direction_north" = "Kuzey";
+"direction_north_east" = "Kuzeydoğu";
+"direction_east" = "Doğu";
+"direction_south_east" = "Güneydoğu";
+"direction_south" = "Güney";
+"direction_south_west" = "Güneybatı";
+"direction_west" = "Batı";
+"direction_north_west" = "KuzeyBatı";

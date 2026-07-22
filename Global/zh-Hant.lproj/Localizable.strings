@@ -31,9 +31,12 @@
 "connect_success" = "連線成功";
 "dashboard_color_set_title" = "儀表板顏色設定";
 "dashboard_set_title" = "儀表板的里程單位";
+"elevation_value" = "高度:%dm";
+"engine_closing" = "關閉中";
 "engine_cold" = "未啟動";
 "engine_cycling" = "運轉中";
 "engine_start" = "啟動中";
+"hpa_value" = "氣壓：%.1f hPa";
 "language_set_title" = "語言設定";
 "maintenance_need" = "需要維護";
 "maintenance_need_no" = "無需維護";
@@ -46,4 +49,11 @@
 "set_success" = "成功設定";
 "tab_navigation" = "導航";
 "tab_setting" = "設置";
-"engine_closing" = "關閉中";
+"direction_north" = "北";
+"direction_north_east" = "東北";
+"direction_east" = "東";
+"direction_south_east" = "東南";
+"direction_south" = "南";
+"direction_south_west" = "西南";
+"direction_west" = "西";
+"direction_north_west" = "西北";

@@ -17,7 +17,16 @@ class PTDashBoardBaseBoardViewController: PTBaseViewController {
     let topSpacing:CGFloat = 44
     let bottomSpacing:CGFloat = CGFloat.kTabbarSaveAreaHeight + 44
     
-    let speedometer = PTSpeedometerView(frame: .zero)
+    lazy var speedometer:PTSpeedometerView = {
+        let view = PTSpeedometerView()
+        view.progressColor = PTDashboardConfig.shared.appMainColor
+        view.needleColor = PTDashboardConfig.shared.appMainColor
+        view.maxSpeed = PTDashboardConfig.shared.appUniIsMetric ? 180 : 110
+        view.unitLabel.text = PTDashboardConfig.shared.appShowUniLabel
+        view.direction = .clockwise
+        view.tickStep = 10
+        return view
+    }()
     let musicNowPlaying = PTNowPlayingView(frame: .zero)
     let compassRoller = PTCompassRollerView(frame: .zero)
     let leanAngleGauge = PTLeanAngleView() // 🌟 新增压弯表
@@ -49,9 +58,13 @@ class PTDashBoardBaseBoardViewController: PTBaseViewController {
         super.viewDidLoad()
         view.backgroundColor = .black
         // Do any additional setup after loading the view.
+    }
+    
+    override func viewControllerOrientation(_ orientationMask: UIInterfaceOrientationMask) {
+        super.viewControllerOrientation(orientationMask)
         setupDashboardUI()
         
-    startPootoolsEngines()
+        startPootoolsEngines()
     }
 
     private func setupDashboardUI() {
@@ -130,7 +143,7 @@ class PTDashBoardBaseBoardViewController: PTBaseViewController {
         // 调用你 pootools 里的引擎
         PTLocationEngine.shared.startTracking()
         PTLocationEngine.shared.locationBlock = { [weak self] tripData in
-            self?.speedometer.updateSpeed(tripData.speedKmh)
+            self?.speedometer.updateSpeed(PTDashboardConfig.shared.appShowMileage(tripData.speedKmh))
             self?.compassRoller.updateHeading(tripData.courseDegree)
             self?.speedometer.updateEnvironment(altitude: tripData.altitude, pressureKpa: nil)
             self?.tripStatsView.updateStats(with: tripData)

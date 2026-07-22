@@ -31,9 +31,12 @@
 "connect_success" = "Successful connection";
 "dashboard_color_set_title" = "Dashboard color settings";
 "dashboard_set_title" = "The mileage unit of the dashboard";
+"elevation_value" = "Altitude:%dm";
+"engine_closing" = "Closure";
 "engine_cold" = "Not started";
 "engine_cycling" = "It is working";
 "engine_start" = "Starting up";
+"hpa_value" = "hPa: %.1f hPa";
 "language_set_title" = "Language settings";
 "maintenance_need" = "Need maintenance";
 "maintenance_need_no" = "No need for maintenance";
@@ -46,4 +49,11 @@
 "set_success" = "Successful setting";
 "tab_navigation" = "Navigation";
 "tab_setting" = "Setting";
-"engine_closing" = "Closure";
+"direction_north" = "North";
+"direction_north_east" = "NorthEast";
+"direction_east" = "East";
+"direction_south_east" = "SouthEast";
+"direction_south" = "South";
+"direction_south_west" = "SouthWest";
+"direction_west" = "West";
+"direction_north_west" = "NorthWest";

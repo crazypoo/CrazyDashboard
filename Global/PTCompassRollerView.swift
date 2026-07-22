@@ -21,6 +21,8 @@ public class PTCompassRollerView: UIView {
     
     private var containerLeftConstraint: Constraint?
     
+    let viewDirection = [PTDashboardConfig.languageFunc(text: "direction_north"), PTDashboardConfig.languageFunc(text: "direction_north_east"), PTDashboardConfig.languageFunc(text: "direction_east"), PTDashboardConfig.languageFunc(text: "direction_south_east"), PTDashboardConfig.languageFunc(text: "direction_south"), PTDashboardConfig.languageFunc(text: "direction_south_west"), PTDashboardConfig.languageFunc(text: "direction_west"), PTDashboardConfig.languageFunc(text: "direction_north_west")]
+    
     public override init(frame: CGRect) {
         super.init(frame: frame)
         setupUI()
@@ -77,7 +79,7 @@ public class PTCompassRollerView: UIView {
     }
     
     private func drawScaleAndLabels() {
-        let directions = ["北", "东北", "东", "东南", "南", "西南", "西", "西北"]
+        let directions = viewDirection
         let pixelsPerDegree = fullCircleWidth / 360.0
         
         let tickLayer = CAShapeLayer()
@@ -143,7 +145,7 @@ public class PTCompassRollerView: UIView {
     
     // 辅助方法：根据度数智能计算方向中文
     private func getDirectionString(_ degree: Double) -> String {
-        let directions = ["北", "东北", "东", "东南", "南", "西南", "西", "西北"]
+        let directions = viewDirection
         // 加上 22.5 度来实现四舍五入的完美区间划分
         let index = Int((degree + 22.5) / 45.0) & 7
         return directions[index]

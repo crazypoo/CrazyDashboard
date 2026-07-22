@@ -173,7 +173,7 @@ public class PTNowPlayingView: UIView {
         
         // 2. 设置进度层 (红色的高亮线)
         progressLayer.fillColor = UIColor.clear.cgColor
-        progressLayer.strokeColor = UIColor.systemRed.cgColor // 匹配你截图里的红色
+        progressLayer.strokeColor = PTDashboardConfig.shared.appMainColor.cgColor // 匹配你截图里的红色
         progressLayer.lineWidth = 10
         progressLayer.lineCap = .round
         progressLayer.strokeEnd = 0 // 初始进度为 0
