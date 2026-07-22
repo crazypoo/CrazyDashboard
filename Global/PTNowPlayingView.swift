@@ -12,8 +12,6 @@ import SwifterSwift
 import PooTools
 import SafeSFSymbols
 
-import UIKit
-
 @objcMembers
 public class PTMarqueeLabel: UIView {
 
