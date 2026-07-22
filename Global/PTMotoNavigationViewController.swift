@@ -16,6 +16,7 @@ import AMapLocationKit
 import AMapSearchKit
 import CoreMotion
 import SafeSFSymbols
+import AttributedString
 
 enum NaviPointAnnotationType: Int {
     case start
@@ -151,14 +152,22 @@ class PreferenceView: UIView {
     private func buttonForTitle(_ title: String) -> PTBaseButton {
         let reBtn = PTBaseButton(type: .custom)
         
+        let nameAttNormal: ASAttributedString = """
+                    \(wrap: .embedding("""
+                    \(title,.foreground(.white),.font(.appfont(size: 10)))
+                    """),.paragraph(.alignment(.left),.lineSpacing(1)))
+                    """
+        let nameAttSelected: ASAttributedString = """
+                    \(wrap: .embedding("""
+                    \(title,.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 10)))
+                    """),.paragraph(.alignment(.left),.lineSpacing(1)))
+                    """
         reBtn.layer.borderColor = UIColor.lightGray.cgColor
         reBtn.layer.borderWidth = 1.0
         reBtn.layer.cornerRadius = 5
-        reBtn.setTitle(title, for: .normal)
-        reBtn.setTitleColor(UIColor.white, for: .normal)
-        reBtn.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .selected)
-        reBtn.titleLabel?.font = .appfont(size: 10)
-        
+        reBtn.titleLabel?.numberOfLines = 2
+        reBtn.setAttributedTitle(nameAttNormal.value, for: .normal)
+        reBtn.setAttributedTitle(nameAttSelected.value, for: .selected)
         return reBtn
     }
     
@@ -274,7 +283,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         let view = PreferenceView()
         return view
     }()
-    var isMultipleRoutePlan = false
+    var isMultipleRoutePlan = true
 
     var loadCurrentLocation:Bool = false
     var currentCity:String = ""

@@ -819,6 +819,8 @@
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "我要用L";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "我要用L";
 				INFOPLIST_KEY_NSMotionUsageDescription = "我要用Motion";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "我要添加到相冊";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "我要用相冊";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -961,6 +963,8 @@
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "我要用L";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "我要用L";
 				INFOPLIST_KEY_NSMotionUsageDescription = "我要用Motion";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "我要添加到相冊";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "我要用相冊";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
