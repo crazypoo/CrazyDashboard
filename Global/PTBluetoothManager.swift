@@ -722,7 +722,9 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         isTioSubscribed = false
         isCreditsSubscribed = false
         authState = .waitKeyId
-        NotificationCenter.default.post(name: MotorcycleDisconnected, object: nil)
+        if PTDashboardConfig.shared.blueConnected {
+            NotificationCenter.default.post(name: MotorcycleDisconnected, object: nil)
+        }
     }
     
     // MARK: - 监听写入

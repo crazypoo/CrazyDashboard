@@ -18,11 +18,11 @@ class SceneDelegate: PTWindowSceneDelegate {
 //        let vc = PTBLEConnectViewController()
 //        vc.bleSuccessCallback = {
 //            PTGCDManager.shared.runOnMain {
+                self.makeKeyAndVisible(in: scene, viewController: PTMotoBaseTabbarController(), tint: .white)
 //            }
 //        }
 //        let nav = PTBaseNavControl(rootViewController: vc)
 //        makeKeyAndVisible(in: scene, viewController: nav, tint: .white)
-        self.makeKeyAndVisible(in: scene, viewController: PTMotoBaseTabbarController(), tint: .white)
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {

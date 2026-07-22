@@ -150,7 +150,9 @@ class PTBLEConnectViewController: PTMotoBaseViewController,@unchecked Sendable {
         PTGCDManager.shared.delayOnMain(time: 3) {
             PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "connect_success")) {
                 self.bleSuccessCallback?()
-                self.dismissAnimated()
+                if self.presentingViewController != nil {
+                    self.dismissAnimated()
+                }
             }
         }
     }
