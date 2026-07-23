@@ -182,9 +182,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         view.clipsToBounds = false
         return view
     }()
-            
-    private var snifferOverlay: PTECUSnifferOverlay!
-    
+                
     open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
         return .solid(.clear)
     }
@@ -287,7 +285,6 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             }
         }
         
-        setupSnifferOverlay()
         setupDeveloperGesture()
     }
     
@@ -430,12 +427,6 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
 }
 
 extension PTMotoInfoViewController {
-    private func setupSnifferOverlay() {
-        snifferOverlay = PTECUSnifferOverlay(frame: view.bounds)
-        // 确保它随屏幕旋转或尺寸变化自动调整
-        snifferOverlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        view.addSubview(snifferOverlay)
-    }
 
     private func setupDeveloperGesture() {
         // 创建长按手势识别器，绑定触发事件
@@ -463,7 +454,12 @@ extension PTMotoInfoViewController {
             impact.impactOccurred()
             
             // 调用嗅探器的纯动画展示方法
-            snifferOverlay.showSniffer()
+            if !PTMotoUserDefaultStruct.BleTestDataGet {
+                if let scene = PTWindowSceneDelegate.sceneDelegate() as? SceneDelegate {
+                    scene.snifferOverlay.showSniffer()
+                    PTMotoUserDefaultStruct.BleTestDataGet = true
+                }
+            }
         }
     }
 }

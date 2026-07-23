@@ -21,7 +21,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
-        
+        PTDebugFunction.registerDefaultsFromSettingsBundle()
         
         var debugDevice = false
         let buglyConfig = BuglyConfig()
@@ -92,6 +92,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         _ = PTMaintenanceManager.shared
         _ = PTGPXRecorder.shared
         _ = PTDiagnosticManager.shared
+        
         return true
     }
 

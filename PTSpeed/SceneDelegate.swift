@@ -9,20 +9,25 @@ import UIKit
 import PooTools
 
 class SceneDelegate: PTWindowSceneDelegate {
+    
+    lazy var snifferOverlay: PTECUSnifferOverlay = {
+        let view = PTECUSnifferOverlay(frame: AppWindows?.bounds ?? .zero)
+        return view
+    }()
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
         guard let scene = (scene as? UIWindowScene) else { return }
-//        let vc = PTBLEConnectViewController()
-//        vc.bleSuccessCallback = {
-//            PTGCDManager.shared.runOnMain {
-                self.makeKeyAndVisible(in: scene, viewController: PTMotoBaseTabbarController(), tint: .white)
-//            }
-//        }
-//        let nav = PTBaseNavControl(rootViewController: vc)
-//        makeKeyAndVisible(in: scene, viewController: nav, tint: .white)
+        self.makeKeyAndVisible(in: scene, viewController: PTMotoBaseTabbarController(), tint: .white)
+        
+        PTGCDManager.shared.delayOnMain(time: 0.5) {
+            AppWindows?.addSubview(self.snifferOverlay)
+            if PTMotoUserDefaultStruct.BleTestDataGet {
+                self.snifferOverlay.showSniffer()
+            }
+        }
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {

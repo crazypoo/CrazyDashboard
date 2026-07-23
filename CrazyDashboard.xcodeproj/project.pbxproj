@@ -58,6 +58,8 @@
 		55986688301150900049684D /* PTECUSnifferOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986686301150900049684D /* PTECUSnifferOverlay.swift */; };
 		559866C23011A71E0049684D /* SpeechSynthesizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559866C13011A71E0049684D /* SpeechSynthesizer.swift */; };
 		559866C33011A71E0049684D /* SpeechSynthesizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559866C13011A71E0049684D /* SpeechSynthesizer.swift */; };
+		5598676D3011C9720049684D /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 5598676C3011C9720049684D /* Settings.bundle */; };
+		5598676E3011C9720049684D /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 5598676C3011C9720049684D /* Settings.bundle */; };
 		55F503AB300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
 		55F503AC300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
 		55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */; };
@@ -123,6 +125,7 @@
 		5598668330114DF00049684D /* PTRoutingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRoutingManager.swift; sourceTree = "<group>"; };
 		55986686301150900049684D /* PTECUSnifferOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTECUSnifferOverlay.swift; sourceTree = "<group>"; };
 		559866C13011A71E0049684D /* SpeechSynthesizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechSynthesizer.swift; sourceTree = "<group>"; };
+		5598676C3011C9720049684D /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
 		55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = GlobalAssets.xcassets; sourceTree = "<group>"; };
 		55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLanguageModel.swift; sourceTree = "<group>"; };
 		55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoUserDefaultStruct.swift; sourceTree = "<group>"; };
@@ -228,6 +231,7 @@
 		5577E64D2FD657110004733F /* Global */ = {
 			isa = PBXGroup;
 			children = (
+				5598676C3011C9720049684D /* Settings.bundle */,
 				55F503B9300FCA1E00C5D085 /* Global */,
 				55F503B5300FC99000C5D085 /* Model */,
 				55FE2A6D300DF836000E741F /* Localizable.strings */,
@@ -413,6 +417,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				55F503AB300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */,
+				5598676D3011C9720049684D /* Settings.bundle in Resources */,
 				55FE2A70300DF836000E741F /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -422,6 +427,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				55F503AC300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */,
+				5598676E3011C9720049684D /* Settings.bundle in Resources */,
 				55FE2A6F300DF836000E741F /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
