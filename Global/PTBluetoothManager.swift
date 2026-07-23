@@ -1028,13 +1028,13 @@ extension PTBluetoothServerManager {
     /// - Parameters:
     ///   - targetID: 目标指令 ID
     ///   - payloadBytes: 十六进制载荷数组
-    public func sendFuzzTest(targetID: UInt8, payloadBytes: [UInt8]) {
-        // 1. 生成探测帧
+    public func sendFuzzTest(targetID: UInt8, payloadBytes: [UInt8] = [0x00]) {
+        guard authenticated else {
+            ptLog( "⚠️ 尚未完成认证，无法发送导航数据")
+            return
+        }
         let dataToWrite = PTFrameBuilder.buildFuzzFrame(idFrame: targetID, payload: payloadBytes)
-        sendChunkedData(data: dataToWrite, to: txChar)        
-        // 4. 打印极其显眼的日志，方便你对照车机反应
-        let hexStr = dataToWrite.map { String(format: "%02X", $0) }.joined(separator: " ")
-        ptLog("🚀 [Fuzz测试] 发射探测帧 -> ID: \(targetID), Payload: \(payloadBytes), 完整报文: \(hexStr)")
+        sendChunkedData(data: dataToWrite, to: txChar)
     }
 
     // 发送断开连接指令[cite: 3]

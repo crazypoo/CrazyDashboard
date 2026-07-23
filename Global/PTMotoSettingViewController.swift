@@ -219,6 +219,23 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         return view
     }()
     
+    lazy var testCommondLabel:UIButton = {
+        let view = UIButton(type: .custom)
+        view.titleLabel?.font = .appfont(size: 16)
+        view.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .normal)
+        view.setTitle("Test", for: .normal)
+        view.addActionHandlers(handler: { _ in
+            let ids:[UInt8] = [UInt8(2),UInt8(3),UInt8(4),UInt8(5),UInt8(6)]
+            let nameMap:[String] = ids.map { value in
+                return "\(value)"
+            }
+            UIAlertController.base_alertVC(title: "Test",okBtns: nameMap,cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
+                PTBluetoothServerManager.shared.sendFuzzTest(targetID: ids[index])
+            })
+        })
+        return view
+    }()
+    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
@@ -234,7 +251,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         super.viewDidLoad()
         
         view.backgroundColor = .black
-        view.addSubviews([dashBoadColorTitle,dashBoardColorButton,dashUniTitle,dashBoardUniButton,dashLanguageTitle,dashBoardLanguageButton,messageTestButton,disconnect,proButton,textView,tcsValueLabel,lightValueLabel])
+        view.addSubviews([dashBoadColorTitle,dashBoardColorButton,dashUniTitle,dashBoardUniButton,dashLanguageTitle,dashBoardLanguageButton,messageTestButton,disconnect,proButton,textView,tcsValueLabel,lightValueLabel,testCommondLabel])
         dashBoadColorTitle.snp.makeConstraints { make in
             make.left.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.right.equalTo(self.view.snp.centerX)
@@ -282,6 +299,11 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             make.top.equalTo(self.tcsValueLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
         }
         
+        testCommondLabel.snp.makeConstraints { make in
+            make.left.equalTo(self.dashBoadColorTitle)
+            make.top.equalTo(self.lightValueLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+        }
+        
         messageTestButton.snp.makeConstraints { make in
             make.size.equalTo(34)
             make.centerX.equalToSuperview()
@@ -301,7 +323,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         
         textView.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.top.equalTo(self.lightValueLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.top.equalTo(self.testCommondLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
             make.bottom.equalTo(self.proButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
         }
         
