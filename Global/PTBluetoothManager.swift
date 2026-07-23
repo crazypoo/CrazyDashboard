@@ -22,6 +22,50 @@ let MotorcycleRawDataReceived = NSNotification.Name("MotorcycleRawDataReceived")
 
 let kmToMilOffset:Double = 0.621371
 
+extension UInt8 {
+    /// 将字节转换为 8 位对齐的二进制字符串 (例如: 01010011)
+    var binaryString: String {
+        let str = String(self, radix: 2)
+        // 自动补齐前导 0，确保长度总是 8
+        return String(repeating: "0", count: 8 - str.count) + str
+    }
+}
+
+public enum PTBacklightMode: Int {
+    case auto = 0  // 二进制 00
+    case led1 = 1  // 二进制 01
+    case led0 = 2  // 二进制 10
+    case led2 = 3  // 二进制 11
+    case unknown = -1
+    
+    public var description: String {
+        switch self {
+        case .auto: return "自动 (Auto)"
+        case .led0: return "亮度档位 0"
+        case .led1: return "亮度档位 1"
+        case .led2: return "亮度档位 2"
+        case .unknown: return "未知状态"
+        }
+    }
+}
+
+public enum PTTCSMode: UInt8 {
+    case mode1 = 0x2E // 相当于二进制 00101110
+    case mode2 = 0x17 // 相当于二进制 00010111
+    case off   = 0xB8 // 相当于二进制 10111000
+    case unknown = 0xFF // 用于容错的未知状态
+    
+    /// 提供给 UI 界面展示的文字描述
+    public var description: String {
+        switch self {
+        case .mode1: return "模式 1 (运动/标准)"
+        case .mode2: return "模式 2 (雨雪/湿滑)"
+        case .off:   return "已关闭 (危险)"
+        case .unknown: return "未知状态"
+        }
+    }
+}
+
 /// 专门用于通过 iOS 原生机制向车机推送 ANCS 弹窗消息的工具类
 class PTMessagePusher {
     
@@ -141,6 +185,8 @@ struct PTDashboardControl {
     let vehicleSpeedKmh: Double
     /// 引擎实时转速 (RPM)
     let engineRpm: Int
+    
+    let tcsMode:PTTCSMode
 }
 
 struct PTDashboardData1 {
@@ -164,6 +210,8 @@ struct PTDashboardData2 {
     let engineStatus: Int
     /// 保养状态原始值 (需通过 PTDashboardLabels.maintenanceLabel 解析)
     let maintenance: Int
+    /// 仪表盘光
+    let backlightMode: PTBacklightMode
 }
 
 struct PTDashboardData3 {
@@ -984,6 +1032,10 @@ extension PTBluetoothServerManager {
         case 2: // DATA1
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:2 (DATA1) -> \(hexString)")
             guard bytes.count >= 8 else { return }
+            
+            let hiddenBits = "b[1]:\(bytes[1].binaryString)"
+            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "🔬 [未知] DATA1 隐藏位: \(hiddenBits)")
+            
             let fuelRaw = Double(bytes[0])
             let fuel = min(max(Int(round(fuelRaw * 0.3937)), 0), 100)
             let avg = Double(bytes[2]) * 0.1
@@ -997,11 +1049,24 @@ extension PTBluetoothServerManager {
         case 3: // DATA2
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:3 (DATA2) -> \(hexString)")
             guard bytes.count >= 6 else { return }
+            
+            // 🚨 深度嗅探：提取被忽略的 bytes[0], bytes[2]，以及如果存在的更靠后的字节
+            var hiddenBits = "b[2]:\(bytes[2].binaryString)"
+            if bytes.count >= 9 { // 根据你提供的数据，DATA2 实际有 9 个 payload 字节
+                hiddenBits += " | b[6]:\(bytes[6].binaryString) | b[7]:\(bytes[7].binaryString) | b[8]:\(bytes[8].binaryString)"
+            }
+            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "🔬 [未知] DATA2 隐藏位: \(hiddenBits)")
+            
+            let byte0 = bytes[0]
+            let modeValue = Int((byte0 & 0b11000000) >> 6)
+            // 通过 rawValue 安全地转换为枚举对象，如果匹配失败则回退到 .unknown
+            let currentMode = PTBacklightMode(rawValue: modeValue) ?? .unknown
+
             let engine = Int(bytes[1])
             let maint = Int(bytes[3])
             let temp = Int(bytes[4]) - 50
             let batt = Double(bytes[5]) * 0.1
-            let data2 = PTDashboardData2(batteryVolt: batt, outsideTempC: temp, engineStatus: engine, maintenance: maint)
+            let data2 = PTDashboardData2(batteryVolt: batt, outsideTempC: temp, engineStatus: engine, maintenance: maint,backlightMode: currentMode)
             self.latestData2 = data2
             NotificationCenter.default.post(name: MotorcycleDATA2, object: data2)
             ptLog("🔋 [DATA2] 引擎: \(PTDashboardLabels.engineStatusLabel(raw: engine)), 电压: \(batt)V")
@@ -1009,6 +1074,11 @@ extension PTBluetoothServerManager {
         case 4: // DATA3
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:4 (DATA3) -> \(hexString)")
             guard bytes.count >= 6 else { return }
+            if bytes.count >= 8 {
+                let hiddenBits = "b[6]:\(bytes[6].binaryString) | b[7]:\(bytes[7].binaryString)"
+                NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "🔬 [未知] DATA3 隐藏位: \(hiddenBits)")
+            }
+
             let autoRaw = (Int(bytes[0]) << 8) | Int(bytes[1])
             let col = Int(bytes[2])
             let dist = (Int(bytes[3]) << 8) | Int(bytes[4])
@@ -1021,9 +1091,17 @@ extension PTBluetoothServerManager {
         case 5: // CONTROL
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:5 (CONTROL) -> \(hexString)")
             guard bytes.count >= 8 else { return }
+            
+            let hiddenBits = "b[1]:\(bytes[1].binaryString) | b[2]:\(bytes[2].binaryString) | b[3]:\(bytes[3].binaryString)"
+            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "🔬 [未知] CONTROL 隐藏位: \(hiddenBits)")
+            
+            let byte0 = bytes[0]
+            // 如果 byte0 不是我们定义的三个值，就会回退为 .unknown
+            let currentTCS = PTTCSMode(rawValue: byte0) ?? .unknown
+
             let engineRaw = (Int(bytes[4]) << 8) | Int(bytes[5])
             let vehicleRaw = (Int(bytes[6]) << 8) | Int(bytes[7])
-            let control = PTDashboardControl(vehicleSpeedKmh: Double(vehicleRaw) * 0.01, engineRpm: Int(Double(engineRaw) * 0.25))
+            let control = PTDashboardControl(vehicleSpeedKmh: Double(vehicleRaw) * 0.01, engineRpm: Int(Double(engineRaw) * 0.25),tcsMode: currentTCS)
             self.latestControl = control
             NotificationCenter.default.post(name: MotorcycleCONTROL, object: control)
             ptLog("🏍️ [CONTROL] 车速: \(Double(vehicleRaw) * 0.01) km/h, 转速: \(Int(Double(engineRaw) * 0.25)) rpm")
@@ -1031,6 +1109,10 @@ extension PTBluetoothServerManager {
         case 6: // ABS
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:6 (ABS) -> \(hexString)")
             guard bytes.count >= 3 else { return }
+            
+            let hiddenBits = "b[0]:\(bytes[0].binaryString) | b[1]:\(bytes[1].binaryString)"
+            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "🔬 [未知] ABS 隐藏位: \(hiddenBits)")
+            
             let absStatus = PTAbsStatus(absRaw: Int(bytes[2]))
             self.latestAbsStatus = absStatus
             NotificationCenter.default.post(name: MotorcycleABS, object: absStatus)
