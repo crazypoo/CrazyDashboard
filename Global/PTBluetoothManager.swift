@@ -187,6 +187,13 @@ struct PTDashboardControl {
     let engineRpm: Int
     
     let tcsMode:PTTCSMode
+    
+    public let isLowBeamOn: Bool
+    public let isHighBeamOn: Bool
+    
+    public let isLeftTurnOn: Bool
+    public let isRightTurnOn: Bool
+    public let isHazardOn: Bool
 }
 
 struct PTDashboardData1 {
@@ -1092,16 +1099,31 @@ extension PTBluetoothServerManager {
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:5 (CONTROL) -> \(hexString)")
             guard bytes.count >= 8 else { return }
             
-            let hiddenBits = "b[1]:\(bytes[1].binaryString) | b[2]:\(bytes[2].binaryString) | b[3]:\(bytes[3].binaryString)"
+            let hiddenBits = "b[3]:\(bytes[3].binaryString)"
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "🔬 [未知] CONTROL 隐藏位: \(hiddenBits)")
             
             let byte0 = bytes[0]
             // 如果 byte0 不是我们定义的三个值，就会回退为 .unknown
             let currentTCS = PTTCSMode(rawValue: byte0) ?? .unknown
 
+            let byte1 = bytes[1]
+            let isLeftTurnOn = (byte1 & 0b00010000) != 0
+            let isRightTurnOn = (byte1 & 0b01000000) != 0
+
+            let byte2 = bytes[2]
+                        
+            // 提取近光灯 (Bit 6)
+            let isLowBeamOn = (byte2 & 0b01000000) != 0
+            
+            // 提取远光灯 (Bit 4)
+            let isHighBeamOn = (byte2 & 0b00010000) != 0
+            
+            let isHazardAuxBitOn = (byte2 & 0b00000001) != 0
+            let isHazardOn = isLeftTurnOn && isRightTurnOn && isHazardAuxBitOn
+
             let engineRaw = (Int(bytes[4]) << 8) | Int(bytes[5])
             let vehicleRaw = (Int(bytes[6]) << 8) | Int(bytes[7])
-            let control = PTDashboardControl(vehicleSpeedKmh: Double(vehicleRaw) * 0.01, engineRpm: Int(Double(engineRaw) * 0.25),tcsMode: currentTCS)
+            let control = PTDashboardControl(vehicleSpeedKmh: Double(vehicleRaw) * 0.01, engineRpm: Int(Double(engineRaw) * 0.25),tcsMode: currentTCS,isLowBeamOn: isLowBeamOn,isHighBeamOn: isHighBeamOn,isLeftTurnOn: isLeftTurnOn,isRightTurnOn: isRightTurnOn,isHazardOn: isHazardOn)
             self.latestControl = control
             NotificationCenter.default.post(name: MotorcycleCONTROL, object: control)
             ptLog("🏍️ [CONTROL] 车速: \(Double(vehicleRaw) * 0.01) km/h, 转速: \(Int(Double(engineRaw) * 0.25)) rpm")
