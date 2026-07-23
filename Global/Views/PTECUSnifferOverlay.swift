@@ -8,18 +8,60 @@
 import UIKit
 import Foundation
 import PooTools
+import SnapKit
+import SwifterSwift
 
 /// ECU 原始数据嗅探器视图 (开发者模式专属)
 @MainActor
 public class PTECUSnifferOverlay: UIView {
     
     // MARK: - UI 组件
-    private let backgroundView = UIView()
-    private let titleLabel = UILabel()
-    private let logTextView = UITextView()
-    private let closeButton = UIButton(type: .system)
+    private lazy var backgroundView:UIView = {
+        let view = UIView()
+        view.backgroundColor = UIColor.black.withAlphaComponent(0.85)
+        view.layer.cornerRadius = 12
+        view.layer.borderWidth = 1
+        view.layer.borderColor = UIColor.systemGreen.withAlphaComponent(0.5).cgColor
+        view.clipsToBounds = true
+        return view
+    }()
+    private lazy var titleLabel:UILabel = {
+        let view = UILabel()
+        view.text = "⚡️ ECU RAW DATA SNIFFER (DEV MODE)"
+        view.textColor = .systemGreen
+        view.font = .appfont(size: 14,bold: true)
+        view.textAlignment = .center
+        return view
+    }()
+    private lazy var logTextView:UITextView = {
+        let view = UITextView()
+        view.backgroundColor = .clear
+        view.textColor = .systemGreen
+        view.font = .appfont(size: 11)
+        view.isEditable = false
+        view.layoutManager.allowsNonContiguousLayout = false // 优化大文本渲染性能
+        return view
+    }()
+    private lazy var closeButton:UIButton = {
+        let view = UIButton(type: .system)
+        view.setTitle("关闭开发者模式", for: .normal)
+        view.setTitleColor(.white, for: .normal)
+        view.backgroundColor = .systemRed.withAlphaComponent(0.8)
+        view.layer.cornerRadius = 8
+        view.addTarget(self, action: #selector(hideSniffer), for: .touchUpInside)
+        return view
+    }()
     
-    private let filterButton = UIButton(type: .system)
+    private lazy var filterButton:UIButton = {
+        let view = UIButton(type: .system)
+        view.setTitle("已显示全部 (点击过滤已知)", for: .normal)
+        view.setTitleColor(.white, for: .normal)
+        view.backgroundColor = .systemBlue.withAlphaComponent(0.8)
+        view.layer.cornerRadius = 8
+        view.addTarget(self, action: #selector(toggleFilter), for: .touchUpInside)
+        return view
+    }()
+    
     private var isFilterEnabled: Bool = false
     // 缓存池，避免高频刷新导致内存溢出
     private var rawLogs: [String] = []
@@ -47,82 +89,36 @@ public class PTECUSnifferOverlay: UIView {
         self.alpha = 0.0
         
         // 配置半透明背景，呈现极客控制台风格
-        backgroundView.backgroundColor = UIColor.black.withAlphaComponent(0.85)
-        backgroundView.layer.cornerRadius = 12
-        backgroundView.layer.borderWidth = 1
-        backgroundView.layer.borderColor = UIColor.systemGreen.withAlphaComponent(0.5).cgColor
-        backgroundView.clipsToBounds = true
         self.addSubview(backgroundView)
-        
-        // 布局 (如果你项目中使用了 SnapKit，可替换为 snp.makeConstraints)
-        backgroundView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            backgroundView.topAnchor.constraint(equalTo: self.topAnchor, constant: 40),
-            backgroundView.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: 20),
-            backgroundView.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -20),
-            backgroundView.bottomAnchor.constraint(equalTo: self.bottomAnchor, constant: -40)
-        ])
+        backgroundView.snp.makeConstraints { make in
+            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing)
+            make.bottom.equalToSuperview().inset(CGFloat.kTabbarHeight_Total + CGFloat.GlobalItemSpacing)
+        }
         
         // 标题
-        titleLabel.text = "⚡️ ECU RAW DATA SNIFFER (DEV MODE)"
-        titleLabel.textColor = .systemGreen
-        titleLabel.font = .boldSystemFont(ofSize: 14)
-        titleLabel.textAlignment = .center
-        backgroundView.addSubview(titleLabel)
+        backgroundView.addSubviews([titleLabel,closeButton,filterButton,logTextView])
+        titleLabel.snp.makeConstraints { make in
+            make.left.right.equalToSuperview()
+            make.top.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
+        }
         
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: backgroundView.topAnchor, constant: 10),
-            titleLabel.centerXAnchor.constraint(equalTo: backgroundView.centerXAnchor)
-        ])
+        closeButton.snp.makeConstraints { make in
+            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.height.equalTo(30)
+            make.bottom.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
+        }
         
-        // 文本输出框
-        logTextView.backgroundColor = .clear
-        logTextView.textColor = .systemGreen
-        logTextView.font = UIFont.monospacedSystemFont(ofSize: 11, weight: .regular)
-        logTextView.isEditable = false
-        logTextView.layoutManager.allowsNonContiguousLayout = false // 优化大文本渲染性能
-        backgroundView.addSubview(logTextView)
+        filterButton.snp.makeConstraints { make in
+            make.left.right.height.equalTo(self.closeButton)
+            make.bottom.equalTo(self.closeButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
+        }
         
-        logTextView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            logTextView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 10),
-            logTextView.leadingAnchor.constraint(equalTo: backgroundView.leadingAnchor, constant: 10),
-            logTextView.trailingAnchor.constraint(equalTo: backgroundView.trailingAnchor, constant: -10),
-            logTextView.bottomAnchor.constraint(equalTo: backgroundView.bottomAnchor, constant: -50)
-        ])
-        
-        // 关闭按钮
-        closeButton.setTitle("关闭开发者模式", for: .normal)
-        closeButton.setTitleColor(.white, for: .normal)
-        closeButton.backgroundColor = .systemRed.withAlphaComponent(0.8)
-        closeButton.layer.cornerRadius = 8
-        closeButton.addTarget(self, action: #selector(hideSniffer), for: .touchUpInside)
-        backgroundView.addSubview(closeButton)
-        
-        closeButton.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            closeButton.bottomAnchor.constraint(equalTo: backgroundView.bottomAnchor, constant: -10),
-            closeButton.centerXAnchor.constraint(equalTo: backgroundView.centerXAnchor),
-            closeButton.widthAnchor.constraint(equalToConstant: 150),
-            closeButton.heightAnchor.constraint(equalToConstant: 30)
-        ])
-        
-        // 🚨 新增：降噪过滤按钮
-        filterButton.setTitle("已显示全部 (点击过滤已知)", for: .normal)
-        filterButton.setTitleColor(.white, for: .normal)
-        filterButton.backgroundColor = .systemBlue.withAlphaComponent(0.8)
-        filterButton.layer.cornerRadius = 8
-        filterButton.addTarget(self, action: #selector(toggleFilter), for: .touchUpInside)
-        backgroundView.addSubview(filterButton)
-        
-        filterButton.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            filterButton.bottomAnchor.constraint(equalTo: closeButton.topAnchor, constant: -10),
-            filterButton.centerXAnchor.constraint(equalTo: backgroundView.centerXAnchor),
-            filterButton.widthAnchor.constraint(equalToConstant: 220),
-            filterButton.heightAnchor.constraint(equalToConstant: 30)
-        ])
+        logTextView.snp.makeConstraints { make in
+            make.left.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
+            make.top.equalTo(self.titleLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.bottom.equalTo(self.filterButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
+        }
     }
     
     // MARK: - 数据监听
