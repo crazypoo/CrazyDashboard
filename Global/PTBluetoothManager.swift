@@ -542,6 +542,18 @@ class PTFrameBuilder {
         // 3. 调用你的通用封包方法 (会自动加上包头 0x16，计算大端序长度，并加上包尾 0x00)
         return wrapTxFrame(idFrame: id, payload: payload)
     }
+    
+    /// 模糊测试专用封包器 (Fuzzer)
+    /// - Parameters:
+    ///   - idFrame: 你想测试的任意指令 ID (例如 2, 3, 4, 5, 6，或者 9, 10 等未知领域)
+    ///   - payload: 任意的十六进制载荷数组 (默认给个 [0x00] 探探路)
+    /// - Returns: 自动计算好大端序长度的完整数据帧
+    static func buildFuzzFrame(idFrame: UInt8, payload: [UInt8] = [0x00]) -> Data {
+        let payloadData = Data(payload)
+        
+        // 调用你封装得非常完美的底层方法
+        return wrapTxFrame(idFrame: idFrame, payload: payloadData)
+    }
 }
 
 // 补充 PTFrameBuilder 内部方法
@@ -1010,6 +1022,21 @@ extension PTBluetoothServerManager {
         sendChunkedData(data: frame, to: txChar)
     }
     
+    // MARK: - 逆向工程：模糊测试 (Fuzzing) 通道
+    
+    /// 向机车发送任意 ID 和 Payload 的探测报文
+    /// - Parameters:
+    ///   - targetID: 目标指令 ID
+    ///   - payloadBytes: 十六进制载荷数组
+    public func sendFuzzTest(targetID: UInt8, payloadBytes: [UInt8]) {
+        // 1. 生成探测帧
+        let dataToWrite = PTFrameBuilder.buildFuzzFrame(idFrame: targetID, payload: payloadBytes)
+        sendChunkedData(data: dataToWrite, to: txChar)        
+        // 4. 打印极其显眼的日志，方便你对照车机反应
+        let hexStr = dataToWrite.map { String(format: "%02X", $0) }.joined(separator: " ")
+        ptLog("🚀 [Fuzz测试] 发射探测帧 -> ID: \(targetID), Payload: \(payloadBytes), 完整报文: \(hexStr)")
+    }
+
     // 发送断开连接指令[cite: 3]
     func sendDisconnect() {
         guard authenticated else { return }
