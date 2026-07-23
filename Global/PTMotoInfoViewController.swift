@@ -182,6 +182,13 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         view.clipsToBounds = false
         return view
     }()
+    
+    lazy var absImage:UIImageView = {
+        let view = UIImageView()
+        view.contentMode = .scaleAspectFit
+        view.image = UIImage(.abs.brakesignal)
+        return view
+    }()
                 
     open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
         return .solid(.clear)
@@ -221,7 +228,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         detailCollection.contentCollectionView.contentInset.bottom = collectionInset
         detailCollection.contentCollectionView.verticalScrollIndicatorInsets.bottom = collectionInset
 
-        view.addSubviews([actionStack,speedometer,speedometerReversed,detailCollection])
+        view.addSubviews([actionStack,speedometer,speedometerReversed,detailCollection,absImage])
         actionStack.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.height.equalTo(54)
@@ -261,6 +268,12 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             make.left.right.equalToSuperview()
             make.top.equalTo(self.speedometer.snp.bottom)
             make.bottom.equalToSuperview()
+        }
+        
+        absImage.snp.makeConstraints { make in
+            make.size.equalTo(34)
+            make.centerX.equalToSuperview()
+            make.top.equalTo(self.speedometer)
         }
         
         listSet()
@@ -404,6 +417,8 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                 let rows = self.detailCollection.getAllRows(in: sectionTrip)
                 rows[1].dataModel = PTDashboardConfig.baseNormalCellModel(name: "ABS",desc: PTDashboardLabels.absLabel(raw: absRaw))
                 self.detailCollection.reloadRows(rows, in: sectionTrip)
+                
+                self.absImage.isHidden = !abs.isAbsLightOn
             }
         }
     }

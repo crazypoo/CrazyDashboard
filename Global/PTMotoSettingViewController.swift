@@ -182,7 +182,43 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         view.backgroundColor = .clear
         return view
     }()
+    
+    lazy var tcsValueLabel:UIButton = {
+        let name = PTBluetoothServerManager.shared.latestControl?.tcsMode.description
+        let view = UIButton(type: .custom)
+        view.titleLabel?.font = .appfont(size: 16)
+        view.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .normal)
+        view.setTitle("TCS mode:" + (name ?? PTTCSMode.unknown.description), for: .normal)
+        view.addActionHandlers(handler: { _ in
+            let ids:[UInt8] = [UInt8(2),UInt8(3),UInt8(4),UInt8(5),UInt8(6)]
+            let nameMap:[String] = ids.map { value in
+                return "\(value)"
+            }
+            UIAlertController.base_alertVC(title: "Test",okBtns: nameMap,cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
+                PTBluetoothServerManager.shared.sendTCSMode(id: ids[index], mode: PTTCSMode.off)
+            })
+        })
+        return view
+    }()
 
+    lazy var lightValueLabel:UIButton = {
+        let name = PTBluetoothServerManager.shared.latestData2?.backlightMode.description
+        let view = UIButton(type: .custom)
+        view.titleLabel?.font = .appfont(size: 16)
+        view.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .normal)
+        view.setTitle("Light mode:" + (name ?? PTBacklightMode.unknown.description), for: .normal)
+        view.addActionHandlers(handler: { _ in
+            let ids:[UInt8] = [UInt8(2),UInt8(3),UInt8(4),UInt8(5),UInt8(6)]
+            let nameMap:[String] = ids.map { value in
+                return "\(value)"
+            }
+            UIAlertController.base_alertVC(title: "Test",okBtns: nameMap,cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
+                PTBluetoothServerManager.shared.sendLightMode(id: ids[index], mode: .led0)
+            })
+        })
+        return view
+    }()
+    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
@@ -198,9 +234,10 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         super.viewDidLoad()
         
         view.backgroundColor = .black
-        view.addSubviews([dashBoadColorTitle,dashBoardColorButton,dashUniTitle,dashBoardUniButton,dashLanguageTitle,dashBoardLanguageButton,messageTestButton,disconnect,proButton,textView])
+        view.addSubviews([dashBoadColorTitle,dashBoardColorButton,dashUniTitle,dashBoardUniButton,dashLanguageTitle,dashBoardLanguageButton,messageTestButton,disconnect,proButton,textView,tcsValueLabel,lightValueLabel])
         dashBoadColorTitle.snp.makeConstraints { make in
-            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.left.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.right.equalTo(self.view.snp.centerX)
             make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing)
         }
         
@@ -212,25 +249,37 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         }
         
         dashUniTitle.snp.makeConstraints { make in
-            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.top.equalTo(self.dashBoardColorButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.left.equalTo(self.view.snp.centerX)
+            make.top.equalTo(self.dashBoadColorTitle)
         }
         
         dashBoardUniButton.snp.makeConstraints { make in
-            make.height.left.equalTo(self.dashBoardColorButton)
+            make.height.equalTo(self.dashBoardColorButton)
+            make.left.equalTo(self.dashUniTitle)
             make.top.equalTo(self.dashUniTitle.snp.bottom).offset(CGFloat.GlobalItemSpacing)
             make.width.equalTo(self.dashBoardColorButton.sizeFor().width + 32)
         }
         
         dashLanguageTitle.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.top.equalTo(self.dashBoardUniButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.top.equalTo(self.dashBoardColorButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
         }
         
         dashBoardLanguageButton.snp.makeConstraints { make in
             make.height.left.equalTo(self.dashBoardColorButton)
             make.top.equalTo(self.dashLanguageTitle.snp.bottom).offset(CGFloat.GlobalItemSpacing)
             make.width.equalTo(self.dashBoardLanguageButton.sizeFor().width + 32)
+        }
+        
+        tcsValueLabel.snp.makeConstraints { make in
+            make.left.equalTo(self.dashBoadColorTitle)
+            make.top.equalTo(self.dashBoardLanguageButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+        }
+        
+        lightValueLabel.snp.makeConstraints { make in
+            make.left.equalTo(self.dashBoadColorTitle)
+            make.top.equalTo(self.tcsValueLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
         }
         
         messageTestButton.snp.makeConstraints { make in
@@ -252,7 +301,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         
         textView.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.top.equalTo(self.dashBoardLanguageButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.top.equalTo(self.lightValueLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
             make.bottom.equalTo(self.proButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
         }
         
@@ -359,6 +408,14 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             self.dashBoadColorTitle.textColor = PTDashboardConfig.shared.appMainColor
             self.dashUniTitle.textColor = PTDashboardConfig.shared.appMainColor
             self.dashLanguageTitle.textColor = PTDashboardConfig.shared.appMainColor
+            
+            let tcsName = PTBluetoothServerManager.shared.latestControl?.tcsMode.description
+            self.tcsValueLabel.setTitle("TCS mode:" + (tcsName ?? PTTCSMode.unknown.description), for: .normal)
+            self.tcsValueLabel.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .normal)
+            
+            let lightName = PTBluetoothServerManager.shared.latestData2?.backlightMode.description
+            self.lightValueLabel.setTitle("Light mode:" + (lightName ?? PTBacklightMode.unknown.description), for: .normal)
+            self.lightValueLabel.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .normal)
         }
     }
 }

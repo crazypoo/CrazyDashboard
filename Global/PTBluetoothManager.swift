@@ -31,20 +31,20 @@ extension UInt8 {
     }
 }
 
-public enum PTBacklightMode: Int {
-    case auto = 0  // 二进制 00
-    case led1 = 1  // 二进制 01
-    case led0 = 2  // 二进制 10
-    case led2 = 3  // 二进制 11
-    case unknown = -1
+public enum PTBacklightMode: UInt8 {
+    case auto = 0x00 // 二进制 00
+    case led1 = 0x01 // 二进制 01
+    case led0 = 0x02  // 二进制 10
+    case led2 = 0x03  // 二进制 11
+    case unknown = 0xFF
     
     public var description: String {
         switch self {
-        case .auto: return "自动 (Auto)"
-        case .led0: return "亮度档位 0"
-        case .led1: return "亮度档位 1"
-        case .led2: return "亮度档位 2"
-        case .unknown: return "未知状态"
+        case .auto: return "Auto"//"自动 (Auto)"
+        case .led0: return "Led0"//"亮度档位 0"
+        case .led1: return "Led1"//"亮度档位 1"
+        case .led2: return "Led2"//"亮度档位 2"
+        case .unknown: return "Unknown"//"未知状态"
         }
     }
 }
@@ -58,10 +58,10 @@ public enum PTTCSMode: UInt8 {
     /// 提供给 UI 界面展示的文字描述
     public var description: String {
         switch self {
-        case .mode1: return "模式 1 (运动/标准)"
-        case .mode2: return "模式 2 (雨雪/湿滑)"
-        case .off:   return "已关闭 (危险)"
-        case .unknown: return "未知状态"
+        case .mode1: return "Mode1"//"模式 1 (运动/标准)"
+        case .mode2: return "Mode2"//"模式 2 (雨雪/湿滑)"
+        case .off:   return "Off"//"已关闭 (危险)"
+        case .unknown: return "Unknown"//"未知状态"
         }
     }
 }
@@ -275,6 +275,8 @@ struct PTDashboardData3 {
 struct PTAbsStatus {
     /// ABS 状态原始值 (1:正常, 2:故障)
     let absRaw: Int
+    
+    let isAbsLightOn: Bool
 }
 
 // MARK: - 状态标签转换工具[cite: 2]
@@ -495,7 +497,7 @@ class PTFrameBuilder {
         return frame
     }
     
-    // 生成配置指令[cite: 2]
+    // 生成配置指令
     static func buildConfigurationFrame(color: UInt8, unit: UInt8, language: UInt8) -> Data {
         let payload = Data([
                     0x01, color,
@@ -505,10 +507,40 @@ class PTFrameBuilder {
         return wrapTxFrame(idFrame: ID_CONFIGURATION, payload: payload)
     }
     
-    // 生成主动断开连接帧[cite: 1]
+    // 生成主动断开连接帧
     static func buildDisconnectFrame() -> Data {
         let payload = Data([1, 1])
         return wrapTxFrame(idFrame: ID_DISCONNECT, payload: payload)
+    }
+    
+    /// 生成 TCS 设置指令帧
+    /// - Parameter mode: 期望设置的 TCS 模式
+    /// - Returns: 封装好的完整二进制蓝牙帧 Data
+    static func buildTCSFrame(id:UInt8,mode: PTTCSMode) -> Data {
+        // 1. 获取核心控制字节
+        let tcsByte = mode.rawValue
+        
+        // 2. 构建 Payload
+        // 注意：如果协议要求类似 configuration 那样的前缀（如 0x01, tcsByte），请在此处修改数组
+        let payload = Data([tcsByte])
+        
+        // 3. 调用你现有的通用封包方法
+        return wrapTxFrame(idFrame: id, payload: payload)
+    }
+    
+    /// 生成仪表盘背光设置指令帧
+    /// - Parameter mode: 期望设置的背光模式
+    /// - Returns: 封装好的完整二进制蓝牙帧 Data
+    static func buildBacklightFrame(id:UInt8,mode: PTBacklightMode) -> Data {
+        // 1. 获取核心控制字节 (0x00, 0x01, 0x02, 0x03)
+        let modeByte = mode.rawValue
+        
+        // 2. 构建 Payload
+        // 如果协议要求带有前缀（例如：0x02 代表设置灯光，后接灯光值），则改为 Data([0x02, modeByte])
+        let payload = Data([modeByte])
+        
+        // 3. 调用你的通用封包方法 (会自动加上包头 0x16，计算大端序长度，并加上包尾 0x00)
+        return wrapTxFrame(idFrame: id, payload: payload)
     }
 }
 
@@ -985,6 +1017,17 @@ extension PTBluetoothServerManager {
         sendChunkedData(data: frame, to: txChar)
     }
     
+    func sendTCSMode(id:UInt8,mode: PTTCSMode) {
+        guard authenticated else { return }
+        let frame = PTFrameBuilder.buildTCSFrame(id: id, mode: mode)
+        sendChunkedData(data: frame, to: txChar)
+    }
+    
+    func sendLightMode(id:UInt8,mode: PTBacklightMode) {
+        guard authenticated else { return }
+        let frame = PTFrameBuilder.buildBacklightFrame(id: id, mode: mode)
+        sendChunkedData(data: frame, to: txChar)
+    }
     
     func sendConfiguration(color: PTConfigColor, unit: PTConfigUnit, language: PTConfigLanguage, completion: @escaping (Bool) -> Void) {
         // 🚨 安全解包：彻底根除在此处点击导致的强制解包闪退
@@ -1065,9 +1108,8 @@ extension PTBluetoothServerManager {
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "🔬 [未知] DATA2 隐藏位: \(hiddenBits)")
             
             let byte0 = bytes[0]
-            let modeValue = Int((byte0 & 0b11000000) >> 6)
             // 通过 rawValue 安全地转换为枚举对象，如果匹配失败则回退到 .unknown
-            let currentMode = PTBacklightMode(rawValue: modeValue) ?? .unknown
+            let currentMode = PTBacklightMode(rawValue: byte0) ?? .unknown
 
             let engine = Int(bytes[1])
             let maint = Int(bytes[3])
@@ -1132,10 +1174,14 @@ extension PTBluetoothServerManager {
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:6 (ABS) -> \(hexString)")
             guard bytes.count >= 3 else { return }
             
-            let hiddenBits = "b[0]:\(bytes[0].binaryString) | b[1]:\(bytes[1].binaryString)"
+            let hiddenBits = "b[0]:\(bytes[0].binaryString)"
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "🔬 [未知] ABS 隐藏位: \(hiddenBits)")
             
-            let absStatus = PTAbsStatus(absRaw: Int(bytes[2]))
+            let byte1 = bytes[1]
+            // 如果结果为 0 (即 00000000)，说明灯是亮起的
+            let isAbsLightOn = (byte1 & 0b00010000) == 0
+
+            let absStatus = PTAbsStatus(absRaw: Int(bytes[2]),isAbsLightOn: isAbsLightOn)
             self.latestAbsStatus = absStatus
             NotificationCenter.default.post(name: MotorcycleABS, object: absStatus)
             ptLog("🛑 [ABS] 状态: \(PTDashboardLabels.absLabel(raw: Int(bytes[2])))")

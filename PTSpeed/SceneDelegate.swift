@@ -7,6 +7,7 @@
 
 import UIKit
 import PooTools
+import SwifterSwift
 
 class SceneDelegate: PTWindowSceneDelegate {
     
@@ -15,6 +16,11 @@ class SceneDelegate: PTWindowSceneDelegate {
         return view
     }()
 
+    lazy var lightFeedbackOverlay: PTLightFeedbackOverlay = {
+        let view = PTLightFeedbackOverlay(frame: AppWindows?.bounds ?? .zero)
+        return view
+    }()
+    
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
@@ -23,7 +29,7 @@ class SceneDelegate: PTWindowSceneDelegate {
         self.makeKeyAndVisible(in: scene, viewController: PTMotoBaseTabbarController(), tint: .white)
         
         PTGCDManager.shared.delayOnMain(time: 0.5) {
-            AppWindows?.addSubview(self.snifferOverlay)
+            AppWindows?.addSubviews([self.snifferOverlay,self.lightFeedbackOverlay])
             if PTMotoUserDefaultStruct.BleTestDataGet {
                 self.snifferOverlay.showSniffer()
             }
