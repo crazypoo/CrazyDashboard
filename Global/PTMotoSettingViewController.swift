@@ -179,6 +179,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         view.font = .appfont(size: 12)
         view.isEditable = false
         view.layoutManager.allowsNonContiguousLayout = false // 优化长文本性能
+        view.backgroundColor = .clear
         return view
     }()
 

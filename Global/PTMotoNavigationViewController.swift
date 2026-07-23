@@ -855,7 +855,7 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
         self.startNavigationButton.isEnabled = true
         self.startNavigationButton.backgroundColor = .systemGreen
     }
-    
+        
     func driveManager(_ driveManager: AMapNaviDriveManager, error: Error) {
         let error = error as NSError
         PTNSLogConsole("error:{%d - %@}", error.code, error.localizedDescription)
@@ -878,6 +878,16 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
     func driveManager(_ manager: AMapNaviDriveManager?, onUpdateNaviSpeedLimitSection speed: Int) {
         PTNSLogConsole(">>>>>>>>>>>>>>>>>>>>>>>>>>>>\(speed)")
         self.currentSpeedLimit = UInt8(speed)
+    }
+    
+    func driveManagerIsNaviSoundPlaying(_ driveManager: AMapNaviDriveManager) -> Bool {
+        return SpeechSynthesizer.Shared.isSpeaking()
+    }
+    
+    func driveManager(_ driveManager: AMapNaviDriveManager, playNaviSound soundString: String, soundStringType: AMapNaviSoundType) {
+        NSLog("playNaviSoundString:{%d:%@}", soundStringType.rawValue, soundString);
+        
+        SpeechSynthesizer.Shared.speak(soundString)
     }
         
     private func convertAMapIconToPTManeuver(iconType: AMapNaviIconType) -> UInt8 {

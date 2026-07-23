@@ -129,13 +129,14 @@ public class PTECUSnifferOverlay: UIView {
     private func setupObservers() {
         NotificationCenter.default.addObserver(forName: MotorcycleRawDataReceived, object: nil, queue: .main) { [weak self] notification in
             guard let self = self, !self.isHidden, let rawText = notification.object as? String else { return }
-            
-            // 🚨 核心逻辑：如果开启了过滤，且数据包含 "[已知]"，则直接丢弃不显示
-            if self.isFilterEnabled && rawText.contains("[已知]") {
-                return
+            PTGCDManager.shared.runOnMain {
+                // 🚨 核心逻辑：如果开启了过滤，且数据包含 "[已知]"，则直接丢弃不显示
+                if self.isFilterEnabled && rawText.contains("[已知]") {
+                    return
+                }
+                
+                self.appendLog(rawText)
             }
-            
-            self.appendLog(rawText)
         }
     }
     

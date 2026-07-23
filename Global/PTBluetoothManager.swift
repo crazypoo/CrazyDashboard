@@ -978,9 +978,11 @@ extension PTBluetoothServerManager {
         
         switch id {
         case 1:
+            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:1 (心跳/连接) -> \(hexString)")
             ptLog("🔗 [状态] 车机报告连接正常 (CONNECTION)")
             
         case 2: // DATA1
+            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:2 (DATA1) -> \(hexString)")
             guard bytes.count >= 8 else { return }
             let fuelRaw = Double(bytes[0])
             let fuel = min(max(Int(round(fuelRaw * 0.3937)), 0), 100)
@@ -993,6 +995,7 @@ extension PTBluetoothServerManager {
             ptLog("📊 [DATA1] 油量: \(fuel)%, 消耗: \(avg)L, 总里程: \(Double(odoRaw) * 0.1)km")
             
         case 3: // DATA2
+            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:3 (DATA2) -> \(hexString)")
             guard bytes.count >= 6 else { return }
             let engine = Int(bytes[1])
             let maint = Int(bytes[3])
@@ -1004,6 +1007,7 @@ extension PTBluetoothServerManager {
             ptLog("🔋 [DATA2] 引擎: \(PTDashboardLabels.engineStatusLabel(raw: engine)), 电压: \(batt)V")
             
         case 4: // DATA3
+            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:4 (DATA3) -> \(hexString)")
             guard bytes.count >= 6 else { return }
             let autoRaw = (Int(bytes[0]) << 8) | Int(bytes[1])
             let col = Int(bytes[2])
@@ -1015,6 +1019,7 @@ extension PTBluetoothServerManager {
             ptLog("🛣️ [DATA3] 剩余续航: \(Double(autoRaw) * 0.1)km")
             
         case 5: // CONTROL
+            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:5 (CONTROL) -> \(hexString)")
             guard bytes.count >= 8 else { return }
             let engineRaw = (Int(bytes[4]) << 8) | Int(bytes[5])
             let vehicleRaw = (Int(bytes[6]) << 8) | Int(bytes[7])
@@ -1024,6 +1029,7 @@ extension PTBluetoothServerManager {
             ptLog("🏍️ [CONTROL] 车速: \(Double(vehicleRaw) * 0.01) km/h, 转速: \(Int(Double(engineRaw) * 0.25)) rpm")
             
         case 6: // ABS
+            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:6 (ABS) -> \(hexString)")
             guard bytes.count >= 3 else { return }
             let absStatus = PTAbsStatus(absRaw: Int(bytes[2]))
             self.latestAbsStatus = absStatus
@@ -1031,6 +1037,7 @@ extension PTBluetoothServerManager {
             ptLog("🛑 [ABS] 状态: \(PTDashboardLabels.absLabel(raw: Int(bytes[2])))")
             
         default:
+            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "⚠️ [未知] ID:\(id) -> \(hexString)")
             ptLog("❓ [未知数据] 收到未定义 ID: \(id)")
         }
     }

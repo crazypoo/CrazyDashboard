@@ -56,6 +56,8 @@
 		5598668530114DF00049684D /* PTRoutingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598668330114DF00049684D /* PTRoutingManager.swift */; };
 		55986687301150900049684D /* PTECUSnifferOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986686301150900049684D /* PTECUSnifferOverlay.swift */; };
 		55986688301150900049684D /* PTECUSnifferOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986686301150900049684D /* PTECUSnifferOverlay.swift */; };
+		559866C23011A71E0049684D /* SpeechSynthesizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559866C13011A71E0049684D /* SpeechSynthesizer.swift */; };
+		559866C33011A71E0049684D /* SpeechSynthesizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559866C13011A71E0049684D /* SpeechSynthesizer.swift */; };
 		55F503AB300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
 		55F503AC300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
 		55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */; };
@@ -120,6 +122,7 @@
 		5598668030114A980049684D /* PTFuelRoutingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFuelRoutingManager.swift; sourceTree = "<group>"; };
 		5598668330114DF00049684D /* PTRoutingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRoutingManager.swift; sourceTree = "<group>"; };
 		55986686301150900049684D /* PTECUSnifferOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTECUSnifferOverlay.swift; sourceTree = "<group>"; };
+		559866C13011A71E0049684D /* SpeechSynthesizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechSynthesizer.swift; sourceTree = "<group>"; };
 		55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = GlobalAssets.xcassets; sourceTree = "<group>"; };
 		55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLanguageModel.swift; sourceTree = "<group>"; };
 		55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoUserDefaultStruct.swift; sourceTree = "<group>"; };
@@ -276,6 +279,7 @@
 				5598667D301148290049684D /* PTDiagnosticManager.swift */,
 				5598668030114A980049684D /* PTFuelRoutingManager.swift */,
 				5598668330114DF00049684D /* PTRoutingManager.swift */,
+				559866C13011A71E0049684D /* SpeechSynthesizer.swift */,
 			);
 			path = Global;
 			sourceTree = "<group>";
@@ -586,6 +590,7 @@
 				55FDBCA83010CD6E00EE7FA5 /* PTMOTOParkingManager.swift in Sources */,
 				5577E7802FD6EEEF0004733F /* PTGForceView.swift in Sources */,
 				5577E7CF2FD704790004733F /* PTBumpMeterView.swift in Sources */,
+				559866C33011A71E0049684D /* SpeechSynthesizer.swift in Sources */,
 				55FE29A4300CC258000E741F /* PTMotoNavigationViewController.swift in Sources */,
 				5577E7C92FD6FC8C0004733F /* PTCrashWarningView.swift in Sources */,
 				55FE2967300CA5E0000E741F /* PTDashboardConfig.swift in Sources */,
@@ -604,6 +609,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				559866C23011A71E0049684D /* SpeechSynthesizer.swift in Sources */,
 				55FE2995300CBCB4000E741F /* PTMotoBaseTabbarController.swift in Sources */,
 				55FE29A6300CC2E2000E741F /* PTMotoSettingViewController.swift in Sources */,
 				5598667C301147FD0049684D /* PTCustomRouteManager.swift in Sources */,

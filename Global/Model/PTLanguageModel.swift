@@ -13,4 +13,5 @@ class PTLanguageModel: NSObject {
     var localozableName:String = ""
     var isSelected:Bool = false
     var flag:UIImage = UIImage()
+    var voiceValue:String = ""
 }

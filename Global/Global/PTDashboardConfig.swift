@@ -188,6 +188,7 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
         cn.localozableName = "zh-Hans"
         cn.isSelected = PTMotoUserDefaultStruct.userSetLanguage == cn.keyName
         cn.flag = Flag(countryCode: "CN")!.originalImage
+        cn.voiceValue = "zh-CN"
         
         let cn_tw = PTLanguageModel()
         cn_tw.name = "繁體中文"
@@ -195,6 +196,7 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
         cn_tw.localozableName = "zh-Hant"
         cn_tw.isSelected = PTMotoUserDefaultStruct.userSetLanguage == cn_tw.keyName
         cn_tw.flag = Flag(countryCode: "TW")!.originalImage
+        cn_tw.voiceValue = "zh-TW"
 
         let en = PTLanguageModel()
         en.name = "English"
@@ -202,6 +204,7 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
         en.localozableName = "en"
         en.isSelected = PTMotoUserDefaultStruct.userSetLanguage == en.keyName
         en.flag = Flag(countryCode: "US")!.originalImage
+        en.voiceValue = "en-US"
 
         let tr = PTLanguageModel()
         tr.name = "Turkish"
@@ -209,6 +212,7 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
         tr.localozableName = "tr"
         tr.isSelected = PTMotoUserDefaultStruct.userSetLanguage == tr.keyName
         tr.flag = Flag(countryCode: "TR")!.originalImage
+        en.voiceValue = "tr-TR"
 
         return [cn,cn_tw,tr,en]
     }
