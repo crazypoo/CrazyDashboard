@@ -361,7 +361,7 @@ class PTScooterAuth {
         var list = [UInt16]()
         list.reserveCapacity(2048)
         
-        // 3. 按小端序 (Little-Endian) 读取每两个字节[cite: 1]
+        // 3. 按小端序 (Little-Endian) 读取每两个字节
         data.withUnsafeBytes { buffer in
             for i in 0..<2048 {
                 let byteOffset = i * 2
@@ -378,7 +378,7 @@ class PTScooterAuth {
     
     // MARK: - 核心验证方法
     
-    // 1. 生成 10 个随机数 Challenge[cite: 1]
+    // 1. 生成 10 个随机数 Challenge
     func createChallenge() -> [UInt16] {
         for i in 0..<10 {
             randomNumbers[i] = UInt16.random(in: 0...UInt16.max)
@@ -386,7 +386,7 @@ class PTScooterAuth {
         return randomNumbers
     }
     
-    // 2. 验证摩托车发回来的 20 字节是否正确[cite: 1]
+    // 2. 验证摩托车发回来的 20 字节是否正确
     func checkAuthMsg(scooterResponse: Data) -> Bool {
         guard scooterResponse.count >= 10 else { return false }
         let expected = createAuthenticationMessage(r: randomNumbers)
@@ -397,7 +397,7 @@ class PTScooterAuth {
         return true
     }
     
-    // 3. 利用字典表生成 20 字节的加密响应[cite: 1]
+    // 3. 利用字典表生成 20 字节的加密响应
     func createAuthenticationMessage(r: [UInt16]) -> Data {
         var data = Data()
         // 前 10 字节根据表生成[cite: 1]
@@ -421,10 +421,10 @@ class PTScooterAuth {
         return data
     }
     
-    // 4. 获取 15 字节的设备身份信息 (Key ID)[cite: 1]
+    // 4. 获取 15 字节的设备身份信息 (Key ID)
     func getScooterKeyId() -> Data {
         var data = Data()
-        // 固定产品 ID 8758 (大端序)[cite: 1]
+        // 固定产品 ID 8758 (大端序)
         var productId = UInt32(8758).bigEndian
         data.append(Data(bytes: &productId, count: 4))
         
@@ -437,7 +437,7 @@ class PTScooterAuth {
         // 固定分隔符[cite: 1]
         data.append(1)
         
-        // iOS 系统版本 (截取前 4 个段)[cite: 1]
+        // iOS 系统版本 (截取前 4 个段)
         let versionString = UIDevice.current.systemVersion
         let parts = versionString.split(separator: ".")
         var written = 0
@@ -455,7 +455,7 @@ class PTScooterAuth {
     }
 }
 
-// MARK: - 2. 协议封装器 (复刻 ScooterFrames.kt)
+// MARK: - 2. 协议封装器
 class PTFrameBuilder {
     // 封包常量[cite: 2]
     static let PREAMBLE: UInt8 = 0x16
@@ -465,7 +465,7 @@ class PTFrameBuilder {
     static let ID_CONFIGURATION: UInt8 = 7
     static let ID_DISCONNECT: UInt8 = 8
     
-    // 通用封包方法：[16] + [ID] + [2字节长度] + [Payload] + [00][cite: 2]
+    // 通用封包方法：[16] + [ID] + [2字节长度] + [Payload] + [00]
     static func wrapTxFrame(idFrame: UInt8, payload: Data) -> Data {
         var frame = Data()
         frame.append(PREAMBLE)
@@ -913,7 +913,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
                 
                 authState = .success
                 authenticated = true
-                
+                PTMotoUserDefaultStruct.MotoLinkedAPP = true
                 // 必须在互信彻底完成后，再发钱解锁仪表盘！
                 grantScooterCredits()
                 NotificationCenter.default.post(name: BLEConnectSuccess, object: nil)

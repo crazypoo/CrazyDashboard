@@ -164,10 +164,12 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         view.bounds = .init(origin: .zero, size: .init(width:view.getKitCurrentDimension() + 5, height:PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers { sender in
             if !PTDashboardConfig.shared.blueConnected {
-                let vc = PTBLEConnectViewController()
-                let nav = PTBaseNavControl(rootViewController: vc)
-                nav.modalPresentationStyle = .fullScreen
-                self.navigationController?.present(nav, animated: true)
+                PTGCDManager.shared.runOnMain {
+                    let vc = PTBLEConnectViewController()
+                    let nav = PTBaseNavControl(rootViewController: vc)
+                    nav.modalPresentationStyle = .fullScreen
+                    self.navigationController?.present(nav, animated: true)
+                }
             }
         }
         view.isSelected = false
@@ -216,9 +218,24 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleDATA3, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleCONTROL, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleABS, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(dashBoardReload), name: MotorcycleDashBoardChange, object: nil)        
+        NotificationCenter.default.addObserver(self, selector: #selector(dashBoardReload), name: MotorcycleDashBoardChange, object: nil)
+        
+        if PTMotoUserDefaultStruct.MotoLinkedAPP {
+            NotificationCenter.default.addObserver(self, selector: #selector(handleAuthSuccess), name: BLEConnectSuccess, object: nil)
+        }
+        
+        if PTMotoUserDefaultStruct.MotoLinkedAPP,!PTDashboardConfig.shared.blueConnected {
+            PTBluetoothServerManager.shared.startBaseStationAndScan()
+        }
     }
         
+    @objc func handleAuthSuccess() {
+        PTDashboardConfig.shared.blueConnected = true
+        PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "connect_success")) {
+            self.bleConnectStatusLabel.isSelected = !PTDashboardConfig.shared.blueConnected
+        }
+    }
+    
     // MARK: - 界面布局
     private func setupUI() {
         view.backgroundColor = .black
