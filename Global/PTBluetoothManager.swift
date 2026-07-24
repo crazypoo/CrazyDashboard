@@ -701,6 +701,9 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     // 🚨 新增：用于缓存当前活跃的通知，等待车机来主动拉取内容
     private var activeNotifications = [UInt32: PTAncsNotif]()
 
+    private var logFileHandle: FileHandle?
+    public private(set) var currentLogFileURL: URL?
+
     var peripheralManager: CBPeripheralManager!
     let auth = PTScooterAuth()
     
@@ -734,6 +737,12 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         let timeString = dateFormatter.string(from: Date())
         let formattedLog = "[\(timeString)] \(message)"
         PTNSLogConsole(formattedLog)
+        
+        // 🚨 核心写入：将日志同步追加到本地文本文件中
+        if let handle = logFileHandle, let data = (formattedLog + "\n").data(using: .utf8) {
+            try? handle.seekToEnd()
+            try? handle.write(contentsOf: data)
+        }
         DispatchQueue.main.async {
             self.logHistory.append(formattedLog)
             // 控制数组大小，防止长时间挂机导致内存爆表
@@ -823,6 +832,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didUnsubscribeFrom characteristic: CBCharacteristic) {
         ptLog("⚠️ [状态] 摩托车断开了通道")
+        stopFileLogging()
         authenticated = false
         isTioSubscribed = false
         isCreditsSubscribed = false
@@ -919,6 +929,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
                 authState = .success
                 authenticated = true
                 PTMotoUserDefaultStruct.MotoLinkedAPP = true
+                startFileLogging()
                 // 必须在互信彻底完成后，再发钱解锁仪表盘！
                 grantScooterCredits()
                 NotificationCenter.default.post(name: BLEConnectSuccess, object: nil)
@@ -1282,5 +1293,70 @@ extension PTBluetoothServerManager {
         let stopString = "🛑 [自动化 Fuzz] 扫描已手动终止。"
         ptLog(stopString)
         NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: stopString)
+    }
+}
+
+extension PTBluetoothServerManager {
+    // MARK: - 文本日志流控引擎
+        
+    private func startFileLogging() {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd_HHmmss"
+        let fileName = "MotoHexLog_\(formatter.string(from: Date())).txt"
+        
+        guard let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+        let fileURL = docsDir.appendingPathComponent(fileName)
+        currentLogFileURL = fileURL
+        
+        // 在沙盒中创建空文件
+        FileManager.default.createFile(atPath: fileURL.path, contents: nil, attributes: nil)
+        
+        do {
+            logFileHandle = try FileHandle(forWritingTo: fileURL)
+            // 写入友好的头部信息
+            let header = "=== PEUGEOT XP400GT RAW HEX LOG ===\n=== SESSION START: \(Date()) ===\n\n"
+            if let data = header.data(using: .utf8) {
+                try logFileHandle?.seekToEnd()
+                try logFileHandle?.write(contentsOf: data)
+            }
+            PTNSLogConsole("📝 [日志记录] 已开始将底层数据流式写入本地文件: \(fileName)")
+        } catch {
+            PTNSLogConsole("❌ [日志记录] 文件创建失败: \(error)")
+        }
+    }
+    
+    private func stopFileLogging() {
+        guard logFileHandle != nil else { return }
+        
+        let footer = "\n=== SESSION END: \(Date()) ===\n"
+        if let data = footer.data(using: .utf8) {
+            try? logFileHandle?.seekToEnd()
+            try? logFileHandle?.write(contentsOf: data)
+        }
+        
+        do {
+            try logFileHandle?.close()
+        } catch {
+            PTNSLogConsole("❌ [日志记录] 关闭文件失败: \(error)")
+        }
+        logFileHandle = nil
+        PTNSLogConsole("💾 [日志记录] 蓝牙会话结束，十六进制日志已安全封装在沙盒中。")
+    }
+    
+    /// 获取沙盒中所有的十六进制日志文件，供 UI 导出使用
+    public func fetchAllHexLogFiles() -> [URL] {
+        guard let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return [] }
+        do {
+            let files = try FileManager.default.contentsOfDirectory(at: docsDir, includingPropertiesForKeys: [.creationDateKey])
+            // 过滤出以 MotoHexLog 开头并以 .txt 结尾的文件，并按时间倒序排列
+            let logFiles = files.filter { $0.lastPathComponent.hasPrefix("MotoHexLog") && $0.pathExtension == "txt" }
+            return logFiles.sorted { url1, url2 in
+                let date1 = (try? url1.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date.distantPast
+                let date2 = (try? url2.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date.distantPast
+                return date1 > date2
+            }
+        } catch {
+            return []
+        }
     }
 }

@@ -281,20 +281,19 @@ public class PTECUSnifferOverlay: UIView {
     }
     
     @objc private func exportLogsAction() {
-        // 合并所有日志（包括还在缓冲池中未显示的部分）
-        var allLogs = rawLogs
-        allLogs.append(contentsOf: pendingLogs)
+        let logFiles = PTBluetoothServerManager.shared.fetchAllHexLogFiles()
         
-        guard !allLogs.isEmpty else {
-            // 没有日志时可选择在此处弹个 Toast，比如 PTProgressHUD
+        // 2. 提取最新的一份日志
+        guard let latestLogURL = logFiles.first else {
+            // 如果没有日志，给出友好的 UI 提示 (这里可以使用你封装的 PTProgressHUD)
+            PTNSLogConsole("⚠️ [导出拦截] 当前沙盒中暂无十六进制日志文件。请先连接机车录制。")
             return
         }
         
-        // 将数组组合成长文本
-        let logString = allLogs.joined(separator: "\n")
+        PTNSLogConsole("📦 [准备导出] 正在打包文件: \(latestLogURL.lastPathComponent)")
         
         // 初始化系统分享面板
-        let activityVC = UIActivityViewController(activityItems: [logString], applicationActivities: nil)
+        let activityVC = UIActivityViewController(activityItems: [latestLogURL], applicationActivities: nil)
         
         // 查找最顶层控制器以执行 Present 操作
         if let topVC = PTUtils.getCurrentVC() {
