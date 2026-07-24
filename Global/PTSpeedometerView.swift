@@ -10,22 +10,135 @@ import SnapKit
 import PooTools
 import SwifterSwift
 
+/// 赛道风格专属仪表盘指针
+public class PTNeedleView: UIView {
+    
+    // MARK: - 属性
+    public var needleColor: UIColor = .red {
+        didSet { shapeLayer.fillColor = needleColor.cgColor }
+    }
+    
+    private let shapeLayer = CAShapeLayer()
+    
+    // MARK: - 初始化
+    public override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupUI()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupUI()
+    }
+    
+    private func setupUI() {
+        self.backgroundColor = .clear // 必须透明，否则会有矩形黑边
+        shapeLayer.fillColor = needleColor.cgColor
+        // 抗锯齿优化，确保指针边缘在旋转时依然锐利
+        shapeLayer.contentsScale = UIScreen.main.scale
+        layer.addSublayer(shapeLayer)
+    }
+    
+    // MARK: - 核心路径绘制
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+        shapeLayer.frame = bounds
+        
+        let width = bounds.width
+        let height = bounds.height
+        let baseRadius = width / 2.0 // 底座圆的半径等于视图宽度的一半
+        
+        // 底座圆心坐标 (位于视图底部，向上偏移一个半径的距离)
+        let baseCenter = CGPoint(x: width / 2.0, y: height - baseRadius)
+        // 针尖坐标 (位于视图顶部正中央)
+        let topPoint = CGPoint(x: width / 2.0, y: 0)
+        
+        let path = UIBezierPath()
+        
+        // 1. 画底部圆弧 (从右侧 0 度画到左侧 180 度，绕过底部)
+        // 注意：iOS 坐标系 Y 轴朝下，所以顺时针 (clockwise: true) 是从右往下再到左
+        path.addArc(withCenter: baseCenter,
+                    radius: baseRadius,
+                    startAngle: 0,
+                    endAngle: .pi,
+                    clockwise: true)
+        
+        // 2. 从左侧边缘连接到顶部针尖
+        path.addLine(to: topPoint)
+        
+        // 3. 闭合路径 (系统会自动从针尖连回起始的右侧边缘)
+        path.close()
+        
+        shapeLayer.path = path.cgPath
+    }
+}
+
 @objcMembers
 public class PTSpeedometerView: UIView {
     
-    // MARK: - 仪表盘方向枚举
+    // MARK: - 🚨 仪表盘方向枚举 (已扩展 4 种方向)
     public enum Direction {
-        case clockwise        // 顺时针 (起点右下)
-        case counterClockwise // 逆时针 (起点左下)
+        case clockwise          // 开口在右 (起点右下，顺时针)
+        case counterClockwise   // 开口在左 (起点左下，逆时针)
+        case bottomOpening      // 开口在下 (起点左下，顺时针跨越顶部)
+        case topOpening         // 开口在上 (起点左上，逆时针跨越底部)
     }
     
+    // MARK: - 新增：指针与刻度的扫略方向控制
+    public enum SweepDirection {
+        case standard // 标准方向 (按设定好的物理轨迹扫略)
+        case reversed // 镜像反向 (起点与终点对调，常用于右侧对称表盘)
+    }
+
     // MARK: - 外部可配属性 (动态刷新)
     
+    /// 指针和刻度的扫略方向，修改后自动刷新
+    public var sweepDirection: SweepDirection = .standard {
+        didSet { reloadAppearance() }
+    }
+
+    // MARK: - 🚨 核心魔法：动态轨迹转换器
+        
+    /// 实际绘制的起始角度
+    private var actualStartAngle: CGFloat {
+        return sweepDirection == .standard ? arcStartAngle : arcEndAngle
+    }
+    
+    /// 实际绘制的结束角度
+    private var actualEndAngle: CGFloat {
+        return sweepDirection == .standard ? arcEndAngle : arcStartAngle
+    }
+    
+    /// 实际的指针行进方向 (顺时针/逆时针)
+    private var actualIsClockwise: Bool {
+        return sweepDirection == .standard ? isClockwiseDrawing : !isClockwiseDrawing
+    }
+
     /// 仪表盘方向，修改后自动刷新布局和刻度
     public var direction: Direction = .clockwise {
         didSet { reloadAppearance() }
     }
     
+    public enum GaugeType {
+        case speedometer // 速度盘 (纯色刻度)
+        case tachometer  // 转速盘 (支持红区警示色)
+    }
+    
+    /// 当前仪表盘的作用类型
+    public var gaugeType: GaugeType = .speedometer {
+        didSet { reloadAppearance() }
+    }
+    
+    /// 转速红区数值范围 (仅当 gaugeType 为 .tachometer 时生效)
+    public var redlineRange: ClosedRange<CGFloat> = 9000...10000 {
+        didSet { reloadAppearance() }
+    }
+    
+    /// 刻度文字的默认颜色
+    public var scaleTextColor: UIColor = .white {
+        didSet { reloadAppearance() }
+    }
+
     /// 满表时速
     public var maxSpeed: CGFloat = 300.0 {
         didSet { reloadAppearance() }
@@ -36,6 +149,10 @@ public class PTSpeedometerView: UIView {
         didSet { reloadAppearance() }
     }
     
+    public var majorTickStep: CGFloat = 10.0 {
+        didSet { reloadAppearance() }
+    }
+
     /// 进度条颜色
     public var progressColor: UIColor = .systemRed {
         didSet { progressLayer.strokeColor = progressColor.cgColor }
@@ -43,11 +160,11 @@ public class PTSpeedometerView: UIView {
     
     /// 指针颜色
     public var needleColor: UIColor = .red {
-        didSet { needleView.backgroundColor = needleColor }
+        didSet { needleView.needleColor = needleColor }
     }
     
     // MARK: - UI 组件
-    private let needleView = UIView()
+    private let needleView = PTNeedleView()
     private let speedLabel = UILabel()
     public let unitLabel = UILabel()
     public let altitudeLabel = UILabel()
@@ -61,13 +178,31 @@ public class PTSpeedometerView: UIView {
     private var currentSpeedRaw: CGFloat = 0
     private var previousSize: CGSize = .zero
     
-    // MARK: - 角度体系动态计算
-    private var arcStartAngle: CGFloat {
-        return direction == .clockwise ? .pi / 4 : .pi * 3 / 4
+    // MARK: - 🚨 角度体系动态计算
+    
+    /// 统一判断当前方向是否为顺时针绘制
+    private var isClockwiseDrawing: Bool {
+        return direction == .clockwise || direction == .bottomOpening
     }
     
+    /// 计算圆弧起点
+    private var arcStartAngle: CGFloat {
+        switch direction {
+        case .clockwise:          return .pi / 4       // 45° (右下)
+        case .counterClockwise:   return .pi * 3 / 4   // 135° (左下)
+        case .bottomOpening:      return .pi * 3 / 4   // 135° (左下)
+        case .topOpening:         return .pi * 5 / 4   // 225° (左上)
+        }
+    }
+    
+    /// 计算圆弧终点
     private var arcEndAngle: CGFloat {
-        return direction == .clockwise ? .pi * 7 / 4 : -.pi * 3 / 4
+        switch direction {
+        case .clockwise:          return .pi * 7 / 4   // 315° (右上)
+        case .counterClockwise:   return -.pi * 3 / 4  // -135° (左上)
+        case .bottomOpening:      return .pi / 4       // 45° (右下)
+        case .topOpening:         return -.pi / 4      // -45° (右上)
+        }
     }
     
     private let totalSweepAngle: CGFloat = .pi * 1.5 // 固定扫过 270 度
@@ -88,11 +223,10 @@ public class PTSpeedometerView: UIView {
         // 确保 bounds 已经有实际大小
         guard bounds.width > 0, bounds.height > 0 else { return }
         
-        // 🚨 核心修复：只有当视图的实际尺寸发生变化时，才重新渲染底层 Layer 和路径
         if previousSize != bounds.size {
             previousSize = bounds.size
             
-            // 同步更新 CAShapeLayer 和基础 Layer 的 frame，防止它们越界或原点错误
+            // 同步更新 CAShapeLayer 和基础 Layer 的 frame
             trackLayer.frame = bounds
             progressLayer.frame = bounds
             scaleLayer.frame = bounds
@@ -126,20 +260,20 @@ public class PTSpeedometerView: UIView {
         // 3. 数字标签
         speedLabel.textAlignment = .center
         speedLabel.textColor = .white
-        speedLabel.font = UIFont.boldSystemFont(ofSize: 55)
+        speedLabel.font = .appfont(size: 55)
         speedLabel.text = "0"
         
         unitLabel.textAlignment = .center
         unitLabel.textColor = .lightGray
-        unitLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        unitLabel.font = .appfont(size: 14)
         unitLabel.text = "km/h"
         
         altitudeLabel.textColor = .white
-        altitudeLabel.font = UIFont.systemFont(ofSize: 13, weight: .medium)
+        altitudeLabel.font = .appfont(size: 13)
         altitudeLabel.text = "海拔: -- m"
         
         pressureLabel.textColor = UIColor.white.withAlphaComponent(0.7)
-        pressureLabel.font = UIFont.systemFont(ofSize: 13, weight: .medium)
+        pressureLabel.font = .appfont(size: 13)
         pressureLabel.text = "气压: -- hPa"
         
         addSubviews([speedLabel, unitLabel, altitudeLabel, pressureLabel])
@@ -155,33 +289,30 @@ public class PTSpeedometerView: UIView {
         }
 
         // 4. 指针
-        needleView.backgroundColor = needleColor
-        needleView.layer.cornerRadius = 2
-        needleView.layer.anchorPoint = CGPoint(x: 0.5, y: 1.0)
+        needleView.needleColor = needleColor
+        needleView.layer.anchorPoint = CGPoint(x: 0.5, y: 0.94)
         addSubview(needleView)
         
         needleView.snp.makeConstraints { make in
             make.center.equalToSuperview()
-            make.width.equalTo(4)
-            make.height.equalTo(100) // 稍后会在 reloadAppearance 中更新高度
+            make.width.equalTo(12)
+            make.height.equalTo(100)
         }
     }
     
     // MARK: - 核心重绘引擎
-    /// 清理并根据当前属性重新渲染轨道、刻度和布局
     public func reloadAppearance() {
         guard bounds.width > 0 else { return }
         
         let center = CGPoint(x: bounds.width / 2, y: bounds.height / 2)
         let radius = bounds.width / 2 - 20
         
-        // 1. 重新绘制轨道圆弧
-        let isClockwise = (direction == .clockwise)
+        // 1. 重新绘制轨道圆弧 (🚨 使用 isClockwiseDrawing)
         let path = UIBezierPath(arcCenter: center,
                                 radius: radius,
-                                startAngle: arcStartAngle,
-                                endAngle: arcEndAngle,
-                                clockwise: isClockwise)
+                                startAngle: actualStartAngle,
+                                endAngle: actualEndAngle,
+                                clockwise: actualIsClockwise)
         
         trackLayer.path = path.cgPath
         progressLayer.path = path.cgPath
@@ -190,13 +321,13 @@ public class PTSpeedometerView: UIView {
         scaleLayer.sublayers?.forEach { $0.removeFromSuperlayer() }
         drawScaleMarks(center: center, radius: radius)
         
-        // 3. 动态调整副标签 (海拔/气压) 的位置和对齐方式
-        altitudeLabel.textAlignment = isClockwise ? .right : .left
-        pressureLabel.textAlignment = isClockwise ? .right : .left
+        // 3. 动态调整副标签 (海拔/气压) 的位置和对齐方式 (🚨 使用 isClockwiseDrawing)
+        altitudeLabel.textAlignment = isClockwiseDrawing ? .right : .left
+        pressureLabel.textAlignment = isClockwiseDrawing ? .right : .left
         
         altitudeLabel.snp.remakeConstraints { make in
             make.centerY.equalToSuperview()
-            if isClockwise {
+            if isClockwiseDrawing {
                 make.left.equalTo(speedLabel.snp.right).offset(5)
                 make.right.equalToSuperview().inset(5)
             } else {
@@ -224,18 +355,28 @@ public class PTSpeedometerView: UIView {
         let safeStep = tickStep > 0 ? tickStep : 10.0
         let tickCount = Int(maxSpeed / safeStep)
         
+        let safeMajorStep = majorTickStep > 0 ? majorTickStep : safeStep
+        
         for i in 0...tickCount {
             let currentSpeed = CGFloat(i) * safeStep
             let speedRatio = currentSpeed / maxSpeed
             
+            // 计算刻度角度 (依赖是否顺时针)
             let angle: CGFloat
-            if direction == .clockwise {
-                angle = arcStartAngle + (speedRatio * totalSweepAngle)
+            if actualIsClockwise {
+                angle = actualStartAngle + (speedRatio * totalSweepAngle)
             } else {
-                angle = arcStartAngle - (speedRatio * totalSweepAngle)
+                angle = actualStartAngle - (speedRatio * totalSweepAngle)
             }
             
-            let isMajorTick = (i % 3 == 0) || i == tickCount
+            // 只要能被 1000 整除，或者是满表最后一格，就是主刻度
+            let isThousandMark = currentSpeed.truncatingRemainder(dividingBy: safeMajorStep) == 0
+            let isMajorTick = isThousandMark || i == tickCount
+            
+            // 🚨 统一判断：当前刻度是否属于红区警示范围
+            let isRedline = (gaugeType == .tachometer && redlineRange.contains(currentSpeed))
+            
+            // 主副刻度的长度区分
             let tickLength: CGFloat = isMajorTick ? 14.0 : 6.0
             
             let outerPoint = CGPoint(x: center.x + radius * cos(angle),
@@ -249,7 +390,16 @@ public class PTSpeedometerView: UIView {
             
             let tickLayer = CAShapeLayer()
             tickLayer.path = tickPath.cgPath
-            tickLayer.strokeColor = isMajorTick ? UIColor.white.cgColor : UIColor.lightGray.cgColor
+            
+            // 🚨 核心改动 1：刻度线颜色逻辑
+            if isRedline {
+                // 如果是红区，线条统一染红（副刻度使用稍微带点透明度的红色以保持层次感）
+                tickLayer.strokeColor = isMajorTick ? UIColor.systemRed.cgColor : UIColor.systemRed.withAlphaComponent(0.6).cgColor
+            } else {
+                // 正常区域，主刻度白，副刻度灰
+                tickLayer.strokeColor = isMajorTick ? UIColor.white.cgColor : UIColor.lightGray.cgColor
+            }
+            
             tickLayer.lineWidth = isMajorTick ? 2.5 : 1.5
             scaleLayer.addSublayer(tickLayer)
             
@@ -261,23 +411,33 @@ public class PTSpeedometerView: UIView {
                 
                 let textLayer = CATextLayer()
                 
-                // 🚨 核心优化：智能数值换算器
-                // 如果满表数值 >= 1000，刻度盘自动除以 1000 显示 (例如 12000 -> 12)
-                let displayValue: Int
+                // 更智能的数值换算器：保留小数点支持
+                let displayValue: String
                 if maxSpeed >= 1000 {
-                    displayValue = Int(currentSpeed) / 1000
+                    let scaled = currentSpeed / 1000.0
+                    if scaled.truncatingRemainder(dividingBy: 1) == 0 {
+                        displayValue = String(format: "%.0f", scaled)
+                    } else {
+                        displayValue = String(format: "%.1f", scaled)
+                    }
                 } else {
-                    displayValue = Int(currentSpeed)
+                    displayValue = "\(Int(currentSpeed))"
                 }
                 
-                textLayer.string = "\(displayValue)"
-                textLayer.font = UIFont.systemFont(ofSize: 14, weight: .bold)
-                textLayer.fontSize = 14
-                textLayer.foregroundColor = UIColor.white.cgColor
+                textLayer.string = displayValue
+                textLayer.font = UIFont.appfont(size: 14)
+                textLayer.fontSize = UIFont.appfont(size: 14).pointSize
+                
+                // 🚨 核心改动 2：复用 isRedline 判断文字颜色
+                if isRedline {
+                    textLayer.foregroundColor = UIColor.systemRed.cgColor
+                } else {
+                    textLayer.foregroundColor = scaleTextColor.cgColor
+                }
+                
                 textLayer.alignmentMode = .center
                 textLayer.contentsScale = UIScreen.main.scale
                 
-                // 文本框宽度可以恢复到 36，因为除以 1000 后，最大的数字也就是两位数 (如 12)
                 let textWidth: CGFloat = 36
                 let textHeight: CGFloat = 16
                 textLayer.frame = CGRect(x: textCenter.x - textWidth/2,
@@ -296,14 +456,15 @@ public class PTSpeedometerView: UIView {
         speedLabel.text = "\(Int(safeSpeed))"
         
         let speedRatio = safeSpeed / maxSpeed
+        
+        // 🚨 修正目标角度计算
         let targetAngle: CGFloat
-        
-        if direction == .clockwise {
-            targetAngle = arcStartAngle + (speedRatio * totalSweepAngle)
+        if actualIsClockwise {
+            targetAngle = actualStartAngle + (speedRatio * totalSweepAngle)
         } else {
-            targetAngle = arcStartAngle - (speedRatio * totalSweepAngle)
+            targetAngle = actualStartAngle - (speedRatio * totalSweepAngle)
         }
-        
+
         let rotationTransform = CGAffineTransform(rotationAngle: targetAngle + .pi / 2)
         
         if animated {
@@ -336,11 +497,6 @@ extension PTSpeedometerView {
     
     // MARK: - 动态换挡/红区提示引擎
     
-    /// 配置红区参数
-    /// - Parameters:
-    ///   - redlineRpm: 危险/换挡转速阈值 (例如 XP400GT 设置为 8000)
-    ///   - normalColor: 正常状态下的进度条颜色
-    ///   - warningColor: 达到红区时的警告颜色 (通常为高亮红色)
     public func applyShiftLightLogic(currentRpm: Int,
                                      redlineRpm: Int = 8000,
                                      normalColor: UIColor = .systemBlue,
@@ -348,13 +504,11 @@ extension PTSpeedometerView {
         
         let isInRedline = currentRpm >= redlineRpm
         
-        // 1. 动态切换颜色
         let targetColor = isInRedline ? warningColor : normalColor
         if self.progressColor != targetColor {
             self.progressColor = targetColor
         }
         
-        // 2. 赛道级视觉反馈：当突破红区时，给数字标签增加呼吸闪烁动画
         if isInRedline {
             startRedlineFlashing()
         } else {
@@ -363,17 +517,15 @@ extension PTSpeedometerView {
     }
     
     private func startRedlineFlashing() {
-        // 防止重复添加动画
         guard unitLabel.layer.animation(forKey: "redlineFlash") == nil else { return }
         
         let flash = CABasicAnimation(keyPath: "opacity")
         flash.fromValue = 1.0
         flash.toValue = 0.2
-        flash.duration = 0.15 // 极快的高频闪烁
+        flash.duration = 0.15
         flash.autoreverses = true
         flash.repeatCount = .infinity
         
-        // 让数字和单位一起疯狂闪烁，提醒骑手换挡或收油
         speedLabel.layer.add(flash, forKey: "redlineFlash")
         unitLabel.layer.add(flash, forKey: "redlineFlash")
     }

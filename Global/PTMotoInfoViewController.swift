@@ -50,27 +50,34 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
     
     lazy var speedometer:PTSpeedometerView = {
         let view = PTSpeedometerView(frame: .zero)
-        view.direction = .clockwise
+        view.gaugeType = .speedometer
+        view.direction = .bottomOpening
+        view.sweepDirection = .standard
         view.altitudeLabel.isHidden = true
         view.pressureLabel.isHidden = true
         view.unitLabel.text = PTDashboardConfig.shared.appShowUniLabel
         view.maxSpeed = PTDashboardConfig.shared.appUniIsMetric ? 180 : 110
-        view.tickStep = 10
+        view.tickStep = 5
         view.progressColor = PTDashboardConfig.shared.appMainColor
         view.needleColor = PTDashboardConfig.shared.appMainColor
+        view.majorTickStep = 20
         return view
     }()
     
     lazy var speedometerReversed:PTSpeedometerView = {
         let view = PTSpeedometerView(frame: .zero)
-        view.direction = .counterClockwise
+        view.gaugeType = .tachometer
+        view.direction = .bottomOpening
+        view.sweepDirection = .reversed
         view.altitudeLabel.isHidden = true
         view.pressureLabel.isHidden = true
         view.unitLabel.text = "x1000 r/min"
         view.maxSpeed = 10000
         view.tickStep = 500
+        view.majorTickStep = 1000
         view.progressColor = PTDashboardConfig.shared.appMainColor
         view.needleColor = PTDashboardConfig.shared.appMainColor
+        view.redlineRange = 9000...10000
         return view
     }()
     
