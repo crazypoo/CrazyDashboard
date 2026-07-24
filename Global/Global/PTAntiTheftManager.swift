@@ -80,20 +80,7 @@ public class PTAntiTheftManager: NSObject {
     
     // MARK: - iOS 15+ 穿透式报警
     private func triggerTheftAlarm() {
-        let content = UNMutableNotificationContent()
-        content.title = "🚨 车辆异常移动警告"
-        content.body = "检测到您的爱车在未启动状态下丢失连接，可能正被非法移动，请立即确认！"
-        content.sound = UNNotificationSound.defaultCritical
-        content.interruptionLevel = .timeSensitive
-
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                PTNSLogConsole("❌ [防盗系统] 报警发送失败: \(error.localizedDescription)")
-            } else {
-                PTNSLogConsole("🚨 [防盗系统] ！！！已触发防丢车穿透警报！！！")
-            }
-        }
+        PTNotificationCenter.pushCenter(title: "🚨 车辆异常移动警告", body: "检测到您的爱车在未启动状态下丢失连接，可能正被非法移动，请立即确认！")
     }
     
     deinit {

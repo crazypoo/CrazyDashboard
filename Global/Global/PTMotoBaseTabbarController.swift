@@ -12,7 +12,7 @@ import SafeSFSymbols
 class PTMotoBaseTabbarController: PTBaseTabBarViewController {
     
     var vcLoaded:Bool = false
-    
+//    text.document
     func tabbarItems() -> [PTTabBarItemConfig] {
         let homeNormalImage = UIImage(.bicycle).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
         let homeSelectedImage = UIImage(.bicycle).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
@@ -28,6 +28,13 @@ class PTMotoBaseTabbarController: PTBaseTabBarViewController {
         let navigationNav = PTBaseNavControl(rootViewController: navigation)
         let navigationTab = PTTabBarItemConfig(title: navigationTitle, content: PTTabBarImageContent(normal: navigationNormalImage, selected: navigationSelectedImage),viewController: navigationNav)
                 
+        let collectedNormalImage = UIImage(.folder).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
+        let collectedSelectedImage = UIImage(.folder).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
+        let collectedTitle = PTDashboardConfig.languageFunc(text: "Data")
+        let collected = PTDataCollectedViewController()
+        let collectedNav = PTBaseNavControl(rootViewController: collected)
+        let collectedTab = PTTabBarItemConfig(title: collectedTitle, content: PTTabBarImageContent(normal: collectedNormalImage, selected: collectedSelectedImage),viewController: collectedNav)
+        
         let settingNormalImage = UIImage(.gear).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
         let settingSelectedImage = UIImage(.gear).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
         let settingTitle = PTDashboardConfig.languageFunc(text: "tab_setting")
@@ -35,7 +42,7 @@ class PTMotoBaseTabbarController: PTBaseTabBarViewController {
         let settingNav = PTBaseNavControl(rootViewController: setting)
         let settingTab = PTTabBarItemConfig(title: settingTitle, content: PTTabBarImageContent(normal: settingNormalImage, selected: settingSelectedImage),viewController: settingNav)
 
-        return [homeTab,navigationTab,settingTab]
+        return [homeTab,navigationTab,collectedTab,settingTab]
     }
 
     override func viewDidLoad() {

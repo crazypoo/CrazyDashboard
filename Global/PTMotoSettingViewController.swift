@@ -185,7 +185,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 return "\(value)"
             }
             UIAlertController.base_alertVC(title: "Test",okBtns: nameMap,cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
-                PTBluetoothServerManager.shared.sendTCSMode(id: ids[index], mode: PTTCSMode.off)
+                PTBluetoothServerManager.shared.sendTCSMode(id: UInt8(7), mode: PTTCSMode.off)
             })
         })
         return view

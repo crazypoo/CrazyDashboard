@@ -85,25 +85,8 @@ class PTMessagePusher {
     ///   - title: 消息标题 (例如："系统警告" 或 "来自助理")
     ///   - body: 消息正文 (例如："轮胎气压过低，请注意安全！")
     static func pushToDashboard(title: String, body: String) {
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        content.sound = UNNotificationSound.default
-        
-        // 触发器：设置为 1 秒后立刻触发
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
-        
-        // 生成唯一请求 ID
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
-        
-        // 将请求加入系统通知中心
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                PTNSLogConsole("❌ [消息推送] 发送失败: \(error.localizedDescription)")
-            } else {
-                PTNSLogConsole("🚀 [消息推送] 消息已交给 iOS 系统，即将通过 ANCS 弹窗推送到车机！")
-            }
-        }
+        PTNotificationCenter.pushCenter(title: title, body: body,trigger: trigger)
     }
 }
 

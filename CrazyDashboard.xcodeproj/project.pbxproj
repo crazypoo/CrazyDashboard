@@ -62,6 +62,12 @@
 		5598676E3011C9720049684D /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 5598676C3011C9720049684D /* Settings.bundle */; };
 		559867D0301281FC0049684D /* PTLightFeedbackOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559867CF301281FC0049684D /* PTLightFeedbackOverlay.swift */; };
 		559867D1301281FC0049684D /* PTLightFeedbackOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559867CF301281FC0049684D /* PTLightFeedbackOverlay.swift */; };
+		55986833301330E00049684D /* PTDataCollectedViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986832301330E00049684D /* PTDataCollectedViewController.swift */; };
+		55986834301330E00049684D /* PTDataCollectedViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986832301330E00049684D /* PTDataCollectedViewController.swift */; };
+		55986836301337DC0049684D /* PTTripDataCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986835301337DC0049684D /* PTTripDataCell.swift */; };
+		55986837301337DC0049684D /* PTTripDataCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986835301337DC0049684D /* PTTripDataCell.swift */; };
+		55986839301348FC0049684D /* PTNotificationCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986838301348FC0049684D /* PTNotificationCenter.swift */; };
+		5598683A301348FC0049684D /* PTNotificationCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986838301348FC0049684D /* PTNotificationCenter.swift */; };
 		55F503AB300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
 		55F503AC300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
 		55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */; };
@@ -129,6 +135,9 @@
 		559866C13011A71E0049684D /* SpeechSynthesizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechSynthesizer.swift; sourceTree = "<group>"; };
 		5598676C3011C9720049684D /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
 		559867CF301281FC0049684D /* PTLightFeedbackOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLightFeedbackOverlay.swift; sourceTree = "<group>"; };
+		55986832301330E00049684D /* PTDataCollectedViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDataCollectedViewController.swift; sourceTree = "<group>"; };
+		55986835301337DC0049684D /* PTTripDataCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTripDataCell.swift; sourceTree = "<group>"; };
+		55986838301348FC0049684D /* PTNotificationCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTNotificationCenter.swift; sourceTree = "<group>"; };
 		55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = GlobalAssets.xcassets; sourceTree = "<group>"; };
 		55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLanguageModel.swift; sourceTree = "<group>"; };
 		55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoUserDefaultStruct.swift; sourceTree = "<group>"; };
@@ -287,6 +296,8 @@
 				5598668030114A980049684D /* PTFuelRoutingManager.swift */,
 				5598668330114DF00049684D /* PTRoutingManager.swift */,
 				559866C13011A71E0049684D /* SpeechSynthesizer.swift */,
+				55986832301330E00049684D /* PTDataCollectedViewController.swift */,
+				55986838301348FC0049684D /* PTNotificationCenter.swift */,
 			);
 			path = Global;
 			sourceTree = "<group>";
@@ -300,6 +311,7 @@
 				55FDBCAA3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift */,
 				55986686301150900049684D /* PTECUSnifferOverlay.swift */,
 				559867CF301281FC0049684D /* PTLightFeedbackOverlay.swift */,
+				55986835301337DC0049684D /* PTTripDataCell.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -574,6 +586,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				55986837301337DC0049684D /* PTTripDataCell.swift in Sources */,
 				5598668530114DF00049684D /* PTRoutingManager.swift in Sources */,
 				5577E62E2FD656D20004733F /* PTCompassRollerView.swift in Sources */,
 				55986675301144060049684D /* PTMaintenanceManager.swift in Sources */,
@@ -605,6 +618,7 @@
 				55FE29A4300CC258000E741F /* PTMotoNavigationViewController.swift in Sources */,
 				5577E7C92FD6FC8C0004733F /* PTCrashWarningView.swift in Sources */,
 				55FE2967300CA5E0000E741F /* PTDashboardConfig.swift in Sources */,
+				55986839301348FC0049684D /* PTNotificationCenter.swift in Sources */,
 				555C0FFA300E06630079D94F /* PTGlobalActionHeader.swift in Sources */,
 				55986688301150900049684D /* PTECUSnifferOverlay.swift in Sources */,
 				55F503BC300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift in Sources */,
@@ -612,6 +626,7 @@
 				55986643301141090049684D /* PTAntiTheftManager.swift in Sources */,
 				55F503B8300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */,
 				5577E7CD2FD6FF890004733F /* PTLeanAngleView.swift in Sources */,
+				55986833301330E00049684D /* PTDataCollectedViewController.swift in Sources */,
 				55986678301144840049684D /* PTGPXRecorder.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -634,9 +649,11 @@
 				55986687301150900049684D /* PTECUSnifferOverlay.swift in Sources */,
 				5598668230114A980049684D /* PTFuelRoutingManager.swift in Sources */,
 				5577E6D22FD680730004733F /* PTTripStatsView.swift in Sources */,
+				55986834301330E00049684D /* PTDataCollectedViewController.swift in Sources */,
 				5577E64F2FD6572A0004733F /* PTLocationEngine.swift in Sources */,
 				55FE2A5E300DF42A000E741F /* PTBLEConnectViewController.swift in Sources */,
 				5577E7CA2FD6FC8C0004733F /* PTCrashWarningView.swift in Sources */,
+				5598683A301348FC0049684D /* PTNotificationCenter.swift in Sources */,
 				55986640301138A30049684D /* PTTripManager.swift in Sources */,
 				55FE295C300CA4E8000E741F /* PTBluetoothManager.swift in Sources */,
 				5590187230107A1C00A77571 /* PTRoutePlantCell.swift in Sources */,
@@ -648,6 +665,7 @@
 				55FE29A1300CC1F1000E741F /* PTMotoInfoViewController.swift in Sources */,
 				55FE2A77300DF95C000E741F /* PTMainProgressView.swift in Sources */,
 				55FE29A3300CC258000E741F /* PTMotoNavigationViewController.swift in Sources */,
+				55986836301337DC0049684D /* PTTripDataCell.swift in Sources */,
 				55986642301141090049684D /* PTAntiTheftManager.swift in Sources */,
 				55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */,
 				5598667E301148290049684D /* PTDiagnosticManager.swift in Sources */,

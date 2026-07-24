@@ -87,11 +87,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         registerBackgroundTasks()
         
+        appNotifiCenter()
         _ = PTTripManager.shared
-        _ = PTAntiTheftManager.shared
-        _ = PTMaintenanceManager.shared
         _ = PTGPXRecorder.shared
-        _ = PTDiagnosticManager.shared
         
         return true
     }
@@ -138,6 +136,40 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         // 告知后台任务调度器任务已完成
         task.setTaskCompleted(success: true)
+    }
+}
+
+extension AppDelegate:UNUserNotificationCenterDelegate {
+    func appNotifiCenter() {
+        let center = UNUserNotificationCenter.current()
+        // 设置代理，以便在前台也能收到通知
+        center.delegate = self
+        
+        // 请求弹窗、声音和角标权限
+        center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            if let error = error {
+                PTNSLogConsole("❌ [防盗系统] 请求通知权限出错: \(error.localizedDescription)")
+                return
+            }
+            if granted {
+                _ = PTAntiTheftManager.shared
+                _ = PTDiagnosticManager.shared
+                _ = PTMaintenanceManager.shared
+            } else {
+                PTNSLogConsole("⚠️ [防盗系统] 用户拒绝了通知权限，报警将无法弹出")
+            }
+        }
+    }
+    
+    public func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                           willPresent notification: UNNotification,
+                                           withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        let content = notification.request.content
+        completionHandler([.banner, .sound, .list])
+        
+        DispatchQueue.main.async {
+            UIAlertController.base_alertVC(title:content.title,msg: content.body,cancelBtn: PTDashboardConfig.languageFunc(text: "button_confirm"))
+        }
     }
 }
 
