@@ -202,6 +202,9 @@ struct PTDashboardData2 {
     let maintenance: Int
     /// 仪表盘光
     let backlightMode: PTBacklightMode
+    
+    let engineTempC: Int
+    let isKickstandDown: Bool
 }
 
 struct PTDashboardData3 {
@@ -1156,11 +1159,20 @@ extension PTBluetoothServerManager {
             // 通过 rawValue 安全地转换为枚举对象，如果匹配失败则回退到 .unknown
             let currentMode = PTBacklightMode(rawValue: byte0) ?? .unknown
 
+            let engineRaw = Int(bytes[1])
+            // 提取最低 2 位获取引擎状态 (0:未启动, 1:启动中, 2:运转中, 3:关闭中)
+            let engineStatus = engineRaw & 0x03
+
+            let isKickstandDown = (engineRaw & 0x30) != 0
+            
+            let tempRaw = Int(bytes[2])
+            let engineTempC = tempRaw - 100
+
             let engine = Int(bytes[1])
             let maint = Int(bytes[3])
             let temp = Int(bytes[4]) - 50
             let batt = Double(bytes[5]) * 0.1
-            let data2 = PTDashboardData2(batteryVolt: batt, outsideTempC: temp, engineStatus: engine, maintenance: maint,backlightMode: currentMode)
+            let data2 = PTDashboardData2(batteryVolt: batt, outsideTempC: temp, engineStatus: engine, maintenance: maint,backlightMode: currentMode,engineTempC: engineTempC,isKickstandDown: isKickstandDown)
             self.latestData2 = data2
             NotificationCenter.default.post(name: MotorcycleDATA2, object: data2)
             ptLog("🔋 [DATA2] 引擎: \(PTDashboardLabels.engineStatusLabel(raw: engine)), 电压: \(batt)V")
