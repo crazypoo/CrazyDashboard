@@ -244,7 +244,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        loadHistoryAndBindUpdates()
+//        loadHistoryAndBindUpdates()
     }
     
     override func viewDidLoad() {

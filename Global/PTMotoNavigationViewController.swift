@@ -856,6 +856,14 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
         self.startNavigationButton.backgroundColor = .systemGreen
     }
         
+    func driveManager(onArrivedDestination driveManager: AMapNaviDriveManager) {
+        self.driveViewCloseButtonClicked(self.driveView)
+    }
+    
+    func driveManagerDidEndEmulatorNavi(_ driveManager: AMapNaviDriveManager) {
+        self.driveViewCloseButtonClicked(self.driveView)
+    }
+    
     func driveManager(_ driveManager: AMapNaviDriveManager, error: Error) {
         let error = error as NSError
         PTNSLogConsole("error:{%d - %@}", error.code, error.localizedDescription)
@@ -885,8 +893,6 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
     }
     
     func driveManager(_ driveManager: AMapNaviDriveManager, playNaviSound soundString: String, soundStringType: AMapNaviSoundType) {
-        NSLog("playNaviSoundString:{%d:%@}", soundStringType.rawValue, soundString);
-        
         SpeechSynthesizer.Shared.speak(soundString)
     }
         
@@ -930,7 +936,7 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
 }
 
 extension PTMotoNavigationViewController : AMapNaviDriveViewDelegate {
-    
+        
     func driveViewCloseButtonClicked(_ driveView: AMapNaviDriveView) {
         
         //停止导航
@@ -941,10 +947,8 @@ extension PTMotoNavigationViewController : AMapNaviDriveViewDelegate {
         self.startNavigationButton.isEnabled = false
         self.amapView.removeAnnotations(amapView.annotations)
         self.amapView.removeOverlays(amapView.overlays)
-//        //停止语音
-//        SpeechSynthesizer.Shared.stopSpeak()
-//
-//        _ = navigationController?.popViewController(animated: true)
+        //停止语音
+        SpeechSynthesizer.Shared.stopSpeak()
     }
     
     func driveView(_ view: AMapNaviDriveView, didChangeTo state: AMapNaviDriveViewState) {
@@ -990,9 +994,6 @@ extension PTMotoNavigationViewController:AMapNaviDriveDataRepresentable {
             distanceToDestination: UInt32(max(0, naviInfo.routeRemainDistance)),
             estimatedTimeToDestinationSec: max(0, naviInfo.routeRemainTime)
         )
-        
-        // 打印调试日志
-//        PTProgressHUD.show(text: "🚀 高德诱导 -> 动作: \(maneuverCode), 距转弯: \(distanceToNextManeuver)m, 限速: \(self.currentSpeedLimit)km/h")
         
         // 5. 核心动作：通过蓝牙将数据泵送给摩托车！
         PTBluetoothServerManager.shared.sendNavigation(info: info)

@@ -31,12 +31,6 @@ final class SpeechSynthesizer: NSObject, AVSpeechSynthesizerDelegate {
         
         //iOS语音合成在iOS8及以下版本系统上语速异常
         let sysVer = (UIDevice.current.systemVersion as NSString).doubleValue
-        if sysVer < 8.0 {
-            aUtterance.rate = 0.25//iOS7设置为0.25
-        }
-        else if sysVer < 9.0 {
-            aUtterance.rate = 0.15//iOS8设置为0.15
-        }
         
         if speechSynthesizer.isSpeaking {
             speechSynthesizer.stopSpeaking(at: .word)
