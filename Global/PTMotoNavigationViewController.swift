@@ -360,6 +360,17 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         return view
     }()
 
+    lazy var muteButton:PTBaseButton = {
+        let view = PTBaseButton(type: .custom)
+        view.setImage(UIImage(.speaker.fill), for: .selected)
+        view.setImage(UIImage(.speaker.slashFill), for: .normal)
+        view.addActionHandlers(handler: { sender in
+            sender.isSelected.toggle()
+            PTMotoUserDefaultStruct.NavMute = !sender.isSelected
+        })
+        view.isSelected = !PTMotoUserDefaultStruct.NavMute
+        return view
+    }()
     
     open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
         return .solid(.clear)
@@ -391,13 +402,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         }
         vcDidLoad = true
         
-        if let findParking = PTMOTOParkingManager.shared.getLastParkedLocation() {
-            let beginAnnotation = NaviPointAnnotation()
-            beginAnnotation.coordinate = CLLocationCoordinate2D(latitude: Double(findParking.latitude), longitude: Double(findParking.longitude))
-            beginAnnotation.title = PTDashboardConfig.languageFunc(text: "pin_parking")
-            beginAnnotation.naviPointType = .parking
-            amapView.addAnnotation(beginAnnotation)
-        }
+        motoParkingLocation()
     }
     
     // MARK: - 初始化配置
@@ -410,7 +415,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     private func setupUI() {
         NotificationCenter.default.addObserver(self, selector: #selector(dashBoardReload), name: MotorcycleDashBoardChange, object: nil)
 
-        view.addSubviews([amapView,homeButton,officeButton,searchResultsTableView,startNavigationButton,preferenceView,driveView,routePlantList])
+        view.addSubviews([amapView,homeButton,officeButton,searchResultsTableView,startNavigationButton,preferenceView,driveView,routePlantList,muteButton])
         amapView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
@@ -460,6 +465,12 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
             make.left.right.equalToSuperview()
             make.bottom.equalTo(self.startNavigationButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
             make.height.equalTo(self.routePlantItemHeight + CGFloat.GlobalItemSpacing * 2)
+        }
+        
+        muteButton.snp.makeConstraints { make in
+            make.size.equalTo(self.homeSize)
+            make.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.top.equalTo(self.preferenceView.snp.bottom).offset(CGFloat.GlobalItemSpacing)
         }
     }
     
@@ -527,6 +538,27 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     
     @objc func dashBoardReload() {
         self.searchBar.cursorColor = PTDashboardConfig.shared.appMainColor
+    }
+    
+    override func handleMotorcycleDisconnect() {
+        super.handleMotorcycleDisconnect()
+        motoParkingLocation()
+    }
+    
+    func motoParkingLocation() {
+        if let findParking = PTMOTOParkingManager.shared.getLastParkedLocation() {
+            if let findValue = self.amapView.annotations.first(where: { $0 is NaviPointAnnotation }),let findRealValue = findValue as? NaviPointAnnotation,findRealValue.naviPointType == .parking {
+                self.amapView.removeAnnotation(findRealValue)
+            }
+            
+            let beginAnnotation = NaviPointAnnotation()
+            beginAnnotation.coordinate = CLLocationCoordinate2D(latitude: Double(findParking.latitude), longitude: Double(findParking.longitude))
+            beginAnnotation.title = PTDashboardConfig.languageFunc(text: "pin_parking")
+            beginAnnotation.naviPointType = .parking
+            amapView.addAnnotation(beginAnnotation)
+            
+            amapView.setZoomLevel(17.5, animated: true)
+        }
     }
 }
 
@@ -893,7 +925,9 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
     }
     
     func driveManager(_ driveManager: AMapNaviDriveManager, playNaviSound soundString: String, soundStringType: AMapNaviSoundType) {
-        SpeechSynthesizer.Shared.speak(soundString)
+        if muteButton.isSelected {
+            SpeechSynthesizer.Shared.speak(soundString)
+        }
     }
         
     private func convertAMapIconToPTManeuver(iconType: AMapNaviIconType) -> UInt8 {
@@ -948,7 +982,9 @@ extension PTMotoNavigationViewController : AMapNaviDriveViewDelegate {
         self.amapView.removeAnnotations(amapView.annotations)
         self.amapView.removeOverlays(amapView.overlays)
         //停止语音
-        SpeechSynthesizer.Shared.stopSpeak()
+        if muteButton.isSelected {
+            SpeechSynthesizer.Shared.stopSpeak()
+        }
     }
     
     func driveView(_ view: AMapNaviDriveView, didChangeTo state: AMapNaviDriveViewState) {
