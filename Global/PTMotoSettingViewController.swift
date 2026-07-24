@@ -220,7 +220,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 return "\(value)"
             }
             UIAlertController.base_alertVC(title: "Test",okBtns: nameMap,cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
-                PTBluetoothServerManager.shared.sendFuzzTest(targetID: ids[index])
+                PTBluetoothServerManager.shared.startAutomatedFuzzing()
             })
         })
         return view

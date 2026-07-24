@@ -39,7 +39,9 @@ public class PTECUSnifferOverlay: UIView {
         view.textColor = .systemGreen
         view.font = .appfont(size: 11)
         view.isEditable = false
-        view.layoutManager.allowsNonContiguousLayout = false // 优化大文本渲染性能
+        view.layoutManager.allowsNonContiguousLayout = true
+        view.isScrollEnabled = true
+        view.showsVerticalScrollIndicator = false
         return view
     }()
     private lazy var closeButton:UIButton = {
@@ -62,11 +64,25 @@ public class PTECUSnifferOverlay: UIView {
         return view
     }()
     
+    private lazy var exportButton: UIButton = {
+        let view = UIButton(type: .system)
+        view.setTitle("导出日志 (Export)", for: .normal)
+        view.setTitleColor(.white, for: .normal)
+        view.backgroundColor = .systemPurple.withAlphaComponent(0.8)
+        view.layer.cornerRadius = 8
+        view.addTarget(self, action: #selector(exportLogsAction), for: .touchUpInside)
+        return view
+    }()
+
     private var isFilterEnabled: Bool = false
     // 缓存池，避免高频刷新导致内存溢出
     private var rawLogs: [String] = []
     private let maxLogCount = 100
     
+    // 🚨 性能优化新增：数据缓冲池与渲染定时器
+    private var pendingLogs: [String] = []
+    private var uiRefreshTimer: Timer?
+
     // MARK: - 初始化
     public override init(frame: CGRect) {
         super.init(frame: frame)
@@ -97,7 +113,7 @@ public class PTECUSnifferOverlay: UIView {
         }
         
         // 标题
-        backgroundView.addSubviews([titleLabel,closeButton,filterButton,logTextView])
+        backgroundView.addSubviews([titleLabel,closeButton,filterButton,exportButton,logTextView])
         titleLabel.snp.makeConstraints { make in
             make.left.right.equalToSuperview()
             make.top.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
@@ -114,10 +130,15 @@ public class PTECUSnifferOverlay: UIView {
             make.bottom.equalTo(self.closeButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
         }
         
+        exportButton.snp.makeConstraints { make in
+            make.left.right.height.equalTo(self.closeButton)
+            make.bottom.equalTo(self.filterButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
+        }
+        
         logTextView.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
             make.top.equalTo(self.titleLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-            make.bottom.equalTo(self.filterButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
+            make.bottom.equalTo(self.exportButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
         }
     }
     
@@ -131,33 +152,59 @@ public class PTECUSnifferOverlay: UIView {
                     return
                 }
                 
-                self.appendLog(rawText)
+                let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
+                let newLog = "[\(timestamp)] RX: \(rawText)"
+                
+                // 🚨 只做极轻量的数组追加操作
+                DispatchQueue.main.async {
+                    guard !self.isHidden else { return }
+                    self.pendingLogs.append(newLog)
+                }
             }
         }
     }
     
-    // MARK: - 交互与动画控制
-    /// 追加日志并自动滚动到底部
-    private func appendLog(_ text: String) {
-        let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
-        let newLog = "[\(timestamp)] RX: \(text)"
-        
-        rawLogs.append(newLog)
-        if rawLogs.count > maxLogCount {
-            rawLogs.removeFirst()
+    // MARK: - 🚨 性能优化：定时批量刷新 UI
+    private func startRefreshTimer() {
+        stopRefreshTimer()
+        // 每 0.2 秒 (5Hz) 批量更新一次 UI，既保证了视觉实时性，又解放了 CPU
+        uiRefreshTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in
+            self.flushPendingLogsToUI()
         }
-        
-        logTextView.text = rawLogs.joined(separator: "\n")
-        
-        // 滚动到最新一行
-        let range = NSRange(location: logTextView.text.count - 1, length: 1)
-        logTextView.scrollRangeToVisible(range)
     }
     
+    private func stopRefreshTimer() {
+        uiRefreshTimer?.invalidate()
+        uiRefreshTimer = nil
+    }
+    
+    private func flushPendingLogsToUI() {
+        guard !pendingLogs.isEmpty else { return }
+        
+        // 1. 将缓冲池的数据合并到主数组
+        rawLogs.append(contentsOf: pendingLogs)
+        pendingLogs.removeAll()
+        
+        // 2. 批量剔除溢出的旧数据
+        if rawLogs.count > maxLogCount {
+            rawLogs.removeFirst(rawLogs.count - maxLogCount)
+        }
+        
+        // 3. 一次性更新 UI
+        logTextView.text = rawLogs.joined(separator: "\n")
+        
+        // 4. 一次性滚动到底部
+        if logTextView.text.count > 0 {
+            let range = NSRange(location: logTextView.text.count - 1, length: 1)
+            logTextView.scrollRangeToVisible(range)
+        }
+    }
+
     /// 动画展示嗅探器
     public func showSniffer() {
         guard self.isHidden else { return }
         self.isHidden = false
+        startRefreshTimer()
         UIView.animate(withDuration: 0.3) {
             self.alpha = 1.0
         }
@@ -165,6 +212,7 @@ public class PTECUSnifferOverlay: UIView {
     
     /// 动画隐藏嗅探器
     @objc public func hideSniffer() {
+        stopRefreshTimer()
         UIView.animate(withDuration: 0.3, animations: {
             self.alpha = 0.0
         }) { _ in
@@ -202,6 +250,39 @@ public class PTECUSnifferOverlay: UIView {
         
         // 如果点中的是黑色的 backgroundView，或者是关闭/过滤按钮，就正常返回它，拦截触摸
         return hitView
+    }
+    
+    @MainActor deinit {
+        stopRefreshTimer()
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc private func exportLogsAction() {
+        // 合并所有日志（包括还在缓冲池中未显示的部分）
+        var allLogs = rawLogs
+        allLogs.append(contentsOf: pendingLogs)
+        
+        guard !allLogs.isEmpty else {
+            // 没有日志时可选择在此处弹个 Toast，比如 PTProgressHUD
+            return
+        }
+        
+        // 将数组组合成长文本
+        let logString = allLogs.joined(separator: "\n")
+        
+        // 初始化系统分享面板
+        let activityVC = UIActivityViewController(activityItems: [logString], applicationActivities: nil)
+        
+        // 查找最顶层控制器以执行 Present 操作
+        if let topVC = PTUtils.getCurrentVC() {
+            // 兼容 iPad，防止崩溃（指定气泡弹出的源头）
+            if let popover = activityVC.popoverPresentationController {
+                popover.sourceView = self.exportButton
+                popover.sourceRect = self.exportButton.bounds
+            }
+            
+            topVC.present(activityVC, animated: true, completion: nil)
+        }
     }
 }
 
