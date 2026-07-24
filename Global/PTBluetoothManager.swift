@@ -1218,8 +1218,9 @@ extension PTBluetoothServerManager {
             ptLog("⚠️ 尚未完成认证，无法进行 Fuzz 扫描")
             return
         }
-        
-        ptLog("🚀 [自动化 Fuzz] 扫描任务已启动！请密切观察机车仪表盘反应...")
+        let startString = "🚀 [自动化 Fuzz] 扫描任务已启动！请密切观察机车仪表盘反应..."
+        ptLog(startString)
+        NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: startString)
         fuzzTimer?.invalidate()
         currentFuzzID = 0x00
         
@@ -1236,7 +1237,9 @@ extension PTBluetoothServerManager {
             
             // 扫描结束条件
             if self.currentFuzzID == 0xFF {
-                self.ptLog("🏁 [自动化 Fuzz] 全频段扫描完成！")
+                let finishString = "🏁 [自动化 Fuzz] 全频段扫描完成！"
+                self.ptLog(finishString)
+                NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: finishString)
                 self.fuzzTimer?.invalidate()
                 return
             }
@@ -1244,8 +1247,9 @@ extension PTBluetoothServerManager {
             // 构造探测 Payload：
             // 很多工厂指令使用 0x00(查询), 0x01(开启), 或 0xFF(出厂重置) 作为标识
             let testPayload: [UInt8] = [0x01, 0x00, 0xFF]
-            
-            self.ptLog("📡 [自动化 Fuzz] 正在探测 ID: 0x\(String(format: "%02X", self.currentFuzzID)) ...")
+            let searchingString = "📡 [自动化 Fuzz] 正在探测 ID: 0x\(String(format: "%02X", self.currentFuzzID)) ..."
+            self.ptLog(searchingString)
+            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: searchingString)
             self.sendFuzzTest(targetID: self.currentFuzzID, payloadBytes: testPayload)
             
             self.currentFuzzID = self.currentFuzzID &+ 1
@@ -1256,6 +1260,8 @@ extension PTBluetoothServerManager {
     public func stopAutomatedFuzzing() {
         fuzzTimer?.invalidate()
         fuzzTimer = nil
-        ptLog("🛑 [自动化 Fuzz] 扫描已手动终止。")
+        let stopString = "🛑 [自动化 Fuzz] 扫描已手动终止。"
+        ptLog(stopString)
+        NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: stopString)
     }
 }

@@ -225,7 +225,9 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         }
         
         if PTMotoUserDefaultStruct.MotoLinkedAPP,!PTDashboardConfig.shared.blueConnected {
-            PTBluetoothServerManager.shared.startBaseStationAndScan()
+            PTGCDManager.shared.delayOnMain(time: 3) {
+                PTBluetoothServerManager.shared.startBaseStationAndScan()
+            }
         }
     }
         

@@ -74,6 +74,24 @@ public class PTECUSnifferOverlay: UIView {
         return view
     }()
 
+    private lazy var findFunctionButton: UIButton = {
+        let view = UIButton(type: .system)
+        view.setTitle("Find commond", for: .normal)
+        view.setTitleColor(.white, for: .normal)
+        view.layer.cornerRadius = 8
+        view.setBackgroundColor(color: .systemPurple.withAlphaComponent(0.8), forState: .normal)
+        view.setBackgroundColor(color: .systemRed.withAlphaComponent(0.8), forState: .selected)
+        view.addActionHandlers(handler: { sender in
+            if sender.isSelected {
+                PTBluetoothServerManager.shared.stopAutomatedFuzzing()
+            } else {
+                PTBluetoothServerManager.shared.startAutomatedFuzzing()
+            }
+            sender.isSelected.toggle()
+        })
+        return view
+    }()
+
     private var isFilterEnabled: Bool = false
     // 缓存池，避免高频刷新导致内存溢出
     private var rawLogs: [String] = []
@@ -113,7 +131,7 @@ public class PTECUSnifferOverlay: UIView {
         }
         
         // 标题
-        backgroundView.addSubviews([titleLabel,closeButton,filterButton,exportButton,logTextView])
+        backgroundView.addSubviews([titleLabel,closeButton,filterButton,exportButton,findFunctionButton,logTextView])
         titleLabel.snp.makeConstraints { make in
             make.left.right.equalToSuperview()
             make.top.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
@@ -135,10 +153,15 @@ public class PTECUSnifferOverlay: UIView {
             make.bottom.equalTo(self.filterButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
         }
         
+        findFunctionButton.snp.makeConstraints { make in
+            make.left.right.height.equalTo(self.closeButton)
+            make.bottom.equalTo(self.exportButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
+        }
+        
         logTextView.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
             make.top.equalTo(self.titleLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-            make.bottom.equalTo(self.exportButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
+            make.bottom.equalTo(self.findFunctionButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
         }
     }
     
