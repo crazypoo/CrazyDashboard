@@ -291,7 +291,7 @@ struct PTDashboardLabels {
     }    
 }
 
-// 复刻 Android 的 NavigationInfo[cite: 2]
+// 复刻 Android 的 NavigationInfo
 struct PTNavigationInfo {
     var nextManeuver: UInt8
     var metersToNextManeuver: UInt32
@@ -299,11 +299,11 @@ struct PTNavigationInfo {
     var nameCurrentRoad: String
     var currentSpeedLimit: UInt8
     var distanceToDestination: UInt32
-    /// 距离到达目的地的预计剩余秒数[cite: 2]
+    /// 距离到达目的地的预计剩余秒数
     var estimatedTimeToDestinationSec: Int
 }
 
-// 转弯动作常量枚举 (复刻 ManeuverMap)[cite: 2]
+// 转弯动作常量枚举 (复刻 ManeuverMap)
 enum PTManeuverMap {
     static let undefined: UInt8 = 0
     static let straight: UInt8 = 1
@@ -319,11 +319,11 @@ enum PTManeuverMap {
     static let quiteLeft: UInt8 = 11
     static let heavyLeft: UInt8 = 12   // 急左转
     
-    // 🚨 新增：环岛基础动作[cite: 2]
+    // 🚨 新增：环岛基础动作
     static let roundaboutRightBase: UInt8 = 0x13 // 右侧环岛起始 (13~1E 代表 1~12 出口)
     static let roundaboutLeftBase: UInt8 = 0x1F  // 左侧环岛起始 (1F~2A 代表 1~12 出口)
     
-    // 🚨 新增：特殊状态指令[cite: 2]
+    // 🚨 新增：特殊状态指令
     static let depart: UInt8 = 43       // 0x2B 出发
     static let arrive: UInt8 = 44       // 0x2C 到达
     static let ferry: UInt8 = 45        // 0x2D 轮渡 (推测)
@@ -1000,7 +1000,7 @@ extension PTBluetoothServerManager {
     
     // MARK: - 发送导航与控制指令
     
-    // 发送导航定位信息[cite: 3]
+    // 发送导航定位信息
     func sendNavigation(info: PTNavigationInfo) {
         guard authenticated else {
             ptLog( "⚠️ 尚未完成认证，无法发送导航数据")
@@ -1010,6 +1010,25 @@ extension PTBluetoothServerManager {
         sendChunkedData(data: frame, to: txChar)
     }
     
+    public func sendWelcomeMessage(next:String = "",title:String) {
+        guard authenticated else { return }
+
+        // 伪造一个导航对象
+        let welcomeInfo = PTNavigationInfo(
+            nextManeuver: PTManeuverMap.depart, // 使用“出发”图标
+            metersToNextManeuver: 999,
+            nameNextRoad: next, // 下一条路留空
+            nameCurrentRoad: title, // 🚨 你的专属欢迎语，建议用全大写英文
+            currentSpeedLimit: 99,
+            distanceToDestination: 0,
+            estimatedTimeToDestinationSec: 0
+        )
+        
+        ptLog("🎉 [视觉交互] 正在向仪表盘推送欢迎信息: \(welcomeInfo.nameCurrentRoad)")
+        // 复用你已有的导航发送方法
+        self.sendNavigation(info: welcomeInfo)
+    }
+
     // MARK: - 逆向工程：模糊测试 (Fuzzing) 通道
     
     /// 向机车发送任意 ID 和 Payload 的探测报文
@@ -1229,7 +1248,7 @@ extension PTBluetoothServerManager {
             guard let self = self else { return }
             
             // 🚨 跳过已知的指令 ID，防止干扰正常的仪表盘运作或导致重复断连
-            let knownIDs: [UInt8] = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07]
+            let knownIDs: [UInt8] = [0x01,0x07,0x08]
             while knownIDs.contains(self.currentFuzzID) {
                 // 使用溢出运算符 &+ 防止越界崩溃
                 self.currentFuzzID = self.currentFuzzID &+ 1
