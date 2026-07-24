@@ -1,5 +1,5 @@
 //
-//  PTDataCollectedViewController.swift
+//  PTGPXViewController.swift
 //  CrazyDashboard
 //
 //  Created by 邓杰豪 on 24/7/2026.
@@ -11,28 +11,8 @@ import SwifterSwift
 import SnapKit
 import SafeSFSymbols
 
-class PTDataCollectedViewController: PTMotoBaseViewController {
+class PTGPXViewController: PTMotoBaseViewController {
 
-    lazy var appLogo:UIImageView = {
-        let view = UIImageView()
-        view.image = UIImage(named: "app_inside_logo")
-        view.bounds = .init(origin: .zero, size: .init(width: 108.adapter, height: PTAppBaseConfig.share.navBarButtonSize))
-        view.contentMode = .scaleAspectFit
-        view.clipsToBounds = false
-        return view
-    }()
-    
-    lazy var GPXButton:PTBaseButton = {
-        let view = PTBaseButton(type: .custom)
-        view.setImage(UIImage(.location.magnifyingglass), for: .normal)
-        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
-        view.addActionHandlers(handler: { _ in
-            let vc = PTGPXViewController()
-            self.navigationController?.pushViewController(vc)
-        })
-        return view
-    }()
-    
     lazy var detailCollection:PTCollectionView = {
                                 
         let collectionConfig = PTCollectionViewConfig()
@@ -41,15 +21,15 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
         collectionConfig.topRefresh = false
 
         let view = PTCollectionView(viewConfig: collectionConfig)
-        view.registerClassCells(classs: [PTTripDataCell.ID:PTTripDataCell.self])
+        view.registerClassCells(classs: [PTGPXCell.ID:PTGPXCell.self])
         view.customerLayout = { sectionIndex,section in
             return UICollectionView.girdCollectionLayout(data: section.rows, itemHeight: 88,cellRowCount: 1,originalX: PTAppBaseConfig.share.defaultViewSpace,cellTrailingSpace: CGFloat.GlobalItemSpacing)
         }
         view.cellInCollection = { collectionView,sectionModel,indexPath in
             if let itemRow = sectionModel.rows?[indexPath.row] {
                 let getCell = collectionView.dequeueReusableCell(withReuseIdentifier: itemRow.ID, for: indexPath)
-                if let cell = getCell as? PTTripDataCell {
-                    cell.cellModel = PTTripManager.shared.tripHistory[indexPath.row]
+                if let cell = getCell as? PTGPXCell {
+                    cell.cellModel = PTGPXRecorder.shared.fetchSavedTracks()[indexPath.row]
                     cell.backgroundColor = .white.withAlphaComponent(0.1)
                     return cell
                 }
@@ -63,18 +43,12 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
         return .solid(.clear)
     }
 
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        setLeftButtons(views: [appLogo])
-        setCustomRightButtons(buttons: [GPXButton])
-    }
-    
     override func viewDidLoad() {
         super.viewDidLoad()
 
         view.backgroundColor = .black
         
-        let collectionInset:CGFloat = CGFloat.kTabbarHeight_Total
+        let collectionInset:CGFloat = CGFloat.kTabbarSaveAreaHeight
         detailCollection.contentCollectionView.contentInsetAdjustmentBehavior = .never
         detailCollection.contentCollectionView.contentInset.bottom = collectionInset
         detailCollection.contentCollectionView.verticalScrollIndicatorInsets.bottom = collectionInset
@@ -89,13 +63,12 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
     
     func listSet(finishTask:PTCollectionCallback? = nil) {
         var sections = [PTSection]()
-        let rowsTrip = PTTripManager.shared.tripHistory.map { value in
-            let row = PTRows(ID:PTTripDataCell.ID)
+        let rowsTrip = PTGPXRecorder.shared.fetchSavedTracks().map { value in
+            let row = PTRows(ID:PTGPXCell.ID)
             return row
         }
         let sectionTrip = PTSection(rows: rowsTrip)
         sections.append(sectionTrip)
         detailCollection.showCollectionDetail(collectionData: sections,finishTask: finishTask)
     }
-
 }

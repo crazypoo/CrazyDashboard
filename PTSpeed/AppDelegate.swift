@@ -15,6 +15,7 @@ import IQKeyboardToolbar
 import DeviceKit
 import Bugly
 import BackgroundTasks
+import SafeSFSymbols
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -84,7 +85,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         PTAppBaseConfig.share.tabSelectedFont = .appfont(size: 10.adapter,bold:true)
         PTAppBaseConfig.share.tabNormalColor = .gray7F
         PTAppBaseConfig.share.tabSelectedColor = PTDashboardConfig.shared.appMainColor
-
+        PTAppBaseConfig.share.viewControllerBackItemImage = UIImage(.chevron.compactLeft)
         registerBackgroundTasks()
         
         appNotifiCenter()
