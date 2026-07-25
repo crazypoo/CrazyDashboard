@@ -198,7 +198,27 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         view.image = UIImage(.abs.brakesignal)
         return view
     }()
-                
+        
+    lazy var stickImage:UIImageView = {
+        let view = UIImageView()
+        view.contentMode = .scaleAspectFit
+        view.image = UIImage(.figure.hiking)
+        return view
+    }()
+    
+    lazy var temLabel:PTActionLayoutButton = {
+        let view = PTActionLayoutButton()
+        view.layoutStyle = .leftImageRightTitle
+        view.midSpacing = 2
+        view.imageSize = .init(width: 34, height: 34)
+        view.setTitleFont(.appfont(size: 14), state: .normal)
+        view.setTitleColor(.white, state: .normal)
+        view.setImage(UIImage(.thermometer.high), state: .normal)
+        view.setTitle("0°C", state: .normal)
+        view.isUserInteractionEnabled = false
+        return view
+    }()
+    
     open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
         return .solid(.clear)
     }
@@ -255,7 +275,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         detailCollection.contentCollectionView.contentInset.bottom = collectionInset
         detailCollection.contentCollectionView.verticalScrollIndicatorInsets.bottom = collectionInset
 
-        view.addSubviews([actionStack,speedometer,speedometerReversed,detailCollection,absImage])
+        view.addSubviews([actionStack,speedometer,speedometerReversed,detailCollection,absImage,stickImage,temLabel])
         actionStack.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.height.equalTo(54)
@@ -300,7 +320,18 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         absImage.snp.makeConstraints { make in
             make.size.equalTo(34)
             make.centerX.equalToSuperview()
-            make.top.equalTo(self.speedometer)
+            make.top.equalTo(self.speedometer.snp.bottom).offset(-35)
+        }
+        
+        stickImage.snp.makeConstraints { make in
+            make.size.centerY.equalTo(self.absImage)
+            make.right.equalTo(self.absImage.snp.left).offset(-CGFloat.GlobalItemSpacing)
+        }
+        
+        temLabel.snp.makeConstraints { make in
+            make.height.centerY.equalTo(self.absImage)
+            make.left.equalTo(self.absImage.snp.right).offset(CGFloat.GlobalItemSpacing)
+            make.width.equalTo(self.temLabel.getKitCurrentDimension())
         }
         
         listSet()
@@ -402,6 +433,12 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                 self.detailCollection.reloadRows(rows, in: sectionTrip)
 
                 self.voltageLabel.modelSet = self.modelvoltageSet(currentValue: volt)
+                
+                self.stickImage.isHidden = !data2.isKickstandDown
+                self.temLabel.setTitle("\(data2.engineTempC)°C", state: .normal)
+                self.temLabel.snp.makeConstraints { make in
+                    make.width.equalTo(self.temLabel.getKitCurrentDimension())
+                }
             }
         } else if let data3 = notification.object as? PTDashboardData3 {
             

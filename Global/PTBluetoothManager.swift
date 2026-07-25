@@ -1166,13 +1166,13 @@ extension PTBluetoothServerManager {
             let isKickstandDown = (engineRaw & 0x30) != 0
             
             let tempRaw = Int(bytes[2])
-            let engineTempC = tempRaw - 100
+            let engineTempC = tempRaw - 40
 
             let engine = Int(bytes[1])
             let maint = Int(bytes[3])
             let temp = Int(bytes[4]) - 50
             let batt = Double(bytes[5]) * 0.1
-            let data2 = PTDashboardData2(batteryVolt: batt, outsideTempC: temp, engineStatus: engine, maintenance: maint,backlightMode: currentMode,engineTempC: engineTempC,isKickstandDown: isKickstandDown)
+            let data2 = PTDashboardData2(batteryVolt: batt, outsideTempC: temp, engineStatus: engineStatus, maintenance: maint,backlightMode: currentMode,engineTempC: engineTempC,isKickstandDown: isKickstandDown)
             self.latestData2 = data2
             NotificationCenter.default.post(name: MotorcycleDATA2, object: data2)
             ptLog("🔋 [DATA2] 引擎: \(PTDashboardLabels.engineStatusLabel(raw: engine)), 电压: \(batt)V")
@@ -1201,9 +1201,14 @@ extension PTBluetoothServerManager {
             let hiddenBits = "b[3]:\(bytes[3].binaryString)"
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "🔬 [未知] CONTROL 隐藏位: \(hiddenBits)")
             
-            let byte0 = bytes[0]
-            // 如果 byte0 不是我们定义的三个值，就会回退为 .unknown
-            let currentTCS = PTTCSMode(rawValue: byte0) ?? .unknown
+            let tcsRaw = bytes[3] & 0x0F // 提取低 4 位
+            let currentTCS: PTTCSMode
+            switch tcsRaw {
+            case 0x02: currentTCS = .mode1
+            case 0x04: currentTCS = .mode2
+            case 0x00: currentTCS = .off
+            default: currentTCS = .unknown
+            }
 
             let byte1 = bytes[1]
             let isLeftTurnOn = (byte1 & 0b00010000) != 0
