@@ -288,15 +288,12 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
     @objc func handleAuthSuccess() {
         PTDashboardConfig.shared.blueConnected = true
         PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "connect_success")) {
-//            PTBluetoothServerManager.shared.sendWelcomeMessage(next: "JJJJJJJJJJJJ", title: "HHHHHHHHHHHHHHHHHHHHHHHHHHHHH")
             self.bleConnectStatusLabel.isSelected = !PTDashboardConfig.shared.blueConnected
-//            PTBluetoothServerManager.shared.startAutomatedFuzzing()
         }
     }
     
     override func handleMotorcycleDisconnect() {
         super.handleMotorcycleDisconnect()
-//        PTBluetoothServerManager.shared.stopAutomatedFuzzing()
     }
     
     // MARK: - 界面布局

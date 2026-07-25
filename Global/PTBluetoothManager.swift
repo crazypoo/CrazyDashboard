@@ -707,7 +707,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
             // 可在此发送额外的 Notification 让 UI 界面上高亮 TCS 图标
             NotificationCenter.default.post(name: MotorcycleRawDataTCSShow, object: "1")
         } else {
-            NotificationCenter.default.post(name: MotorcycleRawDataTCSShow, object: "1")
+            NotificationCenter.default.post(name: MotorcycleRawDataTCSShow, object: "0")
         }
     }
 
@@ -762,6 +762,8 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     private var sendQueue: [PTNotifyJob] = []
     private var isSending = false
     
+    private let ioQueue = DispatchQueue(label: "com.ptools.MotoLogIOQueue", qos: .utility)
+    
     override init() {
         super.init()
         ptLog("🛠️ [DEBUG] 初始化基站 (移除所有多余扫描干扰)")
@@ -773,14 +775,18 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         let formattedLog = "[\(timeString)] \(message)"
         PTNSLogConsole(formattedLog)
         
-        // 🚨 核心写入：将日志同步追加到本地文本文件中
-        if let handle = logFileHandle, let data = (formattedLog + "\n").data(using: .utf8) {
-            try? handle.seekToEnd()
-            try? handle.write(contentsOf: data)
+        // 🚨 优化：将极其耗时的磁盘写入操作异步丢入后台队列
+        ioQueue.async { [weak self] in
+            guard let self = self, let handle = self.logFileHandle else { return }
+            if let data = (formattedLog + "\n").data(using: .utf8) {
+                try? handle.seekToEnd()
+                try? handle.write(contentsOf: data)
+            }
         }
+        
+        // UI 更新仍然在主线程
         DispatchQueue.main.async {
             self.logHistory.append(formattedLog)
-            // 控制数组大小，防止长时间挂机导致内存爆表
             if self.logHistory.count > 500 {
                 self.logHistory.removeFirst()
             }
@@ -996,11 +1002,15 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
 
     private func sendChunkedData(data: Data, to characteristic: CBMutableCharacteristic, completion: (() -> Void)? = nil) {
         var offset = 0
-        let totalChunks = Int(ceil(Double(data.count) / 20.0))
+        // 🚨 优化：向订阅了该特征的中心设备查询它所支持的最大长度，如果没有则安全降级回默认值 20
+        // 对于 WriteWithoutResponse 或 Notify，使用 .withoutResponse 类型的 MTU
+        let maxChunkSize = connectedCentral?.maximumUpdateValueLength ?? 20
+        
+        let totalChunks = Int(ceil(Double(data.count) / Double(maxChunkSize)))
         var currentChunk = 0
         
         while offset < data.count {
-            let end = min(offset + 20, data.count)
+            let end = min(offset + maxChunkSize, data.count)
             currentChunk += 1
             let isLastChunk = (currentChunk == totalChunks)
             
