@@ -19,6 +19,7 @@ let MotorcycleABS = NSNotification.Name("MotorcycleABS")
 let MotorcycleDashBoardChange = NSNotification.Name("MotorcycleDashBoardChange")
 let MotorcycleDisconnected = NSNotification.Name("MotorcycleDisconnected")
 let MotorcycleRawDataReceived = NSNotification.Name("MotorcycleRawDataReceived")
+let MotorcycleRawDataTCSShow = NSNotification.Name("MotorcycleRawDataTCSShow")
 
 let kmToMilOffset:Double = 0.621371
 
@@ -50,9 +51,9 @@ public enum PTBacklightMode: UInt8 {
 }
 
 public enum PTTCSMode: UInt8 {
-    case mode1 = 0x2E // 相当于二进制 00101110
-    case mode2 = 0x17 // 相当于二进制 00010111
-    case off   = 0xB8 // 相当于二进制 10111000
+    case mode1 = 0x02 // 相当于二进制 00101110
+    case mode2 = 0x04 // 相当于二进制 00010111
+    case off   = 0x00 // 相当于二进制 10111000
     case unknown = 0xFF // 用于容错的未知状态
     
     /// 提供给 UI 界面展示的文字描述
@@ -171,12 +172,14 @@ struct PTDashboardControl {
     
     let tcsMode:PTTCSMode
     
-    public let isLowBeamOn: Bool
-    public let isHighBeamOn: Bool
+    let isLowBeamOn: Bool
+    let isHighBeamOn: Bool
     
-    public let isLeftTurnOn: Bool
-    public let isRightTurnOn: Bool
-    public let isHazardOn: Bool
+    let isLeftTurnOn: Bool
+    let isRightTurnOn: Bool
+    let isHazardOn: Bool
+    
+    let isTcsSystemReady:Bool
 }
 
 struct PTDashboardData1 {
@@ -205,6 +208,8 @@ struct PTDashboardData2 {
     
     let engineTempC: Int
     let isKickstandDown: Bool
+    
+    let batteryDisplayState: Int
 }
 
 struct PTDashboardData3 {
@@ -263,6 +268,8 @@ struct PTAbsStatus {
     let absRaw: Int
     
     let isAbsLightOn: Bool
+    
+    let frontWheelSpeedKmh:Double
 }
 
 // MARK: - 状态标签转换工具[cite: 2]
@@ -674,10 +681,35 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     
     static let shared = PTBluetoothServerManager()
     
+    // MARK: - 深度 OBD 探针引擎 (Active Diagnostic Prober)
+        
+    private var diagnosticTimer: Timer?
+    private var currentProbeIndex: UInt8 = 0x00
+
     // 用于控制自动扫描的定时器
     private var fuzzTimer: Timer?
     // 当前正在探测的 ID
     private var currentFuzzID: UInt8 = 0x00
+    
+    // MARK: - TCS 物理打滑监控系统
+    private var currentFrontSpeed: Double = 0.0
+    private var currentRearSpeed: Double = 0.0
+    /// 允许的最大轮速差安全阈值 (km/h)，可根据测试结果微调
+    private let slipThreshold: Double = 5.0
+    
+    /// 核心逻辑：比对轮速差，复现 TCS 触发条件
+    private func checkTCSIntervention() {
+        let speedDelta = currentRearSpeed - currentFrontSpeed
+        // 当后轮速大于前轮速，且差值超过阈值时，判定为打滑
+        if speedDelta > slipThreshold {
+            let logMsg = "⚠️ [TCS 预警] 检测到打滑物理条件！后轮: \(currentRearSpeed) | 前轮: \(currentFrontSpeed) | 差值: \(String(format: "%.2f", speedDelta)) km/h"
+            ptLog(logMsg)
+            // 可在此发送额外的 Notification 让 UI 界面上高亮 TCS 图标
+            NotificationCenter.default.post(name: MotorcycleRawDataTCSShow, object: "1")
+        } else {
+            NotificationCenter.default.post(name: MotorcycleRawDataTCSShow, object: "1")
+        }
+    }
 
     public private(set) var latestData1: PTDashboardData1?
     public private(set) var latestData2: PTDashboardData2?
@@ -1096,6 +1128,78 @@ extension PTBluetoothServerManager {
             completion(true)
         }
     }
+    
+    /// 启动全频段主动查询扫描
+    /// 向配置通道 (ID: 7) 发送轮询请求，试图触发车机回传隐藏的物理数据
+    public func startActiveDiagnosticScan() {
+        guard authenticated else {
+            ptLog("⚠️ [查询拦截] 尚未完成认证，无法发送诊断探针。")
+            return
+        }
+        
+        ptLog("🚀 [深度探测] 开始发送 ISO-TP 增强版主动查询指令 (OBD/UDS 模式)...")
+        currentProbeIndex = 0x00
+        
+        // 每 1.2 秒发送一次探针，给车机留出处理和回传的时间
+        diagnosticTimer = Timer.scheduledTimer(withTimeInterval: 1.2, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            
+            // 🚨 升级点：遵守 ISO-TP 传输层单帧格式 (Single Frame)
+            // UDS 规范中，PID 通常是两字节的 (例如 0xF1 0x90)
+            // 格式：[有效载荷长度, 服务ID, PID高位, PID低位]
+            
+            let udsLength: UInt8 = 0x03
+            let serviceID: UInt8 = 0x22 // 读取数据服务 (Read Data By Identifier)
+            let pidHighByte: UInt8 = 0x00 // 大多车辆标准 PID 从 0x0000 到 0xFFFF
+            let pidLowByte: UInt8 = self.currentProbeIndex
+            
+            // 组合成标准 UDS 载荷
+            let payload: [UInt8] = [udsLength, serviceID, pidHighByte, pidLowByte]
+            let payloadData = Data(payload)
+            
+            // 复用你已有的常量 ID_CONFIGURATION (0x07) 作为诊断通道
+            let targetID = PTFrameBuilder.ID_CONFIGURATION
+            let frame = PTFrameBuilder.wrapTxFrame(idFrame: targetID, payload: payloadData)
+            
+            // 使用现有的分包发送方法将探针压入蓝牙通道
+            self.sendChunkedData(data: frame, to: self.txChar) {
+                let hexStr = payload.map { String(format: "%02X", $0) }.joined(separator: " ")
+                self.ptLog("📡 [ISO-TP 探针发射] 通道 ID: 0x\(String(format: "%02X", targetID)), 载荷: [ \(hexStr) ]")
+            }
+            
+            // 扫描结束条件
+            if self.currentProbeIndex == 0xFF {
+                self.stopActiveDiagnosticScan()
+            } else {
+                // 使用溢出运算符，防止边界崩溃
+                self.currentProbeIndex &+= 1
+            }
+        }
+    }
+    
+    /// 停止主动诊断扫描
+    public func stopActiveDiagnosticScan() {
+        diagnosticTimer?.invalidate()
+        diagnosticTimer = nil
+        ptLog("🛑 [深度探测] 主动查询扫描已手动结束或完成全频段覆盖。")
+    }
+
+    public func requestStaticConfiguration() {
+        guard authenticated else {
+            ptLog("⚠️ [查询拦截] 尚未完成认证，无法发送查询请求。")
+            return
+        }
+        
+        // 策略 1：针对已知的配置通道 (ID: 7)，发送 0x00 载荷，触发底层 Read 逻辑
+        let readPayload = Data([0x00])
+        
+        // 利用你封装好的通用封包器
+        let requestFrame = PTFrameBuilder.wrapTxFrame(idFrame: 7, payload: readPayload)
+        
+        sendChunkedData(data: requestFrame, to: txChar) {
+            self.ptLog("📡 [主动查询] 已向配置通道发射探针，请紧盯回传日志...")
+        }
+    }
 
     // MARK: - 解析摩托车回传状态
     /// 解析摩托车仪表盘的实时状态帧[cite: 2]
@@ -1125,8 +1229,11 @@ extension PTBluetoothServerManager {
         switch id {
         case 1:
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:1 (心跳/连接) -> \(hexString)")
-            ptLog("🔗 [状态] 车机报告连接正常 (CONNECTION)")
-            
+            if let asciiString = String(bytes: bytes, encoding: .ascii) {
+                ptLog("🔗 [状态] 车机报告连接正常 (CONNECTION) | 设备序列号: \(asciiString)")
+            } else {
+                ptLog("🔗 [状态] 车机报告连接正常 (CONNECTION)")
+            }
         case 2: // DATA1
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:2 (DATA1) -> \(hexString)")
             guard bytes.count >= 8 else { return }
@@ -1155,24 +1262,25 @@ extension PTBluetoothServerManager {
             }
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "🔬 [未知] DATA2 隐藏位: \(hiddenBits)")
             
-            let byte0 = bytes[0]
-            // 通过 rawValue 安全地转换为枚举对象，如果匹配失败则回退到 .unknown
-            let currentMode = PTBacklightMode(rawValue: byte0) ?? .unknown
 
             let engineRaw = Int(bytes[1])
+            // 通过 rawValue 安全地转换为枚举对象，如果匹配失败则回退到 .unknown
+            let backlightModeRaw = UInt8((engineRaw & 0xC0) >> 6)
+            let currentBacklightMode = PTBacklightMode(rawValue: backlightModeRaw) ?? .unknown
+
+            let batteryDisplayState = (engineRaw & 0x0C) >> 2
             // 提取最低 2 位获取引擎状态 (0:未启动, 1:启动中, 2:运转中, 3:关闭中)
             let engineStatus = engineRaw & 0x03
 
             let isKickstandDown = (engineRaw & 0x30) != 0
             
-            let tempRaw = Int(bytes[2])
-            let engineTempC = tempRaw - 40
+            let engineTempC = 0
 
             let engine = Int(bytes[1])
             let maint = Int(bytes[3])
             let temp = Int(bytes[4]) - 50
             let batt = Double(bytes[5]) * 0.1
-            let data2 = PTDashboardData2(batteryVolt: batt, outsideTempC: temp, engineStatus: engineStatus, maintenance: maint,backlightMode: currentMode,engineTempC: engineTempC,isKickstandDown: isKickstandDown)
+            let data2 = PTDashboardData2(batteryVolt: batt, outsideTempC: temp, engineStatus: engineStatus, maintenance: maint,backlightMode: currentBacklightMode,engineTempC: engineTempC,isKickstandDown: isKickstandDown,batteryDisplayState:batteryDisplayState)
             self.latestData2 = data2
             NotificationCenter.default.post(name: MotorcycleDATA2, object: data2)
             ptLog("🔋 [DATA2] 引擎: \(PTDashboardLabels.engineStatusLabel(raw: engine)), 电压: \(batt)V")
@@ -1197,11 +1305,9 @@ extension PTBluetoothServerManager {
         case 5: // CONTROL
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:5 (CONTROL) -> \(hexString)")
             guard bytes.count >= 8 else { return }
-            
-            let hiddenBits = "b[3]:\(bytes[3].binaryString)"
-            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "🔬 [未知] CONTROL 隐藏位: \(hiddenBits)")
-            
+                        
             let tcsRaw = bytes[3] & 0x0F // 提取低 4 位
+            let isTcsSystemReady = (tcsRaw & 0b10000000) != 0 // 提取最高位作为系统就绪标志
             let currentTCS: PTTCSMode
             switch tcsRaw {
             case 0x02: currentTCS = .mode1
@@ -1225,9 +1331,14 @@ extension PTBluetoothServerManager {
             let isHazardAuxBitOn = (byte2 & 0b00000001) != 0
             let isHazardOn = isLeftTurnOn && isRightTurnOn && isHazardAuxBitOn
 
-            let engineRaw = (Int(bytes[4]) << 8) | Int(bytes[5])
             let vehicleRaw = (Int(bytes[6]) << 8) | Int(bytes[7])
-            let control = PTDashboardControl(vehicleSpeedKmh: Double(vehicleRaw) * 0.01, engineRpm: Int(Double(engineRaw) * 0.25),tcsMode: currentTCS,isLowBeamOn: isLowBeamOn,isHighBeamOn: isHighBeamOn,isLeftTurnOn: isLeftTurnOn,isRightTurnOn: isRightTurnOn,isHazardOn: isHazardOn)
+            let rearSpeed = Double(vehicleRaw) * 0.01
+
+            self.currentRearSpeed = rearSpeed
+            self.checkTCSIntervention()
+
+            let engineRaw = (Int(bytes[4]) << 8) | Int(bytes[5])
+            let control = PTDashboardControl(vehicleSpeedKmh: Double(vehicleRaw) * 0.01, engineRpm: Int(Double(engineRaw) * 0.25),tcsMode: currentTCS,isLowBeamOn: isLowBeamOn,isHighBeamOn: isHighBeamOn,isLeftTurnOn: isLeftTurnOn,isRightTurnOn: isRightTurnOn,isHazardOn: isHazardOn,isTcsSystemReady: isTcsSystemReady)
             self.latestControl = control
             NotificationCenter.default.post(name: MotorcycleCONTROL, object: control)
             ptLog("🏍️ [CONTROL] 车速: \(Double(vehicleRaw) * 0.01) km/h, 转速: \(Int(Double(engineRaw) * 0.25)) rpm")
@@ -1236,14 +1347,19 @@ extension PTBluetoothServerManager {
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:6 (ABS) -> \(hexString)")
             guard bytes.count >= 3 else { return }
             
-            let hiddenBits = "b[0]:\(bytes[0].binaryString)"
-            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "🔬 [未知] ABS 隐藏位: \(hiddenBits)")
+            // 🚨 新挖掘：提取前轮独立车速 (Byte 0 和 Byte 1)
+            let frontSpeedRaw = (Int(bytes[0]) << 8) | Int(bytes[1])
+            let frontSpeed = Double(frontSpeedRaw) * 0.01
             
+            // 更新本实例的前轮车速，并触发 TCS 打滑检测
+            self.currentFrontSpeed = frontSpeed
+            self.checkTCSIntervention()
+                        
             let byte1 = bytes[1]
             // 如果结果为 0 (即 00000000)，说明灯是亮起的
             let isAbsLightOn = (byte1 & 0b00010000) == 0
 
-            let absStatus = PTAbsStatus(absRaw: Int(bytes[2]),isAbsLightOn: isAbsLightOn)
+            let absStatus = PTAbsStatus(absRaw: Int(bytes[2]),isAbsLightOn: isAbsLightOn,frontWheelSpeedKmh: frontSpeed)
             self.latestAbsStatus = absStatus
             NotificationCenter.default.post(name: MotorcycleABS, object: absStatus)
             ptLog("🛑 [ABS] 状态: \(PTDashboardLabels.absLabel(raw: Int(bytes[2])))")
@@ -1293,7 +1409,7 @@ extension PTBluetoothServerManager {
             
             // 构造探测 Payload：
             // 很多工厂指令使用 0x00(查询), 0x01(开启), 或 0xFF(出厂重置) 作为标识
-            let testPayload: [UInt8] = [0x01, 0x00, 0xFF]
+            let testPayload: [UInt8] = [0x02, 0x10, 0x03]
             let searchingString = "📡 [自动化 Fuzz] 正在探测 ID: 0x\(String(format: "%02X", self.currentFuzzID)) ..."
             self.ptLog(searchingString)
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: searchingString)

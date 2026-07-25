@@ -216,6 +216,32 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         view.setImage(UIImage(.thermometer.high), state: .normal)
         view.setTitle("0°C", state: .normal)
         view.isUserInteractionEnabled = false
+        view.isHidden = true
+        return view
+    }()
+    
+    lazy var tcsValueLabel:UILabel = {
+        let name = PTBluetoothServerManager.shared.latestControl?.tcsMode.description
+        let view = UILabel()
+        view.font = .appfont(size: 13)
+        view.textColor = PTDashboardConfig.shared.appMainColor
+        view.text = "TCS mode:" + (name ?? PTTCSMode.unknown.description)
+        return view
+    }()
+
+    lazy var lightValueLabel:UILabel = {
+        let name = PTBluetoothServerManager.shared.latestData2?.backlightMode.description
+        let view = UILabel()
+        view.font = .appfont(size: 13)
+        view.textColor = PTDashboardConfig.shared.appMainColor
+        view.text = "Light mode:" + (name ?? PTBacklightMode.unknown.description)
+        return view
+    }()
+    
+    lazy var tcsImage:UIImageView = {
+        let view = UIImageView()
+        view.contentMode = .scaleAspectFit
+        view.image = UIImage(.t.circle)
         return view
     }()
     
@@ -246,7 +272,8 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleCONTROL, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleABS, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(dashBoardReload), name: MotorcycleDashBoardChange, object: nil)
-        
+        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleRawDataTCSShow, object: nil)
+
         if PTMotoUserDefaultStruct.MotoLinkedAPP {
             NotificationCenter.default.addObserver(self, selector: #selector(handleAuthSuccess), name: BLEConnectSuccess, object: nil)
         }
@@ -261,9 +288,15 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
     @objc func handleAuthSuccess() {
         PTDashboardConfig.shared.blueConnected = true
         PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "connect_success")) {
-            PTBluetoothServerManager.shared.sendWelcomeMessage(next: "JJJJJJJJJJJJ", title: "HHHHHHHHHHHHHHHHHHHHHHHHHHHHH")
+//            PTBluetoothServerManager.shared.sendWelcomeMessage(next: "JJJJJJJJJJJJ", title: "HHHHHHHHHHHHHHHHHHHHHHHHHHHHH")
             self.bleConnectStatusLabel.isSelected = !PTDashboardConfig.shared.blueConnected
+//            PTBluetoothServerManager.shared.startAutomatedFuzzing()
         }
+    }
+    
+    override func handleMotorcycleDisconnect() {
+        super.handleMotorcycleDisconnect()
+//        PTBluetoothServerManager.shared.stopAutomatedFuzzing()
     }
     
     // MARK: - 界面布局
@@ -275,7 +308,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         detailCollection.contentCollectionView.contentInset.bottom = collectionInset
         detailCollection.contentCollectionView.verticalScrollIndicatorInsets.bottom = collectionInset
 
-        view.addSubviews([actionStack,speedometer,speedometerReversed,detailCollection,absImage,stickImage,temLabel])
+        view.addSubviews([actionStack,speedometer,speedometerReversed,detailCollection,absImage,stickImage,temLabel,tcsValueLabel,lightValueLabel,tcsImage])
         actionStack.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.height.equalTo(54)
@@ -332,6 +365,21 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             make.height.centerY.equalTo(self.absImage)
             make.left.equalTo(self.absImage.snp.right).offset(CGFloat.GlobalItemSpacing)
             make.width.equalTo(self.temLabel.getKitCurrentDimension())
+        }
+        
+        tcsValueLabel.snp.makeConstraints { make in
+            make.top.equalTo(self.absImage)
+            make.left.equalTo(self.absImage.snp.right).offset(CGFloat.GlobalItemSpacing)
+        }
+        
+        lightValueLabel.snp.makeConstraints { make in
+            make.top.equalTo(self.tcsValueLabel.snp.bottom)
+            make.left.equalTo(self.tcsValueLabel)
+        }
+        
+        tcsImage.snp.makeConstraints { make in
+            make.size.centerY.equalTo(self.absImage)
+            make.right.equalTo(self.stickImage.snp.left).offset(-CGFloat.GlobalItemSpacing)
         }
         
         listSet()
@@ -426,6 +474,8 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             
             // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
             DispatchQueue.main.async {
+                self.lightValueLabel.text = "Light mode:" + data2.backlightMode.description
+
                 let sectionTrip = 1
                 let rows = self.detailCollection.getAllRows(in: sectionTrip)
                 rows[0].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_engine"),desc: PTDashboardLabels.engineStatusLabel(raw: engineStatus))
@@ -467,9 +517,12 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
 
             // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
             DispatchQueue.main.async {
+                self.tcsValueLabel.text = "TCS mode:" + control.tcsMode.description
+
                 self.speedometer.updateSpeed(vehicleSpeedKmh)
                 self.speedometerReversed.updateSpeed(CGFloat(engineRpm))
                 self.speedometerReversed.applyShiftLightLogic(currentRpm: engineRpm)
+                self.tcsImage.isHidden = control.isTcsSystemReady
             }
         } else if let abs = notification.object as? PTAbsStatus {
             
@@ -484,6 +537,8 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                 
                 self.absImage.isHidden = !abs.isAbsLightOn
             }
+        } else if let tcsShow = notification.object as? String {
+            tcsImage.isHidden = tcsShow.bool ?? false
         }
     }
     

@@ -985,6 +985,8 @@ extension PTMotoNavigationViewController : AMapNaviDriveViewDelegate {
         if muteButton.isSelected {
             SpeechSynthesizer.Shared.stopSpeak()
         }
+        PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Yeah!!!!!!!!!!", title: "Navigation finished!!!!!!!!!!!!!!!!!!!!")
+
     }
     
     func driveView(_ view: AMapNaviDriveView, didChangeTo state: AMapNaviDriveViewState) {

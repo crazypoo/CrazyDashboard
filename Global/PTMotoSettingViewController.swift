@@ -222,6 +222,8 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleCONTROL, object: nil)
+
         view.backgroundColor = .black
         view.addSubviews([dashBoadColorTitle,dashBoardColorButton,dashUniTitle,dashBoardUniButton,dashLanguageTitle,dashBoardLanguageButton,messageTestButton,disconnect,proButton,tcsValueLabel,lightValueLabel])
         dashBoadColorTitle.snp.makeConstraints { make in
@@ -362,6 +364,25 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             let lightName = PTBluetoothServerManager.shared.latestData2?.backlightMode.description
             self.lightValueLabel.setTitle("Light mode:" + (lightName ?? PTBacklightMode.unknown.description), for: .normal)
             self.lightValueLabel.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .normal)
+        }
+    }
+    
+    @objc func handleDataNotification(_ notification: Notification) {
+        // 1. 将广播传递过来的 object 安全地向下转型为我们的数据模型
+        if let data2 = notification.object as? PTDashboardData2 {
+            // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
+            DispatchQueue.main.async {
+                
+                let lightName = data2.backlightMode.description
+                self.lightValueLabel.setTitle("Light mode:" + (lightName), for: .normal)
+            }
+        } else if let control = notification.object as? PTDashboardControl {
+            
+            // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
+            DispatchQueue.main.async {
+                let tcsName = control.tcsMode.description
+                self.tcsValueLabel.setTitle("TCS mode:" + (tcsName), for: .normal)
+            }
         }
     }
 }
