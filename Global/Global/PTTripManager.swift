@@ -19,10 +19,28 @@ public struct PTTripReport: Codable {
     public let endOdoKm: Double
     public let distanceKm: Double
     public let avgConsumption: Double
+    
+    public let maxLeanAngleLeft: Double
+    public let maxLeanAngleRight: Double
+    public let leanAngleTrace: [Double]
+    // 🌟 新增：极限物理状态记录
+    public let maxAccelerationG: Double // 最大加速 G 值 (+Y)
+    public let maxBrakingG: Double      // 最大刹车 G 值 (-Y)
+    public let maxCorneringG: Double    // 最大过弯向心力 (X 绝对值)
+    public let maxBumpG: Double         // 最大颠簸冲击 (Z)
+    public let maxPitchUp: Double       // 最大上坡角度 (+Pitch)
+    public let maxPitchDown: Double     // 最大下坡角度 (-Pitch)
+    
+    // 🌟 新增：时间轴遥测轨迹数组 (与 leanAngleTrace 长度严格一致)
+    public let gForceYTrace: [Double]   // 加减速轨迹
+    public let gForceXTrace: [Double]   // 左右侧向力轨迹
+    public let pitchTrace: [Double]     // 坡度轨迹
+    public let relativeAltitudeTrace: [Double] // 海拔起伏轨迹
 }
 
 // 🚨 升级 2：定义一个新的通知，告诉 UI 界面 "有新报告生成了"
 public let MotorcycleTripReportGenerated = NSNotification.Name("MotorcycleTripReportGenerated")
+public let MotorcycleMotionUpdate = NSNotification.Name("MotorcycleMotionUpdate")
 
 /// 骑行行程统计与存储管理器
 @objcMembers
@@ -45,6 +63,32 @@ public class PTTripManager: NSObject {
     private var latestOdo: Double = 0
     private var latestConsumption: Double = 0
     
+    private var maxLeanLeft: Double = 0
+    private var maxLeanRight: Double = 0
+    private var telemetryTimer: Timer?
+
+    // 🌟 极限值缓存
+    private var maxAccelG: Double = 0.0
+    private var maxBrakeG: Double = 0.0
+    private var maxCornerG: Double = 0.0
+    private var maxBump: Double = 0.0
+    private var maxPitchUp: Double = 0.0
+    private var maxPitchDown: Double = 0.0
+
+    // 🌟 1Hz 线程安全快照缓存
+    private var currentLiveRoll: Double = 0.0
+    private var currentLivePitch: Double = 0.0
+    private var currentLiveGForceX: Double = 0.0
+    private var currentLiveGForceY: Double = 0.0
+    private var currentLiveAltitude: Double = 0.0
+    
+    // 🌟 轨迹数组
+    private var leanTraceArray: [Double] = []
+    private var pitchTraceArray: [Double] = []
+    private var gForceXTraceArray: [Double] = []
+    private var gForceYTraceArray: [Double] = []
+    private var altitudeTraceArray: [Double] = []
+
     private override init() {
         super.init()
         loadHistory() // 初始化时，自动把本地保存的历史数据读进内存
@@ -92,6 +136,55 @@ public class PTTripManager: NSObject {
         startOdo = 0
         latestOdo = 0
         latestConsumption = 0
+        
+        // 重置倾角状态
+        maxLeanLeft = 0
+        maxLeanRight = 0
+        currentLiveRoll = 0.0
+        maxAccelG = 0
+        maxBrakeG = 0
+        maxCornerG = 0
+        maxBump = 0
+        maxPitchUp = 0
+        maxPitchDown = 0
+        
+        leanTraceArray.removeAll()
+        pitchTraceArray.removeAll()
+        gForceXTraceArray.removeAll()
+        gForceYTraceArray.removeAll()
+        altitudeTraceArray.removeAll()
+
+        PTMotion.shared.resetLeanAngles()
+        PTMotion.shared.startMotion()
+        
+        // 🚨 启动遥测定时器 (1Hz 采样率)
+        telemetryTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard let self = self, self.isRiding else { return }
+            // 从倾角管理器中直接抓拍当前的平滑角度
+            self.leanTraceArray.append(self.currentLiveRoll)
+            self.pitchTraceArray.append(self.currentLivePitch)
+            self.gForceXTraceArray.append(self.currentLiveGForceX)
+            self.gForceYTraceArray.append(self.currentLiveGForceY)
+            self.altitudeTraceArray.append(self.currentLiveAltitude)
+        }
+        
+        PTMotion.shared.motionBlock = { [weak self] data in
+            guard let self = self else { return }
+            self.maxLeanLeft = data.maxLeftLean
+            self.maxLeanRight = data.maxRightLean
+            self.currentLiveRoll = data.roll
+            self.currentLivePitch = data.pitch
+            self.currentLiveGForceX = data.gForceX
+            self.currentLiveGForceY = data.gForceY
+            self.currentLiveAltitude = data.relativeAltitude
+            
+            if data.gForceY > self.maxAccelG { self.maxAccelG = data.gForceY }
+            if data.gForceY < self.maxBrakeG { self.maxBrakeG = data.gForceY } // 刹车通常为负值
+            if abs(data.gForceX) > self.maxCornerG { self.maxCornerG = abs(data.gForceX) }
+            if abs(data.gForceZ) > self.maxBump { self.maxBump = abs(data.gForceZ) }
+            if data.pitch > self.maxPitchUp { self.maxPitchUp = data.pitch }
+            if data.pitch < self.maxPitchDown { self.maxPitchDown = data.pitch }
+        }
     }
     
     @objc private func handleControlData(_ notification: Notification) {
@@ -111,6 +204,10 @@ public class PTTripManager: NSObject {
         guard isRiding, let start = startTime else { return }
         isRiding = false
         
+        // 🚨 停止采样定时器
+        telemetryTimer?.invalidate()
+        telemetryTimer = nil
+
         let endTime = Date()
         let durationSec = endTime.timeIntervalSince(start)
         let durationMin = Int(durationSec / 60.0)
@@ -131,7 +228,24 @@ public class PTTripManager: NSObject {
             startOdoKm: startOdo,
             endOdoKm: latestOdo,
             distanceKm: distance,
-            avgConsumption: latestConsumption
+            avgConsumption: latestConsumption,
+            maxLeanAngleLeft: maxLeanLeft,
+            maxLeanAngleRight: maxLeanRight,
+            leanAngleTrace: leanTraceArray,
+            
+            // 新增的极限数据
+            maxAccelerationG: maxAccelG,
+            maxBrakingG: maxBrakeG,
+            maxCorneringG: maxCornerG,
+            maxBumpG: maxBump,
+            maxPitchUp: maxPitchUp,
+            maxPitchDown: maxPitchDown,
+            
+            // 新增的轨迹数据
+            gForceYTrace: gForceYTraceArray,
+            gForceXTrace: gForceXTraceArray,
+            pitchTrace: pitchTraceArray,
+            relativeAltitudeTrace: altitudeTraceArray
         )
         
         // 1. 存入内存数组的最前面 (保证最新记录在列表顶部)

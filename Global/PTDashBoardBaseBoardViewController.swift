@@ -25,6 +25,7 @@ class PTDashBoardBaseBoardViewController: PTBaseViewController {
         view.unitLabel.text = PTDashboardConfig.shared.appShowUniLabel
         view.direction = .clockwise
         view.tickStep = 10
+        view.majorTickStep = 20
         return view
     }()
     let musicNowPlaying = PTNowPlayingView(frame: .zero)
@@ -58,6 +59,10 @@ class PTDashBoardBaseBoardViewController: PTBaseViewController {
         super.viewDidLoad()
         view.backgroundColor = .black
         // Do any additional setup after loading the view.
+        
+        if PTMotion.shared.motionStarted {
+            motionBlockSet()
+        }
     }
     
     override func viewControllerOrientation(_ orientationMask: UIInterfaceOrientationMask) {
@@ -65,6 +70,26 @@ class PTDashBoardBaseBoardViewController: PTBaseViewController {
         setupDashboardUI()
         
         startPootoolsEngines()
+    }
+    
+    func motionBlockSet() {
+        PTMotion.shared.motionBlock = { [weak self] motionData in
+            self?.motionSet(motionData: motionData)
+        }
+    }
+        
+    func motionSet(motionData:PTMotionData) {
+        self.speedometer.updateEnvironment(altitude: nil, pressureKpa: motionData.pressure) // 再更新气压
+        self.gForceView.updateGForce(x: motionData.gForceX, y: motionData.gForceY)
+        self.leanAngleGauge.updateLean(current: motionData.roll, leftMax: motionData.maxLeftLean, rightMax: motionData.maxRightLean)
+        self.bumpMeter.updateBump(zForce: motionData.gForceZ)
+        self.pitchGauge.updatePitch(degrees: motionData.pitch)
+        // 🌟处理机车事故警报 UI
+        if motionData.isTipOverDetected {
+            self.showEmergencyOverlay(true) // 事故弹出全屏红色警告
+        } else {
+            self.showEmergencyOverlay(false)
+        }
     }
 
     private func setupDashboardUI() {
@@ -149,19 +174,11 @@ class PTDashBoardBaseBoardViewController: PTBaseViewController {
             self?.tripStatsView.updateStats(with: tripData)
             PTMotion.shared.currentSpeedKmh = tripData.speedKmh
         }
-        PTMotion.shared.startMotion()
-        PTMotion.shared.motionBlock = { [weak self] motionData in
-            self?.speedometer.updateEnvironment(altitude: nil, pressureKpa: motionData.pressure) // 再更新气压
-            self?.gForceView.updateGForce(x: motionData.gForceX, y: motionData.gForceY)
-            self?.leanAngleGauge.updateLean(current: motionData.roll, leftMax: motionData.maxLeftLean, rightMax: motionData.maxRightLean)
-            self?.bumpMeter.updateBump(zForce: motionData.gForceZ)
-            self?.pitchGauge.updatePitch(degrees: motionData.pitch)
-            // 🌟处理机车事故警报 UI
-            if motionData.isTipOverDetected {
-                self?.showEmergencyOverlay(true) // 事故弹出全屏红色警告
-            } else {
-                self?.showEmergencyOverlay(false)
-            }
+        
+        if !PTMotion.shared.motionStarted {
+            PTMotion.shared.startMotion()
+            PTMotion.shared.calibrateZeroPoint()
+            motionBlockSet()
         }
     }
     
@@ -170,5 +187,9 @@ class PTDashBoardBaseBoardViewController: PTBaseViewController {
         UIView.transition(with: crashOverlay, duration: 0.3, options: .transitionCrossDissolve, animations: {
             self.crashOverlay.isHidden = !show
         }, completion: nil)
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 }
