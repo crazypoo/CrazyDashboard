@@ -8,6 +8,11 @@
 import Foundation
 import PooTools
 
+public struct PTRoutePoint: Codable {
+    public let lat: Double
+    public let lon: Double
+}
+
 // 🚨 升级 1：让模型支持 Codable，以便于本地持久化存储
 public struct PTTripReport: Codable {
     public let startTime: Date
@@ -36,6 +41,8 @@ public struct PTTripReport: Codable {
     public let gForceXTrace: [Double]   // 左右侧向力轨迹
     public let pitchTrace: [Double]     // 坡度轨迹
     public let relativeAltitudeTrace: [Double] // 海拔起伏轨迹
+    
+    public let routeCoordinates: [PTRoutePoint]
 }
 
 // 🚨 升级 2：定义一个新的通知，告诉 UI 界面 "有新报告生成了"
@@ -88,7 +95,8 @@ public class PTTripManager: NSObject {
     private var gForceXTraceArray: [Double] = []
     private var gForceYTraceArray: [Double] = []
     private var altitudeTraceArray: [Double] = []
-
+    private var routeArray: [PTRoutePoint] = []
+    
     private override init() {
         super.init()
         loadHistory() // 初始化时，自动把本地保存的历史数据读进内存
@@ -153,6 +161,7 @@ public class PTTripManager: NSObject {
         gForceXTraceArray.removeAll()
         gForceYTraceArray.removeAll()
         altitudeTraceArray.removeAll()
+        routeArray.removeAll()
 
         PTMotion.shared.resetLeanAngles()
         PTMotion.shared.startMotion()
@@ -185,6 +194,17 @@ public class PTTripManager: NSObject {
             if data.pitch > self.maxPitchUp { self.maxPitchUp = data.pitch }
             if data.pitch < self.maxPitchDown { self.maxPitchDown = data.pitch }
         }
+        
+        PTLocationEngine.shared.switchEngineMode(to: .riding)
+        PTLocationEngine.shared.locationBlock = { [weak self] tripData in
+            guard let self = self, self.isRiding else { return }
+            
+            // 只要拿到了有效的新坐标，就追加到地图轨迹数组中
+            if let loc = tripData.currentLocation {
+                let point = PTRoutePoint(lat: loc.coordinate.latitude, lon: loc.coordinate.longitude)
+                self.routeArray.append(point)
+            }
+        }
     }
     
     @objc private func handleControlData(_ notification: Notification) {
@@ -203,6 +223,8 @@ public class PTTripManager: NSObject {
     @objc private func handleDisconnect() {
         guard isRiding, let start = startTime else { return }
         isRiding = false
+        
+        PTLocationEngine.shared.switchEngineMode(to: .antiTheft)
         
         // 🚨 停止采样定时器
         telemetryTimer?.invalidate()
@@ -245,7 +267,9 @@ public class PTTripManager: NSObject {
             gForceYTrace: gForceYTraceArray,
             gForceXTrace: gForceXTraceArray,
             pitchTrace: pitchTraceArray,
-            relativeAltitudeTrace: altitudeTraceArray
+            
+            relativeAltitudeTrace: altitudeTraceArray,
+            routeCoordinates: routeArray
         )
         
         // 1. 存入内存数组的最前面 (保证最新记录在列表顶部)

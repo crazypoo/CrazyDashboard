@@ -6,14 +6,14 @@
 //
 
 import UIKit
-import MapKit
+import AMapNaviKit
 import SnapKit
 
 @objcMembers
-public class PTMapView: UIView, MKMapViewDelegate {
+public class PTMapView: UIView, MAMapViewDelegate {
     
     // 暴露出原生地图实例，方便你未来在外部直接添加大头针 (Annotations) 或划线 (Overlays)
-    public let mapView = MKMapView()
+    public let mapView = MAMapView()
     
     // 用于标记是否已经完成了首次中心点放大
     private var isFirstLocationUpdate = true
@@ -47,24 +47,22 @@ public class PTMapView: UIView, MKMapViewDelegate {
     }
     
     private func setupUI() {
-        // 1. 添加地图并使用 SnapKit 撑满当前 View
         addSubview(mapView)
         mapView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
         
-        // 2. 核心属性配置：极客仪表盘模式
         mapView.showsUserLocation = true // 显示当前位置的蓝点/车标
         mapView.userTrackingMode = .followWithHeading // 【灵魂属性】跟随车头方向，自动呈现 3D 导航视角
         
         // 3. 隐藏原生多余的 UI，保持界面纯粹
         mapView.showsCompass = false // 隐藏原生指南针，因为我们有 PTCompassRollerView
         mapView.showsScale = false
-        mapView.showsTraffic = true // 开启实时路况（会有红黄绿的拥堵提示，很实用）
-        mapView.showsBuildings = true // 显示 3D 建筑物模型
+        mapView.isShowTraffic = true // 开启实时路况（会有红黄绿的拥堵提示，很实用）
+//        mapView.showsBuildings = true // 显示 3D 建筑物模型
         
         // 4. 样式配置：强制科技感
-        mapView.mapType = .mutedStandard // 颜色更暗淡柔和，不会喧宾夺主
+        mapView.mapType = .standardNight
         mapView.overrideUserInterfaceStyle = .dark // 强制暗黑模式
 
         mapView.delegate = self
@@ -95,16 +93,11 @@ public class PTMapView: UIView, MKMapViewDelegate {
     }
 
     // MARK: - MKMapViewDelegate
-    
-    public func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
+    public func mapView(_ mapView: MAMapView!, didUpdate userLocation: MAUserLocation!, updatingLocation: Bool) {
         // 当首次获取到用户的 GPS 坐标时，给地图一个平滑的缩放动画
         if isFirstLocationUpdate, let _ = userLocation.location {
             isFirstLocationUpdate = false
-            let zoomRange = MKMapView.CameraZoomRange(
-                            minCenterCoordinateDistance: 250,
-                            maxCenterCoordinateDistance: 250
-                        )
-            mapView.setCameraZoomRange(zoomRange, animated: true)
+            mapView.setZoomLevel(250, animated: true)
             mapView.setUserTrackingMode(.followWithHeading, animated: true)
         }
     }

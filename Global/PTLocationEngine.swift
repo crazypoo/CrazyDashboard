@@ -44,7 +44,7 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
     private let locationManager = AMapLocationManager()
     
     // 防抖：防止重复启动导致数据被清零
-    private var isTracking = false
+    var isTracking = false
     
     public private(set) var currentMode: PTLocationEngineMode = .riding
     
@@ -196,7 +196,7 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
             self.lastLocation = location
             return
        }
-
+        
         // 过滤低精度垃圾数据 (80米)
         guard location.horizontalAccuracy > 0 && location.horizontalAccuracy < 80 else { return }
         

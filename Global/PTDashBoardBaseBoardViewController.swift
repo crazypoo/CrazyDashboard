@@ -25,7 +25,7 @@ class PTDashBoardBaseBoardViewController: PTBaseViewController {
         view.unitLabel.text = PTDashboardConfig.shared.appShowUniLabel
         view.direction = .clockwise
         view.tickStep = 10
-        view.majorTickStep = 20
+        view.majorTickStep = 30
         return view
     }()
     let musicNowPlaying = PTNowPlayingView(frame: .zero)
@@ -63,6 +63,11 @@ class PTDashBoardBaseBoardViewController: PTBaseViewController {
         if PTMotion.shared.motionStarted {
             motionBlockSet()
         }
+        
+        if PTLocationEngine.shared.isTracking {
+            PTLocationEngine.shared.switchEngineMode(to: .riding)
+            locationEngineBlockSet()
+        }
     }
     
     override func viewControllerOrientation(_ orientationMask: UIInterfaceOrientationMask) {
@@ -89,6 +94,16 @@ class PTDashBoardBaseBoardViewController: PTBaseViewController {
             self.showEmergencyOverlay(true) // 事故弹出全屏红色警告
         } else {
             self.showEmergencyOverlay(false)
+        }
+    }
+    
+    func locationEngineBlockSet() {
+        PTLocationEngine.shared.locationBlock = { [weak self] tripData in
+            self?.speedometer.updateSpeed(PTDashboardConfig.shared.appShowMileage(tripData.speedKmh))
+            self?.compassRoller.updateHeading(tripData.courseDegree)
+            self?.speedometer.updateEnvironment(altitude: tripData.altitude, pressureKpa: nil)
+            self?.tripStatsView.updateStats(with: tripData)
+            PTMotion.shared.currentSpeedKmh = tripData.speedKmh
         }
     }
 
@@ -166,13 +181,10 @@ class PTDashBoardBaseBoardViewController: PTBaseViewController {
     
     @MainActor private func startPootoolsEngines() {
         // 调用你 pootools 里的引擎
-        PTLocationEngine.shared.startTracking()
-        PTLocationEngine.shared.locationBlock = { [weak self] tripData in
-            self?.speedometer.updateSpeed(PTDashboardConfig.shared.appShowMileage(tripData.speedKmh))
-            self?.compassRoller.updateHeading(tripData.courseDegree)
-            self?.speedometer.updateEnvironment(altitude: tripData.altitude, pressureKpa: nil)
-            self?.tripStatsView.updateStats(with: tripData)
-            PTMotion.shared.currentSpeedKmh = tripData.speedKmh
+        if !PTLocationEngine.shared.isTracking {
+            PTLocationEngine.shared.switchEngineMode(to: .riding)
+            PTLocationEngine.shared.startTracking()
+            locationEngineBlockSet()
         }
         
         if !PTMotion.shared.motionStarted {

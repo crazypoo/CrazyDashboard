@@ -198,16 +198,6 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         return view
     }()
     
-    private lazy var locationManager:AMapLocationManager = {
-        let manager = AMapLocationManager()
-        manager.delegate = self
-        manager.allowsBackgroundLocationUpdates = true
-        manager.pausesLocationUpdatesAutomatically = false
-        manager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
-        manager.distanceFilter = 5
-        return manager
-    }()
-
     private lazy var search: AMapSearchAPI = {
         let view = AMapSearchAPI()
         view!.delegate = self
@@ -406,9 +396,29 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     }
     
     // MARK: - 初始化配置
-    private func setupLocationManager() {
-        locationManager.startUpdatingLocation()
-        locationManager.startUpdatingHeading()
+    private func setupLocationManager() {        
+        if PTLocationEngine.shared.isTracking {
+            locationEngineBlockSet()
+        } else {
+            PTLocationEngine.shared.switchEngineMode(to: .riding)
+            PTLocationEngine.shared.startTracking()
+            locationEngineBlockSet()
+        }
+    }
+    
+    func locationEngineBlockSet() {
+        PTLocationEngine.shared.locationBlock = { [weak self] tripData in
+            if let coordinate = tripData.currentLocation {
+                self?.userCurrentLocation = AMapNaviPoint.location(withLatitude: coordinate.coordinate.latitude, longitude: coordinate.coordinate.longitude)!
+                if !(self?.loadCurrentLocation ?? false) {
+                    let regeo = AMapReGeocodeSearchRequest()
+                    regeo.location = AMapGeoPoint.location(withLatitude: coordinate.coordinate.latitude, longitude: coordinate.coordinate.longitude)
+                    regeo.requireExtension = true
+                    self?.search.aMapReGoecodeSearch(regeo)
+                }
+                PTGPXRecorder.shared.appendLocation(coordinate)
+            }
+        }
     }
     
     // MARK: - UI 布局实现
@@ -731,34 +741,6 @@ extension PTMotoNavigationViewController:MAMapViewDelegate {
     }
 }
 
-extension PTMotoNavigationViewController:AMapLocationManagerDelegate {
-    func amapLocationManager(_ manager: AMapLocationManager!, doRequireLocationAuth locationManager: CLLocationManager!) {
-        locationManager.requestAlwaysAuthorization()
-    }
-    
-    func amapLocationManager(_ manager: AMapLocationManager!, didChange status: CLAuthorizationStatus) {
-    }
-    
-    func amapLocationManager(_ manager: AMapLocationManager!, didFailWithError error: (any Error)!) {
-        
-    }
-    
-    func amapLocationManager(_ manager: AMapLocationManager!, didUpdate location: CLLocation!, reGeocode: AMapLocationReGeocode!) {
-        userCurrentLocation = AMapNaviPoint.location(withLatitude: location.coordinate.latitude, longitude: location.coordinate.longitude)!
-        if !loadCurrentLocation {
-            let regeo = AMapReGeocodeSearchRequest()
-            regeo.location = AMapGeoPoint.location(withLatitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
-            regeo.requireExtension = true
-            self.search.aMapReGoecodeSearch(regeo)
-        }
-        PTGPXRecorder.shared.appendLocation(location)
-    }
-    
-    func onReGeocodeSearchDone(_ request: AMapReGeocodeSearchRequest!, response: AMapReGeocodeSearchResponse!) {
-        currentCity = response.regeocode.addressComponent.city
-    }
-}
-
 extension PTMotoNavigationViewController:AMapSearchDelegate {
     func searchPOI(withKeyword keyword: String?) {
         
@@ -790,6 +772,10 @@ extension PTMotoNavigationViewController:AMapSearchDelegate {
             searchResultsTableView.isHidden = true
             searchResultsTableView.reloadData()
         }
+    }
+    
+    func onReGeocodeSearchDone(_ request: AMapReGeocodeSearchRequest!, response: AMapReGeocodeSearchResponse!) {
+        currentCity = response.regeocode.addressComponent.city
     }
 }
 
