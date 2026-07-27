@@ -9,21 +9,6 @@ import Foundation
 import CoreLocation
 import PooTools
 
-/// 单个轨迹点模型，包含位置与机车遥测数据
-public struct PTTrackPoint {
-    let coordinate: CLLocationCoordinate2D
-    let altitude: CLLocationDistance
-    let timestamp: Date
-    let speed: Double // 机车传来的真实速度
-    let rpm: Int      // 机车传来的真实转速
-    
-    let fuelLevel: Int        // 油量百分比
-    let temperature: Int      // 外界温度
-    let batteryVolt: Double   // 电瓶电压
-    let tcsMode: String       // TCS 当前模式
-    let isAbsActive: Bool     // ABS 是否正在亮灯/触发
-}
-
 // MARK: - UI 列表数据模型
 /// 骑行历史记录模型，专门用于在列表中展示
 public struct PTRideHistoryModel {
@@ -57,98 +42,15 @@ public class PTGPXRecorder: NSObject {
     
     public static let shared = PTGPXRecorder()
     
-    private var isRecording: Bool = false
-    private var currentTrack: [PTTrackPoint] = []
-    
-    // 缓存最新收到的遥测数据，等待 GPS 点刷新时一并打包
-    private var latestSpeed: Double = 0
-    private var latestRpm: Int = 0
-    private var lastSampleTime: Date = Date()
-    
-    private var latestFuel: Int = 0
-    private var latestTemp: Int = 0
-    private var latestVolt: Double = 0.0
-    private var latestTCS: String = "Unknown"
-    private var latestAbsActive: Bool = false
-    
     private override init() {
         super.init()
-        setupObservers()
     }
-    
-    private func setupObservers() {
-        let nc = NotificationCenter.default
-        nc.addObserver(self, selector: #selector(startRecording), name: BLEConnectSuccess, object: nil)
-        nc.addObserver(self, selector: #selector(stopAndExport), name: MotorcycleDisconnected, object: nil)
-        nc.addObserver(self, selector: #selector(handleControlData(_:)), name: MotorcycleCONTROL, object: nil)
-        nc.addObserver(self, selector: #selector(handleData1(_:)), name: MotorcycleDATA1, object: nil)
-        nc.addObserver(self, selector: #selector(handleData2(_:)), name: MotorcycleDATA2, object: nil)
-        nc.addObserver(self, selector: #selector(handleAbsData(_:)), name: MotorcycleABS, object: nil)
-    }
-    
-    @objc private func handleControlData(_ notification: Notification) {
-        guard let control = notification.object as? PTDashboardControl else { return }
-        latestSpeed = control.vehicleSpeedKmh
-        latestRpm = control.engineRpm
-    }
-    
-    // 🚨 提取油耗
-    @objc private func handleData1(_ notification: Notification) {
-        guard let data1 = notification.object as? PTDashboardData1 else { return }
-        latestFuel = data1.fuelLevelPct
-    }
-    
-    // 🚨 提取温度和电压
-    @objc private func handleData2(_ notification: Notification) {
-        guard let data2 = notification.object as? PTDashboardData2 else { return }
-        latestTemp = data2.outsideTempC
-        latestVolt = data2.batteryVolt
-    }
-    
-    // 🚨 提取 ABS 状态
-    @objc private func handleAbsData(_ notification: Notification) {
-        guard let absData = notification.object as? PTAbsStatus else { return }
-        latestAbsActive = absData.isAbsLightOn
-    }
-    
-    @objc private func startRecording() {
-        isRecording = true
-        currentTrack.removeAll()
-        PTNSLogConsole("🗺️ [GPX 录制] 开始全新骑行轨迹录制...")
-    }
-    
-    /// 外部调用：当你的高德地图 `didUpdate` 代理拿到新坐标时，调用此方法写入数据
-    public func appendLocation(_ location: CLLocation) {
-        guard isRecording else { return }
+            
+    // 🌟 修改返回值：直接返回生成的文件名（例如：MotoRide_20260726_105100.gpx）
+    public func exportGPX(from points: [PTRoutePoint]) -> String? {
+        guard !points.isEmpty else { return nil }
+        let xmlString = generateGPXString(from: points) // (保留原有的拼装逻辑)
         
-        // 采样控制：每隔 2 秒记录一个点，防止长途骑行文件过大
-        let now = Date()
-        guard now.timeIntervalSince(lastSampleTime) >= 2.0 else { return }
-        lastSampleTime = now
-        
-        let point = PTTrackPoint(
-            coordinate: location.coordinate,
-            altitude: location.altitude,
-            timestamp: now,
-            speed: latestSpeed,
-            rpm: latestRpm,
-            fuelLevel: latestFuel,
-            temperature: latestTemp,
-            batteryVolt: latestVolt,
-            tcsMode: latestTCS,
-            isAbsActive: latestAbsActive
-        )
-        currentTrack.append(point)
-    }
-    
-    @objc private func stopAndExport() {
-        guard isRecording, !currentTrack.isEmpty else { return }
-        isRecording = false
-        
-        // 生成遵循 GPX 1.1 标准的 XML 文本
-        let xmlString = generateGPXString(from: currentTrack)
-        
-        // 保存到 App 沙盒的 Documents 目录
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd_HHmmss"
         let fileName = "MotoRide_\(formatter.string(from: Date())).gpx"
@@ -157,16 +59,18 @@ public class PTGPXRecorder: NSObject {
             let fileURL = docsDir.appendingPathComponent(fileName)
             do {
                 try xmlString.write(to: fileURL, atomically: true, encoding: .utf8)
-                PTNSLogConsole("✅ [GPX 录制] 轨迹保存成功！可至文件 App 查看: \(fileURL.path)")
+                PTNSLogConsole("✅ [GPX 导出] 轨迹保存成功！: \(fileName)")
+                return fileName // 导出成功，返回文件名
             } catch {
-                PTNSLogConsole("❌ [GPX 录制] 轨迹保存失败: \(error)")
+                PTNSLogConsole("❌ [GPX 导出] 轨迹保存失败: \(error)")
+                return nil
             }
         }
-        currentTrack.removeAll()
+        return nil
     }
-    
+
     // MARK: - XML 拼装引擎
-    private func generateGPXString(from points: [PTTrackPoint]) -> String {
+    private func generateGPXString(from points: [PTRoutePoint]) -> String {
         let isoFormatter = ISO8601DateFormatter()
         
         var gpx = """
@@ -181,17 +85,17 @@ public class PTGPXRecorder: NSObject {
             let timeStr = isoFormatter.string(from: point.timestamp)
             // 🚨 在 extensions 标签中注入所有高级遥测数据
             let trkpt = """
-                    <trkpt lat="\(point.coordinate.latitude)" lon="\(point.coordinate.longitude)">
+                    <trkpt lat="\(point.lat)" lon="\(point.lon)">
                       <ele>\(point.altitude)</ele>
                       <time>\(timeStr)</time>
                       <extensions>
                         <speed>\(point.speed)</speed>
                         <rpm>\(point.rpm)</rpm>
-                        <fuel>\(point.fuelLevel)</fuel>
-                        <temp>\(point.temperature)</temp>
-                        <volt>\(point.batteryVolt)</volt>
-                        <tcs>\(point.tcsMode)</tcs>
-                        <abs>\(point.isAbsActive ? "1" : "0")</abs>
+                        <fuel>\(0)</fuel>
+                        <temp>\(0)</temp>
+                        <volt>\(0)</volt>
+                        <tcs>\(0)</tcs>
+                        <abs>\(0)</abs>
                       </extensions>
                     </trkpt>\n
                 """

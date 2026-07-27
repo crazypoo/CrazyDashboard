@@ -11,7 +11,7 @@ import SnapKit
 import SwifterSwift
 import CoreLocation
 
-class PTDashBoardBaseBoardViewController: PTBaseViewController {
+class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
 
     let lrSpacing:CGFloat = 44
     let topSpacing:CGFloat = 44
@@ -54,6 +54,10 @@ class PTDashBoardBaseBoardViewController: PTBaseViewController {
         // 视图即将消失（比如返回上一页）时：强制恢复为竖屏
         PTRotationManager.shared.rotationToPortrait()
     }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -75,6 +79,10 @@ class PTDashBoardBaseBoardViewController: PTBaseViewController {
         setupDashboardUI()
         
         startPootoolsEngines()
+        if !vcDidLoad {
+            speedometer.playStartupSweep(duration: 1.5)
+            vcDidLoad = true
+        }
     }
     
     func motionBlockSet() {
@@ -201,7 +209,7 @@ class PTDashBoardBaseBoardViewController: PTBaseViewController {
         }, completion: nil)
     }
     
-    deinit {
+    @MainActor deinit {
         NotificationCenter.default.removeObserver(self)
     }
 }

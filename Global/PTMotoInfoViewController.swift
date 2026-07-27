@@ -260,6 +260,11 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         self.bleConnectStatusLabel.isSelected = !PTDashboardConfig.shared.blueConnected
+        if !vcDidLoad {
+            speedometer.playStartupSweep(duration: 1.5)
+            speedometerReversed.playStartupSweep(duration: 1.5)
+            vcDidLoad = true
+        }
     }
     
     override func viewDidLoad() {
@@ -395,7 +400,6 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             }
         }
         
-        vcDidLoad = true
         pt_observerLanguage {
             if self.vcDidLoad {
                 self.voltageLabel.modelSet = self.modelvoltageSet(currentValue: 0)

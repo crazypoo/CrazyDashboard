@@ -416,7 +416,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
                     regeo.requireExtension = true
                     self?.search.aMapReGoecodeSearch(regeo)
                 }
-                PTGPXRecorder.shared.appendLocation(coordinate)
+//                PTGPXRecorder.shared.appendLocation(coordinate)
             }
         }
     }

@@ -11,6 +11,16 @@ import PooTools
 public struct PTRoutePoint: Codable {
     public let lat: Double
     public let lon: Double
+    
+    public let altitude: Double
+    public let timestamp: Date
+    
+    // 遥测快照数据 (用于导出到 GPX 的 <extensions> 中)
+    public let speed: Double
+    public let rpm: Int
+    public let leanAngle: Double // 把倾角也导进去！
+    public let gForceY: Double   // 加减速 G 值
+    public let gForceX: Double   // 过弯 G 值
 }
 
 // 🚨 升级 1：让模型支持 Codable，以便于本地持久化存储
@@ -42,7 +52,7 @@ public struct PTTripReport: Codable {
     public let pitchTrace: [Double]     // 坡度轨迹
     public let relativeAltitudeTrace: [Double] // 海拔起伏轨迹
     
-    public let routeCoordinates: [PTRoutePoint]
+    public let gpxFileName: String?
 }
 
 // 🚨 升级 2：定义一个新的通知，告诉 UI 界面 "有新报告生成了"
@@ -198,10 +208,19 @@ public class PTTripManager: NSObject {
         PTLocationEngine.shared.switchEngineMode(to: .riding)
         PTLocationEngine.shared.locationBlock = { [weak self] tripData in
             guard let self = self, self.isRiding else { return }
-            
             // 只要拿到了有效的新坐标，就追加到地图轨迹数组中
             if let loc = tripData.currentLocation {
-                let point = PTRoutePoint(lat: loc.coordinate.latitude, lon: loc.coordinate.longitude)
+                let point = PTRoutePoint(
+                    lat: loc.coordinate.latitude,
+                    lon: loc.coordinate.longitude,
+                    altitude: loc.altitude,
+                    timestamp: Date(),
+                    speed: tripData.speedKmh, // 使用高德计算出的精准速度，或者如果你喜欢机车表显速度也可以换
+                    rpm: self.maxRpm,         // (你可以在 manager 中加一个 currentRpm 属性)
+                    leanAngle: self.currentLiveRoll,
+                    gForceY: self.currentLiveGForceY,
+                    gForceX: self.currentLiveGForceX
+                )
                 self.routeArray.append(point)
             }
         }
@@ -224,6 +243,7 @@ public class PTTripManager: NSObject {
         guard isRiding, let start = startTime else { return }
         isRiding = false
         
+        let generatedFileName = PTGPXRecorder.shared.exportGPX(from: routeArray)
         PTLocationEngine.shared.switchEngineMode(to: .antiTheft)
         
         // 🚨 停止采样定时器
@@ -269,7 +289,7 @@ public class PTTripManager: NSObject {
             pitchTrace: pitchTraceArray,
             
             relativeAltitudeTrace: altitudeTraceArray,
-            routeCoordinates: routeArray
+            gpxFileName: generatedFileName
         )
         
         // 1. 存入内存数组的最前面 (保证最新记录在列表顶部)

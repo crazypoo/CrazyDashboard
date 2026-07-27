@@ -23,15 +23,10 @@ final class SpeechSynthesizer: NSObject, AVSpeechSynthesizerDelegate {
     }
     
     public func speak(_ aString: String) {
-        
-        
-        
+                
         let aUtterance = AVSpeechUtterance(string: aString)
         aUtterance.voice = AVSpeechSynthesisVoice(language: PTDashboardConfig.shared.lauguageModels.first(where: { $0.isSelected })?.voiceValue ?? "zh-CN")
-        
-        //iOS语音合成在iOS8及以下版本系统上语速异常
-        let sysVer = (UIDevice.current.systemVersion as NSString).doubleValue
-        
+                
         if speechSynthesizer.isSpeaking {
             speechSynthesizer.stopSpeaking(at: .word)
         }

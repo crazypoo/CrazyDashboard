@@ -106,11 +106,8 @@ public class PTRoutingManager: NSObject {
             
         case .openHUD:
             PTNSLogConsole("🗣️ [路由引擎] 收到 Siri 指令：开启 HUD")
-            // 通过通知告诉外部 UI 切换视图，或者直接控制 TabBar
-//            NotificationCenter.default.post(name: NSNotification.Name("SwitchToMotoHUD"), object: nil)
             let vc = PTDashBoardBaseBoardViewController()
             PTUtils.getCurrentVC()?.navigationController?.pushViewController(vc, animated: true)
-            
         case .unknown:
             PTNSLogConsole("❓ [路由引擎] 收到无法解析的外部指令")
         }

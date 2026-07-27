@@ -207,6 +207,16 @@ public class PTSpeedometerView: UIView {
     
     private let totalSweepAngle: CGFloat = .pi * 1.5 // 固定扫过 270 度
     
+    private var isStartupAnimating: Bool = false
+    private var sweepDisplayLink: CADisplayLink?
+    private var sweepStartTime: CFTimeInterval = 0
+    private var sweepDuration: TimeInterval = 1.2 // 自检动画总时长 (1.2秒极速扫表)
+    private var sweepCompletion: (() -> Void)?
+
+    deinit {
+        sweepDisplayLink?.invalidate()
+    }
+
     // MARK: - 初始化
     public override init(frame: CGRect) {
         super.init(frame: frame)
@@ -451,13 +461,18 @@ public class PTSpeedometerView: UIView {
 
     // MARK: - 更新数据
     public func updateSpeed(_ currentSpeed: CGFloat, animated: Bool = true) {
+        guard !isStartupAnimating else { return }
+        _internalUpdateSpeed(currentSpeed, animated: animated)
+    }
+    
+    /// 内部真正的更新引擎
+    private func _internalUpdateSpeed(_ currentSpeed: CGFloat, animated: Bool) {
         currentSpeedRaw = currentSpeed
         let safeSpeed = min(max(currentSpeed, 0), maxSpeed)
         speedLabel.text = "\(Int(safeSpeed))"
         
         let speedRatio = safeSpeed / maxSpeed
         
-        // 🚨 修正目标角度计算
         let targetAngle: CGFloat
         if actualIsClockwise {
             targetAngle = actualStartAngle + (speedRatio * totalSweepAngle)
@@ -480,7 +495,7 @@ public class PTSpeedometerView: UIView {
             CATransaction.commit()
         }
     }
-    
+
     public func updateEnvironment(altitude: Double?, pressureKpa: Double?) {
         if let alt = altitude {
             self.altitudeLabel.text = PTDashboardConfig.language(key: "elevation_value", Int(alt))
@@ -490,6 +505,59 @@ public class PTSpeedometerView: UIView {
             let hpa = kpa * 10.0
             self.pressureLabel.text = PTDashboardConfig.language(key: "hpa_value", hpa)
         }
+    }
+    
+    /// 播放通电自检扫表动画
+    /// - Parameters:
+    ///   - duration: 动画总时长 (默认 1.2 秒)
+    ///   - completion: 动画结束后的回调
+    public func playStartupSweep(duration: TimeInterval = 1.2, completion: (() -> Void)? = nil) {
+        // 如果正在动画中，则忽略重复调用
+        guard !isStartupAnimating else { return }
+        
+        isStartupAnimating = true
+        sweepDuration = duration
+        sweepCompletion = completion
+        sweepStartTime = CACurrentMediaTime()
+        
+        // 杀掉旧的定时器
+        sweepDisplayLink?.invalidate()
+        
+        // 创建屏幕刷新率绑定的定时器
+        sweepDisplayLink = CADisplayLink(target: self, selector: #selector(handleSweepUpdate))
+        sweepDisplayLink?.add(to: .main, forMode: .common)
+    }
+    
+    @objc private func handleSweepUpdate() {
+        let elapsed = CACurrentMediaTime() - sweepStartTime
+        let progress = CGFloat(elapsed / sweepDuration) // 进度：0.0 到 1.0
+        
+        // 1. 动画结束判断
+        if progress >= 1.0 {
+            sweepDisplayLink?.invalidate()
+            sweepDisplayLink = nil
+            isStartupAnimating = false
+            
+            // 确保指针彻底归零
+            _internalUpdateSpeed(0, animated: false)
+            
+            // 执行结束回调
+            sweepCompletion?()
+            sweepCompletion = nil
+            return
+        }
+        
+        // 2. 核心魔法：使用正弦函数 sin(x) 产生 0 -> 1 -> 0 的完美平滑抛物线
+        // 当 progress 从 0 走到 1 时，progress * π 就是从 0度 走到 180度
+        // sin(0) = 0, sin(90度) = 1, sin(180度) = 0
+        let sineProgress = sin(progress * .pi)
+        
+        // 计算当前应当显示的虚拟速度
+        let virtualSpeed = maxSpeed * sineProgress
+        
+        // 3. 以非动画模式（依赖 60Hz/120Hz 极速刷新）静默更新仪表盘
+        // 这会让指针、高亮光条和中间的数字一起飞速滚动！
+        _internalUpdateSpeed(virtualSpeed, animated: false)
     }
 }
 
