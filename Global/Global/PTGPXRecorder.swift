@@ -9,6 +9,61 @@ import Foundation
 import CoreLocation
 import PooTools
 
+extension PTiCloudFileManager {
+    
+    /// 按需从 iCloud 拉取指定的 GPX 文件到本地沙盒
+    /// - Parameters:
+    ///   - fileName: 需要拉取的文件名 (例如: MotoRide_20260726.gpx)
+    ///   - completion: 拉取完成后的回调，返回本地可用的完整文件 URL
+    func fetchGPXFileIfNeeded(fileName: String, completion: @escaping (URL?) -> Void) {
+        let localFileURL = localDocumentsURL.appendingPathComponent(fileName)
+        
+        // 1. 如果本地沙盒已经存在该文件，秒开！直接返回本地路径
+        if fileManager.fileExists(atPath: localFileURL.path) {
+            completion(localFileURL)
+            return
+        }
+        
+        // 2. 本地没有，去 iCloud 容器中寻找
+        guard let cloudURL = iCloudDocumentsURL else {
+            PTNSLogConsole("⚠️ 拉取失败：iCloud 未开启或未准备好")
+            completion(nil)
+            return
+        }
+        
+        let cloudFileURL = cloudURL.appendingPathComponent(fileName)
+        
+        // 检查云端是否记录了这个文件
+        guard fileManager.fileExists(atPath: cloudFileURL.path) else {
+            PTNSLogConsole("⚠️ 拉取失败：iCloud 中也未找到该轨迹文件 \(fileName)")
+            completion(nil)
+            return
+        }
+        
+        // 3. 开启后台线程进行文件拷贝与下载，绝不卡死用户正在操作的 UI 界面
+        PTGCDManager.shared.runOnMain {
+            do {
+                // 🚨 核心魔法：如果该文件在 iCloud 处于“占位符”状态（未真实下载到本设备），
+                // 这个方法会唤醒 iOS 底层系统去立刻下载它！
+                try self.fileManager.startDownloadingUbiquitousItem(at: cloudFileURL)
+                
+                // 将真实的云端文件拷贝一份到我们随时可读写的本地沙盒中
+                try self.fileManager.copyItem(at: cloudFileURL, to: localFileURL)
+                
+                DispatchQueue.main.async {
+                    PTNSLogConsole("☁️✅ 成功从 iCloud 拉取轨迹文件并缓存至本地: \(fileName)")
+                    completion(localFileURL)
+                }
+            } catch {
+                PTGCDManager.shared.runOnMain {
+                    PTNSLogConsole("❌ 从 iCloud 拉取文件失败: \(error.localizedDescription)")
+                    completion(nil)
+                }
+            }
+        }
+    }
+}
+
 // MARK: - UI 列表数据模型
 /// 骑行历史记录模型，专门用于在列表中展示
 public struct PTRideHistoryModel {
@@ -59,8 +114,12 @@ public class PTGPXRecorder: NSObject {
             let fileURL = docsDir.appendingPathComponent(fileName)
             do {
                 try xmlString.write(to: fileURL, atomically: true, encoding: .utf8)
-                PTNSLogConsole("✅ [GPX 导出] 轨迹保存成功！: \(fileName)")
-                return fileName // 导出成功，返回文件名
+                PTNSLogConsole("✅ [GPX 导出] 轨迹本地保存成功！: \(fileName)")
+                
+                // 🚨 新增：顺手把这趟骑行的轨迹也备份到 iCloud！
+                PTiCloudFileManager.shared.backupDatabaseToICloud(dbName: fileName)
+                
+                return fileName
             } catch {
                 PTNSLogConsole("❌ [GPX 导出] 轨迹保存失败: \(error)")
                 return nil
@@ -91,11 +150,9 @@ public class PTGPXRecorder: NSObject {
                       <extensions>
                         <speed>\(point.speed)</speed>
                         <rpm>\(point.rpm)</rpm>
-                        <fuel>\(0)</fuel>
-                        <temp>\(0)</temp>
-                        <volt>\(0)</volt>
-                        <tcs>\(0)</tcs>
-                        <abs>\(0)</abs>
+                        <lean>\(point.leanAngle)</lean>
+                        <gforce_y>\(point.gForceY)</gforce_y>
+                        <gforce_x>\(point.gForceX)</gforce_x>
                       </extensions>
                     </trkpt>\n
                 """

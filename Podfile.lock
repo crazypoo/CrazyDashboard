@@ -57,12 +57,12 @@ PODS:
   - IQTextView (1.0.5):
     - IQKeyboardToolbar/Placeholderable
   - KakaJSON (1.1.2)
-  - Kingfisher (8.10.0)
+  - Kingfisher (8.11.0)
   - LookinServer/Core (1.2.8)
   - LookinServer/Swift (1.2.8):
     - LookinServer/Core
   - lottie-ios (4.6.1)
-  - PooTools/Core (4.5.2):
+  - PooTools/Core (4.5.6):
     - AttributedString
     - CocoaLumberjack/Swift
     - DeviceKit
@@ -78,42 +78,42 @@ PODS:
     - SnapKit
     - SwiftDate
     - SwifterSwift
-  - PooTools/CustomerLabel (4.5.2):
+  - PooTools/CustomerLabel (4.5.6):
     - PooTools/Core
-  - PooTools/DEBUG (4.5.2):
+  - PooTools/DEBUG (4.5.6):
     - PooTools/Core
     - PooTools/NetWork
     - PooTools/PDF
     - PooTools/SearchBar
     - PooTools/Share
-  - PooTools/Flag (4.5.2):
+  - PooTools/Flag (4.5.6):
     - FlagKit
     - PooTools/Core
-  - PooTools/Hud (4.5.2):
+  - PooTools/Hud (4.5.6):
     - PooTools/Core
     - PooTools/ProgressBar
-  - PooTools/Loading (4.5.2):
+  - PooTools/Loading (4.5.6):
     - PooTools/Core
-  - PooTools/LocationPermission (4.5.2):
+  - PooTools/LocationPermission (4.5.6):
     - PooTools/Core
-  - PooTools/Motion (4.5.2):
+  - PooTools/Motion (4.5.6):
     - PooTools/Core
     - PooTools/MotionPermission
-  - PooTools/MotionPermission (4.5.2):
+  - PooTools/MotionPermission (4.5.6):
     - PooTools/Core
-  - PooTools/NetWork (4.5.2):
+  - PooTools/NetWork (4.5.6):
     - Alamofire
     - PooTools/Core
     - PooTools/Loading
-  - PooTools/PDF (4.5.2):
+  - PooTools/PDF (4.5.6):
     - PooTools/Core
-  - PooTools/ProgressBar (4.5.2):
+  - PooTools/ProgressBar (4.5.6):
     - PooTools/Core
-  - PooTools/SearchBar (4.5.2):
+  - PooTools/SearchBar (4.5.6):
     - PooTools/Core
-  - PooTools/Share (4.5.2):
+  - PooTools/Share (4.5.6):
     - PooTools/CustomerLabel
-  - PooTools/WhatsNewsKit (4.5.2):
+  - PooTools/WhatsNewsKit (4.5.6):
     - PooTools/Core
   - pop (1.0.12)
   - SafeSFSymbols (2.0.0)
@@ -220,7 +220,7 @@ EXTERNAL SOURCES:
 
 CHECKOUT OPTIONS:
   PooTools:
-    :commit: 85b082dfa1ed851a607ca221ece590cb517ea185
+    :commit: 4cbfa97fa512d151648e4b1401df93943d71518e
     :git: https://github.com/crazypoo/PTools.git
 
 SPEC CHECKSUMS:
@@ -243,10 +243,10 @@ SPEC CHECKSUMS:
   IQTextInputViewNotification: 3b9fb27a16e7ee8958cc9092cfb07a1a9e1fd559
   IQTextView: ae13b4922f22e6f027f62c557d9f4f236b19d5c7
   KakaJSON: cc5ff50a8c1cfbb09413db8496cb709a209e6137
-  Kingfisher: db468f911dd666c9134dcbeec4db8bed52e4132d
+  Kingfisher: ee4ff4936d5b399164b6d01a0dfc0388583287b6
   LookinServer: 1b2b61c6402ae29fa22182d48f5cd067b4e99e80
   lottie-ios: 6467ca7035120c5b0e0acee58bb679cf15875686
-  PooTools: 9f16fdbf4accdc18bf3c42c2c8a4262f031a7f50
+  PooTools: d2c40d7aab1f279bda12233b66dbf260a439499e
   pop: d582054913807fd11fd50bfe6a539d91c7e1a55a
   SafeSFSymbols: c57c8752149b2ddc0213d3d519a3a31a8bd76340
   SmartCodable: db7f9dc94eb9022ede18adf5052772432c5286c7

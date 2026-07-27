@@ -15,7 +15,6 @@ public struct PTRoutePoint: Codable {
     public let altitude: Double
     public let timestamp: Date
     
-    // 遥测快照数据 (用于导出到 GPX 的 <extensions> 中)
     public let speed: Double
     public let rpm: Int
     public let leanAngle: Double // 把倾角也导进去！
@@ -65,6 +64,13 @@ public class PTTripManager: NSObject {
     
     public static let shared = PTTripManager()
     
+    private let historyFileName = "PTTripHistory.json"
+    
+    private var localHistoryURL: URL {
+        let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        return docsDir.appendingPathComponent(historyFileName)
+    }
+
     // 🚨 升级 3：对外暴露的历史记录数组，你的 UI 将直接读取这个属性！
     public private(set) var tripHistory: [PTTripReport] = []
     
@@ -116,16 +122,59 @@ public class PTTripManager: NSObject {
     // MARK: - 持久化存储逻辑
     /// 从本地加载历史记录
     private func loadHistory() {
-        if let data = UserDefaults.standard.data(forKey: tripStorageKey),
-           let savedTrips = try? JSONDecoder().decode([PTTripReport].self, from: data) {
-            self.tripHistory = savedTrips
+        let fileURL = localHistoryURL
+        let fileManager = FileManager.default
+        
+        // 🚨 云端恢复逻辑：如果本地发现没有历史文件（比如刚装 App 或换了新手机）
+        if !fileManager.fileExists(atPath: fileURL.path) {
+            PTNSLogConsole("ℹ️ 本地未找到行程记录，尝试从 iCloud 恢复...")
+            // 巧妙借用你写好的数据库恢复方法，其实它对 json 文件也完全适用
+            let restored = PTiCloudFileManager.shared.restoreDatabaseFromICloud(dbName: historyFileName)
+            if restored {
+                PTNSLogConsole("☁️ 成功从 iCloud 拉取历史行程数据！")
+            }
+        }
+        
+        // 尝试读取文件数据
+        if let data = try? Data(contentsOf: fileURL) {
+            do {
+                let decoder = JSONDecoder()
+                // 工业级容错：防止传感器产生异常浮点数导致解析崩溃
+                decoder.nonConformingFloatDecodingStrategy = .convertFromString(positiveInfinity: "INF", negativeInfinity: "-INF", nan: "NaN")
+                
+                let savedTrips = try decoder.decode([PTTripReport].self, from: data)
+                self.tripHistory = savedTrips
+                PTNSLogConsole("✅ [行程记录] 成功加载 \(savedTrips.count) 条历史记录")
+                
+            } catch {
+                PTNSLogConsole("❌ [行程记录] 历史数据解析严重失败: \(error)")
+                self.tripHistory = []
+            }
+        } else {
+            PTNSLogConsole("ℹ️ [行程记录] 本地与云端均无数据，初始化为空列表")
         }
     }
-    
+
     /// 保存记录到本地沙盒
     private func saveHistory() {
-        if let data = try? JSONEncoder().encode(tripHistory) {
-            UserDefaults.standard.set(data, forKey: tripStorageKey)
+        do {
+            let encoder = JSONEncoder()
+            // 工业级容错：防止传感器异常浮点数导致编码崩溃
+            encoder.nonConformingFloatEncodingStrategy = .convertToString(positiveInfinity: "INF", negativeInfinity: "-INF", nan: "NaN")
+            
+            // 1. 将数组编码为 JSON 二进制数据
+            let data = try encoder.encode(tripHistory)
+            
+            // 2. 写入本地文件 (options: .atomic 保证即使写入时断电，文件也不会损坏)
+            try data.write(to: localHistoryURL, options: .atomic)
+            
+            // 3. 🚨 核心联动：推送到 iCloud 进行云备份！
+            PTiCloudFileManager.shared.backupDatabaseToICloud(dbName: historyFileName)
+            
+            PTNSLogConsole("💾 [行程记录] 完美保存至本地并已发起 iCloud 同步！当前历史总数: \(tripHistory.count)")
+            
+        } catch {
+            PTNSLogConsole("❌ [行程记录] 数据编码保存严重失败: \(error)")
         }
     }
     
