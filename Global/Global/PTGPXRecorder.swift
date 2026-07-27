@@ -11,54 +11,73 @@ import PooTools
 
 extension PTiCloudFileManager {
     
-    /// 按需从 iCloud 拉取指定的 GPX 文件到本地沙盒
+    /// 按需从 iCloud 拉取指定的文件 (GPX 或 JPG) 到本地沙盒
     /// - Parameters:
-    ///   - fileName: 需要拉取的文件名 (例如: MotoRide_20260726.gpx)
+    ///   - fileName: 需要拉取的文件名 (例如: MotoRide_xxx.gpx 或 MotoRide_xxx.jpg)
     ///   - completion: 拉取完成后的回调，返回本地可用的完整文件 URL
-    func fetchGPXFileIfNeeded(fileName: String, completion: @escaping (URL?) -> Void) {
+    func fetchCloudFileIfNeeded(fileName: String, completion: @escaping (URL?) -> Void) {
         let localFileURL = localDocumentsURL.appendingPathComponent(fileName)
         
-        // 1. 如果本地沙盒已经存在该文件，秒开！直接返回本地路径
+        // 1. 本地沙盒秒开
         if fileManager.fileExists(atPath: localFileURL.path) {
             completion(localFileURL)
             return
         }
         
-        // 2. 本地没有，去 iCloud 容器中寻找
+        // 2. 检查 iCloud 容器
         guard let cloudURL = iCloudDocumentsURL else {
-            PTNSLogConsole("⚠️ 拉取失败：iCloud 未开启或未准备好")
             completion(nil)
             return
         }
         
         let cloudFileURL = cloudURL.appendingPathComponent(fileName)
-        
-        // 检查云端是否记录了这个文件
         guard fileManager.fileExists(atPath: cloudFileURL.path) else {
-            PTNSLogConsole("⚠️ 拉取失败：iCloud 中也未找到该轨迹文件 \(fileName)")
             completion(nil)
             return
         }
         
-        // 3. 开启后台线程进行文件拷贝与下载，绝不卡死用户正在操作的 UI 界面
-        PTGCDManager.shared.runOnMain {
-            do {
-                // 🚨 核心魔法：如果该文件在 iCloud 处于“占位符”状态（未真实下载到本设备），
-                // 这个方法会唤醒 iOS 底层系统去立刻下载它！
-                try self.fileManager.startDownloadingUbiquitousItem(at: cloudFileURL)
-                
-                // 将真实的云端文件拷贝一份到我们随时可读写的本地沙盒中
-                try self.fileManager.copyItem(at: cloudFileURL, to: localFileURL)
-                
-                DispatchQueue.main.async {
-                    PTNSLogConsole("☁️✅ 成功从 iCloud 拉取轨迹文件并缓存至本地: \(fileName)")
-                    completion(localFileURL)
-                }
-            } catch {
-                PTGCDManager.shared.runOnMain {
-                    PTNSLogConsole("❌ 从 iCloud 拉取文件失败: \(error.localizedDescription)")
-                    completion(nil)
-                }
+        // 3. 后台异步下载与拷贝
+        do {
+            try self.fileManager.startDownloadingUbiquitousItem(at: cloudFileURL)
+            try self.fileManager.copyItem(at: cloudFileURL, to: localFileURL)
+            
+            DispatchQueue.main.async {
+                PTNSLogConsole("☁️✅ 成功从 iCloud 拉取文件并缓存至本地: \(fileName)")
+                completion(localFileURL)
+            }
+        } catch {
+            DispatchQueue.main.async {
+                PTNSLogConsole("❌ 从 iCloud 拉取文件失败: \(error.localizedDescription)")
+                completion(nil)
+            }
+        }
+    }
+}
+
+/// 极简的 GPX 坐标提取工具
+public class PTGPXParser: NSObject, XMLParserDelegate {
+    
+    private var coordinates: [CLLocationCoordinate2D] = []
+    
+    /// 传入本地的 GPX 文件 URL，返回所有的坐标点
+    public func parse(fileURL: URL) -> [CLLocationCoordinate2D] {
+        coordinates.removeAll()
+        
+        // 使用苹果原生的 XML 解析器，性能极高
+        guard let parser = XMLParser(contentsOf: fileURL) else { return [] }
+        parser.delegate = self
+        parser.parse()
+        
+        return coordinates
+    }
+    
+    // MARK: - XMLParserDelegate
+    public func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
+        // 只要遇到 <trkpt lat="..." lon="..."> 标签，就把坐标提出来
+        if elementName == "trkpt" {
+            if let latStr = attributeDict["lat"], let lonStr = attributeDict["lon"],
+               let lat = Double(latStr), let lon = Double(lonStr) {
+                coordinates.append(CLLocationCoordinate2D(latitude: lat, longitude: lon))
             }
         }
     }

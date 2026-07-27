@@ -32,7 +32,8 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
         let view = PTCollectionView(viewConfig: collectionConfig)
         view.registerClassCells(classs: [PTTripDataCell.ID:PTTripDataCell.self])
         view.customerLayout = { sectionIndex,section in
-            return UICollectionView.girdCollectionLayout(data: section.rows, itemHeight: 88,cellRowCount: 1,originalX: PTAppBaseConfig.share.defaultViewSpace,cellTrailingSpace: CGFloat.GlobalItemSpacing)
+            let itemHeight:CGFloat = 88 + PTTripDataCell.ChartHeight * 4 + CGFloat.GlobalItemSpacing * 5 + PTTripDataCell.MapHeight
+            return UICollectionView.girdCollectionLayout(data: section.rows, itemHeight: itemHeight,cellRowCount: 1,originalX: PTAppBaseConfig.share.defaultViewSpace,cellTrailingSpace: CGFloat.GlobalItemSpacing)
         }
         view.cellInCollection = { collectionView,sectionModel,indexPath in
             if let itemRow = sectionModel.rows?[indexPath.row] {

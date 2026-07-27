@@ -299,6 +299,14 @@ public class PTTripManager: NSObject {
         isRiding = false
         
         let generatedFileName = PTGPXRecorder.shared.exportGPX(from: routeArray)
+        if let fileName = generatedFileName {
+            // 这个过程是在后台悄悄进行的，完全不会卡顿用户的操作
+            let coosMap = routeArray.map { value in
+                let coo = CLLocationCoordinate2D(latitude: value.lat, longitude: value.lon)
+                return coo
+            }
+            PTRouteSnapshotManager.shared.generateAndSaveSnapshot(coordinates: coosMap, gpxFileName: fileName)
+        }
         PTLocationEngine.shared.switchEngineMode(to: .antiTheft)
         
         // 🚨 停止采样定时器

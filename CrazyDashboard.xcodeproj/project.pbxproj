@@ -68,6 +68,8 @@
 		55986837301337DC0049684D /* PTTripDataCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986835301337DC0049684D /* PTTripDataCell.swift */; };
 		55986839301348FC0049684D /* PTNotificationCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986838301348FC0049684D /* PTNotificationCenter.swift */; };
 		5598683A301348FC0049684D /* PTNotificationCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986838301348FC0049684D /* PTNotificationCenter.swift */; };
+		55986BAD30179D500049684D /* PTNativeTelemetryChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986BAC30179D500049684D /* PTNativeTelemetryChartView.swift */; };
+		55986BAE30179D500049684D /* PTNativeTelemetryChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986BAC30179D500049684D /* PTNativeTelemetryChartView.swift */; };
 		55F503AB300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
 		55F503AC300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
 		55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */; };
@@ -138,6 +140,7 @@
 		55986832301330E00049684D /* PTDataCollectedViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDataCollectedViewController.swift; sourceTree = "<group>"; };
 		55986835301337DC0049684D /* PTTripDataCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTripDataCell.swift; sourceTree = "<group>"; };
 		55986838301348FC0049684D /* PTNotificationCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTNotificationCenter.swift; sourceTree = "<group>"; };
+		55986BAC30179D500049684D /* PTNativeTelemetryChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTNativeTelemetryChartView.swift; sourceTree = "<group>"; };
 		55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = GlobalAssets.xcassets; sourceTree = "<group>"; };
 		55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLanguageModel.swift; sourceTree = "<group>"; };
 		55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoUserDefaultStruct.swift; sourceTree = "<group>"; };
@@ -312,6 +315,7 @@
 				55986686301150900049684D /* PTECUSnifferOverlay.swift */,
 				559867CF301281FC0049684D /* PTLightFeedbackOverlay.swift */,
 				55986835301337DC0049684D /* PTTripDataCell.swift */,
+				55986BAC30179D500049684D /* PTNativeTelemetryChartView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -628,6 +632,7 @@
 				5577E7CD2FD6FF890004733F /* PTLeanAngleView.swift in Sources */,
 				55986833301330E00049684D /* PTDataCollectedViewController.swift in Sources */,
 				55986678301144840049684D /* PTGPXRecorder.swift in Sources */,
+				55986BAD30179D500049684D /* PTNativeTelemetryChartView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -670,6 +675,7 @@
 				55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */,
 				5598667E301148290049684D /* PTDiagnosticManager.swift in Sources */,
 				55901837300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */,
+				55986BAE30179D500049684D /* PTNativeTelemetryChartView.swift in Sources */,
 				5598668430114DF00049684D /* PTRoutingManager.swift in Sources */,
 				55986679301144840049684D /* PTGPXRecorder.swift in Sources */,
 				55F503BB300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift in Sources */,
