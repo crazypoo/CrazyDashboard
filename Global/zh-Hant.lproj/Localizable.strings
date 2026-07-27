@@ -51,6 +51,7 @@
 "music_not_play" = "暫無播放";
 "music_unknow_artist" = "未知歌手";
 "music_unknow_music" = "未知歌曲";
+"pin_parking" = "你的摩托車在這裡";
 "pitch_down" = "▼ %d° 下坡";
 "pitch_normal" = "0° 平路";
 "pitch_up" = "▲ %d° 上坡";
@@ -65,4 +66,7 @@
 "tab_navigation" = "導航";
 "tab_setting" = "設置";
 "vechicle_pitch" = "車身姿態(Pitch)";
-"pin_parking" = "你的摩托車在這裡";
+"batt_warning_title" = "電池電量損失警告";
+"batt_warning_msg" = "電流靜態電壓只有%.1fV，存在無法啟動的風險。 請儘快充電。";
+"freeze_warning_title" = "結冰警告";
+"freeze_warning_msg" = "車外的溫度是%d°C，路上可能有黑冰。 請慢點！";

@@ -45,6 +45,19 @@ class PTMotoBaseTabbarController: PTBaseTabBarViewController {
         return [homeTab,navigationTab,collectedTab,settingTab]
     }
 
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        // 让系统读取我们 Manager 中维护的当前状态
+        return StatusBarManager.shared.style
+    }
+
+    override var prefersStatusBarHidden: Bool {
+        return StatusBarManager.shared.isHidden
+    }
+
+    override var preferredStatusBarUpdateAnimation: UIStatusBarAnimation {
+        return StatusBarManager.shared.animation
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         

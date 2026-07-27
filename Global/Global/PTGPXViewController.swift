@@ -47,6 +47,7 @@ class PTGPXViewController: PTMotoBaseViewController {
         super.viewDidLoad()
 
         view.backgroundColor = .black
+        pt_Title = "GPX"
         
         let collectionInset:CGFloat = CGFloat.kTabbarSaveAreaHeight
         detailCollection.contentCollectionView.contentInsetAdjustmentBehavior = .never

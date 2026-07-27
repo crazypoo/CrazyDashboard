@@ -85,7 +85,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         PTAppBaseConfig.share.tabSelectedFont = .appfont(size: 10.adapter,bold:true)
         PTAppBaseConfig.share.tabNormalColor = .gray7F
         PTAppBaseConfig.share.tabSelectedColor = PTDashboardConfig.shared.appMainColor
-        PTAppBaseConfig.share.viewControllerBackItemImage = UIImage(.chevron.compactLeft)
+        PTAppBaseConfig.share.viewControllerBackItemImage = UIImage(.chevron.compactLeft).withTintColor(.white, renderingMode: .alwaysOriginal)
+        PTAppBaseConfig.share.navTitleTextColor = .white
+        PTAppBaseConfig.share.navTitleFont = .appfont(size: 24,bold: true)
         registerBackgroundTasks()
         
         appNotifiCenter()

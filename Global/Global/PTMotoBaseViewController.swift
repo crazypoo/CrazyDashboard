@@ -14,9 +14,12 @@ class PTMotoBaseViewController: PTBaseViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        PTGCDManager.shared.delayOnMain(time: 0.35) {
-            self.changeStatusBar(type: .Dark)
-        }
+        self.changeStatusBar(type: .Dark)
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        self.changeStatusBar(type: .Dark)
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -25,7 +28,7 @@ class PTMotoBaseViewController: PTBaseViewController {
             self.changeStatusBar(type: .Dark)
         }
     }
-    
+        
     override func viewDidLoad() {
         super.viewDidLoad()
         

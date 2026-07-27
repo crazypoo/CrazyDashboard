@@ -51,6 +51,7 @@
 "music_not_play" = "暂无播放";
 "music_unknow_artist" = "未知歌手";
 "music_unknow_music" = "未知歌曲";
+"pin_parking" = "你的车在这里";
 "pitch_down" = "▼ %d° 下坡";
 "pitch_normal" = "0° 平路";
 "pitch_up" = "▲ %d° 上坡";
@@ -65,4 +66,7 @@
 "tab_navigation" = "导航";
 "tab_setting" = "设置";
 "vechicle_pitch" = "车身姿态 (Pitch)";
-"pin_parking" = "你的车在这里";
+"batt_warning_title" = "电瓶亏电警告";
+"batt_warning_msg" = "当前静态电压仅 %.1fV，存在无法启动的风险，请尽快充电。";
+"freeze_warning_title" = "结冰预警";
+"freeze_warning_msg" = "车外温度 %d°C，道路极可能存在暗冰，请减速慢行！";

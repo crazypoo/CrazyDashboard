@@ -294,6 +294,11 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
     
     override func handleMotorcycleDisconnect() {
         super.handleMotorcycleDisconnect()
+        PTGCDManager.shared.delayOnMain(time: 0.35) {
+            self.bleConnectStatusLabel.isSelected = !PTDashboardConfig.shared.blueConnected
+            self.speedometer.updateSpeed(0)
+            self.speedometerReversed.updateSpeed(0)
+        }
     }
     
     // MARK: - 界面布局

@@ -24,7 +24,7 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
     
     lazy var GPXButton:PTBaseButton = {
         let view = PTBaseButton(type: .custom)
-        view.setImage(UIImage(.location.magnifyingglass), for: .normal)
+        view.setImage(UIImage(.location.magnifyingglass).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
         view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers(handler: { _ in
             let vc = PTGPXViewController()

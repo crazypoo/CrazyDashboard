@@ -51,6 +51,7 @@
 "music_not_play" = "Oynama";
 "music_unknow_artist" = "Bilinmeyen sanatçı";
 "music_unknow_music" = "Bilinmeyen şarkı";
+"pin_parking" = "Motosikletin burada.";
 "pitch_down" = "▼ %d° Yokuş aşağı";
 "pitch_normal" = "0° düz yol";
 "pitch_up" = "▲ %d° Uphill";
@@ -65,4 +66,7 @@
 "tab_navigation" = "Seyrüsefer";
 "tab_setting" = "Batma";
 "vechicle_pitch" = "Araç Sahası";
-"pin_parking" = "Motosikletin burada.";
+"batt_warning_title" = "Pil güç kaybı uyarısı";
+"batt_warning_msg" = "Mevcut statik voltaj sadece %.1fV'dur ve başlatılamama riski vardır. Lütfen mümkün olan en kısa sürede şarj edin.";
+"freeze_warning_title" = "Buzlanma uyarısı";
+"freeze_warning_msg" = "Arabanın dışındaki sıcaklık %d°C ve yolda koyu buz olabilir. Lütfen yavaşlayın!";

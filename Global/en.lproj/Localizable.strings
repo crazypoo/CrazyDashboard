@@ -51,6 +51,7 @@
 "music_not_play" = "Not play";
 "music_unknow_artist" = "Unknows artist";
 "music_unknow_music" = "Unknown song";
+"pin_parking" = "Your moto is here.";
 "pitch_down" = "▼ %d° Downhill";
 "pitch_normal" = "0° straight path";
 "pitch_up" = "▲ %d° Uphill";
@@ -65,4 +66,7 @@
 "tab_navigation" = "Navigation";
 "tab_setting" = "Setting";
 "vechicle_pitch" = "Vehicle Pitch";
-"pin_parking" = "Your moto is here.";
+"batt_warning_title" = "Battery power loss warning";
+"batt_warning_msg" = "The current static voltage is only %.1fV, and there is a risk that it cannot be started. Please charge it as soon as possible.";
+"freeze_warning_title" = "Icing warning";
+"freeze_warning_msg" = "The temperature outside the car is %d°C, and there may be dark ice on the road. Please slow down!";
