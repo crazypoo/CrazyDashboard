@@ -61,7 +61,7 @@ class PTTripDataCell: PTBaseNormalCell {
                 
                 if let imgURL = localImageURL, FileManager.default.fileExists(atPath: imgURL.path) {
                     // 🎉 太棒了！找到了图片，直接显示
-                    self.thumbnailImageView.image = UIImage(contentsOfFile: imgURL.path)
+                    self.thumbnailImageView.loadImage(contentData: UIImage(contentsOfFile: imgURL.path) as Any)
                 } else {
                     
                     // 🚨 步骤 2：图片彻底丢失！触发【亡羊补牢】重绘机制！
@@ -83,7 +83,7 @@ class PTTripDataCell: PTBaseNormalCell {
                             if let newURL = newImageURL {
                                 // c) 在主线程将新鲜出炉的图片更新到界面上
                                 DispatchQueue.main.async {
-                                    self.thumbnailImageView.image = UIImage(contentsOfFile: newURL.path)
+                                    self.thumbnailImageView.loadImage(contentData: UIImage(contentsOfFile: newURL.path) as Any)
                                 }
                             }
                         }
@@ -119,10 +119,10 @@ class PTTripDataCell: PTBaseNormalCell {
         return view
     }()
     
-    lazy var thumbnailImageView:UIImageView = {
-        let view = UIImageView()
-        view.contentMode = .scaleAspectFit
-        view.clipsToBounds = false
+    lazy var thumbnailImageView:UIButton = {
+        let view = UIButton(type:.custom)
+        view.imageView?.contentMode = .scaleAspectFit
+        view.imageView?.clipsToBounds = false
         return view
     }()
     
@@ -147,6 +147,8 @@ class PTTripDataCell: PTBaseNormalCell {
                         }
                     }
                 }
+            } else {
+                PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "alert_title"))
             }
         }
         return view
