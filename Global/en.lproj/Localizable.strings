@@ -70,3 +70,7 @@
 "batt_warning_msg" = "The current static voltage is only %.1fV, and there is a risk that it cannot be started. Please charge it as soon as possible.";
 "freeze_warning_title" = "Icing warning";
 "freeze_warning_msg" = "The temperature outside the car is %d°C, and there may be dark ice on the road. Please slow down!";
+"maintenance_warning_title" = "Maintenance mileage warning";
+"maintenance_warning_msg" = "There are only %dkilometres left before the next maintenance. For the best riding experience, please prepare the supplies in advance.";
+"maintenance_need_msg" = "The car system prompts that routine maintenance and inspection are required. Please make an appointment for after-sales service in time.";
+"maintenance_need_title" = "Vehicle maintenance reminder";

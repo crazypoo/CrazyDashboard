@@ -70,3 +70,7 @@
 "batt_warning_msg" = "電流靜態電壓只有%.1fV，存在無法啟動的風險。 請儘快充電。";
 "freeze_warning_title" = "結冰警告";
 "freeze_warning_msg" = "車外的溫度是%d°C，路上可能有黑冰。 請慢點！";
+"maintenance_warning_title" = "維護里程警告";
+"maintenance_warning_msg" = "距離下一次維修只剩下%d公里了。 為了獲得最佳的騎行體驗，請提前準備好用品。";
+"maintenance_need_msg" = "汽車系統提示需要進行日常維護和檢查。 請及時預約售後服務。";
+"maintenance_need_title" = "車輛維護提醒";

@@ -107,11 +107,10 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
     
     func locationEngineBlockSet() {
         PTLocationEngine.shared.locationBlock = { [weak self] tripData in
-            self?.speedometer.updateSpeed(PTDashboardConfig.shared.appShowMileage(tripData.speedKmh))
+            self?.speedometer.updateSpeed(PTDashboardConfig.shared.appShowMileage(PTMotion.shared.currentSpeedKmh))
             self?.compassRoller.updateHeading(tripData.courseDegree)
             self?.speedometer.updateEnvironment(altitude: tripData.altitude, pressureKpa: nil)
             self?.tripStatsView.updateStats(with: tripData)
-            PTMotion.shared.currentSpeedKmh = tripData.speedKmh
         }
     }
 

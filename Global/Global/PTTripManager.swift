@@ -271,8 +271,8 @@ public class PTTripManager: NSObject {
                     lon: loc.coordinate.longitude,
                     altitude: loc.altitude,
                     timestamp: Date(),
-                    speed: tripData.speedKmh, // 使用高德计算出的精准速度，或者如果你喜欢机车表显速度也可以换
-                    rpm: self.maxRpm,         // (你可以在 manager 中加一个 currentRpm 属性)
+                    speed: PTMotion.shared.currentSpeedKmh,
+                    rpm: self.maxRpm,
                     leanAngle: self.currentLiveRoll,
                     gForceY: self.currentLiveGForceY,
                     gForceX: self.currentLiveGForceX
@@ -284,6 +284,7 @@ public class PTTripManager: NSObject {
     
     @objc private func handleControlData(_ notification: Notification) {
         guard isRiding, let control = notification.object as? PTDashboardControl else { return }
+        PTMotion.shared.currentSpeedKmh = control.vehicleSpeedKmh
         if control.vehicleSpeedKmh > maxSpeed { maxSpeed = control.vehicleSpeedKmh }
         if control.engineRpm > maxRpm { maxRpm = control.engineRpm }
     }

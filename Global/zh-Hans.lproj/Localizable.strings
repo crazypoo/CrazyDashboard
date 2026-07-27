@@ -70,3 +70,7 @@
 "batt_warning_msg" = "当前静态电压仅 %.1fV，存在无法启动的风险，请尽快充电。";
 "freeze_warning_title" = "结冰预警";
 "freeze_warning_msg" = "车外温度 %d°C，道路极可能存在暗冰，请减速慢行！";
+"maintenance_warning_title" = "保养里程预警";
+"maintenance_warning_msg" = "距离下次保养仅剩 %d公里，为了最佳骑行体验，请提前准备耗材。";
+"maintenance_need_msg" = "车机系统提示需要进行常规保养检查，请及时预约售后服务。";
+"maintenance_need_title" = "车辆保养提醒";

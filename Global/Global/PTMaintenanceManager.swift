@@ -39,7 +39,7 @@ public class PTMaintenanceManager: NSObject {
         // 协议规定 maintenance 的 0x20 位表示“需要保养”[cite: 4]
         // 这里假设你在解析层已经处理好了 (raw & 0xE0) != 0 的判断
         if data2.maintenance != 0 {
-            triggerWarningIfNeeded(title: "🛠️ 车辆保养提醒", body: "车机系统提示需要进行常规保养检查，请及时预约售后服务。")
+            triggerWarningIfNeeded(title: "🛠️" + PTDashboardConfig.languageFunc(text: "maintenance_need_title"), body: PTDashboardConfig.languageFunc(text: "maintenance_need_msg"))
         }
     }
     
@@ -48,7 +48,8 @@ public class PTMaintenanceManager: NSObject {
         
         // 当剩余保养里程小于阈值且大于 0 时，触发预警
         if data3.distToMaintenance <= warningThresholdKm && data3.distToMaintenance > 0 {
-            triggerWarningIfNeeded(title: "⚙️ 保养里程预警", body: "距离下次保养仅剩 \(data3.distToMaintenance) 公里，为了最佳骑行体验，请提前准备耗材。")
+            
+            triggerWarningIfNeeded(title: "⚙️" + PTDashboardConfig.languageFunc(text: "maintenance_warning_title"), body: PTDashboardConfig.language(key: "maintenance_warning_msg", data3.distToMaintenance))
         }
     }
     

@@ -70,3 +70,7 @@
 "batt_warning_msg" = "Mevcut statik voltaj sadece %.1fV'dur ve başlatılamama riski vardır. Lütfen mümkün olan en kısa sürede şarj edin.";
 "freeze_warning_title" = "Buzlanma uyarısı";
 "freeze_warning_msg" = "Arabanın dışındaki sıcaklık %d°C ve yolda koyu buz olabilir. Lütfen yavaşlayın!";
+"maintenance_warning_title" = "Bakım kilometre uyarısı";
+"maintenance_warning_msg" = "Bir sonraki bakıma sadece %d kilometre kaldı. En iyi sürüş deneyimi için lütfen malzemeleri önceden hazırlayın.";
+"maintenance_need_msg" = "Araç sistemi rutin bakım ve incelemenin gerekli olduğunu talep eder. Lütfen satış sonrası servis için zamanında randevu alın.";
+"maintenance_need_title" = "Araç bakım hatırlatıcısı";
