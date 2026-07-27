@@ -261,6 +261,7 @@ public class PTTripManager: NSObject {
         }
         
         PTLocationEngine.shared.switchEngineMode(to: .riding)
+        PTLocationEngine.shared.startTracking()
         PTLocationEngine.shared.locationBlock = { [weak self] tripData in
             guard let self = self, self.isRiding else { return }
             // 只要拿到了有效的新坐标，就追加到地图轨迹数组中
@@ -297,18 +298,7 @@ public class PTTripManager: NSObject {
     @objc private func handleDisconnect() {
         guard isRiding, let start = startTime else { return }
         isRiding = false
-        
-        let generatedFileName = PTGPXRecorder.shared.exportGPX(from: routeArray)
-        if let fileName = generatedFileName {
-            // 这个过程是在后台悄悄进行的，完全不会卡顿用户的操作
-            let coosMap = routeArray.map { value in
-                let coo = CLLocationCoordinate2D(latitude: value.lat, longitude: value.lon)
-                return coo
-            }
-            PTRouteSnapshotManager.shared.generateAndSaveSnapshot(coordinates: coosMap, gpxFileName: fileName)
-        }
-        PTLocationEngine.shared.switchEngineMode(to: .antiTheft)
-        
+                
         // 🚨 停止采样定时器
         telemetryTimer?.invalidate()
         telemetryTimer = nil
@@ -318,12 +308,24 @@ public class PTTripManager: NSObject {
         let durationMin = Int(durationSec / 60.0)
         let distance = (latestOdo > startOdo) ? (latestOdo - startOdo) : 0
         
-        // 🚨 升级 4：无效数据过滤。防止因为信号抖动或接通即断电产生的 0 距离垃圾数据污染列表
         guard durationMin > 0 || distance > 0.1 else {
             PTNSLogConsole("⚠️ [行程记录] 本次连接时间过短或未产生位移，已忽略。")
+            // 记得把定位切回防盗模式
+            PTLocationEngine.shared.switchEngineMode(to: .antiTheft)
             return
         }
         
+        // 3. 开始生成高德 GPX 和快照
+        let generatedFileName = PTGPXRecorder.shared.exportGPX(from: routeArray)
+        if let fileName = generatedFileName {
+            // 在后台生成缩略图并上传 iCloud
+            let coosMap = routeArray.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon) }
+            PTRouteSnapshotManager.shared.generateAndSaveSnapshot(coordinates: coosMap, gpxFileName: fileName)
+        }
+        
+        // 切回防盗模式
+        PTLocationEngine.shared.switchEngineMode(to: .antiTheft)
+
         let report = PTTripReport(
             startTime: start,
             endTime: endTime,

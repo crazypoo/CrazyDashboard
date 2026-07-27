@@ -12,6 +12,7 @@ import SnapKit
 import SwiftDate
 import AttributedString
 import AMapNaviKit
+import SafeSFSymbols
 
 class PTTripDataCell: PTBaseNormalCell {
     static let ID = "PTTripDataCell"
@@ -125,10 +126,36 @@ class PTTripDataCell: PTBaseNormalCell {
         return view
     }()
     
+    lazy var gpxButton:UIButton = {
+        let view = UIButton(type: .custom)
+        view.setImage(UIImage(.dot.square), for: .normal)
+        view.addActionHandlers { sender in
+            if let gpx = self.cellModel.gpxFileName {
+                PTiCloudFileManager.shared.fetchCloudFileIfNeeded(fileName: gpx) { localImageURL in
+                    if let url = localImageURL {
+                        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+                        
+                        // 查找最顶层控制器以执行 Present 操作
+                        if let topVC = PTUtils.getCurrentVC() {
+                            // 兼容 iPad，防止崩溃（指定气泡弹出的源头）
+                            if let popover = activityVC.popoverPresentationController {
+                                popover.sourceView = sender
+                                popover.sourceRect = sender.bounds
+                            }
+                            
+                            topVC.present(activityVC, animated: true, completion: nil)
+                        }
+                    }
+                }
+            }
+        }
+        return view
+    }()
+    
     public override init(frame: CGRect) {
         super.init(frame: frame)
         
-        contentView.addSubviews([timeLabel,leanAngleChart,gChart,pChart,altitudeChart,thumbnailImageView])
+        contentView.addSubviews([timeLabel,leanAngleChart,gChart,pChart,altitudeChart,thumbnailImageView,gpxButton])
         timeLabel.snp.makeConstraints { make in
             make.left.top.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
         }
@@ -158,6 +185,12 @@ class PTTripDataCell: PTBaseNormalCell {
             make.size.equalTo(PTTripDataCell.MapHeight)
             make.top.equalTo(self.altitudeChart.snp.bottom).offset(CGFloat.GlobalItemSpacing)
             make.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
+        }
+        
+        gpxButton.snp.makeConstraints { make in
+            make.size.equalTo(44)
+            make.bottom.equalTo(self.thumbnailImageView)
+            make.right.equalTo(self.thumbnailImageView.snp.left).offset(-CGFloat.GlobalItemSpacing)
         }
     }
     
