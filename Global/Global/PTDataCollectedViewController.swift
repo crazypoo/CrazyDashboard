@@ -21,18 +21,7 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
         view.clipsToBounds = false
         return view
     }()
-    
-    lazy var GPXButton:PTBaseButton = {
-        let view = PTBaseButton(type: .custom)
-        view.setImage(UIImage(.location.magnifyingglass).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
-        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
-        view.addActionHandlers(handler: { _ in
-            let vc = PTGPXViewController()
-            self.navigationController?.pushViewController(vc)
-        })
-        return view
-    }()
-    
+        
     lazy var detailCollection:PTCollectionView = {
                                 
         let collectionConfig = PTCollectionViewConfig()
@@ -66,7 +55,6 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
-        setCustomRightButtons(buttons: [GPXButton])
     }
     
     override func viewDidLoad() {
