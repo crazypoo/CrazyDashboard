@@ -48,6 +48,7 @@ public struct PTTripReport: Codable {
     // 🌟 新增：时间轴遥测轨迹数组 (与 leanAngleTrace 长度严格一致)
     public let gForceYTrace: [Double]   // 加减速轨迹
     public let gForceXTrace: [Double]   // 左右侧向力轨迹
+    public let gForceZTrace: [Double]   // 左右侧向力轨迹
     public let pitchTrace: [Double]     // 坡度轨迹
     public let relativeAltitudeTrace: [Double] // 海拔起伏轨迹
     
@@ -103,6 +104,7 @@ public class PTTripManager: NSObject {
     private var currentLivePitch: Double = 0.0
     private var currentLiveGForceX: Double = 0.0
     private var currentLiveGForceY: Double = 0.0
+    private var currentLiveGForceZ: Double = 0.0
     private var currentLiveAltitude: Double = 0.0
     
     // 🌟 轨迹数组
@@ -110,6 +112,7 @@ public class PTTripManager: NSObject {
     private var pitchTraceArray: [Double] = []
     private var gForceXTraceArray: [Double] = []
     private var gForceYTraceArray: [Double] = []
+    private var gForceZTraceArray: [Double] = []
     private var altitudeTraceArray: [Double] = []
     private var routeArray: [PTRoutePoint] = []
     
@@ -219,6 +222,7 @@ public class PTTripManager: NSObject {
         pitchTraceArray.removeAll()
         gForceXTraceArray.removeAll()
         gForceYTraceArray.removeAll()
+        gForceZTraceArray.removeAll()
         altitudeTraceArray.removeAll()
         routeArray.removeAll()
 
@@ -233,6 +237,7 @@ public class PTTripManager: NSObject {
             self.pitchTraceArray.append(self.currentLivePitch)
             self.gForceXTraceArray.append(self.currentLiveGForceX)
             self.gForceYTraceArray.append(self.currentLiveGForceY)
+            self.gForceZTraceArray.append(self.currentLiveGForceZ)
             self.altitudeTraceArray.append(self.currentLiveAltitude)
         }
         
@@ -244,6 +249,7 @@ public class PTTripManager: NSObject {
             self.currentLivePitch = data.pitch
             self.currentLiveGForceX = data.gForceX
             self.currentLiveGForceY = data.gForceY
+            self.currentLiveGForceZ = data.gForceZ
             self.currentLiveAltitude = data.relativeAltitude
             
             if data.gForceY > self.maxAccelG { self.maxAccelG = data.gForceY }
@@ -335,6 +341,7 @@ public class PTTripManager: NSObject {
             // 新增的轨迹数据
             gForceYTrace: gForceYTraceArray,
             gForceXTrace: gForceXTraceArray,
+            gForceZTrace: gForceZTraceArray,
             pitchTrace: pitchTraceArray,
             
             relativeAltitudeTrace: altitudeTraceArray,

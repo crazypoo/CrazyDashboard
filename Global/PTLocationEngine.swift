@@ -197,8 +197,8 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
             return
        }
         
-        // 过滤低精度垃圾数据 (80米)
-        guard location.horizontalAccuracy > 0 && location.horizontalAccuracy < 80 else { return }
+        // 过滤低精度垃圾数据
+//        guard location.horizontalAccuracy > 0 && location.horizontalAccuracy < 80 else { return }
         
         let now = Date()
         
