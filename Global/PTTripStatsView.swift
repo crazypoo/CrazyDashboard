@@ -133,7 +133,7 @@ public class PTTripStatsView: UIView {
     }
     
     // MARK: - 外部数据灌入
-    public func updateStats(with data: PTTripData) {
+    public func updateStats(with data: PTLiveTripStats) {
         // 1. 格式化运行时长 (时:分:秒)
         let totalSeconds = Int(data.runTime)
         let hours = totalSeconds / 3600
@@ -142,13 +142,13 @@ public class PTTripStatsView: UIView {
         runTimeLabel.setTitle(String(format: "%02d:%02d:%02d", hours, minutes, seconds), state: .normal)
         
         // 2. 格式化距离 (米转公里，保留两位小数)
-        let distanceKm = data.totalDistance / 1000.0
+        let distanceKm = data.distanceKm
         distanceLabel.setTitle(String(format: "%.2f km", distanceKm), state: .normal)
 
         // 3. 速度数据
-        avgSpeedLabel.setTitle("\(Int(data.avgSpeed)) km/h", state: .normal)
-        maxSpeedLabel.setTitle("\(Int(data.maxSpeed)) km/h", state: .normal)
-        minSpeedLabel.setTitle("\(Int(data.minSpeed)) km/h", state: .normal)
+        avgSpeedLabel.setTitle("\(Int(data.avgSpeedKmh)) km/h", state: .normal)
+        maxSpeedLabel.setTitle("\(Int(data.maxSpeedKmh)) km/h", state: .normal)
+        minSpeedLabel.setTitle("\(Int(data.minSpeedKmh)) km/h", state: .normal)
         
         let totalSeconds_idle = Int(data.idleTime)
         let hours_idle = totalSeconds_idle / 3600

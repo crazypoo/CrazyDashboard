@@ -16,19 +16,8 @@ public enum PTLocationEngineMode {
 }
 
 public struct PTTripData: Sendable {
-    public var speedKmh: Double = 0.0
     public var courseDegree: Double = 0.0
     public var altitude: Double = 0.0
-    
-    public var runTime: TimeInterval = 0.0    // 运行时长 (秒)
-    public var totalDistance: Double = 0.0    // 总行驶距离 (米)
-    public var avgSpeed: Double = 0.0         // 平均速度 (km/h)
-    public var maxSpeed: Double = 0.0         // 最高速度 (km/h)
-    public var minSpeed: Double = 0.0         // 最低速度 (km/h)
-    
-    public var idleTime: TimeInterval = 0.0       // 怠速/拥堵时长 (秒)
-    public var best0To100Time: TimeInterval? = nil // 0-100 最佳加速成绩 (秒)
-    
     public var currentLocation: CLLocation?
 }
 
@@ -57,16 +46,7 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
     private var currentAltitude: Double = 0.0
     
     // MARK: - 行程统计核心变量
-    private var startTime: Date?
     private var lastLocation: CLLocation?
-    private var totalDistance: Double = 0.0
-    private var maxSpeed: Double = 0.0
-    private var minSpeed: Double = 999.0
-    
-    private var lastUpdateTime: Date?
-    private var idleTime: TimeInterval = 0.0
-    private var zeroToHundredStartTime: Date?
-    private var best0To100: TimeInterval?
 
     private override init() {
         super.init()
@@ -177,100 +157,21 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
     }
     
     public func resetTrip() {
-        startTime = nil
         lastLocation = nil
-        totalDistance = 0.0
-        maxSpeed = 0.0
-        minSpeed = 999.0
-        idleTime = 0.0
-        zeroToHundredStartTime = nil
-        best0To100 = nil
-        PTNSLogConsole("♻️ [PTLocationEngine] 行程数据已清零")
     }
     
     // MARK: - 高德地图位置更新回调
     public func amapLocationManager(_ manager: AMapLocationManager!, didUpdate location: CLLocation!, reGeocode: AMapLocationReGeocode!) {
         guard let location = location else { return }
-        
+        self.lastLocation = location
         if currentMode == .antiTheft {
-            self.lastLocation = location
             return
-       }
-        
-        // 过滤低精度垃圾数据
-        
-        let now = Date()
-        
-        if startTime == nil {
-            startTime = Date()
         }
-        
-        // 1. 累加行驶距离
-        if let last = lastLocation {
-            let distance = location.distance(from: last)
-            // 过滤原地漂移和超级瞬移
-            if distance > 1.5 && distance < 2000.0 {
-                totalDistance += distance
-            }
-        }
-        lastLocation = location
-        
-        // 2. 速度处理
-        var rawSpeed = location.speed
-        if rawSpeed < 0 { rawSpeed = 0 }
-        let currentSpeedKmh = rawSpeed * 3.6
-        
-        if let lastTime = lastUpdateTime {
-            let timeDelta = now.timeIntervalSince(lastTime)
-            if currentSpeedKmh < 2.0 {
-                idleTime += timeDelta // 累加怠速
-            }
-        }
-        lastUpdateTime = now
-
-        // 🌟 核心 2：0-100 km/h 自动计时逻辑
-        if currentSpeedKmh <= 2.0 {
-            zeroToHundredStartTime = now
-        } else if currentSpeedKmh >= 100.0 {
-            if let start = zeroToHundredStartTime {
-                let achievedTime = now.timeIntervalSince(start)
-                if achievedTime > 2.0 {
-                    if best0To100 == nil || achievedTime < best0To100! {
-                        best0To100 = achievedTime
-                        PTNSLogConsole("🏎️💨 [测速突破] 创造新的 0-100km/h 成绩: \(String(format: "%.2f", achievedTime))秒！")
-                    }
-                }
-                zeroToHundredStartTime = nil
-            }
-        }
-
-        // 3. 统计极值
-        if currentSpeedKmh > maxSpeed { maxSpeed = currentSpeedKmh }
-        if currentSpeedKmh > 1.0 && currentSpeedKmh < minSpeed { minSpeed = currentSpeedKmh }
-        
-        // 4. 计算运行时长和平均速度
-        let runTime = now.timeIntervalSince(startTime!)
-        let avgSpeed = runTime > 0 ? (totalDistance / runTime) * 3.6 : 0.0
         
         currentAltitude = location.altitude
-        
-        var finalCourse = location.course
-        if finalCourse < 0 || currentSpeedKmh < 5.0 {
-            finalCourse = currentHeading
-        }
-        
-        // 5. 组装数据并抛给上层 UI
         let tripData = PTTripData(
-            speedKmh: currentSpeedKmh,
-            courseDegree: finalCourse,
-            altitude: currentAltitude,
-            runTime: runTime,
-            totalDistance: totalDistance,
-            avgSpeed: avgSpeed,
-            maxSpeed: maxSpeed,
-            minSpeed: minSpeed == 999.0 ? 0.0 : minSpeed,
-            idleTime: idleTime,
-            best0To100Time: best0To100,
+            courseDegree: location.course,
+            altitude: location.altitude,
             currentLocation: location
         )
         
@@ -289,20 +190,10 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
         if (locationBlock != nil) && (lastLocation != nil) {
             let speed = max(0, (lastLocation?.speed ?? 0) * 3.6)
             if speed < 5.0 {
-                let runTime = Date().timeIntervalSince(startTime ?? Date())
-                let avg = runTime > 0 ? (totalDistance / runTime) * 3.6 : 0.0
-                
                 let tripData = PTTripData(
-                    speedKmh: speed,
                     courseDegree: currentHeading,
                     altitude: currentAltitude,
-                    runTime: runTime,
-                    totalDistance: totalDistance,
-                    avgSpeed: avg,
-                    maxSpeed: maxSpeed,
-                    minSpeed: minSpeed == 999.0 ? 0.0 : minSpeed,
-                    idleTime: idleTime,
-                    best0To100Time: best0To100
+                    currentLocation: self.lastLocation
                 )
                 DispatchQueue.main.async { [weak self] in
                     self?.locationBlock?(tripData)

@@ -72,6 +72,10 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
             PTLocationEngine.shared.switchEngineMode(to: .riding)
             locationEngineBlockSet()
         }
+        
+        PTTripManager.shared.liveStatsBlock = { [weak self] tripStats in
+            self?.tripStatsView.updateStats(with: tripStats)
+        }
     }
     
     override func viewControllerOrientation(_ orientationMask: UIInterfaceOrientationMask) {
@@ -110,7 +114,6 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
             self?.speedometer.updateSpeed(PTDashboardConfig.shared.appShowMileage(PTMotion.shared.currentSpeedKmh))
             self?.compassRoller.updateHeading(tripData.courseDegree)
             self?.speedometer.updateEnvironment(altitude: tripData.altitude, pressureKpa: nil)
-            self?.tripStatsView.updateStats(with: tripData)
         }
     }
 

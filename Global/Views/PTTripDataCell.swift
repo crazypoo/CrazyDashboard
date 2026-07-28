@@ -128,7 +128,7 @@ class PTTripDataCell: PTBaseNormalCell {
     
     lazy var gpxButton:UIButton = {
         let view = UIButton(type: .custom)
-        view.setImage(UIImage(.dot.square), for: .normal)
+        view.setImage(UIImage(.dot.scope), for: .normal)
         view.addActionHandlers { sender in
             if let gpx = self.cellModel.gpxFileName {
                 PTiCloudFileManager.shared.fetchCloudFileIfNeeded(fileName: gpx) { localImageURL in
@@ -188,6 +188,8 @@ class PTTripDataCell: PTBaseNormalCell {
             make.top.equalTo(self.altitudeChart.snp.bottom).offset(CGFloat.GlobalItemSpacing)
             make.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
         }
+        thumbnailImageView.layoutIfNeeded()
+        thumbnailImageView.viewCorner(radius: 4)
         
         gpxButton.snp.makeConstraints { make in
             make.size.equalTo(44)
@@ -276,9 +278,7 @@ public class PTRouteSnapshotManager: NSObject, MAMapViewDelegate {
         if let polyline = overlay as? MAPolyline {
             let renderer = MAPolylineRenderer(polyline: polyline)
             renderer?.lineWidth = 6.0
-            renderer?.strokeColor = .systemRed // 赛道红
-//            renderer?.lineJoinType = .round
-//            renderer?.lineCapType = .round
+            renderer?.strokeColor = PTDashboardConfig.shared.appMainColor
             return renderer
         }
         return nil

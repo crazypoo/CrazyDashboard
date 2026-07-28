@@ -87,4 +87,10 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
         detailCollection.showCollectionDetail(collectionData: sections,finishTask: finishTask)
     }
 
+    override func handleMotorcycleDisconnect() {
+        super.handleMotorcycleDisconnect()
+        detailCollection.clearAllData { _ in
+            self.listSet()
+        }
+    }
 }

@@ -8,6 +8,17 @@
 import Foundation
 import PooTools
 
+// 🌟 新增：专门用于给 UI 界面实时刷新用的数据模型
+public struct PTLiveTripStats {
+    public let runTime: TimeInterval       // 运行时长 (秒)
+    public let idleTime: TimeInterval      // 怠速时长 (秒)
+    public let distanceKm: Double          // 当前行驶里程 (km)
+    public let avgSpeedKmh: Double         // 实时平均速度
+    public let maxSpeedKmh: Double         // 当前最高速度
+    public let minSpeedKmh: Double         // 当前最低速度
+    public let best0To100Time: TimeInterval? // 最佳 0-100 成绩
+}
+
 public struct PTRoutePoint: Codable {
     public let lat: Double
     public let lon: Double
@@ -52,6 +63,13 @@ public struct PTTripReport: Codable {
     public let pitchTrace: [Double]     // 坡度轨迹
     public let relativeAltitudeTrace: [Double] // 海拔起伏轨迹
     
+    public let pressureTrace: [Double]
+    public let idleTimeSeconds: TimeInterval  // 怠速时长(秒)
+    public let best0To100Time: TimeInterval?  // 0-100加速最佳成绩(秒)
+    public let gpsAvgSpeedKmh: Double         // GPS 平均速度
+    public let gpsMaxSpeedKmh: Double         // GPS 最高速度
+    public let gpsMinSpeedKmh: Double         // GPS 最低速度
+
     public let gpxFileName: String?
 }
 
@@ -64,6 +82,8 @@ public let MotorcycleMotionUpdate = NSNotification.Name("MotorcycleMotionUpdate"
 public class PTTripManager: NSObject {
     
     public static let shared = PTTripManager()
+    
+    public var liveStatsBlock: ((PTLiveTripStats) -> Void)?
     
     private let historyFileName = "PTTripHistory.json"
     
@@ -106,6 +126,7 @@ public class PTTripManager: NSObject {
     private var currentLiveGForceY: Double = 0.0
     private var currentLiveGForceZ: Double = 0.0
     private var currentLiveAltitude: Double = 0.0
+    private var currentLivePressure: Double = 0.0 // 🌟 新增：当前气压缓存
     
     // 🌟 轨迹数组
     private var leanTraceArray: [Double] = []
@@ -114,14 +135,45 @@ public class PTTripManager: NSObject {
     private var gForceYTraceArray: [Double] = []
     private var gForceZTraceArray: [Double] = []
     private var altitudeTraceArray: [Double] = []
+    private var pressureTraceArray: [Double] = [] // 🌟 新增：气压轨迹数组
     private var routeArray: [PTRoutePoint] = []
     
+    private var minSpeed: Double = 999.0
+    private var idleTime: TimeInterval = 0.0
+    private var lastControlUpdateTime: Date?       // 用于计算帧间差的怠速时间
+    private var zeroToHundredStartTime: Date?      // 0-100 起步时刻
+    private var best0To100Time: TimeInterval?      // 本次行程的最佳 0-100 成绩
+
     private override init() {
         super.init()
         loadHistory() // 初始化时，自动把本地保存的历史数据读进内存
         setupObservers()
     }
     
+    private func broadcastLiveStats() {
+        guard isRiding, let start = startTime else { return }
+        
+        let runTime = Date().timeIntervalSince(start)
+        let distance = (latestOdo > startOdo) ? (latestOdo - startOdo) : 0
+        let durationHours = runTime / 3600.0
+        let avgSpeed = durationHours > 0 ? (distance / durationHours) : 0.0
+        
+        let stats = PTLiveTripStats(
+            runTime: runTime,
+            idleTime: idleTime,
+            distanceKm: distance,
+            avgSpeedKmh: avgSpeed,
+            maxSpeedKmh: maxSpeed,
+            minSpeedKmh: minSpeed == 999.0 ? 0.0 : minSpeed,
+            best0To100Time: best0To100Time
+        )
+        
+        // 保证回调在主线程执行，防止 UI 界面崩溃
+        DispatchQueue.main.async { [weak self] in
+            self?.liveStatsBlock?(stats)
+        }
+    }
+
     // MARK: - 持久化存储逻辑
     /// 从本地加载历史记录
     private func loadHistory() {
@@ -217,6 +269,7 @@ public class PTTripManager: NSObject {
         maxBump = 0
         maxPitchUp = 0
         maxPitchDown = 0
+        currentLivePressure = 0
         
         leanTraceArray.removeAll()
         pitchTraceArray.removeAll()
@@ -224,7 +277,14 @@ public class PTTripManager: NSObject {
         gForceYTraceArray.removeAll()
         gForceZTraceArray.removeAll()
         altitudeTraceArray.removeAll()
+        pressureTraceArray.removeAll()
         routeArray.removeAll()
+
+        minSpeed = 999.0
+        idleTime = 0.0
+        lastControlUpdateTime = nil
+        zeroToHundredStartTime = nil
+        best0To100Time = nil
 
         PTMotion.shared.resetLeanAngles()
         PTMotion.shared.startMotion()
@@ -239,6 +299,9 @@ public class PTTripManager: NSObject {
             self.gForceYTraceArray.append(self.currentLiveGForceY)
             self.gForceZTraceArray.append(self.currentLiveGForceZ)
             self.altitudeTraceArray.append(self.currentLiveAltitude)
+            self.pressureTraceArray.append(self.currentLivePressure)
+            
+            self.broadcastLiveStats()
         }
         
         PTMotion.shared.motionBlock = { [weak self] data in
@@ -251,6 +314,7 @@ public class PTTripManager: NSObject {
             self.currentLiveGForceY = data.gForceY
             self.currentLiveGForceZ = data.gForceZ
             self.currentLiveAltitude = data.relativeAltitude
+            self.currentLivePressure = data.pressure
             
             if data.gForceY > self.maxAccelG { self.maxAccelG = data.gForceY }
             if data.gForceY < self.maxBrakeG { self.maxBrakeG = data.gForceY } // 刹车通常为负值
@@ -284,8 +348,48 @@ public class PTTripManager: NSObject {
     
     @objc private func handleControlData(_ notification: Notification) {
         guard isRiding, let control = notification.object as? PTDashboardControl else { return }
-        PTMotion.shared.currentSpeedKmh = control.vehicleSpeedKmh
-        if control.vehicleSpeedKmh > maxSpeed { maxSpeed = control.vehicleSpeedKmh }
+                
+        let speed = control.vehicleSpeedKmh
+        let now = Date()
+        
+        // 1. 怠速时长计算 (利用两次数据包的时间差累加)
+        if let lastTime = lastControlUpdateTime {
+            let delta = now.timeIntervalSince(lastTime)
+            // 如果车速小于 2.0 km/h，视为怠速停车状态
+            if speed < 2.0 {
+                idleTime += delta
+            }
+        }
+        lastControlUpdateTime = now
+        
+        // 2. 0-100 km/h 高精度自动计时
+        if speed <= 2.0 {
+            // 处于静止，随时准备弹射起步
+            zeroToHundredStartTime = now
+        } else if speed >= 100.0 {
+            // 突破 100 时，检查是否有起步记录
+            if let start = zeroToHundredStartTime {
+                let achievedTime = now.timeIntervalSince(start)
+                // 基础防噪：成绩需大于2秒才合理，防止传感器跳变导致的 0.1秒“幽灵成绩”
+                if achievedTime > 2.0 {
+                    if best0To100Time == nil || achievedTime < best0To100Time! {
+                        best0To100Time = achievedTime
+                        PTNSLogConsole("🏎️💨 [硬件测速] 创造新的 0-100km/h 成绩: \(String(format: "%.2f", achievedTime))秒！")
+                    }
+                }
+                // 成绩达成后清除起步时刻，等待下次重新静止
+                zeroToHundredStartTime = nil
+            }
+        }
+        
+        // 3. 更新极限速度极值
+        PTMotion.shared.currentSpeedKmh = speed // 给轨迹打点备用
+        
+        if speed > maxSpeed { maxSpeed = speed }
+        // 最低速度需排除怠速状态
+        if speed > 1.0 && speed < minSpeed { minSpeed = speed }
+        
+        // 更新转速
         if control.engineRpm > maxRpm { maxRpm = control.engineRpm }
     }
     
@@ -308,6 +412,9 @@ public class PTTripManager: NSObject {
         let durationSec = endTime.timeIntervalSince(start)
         let durationMin = Int(durationSec / 60.0)
         let distance = (latestOdo > startOdo) ? (latestOdo - startOdo) : 0
+        
+        let durationHours = durationSec / 3600.0
+        let hardwareAvgSpeed = durationHours > 0 ? (distance / durationHours) : 0.0
         
         guard durationMin > 0 || distance > 0.1 else {
             PTNSLogConsole("⚠️ [行程记录] 本次连接时间过短或未产生位移，已忽略。")
@@ -356,6 +463,14 @@ public class PTTripManager: NSObject {
             pitchTrace: pitchTraceArray,
             
             relativeAltitudeTrace: altitudeTraceArray,
+            
+            pressureTrace: pressureTraceArray,
+            idleTimeSeconds: idleTime,
+            best0To100Time: best0To100Time,
+            gpsAvgSpeedKmh: hardwareAvgSpeed, // 虽然参数名还叫 gpsAvgSpeedKmh，但它现在是更准的表显平均速度
+            gpsMaxSpeedKmh: maxSpeed,         // 保持一致
+            gpsMinSpeedKmh: minSpeed == 999.0 ? 0.0 : minSpeed,
+            
             gpxFileName: generatedFileName
         )
         
