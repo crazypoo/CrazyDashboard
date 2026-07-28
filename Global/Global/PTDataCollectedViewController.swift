@@ -22,9 +22,9 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
         return view
     }()
         
+    var listEmptyConfig:PTEmptyDataViewConfig!
     lazy var detailCollection:PTCollectionView = {
-                                
-        let collectionConfig = PTCollectionViewConfig()
+        let collectionConfig = PTDashboardConfig.baseCollectionConfig(emptyConfig:self.listEmptyConfig)
         collectionConfig.viewType = .Custom
         collectionConfig.footerRefresh = false
         collectionConfig.topRefresh = false
@@ -63,6 +63,7 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
 
         view.backgroundColor = .black
         
+        setEmptyConfig(empty: .Normal)
         let collectionInset:CGFloat = CGFloat.kTabbarHeight_Total
         detailCollection.contentCollectionView.contentInsetAdjustmentBehavior = .never
         detailCollection.contentCollectionView.contentInset.bottom = collectionInset
@@ -92,5 +93,15 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
         detailCollection.clearAllData { _ in
             self.listSet()
         }
+    }
+    
+    func setEmptyConfig(empty:PTCollectionEmptyType) {
+        self.listEmptyConfig = PTDashboardConfig.setEmptyConfig(empty: empty) {
+            PTGCDManager.shared.runOnMain {
+                self.listSet()
+            }
+        }
+        detailCollection.viewConfig.emptyViewConfig = self.listEmptyConfig
+        detailCollection.reloadEmptyConfig()
     }
 }

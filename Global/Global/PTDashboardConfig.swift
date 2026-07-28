@@ -9,6 +9,14 @@ import UIKit
 import PooTools
 import AttributedString
 import FlagKit
+import SwifterSwift
+import SnapKit
+
+enum PTCollectionEmptyType {
+    case Normal
+    case Loading
+    case Empty
+}
 
 extension UIColor {
     static let grayCA = DynamicColor(hexString: "cacaca")!
@@ -246,5 +254,88 @@ extension PTDashboardConfig {
     
     static func language(key:String, _ args: CVarArg...) ->String {
         String(format: PTDashboardConfig.languageFunc(text: key), args)
+    }
+}
+
+extension PTDashboardConfig {
+    @MainActor class func baseCollectionConfig(footerRefresh:Bool = true,emptyConfig:PTEmptyDataViewConfig? = nil) ->PTCollectionViewConfig {
+        let collectionConfig = PTCollectionViewConfig()
+        collectionConfig.emptyShowType = .ThirtyParty
+        collectionConfig.emptyViewConfig = emptyConfig ?? PTDashboardConfig.gobalListEmptySet()
+        collectionConfig.showEmptyAlert = true
+        collectionConfig.footerRefresh = footerRefresh
+        if footerRefresh {
+            collectionConfig.footerRefreshTextColor = .gray7F
+            collectionConfig.footerRefreshTextFont = .appfont(size: 13)
+            collectionConfig.footerRefreshNoMoreData = PTDashboardConfig.languageFunc(text: "list_nomore")
+        }
+        return collectionConfig
+    }
+    
+    @MainActor class public func gobalListEmptySet(image:String = "placeholder",emptyString:String = PTDashboardConfig.languageFunc(text: "empty_data_normal"),width:CGFloat? = nil,emptyTap:PTActionTask? = nil) -> PTEmptyDataViewConfig {
+        let newWidth = width ?? (CGFloat.kSCREEN_WIDTH - 24)
+        let emptyConfig = PTEmptyDataViewConfig()
+        let emptyHeight:CGFloat = 188
+        let emptyView = PTDashboardConfig.emptyEmptyView(image: image, emptyString: emptyString,viewWidth: newWidth,emptyTap: emptyTap)
+        emptyView.frame = CGRectMake(0, 0, newWidth, emptyHeight)
+        emptyConfig.customerView = emptyView
+        emptyConfig.verticalOffSet = -(emptyHeight / 2)
+        emptyConfig.image = nil
+        return emptyConfig
+    }
+    
+    @MainActor class func emptyEmptyView(image:String = "placeholder",emptyString:String = PTDashboardConfig.languageFunc(text: "empty_data_normal"),viewWidth:CGFloat? = nil,emptyTap:PTActionTask? = nil) ->UIView {
+        let newWidth = viewWidth ?? (CGFloat.kSCREEN_WIDTH - 24)
+        let view = UIView()
+        
+        let couponImage = UIImageView(image: UIImage(named: image))
+        couponImage.contentMode = .scaleAspectFill
+        couponImage.clipsToBounds = true
+        
+        let emptyLabel = UILabel()
+        emptyLabel.font = .appfont(size: 14)
+        emptyLabel.text = emptyString
+        emptyLabel.textAlignment = .center
+        emptyLabel.textColor = .gray7F
+        emptyLabel.numberOfLines = 0
+        
+        view.addSubviews([couponImage,emptyLabel])
+        couponImage.snp.makeConstraints { make in
+            if newWidth > 160 {
+                make.size.equalTo(160)
+            } else {
+                make.size.equalTo(newWidth * 0.75)
+            }
+            make.centerX.equalToSuperview()
+            make.top.equalToSuperview()
+        }
+        
+        emptyLabel.snp.makeConstraints { make in
+            make.top.equalTo(couponImage.snp.bottom).offset(8)
+            make.left.right.equalToSuperview().inset(10)
+        }
+        
+        let tap = UITapGestureRecognizer { sender in
+            PTGCDManager.shared.runOnMain {
+                emptyTap?()
+            }
+        }
+        view.addGestureRecognizer(tap)
+        return view
+    }
+    
+    @MainActor static func setEmptyConfig(empty:PTCollectionEmptyType,loadCallback:PTActionTask? = nil) -> PTEmptyDataViewConfig {
+        let imageName = "placeholder"
+        var emptyString = ""
+        switch empty {
+        case .Normal:
+            emptyString = PTDashboardConfig.languageFunc(text: "empty_data_normal")
+        case .Loading:
+            emptyString = PTDashboardConfig.languageFunc(text: "alert_loading")
+        case .Empty:
+            emptyString = PTDashboardConfig.languageFunc(text: "empty_data_empty")
+        }
+        let listEmptyConfig = PTDashboardConfig.gobalListEmptySet(image:imageName,emptyString: emptyString,emptyTap:loadCallback)
+        return listEmptyConfig
     }
 }
