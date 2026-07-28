@@ -294,7 +294,6 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         PTDashboardConfig.shared.blueConnected = true
         PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "connect_success")) {
             self.bleConnectStatusLabel.isSelected = !PTDashboardConfig.shared.blueConnected
-            PTBluetoothServerManager.shared.sendWelcomeMessage(next: "111111111", title: "123123123123123123123")
         }
     }
     

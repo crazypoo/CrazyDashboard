@@ -83,3 +83,6 @@
 "tab_setting" = "Batma";
 "vechicle_pitch" = "Araç Sahası";
 "parking_unlock_msg" = "Hırsızlık önleyici koruma kaldırıldı.";
+"elevation_title" = "Rakım";
+"hpa_title" = "Hava basıncı";
+"lean_angle_title" = "Eğik açı";

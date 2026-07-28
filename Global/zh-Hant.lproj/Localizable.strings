@@ -41,7 +41,7 @@
 "direction_south_east" = "東南";
 "direction_south_west" = "西南";
 "direction_west" = "西";
-"elevation_value" = "高度:%dm";
+"elevation_value" = "海拔:%dm";
 "empty_data_empty" = "無資料";
 "empty_data_normal" = "無資料";
 "engine_closing" = "關閉中";
@@ -83,3 +83,6 @@
 "tab_setting" = "設置";
 "vechicle_pitch" = "車身姿態(Pitch)";
 "parking_unlock_msg" = "防盜衛士已經解除了。";
+"elevation_title" = "海拔";
+"hpa_title" = "氣壓";
+"lean_angle_title" = "傾斜角度";

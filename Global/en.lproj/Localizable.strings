@@ -83,3 +83,6 @@
 "tab_setting" = "Setting";
 "vechicle_pitch" = "Vehicle Pitch";
 "parking_unlock_msg" = "The anti-theft guard has been lifted.";
+"elevation_title" = "Altitude";
+"hpa_title" = "hPa";
+"lean_angle_title" = "Lean angle";

@@ -83,3 +83,6 @@
 "tab_setting" = "设置";
 "vechicle_pitch" = "车身姿态 (Pitch)";
 "parking_unlock_msg" = "防盗守护已解除。";
+"elevation_title" = "海拔";
+"hpa_title" = "气压";
+"lean_angle_title" = "倾角";

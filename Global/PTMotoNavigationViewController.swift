@@ -401,6 +401,8 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(handleEmergencyNavigation(_:)), name: MotorcycleStartRealNavigation, object: nil)
     }
     
+    
+    
     @objc private func handleEmergencyNavigation(_ notification: Notification) {
         guard let dict = notification.object as? [String: Any],
               let coordinate = dict["coordinate"] as? CLLocationCoordinate2D,
@@ -594,6 +596,8 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
             
             amapView.setZoomLevel(17.5, animated: true)
         }
+        
+        driveViewCloseButtonClicked(self.driveView)
     }
 }
 
@@ -1028,12 +1032,9 @@ extension PTMotoNavigationViewController : AMapNaviDriveViewDelegate {
             SpeechSynthesizer.Shared.stopSpeak()
         }
         PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Yeah!!!!!!!!!!", title: "Navigation finished!!!!!!!!!!!!!!!!!!!!")
-
     }
     
-    func driveView(_ view: AMapNaviDriveView, didChangeTo state: AMapNaviDriveViewState) {
-        
-    }
+    func driveView(_ view: AMapNaviDriveView, didChangeTo state: AMapNaviDriveViewState) { }
 }
 
 extension PTMotoNavigationViewController:AMapNaviDriveDataRepresentable {

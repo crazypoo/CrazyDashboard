@@ -37,7 +37,7 @@ class PTTripDataCell: PTBaseNormalCell {
                         """
             timeLabel.attributed.text = nameAtt
             
-            let chartModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "倾角"), color: .systemRed, data: cellModel.leanAngleTrace)
+            let chartModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "lean_angle_title"), color: .systemRed, data: cellModel.leanAngleTrace)
             leanAngleChart.bindData(lines: [chartModel])
             
             let gXModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "G:X"), color: .systemRed, data: cellModel.gForceXTrace)
@@ -46,13 +46,13 @@ class PTTripDataCell: PTBaseNormalCell {
 
             gChart.bindData(lines: [gXModel,gYModel,gZModel])
             
-            let pModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "P"), color: .systemRed, data: cellModel.pitchTrace)
+            let pModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "vechicle_pitch"), color: .systemRed, data: cellModel.pitchTrace)
             pChart.bindData(lines: [pModel])
             
-            let aModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "海拔"), color: .systemRed, data: cellModel.relativeAltitudeTrace)
+            let aModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "elevation_title"), color: .systemRed, data: cellModel.relativeAltitudeTrace)
             altitudeChart.bindData(lines: [aModel])
             
-            let pressureModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "气压"), color: .systemRed, data: cellModel.pressureTrace)
+            let pressureModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "hpa_title"), color: .systemRed, data: cellModel.pressureTrace)
             pressureChart.bindData(lines: [pressureModel])
             
             guard let gpxName = cellModel.gpxFileName else { return }
