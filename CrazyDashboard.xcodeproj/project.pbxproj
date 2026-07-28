@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		55028F2C2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */; };
 		55028F2D2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */; };
+		55499CEC3018E6E100A1A2D9 /* PTDashBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CEB3018E6E100A1A2D9 /* PTDashBoardView.swift */; };
+		55499CED3018E6E100A1A2D9 /* PTDashBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CEB3018E6E100A1A2D9 /* PTDashBoardView.swift */; };
 		555C0FF9300E06630079D94F /* PTGlobalActionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */; };
 		555C0FFA300E06630079D94F /* PTGlobalActionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */; };
 		5577E62E2FD656D20004733F /* PTCompassRollerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6202FD656D20004733F /* PTCompassRollerView.swift */; };
@@ -108,6 +110,7 @@
 		2567A83A06A2B2498B880D19 /* Pods-CrazyDashboard.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.release.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.release.xcconfig"; sourceTree = "<group>"; };
 		33464FDDE31899C7F87FB6EC /* Pods_PTSpeed.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_PTSpeed.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashBoardBaseBoardViewController.swift; sourceTree = "<group>"; };
+		55499CEB3018E6E100A1A2D9 /* PTDashBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashBoardView.swift; sourceTree = "<group>"; };
 		555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTGlobalActionHeader.swift; sourceTree = "<group>"; };
 		5577E5BD2FD5C1DB0004733F /* CrazyDashboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CrazyDashboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5577E6202FD656D20004733F /* PTCompassRollerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCompassRollerView.swift; sourceTree = "<group>"; };
@@ -316,6 +319,7 @@
 				559867CF301281FC0049684D /* PTLightFeedbackOverlay.swift */,
 				55986835301337DC0049684D /* PTTripDataCell.swift */,
 				55986BAC30179D500049684D /* PTNativeTelemetryChartView.swift */,
+				55499CEB3018E6E100A1A2D9 /* PTDashBoardView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -597,6 +601,7 @@
 				5598667F301148290049684D /* PTDiagnosticManager.swift in Sources */,
 				55FE29A0300CC1F1000E741F /* PTMotoInfoViewController.swift in Sources */,
 				55028F2D2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */,
+				55499CEC3018E6E100A1A2D9 /* PTDashBoardView.swift in Sources */,
 				55FE295B300CA4E8000E741F /* PTBluetoothManager.swift in Sources */,
 				55FDBCAB3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift in Sources */,
 				55FE29A7300CC2E2000E741F /* PTMotoSettingViewController.swift in Sources */,
@@ -647,6 +652,7 @@
 				5577E6502FD6572E0004733F /* PTNowPlayingView.swift in Sources */,
 				555C0FF9300E06630079D94F /* PTGlobalActionHeader.swift in Sources */,
 				559867D0301281FC0049684D /* PTLightFeedbackOverlay.swift in Sources */,
+				55499CED3018E6E100A1A2D9 /* PTDashBoardView.swift in Sources */,
 				5577E64E2FD657250004733F /* PTCompassRollerView.swift in Sources */,
 				55028F2C2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */,
 				5577E7CC2FD6FF890004733F /* PTLeanAngleView.swift in Sources */,
@@ -946,6 +952,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MARKETING_VERSION = 2.0.8;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
@@ -1056,6 +1063,8 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
+				WATCHOS_DEPLOYMENT_TARGET = 10.6;
+				XROS_DEPLOYMENT_TARGET = 2.6;
 			};
 			name = Debug;
 		};
@@ -1091,6 +1100,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MARKETING_VERSION = 2.0.8;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
@@ -1199,6 +1209,8 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
+				WATCHOS_DEPLOYMENT_TARGET = 10.6;
+				XROS_DEPLOYMENT_TARGET = 2.6;
 			};
 			name = Release;
 		};
