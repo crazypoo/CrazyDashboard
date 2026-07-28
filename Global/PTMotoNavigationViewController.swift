@@ -417,11 +417,11 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     }
 
     // MARK: - 初始化配置
-    private func setupLocationManager() {        
+    private func setupLocationManager() {
+        PTLocationEngine.shared.switchEngineMode(to: .riding)
         if PTLocationEngine.shared.isTracking {
             locationEngineBlockSet()
         } else {
-            PTLocationEngine.shared.switchEngineMode(to: .riding)
             PTLocationEngine.shared.startTracking()
             locationEngineBlockSet()
         }
@@ -437,7 +437,6 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
                     regeo.requireExtension = true
                     self?.search.aMapReGoecodeSearch(regeo)
                 }
-//                PTGPXRecorder.shared.appendLocation(coordinate)
             }
         }
     }
