@@ -7,6 +7,7 @@
 
 import Foundation
 import PooTools
+import CoreLocation
 
 // 🌟 新增：专门用于给 UI 界面实时刷新用的数据模型
 public struct PTLiveTripStats {

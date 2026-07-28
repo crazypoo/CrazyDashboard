@@ -798,6 +798,8 @@ extension PTMotoNavigationViewController:AMapSearchDelegate {
         request.showFieldsType = .all
         request.city = currentCity
         search.aMapPOIKeywordsSearch(request)
+        amapSearchResults.removeAll()
+        searchResultsTableView.reloadData()
     }
     
     func onPOISearchDone(_ request: AMapPOISearchBaseRequest!, response: AMapPOISearchResponse!) {

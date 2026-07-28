@@ -7,6 +7,7 @@
 
 import UIKit
 import PooTools
+import CoreLocation
 
 class PTMOTOParkingManager: NSObject {
     public static let shared = PTMOTOParkingManager()
