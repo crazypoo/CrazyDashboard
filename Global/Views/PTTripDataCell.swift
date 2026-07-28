@@ -25,7 +25,7 @@ class PTTripDataCell: PTBaseNormalCell {
             let startTime = cellModel.startTime.convertTo(region: .local).toFormat("yyyy-MM-dd HH:mm:ss")
             let endTime = cellModel.endTime.convertTo(region: .local).toFormat("yyyy-MM-dd HH:mm:ss")
             let distanceString = PTDashboardConfig.languageFunc(text: "casa_card_little_trip") + ":" + String(format: "%@%@", PTDashboardConfig.shared.appShowMileageValueString(cellModel.distanceKm),PTDashboardConfig.shared.appShowUniLabel)
-            let speedRpm = "Max speed:" + String(format: "%@%@", PTDashboardConfig.shared.appShowMileageValueString(cellModel.maxSpeedKmh),PTDashboardConfig.shared.appShowUniLabel) + ",Max Rpm:" + "\(cellModel.maxRpm)"
+            let speedRpm = "Max speed:" + String(format: "%@%@", PTDashboardConfig.shared.appShowMileageValueString(cellModel.maxSpeedKmh),PTDashboardConfig.shared.appShowUniLabel) + ",Max Rpm:" + "\(cellModel.maxRpm)" + "AvgSpeed:" + "\(cellModel.gpsAvgSpeedKmh)"
             let avgOil = PTDashboardConfig.languageFunc(text: "casa_card_avg_oil") + ":\(cellModel.avgConsumption)"
             let nameAtt: ASAttributedString = """
                         \(wrap: .embedding("""
@@ -37,6 +37,13 @@ class PTTripDataCell: PTBaseNormalCell {
                         """
             timeLabel.attributed.text = nameAtt
             
+            let speedModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "Speed"), color: .systemRed, data: cellModel.speedTrace)
+            let rpmDouble = cellModel.rpmTrace.map { value in
+                return Double(value)
+            }
+            let rpmModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "RPM"), color: .systemGreen, data: rpmDouble)
+            speedChart.bindData(lines: [speedModel,rpmModel])
+
             let chartModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "lean_angle_title"), color: .systemRed, data: cellModel.leanAngleTrace)
             leanAngleChart.bindData(lines: [chartModel])
             
@@ -127,6 +134,11 @@ class PTTripDataCell: PTBaseNormalCell {
         return view
     }()
     
+    lazy var speedChart:PTNativeTelemetryChartView = {
+        let view = PTNativeTelemetryChartView()
+        return view
+    }()
+    
     lazy var thumbnailImageView:UIButton = {
         let view = UIButton(type:.custom)
         view.imageView?.contentMode = .scaleAspectFit
@@ -165,14 +177,20 @@ class PTTripDataCell: PTBaseNormalCell {
     public override init(frame: CGRect) {
         super.init(frame: frame)
         
-        contentView.addSubviews([timeLabel,leanAngleChart,gChart,pChart,altitudeChart,pressureChart,thumbnailImageView,gpxButton])
+        contentView.addSubviews([timeLabel,speedChart,leanAngleChart,gChart,pChart,altitudeChart,pressureChart,thumbnailImageView,gpxButton])
         timeLabel.snp.makeConstraints { make in
             make.left.top.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
         }
         
-        leanAngleChart.snp.makeConstraints { make in
+        speedChart.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
             make.top.equalTo(self.timeLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.height.equalTo(PTTripDataCell.ChartHeight)
+        }
+        
+        leanAngleChart.snp.makeConstraints { make in
+            make.left.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
+            make.top.equalTo(self.speedChart.snp.bottom).offset(CGFloat.GlobalItemSpacing)
             make.height.equalTo(PTTripDataCell.ChartHeight)
         }
         

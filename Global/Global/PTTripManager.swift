@@ -65,6 +65,8 @@ public struct PTTripReport: Codable {
     
     public let pressureTrace: [Double]
     public let idleTimeSeconds: TimeInterval  // 怠速时长(秒)
+    public let speedTrace: [Double]     // 车速轨迹 (km/h)
+    public let rpmTrace: [Int]          // 转速轨迹 (RPM)
     public let best0To100Time: TimeInterval?  // 0-100加速最佳成绩(秒)
     public let gpsAvgSpeedKmh: Double         // GPS 平均速度
     public let gpsMaxSpeedKmh: Double         // GPS 最高速度
@@ -127,6 +129,8 @@ public class PTTripManager: NSObject {
     private var currentLiveGForceZ: Double = 0.0
     private var currentLiveAltitude: Double = 0.0
     private var currentLivePressure: Double = 0.0 // 🌟 新增：当前气压缓存
+    private var currentLiveSpeed: Double = 0.0 // 🌟 新增：当前车速缓存
+    private var currentLiveRpm: Int = 0        // 🌟 新增：当前转速缓存
     
     // 🌟 轨迹数组
     private var leanTraceArray: [Double] = []
@@ -137,7 +141,9 @@ public class PTTripManager: NSObject {
     private var altitudeTraceArray: [Double] = []
     private var pressureTraceArray: [Double] = [] // 🌟 新增：气压轨迹数组
     private var routeArray: [PTRoutePoint] = []
-    
+    private var speedTraceArray: [Double] = [] // 🌟 新增：车速轨迹数组
+    private var rpmTraceArray: [Int] = []      // 🌟 新增：转速轨迹数组
+
     private var minSpeed: Double = 999.0
     private var idleTime: TimeInterval = 0.0
     private var lastControlUpdateTime: Date?       // 用于计算帧间差的怠速时间
@@ -270,7 +276,9 @@ public class PTTripManager: NSObject {
         maxPitchUp = 0
         maxPitchDown = 0
         currentLivePressure = 0
-        
+        currentLiveSpeed = 0.0 // 🌟 重置
+        currentLiveRpm = 0     // 🌟 重置
+
         leanTraceArray.removeAll()
         pitchTraceArray.removeAll()
         gForceXTraceArray.removeAll()
@@ -279,6 +287,8 @@ public class PTTripManager: NSObject {
         altitudeTraceArray.removeAll()
         pressureTraceArray.removeAll()
         routeArray.removeAll()
+        speedTraceArray.removeAll() // 🌟 清空
+        rpmTraceArray.removeAll()   // 🌟 清空
 
         minSpeed = 999.0
         idleTime = 0.0
@@ -301,6 +311,8 @@ public class PTTripManager: NSObject {
             self.altitudeTraceArray.append(self.currentLiveAltitude)
             self.pressureTraceArray.append(self.currentLivePressure)
             
+            self.speedTraceArray.append(self.currentLiveSpeed)
+            self.rpmTraceArray.append(self.currentLiveRpm)
             self.broadcastLiveStats()
         }
         
@@ -352,7 +364,11 @@ public class PTTripManager: NSObject {
         guard isRiding, let control = notification.object as? PTDashboardControl else { return }
                 
         let speed = control.vehicleSpeedKmh
+        let rpm = control.engineRpm
         let now = Date()
+        
+        self.currentLiveSpeed = speed
+        self.currentLiveRpm = rpm
         
         // 1. 怠速时长计算 (利用两次数据包的时间差累加)
         if let lastTime = lastControlUpdateTime {
@@ -390,9 +406,7 @@ public class PTTripManager: NSObject {
         if speed > maxSpeed { maxSpeed = speed }
         // 最低速度需排除怠速状态
         if speed > 1.0 && speed < minSpeed { minSpeed = speed }
-        
-        // 更新转速
-        if control.engineRpm > maxRpm { maxRpm = control.engineRpm }
+        if rpm > maxRpm { maxRpm = rpm }
     }
     
     @objc private func handleData1(_ notification: Notification) {
@@ -468,6 +482,8 @@ public class PTTripManager: NSObject {
             
             pressureTrace: pressureTraceArray,
             idleTimeSeconds: idleTime,
+            speedTrace: speedTraceArray,
+            rpmTrace: rpmTraceArray,
             best0To100Time: best0To100Time,
             gpsAvgSpeedKmh: hardwareAvgSpeed, // 虽然参数名还叫 gpsAvgSpeedKmh，但它现在是更准的表显平均速度
             gpsMaxSpeedKmh: maxSpeed,         // 保持一致
