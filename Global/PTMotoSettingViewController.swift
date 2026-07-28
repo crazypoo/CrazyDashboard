@@ -301,7 +301,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.top.equalTo(self.lightValueLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
         }
-        
         let shortAtt: ASAttributedString = """
                     \(wrap: .embedding("""
                     \(PTDashboardConfig.languageFunc(text: "Support shortcut"),.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
@@ -309,6 +308,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                     \("xp400://antiTheft?enable=true OR xp400://antiTheft?enable=false",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
                     \("xp400://openHUD",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
                     \("xp400://confirmGasStationRoute",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
+                    \("xp400://navigate?destination=",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
                     """),.paragraph(.alignment(.left)))
                     """
         shortCut.attributed.text = shortAtt

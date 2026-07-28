@@ -259,17 +259,21 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         view.layer.cornerRadius = 12
         view.isHidden = true // 只有规划好路线才显示
         view.addActionHandlers(handler: { _ in
-            self.startNavigationTapped()
-            self.driveView.isHidden = false
-            self.routePlantList.isHidden = true
-            if self.testButton.isSelected {
-                AMapNaviDriveManager.sharedInstance().startEmulatorNavi()
-            } else {
-                AMapNaviDriveManager.sharedInstance().startGPSNavi()
-            }
+            self.navAction()
         })
         return view
     }()
+    
+    func navAction() {
+        self.startNavigationTapped()
+        self.driveView.isHidden = false
+        self.routePlantList.isHidden = true
+        if self.testButton.isSelected {
+            AMapNaviDriveManager.sharedInstance().startEmulatorNavi()
+        } else {
+            AMapNaviDriveManager.sharedInstance().startGPSNavi()
+        }
+    }
         
     private var amapSearchResults:[MAPointAnnotation] = []
     
@@ -362,6 +366,8 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         return view
     }()
     
+    var isKeywordSearch:Bool = false
+    
     @MainActor deinit {
         NotificationCenter.default.removeObserver(self)
     }
@@ -399,9 +405,19 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         motoParkingLocation()
         
         NotificationCenter.default.addObserver(self, selector: #selector(handleEmergencyNavigation(_:)), name: MotorcycleStartRealNavigation, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handlePositionNavigation(_:)), name: MotorcycleSearchAndNavigate, object: nil)
     }
     
-    
+    @objc private func handlePositionNavigation(_ notification: Notification) {
+        if let keyword = notification.object as? String,!keyword.isEmpty {
+            self.isKeywordSearch = true
+            self.amapSearchResults.removeAll()
+            let request = AMapPOIKeywordsSearchRequest()
+            request.keywords = keyword
+            request.showFieldsType = .all
+            search.aMapPOIKeywordsSearch(request)
+        }
+    }
     
     @objc private func handleEmergencyNavigation(_ notification: Notification) {
         guard let dict = notification.object as? [String: Any],
@@ -793,13 +809,21 @@ extension PTMotoNavigationViewController:AMapSearchDelegate {
             anno.subtitle = aPOI.address
             self.amapSearchResults.append(anno)
         }
-        if !self.amapSearchResults.isEmpty {
-            searchResultsTableView.isHidden = false
-            searchResultsTableView.reloadData()
-            self.searchBar.text = ""
+        
+        if !isKeywordSearch {
+            if !self.amapSearchResults.isEmpty {
+                searchResultsTableView.isHidden = false
+                searchResultsTableView.reloadData()
+                self.searchBar.text = ""
+            } else {
+                searchResultsTableView.isHidden = true
+                searchResultsTableView.reloadData()
+            }
         } else {
-            searchResultsTableView.isHidden = true
-            searchResultsTableView.reloadData()
+            if let first = self.amapSearchResults.first {
+                self.planRoute(to: first.coordinate, title: first.title)
+                setPointPin(location: first.coordinate)
+            }
         }
     }
     
@@ -846,9 +870,11 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
         if let first = routeIndicatorInfoArray.first {
             routeIndicatorInfoArray[0].isSelected = true
             self.startNavigationButton.isEnabled = true
-            self.routePlantList.isHidden = false
-            self.routePlantList.clearAllData { _ in
-                self.listSet()
+            if !isKeywordSearch {
+                self.routePlantList.isHidden = false
+                self.routePlantList.clearAllData { _ in
+                    self.listSet()
+                }
             }
             selectNaviRouteWithID(routeID: first.routeID)
         }
@@ -901,6 +927,11 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
         self.startNavigationButton.isHidden = false
         self.startNavigationButton.isEnabled = true
         self.startNavigationButton.backgroundColor = .systemGreen
+        
+        if isKeywordSearch {
+            self.navAction()
+            isKeywordSearch.toggle()
+        }
     }
         
     func driveManager(onArrivedDestination driveManager: AMapNaviDriveManager) {

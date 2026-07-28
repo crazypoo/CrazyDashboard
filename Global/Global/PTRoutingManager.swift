@@ -9,6 +9,8 @@ import UIKit
 import Foundation
 import PooTools
 
+public let MotorcycleSearchAndNavigate = NSNotification.Name("MotorcycleSearchAndNavigate")
+
 /// 1. 定义类型安全的指令枚举 (App Intents)
 /// 这里的每一个 case 都代表一个允许外部唤醒的功能
 public enum PTAppIntent {
@@ -20,6 +22,7 @@ public enum PTAppIntent {
     case openHUD
     /// 去找加油站
     case confirmGasStationRoute
+    case navigateTo(destination: String)
     /// 未知或不支持的指令
     case unknown
 }
@@ -72,6 +75,11 @@ public class PTRoutingManager: NSObject {
             return .openHUD
         case "confirmGasStationRoute":
             return .confirmGasStationRoute
+        case "navigate":
+            if let destination = components.queryItems?.first(where: { $0.name == "destination" })?.value, !destination.isEmpty {
+                return .navigateTo(destination: destination)
+            }
+            return .unknown
         default:
             return .unknown
         }
@@ -118,6 +126,11 @@ public class PTRoutingManager: NSObject {
             PTFuelRoutingManager.shared.confirmAndSendGasStationRoute()
             // 贴心小优化：触发语音反馈，让戴着头盔的骑手知道指令已经成功执行了
             SpeechSynthesizer.Shared.speak(PTDashboardConfig.languageFunc(text: "button_done"))
+        case .navigateTo(let destination):
+            NotificationCenter.default.post(name: MotorcycleSearchAndNavigate, object: destination)
+            if let vc = PTUtils.getCurrentVC() as? PTMotoBaseViewController,let tabbar = vc.tabBarController as? PTMotoBaseTabbarController {
+                tabbar.ptCustomBar.select(1)
+            }
         case .unknown:
             PTNSLogConsole("❓ [路由引擎] 收到无法解析的外部指令")
         }
