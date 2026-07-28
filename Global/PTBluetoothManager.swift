@@ -161,6 +161,14 @@ struct PTAncsNotif {
     let message: String
     let category: UInt8 // 例如：1 代表 Call，4 代表 Social
     let appId: String
+    
+    public init(uid: UInt32, title: String, message: String, category: UInt8, appId: String) {
+        self.uid = uid
+        self.title = title
+        self.message = message
+        self.category = category
+        self.appId = appId
+    }
 }
 
 // MARK: - 导航与状态数据模型
@@ -339,6 +347,8 @@ enum PTManeuverMap {
     static let ferry: UInt8 = 45        // 0x2D 轮渡 (推测)
     static let returnToRoute: UInt8 = 46// 0x2E 回到路线
     static let noValidAction: UInt8 = 47// 0x2F 无有效动作
+    static let rerouting: UInt8 = 48    // 0x30 ICON_REROUTING (重新算路图标)[cite: 2]
+    static let noGPS: UInt8 = 49        // 0x31 ICON_NO_GPS (无 GPS 图标)[cite: 2]
 }
 
 // MARK: - 安全认证中心 (完整版)
@@ -571,7 +581,7 @@ extension PTFrameBuilder {
         payload.append(UInt8(nextRoadData.count))
         payload.append(nextRoadData)
         
-        // 4. Current Road (当前道路): [Size][Text] (最大 50 字节，注意这里没有 Hdr)[cite: 1]
+        // 4. Current Road (当前道路): [Size][Text] (最大 50 字节，注意这里没有 Hdr)
         let curRoadData = encodeString(info.nameCurrentRoad)
         payload.append(UInt8(curRoadData.count))
         payload.append(curRoadData)
@@ -580,19 +590,19 @@ extension PTFrameBuilder {
         payload.append(1)
         payload.append(info.currentSpeedLimit)
         
-        // 6. Total Distance (剩余总距离): [Hdr=4][4-byte Dist 大端序][cite: 1]
+        // 6. Total Distance (剩余总距离): [Hdr=4][4-byte Dist 大端序]
         payload.append(4)
         var totalDist = info.distanceToDestination.bigEndian
         payload.append(Data(bytes: &totalDist, count: MemoryLayout<UInt32>.size))
         
-        // 7. ETA (预计到达时间): [Hdr=7][7-byte Date/Time 大端序][cite: 1]
+        // 7. ETA (预计到达时间): [Hdr=7][7-byte Date/Time 大端序]
         payload.append(7)
         
-        // 通过当前时间 + 剩余秒数，计算出预计到达的真实时间[cite: 1]
+        // 通过当前时间 + 剩余秒数，计算出预计到达的真实时间
         let etaDate = Calendar.current.date(byAdding: .second, value: info.estimatedTimeToDestinationSec, to: Date()) ?? Date()
         let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: etaDate)
         
-        // 写入年份 (Short, 2字节)[cite: 1]
+        // 写入年份 (Short, 2字节)
         var year = UInt16(comps.year ?? 2026).bigEndian
         payload.append(Data(bytes: &year, count: MemoryLayout<UInt16>.size))
         
@@ -608,10 +618,10 @@ extension PTFrameBuilder {
         return wrapTxFrame(idFrame: ID_NAVIGATION, payload: payload)
     }
 
-    // 字符串截断与编码辅助方法[cite: 2]
+    // 字符串截断与编码辅助方法
     private static func encodeString(_ text: String) -> Data {
-        // Android 中采用了 ISO_8859_1 或 UTF_8 编码，并限制最大 50 字节[cite: 2]
-        let data = text.data(using: .isoLatin1) ?? text.data(using: .utf8) ?? Data()
+        let normalizedStr = text.folding(options: .diacriticInsensitive, locale: .current)
+        let data = normalizedStr.data(using: .isoLatin1) ?? Data()
         if data.count > 50 {
             return data.prefix(50)
         }
@@ -751,6 +761,8 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     private var isCreditsSubscribed = false
     private var localCredits = 0
     private var connectedCentral: CBCentral?
+    
+    private var sendCredits = 0
     
     var onLogUpdated: ((String) -> Void)?
     
@@ -898,6 +910,14 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
                     if localCredits <= 4 { grantScooterCredits() }
                 }
                 handleIncoming(data: data)
+            } else if request.characteristic.uuid == UART_RX_CREDITS {
+                // 🚨 核心修复 1：接收摩托车发放的发送令牌 (Credits)！
+                let addedCredits = Int(data[0])
+                self.sendCredits += addedCredits
+                self.ptLog("🎟️ [流控通道] 摩托车发放了 \(addedCredits) 个发送令牌，当前总余额: \(self.sendCredits)")
+                
+                // 拿到令牌后，立刻启动发送泵，把积压的导航数据发出去
+                self.pumpQueue()
             }
         }
     }
@@ -1002,13 +1022,15 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
 
     private func sendChunkedData(data: Data, to characteristic: CBMutableCharacteristic, completion: (() -> Void)? = nil) {
         var offset = 0
+        let hexString = data.map { String(format: "%02hhx", $0) }.joined()
+        self.ptLog("⬆️ [发送包] 正在发射指令: \(hexString)")
         // 🚨 优化：向订阅了该特征的中心设备查询它所支持的最大长度，如果没有则安全降级回默认值 20
         // 对于 WriteWithoutResponse 或 Notify，使用 .withoutResponse 类型的 MTU
-        let maxChunkSize = connectedCentral?.maximumUpdateValueLength ?? 20
-        
+        let maxChunkSize = 20
+                
         let totalChunks = Int(ceil(Double(data.count) / Double(maxChunkSize)))
         var currentChunk = 0
-        
+
         while offset < data.count {
             let end = min(offset + maxChunkSize, data.count)
             currentChunk += 1
@@ -1029,8 +1051,14 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         let job = sendQueue[0]
         
         // 🚨 终极死锁破除器：如果当前没有车机订阅此通道，强制丢弃以防永久卡死
-        let centrals = job.characteristic.subscribedCentrals
-        if centrals == nil || centrals!.isEmpty {
+        if job.characteristic.uuid == UART_TX {
+            // 如果余额不足，绝对不能发！挂起队列，等待车机通过 RX_CREDITS 补充令牌
+            guard self.sendCredits > 0 else {
+                return
+            }
+        }
+
+        if !self.isTioSubscribed {
             let completedJob = sendQueue.removeFirst()
             if let callback = completedJob.completion {
                 DispatchQueue.main.async { callback() }
@@ -1039,10 +1067,15 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
             return
         }
         
+        // 下方代码保持你原来的逻辑不变
         let success = peripheralManager.updateValue(job.data, for: job.characteristic, onSubscribedCentrals: nil)
         
         if success {
             let completedJob = sendQueue.removeFirst()
+            if completedJob.characteristic.uuid == UART_TX {
+                self.sendCredits -= 1
+            }
+
             if let callback = completedJob.completion {
                 DispatchQueue.main.async { callback() }
             }
@@ -1055,6 +1088,18 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
 extension PTBluetoothServerManager {
     
     // MARK: - 发送导航与控制指令
+    func sendCustomAlertToDashboard(title: String, message: String) {
+        // 1. 创建一个唯一的 UID
+        let alertUid = UInt32(Date().timeIntervalSince1970) % 100000
+        
+        let notif = PTAncsNotif(uid: alertUid, title: title, message: message, category: 1, appId: "com.ptools.moto")
+        
+        // 2. 生成“通知到达”帧
+        let sourceFrame = PTFrameBuilder.buildAncsNotifSourceFrame(notif: notif)
+        
+        // 3. 将数据压入蓝牙发送队列 (假设你有一个特征值专门处理 ANCS 数据)
+        // sendChunkedData(data: sourceFrame, to: ancsCharacteristic)
+    }
     
     // 发送导航定位信息
     func sendNavigation(info: PTNavigationInfo) {

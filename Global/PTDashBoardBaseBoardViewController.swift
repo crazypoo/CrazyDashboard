@@ -68,11 +68,6 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
             motionBlockSet()
         }
         
-        if PTLocationEngine.shared.isTracking {
-            PTLocationEngine.shared.switchEngineMode(to: .riding)
-            locationEngineBlockSet()
-        }
-        
         PTTripManager.shared.liveStatsBlock = { [weak self] tripStats in
             self?.tripStatsView.updateStats(with: tripStats)
         }
@@ -108,13 +103,13 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
             self.showEmergencyOverlay(false)
         }
     }
-    
-    func locationEngineBlockSet() {
-        PTLocationEngine.shared.locationBlock = { [weak self] tripData in
-            self?.speedometer.updateSpeed(PTDashboardConfig.shared.appShowMileage(PTMotion.shared.currentSpeedKmh))
-            self?.compassRoller.updateHeading(tripData.courseDegree)
-            self?.speedometer.updateEnvironment(altitude: tripData.altitude, pressureKpa: nil)
-        }
+        
+    @objc private func handleLocationUpdate(_ notification: Notification) {
+        guard let tripData = notification.object as? PTTripData else { return }
+        
+        self.speedometer.updateSpeed(PTDashboardConfig.shared.appShowMileage(PTMotion.shared.currentSpeedKmh))
+        self.compassRoller.updateHeading(tripData.courseDegree)
+        self.speedometer.updateEnvironment(altitude: tripData.altitude, pressureKpa: nil)
     }
 
     private func setupDashboardUI() {
@@ -191,11 +186,11 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
     
     @MainActor private func startPootoolsEngines() {
         // 调用你 pootools 里的引擎
+        PTLocationEngine.shared.switchEngineMode(to: .riding)
         if !PTLocationEngine.shared.isTracking {
-            PTLocationEngine.shared.switchEngineMode(to: .riding)
             PTLocationEngine.shared.startTracking()
-            locationEngineBlockSet()
         }
+        NotificationCenter.default.addObserver(self, selector: #selector(handleLocationUpdate(_:)), name: PTLocationEngineDidUpdate, object: nil)
         
         if !PTMotion.shared.motionStarted {
             PTMotion.shared.startMotion()

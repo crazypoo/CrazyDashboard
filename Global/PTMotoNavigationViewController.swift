@@ -362,6 +362,10 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         return view
     }()
     
+    @MainActor deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
     open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
         return .solid(.clear)
     }
@@ -419,28 +423,29 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     // MARK: - 初始化配置
     private func setupLocationManager() {
         PTLocationEngine.shared.switchEngineMode(to: .riding)
-        if PTLocationEngine.shared.isTracking {
-            locationEngineBlockSet()
-        } else {
+        if !PTLocationEngine.shared.isTracking {
             PTLocationEngine.shared.startTracking()
-            locationEngineBlockSet()
+        }
+        NotificationCenter.default.addObserver(self, selector: #selector(handleLocationUpdate(_:)), name: PTLocationEngineDidUpdate, object: nil)
+    }
+        
+    @objc private func handleLocationUpdate(_ notification: Notification) {
+        guard let tripData = notification.object as? PTTripData,
+              let coordinate = tripData.currentLocation else { return }
+        
+        self.userCurrentLocation = AMapNaviPoint.location(withLatitude: coordinate.coordinate.latitude, longitude: coordinate.coordinate.longitude)!
+        
+        // 🚨 核心修复 2：发起请求前，立刻将标记设为 true，打破无限网络请求的死循环！
+        if !self.loadCurrentLocation {
+            self.loadCurrentLocation = true
+            
+            let regeo = AMapReGeocodeSearchRequest()
+            regeo.location = AMapGeoPoint.location(withLatitude: coordinate.coordinate.latitude, longitude: coordinate.coordinate.longitude)
+            regeo.requireExtension = true
+            self.search.aMapReGoecodeSearch(regeo)
         }
     }
-    
-    func locationEngineBlockSet() {
-        PTLocationEngine.shared.locationBlock = { [weak self] tripData in
-            if let coordinate = tripData.currentLocation {
-                self?.userCurrentLocation = AMapNaviPoint.location(withLatitude: coordinate.coordinate.latitude, longitude: coordinate.coordinate.longitude)!
-                if !(self?.loadCurrentLocation ?? false) {
-                    let regeo = AMapReGeocodeSearchRequest()
-                    regeo.location = AMapGeoPoint.location(withLatitude: coordinate.coordinate.latitude, longitude: coordinate.coordinate.longitude)
-                    regeo.requireExtension = true
-                    self?.search.aMapReGoecodeSearch(regeo)
-                }
-            }
-        }
-    }
-    
+
     // MARK: - UI 布局实现
     private func setupUI() {
         NotificationCenter.default.addObserver(self, selector: #selector(dashBoardReload), name: MotorcycleDashBoardChange, object: nil)
@@ -973,6 +978,37 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
             return PTManeuverMap.straight
         }
     }
+    
+    func driveManager(_ driveManager: AMapNaviDriveManager, onCalculateRouteSuccessWith type: AMapNaviRoutePlanType) {
+        let rerouteInfo = PTNavigationInfo(
+            nextManeuver: PTManeuverMap.rerouting, // 🌟 仪表盘将显示“重新算路”图标
+            metersToNextManeuver: 0,
+            nameNextRoad: "Rerouting...",
+            nameCurrentRoad: "",
+            currentSpeedLimit: 0,
+            distanceToDestination: 0,
+            estimatedTimeToDestinationSec: 0
+        )
+        PTBluetoothServerManager.shared.sendNavigation(info: rerouteInfo)
+    }
+        
+    func driveManager(_ driveManager: AMapNaviDriveManager, update gpsSignalStrength: AMapNaviGPSSignalStrength) {
+        switch gpsSignalStrength {
+        case .smartPos:
+            break
+        default:
+            let noGpsInfo = PTNavigationInfo(
+                nextManeuver: PTManeuverMap.noGPS, // 🌟 仪表盘将显示“无GPS/卫星打叉”图标
+                metersToNextManeuver: 0,
+                nameNextRoad: "Searching GPS...",
+                nameCurrentRoad: "",
+                currentSpeedLimit: 0,
+                distanceToDestination: 0,
+                estimatedTimeToDestinationSec: 0
+            )
+            PTBluetoothServerManager.shared.sendNavigation(info: noGpsInfo)
+        }
+    }
 }
 
 extension PTMotoNavigationViewController : AMapNaviDriveViewDelegate {
@@ -1002,6 +1038,15 @@ extension PTMotoNavigationViewController : AMapNaviDriveViewDelegate {
 
 extension PTMotoNavigationViewController:AMapNaviDriveDataRepresentable {
          
+    func driveManager(_ driveManager: AMapNaviDriveManager, updateCruiseElecCameraInfos cameraInfos: [AMapNaviTrafficFacilityInfo]) {
+        if let firstCamera = cameraInfos.first {
+            // cameraSpeed 通常代表该路段限速，为 0 时表示无限速或未知
+            if firstCamera.limitSpeed > 0 {
+                self.currentSpeedLimit = UInt8(firstCamera.limitSpeed)
+            }
+        }
+    }
+    
     func driveManager(_ driveManager: AMapNaviDriveManager, update cameraInfos: [AMapNaviCameraInfo]?) {
         if let firstCamera = cameraInfos?.first {
             // cameraSpeed 通常代表该路段限速，为 0 时表示无限速或未知
@@ -1015,6 +1060,7 @@ extension PTMotoNavigationViewController:AMapNaviDriveDataRepresentable {
         guard let naviInfo = naviInfo else {
             return
         }
+        PTNSLogConsole("\(naviInfo)")
         // --- 核心逻辑开始 ---
         // 1. 获取距离下一个转弯动作的剩余距离 (米)
         let distanceToNextManeuver = naviInfo.segmentRemainDistance

@@ -9,6 +9,8 @@ import Foundation
 import AMapLocationKit // 🌟 引入高德定位 SDK
 import PooTools
 
+public let PTLocationEngineDidUpdate = NSNotification.Name("PTLocationEngineDidUpdate")
+
 // 🌟 引擎运行模式
 public enum PTLocationEngineMode {
     case riding      // 骑行模式：注重行程统计，允许系统在长时间静止时自动挂起以省电
@@ -21,13 +23,10 @@ public struct PTTripData: Sendable {
     public var currentLocation: CLLocation?
 }
 
-public typealias PTLocationTripBlock = (_ data: PTTripData) -> Void
-
 @objcMembers
 public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 修改代理协议为高德
     
     public static let shared = PTLocationEngine()
-    public var locationBlock: PTLocationTripBlock?
     
     // 🌟 核心替换：使用高德定位管理器
     private let locationManager = AMapLocationManager()
@@ -175,8 +174,8 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
             currentLocation: location
         )
         
-        DispatchQueue.main.async { [weak self] in
-            self?.locationBlock?(tripData)
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: PTLocationEngineDidUpdate, object: tripData)
         }
     }
     
@@ -187,7 +186,7 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
         currentHeading = newHeading.trueHeading > 0 ? newHeading.trueHeading : newHeading.magneticHeading
         
         // 低速状态下主动刷新 UI 指南针
-        if (locationBlock != nil) && (lastLocation != nil) {
+        if (lastLocation != nil) {
             let speed = max(0, (lastLocation?.speed ?? 0) * 3.6)
             if speed < 5.0 {
                 let tripData = PTTripData(
@@ -195,8 +194,8 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
                     altitude: currentAltitude,
                     currentLocation: self.lastLocation
                 )
-                DispatchQueue.main.async { [weak self] in
-                    self?.locationBlock?(tripData)
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: PTLocationEngineDidUpdate, object: tripData)
                 }
             }
         }

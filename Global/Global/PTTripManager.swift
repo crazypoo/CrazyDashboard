@@ -326,26 +326,28 @@ public class PTTripManager: NSObject {
         
         PTLocationEngine.shared.switchEngineMode(to: .riding)
         PTLocationEngine.shared.startTracking()
-        PTLocationEngine.shared.locationBlock = { [weak self] tripData in
-            guard let self = self, self.isRiding else { return }
-            // 只要拿到了有效的新坐标，就追加到地图轨迹数组中
-            if let loc = tripData.currentLocation {
-                let point = PTRoutePoint(
-                    lat: loc.coordinate.latitude,
-                    lon: loc.coordinate.longitude,
-                    altitude: loc.altitude,
-                    timestamp: Date(),
-                    speed: PTMotion.shared.currentSpeedKmh,
-                    rpm: self.maxRpm,
-                    leanAngle: self.currentLiveRoll,
-                    gForceY: self.currentLiveGForceY,
-                    gForceX: self.currentLiveGForceX
-                )
-                self.routeArray.append(point)
-            }
-        }
+        NotificationCenter.default.addObserver(self, selector: #selector(handleLocationUpdate(_:)), name: PTLocationEngineDidUpdate, object: nil)
     }
     
+    @objc private func handleLocationUpdate(_ notification: Notification) {
+        guard let tripData = notification.object as? PTTripData,
+              let coordinate = tripData.currentLocation,
+              self.isRiding else { return }
+        
+        let point = PTRoutePoint(
+            lat: coordinate.coordinate.latitude,
+            lon: coordinate.coordinate.longitude,
+            altitude: coordinate.altitude,
+            timestamp: Date(),
+            speed: PTMotion.shared.currentSpeedKmh,
+            rpm: self.maxRpm,
+            leanAngle: self.currentLiveRoll,
+            gForceY: self.currentLiveGForceY,
+            gForceX: self.currentLiveGForceX
+        )
+        self.routeArray.append(point)
+    }
+
     @objc private func handleControlData(_ notification: Notification) {
         guard isRiding, let control = notification.object as? PTDashboardControl else { return }
                 

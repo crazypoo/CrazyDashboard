@@ -52,6 +52,9 @@ class PTTripDataCell: PTBaseNormalCell {
             let aModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "海拔"), color: .systemRed, data: cellModel.relativeAltitudeTrace)
             altitudeChart.bindData(lines: [aModel])
             
+            let pressureModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "气压"), color: .systemRed, data: cellModel.pressureTrace)
+            pressureChart.bindData(lines: [pressureModel])
+            
             guard let gpxName = cellModel.gpxFileName else { return }
             let imageName = gpxName.replacingOccurrences(of: ".gpx", with: ".jpg")
             
@@ -119,6 +122,11 @@ class PTTripDataCell: PTBaseNormalCell {
         return view
     }()
     
+    lazy var pressureChart:PTNativeTelemetryChartView = {
+        let view = PTNativeTelemetryChartView()
+        return view
+    }()
+    
     lazy var thumbnailImageView:UIButton = {
         let view = UIButton(type:.custom)
         view.imageView?.contentMode = .scaleAspectFit
@@ -157,7 +165,7 @@ class PTTripDataCell: PTBaseNormalCell {
     public override init(frame: CGRect) {
         super.init(frame: frame)
         
-        contentView.addSubviews([timeLabel,leanAngleChart,gChart,pChart,altitudeChart,thumbnailImageView,gpxButton])
+        contentView.addSubviews([timeLabel,leanAngleChart,gChart,pChart,altitudeChart,pressureChart,thumbnailImageView,gpxButton])
         timeLabel.snp.makeConstraints { make in
             make.left.top.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
         }
@@ -183,9 +191,14 @@ class PTTripDataCell: PTBaseNormalCell {
             make.top.equalTo(self.pChart.snp.bottom).offset(CGFloat.GlobalItemSpacing)
         }
         
+        pressureChart.snp.makeConstraints { make in
+            make.left.right.height.equalTo(self.leanAngleChart)
+            make.top.equalTo(self.altitudeChart.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+        }
+        
         thumbnailImageView.snp.makeConstraints { make in
             make.size.equalTo(PTTripDataCell.MapHeight)
-            make.top.equalTo(self.altitudeChart.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.top.equalTo(self.pressureChart.snp.bottom).offset(CGFloat.GlobalItemSpacing)
             make.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
         }
         thumbnailImageView.layoutIfNeeded()
