@@ -18,6 +18,8 @@ public enum PTAppIntent {
     case toggleAntiTheft(enable: Bool)
     /// 开启沉浸式 HUD 模式
     case openHUD
+    /// 去找加油站
+    case confirmGasStationRoute
     /// 未知或不支持的指令
     case unknown
 }
@@ -68,7 +70,8 @@ public class PTRoutingManager: NSObject {
             
         case "openHUD":
             return .openHUD
-            
+        case "confirmGasStationRoute":
+            return .confirmGasStationRoute
         default:
             return .unknown
         }
@@ -109,6 +112,12 @@ public class PTRoutingManager: NSObject {
             PTNSLogConsole("🗣️ [路由引擎] 收到 Siri 指令：开启 HUD")
             let vc = PTDashBoardBaseBoardViewController()
             PTUtils.getCurrentVC()?.navigationController?.pushViewController(vc, animated: true)
+        case .confirmGasStationRoute:
+            PTNSLogConsole("🗣️ [路由引擎] 收到 Siri 指令：确认前往加油站")
+            // 直接调用你写好的确认下发方法
+            PTFuelRoutingManager.shared.confirmAndSendGasStationRoute()
+            // 贴心小优化：触发语音反馈，让戴着头盔的骑手知道指令已经成功执行了
+            SpeechSynthesizer.Shared.speak(PTDashboardConfig.languageFunc(text: "button_done"))
         case .unknown:
             PTNSLogConsole("❓ [路由引擎] 收到无法解析的外部指令")
         }

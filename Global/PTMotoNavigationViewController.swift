@@ -393,8 +393,29 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         vcDidLoad = true
         
         motoParkingLocation()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(handleEmergencyNavigation(_:)), name: MotorcycleStartRealNavigation, object: nil)
     }
     
+    @objc private func handleEmergencyNavigation(_ notification: Notification) {
+        guard let dict = notification.object as? [String: Any],
+              let coordinate = dict["coordinate"] as? CLLocationCoordinate2D,
+              let title = dict["title"] as? String else { return }
+        
+        // 1. 如果用户原本没在导航界面，可以将界面自动跳出来 (取决于你的产品设计)
+        // 2. 调用我们之前写好的路线规划
+        planRoute(to: coordinate, title: title)
+        setPointPin(location: coordinate)
+        
+        // 3. (可选体验优化) 可以稍微延迟 1.5 秒等高德算好路，自动调用 startNavigationTapped()
+        // 这样骑手连屏幕都不用点，算好路直接进入仪表盘逐向导航模式！
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            if self.startNavigationButton.isEnabled { // 代表算路成功
+                self.startNavigationButton.sendActions(for: .touchUpInside)
+            }
+        }
+    }
+
     // MARK: - 初始化配置
     private func setupLocationManager() {        
         if PTLocationEngine.shared.isTracking {

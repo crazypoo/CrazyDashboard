@@ -12,6 +12,7 @@ import PooTools
 
 // 🚨 新增：定义一个新的广播通知，专门用于唤起 UI 的手动确认
 public let MotorcycleLowFuelActionRequired = NSNotification.Name("MotorcycleLowFuelActionRequired")
+public let MotorcycleStartRealNavigation = NSNotification.Name("MotorcycleStartRealNavigation")
 
 @objcMembers
 public class PTFuelRoutingManager: NSObject, AMapSearchDelegate {
@@ -28,7 +29,8 @@ public class PTFuelRoutingManager: NSObject, AMapSearchDelegate {
     private var currentLocationForSearch: CLLocation?
     
     // 🚨 新增：用于暂存即将发送的导航指令，等待骑手点击确认
-    private var pendingGasStationNavInfo: PTNavigationInfo?
+    private var pendingGasStationCoordinate: CLLocationCoordinate2D?
+    private var pendingGasStationName: String?
     
     private override init() {
         super.init()
@@ -43,7 +45,8 @@ public class PTFuelRoutingManager: NSObject, AMapSearchDelegate {
     
     @objc private func resetFuelState() {
         hasTriggeredLowFuel = false
-        pendingGasStationNavInfo = nil // 重置缓存
+        pendingGasStationCoordinate = nil
+        pendingGasStationName = nil
     }
     
     @objc private func handleData1(_ notification: Notification) {
@@ -79,23 +82,14 @@ public class PTFuelRoutingManager: NSObject, AMapSearchDelegate {
         }
         
         let stationName = nearestStation.name ?? "未知加油站"
-        let stationLoc = CLLocation(latitude: CLLocationDegrees(nearestStation.location.latitude),
-                                    longitude: CLLocationDegrees(nearestStation.location.longitude))
-        let distanceMeters = currentLoc.distance(from: stationLoc)
+        let stationLoc = CLLocationCoordinate2D(latitude: CLLocationDegrees(nearestStation.location.latitude),
+                                                longitude: CLLocationDegrees(nearestStation.location.longitude))
+        let distanceMeters = currentLoc.distance(from: CLLocation(latitude: stationLoc.latitude, longitude: stationLoc.longitude))
         
-        // 组装协议帧，但【不立即发送】
-        let navInfo = PTNavigationInfo(
-            nextManeuver: PTManeuverMap.straight,
-            metersToNextManeuver: UInt32(distanceMeters),
-            nameNextRoad: "前往: \(stationName)",
-            nameCurrentRoad: "⚠️ 燃油告急",
-            currentSpeedLimit: 0,
-            distanceToDestination: UInt32(distanceMeters),
-            estimatedTimeToDestinationSec: Int(distanceMeters / (40.0 * 1000.0 / 3600.0))
-        )
+        // 🚨 核心逻辑：缓存真实坐标，推送纯文本给 UI 或 HUD
+        self.pendingGasStationCoordinate = stationLoc
+        self.pendingGasStationName = stationName
         
-        // 🚨 核心逻辑：缓存指令，并通过通知将文字推给 UI
-        self.pendingGasStationNavInfo = navInfo
         let promptText = "油量告急，点击导航至: \(stationName) (\(Int(distanceMeters))米)"
         
         NotificationCenter.default.post(name: MotorcycleLowFuelActionRequired, object: promptText)
@@ -109,16 +103,23 @@ public class PTFuelRoutingManager: NSObject, AMapSearchDelegate {
     // MARK: - 🚨 暴露给 UI 调用的确认接口
     /// 当骑手在 HUD 上点击了提示容器后，调用此方法真正下发导航
     public func confirmAndSendGasStationRoute() {
-        guard let navInfo = pendingGasStationNavInfo else {
-            PTNSLogConsole("⚠️ [加油管家] 没有缓存的救援路线可发送")
+        guard let coordinate = pendingGasStationCoordinate, let name = pendingGasStationName else {
+            PTNSLogConsole("⚠️ [加油管家] 没有缓存的救援坐标可发送")
             return
         }
         
-        // 真正下发给摩托车
-        PTBluetoothServerManager.shared.sendNavigation(info: navInfo)
-        // 发送完毕后清空缓存
-        pendingGasStationNavInfo = nil
+        // 🚨 完美衔接：发送全局通知，把坐标和名字丢给高德导航引擎去真实规划！
+        let targetDict: [String: Any] = ["coordinate": coordinate, "title": name]
+        NotificationCenter.default.post(name: MotorcycleStartRealNavigation, object: targetDict)
         
-        PTNSLogConsole("🚀 [加油管家] 骑手已确认！救援路线成功下发至仪表盘！")
+        if let vc = PTUtils.getCurrentVC() as? PTMotoBaseViewController,let tabbar = vc.tabBarController as? PTMotoBaseTabbarController {
+            tabbar.ptCustomBar.select(1)
+        }
+        
+        // 发送完毕后清空缓存
+        pendingGasStationCoordinate = nil
+        pendingGasStationName = nil
+        
+        PTNSLogConsole("🚀 [加油管家] 骑手已确认！已唤醒高德地图真实导航引擎！")
     }
 }

@@ -10,6 +10,7 @@ import PooTools
 import SwifterSwift
 import SnapKit
 import SafeSFSymbols
+import AttributedString
 
 class PTMotoSettingViewController: PTMotoBaseViewController {
 
@@ -180,13 +181,13 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         view.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .normal)
         view.setTitle("TCS mode:" + (name ?? PTTCSMode.unknown.description), for: .normal)
         view.addActionHandlers(handler: { _ in
-            let ids:[UInt8] = [UInt8(2),UInt8(3),UInt8(4),UInt8(5),UInt8(6)]
-            let nameMap:[String] = ids.map { value in
-                return "\(value)"
-            }
-            UIAlertController.base_alertVC(title: "Test",okBtns: nameMap,cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
-                PTBluetoothServerManager.shared.sendTCSMode(id: UInt8(7), mode: PTTCSMode.off)
-            })
+//            let ids:[UInt8] = [UInt8(2),UInt8(3),UInt8(4),UInt8(5),UInt8(6)]
+//            let nameMap:[String] = ids.map { value in
+//                return "\(value)"
+//            }
+//            UIAlertController.base_alertVC(title: "Test",okBtns: nameMap,cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
+//                PTBluetoothServerManager.shared.sendTCSMode(id: UInt8(7), mode: PTTCSMode.off)
+//            })
         })
         return view
     }()
@@ -198,14 +199,20 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         view.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .normal)
         view.setTitle("Light mode:" + (name ?? PTBacklightMode.unknown.description), for: .normal)
         view.addActionHandlers(handler: { _ in
-            let ids:[UInt8] = [UInt8(2),UInt8(3),UInt8(4),UInt8(5),UInt8(6)]
-            let nameMap:[String] = ids.map { value in
-                return "\(value)"
-            }
-            UIAlertController.base_alertVC(title: "Test",okBtns: nameMap,cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
-                PTBluetoothServerManager.shared.sendLightMode(id: ids[index], mode: .led0)
-            })
+//            let ids:[UInt8] = [UInt8(2),UInt8(3),UInt8(4),UInt8(5),UInt8(6)]
+//            let nameMap:[String] = ids.map { value in
+//                return "\(value)"
+//            }
+//            UIAlertController.base_alertVC(title: "Test",okBtns: nameMap,cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
+//                PTBluetoothServerManager.shared.sendLightMode(id: ids[index], mode: .led0)
+//            })
         })
+        return view
+    }()
+    
+    lazy var shortCut:UILabel = {
+        let view = UILabel()
+        view.numberOfLines = 0
         return view
     }()
         
@@ -225,7 +232,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleCONTROL, object: nil)
 
         view.backgroundColor = .black
-        view.addSubviews([dashBoadColorTitle,dashBoardColorButton,dashUniTitle,dashBoardUniButton,dashLanguageTitle,dashBoardLanguageButton,messageTestButton,disconnect,proButton,tcsValueLabel,lightValueLabel])
+        view.addSubviews([dashBoadColorTitle,dashBoardColorButton,dashUniTitle,dashBoardUniButton,dashLanguageTitle,dashBoardLanguageButton,messageTestButton,disconnect,proButton,tcsValueLabel,lightValueLabel,shortCut])
         dashBoadColorTitle.snp.makeConstraints { make in
             make.left.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.right.equalTo(self.view.snp.centerX)
@@ -289,6 +296,22 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             make.left.right.height.equalTo(self.disconnect)
             make.bottom.equalTo(self.disconnect.snp.top).offset(-CGFloat.GlobalItemSpacing)
         }
+        
+        shortCut.snp.makeConstraints { make in
+            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.top.equalTo(self.lightValueLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+        }
+        
+        let shortAtt: ASAttributedString = """
+                    \(wrap: .embedding("""
+                    \(PTDashboardConfig.languageFunc(text: "Support shortcut"),.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
+                    \("xp400://checkFuel",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
+                    \("xp400://antiTheft?enable=true OR xp400://antiTheft?enable=false",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
+                    \("xp400://openHUD",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
+                    \("xp400://confirmGasStationRoute",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
+                    """),.paragraph(.alignment(.left)))
+                    """
+        shortCut.attributed.text = shortAtt
                 
         dashBoardColorButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashBoardUniButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
