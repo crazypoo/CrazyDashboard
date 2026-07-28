@@ -42,6 +42,7 @@
 "direction_south_west" = "西南";
 "direction_west" = "西";
 "elevation_value" = "海拔:%dm";
+"empty_data_empty" = "没有数据";
 "empty_data_normal" = "没有数据";
 "engine_closing" = "关闭中";
 "engine_cold" = "未启动";
@@ -60,6 +61,9 @@
 "music_not_play" = "暂无播放";
 "music_unknow_artist" = "未知歌手";
 "music_unknow_music" = "未知歌曲";
+"parking_lock_msg" = "防盗守护已通过 Siri 开启。";
+"parking_lock_title" = "系统锁定";
+"parking_unlock_title" = "系统解锁";
 "pin_parking" = "你的车在这里";
 "pitch_down" = "▼ %d° 下坡";
 "pitch_normal" = "0° 平路";
@@ -72,7 +76,10 @@
 "set_bad" = "设置失败";
 "set_success" = "设置成功";
 "shake_value" = "颠簸 G";
+"short_cut_fuel" = "Siri发现油量仅剩 %d%，点击确认导航至最近加油站！";
+"short_cut_fuel_msg" = "当前油量 %d%，请放心骑行。";
+"short_cut_fuel_title" = "油量充足";
 "tab_navigation" = "导航";
 "tab_setting" = "设置";
 "vechicle_pitch" = "车身姿态 (Pitch)";
-"empty_data_empty" = "没有数据";
+"parking_unlock_msg" = "防盗守护已解除。";

@@ -84,10 +84,11 @@ public class PTRoutingManager: NSObject {
             if let latestData1 = PTBluetoothServerManager.shared.latestData1 {
                 if latestData1.fuelLevelPct <= 15 {
                     // 模拟触发低油量广播，唤醒 HUD 弹窗
-                    let promptText = "Siri发现油量仅剩 \(latestData1.fuelLevelPct)%，点击确认导航至最近加油站！"
+                    let promptText = PTDashboardConfig.language(key: "short_cut_fuel", latestData1.fuelLevelPct)
+                    SpeechSynthesizer.Shared.speak(promptText)
                     NotificationCenter.default.post(name: MotorcycleLowFuelActionRequired, object: promptText)
                 } else {
-                    PTMessagePusher.pushToDashboard(title: "油量充足", body: "当前油量 \(latestData1.fuelLevelPct)%，请放心骑行。")
+                    PTMessagePusher.pushToDashboard(title: PTDashboardConfig.languageFunc(text: "short_cut_fuel_title"), body: PTDashboardConfig.language(key: "short_cut_fuel_msg", latestData1.fuelLevelPct))
                 }
             } else {
                 PTNSLogConsole("⚠️ [路由引擎] 蓝牙未连接，无法查询实时油量。")
@@ -98,10 +99,10 @@ public class PTRoutingManager: NSObject {
             if enable {
                 // 调用之前写的防盗管理器打卡
                 PTMOTOParkingManager.shared.saveCurrentLocationAsParkingSpot()
-                PTMessagePusher.pushToDashboard(title: "系统锁定", body: "防盗守护已通过 Siri 开启。")
+                PTMessagePusher.pushToDashboard(title: PTDashboardConfig.languageFunc(text: "parking_lock_title"), body: PTDashboardConfig.languageFunc(text: "parking_lock_msg"))
             } else {
                 PTMOTOParkingManager.shared.clearParkingSpot()
-                PTMessagePusher.pushToDashboard(title: "系统解锁", body: "防盗守护已解除。")
+                PTMessagePusher.pushToDashboard(title: PTDashboardConfig.languageFunc(text: "parking_unlock_title"), body: PTDashboardConfig.languageFunc(text: "parking_unlock_msg"))
             }
             
         case .openHUD:

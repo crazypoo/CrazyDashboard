@@ -42,6 +42,7 @@
 "direction_south_west" = "SouthWest";
 "direction_west" = "West";
 "elevation_value" = "Altitude:%dm";
+"empty_data_empty" = "No data";
 "empty_data_normal" = "No data";
 "engine_closing" = "Closure";
 "engine_cold" = "Not started";
@@ -60,6 +61,9 @@
 "music_not_play" = "Not play";
 "music_unknow_artist" = "Unknows artist";
 "music_unknow_music" = "Unknown song";
+"parking_lock_msg" = "The anti-theft guard has been turned on through Siri.";
+"parking_lock_title" = "System lock";
+"parking_unlock_title" = "System unlocking";
 "pin_parking" = "Your moto is here.";
 "pitch_down" = "▼ %d° Downhill";
 "pitch_normal" = "0° straight path";
@@ -72,7 +76,10 @@
 "set_bad" = "Failed to set up";
 "set_success" = "Successful setting";
 "shake_value" = "Bumpinese G";
+"short_cut_fuel" = "Siri found that there was only %d% left in the fuel. Click to confirm and navigate to the nearest gas station!";
+"short_cut_fuel_msg" = "The current fuel volume is %d%, so please rest assured to ride.";
+"short_cut_fuel_title" = "Sufficient amount of oil";
 "tab_navigation" = "Navigation";
 "tab_setting" = "Setting";
 "vechicle_pitch" = "Vehicle Pitch";
-"empty_data_empty" = "No data";
+"parking_unlock_msg" = "The anti-theft guard has been lifted.";

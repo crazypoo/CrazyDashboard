@@ -42,6 +42,7 @@
 "direction_south_west" = "西南";
 "direction_west" = "西";
 "elevation_value" = "高度:%dm";
+"empty_data_empty" = "無資料";
 "empty_data_normal" = "無資料";
 "engine_closing" = "關閉中";
 "engine_cold" = "未啟動";
@@ -60,6 +61,9 @@
 "music_not_play" = "暫無播放";
 "music_unknow_artist" = "未知歌手";
 "music_unknow_music" = "未知歌曲";
+"parking_lock_msg" = "防盜衛士已透過Siri開啟。";
+"parking_lock_title" = "系統鎖";
+"parking_unlock_title" = "系統解鎖";
 "pin_parking" = "你的摩托車在這裡";
 "pitch_down" = "▼ %d° 下坡";
 "pitch_normal" = "0° 平路";
@@ -72,7 +76,10 @@
 "set_bad" = "設定失敗";
 "set_success" = "成功設定";
 "shake_value" = "顛簸 G";
+"short_cut_fuel" = "Siri發現燃料只剩下%d%了。 點選確認並導航到最近的加油站！";
+"short_cut_fuel_msg" = "目前的燃料量為%d%，所以請放心乘坐。";
+"short_cut_fuel_title" = "足夠的油";
 "tab_navigation" = "導航";
 "tab_setting" = "設置";
 "vechicle_pitch" = "車身姿態(Pitch)";
-"empty_data_empty" = "";
+"parking_unlock_msg" = "防盜衛士已經解除了。";
