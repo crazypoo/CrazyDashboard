@@ -41,9 +41,6 @@ class PTDashBoardView: UIView {
         super.init(frame: frame)
         
         setupDashboardUI()
-        if PTMotion.shared.motionStarted {
-            motionBlockSet()
-        }
         
         PTTripManager.shared.liveStatsBlock = { [weak self] tripStats in
             self?.tripStatsView.updateStats(with: tripStats)
@@ -71,7 +68,7 @@ class PTDashBoardView: UIView {
         
     @objc private func handleLocationUpdate(_ notification: Notification) {
         guard let tripData = notification.object as? PTTripData else { return }
-        
+                
         self.speedometer.updateSpeed(PTDashboardConfig.shared.appShowMileage(PTMotion.shared.currentSpeedKmh))
         self.compassRoller.updateHeading(tripData.courseDegree)
         self.speedometer.updateEnvironment(altitude: tripData.altitude, pressureKpa: nil)
@@ -84,7 +81,7 @@ class PTDashBoardView: UIView {
         mapView.snp.makeConstraints { make in
             make.top.equalToSuperview().inset(10)
             make.bottom.equalToSuperview().inset(10)
-            make.width.equalToSuperview().multipliedBy(0.65)
+            make.width.equalToSuperview().multipliedBy(0.85)
             make.centerX.equalToSuperview()
         }
         
@@ -92,12 +89,12 @@ class PTDashBoardView: UIView {
             make.top.equalTo(self.mapView.snp.top).offset(44)
             make.bottom.equalTo(self.mapView.snp.bottom).offset(-64)
             make.width.equalTo(self.speedometer.snp.height)
-            make.centerX.equalTo(self.mapView.snp.left)
+            make.left.equalToSuperview()
         }
         
         musicNowPlaying.snp.makeConstraints { make in
             make.top.bottom.width.equalTo(speedometer)
-            make.centerX.equalTo(self.mapView.snp.right)
+            make.right.equalToSuperview()
         }
 
         leanAngleGauge.snp.makeConstraints { make in
@@ -156,13 +153,17 @@ class PTDashBoardView: UIView {
         if !PTLocationEngine.shared.isTracking {
             PTLocationEngine.shared.startTracking()
         }
-        NotificationCenter.default.addObserver(self, selector: #selector(handleLocationUpdate(_:)), name: PTLocationEngineDidUpdate, object: nil)
-        
-        if !PTMotion.shared.motionStarted {
-            PTMotion.shared.startMotion()
+        if !PTDashboardConfig.shared.blueConnected {
             PTMotion.shared.calibrateZeroPoint()
-            motionBlockSet()
+            PTTripManager.shared.handleConnect()
         }
+        NotificationCenter.default.addObserver(self, selector: #selector(handleLocationUpdate(_:)), name: PTLocationEngineDidUpdate, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleMotionUpdate(_:)), name: PTMotionEngineDidUpdate, object: nil)
+    }
+    
+    @objc private func handleMotionUpdate(_ notification: Notification) {
+        guard let motionData = notification.object as? PTMotionData else { return }
+        self.motionSet(motionData: motionData)
     }
     
     // 辅助方法：显示/隐藏摔车警告
@@ -170,11 +171,5 @@ class PTDashBoardView: UIView {
         UIView.transition(with: crashOverlay, duration: 0.3, options: .transitionCrossDissolve, animations: {
             self.crashOverlay.isHidden = !show
         }, completion: nil)
-    }
-
-    func motionBlockSet() {
-        PTMotion.shared.motionBlock = { [weak self] motionData in
-            self?.motionSet(motionData: motionData)
-        }
     }
 }

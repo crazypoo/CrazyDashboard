@@ -35,15 +35,6 @@ public class PTMapView: UIView, MAMapViewDelegate {
         
         // 1. 设置渐变蒙版的大小
         gradientMaskLayer.frame = self.bounds
-        
-        // 2. 强行隐藏苹果 Logo 和 Legal 文字 (仅限个人极客项目，上架会被拒！)
-        for subview in mapView.subviews {
-            let className = String(describing: type(of: subview))
-            // 苹果 Logo 通常是一个内部的 ImageView，Legal 通常是内部的 Label
-            if className.contains("ImageView") || className.contains("Label") {
-                subview.isHidden = true
-            }
-        }
     }
     
     private func setupUI() {
@@ -59,8 +50,8 @@ public class PTMapView: UIView, MAMapViewDelegate {
         mapView.showsCompass = false // 隐藏原生指南针，因为我们有 PTCompassRollerView
         mapView.showsScale = false
         mapView.isShowTraffic = true // 开启实时路况（会有红黄绿的拥堵提示，很实用）
-//        mapView.showsBuildings = true // 显示 3D 建筑物模型
-        
+        mapView.cameraDegree = 60
+        mapView.logoEnable = false
         // 4. 样式配置：强制科技感
         mapView.mapType = .standardNight
         mapView.overrideUserInterfaceStyle = .dark // 强制暗黑模式
@@ -97,7 +88,7 @@ public class PTMapView: UIView, MAMapViewDelegate {
         // 当首次获取到用户的 GPS 坐标时，给地图一个平滑的缩放动画
         if isFirstLocationUpdate, let _ = userLocation.location {
             isFirstLocationUpdate = false
-            mapView.setZoomLevel(250, animated: true)
+            mapView.setZoomLevel(17.5, animated: true)
             mapView.setUserTrackingMode(.followWithHeading, animated: true)
         }
     }

@@ -151,6 +151,9 @@ public class PTTripManager: NSObject {
     private var zeroToHundredStartTime: Date?      // 0-100 起步时刻
     private var best0To100Time: TimeInterval?      // 本次行程的最佳 0-100 成绩
 
+    private var lastGpsLocation: CLLocation?
+    private var accumulatedGpsDistance: Double = 0.0 // 纯 GPS 累计行驶里程 (km)
+
     private override init() {
         super.init()
         loadHistory() // 初始化时，自动把本地保存的历史数据读进内存
@@ -254,10 +257,11 @@ public class PTTripManager: NSObject {
         nc.addObserver(self, selector: #selector(handleDisconnect), name: MotorcycleDisconnected, object: nil)
         nc.addObserver(self, selector: #selector(handleControlData(_:)), name: MotorcycleCONTROL, object: nil)
         nc.addObserver(self, selector: #selector(handleData1(_:)), name: MotorcycleDATA1, object: nil)
+        nc.addObserver(self, selector: #selector(handleMotion(_:)), name: PTMotionEngineDidUpdate, object: nil)
     }
     
     // MARK: - 业务逻辑处理
-    @objc private func handleConnect() {
+    @objc public func handleConnect() {
         isRiding = true
         startTime = Date()
         maxSpeed = 0
@@ -265,6 +269,8 @@ public class PTTripManager: NSObject {
         startOdo = 0
         latestOdo = 0
         latestConsumption = 0
+        accumulatedGpsDistance = 0.0 // 🌟 重置 GPS 里程
+        lastGpsLocation = nil        // 🌟 重置 GPS 参考点
         
         // 重置倾角状态
         maxLeanLeft = 0
@@ -316,30 +322,30 @@ public class PTTripManager: NSObject {
             self.rpmTraceArray.append(self.currentLiveRpm)
             self.broadcastLiveStats()
         }
-        
-        PTMotion.shared.motionBlock = { [weak self] data in
-            guard let self = self else { return }
-            self.maxLeanLeft = data.maxLeftLean
-            self.maxLeanRight = data.maxRightLean
-            self.currentLiveRoll = data.roll
-            self.currentLivePitch = data.pitch
-            self.currentLiveGForceX = data.gForceX
-            self.currentLiveGForceY = data.gForceY
-            self.currentLiveGForceZ = data.gForceZ
-            self.currentLiveAltitude = data.relativeAltitude
-            self.currentLivePressure = data.pressure
             
-            if data.gForceY > self.maxAccelG { self.maxAccelG = data.gForceY }
-            if data.gForceY < self.maxBrakeG { self.maxBrakeG = data.gForceY } // 刹车通常为负值
-            if abs(data.gForceX) > self.maxCornerG { self.maxCornerG = abs(data.gForceX) }
-            if abs(data.gForceZ) > self.maxBump { self.maxBump = abs(data.gForceZ) }
-            if data.pitch > self.maxPitchUp { self.maxPitchUp = data.pitch }
-            if data.pitch < self.maxPitchDown { self.maxPitchDown = data.pitch }
-        }
-        
         PTLocationEngine.shared.switchEngineMode(to: .riding)
         PTLocationEngine.shared.startTracking()
         NotificationCenter.default.addObserver(self, selector: #selector(handleLocationUpdate(_:)), name: PTLocationEngineDidUpdate, object: nil)
+    }
+    
+    @objc private func handleMotion(_ notification: Notification) {
+        guard let data = notification.object as? PTMotionData else { return }
+        self.maxLeanLeft = data.maxLeftLean
+        self.maxLeanRight = data.maxRightLean
+        self.currentLiveRoll = data.roll
+        self.currentLivePitch = data.pitch
+        self.currentLiveGForceX = data.gForceX
+        self.currentLiveGForceY = data.gForceY
+        self.currentLiveGForceZ = data.gForceZ
+        self.currentLiveAltitude = data.relativeAltitude
+        self.currentLivePressure = data.pressure
+        
+        if data.gForceY > self.maxAccelG { self.maxAccelG = data.gForceY }
+        if data.gForceY < self.maxBrakeG { self.maxBrakeG = data.gForceY } // 刹车通常为负值
+        if abs(data.gForceX) > self.maxCornerG { self.maxCornerG = abs(data.gForceX) }
+        if abs(data.gForceZ) > self.maxBump { self.maxBump = abs(data.gForceZ) }
+        if data.pitch > self.maxPitchUp { self.maxPitchUp = data.pitch }
+        if data.pitch < self.maxPitchDown { self.maxPitchDown = data.pitch }
     }
     
     @objc private func handleLocationUpdate(_ notification: Notification) {
@@ -347,6 +353,21 @@ public class PTTripManager: NSObject {
               let coordinate = tripData.currentLocation,
               self.isRiding else { return }
         
+        if let last = lastGpsLocation {
+            let distMeters = coordinate.distance(from: last)
+            // 过滤 GPS 漂移燥点 (位移大于 2 米才算有效移动)
+            if distMeters > 2.0 {
+                accumulatedGpsDistance += (distMeters / 1000.0) // 转换为 km
+            }
+        }
+        self.lastGpsLocation = coordinate
+
+        if !PTDashboardConfig.shared.blueConnected {
+            // iOS 系统的 coordinate.speed 是 m/s，需乘以 3.6 转换为 km/h
+            let gpsSpeedKmh = max(0, coordinate.speed * 3.6)
+            processSpeedMetrics(speedKmh: gpsSpeedKmh, timestamp: Date())
+        }
+
         let point = PTRoutePoint(
             lat: coordinate.coordinate.latitude,
             lon: coordinate.coordinate.longitude,
@@ -364,50 +385,12 @@ public class PTTripManager: NSObject {
     @objc private func handleControlData(_ notification: Notification) {
         guard isRiding, let control = notification.object as? PTDashboardControl else { return }
                 
-        let speed = control.vehicleSpeedKmh
         let rpm = control.engineRpm
-        let now = Date()
-        
-        self.currentLiveSpeed = speed
         self.currentLiveRpm = rpm
-        
-        // 1. 怠速时长计算 (利用两次数据包的时间差累加)
-        if let lastTime = lastControlUpdateTime {
-            let delta = now.timeIntervalSince(lastTime)
-            // 如果车速小于 2.0 km/h，视为怠速停车状态
-            if speed < 2.0 {
-                idleTime += delta
-            }
-        }
-        lastControlUpdateTime = now
-        
-        // 2. 0-100 km/h 高精度自动计时
-        if speed <= 2.0 {
-            // 处于静止，随时准备弹射起步
-            zeroToHundredStartTime = now
-        } else if speed >= 100.0 {
-            // 突破 100 时，检查是否有起步记录
-            if let start = zeroToHundredStartTime {
-                let achievedTime = now.timeIntervalSince(start)
-                // 基础防噪：成绩需大于2秒才合理，防止传感器跳变导致的 0.1秒“幽灵成绩”
-                if achievedTime > 2.0 {
-                    if best0To100Time == nil || achievedTime < best0To100Time! {
-                        best0To100Time = achievedTime
-                        PTNSLogConsole("🏎️💨 [硬件测速] 创造新的 0-100km/h 成绩: \(String(format: "%.2f", achievedTime))秒！")
-                    }
-                }
-                // 成绩达成后清除起步时刻，等待下次重新静止
-                zeroToHundredStartTime = nil
-            }
-        }
-        
-        // 3. 更新极限速度极值
-        PTMotion.shared.currentSpeedKmh = speed // 给轨迹打点备用
-        
-        if speed > maxSpeed { maxSpeed = speed }
-        // 最低速度需排除怠速状态
-        if speed > 1.0 && speed < minSpeed { minSpeed = speed }
         if rpm > maxRpm { maxRpm = rpm }
+        
+        // 🌟 将最高精度的蓝牙车速喂给分析引擎
+        processSpeedMetrics(speedKmh: control.vehicleSpeedKmh, timestamp: Date())
     }
     
     @objc private func handleData1(_ notification: Notification) {
@@ -417,7 +400,7 @@ public class PTTripManager: NSObject {
         latestConsumption = data1.avgConsumptionLt
     }
     
-    @objc private func handleDisconnect() {
+    @objc public func handleDisconnect() {
         guard isRiding, let start = startTime else { return }
         isRiding = false
                 
@@ -428,12 +411,15 @@ public class PTTripManager: NSObject {
         let endTime = Date()
         let durationSec = endTime.timeIntervalSince(start)
         let durationMin = Int(durationSec / 60.0)
-        let distance = (latestOdo > startOdo) ? (latestOdo - startOdo) : 0
+        
+        let finalDistance = PTDashboardConfig.shared.blueConnected
+                                    ? (latestOdo > startOdo ? (latestOdo - startOdo) : 0)
+                                    : accumulatedGpsDistance
         
         let durationHours = durationSec / 3600.0
-        let hardwareAvgSpeed = durationHours > 0 ? (distance / durationHours) : 0.0
+        let hardwareAvgSpeed = durationHours > 0 ? (finalDistance / durationHours) : 0.0
         
-        guard durationMin > 0 || distance > 0.1 else {
+        guard durationMin > 0 || finalDistance > 0.1 else {
             PTNSLogConsole("⚠️ [行程记录] 本次连接时间过短或未产生位移，已忽略。")
             // 记得把定位切回防盗模式
             PTLocationEngine.shared.switchEngineMode(to: .antiTheft)
@@ -459,7 +445,7 @@ public class PTTripManager: NSObject {
             maxRpm: maxRpm,
             startOdoKm: startOdo,
             endOdoKm: latestOdo,
-            distanceKm: distance,
+            distanceKm: finalDistance,
             avgConsumption: latestConsumption,
             maxLeanAngleLeft: maxLeanLeft,
             maxLeanAngleRight: maxLeanRight,
@@ -508,4 +494,42 @@ public class PTTripManager: NSObject {
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
+}
+
+//MARK: No Connect ble
+extension PTTripManager {
+    private func processSpeedMetrics(speedKmh: Double, timestamp: Date) {
+            self.currentLiveSpeed = speedKmh
+            
+            // 1. 怠速时长计算 (利用两次数据包的时间差累加)
+            if let lastTime = lastControlUpdateTime {
+                let delta = timestamp.timeIntervalSince(lastTime)
+                if speedKmh < 2.0 {
+                    idleTime += delta
+                }
+            }
+            lastControlUpdateTime = timestamp
+            
+            // 2. 0-100 km/h 高精度自动计时
+            if speedKmh <= 2.0 {
+                zeroToHundredStartTime = timestamp
+            } else if speedKmh >= 100.0 {
+                if let start = zeroToHundredStartTime {
+                    let achievedTime = timestamp.timeIntervalSince(start)
+                    // 基础防噪：成绩需大于2秒才合理
+                    if achievedTime > 2.0 {
+                        if best0To100Time == nil || achievedTime < best0To100Time! {
+                            best0To100Time = achievedTime
+                            PTNSLogConsole("🏎️💨 [测速引擎] 创造新的 0-100km/h 成绩: \(String(format: "%.2f", achievedTime))秒！")
+                        }
+                    }
+                    zeroToHundredStartTime = nil
+                }
+            }
+            
+            // 3. 更新极限速度极值
+            PTMotion.shared.currentSpeedKmh = speedKmh
+            if speedKmh > maxSpeed { maxSpeed = speedKmh }
+            if speedKmh > 1.0 && speedKmh < minSpeed { minSpeed = speedKmh }
+        }
 }

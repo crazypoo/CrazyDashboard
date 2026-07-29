@@ -33,6 +33,10 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
         
         // 视图即将消失（比如返回上一页）时：强制恢复为竖屏
         PTRotationManager.shared.rotationToPortrait()
+        
+        if !PTDashboardConfig.shared.blueConnected {
+            PTTripManager.shared.handleDisconnect()
+        }
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -52,6 +56,24 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
         dashBoard.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
+        
+        switch orientationMask {
+        case .landscapeRight:
+            dashBoard.speedometer.snp.remakeConstraints { make in
+                make.left.equalToSuperview().inset(44)
+                make.top.equalTo(self.dashBoard.mapView.snp.top).offset(44)
+                make.bottom.equalTo(self.dashBoard.mapView.snp.bottom).offset(-64)
+                make.width.equalTo(self.dashBoard.speedometer.snp.height)
+            }
+            
+            dashBoard.musicNowPlaying.snp.remakeConstraints { make in
+                make.top.bottom.width.equalTo(self.dashBoard.speedometer)
+                make.right.equalToSuperview()
+            }
+        default:
+            break
+        }
+        
         if !vcDidLoad {
             dashBoard.speedometer.playStartupSweep(duration: 1.5)
             vcDidLoad = true

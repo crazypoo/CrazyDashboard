@@ -42,7 +42,8 @@ class PTTripDataCell: PTBaseNormalCell {
                 return Double(value)
             }
             let rpmModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "RPM"), color: .systemGreen, data: rpmDouble)
-            speedChart.bindData(lines: [speedModel,rpmModel])
+            speedChart.bindData(lines: [speedModel])
+            rpmChart.bindData(lines: [rpmModel])
 
             let chartModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "lean_angle_title"), color: .systemRed, data: cellModel.leanAngleTrace)
             leanAngleChart.bindData(lines: [chartModel])
@@ -134,6 +135,11 @@ class PTTripDataCell: PTBaseNormalCell {
         return view
     }()
     
+    lazy var rpmChart:PTNativeTelemetryChartView = {
+        let view = PTNativeTelemetryChartView()
+        return view
+    }()
+    
     lazy var speedChart:PTNativeTelemetryChartView = {
         let view = PTNativeTelemetryChartView()
         return view
@@ -177,9 +183,9 @@ class PTTripDataCell: PTBaseNormalCell {
     public override init(frame: CGRect) {
         super.init(frame: frame)
         
-        contentView.addSubviews([timeLabel,speedChart,leanAngleChart,gChart,pChart,altitudeChart,pressureChart,thumbnailImageView,gpxButton])
+        contentView.addSubviews([timeLabel,speedChart,rpmChart,leanAngleChart,gChart,pChart,altitudeChart,pressureChart,thumbnailImageView,gpxButton])
         timeLabel.snp.makeConstraints { make in
-            make.left.top.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
+            make.left.top.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
         }
         
         speedChart.snp.makeConstraints { make in
@@ -188,10 +194,14 @@ class PTTripDataCell: PTBaseNormalCell {
             make.height.equalTo(PTTripDataCell.ChartHeight)
         }
         
-        leanAngleChart.snp.makeConstraints { make in
-            make.left.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
+        rpmChart.snp.makeConstraints { make in
+            make.left.right.height.equalTo(self.speedChart)
             make.top.equalTo(self.speedChart.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-            make.height.equalTo(PTTripDataCell.ChartHeight)
+        }
+        
+        leanAngleChart.snp.makeConstraints { make in
+            make.left.right.height.equalTo(self.speedChart)
+            make.top.equalTo(self.rpmChart.snp.bottom).offset(CGFloat.GlobalItemSpacing)
         }
         
         gChart.snp.makeConstraints { make in
