@@ -10,6 +10,33 @@ import PooTools
 import SnapKit
 import SwifterSwift
 import CoreLocation
+import CarPlay
+
+public let PTCarPlayDidBecomeActiveNotification = NSNotification.Name("PTCarPlayDidBecomeActiveNotification")
+public let PTCarPlayDidEnterBackgroundNotification = NSNotification.Name("PTCarPlayDidEnterBackgroundNotification")
+
+@objcMembers
+public class PTCarPlayManager: NSObject {
+    
+    /// 全局判断：当前设备是否已经成功连上 CarPlay 并激活了对应的 Scene
+    public static var isCarPlayActive: Bool {
+        if #available(iOS 13.0, *) {
+            // 获取所有已连接的场景
+            let connectedScenes = UIApplication.shared.connectedScenes
+            
+            // 查找是否存在角色为 CarPlay 模板的场景
+            let carPlayScene = connectedScenes.first { scene in
+                scene.session.role == .carTemplateApplication
+            }
+            
+            // 如果找到了，说明 CarPlay 正在运行中
+            return carPlayScene != nil
+        } else {
+            // 针对极老版本的兜底 (iOS 12 之前，CarPlay 逻辑有所不同，通常不用考虑)
+            return false
+        }
+    }
+}
 
 class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
 
@@ -46,7 +73,41 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
-        // Do any additional setup after loading the view.
+        
+        updateMapModeForCarPlayConnection(isActive: PTCarPlayManager.isCarPlayActive)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(carplayIsInBackground), name: PTCarPlayDidEnterBackgroundNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(carplayIsNotInBackground), name: PTCarPlayDidBecomeActiveNotification, object: nil)
+
+        NotificationCenter.default.addObserver(forName: UIScene.willConnectNotification, object: nil, queue: .main) { [weak self] notification in
+            if let scene = notification.object as? UIScene, scene.session.role == .carTemplateApplication {
+                PTNSLogConsole("🔗 CarPlay 刚刚连接！让手机界面做出反应")
+                self?.updateMapModeForCarPlayConnection(isActive: true)
+            }
+        }
+        
+        NotificationCenter.default.addObserver(forName: UIScene.didDisconnectNotification, object: nil, queue: .main) { [weak self] notification in
+            if let scene = notification.object as? UIScene, scene.session.role == .carTemplateApplication {
+                PTNSLogConsole("🔌 CarPlay 刚刚断开！恢复手机界面")
+                self?.updateMapModeForCarPlayConnection(isActive: false)
+            }
+        }
+    }
+    
+    func carplayIsInBackground() {
+        updateMapModeForCarPlayConnection(isActive: false)
+    }
+    
+    func carplayIsNotInBackground() {
+        updateMapModeForCarPlayConnection(isActive: true)
+    }
+    
+    private func updateMapModeForCarPlayConnection(isActive: Bool) {
+        if isActive {
+            self.dashBoard.mapView.setNormalMapView()
+        } else {
+            self.dashBoard.mapView.setupNavView()
+        }
     }
     
     override func viewControllerOrientation(_ orientationMask: UIInterfaceOrientationMask) {
@@ -56,7 +117,7 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
         dashBoard.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
-        
+        dashBoard.mapView.setupNavView()
         switch orientationMask {
         case .landscapeRight:
             dashBoard.speedometer.snp.remakeConstraints { make in

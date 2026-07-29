@@ -84,6 +84,7 @@ extension PTProgressHUD {
 class PTDashboardConfig: NSObject,@unchecked Sendable  {
     static let shared = PTDashboardConfig()
     
+    var naving:Bool = false
     var blueConnected:Bool = false
     
     var appMainColor:DynamicColor {

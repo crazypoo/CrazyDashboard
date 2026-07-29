@@ -1111,12 +1111,12 @@ extension PTBluetoothServerManager {
         sendChunkedData(data: frame, to: txChar)
     }
     
-    public func sendWelcomeMessage(next:String = "",title:String) {
+    public func sendWelcomeMessage(next:String = "",title:String,nextManeuver:UInt8 = PTManeuverMap.depart) {
         guard authenticated else { return }
 
         // 伪造一个导航对象
         let welcomeInfo = PTNavigationInfo(
-            nextManeuver: PTManeuverMap.depart, // 使用“出发”图标
+            nextManeuver: nextManeuver, // 使用“出发”图标
             metersToNextManeuver: 999,
             nameNextRoad: next, // 下一条路留空
             nameCurrentRoad: title, // 🚨 你的专属欢迎语，建议用全大写英文

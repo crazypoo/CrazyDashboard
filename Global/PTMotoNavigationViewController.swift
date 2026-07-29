@@ -17,6 +17,9 @@ import AMapSearchKit
 import CoreMotion
 import SafeSFSymbols
 import AttributedString
+import CarPlay
+
+public let PTCarPlayStopNavNotification = NSNotification.Name("PTCarPlayStopNavNotification")
 
 enum NaviPointAnnotationType: Int {
     case start
@@ -187,14 +190,21 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     
     let homeSize:CGFloat = 44
     
-    private lazy var amapView:MAMapView = {
+    private lazy var amapNormalView:MAMapView = {
         let view = MAMapView()
-        view.delegate = self
         view.showsUserLocation = true
         view.userTrackingMode = .follow
         view.mapType = .standardNight
-        view.compassOrigin = .init(x: -(CGFloat.kSCREEN_WIDTH - PTAppBaseConfig.share.defaultViewSpace), y: CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing * 2 + homeSize)
         view.mapLanguage = PTDashboardConfig.appIsInChinese() ? 0 : 1
+        view.delegate = self
+        view.compassOrigin = .init(x: -(CGFloat.kSCREEN_WIDTH - PTAppBaseConfig.share.defaultViewSpace), y: CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing * 2 + homeSize)
+        return view
+    }()
+
+    private lazy var amapView:MAMapView = {
+        let view = PTGlobalMapManager.shared.amapView
+        view.delegate = self
+        view.compassOrigin = .init(x: -(CGFloat.kSCREEN_WIDTH - PTAppBaseConfig.share.defaultViewSpace), y: CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing * 2 + homeSize)
         return view
     }()
     
@@ -265,9 +275,12 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     }()
     
     func navAction() {
+        PTDashboardConfig.shared.naving = true
         self.startNavigationTapped()
         self.driveView.isHidden = false
         self.routePlantList.isHidden = true
+        self.amapView.removeAnnotations(self.amapView.annotations)
+        self.amapView.removeOverlays(self.amapView.overlays)
         if self.testButton.isSelected {
             AMapNaviDriveManager.sharedInstance().startEmulatorNavi()
         } else {
@@ -291,13 +304,8 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     var currentCity:String = ""
     
     lazy var driveView: AMapNaviDriveView = {
-        let view = AMapNaviDriveView()
-        view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        let view = PTGlobalMapManager.shared.driveView
         view.delegate = self
-        view.showGreyAfterPass = true
-        view.autoZoomMapLevel = true
-        view.trackingMode = AMapNaviViewTrackingMode.carNorth
-        view.mapViewModeType = AMapNaviViewMapModeType.night
         view.isHidden = true
         return view
     }()
@@ -366,6 +374,19 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         return view
     }()
     
+    lazy var stopCarplyButton:PTBaseButton = {
+        let view = PTBaseButton(type: .custom)
+        view.setImage(UIImage(.stop.circleFill), for: .normal)
+        view.addActionHandlers(handler: { sender in
+            NotificationCenter.default.post(name: PTCarPlayStopNavNotification, object: nil)
+            PTGCDManager.shared.delayOnMain(time: 0.3, block: {
+                self.updateMapModeForCarPlayConnection(isActive: PTCarPlayManager.isCarPlayActive)
+            })
+        })
+        view.isHidden = true
+        return view
+    }()
+    
     var isKeywordSearch:Bool = false
     
     @MainActor deinit {
@@ -380,18 +401,58 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         super.viewWillAppear(animated)
         setCustomTitleView(searchBar)
         setCustomRightButtons(buttons: [testButton])
+                
+        updateMapModeForCarPlayConnection(isActive: PTCarPlayManager.isCarPlayActive)
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        updateMapModeForCarPlayConnection(isActive: PTCarPlayManager.isCarPlayActive)
+    }
+    
+    func mapSet() {
+        AMapNaviDriveManager.sharedInstance().delegate = nil
+        AMapNaviDriveManager.sharedInstance().removeDataRepresentative(driveView)
+        amapView.removeFromSuperview()
+        driveView.removeFromSuperview()
+        view.addSubview(amapNormalView)
+        amapNormalView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+        self.view.sendSubviewToBack(amapNormalView)
+    }
+    
+    func navReset() {
+        amapNormalView.removeFromSuperview()
+        PTGlobalMapManager.shared.attachAMapView(to: self.view)
+        self.view.sendSubviewToBack(amapView)
+        amapView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+
+        PTGlobalMapManager.shared.attachDriveView(to: self.view)
+        // 确保 startNavigationButton 等在最上方
+        driveView.snp.remakeConstraints { make in
+            make.left.right.equalToSuperview()
+            make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total)
+            make.bottom.equalToSuperview().inset((CGFloat.GlobalItemSpacing + CGFloat.kTabbarHeight_Total))
+        }
+        
+        if !PTDashboardConfig.shared.naving {
+            self.startNavigationButton.isHidden = true
+        }
+        AMapNaviDriveManager.sharedInstance().delegate = self
+        AMapNaviDriveManager.sharedInstance().allowsBackgroundLocationUpdates = true
+        AMapNaviDriveManager.sharedInstance().pausesLocationUpdatesAutomatically = false
+        AMapNaviDriveManager.sharedInstance().addDataRepresentative(driveView)
+        AMapNaviDriveManager.sharedInstance().addDataRepresentative(self)
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setupLocationManager()
-        AMapNaviDriveManager.sharedInstance().delegate = self
-        AMapNaviDriveManager.sharedInstance().allowsBackgroundLocationUpdates = true
-        AMapNaviDriveManager.sharedInstance().pausesLocationUpdatesAutomatically = false
         setupUI()
         //将driveView添加为导航数据的Representative，使其可以接收到导航诱导数据
-        AMapNaviDriveManager.sharedInstance().addDataRepresentative(driveView)
-        AMapNaviDriveManager.sharedInstance().addDataRepresentative(self)
         
         pt_observerLanguage {
             if self.vcDidLoad {
@@ -406,6 +467,48 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         
         NotificationCenter.default.addObserver(self, selector: #selector(handleEmergencyNavigation(_:)), name: MotorcycleStartRealNavigation, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handlePositionNavigation(_:)), name: MotorcycleSearchAndNavigate, object: nil)
+        
+        updateMapModeForCarPlayConnection(isActive: PTCarPlayManager.isCarPlayActive)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(carplayIsInBackground), name: PTCarPlayDidEnterBackgroundNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(carplayIsNotInBackground), name: PTCarPlayDidBecomeActiveNotification, object: nil)
+
+        NotificationCenter.default.addObserver(forName: UIScene.willConnectNotification, object: nil, queue: .main) { [weak self] notification in
+            if let scene = notification.object as? UIScene, scene.session.role == .carTemplateApplication {
+                PTNSLogConsole("🔗 CarPlay 刚刚连接！让手机界面做出反应")
+                self?.updateMapModeForCarPlayConnection(isActive: true)
+            }
+        }
+        
+        NotificationCenter.default.addObserver(forName: UIScene.didDisconnectNotification, object: nil, queue: .main) { [weak self] notification in
+            if let scene = notification.object as? UIScene, scene.session.role == .carTemplateApplication {
+                PTNSLogConsole("🔌 CarPlay 刚刚断开！恢复手机界面")
+                self?.updateMapModeForCarPlayConnection(isActive: false)
+            }
+        }
+    }
+    
+    func carplayIsInBackground() {
+        updateMapModeForCarPlayConnection(isActive: false)
+    }
+    
+    func carplayIsNotInBackground() {
+        updateMapModeForCarPlayConnection(isActive: true)
+    }
+    
+    private func updateMapModeForCarPlayConnection(isActive: Bool) {
+        if isActive {
+            if PTDashboardConfig.shared.naving {
+                mapSet()
+                stopCarplyButton.isHidden = false
+            } else {
+                navReset()
+                stopCarplyButton.isHidden = true
+            }
+        } else {
+            navReset()
+            stopCarplyButton.isHidden = true
+        }
     }
     
     @objc private func handlePositionNavigation(_ notification: Notification) {
@@ -468,10 +571,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     private func setupUI() {
         NotificationCenter.default.addObserver(self, selector: #selector(dashBoardReload), name: MotorcycleDashBoardChange, object: nil)
 
-        view.addSubviews([amapView,homeButton,officeButton,searchResultsTableView,startNavigationButton,preferenceView,driveView,routePlantList,muteButton])
-        amapView.snp.makeConstraints { make in
-            make.edges.equalToSuperview()
-        }
+        view.addSubviews([homeButton,officeButton,searchResultsTableView,startNavigationButton,preferenceView,routePlantList,muteButton,stopCarplyButton])
         
         homeButton.snp.makeConstraints { make in
             make.size.equalTo(self.homeSize)
@@ -495,7 +595,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         }
         searchResultsTableView.layoutIfNeeded()
         searchResultsTableView.viewCorner(radius: 16)
-                
+        
         startNavigationButton.snp.makeConstraints { make in
             make.bottom.equalToSuperview().inset(CGFloat.kTabbarHeight_Total + CGFloat.GlobalItemSpacing)
             make.height.equalTo(50)
@@ -508,12 +608,6 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
             make.left.equalTo(self.officeButton.snp.right).offset(CGFloat.GlobalItemSpacing)
         }
         
-        driveView.snp.makeConstraints { make in
-            make.left.right.equalToSuperview()
-            make.top.equalTo(self.searchResultsTableView)
-            make.bottom.equalTo(self.startNavigationButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
-        }
-        
         routePlantList.snp.makeConstraints { make in
             make.left.right.equalToSuperview()
             make.bottom.equalTo(self.startNavigationButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
@@ -524,6 +618,11 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
             make.size.equalTo(self.homeSize)
             make.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.top.equalTo(self.preferenceView.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+        }
+        
+        stopCarplyButton.snp.makeConstraints { make in
+            make.size.top.equalTo(self.muteButton)
+            make.right.equalTo(self.muteButton.snp.left).offset(-CGFloat.GlobalItemSpacing)
         }
     }
     
@@ -542,6 +641,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         
         // 可以在这里收起按钮，或者进入纯粹的导航视角
         startNavigationButton.isEnabled = false
+        startNavigationButton.isHidden = true
     }
     
     var userCurrentLocation = AMapNaviPoint.location(withLatitude: 0, longitude: 0)!
@@ -871,7 +971,6 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
         
         if let first = routeIndicatorInfoArray.first {
             routeIndicatorInfoArray[0].isSelected = true
-            self.startNavigationButton.isEnabled = true
             if !isKeywordSearch {
                 self.routePlantList.isHidden = false
                 self.routePlantList.clearAllData { _ in
@@ -954,10 +1053,9 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
         PTNSLogConsole("CalculateRouteFailure:{%d - %@}", error.code, error.localizedDescription)
     }
 
-    func driveManager(onCalculateRouteSuccess driveManager: AMapNaviDriveManager) {
-        //算路成功后显示路径
-        showNaviRoutes()
-    }
+//    func driveManager(onCalculateRouteSuccess driveManager: AMapNaviDriveManager) {
+//        //算路成功后显示路径
+//    }
     
     func driveManager(_ driveManager: AMapNaviDriveManager, postRouteNotification notifyData: AMapNaviRouteNotifyData) {
         PTNSLogConsole(">>>>>>>>>>>>>>>>\(String(describing: notifyData.roadName))")
@@ -977,56 +1075,10 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
             SpeechSynthesizer.Shared.speak(soundString)
         }
     }
-        
-    private func convertAMapIconToPTManeuver(iconType: AMapNaviIconType) -> UInt8 {
-        switch iconType {
-        case .none, .default:
-            return PTManeuverMap.straight
-        case .straight:
-            return PTManeuverMap.straight
-        case .left:
-            return PTManeuverMap.quiteLeft
-        case .right:
-            return PTManeuverMap.quiteRight
-        case .leftFront:
-            return PTManeuverMap.lightLeft
-        case .rightFront:
-            return PTManeuverMap.lightRight
-        case .leftBack:
-            return PTManeuverMap.heavyLeft // 0x0C 急左转
-        case .rightBack:
-            return PTManeuverMap.heavyRight // 0x07 急右转[cite: 2]
-        case .entryLeftRingUTurn:
-            return PTManeuverMap.uTurnLeft
-        case .entryLeftRingRight:
-            return PTManeuverMap.uTurnRight
-        case .arrivedWayPoint:
-            return PTManeuverMap.straight
-        case .arrivedDestination:
-            return PTManeuverMap.arrive // 0x2C 到达[cite: 2]
-        // 🚨 新增：环岛处理逻辑
-        case .enterRoundabout:
-            // 协议规定右侧环岛 1 号出口为 0x13[cite: 2]。
-            // 如果高德在 AMapNaviInfo 中提供了环岛出口编号 (ringRoundaboutExitCount)，你可以动态加上该编号减 1。
-            // 这里提供基础的 1 号出口映射作为安全回退机制。
-            return PTManeuverMap.roundaboutRightBase
             
-        default:
-            return PTManeuverMap.straight
-        }
-    }
-    
     func driveManager(_ driveManager: AMapNaviDriveManager, onCalculateRouteSuccessWith type: AMapNaviRoutePlanType) {
-        let rerouteInfo = PTNavigationInfo(
-            nextManeuver: PTManeuverMap.rerouting, // 🌟 仪表盘将显示“重新算路”图标
-            metersToNextManeuver: 0,
-            nameNextRoad: "Rerouting...",
-            nameCurrentRoad: "",
-            currentSpeedLimit: 0,
-            distanceToDestination: 0,
-            estimatedTimeToDestinationSec: 0
-        )
-        PTBluetoothServerManager.shared.sendNavigation(info: rerouteInfo)
+        showNaviRoutes()
+        PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Rerouting...", title: "",nextManeuver: PTManeuverMap.rerouting)
     }
         
     func driveManager(_ driveManager: AMapNaviDriveManager, update gpsSignalStrength: AMapNaviGPSSignalStrength) {
@@ -1034,16 +1086,7 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
         case .smartPos:
             break
         default:
-            let noGpsInfo = PTNavigationInfo(
-                nextManeuver: PTManeuverMap.noGPS, // 🌟 仪表盘将显示“无GPS/卫星打叉”图标
-                metersToNextManeuver: 0,
-                nameNextRoad: "Searching GPS...",
-                nameCurrentRoad: "",
-                currentSpeedLimit: 0,
-                distanceToDestination: 0,
-                estimatedTimeToDestinationSec: 0
-            )
-            PTBluetoothServerManager.shared.sendNavigation(info: noGpsInfo)
+            PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Searching GPS...", title: "",nextManeuver: PTManeuverMap.noGPS)
         }
     }
 }
@@ -1051,7 +1094,7 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
 extension PTMotoNavigationViewController : AMapNaviDriveViewDelegate {
         
     func driveViewCloseButtonClicked(_ driveView: AMapNaviDriveView) {
-        
+        PTDashboardConfig.shared.naving = false
         //停止导航
         AMapNaviDriveManager.sharedInstance().stopNavi()
         AMapNaviDriveManager.sharedInstance().removeDataRepresentative(driveView)
@@ -1095,31 +1138,6 @@ extension PTMotoNavigationViewController:AMapNaviDriveDataRepresentable {
             return
         }
         PTNSLogConsole("\(naviInfo)")
-        // --- 核心逻辑开始 ---
-        // 1. 获取距离下一个转弯动作的剩余距离 (米)
-        let distanceToNextManeuver = naviInfo.segmentRemainDistance
-        
-        // 2. 提取路名，并强制转为无声调拼音/英文，防止车机乱码
-        let rawNextRoad = naviInfo.nextRoadName ?? ""
-        let rawCurrentRoad = naviInfo.currentRoadName ?? ""
-        let safeNextRoad = rawNextRoad.toMotorcycleCompatiblePinyin()
-        let safeCurrentRoad = rawCurrentRoad.toMotorcycleCompatiblePinyin()
-        
-        // 3. 将高德的转向图标枚举转换为车机的动作码
-        let maneuverCode = convertAMapIconToPTManeuver(iconType: naviInfo.iconType)
-        
-        // 4. 组装车机数据模型 (限速字段使用全局变量 currentSpeedLimit)
-        let info = PTNavigationInfo(
-            nextManeuver: maneuverCode,
-            metersToNextManeuver: UInt32(max(0, distanceToNextManeuver)),
-            nameNextRoad: safeNextRoad,
-            nameCurrentRoad: safeCurrentRoad,
-            currentSpeedLimit: self.currentSpeedLimit,
-            distanceToDestination: UInt32(max(0, naviInfo.routeRemainDistance)),
-            estimatedTimeToDestinationSec: max(0, naviInfo.routeRemainTime)
-        )
-        
-        // 5. 核心动作：通过蓝牙将数据泵送给摩托车！
-        PTBluetoothServerManager.shared.sendNavigation(info: info)
+        PTMotoDashBoardNavFunction.sendNavDataToDashboard(naviInfo: naviInfo, currentSpeedLimit: self.currentSpeedLimit)
     }
 }

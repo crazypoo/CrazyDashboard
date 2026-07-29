@@ -11,6 +11,12 @@
 		55028F2D2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */; };
 		55499CEC3018E6E100A1A2D9 /* PTDashBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CEB3018E6E100A1A2D9 /* PTDashBoardView.swift */; };
 		55499CED3018E6E100A1A2D9 /* PTDashBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CEB3018E6E100A1A2D9 /* PTDashBoardView.swift */; };
+		55499CF73019B7DD00A1A2D9 /* PTGlobalMapManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CF63019B7DD00A1A2D9 /* PTGlobalMapManager.swift */; };
+		55499CF83019B7DD00A1A2D9 /* PTGlobalMapManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CF63019B7DD00A1A2D9 /* PTGlobalMapManager.swift */; };
+		55499CFA3019D83800A1A2D9 /* PTDashboardBaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CF93019D83800A1A2D9 /* PTDashboardBaseView.swift */; };
+		55499CFB3019D83800A1A2D9 /* PTDashboardBaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CF93019D83800A1A2D9 /* PTDashboardBaseView.swift */; };
+		55499CFD3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CFC3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift */; };
+		55499CFE3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CFC3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift */; };
 		555C0FF9300E06630079D94F /* PTGlobalActionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */; };
 		555C0FFA300E06630079D94F /* PTGlobalActionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */; };
 		5577E62E2FD656D20004733F /* PTCompassRollerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6202FD656D20004733F /* PTCompassRollerView.swift */; };
@@ -111,6 +117,9 @@
 		33464FDDE31899C7F87FB6EC /* Pods_PTSpeed.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_PTSpeed.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashBoardBaseBoardViewController.swift; sourceTree = "<group>"; };
 		55499CEB3018E6E100A1A2D9 /* PTDashBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashBoardView.swift; sourceTree = "<group>"; };
+		55499CF63019B7DD00A1A2D9 /* PTGlobalMapManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTGlobalMapManager.swift; sourceTree = "<group>"; };
+		55499CF93019D83800A1A2D9 /* PTDashboardBaseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashboardBaseView.swift; sourceTree = "<group>"; };
+		55499CFC3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoDashBoardNavFunction.swift; sourceTree = "<group>"; };
 		555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTGlobalActionHeader.swift; sourceTree = "<group>"; };
 		5577E5BD2FD5C1DB0004733F /* CrazyDashboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CrazyDashboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5577E6202FD656D20004733F /* PTCompassRollerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCompassRollerView.swift; sourceTree = "<group>"; };
@@ -288,22 +297,25 @@
 		55F503B9300FCA1E00C5D085 /* Global */ = {
 			isa = PBXGroup;
 			children = (
-				55FE2994300CBCB4000E741F /* PTMotoBaseTabbarController.swift */,
-				55FE2965300CA5E0000E741F /* PTDashboardConfig.swift */,
-				55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */,
-				55901836300FE37100A77571 /* PTMotoBaseViewController.swift */,
-				55FDBCA73010CD6E00EE7FA5 /* PTMOTOParkingManager.swift */,
-				5598663E301138A30049684D /* PTTripManager.swift */,
 				55986641301141090049684D /* PTAntiTheftManager.swift */,
-				55986674301144060049684D /* PTMaintenanceManager.swift */,
-				55986677301144840049684D /* PTGPXRecorder.swift */,
 				5598667A301147FD0049684D /* PTCustomRouteManager.swift */,
+				55FE2965300CA5E0000E741F /* PTDashboardConfig.swift */,
+				55986832301330E00049684D /* PTDataCollectedViewController.swift */,
 				5598667D301148290049684D /* PTDiagnosticManager.swift */,
 				5598668030114A980049684D /* PTFuelRoutingManager.swift */,
-				5598668330114DF00049684D /* PTRoutingManager.swift */,
-				559866C13011A71E0049684D /* SpeechSynthesizer.swift */,
-				55986832301330E00049684D /* PTDataCollectedViewController.swift */,
+				55499CF63019B7DD00A1A2D9 /* PTGlobalMapManager.swift */,
+				55986677301144840049684D /* PTGPXRecorder.swift */,
+				55986674301144060049684D /* PTMaintenanceManager.swift */,
+				55FE2994300CBCB4000E741F /* PTMotoBaseTabbarController.swift */,
+				55901836300FE37100A77571 /* PTMotoBaseViewController.swift */,
+				55FDBCA73010CD6E00EE7FA5 /* PTMOTOParkingManager.swift */,
+				55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */,
 				55986838301348FC0049684D /* PTNotificationCenter.swift */,
+				5598668330114DF00049684D /* PTRoutingManager.swift */,
+				5598663E301138A30049684D /* PTTripManager.swift */,
+				559866C13011A71E0049684D /* SpeechSynthesizer.swift */,
+				55499CF93019D83800A1A2D9 /* PTDashboardBaseView.swift */,
+				55499CFC3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift */,
 			);
 			path = Global;
 			sourceTree = "<group>";
@@ -616,6 +628,7 @@
 				55901838300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */,
 				55FE2A5D300DF42A000E741F /* PTBLEConnectViewController.swift in Sources */,
 				559867D1301281FC0049684D /* PTLightFeedbackOverlay.swift in Sources */,
+				55499CFB3019D83800A1A2D9 /* PTDashboardBaseView.swift in Sources */,
 				5577E6D12FD680730004733F /* PTTripStatsView.swift in Sources */,
 				5598668130114A980049684D /* PTFuelRoutingManager.swift in Sources */,
 				55FE2A78300DF95C000E741F /* PTMainProgressView.swift in Sources */,
@@ -623,6 +636,7 @@
 				55FDBCA83010CD6E00EE7FA5 /* PTMOTOParkingManager.swift in Sources */,
 				5577E7802FD6EEEF0004733F /* PTGForceView.swift in Sources */,
 				5577E7CF2FD704790004733F /* PTBumpMeterView.swift in Sources */,
+				55499CFD3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift in Sources */,
 				559866C33011A71E0049684D /* SpeechSynthesizer.swift in Sources */,
 				55FE29A4300CC258000E741F /* PTMotoNavigationViewController.swift in Sources */,
 				5577E7C92FD6FC8C0004733F /* PTCrashWarningView.swift in Sources */,
@@ -630,6 +644,7 @@
 				55986839301348FC0049684D /* PTNotificationCenter.swift in Sources */,
 				555C0FFA300E06630079D94F /* PTGlobalActionHeader.swift in Sources */,
 				55986688301150900049684D /* PTECUSnifferOverlay.swift in Sources */,
+				55499CF83019B7DD00A1A2D9 /* PTGlobalMapManager.swift in Sources */,
 				55F503BC300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift in Sources */,
 				55FE2996300CBCB4000E741F /* PTMotoBaseTabbarController.swift in Sources */,
 				55986643301141090049684D /* PTAntiTheftManager.swift in Sources */,
@@ -667,6 +682,7 @@
 				5598683A301348FC0049684D /* PTNotificationCenter.swift in Sources */,
 				55986640301138A30049684D /* PTTripManager.swift in Sources */,
 				55FE295C300CA4E8000E741F /* PTBluetoothManager.swift in Sources */,
+				55499CFA3019D83800A1A2D9 /* PTDashboardBaseView.swift in Sources */,
 				5590187230107A1C00A77571 /* PTRoutePlantCell.swift in Sources */,
 				55FE2966300CA5E0000E741F /* PTDashboardConfig.swift in Sources */,
 				55FE2A0B300CE2B0000E741F /* PTMapKitNavigationHelper.swift in Sources */,
@@ -674,6 +690,7 @@
 				55FDBCAC3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift in Sources */,
 				5577E6512FD657330004733F /* PTSpeedometerView.swift in Sources */,
 				55FE29A1300CC1F1000E741F /* PTMotoInfoViewController.swift in Sources */,
+				55499CFE3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift in Sources */,
 				55FE2A77300DF95C000E741F /* PTMainProgressView.swift in Sources */,
 				55FE29A3300CC258000E741F /* PTMotoNavigationViewController.swift in Sources */,
 				55986836301337DC0049684D /* PTTripDataCell.swift in Sources */,
@@ -681,6 +698,7 @@
 				55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */,
 				5598667E301148290049684D /* PTDiagnosticManager.swift in Sources */,
 				55901837300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */,
+				55499CF73019B7DD00A1A2D9 /* PTGlobalMapManager.swift in Sources */,
 				55986BAE30179D500049684D /* PTNativeTelemetryChartView.swift in Sources */,
 				5598668430114DF00049684D /* PTRoutingManager.swift in Sources */,
 				55986679301144840049684D /* PTGPXRecorder.swift in Sources */,

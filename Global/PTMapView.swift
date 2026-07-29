@@ -8,13 +8,52 @@
 import UIKit
 import AMapNaviKit
 import SnapKit
+import PooTools
+import SwifterSwift
 
 @objcMembers
-public class PTMapView: UIView, MAMapViewDelegate {
+class PTMapView: UIView, MAMapViewDelegate {
     
+    var currentSpeedLimit:UInt8 = 0
+
     // 暴露出原生地图实例，方便你未来在外部直接添加大头针 (Annotations) 或划线 (Overlays)
-    public let mapView = MAMapView()
+    lazy var mapView:MAMapView = {
+        let view = MAMapView()
+        view.showsUserLocation = true
+        view.userTrackingMode = .follow
+        view.mapType = .standardNight
+        view.mapLanguage = PTDashboardConfig.appIsInChinese() ? 0 : 1
+        view.userTrackingMode = .followWithHeading // 【灵魂属性】跟随车头方向，自动呈现 3D 导航视角
+        view.showsCompass = false // 隐藏原生指南针，因为我们有 PTCompassRollerView
+        view.showsScale = false
+        view.isShowTraffic = true // 开启实时路况（会有红黄绿的拥堵提示，很实用）
+        view.cameraDegree = 60
+        view.logoEnable = false
+        view.overrideUserInterfaceStyle = .dark // 强制暗黑模式
+        view.delegate = self
+        return view
+    }()
     
+    lazy var carPlayMapView:MAMapView = {
+        let view = PTGlobalMapManager.shared.amapView
+        view.userTrackingMode = .followWithHeading // 【灵魂属性】跟随车头方向，自动呈现 3D 导航视角
+        view.showsCompass = false // 隐藏原生指南针，因为我们有 PTCompassRollerView
+        view.showsScale = false
+        view.isShowTraffic = true // 开启实时路况（会有红黄绿的拥堵提示，很实用）
+        view.cameraDegree = 60
+        view.logoEnable = false
+        view.overrideUserInterfaceStyle = .dark // 强制暗黑模式
+        view.delegate = self
+        return view
+    }()
+    
+    lazy var driveView: AMapNaviDriveView = {
+        let view = PTGlobalMapManager.shared.driveView
+        view.delegate = self
+        view.isHidden = true
+        return view
+    }()
+
     // 用于标记是否已经完成了首次中心点放大
     private var isFirstLocationUpdate = true
     
@@ -37,28 +76,41 @@ public class PTMapView: UIView, MAMapViewDelegate {
         gradientMaskLayer.frame = self.bounds
     }
     
-    private func setupUI() {
-        addSubview(mapView)
-        mapView.snp.makeConstraints { make in
+    func setNormalMapView() {
+        AMapNaviDriveManager.sharedInstance().delegate = nil
+        AMapNaviDriveManager.sharedInstance().removeDataRepresentative(driveView)
+        self.carPlayMapView.removeFromSuperview()
+        self.driveView.removeFromSuperview()
+        self.addSubview(self.mapView)
+        self.mapView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
-        
-        mapView.showsUserLocation = true // 显示当前位置的蓝点/车标
-        mapView.userTrackingMode = .followWithHeading // 【灵魂属性】跟随车头方向，自动呈现 3D 导航视角
-        
-        // 3. 隐藏原生多余的 UI，保持界面纯粹
-        mapView.showsCompass = false // 隐藏原生指南针，因为我们有 PTCompassRollerView
-        mapView.showsScale = false
-        mapView.isShowTraffic = true // 开启实时路况（会有红黄绿的拥堵提示，很实用）
-        mapView.cameraDegree = 60
-        mapView.logoEnable = false
-        // 4. 样式配置：强制科技感
-        mapView.mapType = .standardNight
-        mapView.overrideUserInterfaceStyle = .dark // 强制暗黑模式
-
-        mapView.delegate = self
-        
+    }
+    
+    func setupNavView() {
+        mapView.removeFromSuperview()
+        PTGlobalMapManager.shared.attachAMapView(to: self)
+        PTGlobalMapManager.shared.attachDriveView(to: self)
+        self.carPlayMapView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+        self.driveView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+        self.setupNavDelegate()
+    }
+    
+    private func setupUI() {
         setupGradientMask()
+    }
+    
+    func setupNavDelegate() {
+        AMapNaviDriveManager.sharedInstance().delegate = self
+        AMapNaviDriveManager.sharedInstance().allowsBackgroundLocationUpdates = true
+        AMapNaviDriveManager.sharedInstance().pausesLocationUpdatesAutomatically = false
+        //将driveView添加为导航数据的Representative，使其可以接收到导航诱导数据
+        AMapNaviDriveManager.sharedInstance().addDataRepresentative(driveView)
+        AMapNaviDriveManager.sharedInstance().addDataRepresentative(self)
     }
     
     // MARK: - 边缘羽化渐变特效
@@ -91,5 +143,113 @@ public class PTMapView: UIView, MAMapViewDelegate {
             mapView.setZoomLevel(17.5, animated: true)
             mapView.setUserTrackingMode(.followWithHeading, animated: true)
         }
+    }
+}
+
+extension PTMapView:AMapNaviDriveManagerDelegate {
+    func driveManager(_ driveManager: AMapNaviDriveManager, didStartNavi naviMode: AMapNaviMode) {
+        self.driveView.isHidden = false
+    }
+    
+    func driveManager(_ driveManager: AMapNaviDriveManager, didStopNavi isStopped: Bool) {
+        self.driveView.isHidden = isStopped
+    }
+        
+    func driveManager(onArrivedDestination driveManager: AMapNaviDriveManager) {
+        self.driveViewCloseButtonClicked(self.driveView)
+    }
+    
+    func driveManagerDidEndEmulatorNavi(_ driveManager: AMapNaviDriveManager) {
+        self.driveViewCloseButtonClicked(self.driveView)
+    }
+    
+    func driveManager(_ driveManager: AMapNaviDriveManager, error: Error) {
+        let error = error as NSError
+        PTNSLogConsole("error:{%d - %@}", error.code, error.localizedDescription)
+    }
+    
+    func driveManager(_ driveManager: AMapNaviDriveManager, onCalculateRouteFailure error: Error) {
+        let error = error as NSError
+        PTNSLogConsole("CalculateRouteFailure:{%d - %@}", error.code, error.localizedDescription)
+    }
+
+    func driveManager(onCalculateRouteSuccess driveManager: AMapNaviDriveManager) {
+        //算路成功后显示路径
+//        showNaviRoutes()
+    }
+    
+    func driveManager(_ driveManager: AMapNaviDriveManager, postRouteNotification notifyData: AMapNaviRouteNotifyData) {
+        PTNSLogConsole(">>>>>>>>>>>>>>>>\(String(describing: notifyData.roadName))")
+    }
+            
+    func driveManager(_ manager: AMapNaviDriveManager?, onUpdateNaviSpeedLimitSection speed: Int) {
+        PTNSLogConsole(">>>>>>>>>>>>>>>>>>>>>>>>>>>>\(speed)")
+        self.currentSpeedLimit = UInt8(speed)
+    }
+    
+    func driveManagerIsNaviSoundPlaying(_ driveManager: AMapNaviDriveManager) -> Bool {
+        return SpeechSynthesizer.Shared.isSpeaking()
+    }
+    
+    func driveManager(_ driveManager: AMapNaviDriveManager, playNaviSound soundString: String, soundStringType: AMapNaviSoundType) {
+        if !PTMotoUserDefaultStruct.NavMute {
+            SpeechSynthesizer.Shared.speak(soundString)
+        }
+    }
+            
+    func driveManager(_ driveManager: AMapNaviDriveManager, onCalculateRouteSuccessWith type: AMapNaviRoutePlanType) {
+        PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Rerouting...", title: "",nextManeuver: PTManeuverMap.rerouting)
+    }
+        
+    func driveManager(_ driveManager: AMapNaviDriveManager, update gpsSignalStrength: AMapNaviGPSSignalStrength) {
+        switch gpsSignalStrength {
+        case .smartPos:
+            break
+        default:
+            PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Searching GPS...", title: "",nextManeuver: PTManeuverMap.noGPS)
+        }
+    }
+}
+
+extension PTMapView : AMapNaviDriveViewDelegate {
+        
+    func driveViewCloseButtonClicked(_ driveView: AMapNaviDriveView) {
+        //停止导航
+        AMapNaviDriveManager.sharedInstance().stopNavi()
+        AMapNaviDriveManager.sharedInstance().removeDataRepresentative(driveView)
+        self.driveView.isHidden = true
+        PTDashboardConfig.shared.naving = false
+    }
+    
+    func driveView(_ view: AMapNaviDriveView, didChangeTo state: AMapNaviDriveViewState) { }
+}
+
+extension PTMapView:AMapNaviDriveDataRepresentable {
+         
+    func driveManager(_ driveManager: AMapNaviDriveManager, updateCruiseElecCameraInfos cameraInfos: [AMapNaviTrafficFacilityInfo]) {
+        if let firstCamera = cameraInfos.first {
+            // cameraSpeed 通常代表该路段限速，为 0 时表示无限速或未知
+            if firstCamera.limitSpeed > 0 {
+                self.currentSpeedLimit = UInt8(firstCamera.limitSpeed)
+            }
+        }
+    }
+    
+    func driveManager(_ driveManager: AMapNaviDriveManager, update cameraInfos: [AMapNaviCameraInfo]?) {
+        if let firstCamera = cameraInfos?.first {
+            // cameraSpeed 通常代表该路段限速，为 0 时表示无限速或未知
+            if firstCamera.cameraSpeed > 0 {
+                self.currentSpeedLimit = UInt8(firstCamera.cameraSpeed)
+            }
+        }
+    }
+    
+    func driveManager(_ driveManager: AMapNaviDriveManager, update naviInfo: AMapNaviInfo?) {
+        guard let naviInfo = naviInfo else {
+            return
+        }
+        PTNSLogConsole("\(naviInfo)")
+        self.driveView.isHidden = false
+        PTMotoDashBoardNavFunction.sendNavDataToDashboard(naviInfo: naviInfo, currentSpeedLimit: self.currentSpeedLimit)
     }
 }

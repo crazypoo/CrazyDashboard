@@ -10,7 +10,7 @@ import SnapKit
 import SwifterSwift
 
 @objcMembers
-public class PTGForceView: UIView {
+public class PTGForceView: PTDashboardBaseView {
     
     private let crosshair = UIView()
     private let xLabel = UILabel()

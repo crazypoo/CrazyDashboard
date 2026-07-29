@@ -9,7 +9,7 @@ import UIKit
 import SnapKit
 
 @objcMembers
-public class PTCompassRollerView: UIView {
+public class PTCompassRollerView: PTDashboardBaseView {
     
     private let scaleContainer = UIView()
     private let indicator = UIView()
