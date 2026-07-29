@@ -24,7 +24,7 @@ class ViewController: UIViewController {
         
         view.addSubviews([dashBoard])
         dashBoard.snp.makeConstraints { make in
-            make.left.equalToSuperview().inset(44)
+            make.left.equalToSuperview().inset(50)
             make.top.bottom.right.equalToSuperview()
         }
         dashBoard.speedometer.playStartupSweep(duration: 1.5)

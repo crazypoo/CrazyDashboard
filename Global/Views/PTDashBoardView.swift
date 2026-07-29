@@ -36,6 +36,12 @@ class PTDashBoardView: UIView {
     let crashOverlay = PTCrashWarningView()
     let bumpMeter = PTBumpMeterView()
     let pitchGauge = PTPitchView()
+    
+    lazy var lightControl:PTIndicatorPanel = {
+        let view = PTIndicatorPanel()
+        view.isHidden = !PTDashboardConfig.shared.blueConnected
+        return view
+    }()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -77,7 +83,7 @@ class PTDashBoardView: UIView {
     private func setupDashboardUI() {
         // 实例化你封装好的仪表盘视图
 
-        self.addSubviews([mapView,speedometer,musicNowPlaying,leanAngleGauge,compassRoller,tripStatsView,gForceView,bumpMeter, pitchGauge,crashOverlay])
+        self.addSubviews([mapView,speedometer,musicNowPlaying,leanAngleGauge,compassRoller,tripStatsView,gForceView,bumpMeter, pitchGauge,lightControl,crashOverlay])
         mapView.snp.makeConstraints { make in
             make.top.equalToSuperview().inset(10)
             make.bottom.equalToSuperview().inset(10)
@@ -89,12 +95,12 @@ class PTDashBoardView: UIView {
             make.top.equalTo(self.mapView.snp.top).offset(44)
             make.bottom.equalTo(self.mapView.snp.bottom).offset(-64)
             make.width.equalTo(self.speedometer.snp.height)
-            make.left.equalToSuperview()
+            make.left.equalToSuperview().inset(CGFloat.GlobalItemSpacing / 2)
         }
         
         musicNowPlaying.snp.makeConstraints { make in
             make.top.bottom.width.equalTo(speedometer)
-            make.right.equalToSuperview()
+            make.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing / 2)
         }
 
         leanAngleGauge.snp.makeConstraints { make in
@@ -133,7 +139,13 @@ class PTDashBoardView: UIView {
             make.right.equalTo(gForceView)
             make.bottom.equalTo(self.mapView)
             make.height.equalTo(64)
-            make.width.equalTo(170)
+            make.left.equalTo(self.compassRoller.snp.right).offset(CGFloat.GlobalItemSpacing)
+        }
+        
+        lightControl.snp.makeConstraints { make in
+            make.height.bottom.equalTo(self.pitchGauge)
+            make.left.equalTo(self.speedometer)
+            make.right.equalTo(self.compassRoller.snp.left).offset(-CGFloat.GlobalItemSpacing)
         }
         
         crashOverlay.snp.makeConstraints { make in

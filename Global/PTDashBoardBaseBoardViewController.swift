@@ -20,21 +20,16 @@ public class PTCarPlayManager: NSObject {
     
     /// 全局判断：当前设备是否已经成功连上 CarPlay 并激活了对应的 Scene
     public static var isCarPlayActive: Bool {
-        if #available(iOS 13.0, *) {
-            // 获取所有已连接的场景
-            let connectedScenes = UIApplication.shared.connectedScenes
-            
-            // 查找是否存在角色为 CarPlay 模板的场景
-            let carPlayScene = connectedScenes.first { scene in
-                scene.session.role == .carTemplateApplication
-            }
-            
-            // 如果找到了，说明 CarPlay 正在运行中
-            return carPlayScene != nil
-        } else {
-            // 针对极老版本的兜底 (iOS 12 之前，CarPlay 逻辑有所不同，通常不用考虑)
-            return false
+        // 获取所有已连接的场景
+        let connectedScenes = UIApplication.shared.connectedScenes
+        
+        // 查找是否存在角色为 CarPlay 模板的场景
+        let carPlayScene = connectedScenes.first { scene in
+            scene.session.role == .carTemplateApplication
         }
+        
+        // 如果找到了，说明 CarPlay 正在运行中
+        return carPlayScene != nil
     }
 }
 
@@ -73,9 +68,7 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
-        
-        updateMapModeForCarPlayConnection(isActive: PTCarPlayManager.isCarPlayActive)
-        
+                
         NotificationCenter.default.addObserver(self, selector: #selector(carplayIsInBackground), name: PTCarPlayDidEnterBackgroundNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(carplayIsNotInBackground), name: PTCarPlayDidBecomeActiveNotification, object: nil)
 
@@ -117,11 +110,13 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
         dashBoard.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
-        dashBoard.mapView.setupNavView()
+        PTGCDManager.shared.delayOnMain(time: 0.35) {
+            self.updateMapModeForCarPlayConnection(isActive: PTCarPlayManager.isCarPlayActive)
+        }
         switch orientationMask {
         case .landscapeRight:
             dashBoard.speedometer.snp.remakeConstraints { make in
-                make.left.equalToSuperview().inset(44)
+                make.left.equalToSuperview().inset(CGFloat.statusBarHeight())
                 make.top.equalTo(self.dashBoard.mapView.snp.top).offset(44)
                 make.bottom.equalTo(self.dashBoard.mapView.snp.bottom).offset(-64)
                 make.width.equalTo(self.dashBoard.speedometer.snp.height)

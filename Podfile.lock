@@ -1,5 +1,5 @@
 PODS:
-  - Alamofire (5.11.2)
+  - Alamofire (5.12.0)
   - AMapFoundation-NO-IDFA (1.9.0)
   - AMapLocation-NO-IDFA (2.12.0):
     - AMapFoundation-NO-IDFA (>= 1.9.0)
@@ -62,7 +62,7 @@ PODS:
   - LookinServer/Swift (1.2.8):
     - LookinServer/Core
   - lottie-ios (4.6.1)
-  - PooTools/Core (4.5.6):
+  - PooTools/Core (4.5.7):
     - AttributedString
     - CocoaLumberjack/Swift
     - DeviceKit
@@ -78,42 +78,42 @@ PODS:
     - SnapKit
     - SwiftDate
     - SwifterSwift
-  - PooTools/CustomerLabel (4.5.6):
+  - PooTools/CustomerLabel (4.5.7):
     - PooTools/Core
-  - PooTools/DEBUG (4.5.6):
+  - PooTools/DEBUG (4.5.7):
     - PooTools/Core
     - PooTools/NetWork
     - PooTools/PDF
     - PooTools/SearchBar
     - PooTools/Share
-  - PooTools/Flag (4.5.6):
+  - PooTools/Flag (4.5.7):
     - FlagKit
     - PooTools/Core
-  - PooTools/Hud (4.5.6):
+  - PooTools/Hud (4.5.7):
     - PooTools/Core
     - PooTools/ProgressBar
-  - PooTools/Loading (4.5.6):
+  - PooTools/Loading (4.5.7):
     - PooTools/Core
-  - PooTools/LocationPermission (4.5.6):
+  - PooTools/LocationPermission (4.5.7):
     - PooTools/Core
-  - PooTools/Motion (4.5.6):
+  - PooTools/Motion (4.5.7):
     - PooTools/Core
     - PooTools/MotionPermission
-  - PooTools/MotionPermission (4.5.6):
+  - PooTools/MotionPermission (4.5.7):
     - PooTools/Core
-  - PooTools/NetWork (4.5.6):
+  - PooTools/NetWork (4.5.7):
     - Alamofire
     - PooTools/Core
     - PooTools/Loading
-  - PooTools/PDF (4.5.6):
+  - PooTools/PDF (4.5.7):
     - PooTools/Core
-  - PooTools/ProgressBar (4.5.6):
+  - PooTools/ProgressBar (4.5.7):
     - PooTools/Core
-  - PooTools/SearchBar (4.5.6):
+  - PooTools/SearchBar (4.5.7):
     - PooTools/Core
-  - PooTools/Share (4.5.6):
+  - PooTools/Share (4.5.7):
     - PooTools/CustomerLabel
-  - PooTools/WhatsNewsKit (4.5.6):
+  - PooTools/WhatsNewsKit (4.5.7):
     - PooTools/Core
   - pop (1.0.12)
   - SafeSFSymbols (2.0.0)
@@ -220,11 +220,11 @@ EXTERNAL SOURCES:
 
 CHECKOUT OPTIONS:
   PooTools:
-    :commit: 4cbfa97fa512d151648e4b1401df93943d71518e
+    :commit: 7a80d58134a51a345c414564296a8bd04506436c
     :git: https://github.com/crazypoo/PTools.git
 
 SPEC CHECKSUMS:
-  Alamofire: 400275dd1c6d87d95a041861d2a59da4b520a203
+  Alamofire: ddb8d5201667b256dbc225f3fc6e835a0753186f
   AMapFoundation-NO-IDFA: a2e3c895398d7ee757278e1a0a8f9359da4b146e
   AMapLocation-NO-IDFA: 7cd8fc837ea41edfbf4d937cd20572e277b77d18
   AMapNavi-NO-IDFA: d55b9b138c6e540f737c689975cae2c9dbd1026a
@@ -246,7 +246,7 @@ SPEC CHECKSUMS:
   Kingfisher: ee4ff4936d5b399164b6d01a0dfc0388583287b6
   LookinServer: 1b2b61c6402ae29fa22182d48f5cd067b4e99e80
   lottie-ios: 6467ca7035120c5b0e0acee58bb679cf15875686
-  PooTools: d2c40d7aab1f279bda12233b66dbf260a439499e
+  PooTools: 33f265762f7c1504744dcb74c8423a18a0aa3bad
   pop: d582054913807fd11fd50bfe6a539d91c7e1a55a
   SafeSFSymbols: c57c8752149b2ddc0213d3d519a3a31a8bd76340
   SmartCodable: db7f9dc94eb9022ede18adf5052772432c5286c7

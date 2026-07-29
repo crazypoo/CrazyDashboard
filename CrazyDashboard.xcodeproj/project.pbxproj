@@ -17,6 +17,8 @@
 		55499CFB3019D83800A1A2D9 /* PTDashboardBaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CF93019D83800A1A2D9 /* PTDashboardBaseView.swift */; };
 		55499CFD3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CFC3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift */; };
 		55499CFE3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CFC3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift */; };
+		55499D96301A21F500A1A2D9 /* PTIndicatorPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499D95301A21F500A1A2D9 /* PTIndicatorPanel.swift */; };
+		55499D97301A21F500A1A2D9 /* PTIndicatorPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499D95301A21F500A1A2D9 /* PTIndicatorPanel.swift */; };
 		555C0FF9300E06630079D94F /* PTGlobalActionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */; };
 		555C0FFA300E06630079D94F /* PTGlobalActionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */; };
 		5577E62E2FD656D20004733F /* PTCompassRollerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6202FD656D20004733F /* PTCompassRollerView.swift */; };
@@ -120,6 +122,7 @@
 		55499CF63019B7DD00A1A2D9 /* PTGlobalMapManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTGlobalMapManager.swift; sourceTree = "<group>"; };
 		55499CF93019D83800A1A2D9 /* PTDashboardBaseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashboardBaseView.swift; sourceTree = "<group>"; };
 		55499CFC3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoDashBoardNavFunction.swift; sourceTree = "<group>"; };
+		55499D95301A21F500A1A2D9 /* PTIndicatorPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTIndicatorPanel.swift; sourceTree = "<group>"; };
 		555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTGlobalActionHeader.swift; sourceTree = "<group>"; };
 		5577E5BD2FD5C1DB0004733F /* CrazyDashboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CrazyDashboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5577E6202FD656D20004733F /* PTCompassRollerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCompassRollerView.swift; sourceTree = "<group>"; };
@@ -332,6 +335,7 @@
 				55986835301337DC0049684D /* PTTripDataCell.swift */,
 				55986BAC30179D500049684D /* PTNativeTelemetryChartView.swift */,
 				55499CEB3018E6E100A1A2D9 /* PTDashBoardView.swift */,
+				55499D95301A21F500A1A2D9 /* PTIndicatorPanel.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -632,6 +636,7 @@
 				5577E6D12FD680730004733F /* PTTripStatsView.swift in Sources */,
 				5598668130114A980049684D /* PTFuelRoutingManager.swift in Sources */,
 				55FE2A78300DF95C000E741F /* PTMainProgressView.swift in Sources */,
+				55499D96301A21F500A1A2D9 /* PTIndicatorPanel.swift in Sources */,
 				5598663F301138A30049684D /* PTTripManager.swift in Sources */,
 				55FDBCA83010CD6E00EE7FA5 /* PTMOTOParkingManager.swift in Sources */,
 				5577E7802FD6EEEF0004733F /* PTGForceView.swift in Sources */,
@@ -686,6 +691,7 @@
 				5590187230107A1C00A77571 /* PTRoutePlantCell.swift in Sources */,
 				55FE2966300CA5E0000E741F /* PTDashboardConfig.swift in Sources */,
 				55FE2A0B300CE2B0000E741F /* PTMapKitNavigationHelper.swift in Sources */,
+				55499D97301A21F500A1A2D9 /* PTIndicatorPanel.swift in Sources */,
 				5577E7812FD6EEEF0004733F /* PTGForceView.swift in Sources */,
 				55FDBCAC3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift in Sources */,
 				5577E6512FD657330004733F /* PTSpeedometerView.swift in Sources */,
@@ -946,7 +952,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -1094,7 +1100,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
