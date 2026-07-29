@@ -15,11 +15,6 @@ class SceneDelegate: PTWindowSceneDelegate {
         let view = PTECUSnifferOverlay(frame: AppWindows?.bounds ?? .zero)
         return view
     }()
-
-    lazy var lightFeedbackOverlay: PTLightFeedbackOverlay = {
-        let view = PTLightFeedbackOverlay(frame: AppWindows?.bounds ?? .zero)
-        return view
-    }()
     
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
@@ -29,7 +24,7 @@ class SceneDelegate: PTWindowSceneDelegate {
         self.makeKeyAndVisible(in: scene, viewController: PTMotoBaseTabbarController(), tint: .white)
         
         PTGCDManager.shared.delayOnMain(time: 0.5) {
-            AppWindows?.addSubviews([self.snifferOverlay,self.lightFeedbackOverlay])
+            AppWindows?.addSubviews([self.snifferOverlay])
             if PTMotoUserDefaultStruct.BleTestDataGet {
                 self.snifferOverlay.showSniffer()
             }

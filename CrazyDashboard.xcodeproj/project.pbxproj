@@ -70,8 +70,6 @@
 		559866C33011A71E0049684D /* SpeechSynthesizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559866C13011A71E0049684D /* SpeechSynthesizer.swift */; };
 		5598676D3011C9720049684D /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 5598676C3011C9720049684D /* Settings.bundle */; };
 		5598676E3011C9720049684D /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 5598676C3011C9720049684D /* Settings.bundle */; };
-		559867D0301281FC0049684D /* PTLightFeedbackOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559867CF301281FC0049684D /* PTLightFeedbackOverlay.swift */; };
-		559867D1301281FC0049684D /* PTLightFeedbackOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559867CF301281FC0049684D /* PTLightFeedbackOverlay.swift */; };
 		55986833301330E00049684D /* PTDataCollectedViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986832301330E00049684D /* PTDataCollectedViewController.swift */; };
 		55986834301330E00049684D /* PTDataCollectedViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986832301330E00049684D /* PTDataCollectedViewController.swift */; };
 		55986836301337DC0049684D /* PTTripDataCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986835301337DC0049684D /* PTTripDataCell.swift */; };
@@ -151,7 +149,6 @@
 		55986686301150900049684D /* PTECUSnifferOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTECUSnifferOverlay.swift; sourceTree = "<group>"; };
 		559866C13011A71E0049684D /* SpeechSynthesizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechSynthesizer.swift; sourceTree = "<group>"; };
 		5598676C3011C9720049684D /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
-		559867CF301281FC0049684D /* PTLightFeedbackOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLightFeedbackOverlay.swift; sourceTree = "<group>"; };
 		55986832301330E00049684D /* PTDataCollectedViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDataCollectedViewController.swift; sourceTree = "<group>"; };
 		55986835301337DC0049684D /* PTTripDataCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTripDataCell.swift; sourceTree = "<group>"; };
 		55986838301348FC0049684D /* PTNotificationCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTNotificationCenter.swift; sourceTree = "<group>"; };
@@ -331,7 +328,6 @@
 				5590187130107A1C00A77571 /* PTRoutePlantCell.swift */,
 				55FDBCAA3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift */,
 				55986686301150900049684D /* PTECUSnifferOverlay.swift */,
-				559867CF301281FC0049684D /* PTLightFeedbackOverlay.swift */,
 				55986835301337DC0049684D /* PTTripDataCell.swift */,
 				55986BAC30179D500049684D /* PTNativeTelemetryChartView.swift */,
 				55499CEB3018E6E100A1A2D9 /* PTDashBoardView.swift */,
@@ -631,7 +627,6 @@
 				5577E6312FD656D20004733F /* PTSpeedometerView.swift in Sources */,
 				55901838300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */,
 				55FE2A5D300DF42A000E741F /* PTBLEConnectViewController.swift in Sources */,
-				559867D1301281FC0049684D /* PTLightFeedbackOverlay.swift in Sources */,
 				55499CFB3019D83800A1A2D9 /* PTDashboardBaseView.swift in Sources */,
 				5577E6D12FD680730004733F /* PTTripStatsView.swift in Sources */,
 				5598668130114A980049684D /* PTFuelRoutingManager.swift in Sources */,
@@ -671,7 +666,6 @@
 				5598667C301147FD0049684D /* PTCustomRouteManager.swift in Sources */,
 				5577E6502FD6572E0004733F /* PTNowPlayingView.swift in Sources */,
 				555C0FF9300E06630079D94F /* PTGlobalActionHeader.swift in Sources */,
-				559867D0301281FC0049684D /* PTLightFeedbackOverlay.swift in Sources */,
 				55499CED3018E6E100A1A2D9 /* PTDashBoardView.swift in Sources */,
 				5577E64E2FD657250004733F /* PTCompassRollerView.swift in Sources */,
 				55028F2C2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */,

@@ -108,8 +108,8 @@ public class PTIndicatorPanel: PTDashboardBaseView {
     // MARK: - 暴露给外部的更新接口    
     func updateControl(control: PTDashboardControl) {
         
-        toggleGlow(for: leftTurnIcon, isOn: control.isLeftTurnOn, activeColor: .systemGreen)
-        toggleGlow(for: rightTurnIcon, isOn: control.isRightTurnOn, activeColor: .systemGreen)
+        setBlinkingGlow(for: leftTurnIcon, isBlinking: control.isLeftTurnOn, activeColor: .systemGreen)
+        setBlinkingGlow(for: rightTurnIcon, isBlinking: control.isRightTurnOn, activeColor: .systemGreen)
         toggleGlow(for: lowBeamIcon, isOn: control.isLowBeamOn, activeColor: .systemGreen)
         toggleGlow(for: highBeamIcon, isOn: control.isHighBeamOn, activeColor: .systemBlue)
         toggleGlow(for: tcsIcon, isOn: control.isTcsSystemReady, activeColor: .systemOrange)
@@ -177,4 +177,41 @@ public class PTIndicatorPanel: PTDashboardBaseView {
         }
     }
 
+    private func setBlinkingGlow(for imageView: UIImageView, isBlinking: Bool, activeColor: UIColor) {
+        if isBlinking {
+            // 如果已经在执行闪烁动画，就不重复添加 (保留了你极佳的防重设计)
+            guard imageView.layer.animation(forKey: "blinkAnimation") == nil else { return }
+            
+            // 1. 赋予激活时的颜色和光晕属性
+            imageView.tintColor = activeColor
+            imageView.layer.shadowColor = activeColor.cgColor
+            imageView.layer.shadowRadius = 8.0
+            imageView.layer.shadowOpacity = 0.9
+            imageView.layer.shadowOffset = .zero
+            
+            // 2. 准备执行动画：初始透明度设为 0 (或 0.2，保留一点底色会更真实)
+            imageView.alpha = 0.2
+            
+            // 3. 执行你的闪烁动画引擎
+            UIView.animate(withDuration: 0.5,
+                           delay: 0,
+                           options: [.repeat, .autoreverse, .allowUserInteraction, .curveEaseInOut],
+                           animations: {
+                imageView.alpha = 1.0 // 峰值亮度
+            }, completion: nil)
+            
+            // 给动画打个标签，防止重复添加
+            imageView.layer.add(CAAnimation(), forKey: "blinkAnimation")
+            
+        } else {
+            // 1. 关闭转向灯时，移除所有动画
+            imageView.layer.removeAllAnimations()
+            imageView.layer.removeAnimation(forKey: "blinkAnimation")
+            
+            // 2. 恢复到熄灭时的静态暗灰状态
+            imageView.alpha = 1.0 // 恢复不透明，以便显示暗灰色
+            imageView.tintColor = .darkGray // 熄灭颜色
+            imageView.layer.shadowOpacity = 0.0 // 关闭光晕
+        }
+    }
 }
