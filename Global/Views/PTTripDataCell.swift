@@ -25,8 +25,8 @@ class PTTripDataCell: PTBaseNormalCell {
             let startTime = cellModel.startTime.convertTo(region: .local).toFormat("yyyy-MM-dd HH:mm:ss")
             let endTime = cellModel.endTime.convertTo(region: .local).toFormat("yyyy-MM-dd HH:mm:ss")
             let distanceString = PTDashboardConfig.languageFunc(text: "casa_card_little_trip") + ":" + String(format: "%@%@", PTDashboardConfig.shared.appShowMileageValueString(cellModel.distanceKm),PTDashboardConfig.shared.appShowUniLabel)
-            let speedRpm = "Max speed:" + String(format: "%@%@", PTDashboardConfig.shared.appShowMileageValueString(cellModel.maxSpeedKmh),PTDashboardConfig.shared.appShowUniLabel) + ",Max Rpm:" + "\(cellModel.maxRpm)" + "AvgSpeed:" + "\(cellModel.gpsAvgSpeedKmh)"
-            let avgOil = PTDashboardConfig.languageFunc(text: "casa_card_avg_oil") + ":\(cellModel.avgConsumption)"
+            let speedRpm = "Max speed:" + String(format: "%@%@", PTDashboardConfig.shared.appShowMileageValueString(cellModel.maxSpeedKmh),PTDashboardConfig.shared.appShowUniLabel) + ",Max Rpm:" + "\(cellModel.maxRpm)" + "AvgSpeed:" + "\(String(format: "%.2f", cellModel.gpsAvgSpeedKmh))"
+            let avgOil = PTDashboardConfig.languageFunc(text: "casa_card_avg_oil") + ":\(String(format: "%.1f", cellModel.avgConsumption))"
             let nameAtt: ASAttributedString = """
                         \(wrap: .embedding("""
                         \((startTime + " -> " + endTime),.foreground(.white),.font(.appfont(size: 14)))

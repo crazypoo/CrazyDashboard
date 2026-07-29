@@ -23,6 +23,8 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
     
     var isFirstLoad:Bool = true
     
+    var motoDashBoardDataChange:Bool = false
+    
     lazy var actionStack:UIStackView = {
         let stackView = UIStackView()
         stackView.axis = .horizontal
@@ -453,6 +455,9 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         
     // MARK: - 状态回调
     @objc func handleDataNotification(_ notification: Notification) {
+        guard !motoDashBoardDataChange else {
+            return
+        }
         // 1. 将广播传递过来的 object 安全地向下转型为我们的数据模型
         if let data1 = notification.object as? PTDashboardData1 {
             
@@ -549,19 +554,24 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
     }
     
     @objc func dashBoardReload() {
+        motoDashBoardDataChange = true
         self.detailCollection.clearAllData { _ in
-            self.detailCollection.reloadAllData()
-            
-            self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(max: PTDashboardConfig.shared.appShowMileage(2500), current: PTDashboardConfig.shared.appShowMileage(Double(PTBluetoothServerManager.shared.latestData3?.distToMaintenance ?? 0)))
-            
-            self.speedometer.unitLabel.text = PTDashboardConfig.shared.appShowUniLabel
-            self.speedometer.maxSpeed = PTDashboardConfig.shared.appUniIsMetric ? 180 : 110
-            self.speedometer.progressColor = PTDashboardConfig.shared.appMainColor
-            self.speedometer.needleColor = PTDashboardConfig.shared.appMainColor
-            self.speedometerReversed.progressColor = PTDashboardConfig.shared.appMainColor
-            self.speedometerReversed.needleColor = PTDashboardConfig.shared.appMainColor
-            self.voltageLabel.dataProgress.barColor = PTDashboardConfig.shared.appMainColor
-            self.distToMaintenanceLabel.dataProgress.barColor = PTDashboardConfig.shared.appMainColor
+            self.detailCollection.reloadAllData() {
+                PTGCDManager.shared.runOnMain {
+                    self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(max: PTDashboardConfig.shared.appShowMileage(2500), current: PTDashboardConfig.shared.appShowMileage(Double(PTBluetoothServerManager.shared.latestData3?.distToMaintenance ?? 0)))
+                    self.speedometer.unitLabel.text = PTDashboardConfig.shared.appShowUniLabel
+                    self.speedometer.maxSpeed = PTDashboardConfig.shared.appUniIsMetric ? 180 : 110
+                    self.speedometer.progressColor = PTDashboardConfig.shared.appMainColor
+                    self.speedometer.needleColor = PTDashboardConfig.shared.appMainColor
+                    self.speedometerReversed.progressColor = PTDashboardConfig.shared.appMainColor
+                    self.speedometerReversed.needleColor = PTDashboardConfig.shared.appMainColor
+                    self.voltageLabel.dataProgress.barColor = PTDashboardConfig.shared.appMainColor
+                    self.distToMaintenanceLabel.dataProgress.barColor = PTDashboardConfig.shared.appMainColor
+                    PTGCDManager.shared.delayOnMain(time: 0.5) {
+                        self.motoDashBoardDataChange = false
+                    }
+                }
+            }
         }
     }
 }
