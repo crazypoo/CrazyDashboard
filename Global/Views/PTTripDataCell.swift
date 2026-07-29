@@ -19,21 +19,23 @@ class PTTripDataCell: PTBaseNormalCell {
     
     static let ChartHeight:CGFloat = 150
     static let MapHeight:CGFloat = 88
+    static let lineMaxHeight:CGFloat = 24
+    static let textLineSpacing:CGFloat = 2.5
+    static let lineCount:CGFloat = 4
 
     var cellModel:PTTripReport! {
         didSet {
+            
             let startTime = cellModel.startTime.convertTo(region: .local).toFormat("yyyy-MM-dd HH:mm:ss")
             let endTime = cellModel.endTime.convertTo(region: .local).toFormat("yyyy-MM-dd HH:mm:ss")
-            let distanceString = PTDashboardConfig.languageFunc(text: "casa_card_little_trip") + ":" + String(format: "%@%@", PTDashboardConfig.shared.appShowMileageValueString(cellModel.distanceKm),PTDashboardConfig.shared.appShowUniLabel)
-            let speedRpm = "Max speed:" + String(format: "%@%@", PTDashboardConfig.shared.appShowMileageValueString(cellModel.maxSpeedKmh),PTDashboardConfig.shared.appShowUniLabel) + ",Max Rpm:" + "\(cellModel.maxRpm)" + "AvgSpeed:" + "\(String(format: "%.2f", cellModel.gpsAvgSpeedKmh))"
-            let avgOil = PTDashboardConfig.languageFunc(text: "casa_card_avg_oil") + ":\(String(format: "%.1f", cellModel.avgConsumption))"
+            let distanceString = String(format: "%@%@", PTDashboardConfig.shared.appShowMileageValueString(cellModel.distanceKm),PTDashboardConfig.shared.appShowUniLabel)
             let nameAtt: ASAttributedString = """
                         \(wrap: .embedding("""
-                        \((startTime + " -> " + endTime),.foreground(.white),.font(.appfont(size: 14)))
-                        \(distanceString,.foreground(.white),.font(.appfont(size: 14)))
-                        \(speedRpm,.foreground(.white),.font(.appfont(size: 14)))
-                        \(avgOil,.foreground(.white),.font(.appfont(size: 14)))
-                        """),.paragraph(.alignment(.left)))
+                        \((startTime + " -> " + endTime),.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight),.minimumLineHeight(PTTripDataCell.lineMaxHeight)))
+                        \(.image(UIImage(.road.lanes).withTintColor(.white, renderingMode: .alwaysOriginal),.custom(size: CGSize(width: PTTripDataCell.lineMaxHeight, height: PTTripDataCell.lineMaxHeight))))\(distanceString,.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight)))
+                        \(.image(UIImage(.gauge.withDotsNeedle_100percent).withTintColor(.white, renderingMode: .alwaysOriginal),.custom(size: CGSize(width: PTTripDataCell.lineMaxHeight, height: PTTripDataCell.lineMaxHeight))))\(String(format: "%@%@", PTDashboardConfig.shared.appShowMileageValueString(cellModel.maxSpeedKmh),PTDashboardConfig.shared.appShowUniLabel),.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight)))\(.image(UIImage(.gauge.withDotsNeedle_50percent).withTintColor(.white, renderingMode: .alwaysOriginal),.custom(size: CGSize(width: PTTripDataCell.lineMaxHeight, height: PTTripDataCell.lineMaxHeight))))\(String(format: "%@%@", PTDashboardConfig.shared.appShowMileageValueString(cellModel.gpsAvgSpeedKmh),PTDashboardConfig.shared.appShowUniLabel),.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight)))\(.image(UIImage(.arrow.counterclockwiseCircle).withTintColor(.white, renderingMode: .alwaysOriginal),.custom(size: CGSize(width: PTTripDataCell.lineMaxHeight, height: PTTripDataCell.lineMaxHeight))))\("\(cellModel.maxRpm)" + " rpm/min",.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight)))
+                        \(.image(UIImage(.fuelpump).withTintColor(.white, renderingMode: .alwaysOriginal),.custom(size: CGSize(width: PTTripDataCell.lineMaxHeight, height: PTTripDataCell.lineMaxHeight))))\(String(format: "%.1fL/%@%@", cellModel.avgConsumption,PTDashboardConfig.shared.appShowMileageValueString(100),PTDashboardConfig.shared.appShowUniLabel),.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight)))
+                        """),.paragraph(.alignment(.left),.lineSpacing(PTTripDataCell.textLineSpacing)))
                         """
             timeLabel.attributed.text = nameAtt
             
