@@ -54,6 +54,34 @@ extension PTiCloudFileManager {
     }
 }
 
+extension PTiCloudFileManager {
+    
+    /// 从 iCloud 中彻底删除指定文件
+    /// - Parameter fileName: 需要删除的文件名 (例如: MotoRide_xxx.gpx 或 MotoRide_xxx.jpg)
+    public func deleteCloudFile(fileName: String) {
+        guard let cloudURL = iCloudDocumentsURL else {
+            PTNSLogConsole("⚠️ 无法删除：iCloud 未准备好。")
+            return
+        }
+        
+        let fileURL = cloudURL.appendingPathComponent(fileName)
+        
+        // 检查云端文件是否存在
+        guard fileManager.fileExists(atPath: fileURL.path) else {
+            PTNSLogConsole("ℹ️ 云端不存在此文件，无需删除: \(fileName)")
+            return
+        }
+        
+        // 执行物理销毁
+        do {
+            try fileManager.removeItem(at: fileURL)
+            PTNSLogConsole("☁️🗑️ 成功：已从 iCloud 彻底删除文件 \(fileName)")
+        } catch {
+            PTNSLogConsole("❌ 从 iCloud 删除文件失败: \(error.localizedDescription)")
+        }
+    }
+}
+
 /// 极简的 GPX 坐标提取工具
 public class PTGPXParser: NSObject, XMLParserDelegate {
     

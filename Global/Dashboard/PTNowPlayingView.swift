@@ -17,9 +17,15 @@ public class PTMarqueeLabel: UIView {
 
     private let label = UILabel()
 
-    // 暴露核心的 Label 属性，方便外部设置
+    // 🌟 核心修复 1：状态锁缓存，避免重复渲染
+    private var lastText: String?
+    private var lastWidth: CGFloat = 0
+
     public var text: String? {
         didSet {
+            // 只有当文本真正发生改变时，才重置动画
+            guard text != lastText else { return }
+            lastText = text
             label.text = text
             triggerMarquee()
         }
@@ -39,7 +45,7 @@ public class PTMarqueeLabel: UIView {
 
     public override init(frame: CGRect) {
         super.init(frame: frame)
-        self.clipsToBounds = true // 核心：超出的文字直接裁切掉
+        self.clipsToBounds = true
         addSubview(label)
     }
 
@@ -47,18 +53,19 @@ public class PTMarqueeLabel: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    // 当 Auto Layout 确定了父视图宽度后，重新计算是否需要滚动
     public override func layoutSubviews() {
         super.layoutSubviews()
-        triggerMarquee()
+        // 🌟 核心修复 2：只有当 AutoLayout 计算出的真实宽度发生变化时，才触发动画
+        if self.bounds.width != lastWidth {
+            lastWidth = self.bounds.width
+            triggerMarquee()
+        }
     }
 
     private func triggerMarquee() {
-        // 每次触发前，先重置之前的状态和动画
         label.layer.removeAllAnimations()
         label.transform = .identity
 
-        // 让 label 自动计算出其实际所需的宽度
         label.sizeToFit()
         let textWidth = label.bounds.width
         let viewWidth = self.bounds.width
@@ -66,26 +73,20 @@ public class PTMarqueeLabel: UIView {
         guard viewWidth > 0, let text = text, !text.isEmpty else { return }
 
         if textWidth > viewWidth {
-            // 🌟 文本超长，启动乒乓跑马灯
-            // 设定 frame，高度撑满，宽度等于文字真实宽度
             label.frame = CGRect(x: 0, y: 0, width: textWidth, height: self.bounds.height)
-            label.textAlignment = .left // 跑马灯时强制左对齐，视觉更合理
+            label.textAlignment = .left
 
-            let overstep = textWidth - viewWidth + 20 // 多留 20pt 的缓冲空间，不会贴得太死
-
-            // 智能速度控制：每 25pt 滚动 1 秒，保证不论字数多少，滚动速度始终一致
+            let overstep = textWidth - viewWidth + 20
             let duration = TimeInterval(overstep) / 25.0
 
             UIView.animate(withDuration: duration,
-                           delay: 1.5, // 等待 1.5 秒让用户看清开头，再开始滚
-                           options: [.autoreverse, .repeat, .curveEaseInOut], // 乒乓来回、无限重复、平滑加减速
+                           delay: 1.5,
+                           options: [.autoreverse, .repeat, .curveEaseInOut],
                            animations: {
-                // 向左移动超出的距离
                 self.label.transform = CGAffineTransform(translationX: -overstep, y: 0)
             }, completion: nil)
 
         } else {
-            // 🌟 文本够短，乖乖按原样对齐显示
             label.frame = self.bounds
             label.textAlignment = self.textAlignment
         }
@@ -99,11 +100,8 @@ public class PTNowPlayingView: UIView {
     private let titleLabel = PTMarqueeLabel()
     private let artistLabel = PTMarqueeLabel()
     private let timeLabel = UILabel()
-    // 获取系统的音乐播放器
     private let musicPlayer = MPMusicPlayerController.systemMusicPlayer
-    
     private var progressTimer: Timer?
-    
     private let trackLayer = CAShapeLayer()
     private let progressLayer = CAShapeLayer()
 
@@ -139,104 +137,89 @@ public class PTNowPlayingView: UIView {
     // MARK: - 生命周期绘图 (当视图大小确定时绘制圆弧)
     public override func layoutSubviews() {
         super.layoutSubviews()
-        
         let center = CGPoint(x: bounds.width / 2, y: bounds.height / 2)
         let radius = bounds.width / 2 - 4
-        
-        // 1. 起点：7点半位置 (135度 -> 3π/4)
         let startAngle = CGFloat.pi * 3 / 4
-        
-        // 2. 终点：逆时针减去 270度后，停在 10点半位置 (-135度 -> -3π/4)
         let endAngle = -CGFloat.pi * 3 / 4
-        
-        // 3. 画出路径：clockwise 设为 false (逆时针)
-        let path = UIBezierPath(arcCenter: center,
-                                radius: radius,
-                                startAngle: startAngle,
-                                endAngle: endAngle,
-                                clockwise: false) // 逆时针！
-        
+        let path = UIBezierPath(arcCenter: center, radius: radius, startAngle: startAngle, endAngle: endAngle, clockwise: false)
         trackLayer.path = path.cgPath
         progressLayer.path = path.cgPath
     }
 
     private func setupUI() {
         self.backgroundColor = UIColor.black.withAlphaComponent(0.6)
-                
+        
         trackLayer.fillColor = UIColor.clear.cgColor
         trackLayer.strokeColor = UIColor.darkGray.withAlphaComponent(0.5).cgColor
         trackLayer.lineWidth = 10
-        trackLayer.lineCap = .round // 让线段的两端是圆角
+        trackLayer.lineCap = .round
         layer.addSublayer(trackLayer)
-        
-        // 2. 设置进度层 (红色的高亮线)
+
         progressLayer.fillColor = UIColor.clear.cgColor
-        progressLayer.strokeColor = PTDashboardConfig.shared.appMainColor.cgColor // 匹配你截图里的红色
+        progressLayer.strokeColor = PTDashboardConfig.shared.appMainColor.cgColor
         progressLayer.lineWidth = 10
         progressLayer.lineCap = .round
-        progressLayer.strokeEnd = 0 // 初始进度为 0
+        progressLayer.strokeEnd = 0
         layer.addSublayer(progressLayer)
 
-        // 1. 专辑封面
         artworkImageView.layer.cornerRadius = 10
         artworkImageView.clipsToBounds = true
         artworkImageView.contentMode = .scaleAspectFill
-        artworkImageView.backgroundColor = .darkGray // 占位色
-        
-        // 2. 歌名
+        artworkImageView.backgroundColor = .darkGray
+
         titleLabel.textColor = .white
         titleLabel.textAlignment = .center
-        titleLabel.font = .appfont(size: 18,bold:true)
+        titleLabel.font = .appfont(size: 18, bold: true)
         titleLabel.text = PTDashboardConfig.languageFunc(text: "music_not_play")
-        
-        // 3. 歌手
+
         artistLabel.textColor = .lightGray
         artistLabel.textAlignment = .center
         artistLabel.font = .appfont(size: 14)
         artistLabel.text = "--"
-        
+
         timeLabel.textColor = .lightGray
         timeLabel.textAlignment = .center
-        timeLabel.font = .appfont(size: 12)
+        timeLabel.font = .appfont(size: 12, bold: true) // 稍微加粗，与电池字体形成呼应
         timeLabel.text = "-00:00"
 
-        addSubviews([artworkImageView,titleLabel,artistLabel,timeLabel,batteryLevel])
+        addSubviews([artworkImageView, titleLabel, artistLabel, timeLabel, batteryLevel])
 
-        // MARK: - SnapKit 布局
-        
+        // 🌟 核心排版优化：完美的中心十字布局
+
+        // 1. 专辑封面：绝对居中，占据 40% 的宽度，让四周有充裕的呼吸感
         artworkImageView.snp.makeConstraints { make in
-            make.width.equalToSuperview().multipliedBy(0.5)
-            make.centerY.centerX.equalToSuperview()
-            make.height.equalTo(self.artworkImageView.snp.width)
+            make.center.equalToSuperview()
+            make.width.height.equalToSuperview().multipliedBy(0.40)
         }
-        
+
+        // 2. 歌名：紧贴封面顶部，左右预留防裁切边距
         titleLabel.snp.makeConstraints { make in
-            // 顶部挨着封面的底部，往下偏移 15
-            make.bottom.equalTo(artworkImageView.snp.top).offset(-8)
-            // 左右留白 10，防止文字太长贴边
-            make.left.right.equalToSuperview().inset(50)
+            make.bottom.equalTo(artworkImageView.snp.top).offset(-10)
+            make.left.right.equalToSuperview().inset(30)
             make.height.equalTo(24)
         }
-        
+
+        // 3. 歌手：紧贴封面底部，与歌名保持绝对对称
         artistLabel.snp.makeConstraints { make in
-            // 顶部挨着歌名的底部，往下偏移 5
-            make.top.equalTo(artworkImageView.snp.bottom).offset(8)
-            make.left.right.height.equalTo(self.titleLabel)
+            make.top.equalTo(artworkImageView.snp.bottom).offset(10)
+            make.left.right.equalToSuperview().inset(30)
+            make.height.equalTo(18)
         }
-        
-        timeLabel.snp.makeConstraints { make in
-            // 时间显示在进度条下方
-            make.left.equalTo(self.artworkImageView.snp.right).offset(2)
-            make.right.equalToSuperview().inset(5)
-            make.centerY.equalTo(self.artworkImageView)
-        }
-        
+
+        // 4. 电量与时间：分居封面左右两侧，垂直居中
         batteryLevel.snp.makeConstraints { make in
-            make.left.equalToSuperview().inset(5)
-            make.right.equalTo(self.artworkImageView.snp.left).offset(-2)
-            make.height.equalTo(40)
-            make.centerY.equalTo(self.artworkImageView)
+            make.centerY.equalToSuperview()
+            make.right.equalTo(artworkImageView.snp.left).offset(-4)
+            make.width.equalTo(44)
+            make.height.equalTo(44)
         }
+
+        timeLabel.snp.makeConstraints { make in
+            make.centerY.equalToSuperview()
+            make.left.equalTo(artworkImageView.snp.right).offset(4)
+            make.right.equalToSuperview().inset(12)
+        }
+
     }
     
     private func setupNotifications() {

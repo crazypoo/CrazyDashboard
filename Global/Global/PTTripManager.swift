@@ -639,3 +639,50 @@ extension PTTripManager {
         PTNSLogConsole("⚠️ [ADV 遥测] 在坐标 (\(loc.coordinate.latitude), \(loc.coordinate.longitude)) 处记录到一次越野脱困事件！")
     }
 }
+
+// MARK: - 单条历史记录删除引擎
+extension PTTripManager {
+    
+    /// 删除指定的行程记录（包含清理本地 GPX 与 JPG 缓存文件）
+    /// - Parameter trip: 需要删除的行程模型
+    public func deleteTrip(_ trip: PTTripReport) {
+        
+        // 1. 从内存数组中安全移除 (利用 startTime 作为唯一标识符)
+        // 使用 removeAll(where:) 是 Swift 中最高效的做法
+        tripHistory.removeAll { $0.startTime == trip.startTime }
+        
+        // 2. 重新写入历史记录的 JSON 文件，并触发 iCloud 同步
+        saveHistory()
+        
+        // 3. 深度清理：销毁与之关联的 GPX 轨迹文件和 JPG 缩略图文件
+        if let gpxName = trip.gpxFileName {
+            let jpgName = gpxName.replacingOccurrences(of: ".gpx", with: ".jpg")
+            deleteFileFromDisk(fileName: gpxName)
+            deleteFileFromDisk(fileName: jpgName)
+        }
+        
+        PTNSLogConsole("🗑️ [行程管理] 完美删除行程: \(trip.startTime)，并已释放关联的磁盘空间。")
+    }
+    
+    /// 辅助方法：物理删除 iOS 沙盒中的指定文件
+    private func deleteFileFromDisk(fileName: String) {
+        let fileManager = FileManager.default
+        
+        // 获取 Documents 目录
+        guard let docsDir = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+        let fileURL = docsDir.appendingPathComponent(fileName)
+        
+        // 如果文件存在，则物理销毁
+        if fileManager.fileExists(atPath: fileURL.path) {
+            do {
+                try fileManager.removeItem(at: fileURL)
+                PTNSLogConsole("🗑️ [文件清理] 已彻底删除本地缓存文件: \(fileName)")
+            } catch {
+                PTNSLogConsole("❌ [文件清理] 无法删除本地文件: \(fileName), 错误: \(error.localizedDescription)")
+            }
+        }
+        
+        // 🚨 联动清理 iCloud：如果你在 PTiCloudFileManager 中写过 delete 方法，可以在这里顺手调用
+        PTiCloudFileManager.shared.deleteCloudFile(fileName: fileName)
+    }
+}
