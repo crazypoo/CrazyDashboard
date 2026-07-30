@@ -340,6 +340,11 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         }
         
         setupDeveloperGesture()
+        
+        if !PTDashboardConfig.shared.blueConnected {
+            PTMotion.shared.calibrateZeroPoint()
+            PTTripManager.shared.handleConnect()
+        }
     }
     
     

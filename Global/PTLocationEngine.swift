@@ -177,6 +177,7 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // ðŸŒŸ ä
     public func amapLocationManager(_ manager: AMapLocationManager!, didUpdate location: CLLocation!, reGeocode: AMapLocationReGeocode!) {
         guard let location = location else { return }
         self.lastLocation = location
+        PTWeatherManager.shared.fetchCurrentWeather(for: location)
         if currentMode == .antiTheft {
             return
         }

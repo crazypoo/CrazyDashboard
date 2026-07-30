@@ -19,6 +19,8 @@
 		55499E0C301AFCE800A1A2D9 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55499E0B301AFCE800A1A2D9 /* SwiftUI.framework */; };
 		55499E17301AFCEA00A1A2D9 /* xp400WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 55499E08301AFCE800A1A2D9 /* xp400WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		55499E1D301B14DD00A1A2D9 /* PTLiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499DFD301AFA2300A1A2D9 /* PTLiveActivityManager.swift */; };
+		55499E1F301B1F4F00A1A2D9 /* PTWeatherOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499E1E301B1F4F00A1A2D9 /* PTWeatherOverlayView.swift */; };
+		55499E24301B204A00A1A2D9 /* PTWeatherManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499E23301B204A00A1A2D9 /* PTWeatherManager.swift */; };
 		555C0FF9300E06630079D94F /* PTGlobalActionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */; };
 		5577E64E2FD657250004733F /* PTCompassRollerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6202FD656D20004733F /* PTCompassRollerView.swift */; };
 		5577E64F2FD6572A0004733F /* PTLocationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6212FD656D20004733F /* PTLocationEngine.swift */; };
@@ -105,6 +107,8 @@
 		55499E08301AFCE800A1A2D9 /* xp400WidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = xp400WidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		55499E09301AFCE800A1A2D9 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		55499E0B301AFCE800A1A2D9 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		55499E1E301B1F4F00A1A2D9 /* PTWeatherOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTWeatherOverlayView.swift; sourceTree = "<group>"; };
+		55499E23301B204A00A1A2D9 /* PTWeatherManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTWeatherManager.swift; sourceTree = "<group>"; };
 		555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTGlobalActionHeader.swift; sourceTree = "<group>"; };
 		5577E6202FD656D20004733F /* PTCompassRollerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCompassRollerView.swift; sourceTree = "<group>"; };
 		5577E6212FD656D20004733F /* PTLocationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLocationEngine.swift; sourceTree = "<group>"; };
@@ -234,6 +238,31 @@
 			path = Widget;
 			sourceTree = "<group>";
 		};
+		55499E20301B201400A1A2D9 /* Weather */ = {
+			isa = PBXGroup;
+			children = (
+				55499E22301B203100A1A2D9 /* Function */,
+				55499E21301B202A00A1A2D9 /* Views */,
+			);
+			path = Weather;
+			sourceTree = "<group>";
+		};
+		55499E21301B202A00A1A2D9 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				55499E1E301B1F4F00A1A2D9 /* PTWeatherOverlayView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		55499E22301B203100A1A2D9 /* Function */ = {
+			isa = PBXGroup;
+			children = (
+				55499E23301B204A00A1A2D9 /* PTWeatherManager.swift */,
+			);
+			path = Function;
+			sourceTree = "<group>";
+		};
 		5577E5B42FD5C1DB0004733F = {
 			isa = PBXGroup;
 			children = (
@@ -258,6 +287,7 @@
 		5577E64D2FD657110004733F /* Global */ = {
 			isa = PBXGroup;
 			children = (
+				55499E20301B201400A1A2D9 /* Weather */,
 				55499E00301AFBF700A1A2D9 /* Widget */,
 				55499DFC301AF9EE00A1A2D9 /* LiveActivity */,
 				5598676C3011C9720049684D /* Settings.bundle */,
@@ -594,8 +624,10 @@
 				55901837300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */,
 				55499CF73019B7DD00A1A2D9 /* PTGlobalMapManager.swift in Sources */,
 				55986BAE30179D500049684D /* PTNativeTelemetryChartView.swift in Sources */,
+				55499E24301B204A00A1A2D9 /* PTWeatherManager.swift in Sources */,
 				5598668430114DF00049684D /* PTRoutingManager.swift in Sources */,
 				55986679301144840049684D /* PTGPXRecorder.swift in Sources */,
+				55499E1F301B1F4F00A1A2D9 /* PTWeatherOverlayView.swift in Sources */,
 				55F503BB300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift in Sources */,
 				55FDBCA93010CD6E00EE7FA5 /* PTMOTOParkingManager.swift in Sources */,
 				55986676301144060049684D /* PTMaintenanceManager.swift in Sources */,
