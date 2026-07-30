@@ -35,6 +35,13 @@ class PTMotoBaseTabbarController: PTBaseTabBarViewController {
         let collectedNav = PTBaseNavControl(rootViewController: collected)
         let collectedTab = PTTabBarItemConfig(title: collectedTitle, content: PTTabBarImageContent(normal: collectedNormalImage, selected: collectedSelectedImage),viewController: collectedNav)
         
+        let pttNormalImage = UIImage(.radio).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
+        let pttSelectedImage = UIImage(.radio).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
+        let pttTitle = PTDashboardConfig.languageFunc(text: "PTT")
+        let ptt = PTPTTViewController()
+        let pttNav = PTBaseNavControl(rootViewController: ptt)
+        let pttTab = PTTabBarItemConfig(title: pttTitle, content: PTTabBarImageContent(normal: pttNormalImage, selected: pttSelectedImage),viewController: pttNav)
+
         let settingNormalImage = UIImage(.gear).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
         let settingSelectedImage = UIImage(.gear).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
         let settingTitle = PTDashboardConfig.languageFunc(text: "tab_setting")
@@ -42,7 +49,7 @@ class PTMotoBaseTabbarController: PTBaseTabBarViewController {
         let settingNav = PTBaseNavControl(rootViewController: setting)
         let settingTab = PTTabBarItemConfig(title: settingTitle, content: PTTabBarImageContent(normal: settingNormalImage, selected: settingSelectedImage),viewController: settingNav)
 
-        return [homeTab,navigationTab,collectedTab,settingTab]
+        return [homeTab,navigationTab,collectedTab,pttTab,settingTab]
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {

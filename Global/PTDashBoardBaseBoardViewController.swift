@@ -40,10 +40,6 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
         return view
     }()
     
-    open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
-        return .solid(.clear)
-    }
-
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         PTRotationManager.shared.rotationToLandscapeRight()

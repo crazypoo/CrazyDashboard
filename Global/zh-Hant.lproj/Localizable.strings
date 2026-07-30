@@ -41,6 +41,7 @@
 "direction_south_east" = "東南";
 "direction_south_west" = "西南";
 "direction_west" = "西";
+"elevation_title" = "海拔";
 "elevation_value" = "海拔:%dm";
 "empty_data_empty" = "無資料";
 "empty_data_normal" = "無資料";
@@ -50,8 +51,10 @@
 "engine_start" = "啟動中";
 "freeze_warning_msg" = "車外的溫度是%d°C，路上可能有黑冰。 請慢點！";
 "freeze_warning_title" = "結冰警告";
+"hpa_title" = "氣壓";
 "hpa_value" = "氣壓：%.1f hPa";
 "language_set_title" = "語言設定";
+"lean_angle_title" = "傾斜角度";
 "maintenance_need" = "需要維護";
 "maintenance_need_msg" = "汽車系統提示需要進行日常維護和檢查。 請及時預約售後服務。";
 "maintenance_need_no" = "無需維護";
@@ -63,11 +66,15 @@
 "music_unknow_music" = "未知歌曲";
 "parking_lock_msg" = "防盜衛士已透過Siri開啟。";
 "parking_lock_title" = "系統鎖";
+"parking_unlock_msg" = "防盜衛士已經解除了。";
 "parking_unlock_title" = "系統解鎖";
 "pin_parking" = "你的摩托車在這裡";
 "pitch_down" = "▼ %d° 下坡";
 "pitch_normal" = "0° 平路";
 "pitch_up" = "▲ %d° 上坡";
+"ptt_push" = "按住並說話。";
+"ptt_ready_connect" = "準備好連線...";
+"ptt_ready_connect_count" = "當前連線的汽車朋友數量：%d";
 "route_plan1" = "避免交通堵塞";
 "route_plan2" = "避免收費";
 "route_plan3" = "不走高速";
@@ -82,7 +89,4 @@
 "tab_navigation" = "導航";
 "tab_setting" = "設置";
 "vechicle_pitch" = "車身姿態(Pitch)";
-"parking_unlock_msg" = "防盜衛士已經解除了。";
-"elevation_title" = "海拔";
-"hpa_title" = "氣壓";
-"lean_angle_title" = "傾斜角度";
+"ptt_release" = "松出結束";

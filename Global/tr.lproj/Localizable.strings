@@ -41,6 +41,7 @@
 "direction_south_east" = "Güneydoğu";
 "direction_south_west" = "Güneybatı";
 "direction_west" = "Batı";
+"elevation_title" = "Rakım";
 "elevation_value" = "Rakım:%dm";
 "empty_data_empty" = "Veri yok";
 "empty_data_normal" = "Veri yok";
@@ -50,8 +51,10 @@
 "engine_start" = "Başlangıç";
 "freeze_warning_msg" = "Arabanın dışındaki sıcaklık %d°C ve yolda koyu buz olabilir. Lütfen yavaşlayın!";
 "freeze_warning_title" = "Buzlanma uyarısı";
+"hpa_title" = "Hava basıncı";
 "hpa_value" = "Hava basıncı: %.1f hPa";
 "language_set_title" = "Dil ayarları";
+"lean_angle_title" = "Eğik açı";
 "maintenance_need" = "Bakım gerekiyor";
 "maintenance_need_msg" = "Araç sistemi rutin bakım ve incelemenin gerekli olduğunu talep eder. Lütfen satış sonrası servis için zamanında randevu alın.";
 "maintenance_need_no" = "Bakıma gerek yok";
@@ -63,11 +66,15 @@
 "music_unknow_music" = "Bilinmeyen şarkı";
 "parking_lock_msg" = "Hırsızlık önleme koruması Siri aracılığıyla açıldı.";
 "parking_lock_title" = "Sistem kilidi";
+"parking_unlock_msg" = "Hırsızlık önleyici koruma kaldırıldı.";
 "parking_unlock_title" = "Sistem kilidi açma";
 "pin_parking" = "Motosikletin burada.";
 "pitch_down" = "▼ %d° Yokuş aşağı";
 "pitch_normal" = "0° düz yol";
 "pitch_up" = "▲ %d° Uphill";
+"ptt_push" = "Tutun ve konuşun.";
+"ptt_ready_connect" = "Bağlanmaya hazır olun...";
+"ptt_ready_connect_count" = "Şu anda bağlı araba arkadaşlarının sayısı: %d";
 "route_plan1" = "Trafik sıkışıklığından kaçının";
 "route_plan2" = "Şarj etmekten kaçının";
 "route_plan3" = "Otoyola girme.";
@@ -82,7 +89,4 @@
 "tab_navigation" = "Seyrüsefer";
 "tab_setting" = "Batma";
 "vechicle_pitch" = "Araç Sahası";
-"parking_unlock_msg" = "Hırsızlık önleyici koruma kaldırıldı.";
-"elevation_title" = "Rakım";
-"hpa_title" = "Hava basıncı";
-"lean_angle_title" = "Eğik açı";
+"ptt_release" = "Bırakmak";

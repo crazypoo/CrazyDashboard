@@ -12,6 +12,10 @@ class PTMotoBaseViewController: PTBaseViewController {
 
     var vcDidLoad:Bool = false
     
+    open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
+        return .solid(.clear)
+    }
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         self.changeStatusBar(type: .Dark)

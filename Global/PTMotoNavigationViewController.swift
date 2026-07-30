@@ -400,10 +400,6 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         NotificationCenter.default.removeObserver(self)
     }
     
-    open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
-        return .solid(.clear)
-    }
-
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setCustomTitleView(searchBar)

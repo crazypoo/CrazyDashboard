@@ -41,6 +41,7 @@
 "direction_south_east" = "东南";
 "direction_south_west" = "西南";
 "direction_west" = "西";
+"elevation_title" = "海拔";
 "elevation_value" = "海拔:%dm";
 "empty_data_empty" = "没有数据";
 "empty_data_normal" = "没有数据";
@@ -50,8 +51,10 @@
 "engine_start" = "启动中";
 "freeze_warning_msg" = "车外温度 %d°C，道路极可能存在暗冰，请减速慢行！";
 "freeze_warning_title" = "结冰预警";
+"hpa_title" = "气压";
 "hpa_value" = "气压: %.1f hPa";
 "language_set_title" = "语言设置";
+"lean_angle_title" = "倾角";
 "maintenance_need" = "需要保养";
 "maintenance_need_msg" = "车机系统提示需要进行常规保养检查，请及时预约售后服务。";
 "maintenance_need_no" = "无需保养";
@@ -63,11 +66,15 @@
 "music_unknow_music" = "未知歌曲";
 "parking_lock_msg" = "防盗守护已通过 Siri 开启。";
 "parking_lock_title" = "系统锁定";
+"parking_unlock_msg" = "防盗守护已解除。";
 "parking_unlock_title" = "系统解锁";
 "pin_parking" = "你的车在这里";
 "pitch_down" = "▼ %d° 下坡";
 "pitch_normal" = "0° 平路";
 "pitch_up" = "▲ %d° 上坡";
+"ptt_push" = "按住说话";
+"ptt_ready_connect" = "准备连接。。。";
+"ptt_ready_connect_count" = "当前连接车友数: 0";
 "route_plan1" = "躲避拥堵";
 "route_plan2" = "避免收费";
 "route_plan3" = "不走高速";
@@ -82,7 +89,4 @@
 "tab_navigation" = "导航";
 "tab_setting" = "设置";
 "vechicle_pitch" = "车身姿态 (Pitch)";
-"parking_unlock_msg" = "防盗守护已解除。";
-"elevation_title" = "海拔";
-"hpa_title" = "气压";
-"lean_angle_title" = "倾角";
+"ptt_release" = "松开结束";

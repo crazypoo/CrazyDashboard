@@ -21,6 +21,8 @@
 		55499E1D301B14DD00A1A2D9 /* PTLiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499DFD301AFA2300A1A2D9 /* PTLiveActivityManager.swift */; };
 		55499E1F301B1F4F00A1A2D9 /* PTWeatherOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499E1E301B1F4F00A1A2D9 /* PTWeatherOverlayView.swift */; };
 		55499E24301B204A00A1A2D9 /* PTWeatherManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499E23301B204A00A1A2D9 /* PTWeatherManager.swift */; };
+		55499E29301B2BBB00A1A2D9 /* PTLocalIntercomManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499E28301B2BBB00A1A2D9 /* PTLocalIntercomManager.swift */; };
+		55499E2C301B2C8800A1A2D9 /* PTPTTViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499E2B301B2C8800A1A2D9 /* PTPTTViewController.swift */; };
 		555C0FF9300E06630079D94F /* PTGlobalActionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */; };
 		5577E64E2FD657250004733F /* PTCompassRollerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6202FD656D20004733F /* PTCompassRollerView.swift */; };
 		5577E64F2FD6572A0004733F /* PTLocationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6212FD656D20004733F /* PTLocationEngine.swift */; };
@@ -109,6 +111,8 @@
 		55499E0B301AFCE800A1A2D9 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		55499E1E301B1F4F00A1A2D9 /* PTWeatherOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTWeatherOverlayView.swift; sourceTree = "<group>"; };
 		55499E23301B204A00A1A2D9 /* PTWeatherManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTWeatherManager.swift; sourceTree = "<group>"; };
+		55499E28301B2BBB00A1A2D9 /* PTLocalIntercomManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLocalIntercomManager.swift; sourceTree = "<group>"; };
+		55499E2B301B2C8800A1A2D9 /* PTPTTViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPTTViewController.swift; sourceTree = "<group>"; };
 		555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTGlobalActionHeader.swift; sourceTree = "<group>"; };
 		5577E6202FD656D20004733F /* PTCompassRollerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCompassRollerView.swift; sourceTree = "<group>"; };
 		5577E6212FD656D20004733F /* PTLocationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLocationEngine.swift; sourceTree = "<group>"; };
@@ -263,6 +267,31 @@
 			path = Function;
 			sourceTree = "<group>";
 		};
+		55499E25301B2B8600A1A2D9 /* PTPTT */ = {
+			isa = PBXGroup;
+			children = (
+				55499E2A301B2C6E00A1A2D9 /* ViewController */,
+				55499E26301B2B9000A1A2D9 /* Function */,
+			);
+			path = PTPTT;
+			sourceTree = "<group>";
+		};
+		55499E26301B2B9000A1A2D9 /* Function */ = {
+			isa = PBXGroup;
+			children = (
+				55499E28301B2BBB00A1A2D9 /* PTLocalIntercomManager.swift */,
+			);
+			path = Function;
+			sourceTree = "<group>";
+		};
+		55499E2A301B2C6E00A1A2D9 /* ViewController */ = {
+			isa = PBXGroup;
+			children = (
+				55499E2B301B2C8800A1A2D9 /* PTPTTViewController.swift */,
+			);
+			path = ViewController;
+			sourceTree = "<group>";
+		};
 		5577E5B42FD5C1DB0004733F = {
 			isa = PBXGroup;
 			children = (
@@ -287,6 +316,7 @@
 		5577E64D2FD657110004733F /* Global */ = {
 			isa = PBXGroup;
 			children = (
+				55499E25301B2B8600A1A2D9 /* PTPTT */,
 				55499E20301B201400A1A2D9 /* Weather */,
 				55499E00301AFBF700A1A2D9 /* Widget */,
 				55499DFC301AF9EE00A1A2D9 /* LiveActivity */,
@@ -620,6 +650,7 @@
 				55499DFF301AFA2300A1A2D9 /* PTLiveActivityManager.swift in Sources */,
 				55986642301141090049684D /* PTAntiTheftManager.swift in Sources */,
 				55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */,
+				55499E29301B2BBB00A1A2D9 /* PTLocalIntercomManager.swift in Sources */,
 				5598667E301148290049684D /* PTDiagnosticManager.swift in Sources */,
 				55901837300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */,
 				55499CF73019B7DD00A1A2D9 /* PTGlobalMapManager.swift in Sources */,
@@ -632,6 +663,7 @@
 				55FDBCA93010CD6E00EE7FA5 /* PTMOTOParkingManager.swift in Sources */,
 				55986676301144060049684D /* PTMaintenanceManager.swift in Sources */,
 				5577E7D02FD704790004733F /* PTBumpMeterView.swift in Sources */,
+				55499E2C301B2C8800A1A2D9 /* PTPTTViewController.swift in Sources */,
 				5577E6AC2FD662C20004733F /* PTMapView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -863,9 +895,11 @@
 				INFOPLIST_KEY_CFBundleDisplayName = XP400RIDE;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "我要用AM";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "我要用蓝牙";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "我要使用本地网络权限";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "我要用L";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "我要用L";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "我要用L";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "我要用Mic";
 				INFOPLIST_KEY_NSMotionUsageDescription = "我要用Motion";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "我要添加到相冊";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "我要用相冊";
@@ -1013,9 +1047,11 @@
 				INFOPLIST_KEY_CFBundleDisplayName = XP400RIDE;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "我要用AM";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "我要用蓝牙";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "我要使用本地网络权限";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "我要用L";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "我要用L";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "我要用L";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "我要用Mic";
 				INFOPLIST_KEY_NSMotionUsageDescription = "我要用Motion";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "我要添加到相冊";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "我要用相冊";

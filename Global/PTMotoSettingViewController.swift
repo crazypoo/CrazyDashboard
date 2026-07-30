@@ -23,10 +23,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         return view
     }()
 
-    open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
-        return .solid(.clear)
-    }
-
     lazy var dashBoadColorTitle:UILabel = {
         let view = baseTitle(value: PTDashboardConfig.languageFunc(text: "dashboard_color_set_title"))
         return view
@@ -153,7 +149,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
     
     lazy var globalButton:PTBaseButton = {
         let view = PTBaseButton(type: .custom)
-        view.setImage(UIImage(.globe), for: .normal)
+        view.setImage(UIImage(.globe).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
         view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers(handler: { _ in
             PTDashboardConfig.globalLanguageAlert()

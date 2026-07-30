@@ -41,6 +41,7 @@
 "direction_south_east" = "SouthEast";
 "direction_south_west" = "SouthWest";
 "direction_west" = "West";
+"elevation_title" = "Altitude";
 "elevation_value" = "Altitude:%dm";
 "empty_data_empty" = "No data";
 "empty_data_normal" = "No data";
@@ -50,8 +51,10 @@
 "engine_start" = "Starting up";
 "freeze_warning_msg" = "The temperature outside the car is %d°C, and there may be dark ice on the road. Please slow down!";
 "freeze_warning_title" = "Icing warning";
+"hpa_title" = "hPa";
 "hpa_value" = "hPa: %.1f hPa";
 "language_set_title" = "Language settings";
+"lean_angle_title" = "Lean angle";
 "maintenance_need" = "Need maintenance";
 "maintenance_need_msg" = "The car system prompts that routine maintenance and inspection are required. Please make an appointment for after-sales service in time.";
 "maintenance_need_no" = "No need for maintenance";
@@ -63,11 +66,15 @@
 "music_unknow_music" = "Unknown song";
 "parking_lock_msg" = "The anti-theft guard has been turned on through Siri.";
 "parking_lock_title" = "System lock";
+"parking_unlock_msg" = "The anti-theft guard has been lifted.";
 "parking_unlock_title" = "System unlocking";
 "pin_parking" = "Your moto is here.";
 "pitch_down" = "▼ %d° Downhill";
 "pitch_normal" = "0° straight path";
 "pitch_up" = "▲ %d° Uphill";
+"ptt_push" = "Hold down and speak.";
+"ptt_ready_connect" = "Get ready to connect...";
+"ptt_ready_connect_count" = "Number of currently connected car friends: %d";
 "route_plan1" = "Avoid traffic jams";
 "route_plan2" = "Avoid charging";
 "route_plan3" = "Don't take the highway.";
@@ -82,7 +89,4 @@
 "tab_navigation" = "Navigation";
 "tab_setting" = "Setting";
 "vechicle_pitch" = "Vehicle Pitch";
-"parking_unlock_msg" = "The anti-theft guard has been lifted.";
-"elevation_title" = "Altitude";
-"hpa_title" = "hPa";
-"lean_angle_title" = "Lean angle";
+"ptt_release" = "Release";

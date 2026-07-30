@@ -85,10 +85,6 @@ class PTBLEConnectViewController: PTMotoBaseViewController,@unchecked Sendable {
         return view
     }()
 
-    open override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
-        return .solid(.clear)
-    }
-
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
