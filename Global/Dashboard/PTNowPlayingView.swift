@@ -121,6 +121,7 @@ public class PTNowPlayingView: UIView {
         super.init(frame: frame)
         setupUI()
         setupNotifications()
+        setupGestures() // 🌟 新增：初始化手势控制
     }
     
     required init?(coder: NSCoder) {
@@ -134,6 +135,62 @@ public class PTNowPlayingView: UIView {
         stopTimer()
     }
     
+    private func setupGestures() {
+        // 🚨 必须开启用户交互，否则手势无效
+        self.isUserInteractionEnabled = true
+        artworkImageView.isUserInteractionEnabled = true
+        
+        // 1. 单击封面：播放/暂停
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handlePlayPauseTap))
+        artworkImageView.addGestureRecognizer(tapGesture)
+        
+        // 2. 左滑：下一首 (Next Track)
+        let swipeLeft = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipeLeft))
+        swipeLeft.direction = .left
+        self.addGestureRecognizer(swipeLeft)
+        
+        // 3. 右滑：上一首 (Previous Track)
+        let swipeRight = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipeRight))
+        swipeRight.direction = .right
+        self.addGestureRecognizer(swipeRight)
+    }
+    
+    // MARK: - 音乐控制逻辑
+    @objc private func handlePlayPauseTap() {
+        if musicPlayer.playbackState == .playing {
+            musicPlayer.pause()
+        } else {
+            // 系统播放器如果没有队列可能会播放失败，保险起见调用 play
+            musicPlayer.play()
+        }
+        provideVisualFeedback()
+    }
+    
+    @objc private func handleSwipeLeft() {
+        musicPlayer.skipToNextItem()
+        provideVisualFeedback()
+    }
+    
+    @objc private func handleSwipeRight() {
+        // 如果当前歌曲播放超过 3 秒，调用上一首通常是回到本首开头；
+        // 如果想强制回上一首，可以调用两次，但这里我们使用系统默认行为
+        musicPlayer.skipToPreviousItem()
+        provideVisualFeedback()
+    }
+    
+    private func provideVisualFeedback() {
+        // 让封面瞬间变暗再恢复，模拟实体按键被按下的顿挫感
+        UIView.animate(withDuration: 0.1, delay: 0, options: .curveEaseOut, animations: {
+            self.artworkImageView.alpha = 0.4
+            self.artworkImageView.transform = CGAffineTransform(scaleX: 0.95, y: 0.95) // 极其轻微的缩放
+        }) { _ in
+            UIView.animate(withDuration: 0.15, delay: 0, options: .curveEaseIn, animations: {
+                self.artworkImageView.alpha = 1.0
+                self.artworkImageView.transform = .identity
+            }, completion: nil)
+        }
+    }
+
     // MARK: - 生命周期绘图 (当视图大小确定时绘制圆弧)
     public override func layoutSubviews() {
         super.layoutSubviews()
