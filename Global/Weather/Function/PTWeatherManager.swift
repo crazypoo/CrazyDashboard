@@ -106,52 +106,25 @@ class PTWeatherManager {
                 let parameter = WeatherParameter(location: locationString)
                 
                 let response =  try await QWeather.instance.weatherNow(parameter)
-                self.applyQWeatherAnimation(iconCode: response.code)
+                PTNSLogConsole(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\(response.now.icon)")
+                self.applyQWeatherAnimation(iconCode: response.now.icon)
             } catch QWeatherError.errorResponse(let error) {
                 PTNSLogConsole(error)
             } catch {
                 PTNSLogConsole(error)
             }
-
         }
     }
 
     /// 将官方天气状态映射为对应的特效
     private func applyWeatherAnimation(for condition: WeatherCondition) {
-        if let scene = PTWindowSceneDelegate.sceneDelegate() as? SceneDelegate {
-            switch condition {
-            // 下雨的各种状态
-            case .rain, .heavyRain, .drizzle, .sunFlurries, .thunderstorms:
-                scene.weatherOverlay.showRain()
-            // 下雪的各种状态
-            case .snow, .heavySnow, .blizzard, .flurries, .sleet:
-                scene.weatherOverlay.showSnow()
-            // 晴天或多云等不需要强烈粒子动画的状态
-            case .clear, .cloudy, .mostlyClear, .mostlyCloudy:
-                scene.weatherOverlay.stopWeather()
-            default:
-                scene.weatherOverlay.stopWeather()
-            }
-        }
+        guard let scene = PTWindowSceneDelegate.sceneDelegate() as? SceneDelegate else { return }
+        scene.weatherOverlay.updateWeatherEffect(for: condition)
     }
     
     /// 和风天气代号的动画映射
     private func applyQWeatherAnimation(iconCode: String) {
-        guard let scene = PTWindowSceneDelegate.sceneDelegate() as? SceneDelegate else { return }
-        guard let code = Int(iconCode) else { return }
-        
-        // 和风天气的图标代码体系：
-        // 300 ~ 399: 各种下雨状态 (阵雨, 雷阵雨, 暴雨等)
-        // 400 ~ 499: 各种下雪状态 (小雪, 大雪, 暴雪等)
-        
-        switch code {
-        case 300...399:
-            scene.weatherOverlay.showRain()
-        case 400...499:
-            scene.weatherOverlay.showSnow()
-        default:
-            // 晴天(100-199)、多云等其他状态，关闭特效
-            scene.weatherOverlay.stopWeather()
-        }
+        guard let scene = PTWindowSceneDelegate.sceneDelegate() as? SceneDelegate else { return }        
+        scene.weatherOverlay.updateWeatherEffect(by: iconCode)
     }
 }
