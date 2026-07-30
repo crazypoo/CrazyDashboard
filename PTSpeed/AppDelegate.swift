@@ -16,6 +16,7 @@ import DeviceKit
 import Bugly
 import BackgroundTasks
 import SafeSFSymbols
+import QWeatherSDK
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -93,6 +94,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         appNotifiCenter()
         _ = PTTripManager.shared
         _ = PTGPXRecorder.shared
+        
+        Task {
+            do {
+                let jwt = JWTGenerator(privateKey: "35b30af77cae435c887e834c0cb41eb2", pid: "2C88VNJQXF", kid: "KBWHPQ94JK")
+                let _ = try await QWeather.getInstance("nj5khxjpk2.re.qweatherapi.com").setupTokenGenerator(jwt).setupLogEnable(true)
+            } catch {
+                PTNSLogConsole(error.localizedDescription)
+            }
+        }
         
         return true
     }

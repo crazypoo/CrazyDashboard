@@ -9,6 +9,7 @@ import Foundation
 import WeatherKit
 import CoreLocation
 import PooTools
+import QWeatherSDK
 
 class PTWeatherManager {
     public static let shared = PTWeatherManager()
@@ -87,11 +88,34 @@ class PTWeatherManager {
                     // 情况 B：如果已经连续失败 5 次
                     // 我们保留 lastFetchTime 原封不动，让系统强制进入 15 分钟或 10 公里的休眠期
                     PTNSLogConsole("⛔ [天气服务] 已连续失败 \(self.maxRetryLimit) 次！触发熔断保护，等待 15 分钟或移动 10 公里后重试。")
+                    self.fetchQWeatherFallback(for: location)
                 }
             }
         }
     }
     
+    // MARK: - 和风天气 (QWeather) 降级方案
+    
+    /// 使用和风天气 API 获取备用天气数据
+    private func fetchQWeatherFallback(for location: CLLocation) {
+        Task {
+            do {
+                let lon = String(format: "%.2f", location.coordinate.longitude)
+                let lat = String(format: "%.2f", location.coordinate.latitude)
+                let locationString = "\(lon),\(lat)"
+                let response =  try await QWeather.instance
+                    .geoCityLookup(.init(location: locationString))
+                PTNSLogConsole(response)
+                self.applyQWeatherAnimation(iconCode: response.code)
+            } catch QWeatherError.errorResponse(let error) {
+                PTNSLogConsole(error)
+            } catch {
+                PTNSLogConsole(error)
+            }
+
+        }
+    }
+
     /// 将官方天气状态映射为对应的特效
     private func applyWeatherAnimation(for condition: WeatherCondition) {
         if let scene = PTWindowSceneDelegate.sceneDelegate() as? SceneDelegate {
@@ -108,6 +132,26 @@ class PTWeatherManager {
             default:
                 scene.weatherOverlay.stopWeather()
             }
+        }
+    }
+    
+    /// 和风天气代号的动画映射
+    private func applyQWeatherAnimation(iconCode: String) {
+        guard let scene = PTWindowSceneDelegate.sceneDelegate() as? SceneDelegate else { return }
+        guard let code = Int(iconCode) else { return }
+        
+        // 和风天气的图标代码体系：
+        // 300 ~ 399: 各种下雨状态 (阵雨, 雷阵雨, 暴雨等)
+        // 400 ~ 499: 各种下雪状态 (小雪, 大雪, 暴雪等)
+        
+        switch code {
+        case 300...399:
+            scene.weatherOverlay.showRain()
+        case 400...499:
+            scene.weatherOverlay.showSnow()
+        default:
+            // 晴天(100-199)、多云等其他状态，关闭特效
+            scene.weatherOverlay.stopWeather()
         }
     }
 }

@@ -177,13 +177,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         view.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .normal)
         view.setTitle("TCS mode:" + (name ?? PTTCSMode.unknown.description), for: .normal)
         view.addActionHandlers(handler: { _ in
-//            let ids:[UInt8] = [UInt8(2),UInt8(3),UInt8(4),UInt8(5),UInt8(6)]
-//            let nameMap:[String] = ids.map { value in
-//                return "\(value)"
-//            }
-//            UIAlertController.base_alertVC(title: "Test",okBtns: nameMap,cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
-//                PTBluetoothServerManager.shared.sendTCSMode(id: UInt8(7), mode: PTTCSMode.off)
-//            })
         })
         return view
     }()
@@ -195,13 +188,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         view.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .normal)
         view.setTitle("Light mode:" + (name ?? PTBacklightMode.unknown.description), for: .normal)
         view.addActionHandlers(handler: { _ in
-//            let ids:[UInt8] = [UInt8(2),UInt8(3),UInt8(4),UInt8(5),UInt8(6)]
-//            let nameMap:[String] = ids.map { value in
-//                return "\(value)"
-//            }
-//            UIAlertController.base_alertVC(title: "Test",okBtns: nameMap,cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
-//                PTBluetoothServerManager.shared.sendLightMode(id: ids[index], mode: .led0)
-//            })
         })
         return view
     }()
