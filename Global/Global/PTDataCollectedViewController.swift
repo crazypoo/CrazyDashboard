@@ -33,7 +33,7 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
         view.registerClassCells(classs: [PTTripDataCell.ID:PTTripDataCell.self])
         view.customerLayout = { sectionIndex,section in
             
-            let itemHeight:CGFloat = PTTripDataCell.lineMaxHeight * PTTripDataCell.lineCount + (PTTripDataCell.lineCount - 1) * PTTripDataCell.textLineSpacing + PTTripDataCell.ChartHeight * 7 + CGFloat.GlobalItemSpacing * 10 + PTTripDataCell.MapHeight
+            let itemHeight:CGFloat = PTTripDataCell.lineMaxHeight * PTTripDataCell.lineCount + (PTTripDataCell.lineCount - 1) * PTTripDataCell.textLineSpacing + PTTripDataCell.ChartHeight * 8 + CGFloat.GlobalItemSpacing * 11
             return UICollectionView.girdCollectionLayout(data: section.rows, itemHeight: itemHeight,cellRowCount: 1,originalX: PTAppBaseConfig.share.defaultViewSpace,cellTrailingSpace: CGFloat.GlobalItemSpacing)
         }
         view.cellInCollection = { collectionView,sectionModel,indexPath in
@@ -41,7 +41,6 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
                 let getCell = collectionView.dequeueReusableCell(withReuseIdentifier: itemRow.ID, for: indexPath)
                 if let cell = getCell as? PTTripDataCell {
                     cell.cellModel = PTTripManager.shared.tripHistory[indexPath.row]
-                    cell.backgroundColor = .white.withAlphaComponent(0.1)
                     return cell
                 }
             }

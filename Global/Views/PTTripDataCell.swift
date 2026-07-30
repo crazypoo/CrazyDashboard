@@ -18,10 +18,10 @@ class PTTripDataCell: PTBaseNormalCell {
     static let ID = "PTTripDataCell"
     
     static let ChartHeight:CGFloat = 150
-    static let MapHeight:CGFloat = 88
+    static let MapHeight:CGFloat = 120
     static let lineMaxHeight:CGFloat = 24
     static let textLineSpacing:CGFloat = 2.5
-    static let lineCount:CGFloat = 4
+    static let lineCount:CGFloat = 6
 
     var cellModel:PTTripReport! {
         didSet {
@@ -33,7 +33,8 @@ class PTTripDataCell: PTBaseNormalCell {
                         \(wrap: .embedding("""
                         \((startTime + " -> " + endTime),.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight),.minimumLineHeight(PTTripDataCell.lineMaxHeight)))
                         \(.image(UIImage(.road.lanes).withTintColor(.white, renderingMode: .alwaysOriginal),.custom(size: CGSize(width: PTTripDataCell.lineMaxHeight, height: PTTripDataCell.lineMaxHeight))))\(distanceString,.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight)))
-                        \(.image(UIImage(.gauge.withDotsNeedle_100percent).withTintColor(.white, renderingMode: .alwaysOriginal),.custom(size: CGSize(width: PTTripDataCell.lineMaxHeight, height: PTTripDataCell.lineMaxHeight))))\(String(format: "%@%@", PTDashboardConfig.shared.appShowMileageValueString(cellModel.maxSpeedKmh),PTDashboardConfig.shared.appShowUniLabel),.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight)))\(.image(UIImage(.gauge.withDotsNeedle_50percent).withTintColor(.white, renderingMode: .alwaysOriginal),.custom(size: CGSize(width: PTTripDataCell.lineMaxHeight, height: PTTripDataCell.lineMaxHeight))))\(String(format: "%@%@", PTDashboardConfig.shared.appShowMileageValueString(cellModel.gpsAvgSpeedKmh),PTDashboardConfig.shared.appShowUniLabel),.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight)))\(.image(UIImage(.arrow.counterclockwiseCircle).withTintColor(.white, renderingMode: .alwaysOriginal),.custom(size: CGSize(width: PTTripDataCell.lineMaxHeight, height: PTTripDataCell.lineMaxHeight))))\("\(cellModel.maxRpm)" + " rpm/min",.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight)))
+                        \(.image(UIImage(.gauge.withDotsNeedle_100percent).withTintColor(.white, renderingMode: .alwaysOriginal),.custom(size: CGSize(width: PTTripDataCell.lineMaxHeight, height: PTTripDataCell.lineMaxHeight))))\(String(format: "%@%@", PTDashboardConfig.shared.appShowMileageValueString(cellModel.maxSpeedKmh),PTDashboardConfig.shared.appShowUniLabel),.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight)))\(.image(UIImage(.gauge.withDotsNeedle_50percent).withTintColor(.white, renderingMode: .alwaysOriginal),.custom(size: CGSize(width: PTTripDataCell.lineMaxHeight, height: PTTripDataCell.lineMaxHeight))))\(String(format: "%@%@", PTDashboardConfig.shared.appShowMileageValueString(cellModel.gpsAvgSpeedKmh),PTDashboardConfig.shared.appShowUniLabel),.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight)))
+                        \(.image(UIImage(.arrow.counterclockwiseCircle).withTintColor(.white, renderingMode: .alwaysOriginal),.custom(size: CGSize(width: PTTripDataCell.lineMaxHeight, height: PTTripDataCell.lineMaxHeight))))\("\(cellModel.maxRpm)" + " rpm/min",.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight)))
                         \(.image(UIImage(.fuelpump).withTintColor(.white, renderingMode: .alwaysOriginal),.custom(size: CGSize(width: PTTripDataCell.lineMaxHeight, height: PTTripDataCell.lineMaxHeight))))\(String(format: "%.1fL/%@%@", cellModel.avgConsumption,PTDashboardConfig.shared.appShowMileageValueString(100),PTDashboardConfig.shared.appShowUniLabel),.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight)))
                         """),.paragraph(.alignment(.left),.lineSpacing(PTTripDataCell.textLineSpacing)))
                         """
@@ -64,6 +65,9 @@ class PTTripDataCell: PTBaseNormalCell {
             
             let pressureModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "hpa_title"), color: .systemRed, data: cellModel.pressureTrace)
             pressureChart.bindData(lines: [pressureModel])
+            
+            let slipRatioModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "Slip Ratio"), color: .systemRed, data: cellModel.slipRatioTrace)
+            slipRatioChart.bindData(lines: [slipRatioModel])
             
             guard let gpxName = cellModel.gpxFileName else { return }
             let imageName = gpxName.replacingOccurrences(of: ".gpx", with: ".jpg")
@@ -112,41 +116,26 @@ class PTTripDataCell: PTBaseNormalCell {
         return view
     }()
     
-    lazy var leanAngleChart:PTNativeTelemetryChartView = {
-        let view = PTNativeTelemetryChartView()
-        return view
+    lazy var speedChart = PTNativeTelemetryChartView()
+    lazy var rpmChart = PTNativeTelemetryChartView()
+    lazy var leanAngleChart = PTNativeTelemetryChartView()
+    lazy var gChart = PTNativeTelemetryChartView()
+    lazy var pChart = PTNativeTelemetryChartView()
+    lazy var altitudeChart = PTNativeTelemetryChartView()
+    lazy var pressureChart = PTNativeTelemetryChartView()
+    lazy var slipRatioChart = PTNativeTelemetryChartView()
+    
+    // 🌟 核心优化：图表容器
+    lazy var chartsStackView: UIStackView = {
+        let stack = UIStackView(arrangedSubviews: [
+            speedChart, rpmChart, leanAngleChart, gChart, pChart, altitudeChart, pressureChart,slipRatioChart
+        ])
+        stack.axis = .vertical
+        stack.spacing = CGFloat.GlobalItemSpacing // 图表之间的间距
+        stack.distribution = .fillEqually // 让所有显示的图表高度一致
+        return stack
     }()
 
-    lazy var gChart:PTNativeTelemetryChartView = {
-        let view = PTNativeTelemetryChartView()
-        return view
-    }()
-    
-    lazy var pChart:PTNativeTelemetryChartView = {
-        let view = PTNativeTelemetryChartView()
-        return view
-    }()
-    
-    lazy var altitudeChart:PTNativeTelemetryChartView = {
-        let view = PTNativeTelemetryChartView()
-        return view
-    }()
-    
-    lazy var pressureChart:PTNativeTelemetryChartView = {
-        let view = PTNativeTelemetryChartView()
-        return view
-    }()
-    
-    lazy var rpmChart:PTNativeTelemetryChartView = {
-        let view = PTNativeTelemetryChartView()
-        return view
-    }()
-    
-    lazy var speedChart:PTNativeTelemetryChartView = {
-        let view = PTNativeTelemetryChartView()
-        return view
-    }()
-    
     lazy var thumbnailImageView:UIButton = {
         let view = UIButton(type:.custom)
         view.imageView?.contentMode = .scaleAspectFit
@@ -185,59 +174,48 @@ class PTTripDataCell: PTBaseNormalCell {
     public override init(frame: CGRect) {
         super.init(frame: frame)
         
-        contentView.addSubviews([timeLabel,speedChart,rpmChart,leanAngleChart,gChart,pChart,altitudeChart,pressureChart,thumbnailImageView,gpxButton])
-        timeLabel.snp.makeConstraints { make in
-            make.left.top.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
-        }
+        contentView.backgroundColor = UIColor(white: 0.05, alpha: 1.0)
+        contentView.layer.cornerRadius = 12
+        contentView.clipsToBounds = true
         
-        speedChart.snp.makeConstraints { make in
-            make.left.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
-            make.top.equalTo(self.timeLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-            make.height.equalTo(PTTripDataCell.ChartHeight)
-        }
+        contentView.addSubviews([timeLabel, thumbnailImageView, gpxButton, chartsStackView])
         
-        rpmChart.snp.makeConstraints { make in
-            make.left.right.height.equalTo(self.speedChart)
-            make.top.equalTo(self.speedChart.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-        }
-        
-        leanAngleChart.snp.makeConstraints { make in
-            make.left.right.height.equalTo(self.speedChart)
-            make.top.equalTo(self.rpmChart.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-        }
-        
-        gChart.snp.makeConstraints { make in
-            make.left.right.height.equalTo(self.leanAngleChart)
-            make.top.equalTo(self.leanAngleChart.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-        }
-        
-        pChart.snp.makeConstraints { make in
-            make.left.right.height.equalTo(self.leanAngleChart)
-            make.top.equalTo(self.gChart.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-        }
-        
-        altitudeChart.snp.makeConstraints { make in
-            make.left.right.height.equalTo(self.leanAngleChart)
-            make.top.equalTo(self.pChart.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-        }
-        
-        pressureChart.snp.makeConstraints { make in
-            make.left.right.height.equalTo(self.leanAngleChart)
-            make.top.equalTo(self.altitudeChart.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-        }
-        
+        // 1. 地图缩略图 (右上角)
         thumbnailImageView.snp.makeConstraints { make in
-            make.size.equalTo(PTTripDataCell.MapHeight)
-            make.top.equalTo(self.pressureChart.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-            make.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
+            make.top.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
+            make.width.equalTo(140)
+            make.height.equalTo(PTTripDataCell.MapHeight)
         }
-        thumbnailImageView.layoutIfNeeded()
-        thumbnailImageView.viewCorner(radius: 4)
         
+        // 2. GPX 导出按钮 (悬浮在地图右下角)
         gpxButton.snp.makeConstraints { make in
-            make.size.equalTo(44)
-            make.bottom.equalTo(self.thumbnailImageView)
-            make.right.equalTo(self.thumbnailImageView.snp.left).offset(-CGFloat.GlobalItemSpacing)
+            make.right.bottom.equalTo(thumbnailImageView).inset(8)
+            make.size.equalTo(32)
+        }
+        
+        // 3. 文本统计信息 (左侧排版，避免被右侧地图遮挡)
+        timeLabel.snp.makeConstraints { make in
+            make.top.left.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
+            make.right.equalTo(thumbnailImageView.snp.left).offset(-16)
+            // 不设置 bottom 约束，让文字自然撑开
+        }
+        
+        // 4. 强大的 StackView 图表容器
+        chartsStackView.snp.makeConstraints { make in
+            make.left.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
+            
+            // 🚨 智能顶部约束：确保图表不管在文字下方还是地图下方，都不会重叠
+            make.top.greaterThanOrEqualTo(timeLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.top.greaterThanOrEqualTo(thumbnailImageView.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            
+            // 🚨 高度计算：假设你展示所有 7 个图表，StackView 会自动撑开。
+            // 这里我们只需要限制单个图表的高度即可，StackView 会自己计算总高度。
+            speedChart.snp.makeConstraints { make in
+                make.height.equalTo(PTTripDataCell.ChartHeight)
+            }
+            
+            // 🚨 闭环约束：极其重要，必须将最底部连向 contentView，才能实现 Cell 自动计算行高
+            make.bottom.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
         }
     }
     
