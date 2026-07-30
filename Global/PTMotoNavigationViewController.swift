@@ -37,6 +37,7 @@ struct RouteCollectionViewInfo {
     var title: String
     var subTitle: String
     var isSelected:Bool
+    var distance:Double
 }
 
 class SelectableOverlay: MABaseOverlay {
@@ -286,6 +287,11 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         } else {
             AMapNaviDriveManager.sharedInstance().startGPSNavi()
         }
+        if let _ = self.routeIndicatorInfoArray.first(where: { $0.isSelected }) {
+//            let eta = Date().addingTimeInterval(TimeInterval(estimatedTimeToDestinationSec))
+                PTLiveActivityManager.shared.startNavigationActivity(destination: "目标地点", expectedArrival: Date())
+//            }
+        }
     }
         
     private var amapSearchResults:[MAPointAnnotation] = []
@@ -353,6 +359,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
             self.routePlantList.reloadAllData() {
                 PTGCDManager.shared.runOnMain(block: {
                     if let findModel = self.routeIndicatorInfoArray.first(where: { $0.isSelected}) {
+                        PTDashboardConfig.shared.currentRouteDistance = findModel.distance
                         self.selectNaviRouteWithID(routeID: findModel.routeID)
                     }
                 })
@@ -962,14 +969,14 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
             //更新CollectonView的信息
             let title = String(format: "Plant:%d", preferenceView.strategy(isMultiple: isMultipleRoutePlan).rawValue)
             let subtitle = String(format: "Distance:%dKm | Time:%@", aRoute.routeLength / 1000, aRoute.routeTime.timeString)
-            let info = RouteCollectionViewInfo(routeID: Int( truncating: aNumber), title: title, subTitle: subtitle,isSelected: false)
-            
+            let info = RouteCollectionViewInfo(routeID: Int( truncating: aNumber), title: title, subTitle: subtitle,isSelected: false,distance: Double(aRoute.routeLength / 1000))
             routeIndicatorInfoArray.append(info)
         }
         
         amapView.showAnnotations(amapView.annotations, animated: false)
         
         if let first = routeIndicatorInfoArray.first {
+            PTDashboardConfig.shared.currentRouteDistance = first.distance
             routeIndicatorInfoArray[0].isSelected = true
             if !isKeywordSearch {
                 self.routePlantList.isHidden = false
@@ -1108,6 +1115,7 @@ extension PTMotoNavigationViewController : AMapNaviDriveViewDelegate {
             SpeechSynthesizer.Shared.stopSpeak()
         }
         PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Yeah!!!!!!!!!!", title: "Navigation finished!!!!!!!!!!!!!!!!!!!!")
+        PTLiveActivityManager.shared.stopNavigationActivity()
     }
     
     func driveView(_ view: AMapNaviDriveView, didChangeTo state: AMapNaviDriveViewState) { }

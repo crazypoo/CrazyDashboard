@@ -36,7 +36,7 @@ public class PTAntiTheftManager: NSObject {
     @objc private func handleData2(_ notification: Notification) {
         guard let data2 = notification.object as? PTDashboardData2 else { return }
         
-        // 引擎未转动 (0) 时[cite: 4]，代表可能已停车，进入防盗警戒模式
+        // 引擎未转动 (0) 时，代表可能已停车，进入防盗警戒模式
         if data2.engineStatus == 0 && !isArmed {
             isArmed = true
             PTNSLogConsole("🛡️ [防盗系统] 引擎已熄火，防盗系统已武装。")

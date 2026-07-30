@@ -8,6 +8,7 @@
 import Foundation
 import AMapLocationKit // 🌟 引入高德定位 SDK
 import PooTools
+import AMapSearchKit
 
 public let PTLocationEngineDidUpdate = NSNotification.Name("PTLocationEngineDidUpdate")
 
@@ -47,6 +48,8 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
     // MARK: - 行程统计核心变量
     private var lastLocation: CLLocation?
 
+    private var searchAPI: AMapSearchAPI?
+    
     private override init() {
         super.init()
         setupManager()
@@ -103,6 +106,17 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
         
         UserDefaults.standard.set(lat, forKey: parkingLatKey)
         UserDefaults.standard.set(lon, forKey: parkingLonKey)
+        
+        let request = AMapReGeocodeSearchRequest()
+        request.location = AMapGeoPoint.location(withLatitude: lat, longitude: lon)
+        
+        // 是否需要返回附近的 POI (兴趣点) 信息。如果只是为了获取街道地址，设为 false 可以加快请求速度
+        request.requireExtension = false
+        
+        // 4. 正式发起请求
+        self.searchAPI = AMapSearchAPI()
+        self.searchAPI?.delegate = self
+        self.searchAPI?.aMapReGoecodeSearch(request)
         
         PTNSLogConsole("🅿️ [停车打卡] 成功在后台/锁屏状态保存车辆位置: 纬度 \(lat), 经度 \(lon)")
     }
@@ -204,5 +218,33 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
     // MARK: - 错误处理
     public func amapLocationManager(_ manager: AMapLocationManager!, didFailWithError error: Error!) {
         PTNSLogConsole("❌ [PTLocationEngine] 引擎定位失败: \(error.localizedDescription)")
+    }
+    
+}
+
+extension PTLocationEngine:AMapSearchDelegate {
+    public func onReGeocodeSearchDone(_ request: AMapReGeocodeSearchRequest!, response: AMapReGeocodeSearchResponse!) {
+        guard let regeocode = response.regeocode else { return }
+        
+        let fullAddress = regeocode.formattedAddress ?? "未知街道"
+        
+        // 2. 提取经纬度
+        let lat = request.location.latitude
+        let lon = request.location.longitude
+        
+        // 获取最新的机车数据 (这取决于你的业务逻辑保存在哪里)
+        let currentFuel = PTBluetoothServerManager.shared.latestData1?.fuelLevelPct ?? 0
+        let currentTrip = PTBluetoothServerManager.shared.latestData1?.tripKm ?? 0 // 替换为真实的 PTDashboardData1 小计里程
+        let isConnected = PTDashboardConfig.shared.blueConnected // 或蓝牙状态
+        
+        // 🌟 3. 调用数据管理器，推送到小组件！
+        PTWidgetDataManager.shared.updateWidgetData(
+            fuelLevel: currentFuel,
+            tripKm: currentTrip,
+            isConnected: isConnected,
+            parkedLat: Double(lat),
+            parkedLon: Double(lon),
+            address: fullAddress
+        )
     }
 }

@@ -92,7 +92,7 @@ class PTMessagePusher {
 }
 
 // MARK: - 主动配置指令模型
-/// 车机下发配置的枚举参数 (注意：这里的颜色值与状态回传帧的位掩码值不同)[cite: 2]
+/// 车机下发配置的枚举参数 (注意：这里的颜色值与状态回传帧的位掩码值不同)
 enum PTConfigColor: UInt8,CaseIterable {
     case red = 1
     case blue = 2
@@ -122,8 +122,8 @@ enum PTConfigColor: UInt8,CaseIterable {
 }
 
 enum PTConfigUnit: UInt8,CaseIterable {
-    case metric = 1   // 公制 (Km)[cite: 2]
-    case imperial = 2 // 英制 (Mil)[cite: 2]
+    case metric = 1   // 公制 (Km)
+    case imperial = 2 // 英制 (Mil)
     
     func getTypeName() -> String {
         switch self {
@@ -248,7 +248,7 @@ struct PTDashboardData3 {
         // 1. 将 Int 转换为 UInt8
         let decodedCode = UInt8((language >> 1) & 0x0F)
         // 2. 尝试用 rawValue 初始化枚举。
-        // 如果匹配失败（例如传来一个未知的数字 9），则触发 ?? 后面的安全回退机制，默认返回英语[cite: 1]。
+        // 如果匹配失败（例如传来一个未知的数字 9），则触发 ?? 后面的安全回退机制，默认返回英语。
         return PTConfigLanguage(rawValue: decodedCode) ?? .english
     }
     
@@ -280,7 +280,7 @@ struct PTAbsStatus {
     let frontWheelSpeedKmh:Double
 }
 
-// MARK: - 状态标签转换工具[cite: 2]
+// MARK: - 状态标签转换工具
 struct PTDashboardLabels {
     static func engineStatusLabel(raw: Int) -> String {
         switch raw & 0x03 {
@@ -347,14 +347,14 @@ enum PTManeuverMap {
     static let ferry: UInt8 = 45        // 0x2D 轮渡 (推测)
     static let returnToRoute: UInt8 = 46// 0x2E 回到路线
     static let noValidAction: UInt8 = 47// 0x2F 无有效动作
-    static let rerouting: UInt8 = 48    // 0x30 ICON_REROUTING (重新算路图标)[cite: 2]
-    static let noGPS: UInt8 = 49        // 0x31 ICON_NO_GPS (无 GPS 图标)[cite: 2]
+    static let rerouting: UInt8 = 48    // 0x30 ICON_REROUTING (重新算路图标)
+    static let noGPS: UInt8 = 49        // 0x31 ICON_NO_GPS (无 GPS 图标)
 }
 
 // MARK: - 安全认证中心 (完整版)
 class PTScooterAuth {
     
-    // 核心加密字典表 (2048 长度)[cite: 1]
+    // 核心加密字典表 (2048 长度)
     private var numbersList: [UInt16] = []
     
     // 当前会话的 Challenge (10 个随机数)
@@ -370,7 +370,7 @@ class PTScooterAuth {
         // 你提供的 Base64 密文
         let base64String = "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"
         
-        // 1. 将 Base64 解码为原始的 4096 字节 Data[cite: 1]
+        // 1. 将 Base64 解码为原始的 4096 字节 Data
         guard let data = Data(base64Encoded: base64String, options: .ignoreUnknownCharacters) else {
             PTProgressHUD.show(text: "❌ 严重错误：Base64 字典表解析失败！")
             self.numbersList = Array(repeating: 0, count: 2048)
@@ -387,7 +387,7 @@ class PTScooterAuth {
                 let byteOffset = i * 2
                 // 直接从指定偏移量加载 UInt16
                 let value = buffer.load(fromByteOffset: byteOffset, as: UInt16.self)
-                // 确保无论在哪种架构的 CPU 上，都按照小端序进行解析[cite: 1]
+                // 确保无论在哪种架构的 CPU 上，都按照小端序进行解析
                 list.append(UInt16(littleEndian: value))
             }
         }
@@ -410,7 +410,7 @@ class PTScooterAuth {
     func checkAuthMsg(scooterResponse: Data) -> Bool {
         guard scooterResponse.count >= 10 else { return false }
         let expected = createAuthenticationMessage(r: randomNumbers)
-        // 只严格比对前 10 个有效响应字节[cite: 1]
+        // 只严格比对前 10 个有效响应字节
         for i in 0..<10 {
             if scooterResponse[i] != expected[i] { return false }
         }
@@ -420,7 +420,7 @@ class PTScooterAuth {
     // 3. 利用字典表生成 20 字节的加密响应
     func createAuthenticationMessage(r: [UInt16]) -> Data {
         var data = Data()
-        // 前 10 字节根据表生成[cite: 1]
+        // 前 10 字节根据表生成
         for k in 0..<5 {
             let c1 = numbersList[Int(r[k] & 0x7FF)]
             let c2 = numbersList[Int(r[k + 5] & 0x7FF)]
@@ -429,11 +429,11 @@ class PTScooterAuth {
             // 必须先将 UInt16 提升为 UInt32，相加后再进行掩码，防止程序在这里静默崩溃
             let sum = (UInt32(c1) + UInt32(c2)) & 0xFFFF
             
-            // 写入 16-bit Big-Endian (大端序)[cite: 1]
+            // 写入 16-bit Big-Endian (大端序)
             var bigEndianSum = UInt16(sum).bigEndian
             data.append(Data(bytes: &bigEndianSum, count: MemoryLayout<UInt16>.size))
         }
-        // 后 10 字节填充随机数防嗅探[cite: 1]
+        // 后 10 字节填充随机数防嗅探
         for _ in 0..<10 {
             let randomByte = UInt8.random(in: 0...255)
             data.append(randomByte)
@@ -448,13 +448,13 @@ class PTScooterAuth {
         var productId = UInt32(8758).bigEndian
         data.append(Data(bytes: &productId, count: 4))
         
-        // App 版本 "2.1.37"[cite: 1]
+        // App 版本 "2.1.37"
         data.append(contentsOf: [2, 0, 8])
         
-        // 编译日期 "12/07/2018"[cite: 1]
+        // 编译日期 "12/07/2018"
         data.append(contentsOf: [1, 4, 25])
         
-        // 固定分隔符[cite: 1]
+        // 固定分隔符
         data.append(1)
         
         // iOS 系统版本 (截取前 4 个段)
@@ -477,7 +477,7 @@ class PTScooterAuth {
 
 // MARK: - 2. 协议封装器
 class PTFrameBuilder {
-    // 封包常量[cite: 2]
+    // 封包常量
     static let PREAMBLE: UInt8 = 0x16
     static let END_OF_FRAME: UInt8 = 0x00
     
@@ -491,7 +491,7 @@ class PTFrameBuilder {
         frame.append(PREAMBLE)
         frame.append(idFrame)
         
-        // 写入 2 字节长度 (Big-Endian)[cite: 2]
+        // 写入 2 字节长度 (Big-Endian)
         var length = UInt16(payload.count).bigEndian
         frame.append(Data(bytes: &length, count: MemoryLayout<UInt16>.size))
         
@@ -562,21 +562,21 @@ class PTFrameBuilder {
 // 补充 PTFrameBuilder 内部方法
 extension PTFrameBuilder {
     
-    // 生成导航数据帧[cite: 1]
+    // 生成导航数据帧
     static func buildNavigationFrame(info: PTNavigationInfo) -> Data {
         var payload = Data()
         
-        // 1. Maneuver Type (机动动作): [Hdr=1][Maneuver][cite: 1]
+        // 1. Maneuver Type (机动动作): [Hdr=1][Maneuver]
         payload.append(1)
         payload.append(info.nextManeuver)
         
-        // 2. Maneuver Distance (距下一动作距离): [Hdr=4][4-byte Dist 大端序][cite: 1]
+        // 2. Maneuver Distance (距下一动作距离): [Hdr=4][4-byte Dist 大端序]
         let roundedNextDist = (info.metersToNextManeuver / 5) * 5
         payload.append(4)
         var dist = roundedNextDist.bigEndian
         payload.append(Data(bytes: &dist, count: MemoryLayout<UInt32>.size))
         
-        // 3. Next Road (下一道路): [Size][Text] (最大 50 字节，注意这里没有 Hdr)[cite: 1]
+        // 3. Next Road (下一道路): [Size][Text] (最大 50 字节，注意这里没有 Hdr)
         let nextRoadData = encodeString(info.nameNextRoad)
         payload.append(UInt8(nextRoadData.count))
         payload.append(nextRoadData)
@@ -586,7 +586,7 @@ extension PTFrameBuilder {
         payload.append(UInt8(curRoadData.count))
         payload.append(curRoadData)
         
-        // 5. Speed Limit (当前限速): [Hdr=1][Speed][cite: 1]
+        // 5. Speed Limit (当前限速): [Hdr=1][Speed]
         payload.append(1)
         payload.append(info.currentSpeedLimit)
         
@@ -607,14 +607,14 @@ extension PTFrameBuilder {
         payload.append(Data(bytes: &year, count: MemoryLayout<UInt16>.size))
         
         // 写入月、日、时、分、秒 (Byte, 各1字节)
-        // Swift 的 month 是 1-12，完美对应自然月，不需要像 Android 的 Calendar 那样 +1[cite: 1]
+        // Swift 的 month 是 1-12，完美对应自然月，不需要像 Android 的 Calendar 那样 +1
         payload.append(UInt8(comps.month ?? 1))
         payload.append(UInt8(comps.day ?? 1))
         payload.append(UInt8(comps.hour ?? 0))
         payload.append(UInt8(comps.minute ?? 0))
         payload.append(UInt8(comps.second ?? 0))
         
-        // 封装成完整的传输帧 (ID = 1)[cite: 1]
+        // 封装成完整的传输帧 (ID = 1)
         return wrapTxFrame(idFrame: ID_NAVIGATION, payload: payload)
     }
 
@@ -1145,7 +1145,7 @@ extension PTBluetoothServerManager {
         sendChunkedData(data: dataToWrite, to: txChar)
     }
 
-    // 发送断开连接指令[cite: 3]
+    // 发送断开连接指令
     func sendDisconnect() {
         guard authenticated else { return }
         let frame = PTFrameBuilder.buildDisconnectFrame()
@@ -1257,7 +1257,7 @@ extension PTBluetoothServerManager {
     }
 
     // MARK: - 解析摩托车回传状态
-    /// 解析摩托车仪表盘的实时状态帧[cite: 2]
+    /// 解析摩托车仪表盘的实时状态帧
     func parseDashboardFrame(_ value: Data) {
         let hexString = value.map { String(format: "%02hhx", $0) }.joined()
         ptLog("📦 [原始包] 收到帧数据: \(hexString)")

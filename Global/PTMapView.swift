@@ -219,6 +219,7 @@ extension PTMapView : AMapNaviDriveViewDelegate {
         AMapNaviDriveManager.sharedInstance().removeDataRepresentative(driveView)
         self.driveView.isHidden = true
         PTDashboardConfig.shared.naving = false
+        PTLiveActivityManager.shared.stopNavigationActivity()
     }
     
     func driveView(_ view: AMapNaviDriveView, didChangeTo state: AMapNaviDriveViewState) { }

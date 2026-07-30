@@ -87,6 +87,8 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
     var naving:Bool = false
     var blueConnected:Bool = false
     
+    var currentRouteDistance:Double = 0
+    
     var appMainColor:DynamicColor {
         return PTBluetoothServerManager.shared.latestData3?.dashboardColor.getColor() ?? PTConfigColor.blue.getColor()
     }

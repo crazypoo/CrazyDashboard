@@ -27,16 +27,16 @@ public class PTMaintenanceManager: NSObject {
     
     private func setupObservers() {
         let nc = NotificationCenter.default
-        // 根据协议，保养状态标志位在 DATA2 中[cite: 4]
+        // 根据协议，保养状态标志位在 DATA2 中
         nc.addObserver(self, selector: #selector(handleData2(_:)), name: MotorcycleDATA2, object: nil)
-        // 根据协议，保养剩余里程在 DATA3 中[cite: 4]
+        // 根据协议，保养剩余里程在 DATA3 中
         nc.addObserver(self, selector: #selector(handleData3(_:)), name: MotorcycleDATA3, object: nil)
     }
     
     @objc private func handleData2(_ notification: Notification) {
         guard let data2 = notification.object as? PTDashboardData2 else { return }
         
-        // 协议规定 maintenance 的 0x20 位表示“需要保养”[cite: 4]
+        // 协议规定 maintenance 的 0x20 位表示“需要保养”
         // 这里假设你在解析层已经处理好了 (raw & 0xE0) != 0 的判断
         if data2.maintenance != 0 {
             triggerWarningIfNeeded(title: "🛠️" + PTDashboardConfig.languageFunc(text: "maintenance_need_title"), body: PTDashboardConfig.languageFunc(text: "maintenance_need_msg"))

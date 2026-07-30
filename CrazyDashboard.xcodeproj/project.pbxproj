@@ -8,109 +8,88 @@
 
 /* Begin PBXBuildFile section */
 		55028F2C2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */; };
-		55028F2D2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */; };
-		55499CEC3018E6E100A1A2D9 /* PTDashBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CEB3018E6E100A1A2D9 /* PTDashBoardView.swift */; };
 		55499CED3018E6E100A1A2D9 /* PTDashBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CEB3018E6E100A1A2D9 /* PTDashBoardView.swift */; };
 		55499CF73019B7DD00A1A2D9 /* PTGlobalMapManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CF63019B7DD00A1A2D9 /* PTGlobalMapManager.swift */; };
-		55499CF83019B7DD00A1A2D9 /* PTGlobalMapManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CF63019B7DD00A1A2D9 /* PTGlobalMapManager.swift */; };
 		55499CFA3019D83800A1A2D9 /* PTDashboardBaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CF93019D83800A1A2D9 /* PTDashboardBaseView.swift */; };
-		55499CFB3019D83800A1A2D9 /* PTDashboardBaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CF93019D83800A1A2D9 /* PTDashboardBaseView.swift */; };
-		55499CFD3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CFC3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift */; };
 		55499CFE3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499CFC3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift */; };
-		55499D96301A21F500A1A2D9 /* PTIndicatorPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499D95301A21F500A1A2D9 /* PTIndicatorPanel.swift */; };
 		55499D97301A21F500A1A2D9 /* PTIndicatorPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499D95301A21F500A1A2D9 /* PTIndicatorPanel.swift */; };
+		55499DFF301AFA2300A1A2D9 /* PTLiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499DFD301AFA2300A1A2D9 /* PTLiveActivityManager.swift */; };
+		55499E03301AFC2200A1A2D9 /* PTWidgetManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499E01301AFC2200A1A2D9 /* PTWidgetManager.swift */; };
+		55499E0A301AFCE800A1A2D9 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55499E09301AFCE800A1A2D9 /* WidgetKit.framework */; };
+		55499E0C301AFCE800A1A2D9 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55499E0B301AFCE800A1A2D9 /* SwiftUI.framework */; };
+		55499E17301AFCEA00A1A2D9 /* xp400WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 55499E08301AFCE800A1A2D9 /* xp400WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		55499E1D301B14DD00A1A2D9 /* PTLiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499DFD301AFA2300A1A2D9 /* PTLiveActivityManager.swift */; };
 		555C0FF9300E06630079D94F /* PTGlobalActionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */; };
-		555C0FFA300E06630079D94F /* PTGlobalActionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */; };
-		5577E62E2FD656D20004733F /* PTCompassRollerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6202FD656D20004733F /* PTCompassRollerView.swift */; };
-		5577E62F2FD656D20004733F /* PTLocationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6212FD656D20004733F /* PTLocationEngine.swift */; };
-		5577E6302FD656D20004733F /* PTNowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6222FD656D20004733F /* PTNowPlayingView.swift */; };
-		5577E6312FD656D20004733F /* PTSpeedometerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6232FD656D20004733F /* PTSpeedometerView.swift */; };
 		5577E64E2FD657250004733F /* PTCompassRollerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6202FD656D20004733F /* PTCompassRollerView.swift */; };
 		5577E64F2FD6572A0004733F /* PTLocationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6212FD656D20004733F /* PTLocationEngine.swift */; };
 		5577E6502FD6572E0004733F /* PTNowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6222FD656D20004733F /* PTNowPlayingView.swift */; };
 		5577E6512FD657330004733F /* PTSpeedometerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6232FD656D20004733F /* PTSpeedometerView.swift */; };
 		5577E6762FD657F30004733F /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5577E6752FD657D20004733F /* libz.tbd */; };
-		5577E6AB2FD662C20004733F /* PTMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6AA2FD662C20004733F /* PTMapView.swift */; };
 		5577E6AC2FD662C20004733F /* PTMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6AA2FD662C20004733F /* PTMapView.swift */; };
-		5577E6D12FD680730004733F /* PTTripStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6D02FD680730004733F /* PTTripStatsView.swift */; };
 		5577E6D22FD680730004733F /* PTTripStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6D02FD680730004733F /* PTTripStatsView.swift */; };
-		5577E7802FD6EEEF0004733F /* PTGForceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E77F2FD6EEEF0004733F /* PTGForceView.swift */; };
 		5577E7812FD6EEEF0004733F /* PTGForceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E77F2FD6EEEF0004733F /* PTGForceView.swift */; };
-		5577E7C92FD6FC8C0004733F /* PTCrashWarningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7C82FD6FC8C0004733F /* PTCrashWarningView.swift */; };
 		5577E7CA2FD6FC8C0004733F /* PTCrashWarningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7C82FD6FC8C0004733F /* PTCrashWarningView.swift */; };
 		5577E7CC2FD6FF890004733F /* PTLeanAngleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7CB2FD6FF890004733F /* PTLeanAngleView.swift */; };
-		5577E7CD2FD6FF890004733F /* PTLeanAngleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7CB2FD6FF890004733F /* PTLeanAngleView.swift */; };
-		5577E7CF2FD704790004733F /* PTBumpMeterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7CE2FD704790004733F /* PTBumpMeterView.swift */; };
 		5577E7D02FD704790004733F /* PTBumpMeterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7CE2FD704790004733F /* PTBumpMeterView.swift */; };
-		5577E7D22FD704AD0004733F /* PTPitchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7D12FD704AD0004733F /* PTPitchView.swift */; };
 		5577E7D32FD704AD0004733F /* PTPitchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7D12FD704AD0004733F /* PTPitchView.swift */; };
 		55901837300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55901836300FE37100A77571 /* PTMotoBaseViewController.swift */; };
-		55901838300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55901836300FE37100A77571 /* PTMotoBaseViewController.swift */; };
 		5590187230107A1C00A77571 /* PTRoutePlantCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5590187130107A1C00A77571 /* PTRoutePlantCell.swift */; };
-		5590187330107A1C00A77571 /* PTRoutePlantCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5590187130107A1C00A77571 /* PTRoutePlantCell.swift */; };
-		5598663F301138A30049684D /* PTTripManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598663E301138A30049684D /* PTTripManager.swift */; };
 		55986640301138A30049684D /* PTTripManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598663E301138A30049684D /* PTTripManager.swift */; };
 		55986642301141090049684D /* PTAntiTheftManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986641301141090049684D /* PTAntiTheftManager.swift */; };
-		55986643301141090049684D /* PTAntiTheftManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986641301141090049684D /* PTAntiTheftManager.swift */; };
-		55986675301144060049684D /* PTMaintenanceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986674301144060049684D /* PTMaintenanceManager.swift */; };
 		55986676301144060049684D /* PTMaintenanceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986674301144060049684D /* PTMaintenanceManager.swift */; };
-		55986678301144840049684D /* PTGPXRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986677301144840049684D /* PTGPXRecorder.swift */; };
 		55986679301144840049684D /* PTGPXRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986677301144840049684D /* PTGPXRecorder.swift */; };
-		5598667B301147FD0049684D /* PTCustomRouteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598667A301147FD0049684D /* PTCustomRouteManager.swift */; };
 		5598667C301147FD0049684D /* PTCustomRouteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598667A301147FD0049684D /* PTCustomRouteManager.swift */; };
 		5598667E301148290049684D /* PTDiagnosticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598667D301148290049684D /* PTDiagnosticManager.swift */; };
-		5598667F301148290049684D /* PTDiagnosticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598667D301148290049684D /* PTDiagnosticManager.swift */; };
-		5598668130114A980049684D /* PTFuelRoutingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598668030114A980049684D /* PTFuelRoutingManager.swift */; };
 		5598668230114A980049684D /* PTFuelRoutingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598668030114A980049684D /* PTFuelRoutingManager.swift */; };
 		5598668430114DF00049684D /* PTRoutingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598668330114DF00049684D /* PTRoutingManager.swift */; };
-		5598668530114DF00049684D /* PTRoutingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598668330114DF00049684D /* PTRoutingManager.swift */; };
 		55986687301150900049684D /* PTECUSnifferOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986686301150900049684D /* PTECUSnifferOverlay.swift */; };
-		55986688301150900049684D /* PTECUSnifferOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986686301150900049684D /* PTECUSnifferOverlay.swift */; };
 		559866C23011A71E0049684D /* SpeechSynthesizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559866C13011A71E0049684D /* SpeechSynthesizer.swift */; };
-		559866C33011A71E0049684D /* SpeechSynthesizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559866C13011A71E0049684D /* SpeechSynthesizer.swift */; };
-		5598676D3011C9720049684D /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 5598676C3011C9720049684D /* Settings.bundle */; };
 		5598676E3011C9720049684D /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 5598676C3011C9720049684D /* Settings.bundle */; };
-		55986833301330E00049684D /* PTDataCollectedViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986832301330E00049684D /* PTDataCollectedViewController.swift */; };
 		55986834301330E00049684D /* PTDataCollectedViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986832301330E00049684D /* PTDataCollectedViewController.swift */; };
 		55986836301337DC0049684D /* PTTripDataCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986835301337DC0049684D /* PTTripDataCell.swift */; };
-		55986837301337DC0049684D /* PTTripDataCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986835301337DC0049684D /* PTTripDataCell.swift */; };
-		55986839301348FC0049684D /* PTNotificationCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986838301348FC0049684D /* PTNotificationCenter.swift */; };
 		5598683A301348FC0049684D /* PTNotificationCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986838301348FC0049684D /* PTNotificationCenter.swift */; };
-		55986BAD30179D500049684D /* PTNativeTelemetryChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986BAC30179D500049684D /* PTNativeTelemetryChartView.swift */; };
 		55986BAE30179D500049684D /* PTNativeTelemetryChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986BAC30179D500049684D /* PTNativeTelemetryChartView.swift */; };
-		55F503AB300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
 		55F503AC300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
 		55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */; };
-		55F503B8300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */; };
 		55F503BB300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */; };
-		55F503BC300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */; };
-		55FDBCA83010CD6E00EE7FA5 /* PTMOTOParkingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FDBCA73010CD6E00EE7FA5 /* PTMOTOParkingManager.swift */; };
 		55FDBCA93010CD6E00EE7FA5 /* PTMOTOParkingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FDBCA73010CD6E00EE7FA5 /* PTMOTOParkingManager.swift */; };
-		55FDBCAB3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FDBCAA3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift */; };
 		55FDBCAC3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FDBCAA3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift */; };
-		55FE295B300CA4E8000E741F /* PTBluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE295A300CA4E8000E741F /* PTBluetoothManager.swift */; };
 		55FE295C300CA4E8000E741F /* PTBluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE295A300CA4E8000E741F /* PTBluetoothManager.swift */; };
 		55FE2966300CA5E0000E741F /* PTDashboardConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2965300CA5E0000E741F /* PTDashboardConfig.swift */; };
-		55FE2967300CA5E0000E741F /* PTDashboardConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2965300CA5E0000E741F /* PTDashboardConfig.swift */; };
 		55FE2995300CBCB4000E741F /* PTMotoBaseTabbarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2994300CBCB4000E741F /* PTMotoBaseTabbarController.swift */; };
-		55FE2996300CBCB4000E741F /* PTMotoBaseTabbarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2994300CBCB4000E741F /* PTMotoBaseTabbarController.swift */; };
-		55FE29A0300CC1F1000E741F /* PTMotoInfoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE299F300CC1F1000E741F /* PTMotoInfoViewController.swift */; };
 		55FE29A1300CC1F1000E741F /* PTMotoInfoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE299F300CC1F1000E741F /* PTMotoInfoViewController.swift */; };
 		55FE29A3300CC258000E741F /* PTMotoNavigationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE29A2300CC258000E741F /* PTMotoNavigationViewController.swift */; };
-		55FE29A4300CC258000E741F /* PTMotoNavigationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE29A2300CC258000E741F /* PTMotoNavigationViewController.swift */; };
 		55FE29A6300CC2E2000E741F /* PTMotoSettingViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE29A5300CC2E2000E741F /* PTMotoSettingViewController.swift */; };
-		55FE29A7300CC2E2000E741F /* PTMotoSettingViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE29A5300CC2E2000E741F /* PTMotoSettingViewController.swift */; };
-		55FE2A0A300CE2B0000E741F /* PTMapKitNavigationHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2A09300CE2B0000E741F /* PTMapKitNavigationHelper.swift */; };
 		55FE2A0B300CE2B0000E741F /* PTMapKitNavigationHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2A09300CE2B0000E741F /* PTMapKitNavigationHelper.swift */; };
-		55FE2A5D300DF42A000E741F /* PTBLEConnectViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2A5C300DF42A000E741F /* PTBLEConnectViewController.swift */; };
 		55FE2A5E300DF42A000E741F /* PTBLEConnectViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2A5C300DF42A000E741F /* PTBLEConnectViewController.swift */; };
 		55FE2A6F300DF836000E741F /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 55FE2A6D300DF836000E741F /* Localizable.strings */; };
-		55FE2A70300DF836000E741F /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 55FE2A6D300DF836000E741F /* Localizable.strings */; };
 		55FE2A77300DF95C000E741F /* PTMainProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2A76300DF95C000E741F /* PTMainProgressView.swift */; };
-		55FE2A78300DF95C000E741F /* PTMainProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2A76300DF95C000E741F /* PTMainProgressView.swift */; };
 		5A200D40EF300920887AD052 /* Pods_PTSpeed.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 33464FDDE31899C7F87FB6EC /* Pods_PTSpeed.framework */; };
-		611EE02BED86EDA626884233 /* Pods_CrazyDashboard.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 561E4C337C3165E9409BE2DF /* Pods_CrazyDashboard.framework */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		55499E15301AFCEA00A1A2D9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5577E5B52FD5C1DB0004733F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 55499E07301AFCE800A1A2D9;
+			remoteInfo = xp400WidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		55499E1C301AFCEA00A1A2D9 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				55499E17301AFCEA00A1A2D9 /* xp400WidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		2567A83A06A2B2498B880D19 /* Pods-CrazyDashboard.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.release.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.release.xcconfig"; sourceTree = "<group>"; };
@@ -121,8 +100,12 @@
 		55499CF93019D83800A1A2D9 /* PTDashboardBaseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashboardBaseView.swift; sourceTree = "<group>"; };
 		55499CFC3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoDashBoardNavFunction.swift; sourceTree = "<group>"; };
 		55499D95301A21F500A1A2D9 /* PTIndicatorPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTIndicatorPanel.swift; sourceTree = "<group>"; };
+		55499DFD301AFA2300A1A2D9 /* PTLiveActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLiveActivityManager.swift; sourceTree = "<group>"; };
+		55499E01301AFC2200A1A2D9 /* PTWidgetManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTWidgetManager.swift; sourceTree = "<group>"; };
+		55499E08301AFCE800A1A2D9 /* xp400WidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = xp400WidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		55499E09301AFCE800A1A2D9 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		55499E0B301AFCE800A1A2D9 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTGlobalActionHeader.swift; sourceTree = "<group>"; };
-		5577E5BD2FD5C1DB0004733F /* CrazyDashboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CrazyDashboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5577E6202FD656D20004733F /* PTCompassRollerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCompassRollerView.swift; sourceTree = "<group>"; };
 		5577E6212FD656D20004733F /* PTLocationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLocationEngine.swift; sourceTree = "<group>"; };
 		5577E6222FD656D20004733F /* PTNowPlayingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTNowPlayingView.swift; sourceTree = "<group>"; };
@@ -178,12 +161,12 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		5577E5CF2FD5C1DD0004733F /* Exceptions for "CrazyDashboard" folder in "CrazyDashboard" target */ = {
+		55499E1B301AFCEA00A1A2D9 /* Exceptions for "xp400Widget" folder in "xp400WidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 5577E5BC2FD5C1DB0004733F /* CrazyDashboard */;
+			target = 55499E07301AFCE800A1A2D9 /* xp400WidgetExtension */;
 		};
 		5577E6492FD657040004733F /* Exceptions for "PTSpeed" folder in "PTSpeed" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -195,12 +178,12 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		5577E5BF2FD5C1DB0004733F /* CrazyDashboard */ = {
+		55499E0D301AFCE800A1A2D9 /* xp400Widget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				5577E5CF2FD5C1DD0004733F /* Exceptions for "CrazyDashboard" folder in "CrazyDashboard" target */,
+				55499E1B301AFCEA00A1A2D9 /* Exceptions for "xp400Widget" folder in "xp400WidgetExtension" target */,
 			);
-			path = CrazyDashboard;
+			path = xp400Widget;
 			sourceTree = "<group>";
 		};
 		5577E6392FD657030004733F /* PTSpeed */ = {
@@ -214,11 +197,12 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		5577E5BA2FD5C1DB0004733F /* Frameworks */ = {
+		55499E05301AFCE800A1A2D9 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				611EE02BED86EDA626884233 /* Pods_CrazyDashboard.framework in Frameworks */,
+				55499E0C301AFCE800A1A2D9 /* SwiftUI.framework in Frameworks */,
+				55499E0A301AFCE800A1A2D9 /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -234,12 +218,28 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		55499DFC301AF9EE00A1A2D9 /* LiveActivity */ = {
+			isa = PBXGroup;
+			children = (
+				55499DFD301AFA2300A1A2D9 /* PTLiveActivityManager.swift */,
+			);
+			path = LiveActivity;
+			sourceTree = "<group>";
+		};
+		55499E00301AFBF700A1A2D9 /* Widget */ = {
+			isa = PBXGroup;
+			children = (
+				55499E01301AFC2200A1A2D9 /* PTWidgetManager.swift */,
+			);
+			path = Widget;
+			sourceTree = "<group>";
+		};
 		5577E5B42FD5C1DB0004733F = {
 			isa = PBXGroup;
 			children = (
 				5577E64D2FD657110004733F /* Global */,
-				5577E5BF2FD5C1DB0004733F /* CrazyDashboard */,
 				5577E6392FD657030004733F /* PTSpeed */,
+				55499E0D301AFCE800A1A2D9 /* xp400Widget */,
 				5577E5BE2FD5C1DB0004733F /* Products */,
 				59D3A021EFE75A7BF8504B6F /* Pods */,
 				C8AF0651275D1EA16545F01B /* Frameworks */,
@@ -249,8 +249,8 @@
 		5577E5BE2FD5C1DB0004733F /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				5577E5BD2FD5C1DB0004733F /* CrazyDashboard.app */,
 				5577E6382FD657030004733F /* PTSpeed.app */,
+				55499E08301AFCE800A1A2D9 /* xp400WidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -258,6 +258,8 @@
 		5577E64D2FD657110004733F /* Global */ = {
 			isa = PBXGroup;
 			children = (
+				55499E00301AFBF700A1A2D9 /* Widget */,
+				55499DFC301AF9EE00A1A2D9 /* LiveActivity */,
 				5598676C3011C9720049684D /* Settings.bundle */,
 				55F503B9300FCA1E00C5D085 /* Global */,
 				55F503B5300FC99000C5D085 /* Model */,
@@ -353,6 +355,8 @@
 				5577E6752FD657D20004733F /* libz.tbd */,
 				561E4C337C3165E9409BE2DF /* Pods_CrazyDashboard.framework */,
 				33464FDDE31899C7F87FB6EC /* Pods_PTSpeed.framework */,
+				55499E09301AFCE800A1A2D9 /* WidgetKit.framework */,
+				55499E0B301AFCE800A1A2D9 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -360,28 +364,27 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		5577E5BC2FD5C1DB0004733F /* CrazyDashboard */ = {
+		55499E07301AFCE800A1A2D9 /* xp400WidgetExtension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 5577E5D02FD5C1DD0004733F /* Build configuration list for PBXNativeTarget "CrazyDashboard" */;
+			buildConfigurationList = 55499E18301AFCEA00A1A2D9 /* Build configuration list for PBXNativeTarget "xp400WidgetExtension" */;
 			buildPhases = (
-				A9C67F5C828926FC79F9FF58 /* [CP] Check Pods Manifest.lock */,
-				5577E5B92FD5C1DB0004733F /* Sources */,
-				5577E5BA2FD5C1DB0004733F /* Frameworks */,
-				5577E5BB2FD5C1DB0004733F /* Resources */,
-				0947FF4B6CC713FEAEBEACAF /* [CP] Embed Pods Frameworks */,
-				7C5C12B22C537290D9BD5FE2 /* [CP] Copy Pods Resources */,
+				55499E04301AFCE800A1A2D9 /* Sources */,
+				55499E05301AFCE800A1A2D9 /* Frameworks */,
+				55499E06301AFCE800A1A2D9 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				5577E5BF2FD5C1DB0004733F /* CrazyDashboard */,
+				55499E0D301AFCE800A1A2D9 /* xp400Widget */,
 			);
-			name = CrazyDashboard;
-			productName = CrazyDashboard;
-			productReference = 5577E5BD2FD5C1DB0004733F /* CrazyDashboard.app */;
-			productType = "com.apple.product-type.application";
+			name = xp400WidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = xp400WidgetExtension;
+			productReference = 55499E08301AFCE800A1A2D9 /* xp400WidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		5577E6372FD657030004733F /* PTSpeed */ = {
 			isa = PBXNativeTarget;
@@ -393,10 +396,12 @@
 				5577E6362FD657030004733F /* Resources */,
 				1590859D94F7EB21C7EB385C /* [CP] Embed Pods Frameworks */,
 				DE491308A2EC7C91DFABD672 /* [CP] Copy Pods Resources */,
+				55499E1C301AFCEA00A1A2D9 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				55499E16301AFCEA00A1A2D9 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				5577E6392FD657030004733F /* PTSpeed */,
@@ -413,11 +418,11 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2650;
+				LastSwiftUpdateCheck = 2700;
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
-					5577E5BC2FD5C1DB0004733F = {
-						CreatedOnToolsVersion = 26.5;
+					55499E07301AFCE800A1A2D9 = {
+						CreatedOnToolsVersion = 27.0;
 					};
 					5577E6372FD657030004733F = {
 						CreatedOnToolsVersion = 26.5;
@@ -441,20 +446,17 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				5577E5BC2FD5C1DB0004733F /* CrazyDashboard */,
 				5577E6372FD657030004733F /* PTSpeed */,
+				55499E07301AFCE800A1A2D9 /* xp400WidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		5577E5BB2FD5C1DB0004733F /* Resources */ = {
+		55499E06301AFCE800A1A2D9 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				55F503AB300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */,
-				5598676D3011C9720049684D /* Settings.bundle in Resources */,
-				55FE2A70300DF836000E741F /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -471,27 +473,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		0947FF4B6CC713FEAEBEACAF /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			inputPaths = (
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 		1590859D94F7EB21C7EB385C /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -513,27 +494,6 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		7C5C12B22C537290D9BD5FE2 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard-resources-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			inputPaths = (
-			);
-			name = "[CP] Copy Pods Resources";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 		8D14E83BDD5EE3D329E978F3 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -550,28 +510,6 @@
 			);
 			outputPaths = (
 				"$(DERIVED_FILE_DIR)/Pods-PTSpeed-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		A9C67F5C828926FC79F9FF58 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-CrazyDashboard-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -602,57 +540,11 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		5577E5B92FD5C1DB0004733F /* Sources */ = {
+		55499E04301AFCE800A1A2D9 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				55986837301337DC0049684D /* PTTripDataCell.swift in Sources */,
-				5598668530114DF00049684D /* PTRoutingManager.swift in Sources */,
-				5577E62E2FD656D20004733F /* PTCompassRollerView.swift in Sources */,
-				55986675301144060049684D /* PTMaintenanceManager.swift in Sources */,
-				5598667F301148290049684D /* PTDiagnosticManager.swift in Sources */,
-				55FE29A0300CC1F1000E741F /* PTMotoInfoViewController.swift in Sources */,
-				55028F2D2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */,
-				55499CEC3018E6E100A1A2D9 /* PTDashBoardView.swift in Sources */,
-				55FE295B300CA4E8000E741F /* PTBluetoothManager.swift in Sources */,
-				55FDBCAB3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift in Sources */,
-				55FE29A7300CC2E2000E741F /* PTMotoSettingViewController.swift in Sources */,
-				5590187330107A1C00A77571 /* PTRoutePlantCell.swift in Sources */,
-				55FE2A0A300CE2B0000E741F /* PTMapKitNavigationHelper.swift in Sources */,
-				5577E62F2FD656D20004733F /* PTLocationEngine.swift in Sources */,
-				5577E6302FD656D20004733F /* PTNowPlayingView.swift in Sources */,
-				5598667B301147FD0049684D /* PTCustomRouteManager.swift in Sources */,
-				5577E6AB2FD662C20004733F /* PTMapView.swift in Sources */,
-				5577E7D22FD704AD0004733F /* PTPitchView.swift in Sources */,
-				5577E6312FD656D20004733F /* PTSpeedometerView.swift in Sources */,
-				55901838300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */,
-				55FE2A5D300DF42A000E741F /* PTBLEConnectViewController.swift in Sources */,
-				55499CFB3019D83800A1A2D9 /* PTDashboardBaseView.swift in Sources */,
-				5577E6D12FD680730004733F /* PTTripStatsView.swift in Sources */,
-				5598668130114A980049684D /* PTFuelRoutingManager.swift in Sources */,
-				55FE2A78300DF95C000E741F /* PTMainProgressView.swift in Sources */,
-				55499D96301A21F500A1A2D9 /* PTIndicatorPanel.swift in Sources */,
-				5598663F301138A30049684D /* PTTripManager.swift in Sources */,
-				55FDBCA83010CD6E00EE7FA5 /* PTMOTOParkingManager.swift in Sources */,
-				5577E7802FD6EEEF0004733F /* PTGForceView.swift in Sources */,
-				5577E7CF2FD704790004733F /* PTBumpMeterView.swift in Sources */,
-				55499CFD3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift in Sources */,
-				559866C33011A71E0049684D /* SpeechSynthesizer.swift in Sources */,
-				55FE29A4300CC258000E741F /* PTMotoNavigationViewController.swift in Sources */,
-				5577E7C92FD6FC8C0004733F /* PTCrashWarningView.swift in Sources */,
-				55FE2967300CA5E0000E741F /* PTDashboardConfig.swift in Sources */,
-				55986839301348FC0049684D /* PTNotificationCenter.swift in Sources */,
-				555C0FFA300E06630079D94F /* PTGlobalActionHeader.swift in Sources */,
-				55986688301150900049684D /* PTECUSnifferOverlay.swift in Sources */,
-				55499CF83019B7DD00A1A2D9 /* PTGlobalMapManager.swift in Sources */,
-				55F503BC300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift in Sources */,
-				55FE2996300CBCB4000E741F /* PTMotoBaseTabbarController.swift in Sources */,
-				55986643301141090049684D /* PTAntiTheftManager.swift in Sources */,
-				55F503B8300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */,
-				5577E7CD2FD6FF890004733F /* PTLeanAngleView.swift in Sources */,
-				55986833301330E00049684D /* PTDataCollectedViewController.swift in Sources */,
-				55986678301144840049684D /* PTGPXRecorder.swift in Sources */,
-				55986BAD30179D500049684D /* PTNativeTelemetryChartView.swift in Sources */,
+				55499E1D301B14DD00A1A2D9 /* PTLiveActivityManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -664,6 +556,7 @@
 				55FE2995300CBCB4000E741F /* PTMotoBaseTabbarController.swift in Sources */,
 				55FE29A6300CC2E2000E741F /* PTMotoSettingViewController.swift in Sources */,
 				5598667C301147FD0049684D /* PTCustomRouteManager.swift in Sources */,
+				55499E03301AFC2200A1A2D9 /* PTWidgetManager.swift in Sources */,
 				5577E6502FD6572E0004733F /* PTNowPlayingView.swift in Sources */,
 				555C0FF9300E06630079D94F /* PTGlobalActionHeader.swift in Sources */,
 				55499CED3018E6E100A1A2D9 /* PTDashBoardView.swift in Sources */,
@@ -694,6 +587,7 @@
 				55FE2A77300DF95C000E741F /* PTMainProgressView.swift in Sources */,
 				55FE29A3300CC258000E741F /* PTMotoNavigationViewController.swift in Sources */,
 				55986836301337DC0049684D /* PTTripDataCell.swift in Sources */,
+				55499DFF301AFA2300A1A2D9 /* PTLiveActivityManager.swift in Sources */,
 				55986642301141090049684D /* PTAntiTheftManager.swift in Sources */,
 				55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */,
 				5598667E301148290049684D /* PTDiagnosticManager.swift in Sources */,
@@ -712,6 +606,14 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		55499E16301AFCEA00A1A2D9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 55499E07301AFCE800A1A2D9 /* xp400WidgetExtension */;
+			targetProxy = 55499E15301AFCEA00A1A2D9 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin PBXVariantGroup section */
 		55FE2A6D300DF836000E741F /* Localizable.strings */ = {
 			isa = PBXVariantGroup;
@@ -727,89 +629,65 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
-		5577E5D12FD5C1DD0004733F /* Debug */ = {
+		55499E19301AFCEA00A1A2D9 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = CrazyDashboard/CrazyDashboard.entitlements;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = CrazyDashboard/Info.plist;
-				INFOPLIST_KEY_NSAppleMusicUsageDescription = "我要调用AM";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = hi;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "我要用L";
-				INFOPLIST_KEY_NSMotionUsageDescription = "我要用Motion";
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				INFOPLIST_FILE = xp400Widget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = xp400Widget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.yd.CrazyDashboard;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yd.PTSpeed.xp400Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
-		5577E5D22FD5C1DD0004733F /* Release */ = {
+		55499E1A301AFCEA00A1A2D9 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 2567A83A06A2B2498B880D19 /* Pods-CrazyDashboard.release.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = CrazyDashboard/CrazyDashboard.entitlements;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = CrazyDashboard/Info.plist;
-				INFOPLIST_KEY_NSAppleMusicUsageDescription = "我要调用AM";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = hi;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "我要用L";
-				INFOPLIST_KEY_NSMotionUsageDescription = "我要用Motion";
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				INFOPLIST_FILE = xp400Widget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = xp400Widget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.yd.CrazyDashboard;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yd.PTSpeed.xp400Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -946,7 +824,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -959,6 +837,7 @@
 				INFOPLIST_KEY_NSMotionUsageDescription = "我要用Motion";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "我要添加到相冊";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "我要用相冊";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -1070,6 +949,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.yd.PTSpeed;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -1094,7 +974,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -1107,6 +987,7 @@
 				INFOPLIST_KEY_NSMotionUsageDescription = "我要用Motion";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "我要添加到相冊";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "我要用相冊";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -1216,6 +1097,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.yd.PTSpeed;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -1235,20 +1117,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		55499E18301AFCEA00A1A2D9 /* Build configuration list for PBXNativeTarget "xp400WidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				55499E19301AFCEA00A1A2D9 /* Debug */,
+				55499E1A301AFCEA00A1A2D9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		5577E5B82FD5C1DB0004733F /* Build configuration list for PBXProject "CrazyDashboard" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				5577E5D32FD5C1DD0004733F /* Debug */,
 				5577E5D42FD5C1DD0004733F /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		5577E5D02FD5C1DD0004733F /* Build configuration list for PBXNativeTarget "CrazyDashboard" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				5577E5D12FD5C1DD0004733F /* Debug */,
-				5577E5D22FD5C1DD0004733F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

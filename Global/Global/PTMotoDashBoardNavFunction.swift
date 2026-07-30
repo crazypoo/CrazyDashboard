@@ -26,7 +26,7 @@ class PTMotoDashBoardNavFunction: NSObject {
         case .leftBack:
             return PTManeuverMap.heavyLeft // 0x0C 急左转
         case .rightBack:
-            return PTManeuverMap.heavyRight // 0x07 急右转[cite: 2]
+            return PTManeuverMap.heavyRight // 0x07 急右转
         case .entryLeftRingUTurn:
             return PTManeuverMap.uTurnLeft
         case .entryLeftRingRight:
@@ -34,10 +34,10 @@ class PTMotoDashBoardNavFunction: NSObject {
         case .arrivedWayPoint:
             return PTManeuverMap.straight
         case .arrivedDestination:
-            return PTManeuverMap.arrive // 0x2C 到达[cite: 2]
+            return PTManeuverMap.arrive // 0x2C 到达
         // 🚨 新增：环岛处理逻辑
         case .enterRoundabout:
-            // 协议规定右侧环岛 1 号出口为 0x13[cite: 2]。
+            // 协议规定右侧环岛 1 号出口为 0x13。
             // 如果高德在 AMapNaviInfo 中提供了环岛出口编号 (ringRoundaboutExitCount)，你可以动态加上该编号减 1。
             // 这里提供基础的 1 号出口映射作为安全回退机制。
             return PTManeuverMap.roundaboutRightBase
@@ -48,6 +48,16 @@ class PTMotoDashBoardNavFunction: NSObject {
     }
     
     static func sendNavDataToDashboard(naviInfo: AMapNaviInfo,currentSpeedLimit:UInt8) {
+        let remainDistanceMeters = Double(naviInfo.routeRemainDistance)
+        let remainingKm = remainDistanceMeters / 1000.0
+        let progress = (Double(naviInfo.travelRealPathLength) - Double(naviInfo.travelDrivedRealLength)) / Double(naviInfo.travelRealPathLength)
+        let eta = Date().addingTimeInterval(TimeInterval(naviInfo.routeRemainTime))
+        PTLiveActivityManager.shared.updateNavigationActivity(
+            progress: progress,
+            remainingKm: remainingKm,
+            expectedArrival: eta
+        )
+
         // --- 核心逻辑开始 ---
         // 1. 获取距离下一个转弯动作的剩余距离 (米)
         let distanceToNextManeuver = naviInfo.segmentRemainDistance
