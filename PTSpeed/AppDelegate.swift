@@ -97,7 +97,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         Task {
             do {
-                let jwt = JWTGenerator(privateKey: "35b30af77cae435c887e834c0cb41eb2", pid: "2C88VNJQXF", kid: "KBWHPQ94JK")
+                let jwt = JWTGenerator(privateKey: "MC4CAQAwBQYDK2VwBCIEIE/J2HAiPGXdCgaKWj8V9SNWngayd/UVVqKtdZ6wA4EZ", pid: "2C88VNJQXF", kid: "KMB2ME5R85")
                 let _ = try await QWeather.getInstance("nj5khxjpk2.re.qweatherapi.com").setupTokenGenerator(jwt).setupLogEnable(true)
             } catch {
                 PTNSLogConsole(error.localizedDescription)

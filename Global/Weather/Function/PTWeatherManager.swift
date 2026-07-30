@@ -103,9 +103,9 @@ class PTWeatherManager {
                 let lon = String(format: "%.2f", location.coordinate.longitude)
                 let lat = String(format: "%.2f", location.coordinate.latitude)
                 let locationString = "\(lon),\(lat)"
-                let response =  try await QWeather.instance
-                    .geoCityLookup(.init(location: locationString))
-                PTNSLogConsole(response)
+                let parameter = WeatherParameter(location: locationString)
+                
+                let response =  try await QWeather.instance.weatherNow(parameter)
                 self.applyQWeatherAnimation(iconCode: response.code)
             } catch QWeatherError.errorResponse(let error) {
                 PTNSLogConsole(error)
