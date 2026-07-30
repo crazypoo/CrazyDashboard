@@ -9,6 +9,14 @@ import Foundation
 import PooTools
 import CoreLocation
 
+public struct PTTripOffRoadEvent: Codable {
+    public let timestamp: Date
+    public let latitude: Double
+    public let longitude: Double
+    public let slipRatio: Double
+    public let info: String
+}
+
 // 🌟 新增：专门用于给 UI 界面实时刷新用的数据模型
 public struct PTLiveTripStats {
     public let runTime: TimeInterval       // 运行时长 (秒)
@@ -18,6 +26,8 @@ public struct PTLiveTripStats {
     public let maxSpeedKmh: Double         // 当前最高速度
     public let minSpeedKmh: Double         // 当前最低速度
     public let best0To100Time: TimeInterval? // 最佳 0-100 成绩
+    public let currentSlipRatio: Double
+    public let tractionLevelName: String
 }
 
 public struct PTRoutePoint: Codable {
@@ -32,6 +42,7 @@ public struct PTRoutePoint: Codable {
     public let leanAngle: Double // 把倾角也导进去！
     public let gForceY: Double   // 加减速 G 值
     public let gForceX: Double   // 过弯 G 值
+    public let slipRatio: Double
 }
 
 // 🚨 升级 1：让模型支持 Codable，以便于本地持久化存储
@@ -74,6 +85,11 @@ public struct PTTripReport: Codable {
     public let gpsMinSpeedKmh: Double         // GPS 最低速度
 
     public let gpxFileName: String?
+    
+    public let maxSlipRatio: Double             // 本次行程极值
+    public let heavySlipCount: Int              // 严重打滑次数
+    public let slipRatioTrace: [Double]         // 1Hz 遥测轨迹 (用于画折线图)
+    public let offRoadEvents: [PTTripOffRoadEvent] // 危险/脱困坐标点集合
 }
 
 // 🚨 升级 2：定义一个新的通知，告诉 UI 界面 "有新报告生成了"
@@ -154,6 +170,17 @@ public class PTTripManager: NSObject {
     private var lastGpsLocation: CLLocation?
     private var accumulatedGpsDistance: Double = 0.0 // 纯 GPS 累计行驶里程 (km)
 
+    // 🌟 新增 (ADV越野)：实时状态快照
+    private var currentLiveSlipRatio: Double = 0.0
+    private var currentTractionLevelName: String = "抓地力良好"
+    private var lastFrontSpeed: Double = 0.0
+    
+    // 🌟 新增 (ADV越野)：统计与轨迹缓存
+    private var maxSlipRatio: Double = 0.0
+    private var slipRatioTraceArray: [Double] = []
+    private var offRoadEventsArray: [PTTripOffRoadEvent] = []
+    private var lastOffRoadEventTime: Date? // 防抖控制
+
     private override init() {
         super.init()
         loadHistory() // 初始化时，自动把本地保存的历史数据读进内存
@@ -175,7 +202,9 @@ public class PTTripManager: NSObject {
             avgSpeedKmh: avgSpeed,
             maxSpeedKmh: maxSpeed,
             minSpeedKmh: minSpeed == 999.0 ? 0.0 : minSpeed,
-            best0To100Time: best0To100Time
+            best0To100Time: best0To100Time,
+            currentSlipRatio: currentLiveSlipRatio,
+            tractionLevelName: currentTractionLevelName
         )
         
         // 保证回调在主线程执行，防止 UI 界面崩溃
@@ -258,6 +287,7 @@ public class PTTripManager: NSObject {
         nc.addObserver(self, selector: #selector(handleControlData(_:)), name: MotorcycleCONTROL, object: nil)
         nc.addObserver(self, selector: #selector(handleData1(_:)), name: MotorcycleDATA1, object: nil)
         nc.addObserver(self, selector: #selector(handleMotion(_:)), name: PTMotionEngineDidUpdate, object: nil)
+        nc.addObserver(self, selector: #selector(handleABSData(_:)), name: MotorcycleABS, object: nil)
     }
     
     // MARK: - 业务逻辑处理
@@ -303,6 +333,14 @@ public class PTTripManager: NSObject {
         zeroToHundredStartTime = nil
         best0To100Time = nil
 
+        maxSlipRatio = 0.0
+        currentLiveSlipRatio = 0.0
+        lastFrontSpeed = 0.0
+        currentTractionLevelName = "抓地力良好"
+        slipRatioTraceArray.removeAll()
+        offRoadEventsArray.removeAll()
+        lastOffRoadEventTime = nil
+
         PTMotion.shared.resetLeanAngles()
         PTMotion.shared.startMotion()
         
@@ -320,6 +358,8 @@ public class PTTripManager: NSObject {
             
             self.speedTraceArray.append(self.currentLiveSpeed)
             self.rpmTraceArray.append(self.currentLiveRpm)
+            
+            self.slipRatioTraceArray.append(self.currentLiveSlipRatio)
             self.broadcastLiveStats()
         }
             
@@ -377,7 +417,8 @@ public class PTTripManager: NSObject {
             rpm: self.maxRpm,
             leanAngle: self.currentLiveRoll,
             gForceY: self.currentLiveGForceY,
-            gForceX: self.currentLiveGForceX
+            gForceX: self.currentLiveGForceX,
+            slipRatio: self.currentLiveSlipRatio
         )
         self.routeArray.append(point)
     }
@@ -476,7 +517,12 @@ public class PTTripManager: NSObject {
             gpsMaxSpeedKmh: maxSpeed,         // 保持一致
             gpsMinSpeedKmh: minSpeed == 999.0 ? 0.0 : minSpeed,
             
-            gpxFileName: generatedFileName
+            gpxFileName: generatedFileName,
+            
+            maxSlipRatio: maxSlipRatio,
+            heavySlipCount: offRoadEventsArray.count,
+            slipRatioTrace: slipRatioTraceArray,
+            offRoadEvents: offRoadEventsArray
         )
         
         // 1. 存入内存数组的最前面 (保证最新记录在列表顶部)
@@ -499,37 +545,97 @@ public class PTTripManager: NSObject {
 //MARK: No Connect ble
 extension PTTripManager {
     private func processSpeedMetrics(speedKmh: Double, timestamp: Date) {
-            self.currentLiveSpeed = speedKmh
-            
-            // 1. 怠速时长计算 (利用两次数据包的时间差累加)
-            if let lastTime = lastControlUpdateTime {
-                let delta = timestamp.timeIntervalSince(lastTime)
-                if speedKmh < 2.0 {
-                    idleTime += delta
-                }
+        self.currentLiveSpeed = speedKmh
+        
+        // 1. 怠速时长计算 (利用两次数据包的时间差累加)
+        if let lastTime = lastControlUpdateTime {
+            let delta = timestamp.timeIntervalSince(lastTime)
+            if speedKmh < 2.0 {
+                idleTime += delta
             }
-            lastControlUpdateTime = timestamp
-            
-            // 2. 0-100 km/h 高精度自动计时
-            if speedKmh <= 2.0 {
-                zeroToHundredStartTime = timestamp
-            } else if speedKmh >= 100.0 {
-                if let start = zeroToHundredStartTime {
-                    let achievedTime = timestamp.timeIntervalSince(start)
-                    // 基础防噪：成绩需大于2秒才合理
-                    if achievedTime > 2.0 {
-                        if best0To100Time == nil || achievedTime < best0To100Time! {
-                            best0To100Time = achievedTime
-                            PTNSLogConsole("🏎️💨 [测速引擎] 创造新的 0-100km/h 成绩: \(String(format: "%.2f", achievedTime))秒！")
-                        }
-                    }
-                    zeroToHundredStartTime = nil
-                }
-            }
-            
-            // 3. 更新极限速度极值
-            PTMotion.shared.currentSpeedKmh = speedKmh
-            if speedKmh > maxSpeed { maxSpeed = speedKmh }
-            if speedKmh > 1.0 && speedKmh < minSpeed { minSpeed = speedKmh }
         }
+        lastControlUpdateTime = timestamp
+        
+        // 2. 0-100 km/h 高精度自动计时
+        if speedKmh <= 2.0 {
+            zeroToHundredStartTime = timestamp
+        } else if speedKmh >= 100.0 {
+            if let start = zeroToHundredStartTime {
+                let achievedTime = timestamp.timeIntervalSince(start)
+                // 基础防噪：成绩需大于2秒才合理
+                if achievedTime > 2.0 {
+                    if best0To100Time == nil || achievedTime < best0To100Time! {
+                        best0To100Time = achievedTime
+                        PTNSLogConsole("🏎️💨 [测速引擎] 创造新的 0-100km/h 成绩: \(String(format: "%.2f", achievedTime))秒！")
+                    }
+                }
+                zeroToHundredStartTime = nil
+            }
+        }
+        
+        // 3. 更新极限速度极值
+        PTMotion.shared.currentSpeedKmh = speedKmh
+        if speedKmh > maxSpeed { maxSpeed = speedKmh }
+        if speedKmh > 1.0 && speedKmh < minSpeed { minSpeed = speedKmh }
+    }
+}
+
+//MARK: - ADV 打滑率与事件引擎
+extension PTTripManager {
+    
+    // 🌟 新增 (ADV越野)：处理 ABS 帧带来的前轮速
+    @objc private func handleABSData(_ notification: Notification) {
+        guard isRiding, let absStatus = notification.object as? PTAbsStatus else { return }
+        self.lastFrontSpeed = absStatus.frontWheelSpeedKmh
+        calculateSlipRatio()
+    }
+    
+    // 🌟 需在原有的 processSpeedMetrics 中被调用：当你更新了 currentLiveSpeed (后轮速) 后，触发计算
+    // 请确保在 handleControlData 结尾处，调用了 processSpeedMetrics 之后，加上 calculateSlipRatio()
+    
+    private func calculateSlipRatio() {
+        guard lastFrontSpeed > 2.0 || currentLiveSpeed > 2.0 else {
+            self.currentLiveSlipRatio = 0.0
+            self.currentTractionLevelName = "抓地力良好"
+            return
+        }
+        
+        let baseSpeed = max(lastFrontSpeed, 1.0)
+        let speedDiff = currentLiveSpeed - lastFrontSpeed
+        let ratio = (speedDiff / baseSpeed) * 100.0
+        let clampedRatio = min(max(ratio, -50.0), 200.0)
+        
+        self.currentLiveSlipRatio = clampedRatio
+        
+        // 更新极值
+        if clampedRatio > maxSlipRatio { maxSlipRatio = clampedRatio }
+        
+        // 判定级别并触发事件
+        if clampedRatio >= 35.0 {
+            self.currentTractionLevelName = "严重打滑/脱困"
+            recordOffRoadEvent(ratio: clampedRatio)
+        } else if clampedRatio >= 10.0 {
+            self.currentTractionLevelName = "非铺装路面(碎石)"
+        } else {
+            self.currentTractionLevelName = "抓地力良好"
+        }
+    }
+    
+    private func recordOffRoadEvent(ratio: Double) {
+        let now = Date()
+        // ⏲ 防抖 5 秒：防止泥坑里疯狂打点
+        if let last = lastOffRoadEventTime, now.timeIntervalSince(last) < 5.0 { return }
+        guard let loc = lastGpsLocation else { return }
+        
+        let event = PTTripOffRoadEvent(
+            timestamp: now,
+            latitude: loc.coordinate.latitude,
+            longitude: loc.coordinate.longitude,
+            slipRatio: ratio,
+            info: "极限脱困"
+        )
+        self.offRoadEventsArray.append(event)
+        self.lastOffRoadEventTime = now
+        PTNSLogConsole("⚠️ [ADV 遥测] 在坐标 (\(loc.coordinate.latitude), \(loc.coordinate.longitude)) 处记录到一次越野脱困事件！")
+    }
 }

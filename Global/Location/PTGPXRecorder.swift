@@ -161,7 +161,7 @@ public class PTGPXRecorder: NSObject {
         
         for point in points {
             let timeStr = isoFormatter.string(from: point.timestamp)
-            // 🚨 在 extensions 标签中注入所有高级遥测数据
+            // 🚨 升级：在 extensions 标签中注入新增的 slip_ratio 遥测数据
             let trkpt = """
                     <trkpt lat="\(point.lat)" lon="\(point.lon)">
                       <ele>\(point.altitude)</ele>
@@ -172,6 +172,7 @@ public class PTGPXRecorder: NSObject {
                         <lean>\(point.leanAngle)</lean>
                         <gforce_y>\(point.gForceY)</gforce_y>
                         <gforce_x>\(point.gForceX)</gforce_x>
+                        <slip_ratio>\(point.slipRatio)</slip_ratio>
                       </extensions>
                     </trkpt>\n
                 """
