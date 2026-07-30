@@ -333,10 +333,8 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
     
     func dashBoardSetResult(finish:Bool) {
         if finish {
-            PTGCDManager.shared.delayOnMain(time: 0.55) {
-                PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "set_success"))
-                self.globalChangeDashBoardData()
-            }
+            PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "set_success"))
+            self.globalChangeDashBoardData()
         } else {
             PTGCDManager.shared.delayOnMain(time: 0.55) {
                 PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "set_bad"))
@@ -345,8 +343,8 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
     }
     
     func globalChangeDashBoardData() {
+        NotificationCenter.default.post(name: MotorcycleDashBoardChange, object: nil)
         PTGCDManager.shared.delayOnMain(time: 0.5) {
-            NotificationCenter.default.post(name: MotorcycleDashBoardChange, object: nil)
             self.dashBoardColorButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
             self.dashBoardUniButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
             self.dashBoardUniButton.setTitle(PTBluetoothServerManager.shared.latestData3?.unitType.getTypeName() ?? PTConfigUnit.metric.getTypeName(), for: .normal)
@@ -369,6 +367,9 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             let lightName = PTBluetoothServerManager.shared.latestData2?.backlightMode.description
             self.lightValueLabel.setTitle("Light mode:" + (lightName ?? PTBacklightMode.unknown.description), for: .normal)
             self.lightValueLabel.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .normal)
+            
+            self.disconnect.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
+            self.proButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         }
     }
     
