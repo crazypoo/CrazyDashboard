@@ -169,29 +169,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         }
         return view
     }()
-        
-    lazy var tcsValueLabel:UIButton = {
-        let name = PTBluetoothServerManager.shared.latestControl?.tcsMode.description
-        let view = UIButton(type: .custom)
-        view.titleLabel?.font = .appfont(size: 16)
-        view.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .normal)
-        view.setTitle("TCS mode:" + (name ?? PTTCSMode.unknown.description), for: .normal)
-        view.addActionHandlers(handler: { _ in
-        })
-        return view
-    }()
-
-    lazy var lightValueLabel:UIButton = {
-        let name = PTBluetoothServerManager.shared.latestData2?.backlightMode.description
-        let view = UIButton(type: .custom)
-        view.titleLabel?.font = .appfont(size: 16)
-        view.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .normal)
-        view.setTitle("Light mode:" + (name ?? PTBacklightMode.unknown.description), for: .normal)
-        view.addActionHandlers(handler: { _ in
-        })
-        return view
-    }()
-    
+            
     lazy var shortCut:UILabel = {
         let view = UILabel()
         view.numberOfLines = 0
@@ -211,10 +189,8 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleCONTROL, object: nil)
-
         view.backgroundColor = .black
-        view.addSubviews([dashBoadColorTitle,dashBoardColorButton,dashUniTitle,dashBoardUniButton,dashLanguageTitle,dashBoardLanguageButton,messageTestButton,disconnect,proButton,tcsValueLabel,lightValueLabel,shortCut])
+        view.addSubviews([dashBoadColorTitle,dashBoardColorButton,dashUniTitle,dashBoardUniButton,dashLanguageTitle,dashBoardLanguageButton,messageTestButton,disconnect,proButton,shortCut])
         dashBoadColorTitle.snp.makeConstraints { make in
             make.left.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.right.equalTo(self.view.snp.centerX)
@@ -251,17 +227,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             make.top.equalTo(self.dashLanguageTitle.snp.bottom).offset(CGFloat.GlobalItemSpacing)
             make.width.equalTo(self.dashBoardLanguageButton.sizeFor().width + 32)
         }
-        
-        tcsValueLabel.snp.makeConstraints { make in
-            make.left.equalTo(self.dashBoadColorTitle)
-            make.top.equalTo(self.dashBoardLanguageButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-        }
-        
-        lightValueLabel.snp.makeConstraints { make in
-            make.left.equalTo(self.dashBoadColorTitle)
-            make.top.equalTo(self.tcsValueLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-        }
-                
+                        
         messageTestButton.snp.makeConstraints { make in
             make.size.equalTo(34)
             make.centerX.equalToSuperview()
@@ -281,7 +247,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         
         shortCut.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.top.equalTo(self.lightValueLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.top.equalTo(self.dashBoardLanguageButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
         }
         let shortAtt: ASAttributedString = """
                     \(wrap: .embedding("""
@@ -359,36 +325,9 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             self.dashBoadColorTitle.textColor = PTDashboardConfig.shared.appMainColor
             self.dashUniTitle.textColor = PTDashboardConfig.shared.appMainColor
             self.dashLanguageTitle.textColor = PTDashboardConfig.shared.appMainColor
-            
-            let tcsName = PTBluetoothServerManager.shared.latestControl?.tcsMode.description
-            self.tcsValueLabel.setTitle("TCS mode:" + (tcsName ?? PTTCSMode.unknown.description), for: .normal)
-            self.tcsValueLabel.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .normal)
-            
-            let lightName = PTBluetoothServerManager.shared.latestData2?.backlightMode.description
-            self.lightValueLabel.setTitle("Light mode:" + (lightName ?? PTBacklightMode.unknown.description), for: .normal)
-            self.lightValueLabel.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .normal)
-            
+                        
             self.disconnect.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
             self.proButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
-        }
-    }
-    
-    @objc func handleDataNotification(_ notification: Notification) {
-        // 1. 将广播传递过来的 object 安全地向下转型为我们的数据模型
-        if let data2 = notification.object as? PTDashboardData2 {
-            // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
-            DispatchQueue.main.async {
-                
-                let lightName = data2.backlightMode.description
-                self.lightValueLabel.setTitle("Light mode:" + (lightName), for: .normal)
-            }
-        } else if let control = notification.object as? PTDashboardControl {
-            
-            // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
-            DispatchQueue.main.async {
-                let tcsName = control.tcsMode.description
-                self.tcsValueLabel.setTitle("TCS mode:" + (tcsName), for: .normal)
-            }
         }
     }
 }
