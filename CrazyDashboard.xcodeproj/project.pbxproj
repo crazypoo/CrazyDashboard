@@ -352,17 +352,17 @@
 		55E616B5301B88D40075F883 /* Dashboard */ = {
 			isa = PBXGroup;
 			children = (
-				5577E77F2FD6EEEF0004733F /* PTGForceView.swift */,
 				5577E7CE2FD704790004733F /* PTBumpMeterView.swift */,
 				5577E6202FD656D20004733F /* PTCompassRollerView.swift */,
 				5577E7C82FD6FC8C0004733F /* PTCrashWarningView.swift */,
-				5577E7CB2FD6FF890004733F /* PTLeanAngleView.swift */,
-				5577E7D12FD704AD0004733F /* PTPitchView.swift */,
-				5577E6232FD656D20004733F /* PTSpeedometerView.swift */,
-				5577E6222FD656D20004733F /* PTNowPlayingView.swift */,
 				55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */,
 				55499CEB3018E6E100A1A2D9 /* PTDashBoardView.swift */,
+				5577E77F2FD6EEEF0004733F /* PTGForceView.swift */,
 				55499D95301A21F500A1A2D9 /* PTIndicatorPanel.swift */,
+				5577E7CB2FD6FF890004733F /* PTLeanAngleView.swift */,
+				5577E6222FD656D20004733F /* PTNowPlayingView.swift */,
+				5577E7D12FD704AD0004733F /* PTPitchView.swift */,
+				5577E6232FD656D20004733F /* PTSpeedometerView.swift */,
 			);
 			path = Dashboard;
 			sourceTree = "<group>";
@@ -370,10 +370,13 @@
 		55E616B6301B89310075F883 /* Location */ = {
 			isa = PBXGroup;
 			children = (
-				55FE29A2300CC258000E741F /* PTMotoNavigationViewController.swift */,
+				55499CF63019B7DD00A1A2D9 /* PTGlobalMapManager.swift */,
+				55986677301144840049684D /* PTGPXRecorder.swift */,
 				5577E6212FD656D20004733F /* PTLocationEngine.swift */,
-				5577E6AA2FD662C20004733F /* PTMapView.swift */,
 				55FE2A09300CE2B0000E741F /* PTMapKitNavigationHelper.swift */,
+				5577E6AA2FD662C20004733F /* PTMapView.swift */,
+				55499CFC3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift */,
+				55FE29A2300CC258000E741F /* PTMotoNavigationViewController.swift */,
 				55FDBCAA3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift */,
 				5590187130107A1C00A77571 /* PTRoutePlantCell.swift */,
 			);
@@ -413,8 +416,6 @@
 				55986832301330E00049684D /* PTDataCollectedViewController.swift */,
 				5598667D301148290049684D /* PTDiagnosticManager.swift */,
 				5598668030114A980049684D /* PTFuelRoutingManager.swift */,
-				55499CF63019B7DD00A1A2D9 /* PTGlobalMapManager.swift */,
-				55986677301144840049684D /* PTGPXRecorder.swift */,
 				55986674301144060049684D /* PTMaintenanceManager.swift */,
 				55FE2994300CBCB4000E741F /* PTMotoBaseTabbarController.swift */,
 				55901836300FE37100A77571 /* PTMotoBaseViewController.swift */,
@@ -425,7 +426,6 @@
 				5598663E301138A30049684D /* PTTripManager.swift */,
 				559866C13011A71E0049684D /* SpeechSynthesizer.swift */,
 				55499CF93019D83800A1A2D9 /* PTDashboardBaseView.swift */,
-				55499CFC3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift */,
 			);
 			path = Global;
 			sourceTree = "<group>";

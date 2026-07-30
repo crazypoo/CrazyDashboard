@@ -27,22 +27,22 @@ public struct PTChartLineModel {
 public class PTNativeTelemetryChartView: UIView {
     
     // MARK: - UI 组件
-    /// 用于装载所有折线、网格和 Y 轴标签的核心容器
     private let chartContainerView = UIView()
-    
-    /// 底部图例使用横向 ScrollView 嵌套 StackView
     private let legendScrollView = UIScrollView()
     private let legendStackView = UIStackView()
     
-    // MARK: - 渲染层缓存 (便于在 Cell 中复用时清理)
+    // MARK: - 渲染层缓存
     private var chartSublayers: [CALayer] = []
     
+    // 🚨 修复 1：增加数据缓存，等待视图布局完成后再绘制
+    private var currentLines: [PTChartLineModel] = []
+    
     // MARK: - 图表布局参数
-    private let yAxisWidth: CGFloat = 40.0   // 给左侧 Y 轴文字预留的宽度
-    private let rightPadding: CGFloat = 10.0 // 右侧边距
-    private let topPadding: CGFloat = 20.0   // 顶部边距
-    private let bottomPadding: CGFloat = 10.0// 底部边距
-    private let gridCount: Int = 5           // Y轴划分为几个横向网格区间
+    private let yAxisWidth: CGFloat = 40.0
+    private let rightPadding: CGFloat = 10.0
+    private let topPadding: CGFloat = 20.0
+    private let bottomPadding: CGFloat = 10.0
+    private let gridCount: Int = 5
     
     public override init(frame: CGRect) {
         super.init(frame: frame)
@@ -57,7 +57,6 @@ public class PTNativeTelemetryChartView: UIView {
     private func setupUI() {
         self.backgroundColor = .clear
         
-        // 1. 图例容器设置
         legendScrollView.showsHorizontalScrollIndicator = false
         legendStackView.axis = .horizontal
         legendStackView.alignment = .center
@@ -68,7 +67,6 @@ public class PTNativeTelemetryChartView: UIView {
         legendScrollView.addSubview(legendStackView)
         addSubview(chartContainerView)
         
-        // 2. 布局 (使用 SnapKit)
         legendScrollView.snp.makeConstraints { make in
             make.left.right.bottom.equalToSuperview()
             make.height.equalTo(30)
@@ -87,12 +85,19 @@ public class PTNativeTelemetryChartView: UIView {
     
     // MARK: - 核心入口：绑定并绘制数据
     public func bindData(lines: [PTChartLineModel]) {
+        self.currentLines = lines
         buildLegend(with: lines)
         
-        // 必须让视图完成布局，获取准确的 bounds 进行绘制
+        // 标记需要重新布局，系统会在下一个渲染周期自动调用 layoutSubviews
+        self.setNeedsLayout()
         self.layoutIfNeeded()
-        
-        drawChart(with: lines)
+    }
+    
+    // 🚨 修复 1：利用 layoutSubviews 确保能够拿到真实准确的 Bounds
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+        // 每次视图 Frame 发生变化（或初次渲染）时，触发重绘
+        drawChart(with: currentLines)
     }
     
     // MARK: - 动态生成底部图例
@@ -126,50 +131,48 @@ public class PTNativeTelemetryChartView: UIView {
     
     // MARK: - 核心原生绘制算法
     private func drawChart(with lines: [PTChartLineModel]) {
-        // 清理上一次的残余图层 (Cell 复用机制必须这一步)
         chartSublayers.forEach { $0.removeFromSuperlayer() }
         chartSublayers.removeAll()
         
         let width = chartContainerView.bounds.width
         let height = chartContainerView.bounds.height
-        guard width > yAxisWidth, height > topPadding + bottomPadding else { return }
+        // 防止 bounds 尚未成型时执行无效绘制
+        guard width > yAxisWidth, height > topPadding + bottomPadding, !lines.isEmpty else { return }
         
-        // 1. 计算全局极值
         var globalMin: Double = Double.greatestFiniteMagnitude
         var globalMax: Double = -Double.greatestFiniteMagnitude
-        var maxDataCount: Int = 0 // 找出最长的那条线，用于划分 X 轴
         
+        // 🚨 修复 2：移除全局 maxDataCount，只计算极值
         for line in lines {
-            if line.data.count > maxDataCount { maxDataCount = line.data.count }
             if let minVal = line.data.min(), minVal < globalMin { globalMin = minVal }
             if let maxVal = line.data.max(), maxVal > globalMax { globalMax = maxVal }
         }
         
-        // 容错处理：没有数据或所有数据相等
         if globalMin == Double.greatestFiniteMagnitude { return }
         if globalMin == globalMax {
-            globalMax += 1.0 // 防止除以0
+            globalMax += 1.0
             globalMin -= 1.0
         }
         
-        // 可绘制区域的真实宽高
         let drawWidth = width - yAxisWidth - rightPadding
         let drawHeight = height - topPadding - bottomPadding
+        let valueRange = globalMax - globalMin
         
-        // 2. 绘制 Y 轴辅助网格和数值标签
         drawYAxisAndGrid(drawWidth: drawWidth, drawHeight: drawHeight, globalMin: globalMin, globalMax: globalMax)
         
         // 3. 绘制折线
-        guard maxDataCount > 1 else { return }
-        let stepX = drawWidth / CGFloat(maxDataCount - 1)
-        let valueRange = globalMax - globalMin
-        
         for line in lines {
+            let count = line.data.count
+            // 确保至少有两个点才能连成线
+            guard count > 1 else { continue }
+            
+            // 🚨 修复 2：每一条线独立计算自己的 stepX，确保无论多少个点都能铺满 X 轴
+            let stepX = drawWidth / CGFloat(count - 1)
+            
             let path = UIBezierPath()
             
             for (index, value) in line.data.enumerated() {
                 let x = yAxisWidth + CGFloat(index) * stepX
-                // 坐标映射：按比例计算 Y，注意 iOS 坐标系向下为正，所以用 drawHeight 减去
                 let yRatio = CGFloat((value - globalMin) / valueRange)
                 let y = topPadding + drawHeight - (yRatio * drawHeight)
                 
@@ -180,7 +183,6 @@ public class PTNativeTelemetryChartView: UIView {
                 }
             }
             
-            // 生成原生线条 Layer
             let shapeLayer = CAShapeLayer()
             shapeLayer.path = path.cgPath
             shapeLayer.strokeColor = line.color.cgColor
@@ -192,7 +194,7 @@ public class PTNativeTelemetryChartView: UIView {
             chartContainerView.layer.addSublayer(shapeLayer)
             chartSublayers.append(shapeLayer)
             
-            // 添加生长动画 (首次渲染时极具赛道科技感)
+            // 动画保留，赛道科技感非常棒
             let animation = CABasicAnimation(keyPath: "strokeEnd")
             animation.fromValue = 0.0
             animation.toValue = 1.0
@@ -206,15 +208,11 @@ public class PTNativeTelemetryChartView: UIView {
     private func drawYAxisAndGrid(drawWidth: CGFloat, drawHeight: CGFloat, globalMin: Double, globalMax: Double) {
         let range = globalMax - globalMin
         
-        // 循环划分为网格
         for i in 0...gridCount {
             let ratio = CGFloat(i) / CGFloat(gridCount)
             let value = globalMin + range * Double(ratio)
-            
-            // 从下往上画，i=0 是最底部，i=gridCount 是最顶部
             let y = topPadding + drawHeight - (ratio * drawHeight)
             
-            // 1. 画横向辅助线
             let gridPath = UIBezierPath()
             gridPath.move(to: CGPoint(x: yAxisWidth, y: y))
             gridPath.addLine(to: CGPoint(x: yAxisWidth + drawWidth, y: y))
@@ -223,24 +221,19 @@ public class PTNativeTelemetryChartView: UIView {
             gridLayer.path = gridPath.cgPath
             gridLayer.strokeColor = UIColor.white.withAlphaComponent(0.15).cgColor
             gridLayer.lineWidth = 1.0
-            // 设置虚线效果 (实线2像素，空白4像素)
             gridLayer.lineDashPattern = [2, 4]
             
             chartContainerView.layer.addSublayer(gridLayer)
             chartSublayers.append(gridLayer)
             
-            // 2. 画 Y 轴数字标签 (使用原生的 CATextLayer 保证滚动极度流畅)
             let textLayer = CATextLayer()
-            // 简单格式化数值 (如果数值较大可以取整，较小可以保留1位小数)
             textLayer.string = String(format: "%.1f", value)
             textLayer.font = UIFont.systemFont(ofSize: 10, weight: .regular)
             textLayer.fontSize = 10
             textLayer.foregroundColor = UIColor.lightGray.cgColor
             textLayer.alignmentMode = .right
-            // 关键抗锯齿设置
             textLayer.contentsScale = UIScreen.main.scale
             
-            // 计算文字位置 (在 Y 轴中心偏上一点，以便对齐网格线)
             let textHeight: CGFloat = 14
             textLayer.frame = CGRect(x: 0, y: y - textHeight / 2, width: yAxisWidth - 6, height: textHeight)
             

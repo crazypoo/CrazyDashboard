@@ -188,93 +188,121 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         view.backgroundColor = .black
-        view.addSubviews([dashBoadColorTitle,dashBoardColorButton,dashUniTitle,dashBoardUniButton,dashLanguageTitle,dashBoardLanguageButton,messageTestButton,disconnect,proButton,shortCut])
-        dashBoadColorTitle.snp.makeConstraints { make in
-            make.left.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.right.equalTo(self.view.snp.centerX)
-            make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing)
-        }
         
-        dashBoardColorButton.snp.makeConstraints { make in
-            make.left.equalTo(self.dashBoadColorTitle)
-            make.top.equalTo(self.dashBoadColorTitle.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-            make.width.equalTo(54)
-            make.height.equalTo(34)
-        }
+        // MARK: - 1. 创建现代 iOS 风格的设置卡片容器
+        let settingsContainer = UIView()
+        // 使用半透明白色作为暗黑模式下的卡片底色
+        settingsContainer.backgroundColor = UIColor.white.withAlphaComponent(0.08)
+        settingsContainer.layer.cornerRadius = 12
+        view.addSubview(settingsContainer)
         
-        dashUniTitle.snp.makeConstraints { make in
-            make.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.left.equalTo(self.view.snp.centerX)
-            make.top.equalTo(self.dashBoadColorTitle)
-        }
+        // 将设置项统一加入卡片容器
+        settingsContainer.addSubviews([dashBoadColorTitle, dashBoardColorButton,
+                                       dashUniTitle, dashBoardUniButton,
+                                       dashLanguageTitle, dashBoardLanguageButton])
         
-        dashBoardUniButton.snp.makeConstraints { make in
-            make.height.equalTo(self.dashBoardColorButton)
-            make.left.equalTo(self.dashUniTitle)
-            make.top.equalTo(self.dashUniTitle.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-            make.width.equalTo(self.dashBoardColorButton.sizeFor().width + 32)
-        }
+        // 其他独立组件直接加入主视图
+        view.addSubviews([shortCut, messageTestButton, proButton, disconnect])
         
-        dashLanguageTitle.snp.makeConstraints { make in
+        // MARK: - 2. 开始优雅的 SnapKit 布局
+        
+        // 卡片容器的整体位置
+        settingsContainer.snp.makeConstraints { make in
+            make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + 20)
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.top.equalTo(self.dashBoardColorButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
         }
         
+        // 第一行：仪表盘颜色 (左标题，右按钮)
+        dashBoadColorTitle.snp.makeConstraints { make in
+            make.left.equalToSuperview().inset(16)
+            make.centerY.equalTo(dashBoardColorButton)
+        }
+        dashBoardColorButton.snp.makeConstraints { make in
+            make.right.equalToSuperview().inset(16)
+            make.top.equalToSuperview().inset(16)
+            make.height.equalTo(34)
+            make.width.greaterThanOrEqualTo(54) // 允许按钮根据文字自动加宽
+        }
+        
+        // 第二行：单位设置
+        dashUniTitle.snp.makeConstraints { make in
+            make.left.equalToSuperview().inset(16)
+            make.centerY.equalTo(dashBoardUniButton)
+        }
+        dashBoardUniButton.snp.makeConstraints { make in
+            make.right.equalToSuperview().inset(16)
+            make.top.equalTo(dashBoardColorButton.snp.bottom).offset(20)
+            make.height.equalTo(34)
+            make.width.greaterThanOrEqualTo(54)
+        }
+        
+        // 第三行：语言设置
+        dashLanguageTitle.snp.makeConstraints { make in
+            make.left.equalToSuperview().inset(16)
+            make.centerY.equalTo(dashBoardLanguageButton)
+        }
         dashBoardLanguageButton.snp.makeConstraints { make in
-            make.height.left.equalTo(self.dashBoardColorButton)
-            make.top.equalTo(self.dashLanguageTitle.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-            make.width.equalTo(self.dashBoardLanguageButton.sizeFor().width + 32)
-        }
-                        
-        messageTestButton.snp.makeConstraints { make in
-            make.size.equalTo(34)
-            make.centerX.equalToSuperview()
-            make.top.equalTo(self.dashBoardLanguageButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.right.equalToSuperview().inset(16)
+            make.top.equalTo(dashBoardUniButton.snp.bottom).offset(20)
+            make.height.equalTo(34)
+            make.width.greaterThanOrEqualTo(dashBoardLanguageButton.sizeFor().width + CGFloat.GlobalItemSpacing * 2)
+            make.bottom.equalToSuperview().inset(16)
         }
         
+        // 快捷指令说明 (紧贴卡片下方)
+        shortCut.snp.makeConstraints { make in
+            make.top.equalTo(settingsContainer.snp.bottom).offset(20)
+            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+        }
+        
+        // 底部断开连接按钮 (紧贴底部安全区)
         disconnect.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.height.equalTo(44)
-            make.bottom.equalToSuperview().inset(CGFloat.kTabbarHeight_Total + CGFloat.GlobalItemSpacing)
+            make.bottom.equalToSuperview().inset(CGFloat.kTabbarHeight_Total + 20)
         }
         
+        // 底部高级功能按钮 (在断开连接按钮的上方)
         proButton.snp.makeConstraints { make in
-            make.left.right.height.equalTo(self.disconnect)
-            make.bottom.equalTo(self.disconnect.snp.top).offset(-CGFloat.GlobalItemSpacing)
+            make.left.right.height.equalTo(disconnect)
+            make.bottom.equalTo(disconnect.snp.top).offset(-16)
         }
         
-        shortCut.snp.makeConstraints { make in
-            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.top.equalTo(self.dashBoardLanguageButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+        // 隐藏的测试按钮
+        messageTestButton.snp.makeConstraints { make in
+            make.size.equalTo(34)
+            make.centerX.equalToSuperview()
+            make.bottom.equalTo(proButton.snp.top).offset(-20)
         }
+        
+        // MARK: - 3. 逻辑与样式装配
+        
         let shortAtt: ASAttributedString = """
-                    \(wrap: .embedding("""
-                    \(PTDashboardConfig.languageFunc(text: "Support shortcut"),.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
-                    \("xp400://checkFuel",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
-                    \("xp400://antiTheft?enable=true OR xp400://antiTheft?enable=false",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
-                    \("xp400://openHUD",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
-                    \("xp400://confirmGasStationRoute",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
-                    \("xp400://navigate?destination=",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
-                    """),.paragraph(.alignment(.left)))
-                    """
+        \(wrap: .embedding("""
+        \(PTDashboardConfig.languageFunc(text: "Support shortcut"),.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
+        \("xp400://checkFuel",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
+        \("xp400://antiTheft?enable=true OR xp400://antiTheft?enable=false",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
+        \("xp400://openHUD",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
+        \("xp400://confirmGasStationRoute",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
+        \("xp400://navigate?destination=",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
+        """),.paragraph(.alignment(.left)))
+        """
         shortCut.attributed.text = shortAtt
                 
         dashBoardColorButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashBoardUniButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashBoardLanguageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         disconnect.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
-        dashBoardColorButton.layoutIfNeeded()
-        dashBoardColorButton.viewCorner(radius: 4)
-        dashBoardUniButton.layoutIfNeeded()
-        dashBoardUniButton.viewCorner(radius: 4)
-        dashBoardLanguageButton.layoutIfNeeded()
-        dashBoardLanguageButton.viewCorner(radius: 4)
-        disconnect.layoutIfNeeded()
-        disconnect.viewCorner(radius: 4)
-        proButton.layoutIfNeeded()
-        proButton.viewCorner(radius: 4)
+        
+        // 利用异步队列保证 AutoLayout 已经完成 frame 计算，切圆角才不会发生偏移或失效
+        DispatchQueue.main.async {
+            self.dashBoardColorButton.viewCorner(radius: 4)
+            self.dashBoardUniButton.viewCorner(radius: 4)
+            self.dashBoardLanguageButton.viewCorner(radius: 4)
+            self.disconnect.viewCorner(radius: 4)
+            self.proButton.viewCorner(radius: 4)
+        }
 
         pt_observerLanguage {
             if self.vcDidLoad {
@@ -314,13 +342,10 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             self.dashBoardColorButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
             self.dashBoardUniButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
             self.dashBoardUniButton.setTitle(PTBluetoothServerManager.shared.latestData3?.unitType.getTypeName() ?? PTConfigUnit.metric.getTypeName(), for: .normal)
-            self.dashBoardUniButton.snp.updateConstraints { make in
-                make.width.equalTo(self.dashBoardColorButton.sizeFor().width + 32)
-            }
             self.dashBoardLanguageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
             self.dashBoardLanguageButton.setTitle(PTBluetoothServerManager.shared.latestData3?.languageType.getTypeName() ?? PTConfigLanguage.english.getTypeName(), for: .normal)
             self.dashBoardLanguageButton.snp.updateConstraints { make in
-                make.width.equalTo(self.dashBoardLanguageButton.sizeFor().width + 32)
+                make.width.greaterThanOrEqualTo(self.dashBoardLanguageButton.sizeFor().width + CGFloat.GlobalItemSpacing * 2)
             }
             self.dashBoadColorTitle.textColor = PTDashboardConfig.shared.appMainColor
             self.dashUniTitle.textColor = PTDashboardConfig.shared.appMainColor
