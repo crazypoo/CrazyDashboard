@@ -42,20 +42,22 @@ public class PTGlobalMapManager: NSObject {
     }
     
     /// 将 2D 地图贴到指定的容器视图上
-    public func attachAMapView(to container: UIView) {
+    public func attachAMapView(to container: UIView, delegate: MAMapViewDelegate?) {
         amapView.removeFromSuperview() // 从上一个界面的父视图中剥离
         container.addSubview(amapView)
         amapView.snp.remakeConstraints { make in
             make.edges.equalToSuperview()
         }
+        amapView.delegate = delegate
     }
     
     /// 将 3D 导航视图贴到指定的容器视图上
-    public func attachDriveView(to container: UIView) {
+    public func attachDriveView(to container: UIView, delegate: AMapNaviDriveViewDelegate?) {
         driveView.removeFromSuperview() // 从上一个界面的父视图中剥离
         container.addSubview(driveView)
         driveView.snp.remakeConstraints { make in
             make.edges.equalToSuperview()
         }
+        driveView.delegate = delegate
     }
 }

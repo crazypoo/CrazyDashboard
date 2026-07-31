@@ -89,8 +89,8 @@ class PTMapView: UIView, MAMapViewDelegate {
     
     func setupNavView() {
         mapView.removeFromSuperview()
-        PTGlobalMapManager.shared.attachAMapView(to: self)
-        PTGlobalMapManager.shared.attachDriveView(to: self)
+        PTGlobalMapManager.shared.attachAMapView(to: self,delegate: self)
+        PTGlobalMapManager.shared.attachDriveView(to: self,delegate: self)
         self.carPlayMapView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }

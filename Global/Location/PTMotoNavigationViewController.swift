@@ -427,13 +427,13 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     
     func navReset() {
         amapNormalView.removeFromSuperview()
-        PTGlobalMapManager.shared.attachAMapView(to: self.view)
+        PTGlobalMapManager.shared.attachAMapView(to: self.view,delegate: self)
         self.view.sendSubviewToBack(amapView)
         amapView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
 
-        PTGlobalMapManager.shared.attachDriveView(to: self.view)
+        PTGlobalMapManager.shared.attachDriveView(to: self.view,delegate: self)
         // 确保 startNavigationButton 等在最上方
         driveView.snp.remakeConstraints { make in
             make.left.right.equalToSuperview()
@@ -441,6 +441,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
             make.bottom.equalToSuperview().inset((CGFloat.GlobalItemSpacing + CGFloat.kTabbarHeight_Total))
         }
         
+        self.view.bringSubviewToFront(self.startNavigationButton)
         if !PTDashboardConfig.shared.naving {
             self.startNavigationButton.isHidden = true
         }

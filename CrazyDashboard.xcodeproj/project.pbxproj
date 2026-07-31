@@ -412,6 +412,7 @@
 			children = (
 				55986641301141090049684D /* PTAntiTheftManager.swift */,
 				5598667A301147FD0049684D /* PTCustomRouteManager.swift */,
+				55499CF93019D83800A1A2D9 /* PTDashboardBaseView.swift */,
 				55FE2965300CA5E0000E741F /* PTDashboardConfig.swift */,
 				55986832301330E00049684D /* PTDataCollectedViewController.swift */,
 				5598667D301148290049684D /* PTDiagnosticManager.swift */,
@@ -425,7 +426,6 @@
 				5598668330114DF00049684D /* PTRoutingManager.swift */,
 				5598663E301138A30049684D /* PTTripManager.swift */,
 				559866C13011A71E0049684D /* SpeechSynthesizer.swift */,
-				55499CF93019D83800A1A2D9 /* PTDashboardBaseView.swift */,
 			);
 			path = Global;
 			sourceTree = "<group>";
@@ -933,7 +933,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 15;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -1085,7 +1085,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 15;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;

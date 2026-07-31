@@ -381,87 +381,115 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         
     // MARK: - 状态回调
     @objc func handleDataNotification(_ notification: Notification) {
-        // 1. 将广播传递过来的 object 安全地向下转型为我们的数据模型
         if let data1 = notification.object as? PTDashboardData1 {
-            
             let tripKm = data1.tripKm
             let odoKm = data1.odoKm
             let fuelLevelPct = data1.fuelLevelPct
             let avgConsumptionLt = data1.avgConsumptionLt
             
-            // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
             DispatchQueue.main.async {
                 let sectionTrip = 0
                 let rows = self.detailCollection.getAllRows(in: sectionTrip)
-                rows[0].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_oil"),desc: "\(fuelLevelPct)%")
-                rows[2].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_little_trip"),desc: "\(PTDashboardConfig.shared.appShowMileageValueString(tripKm))\(PTDashboardConfig.shared.appShowUniLabel)")
-                rows[3].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_odo_trip"),desc: "\(PTDashboardConfig.shared.appShowMileageValueString(odoKm))\(PTDashboardConfig.shared.appShowUniLabel)")
-                rows[4].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_avg_oil"),desc: "\(avgConsumptionLt)L/\(PTDashboardConfig.shared.appShowMileageValueString(100))\(PTDashboardConfig.shared.appShowUniLabel)")
+                guard rows.count > 4 else { return }
+                
+                // 💡 优化点：对比当前 Cell 的旧数据，如果内容没变就不做无用渲染，彻底消除闪烁
+                let newFuelDesc = "\(fuelLevelPct)%"
+                let newTripDesc = "\(PTDashboardConfig.shared.appShowMileageValueString(tripKm))\(PTDashboardConfig.shared.appShowUniLabel)"
+                let newOdoDesc = "\(PTDashboardConfig.shared.appShowMileageValueString(odoKm))\(PTDashboardConfig.shared.appShowUniLabel)"
+                let newAvgDesc = "\(avgConsumptionLt)L/\(PTDashboardConfig.shared.appShowMileageValueString(100))\(PTDashboardConfig.shared.appShowUniLabel)"
+                
+                if let oldModel = rows[0].dataModel as? PTFusionCellModel, oldModel.desc == newFuelDesc {
+                    return // 数据无变化，直接拦截，防止闪烁！
+                }
+                
+                rows[0].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_oil"), desc: newFuelDesc)
+                rows[2].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_little_trip"), desc: newTripDesc)
+                rows[3].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_odo_trip"), desc: newOdoDesc)
+                rows[4].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_avg_oil"), desc: newAvgDesc)
+                
+                // 优先只刷新对应的可见 Cell，而不是粗暴地 reloadRows 整个 Section
                 self.detailCollection.reloadRows(rows, in: sectionTrip)
             }
         } else if let data2 = notification.object as? PTDashboardData2 {
-            
-            // 2. ✅ 正确做法：使用【点语法】直接访问属性名称
             let volt = data2.batteryVolt
             let temp = data2.outsideTempC
             let engineStatus = data2.engineStatus
             
-            // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
             DispatchQueue.main.async {
-
-                let sectionTrip = 1
-                let rows = self.detailCollection.getAllRows(in: sectionTrip)
-                rows[0].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_engine"),desc: PTDashboardLabels.engineStatusLabel(raw: engineStatus))
-                rows[2].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_tem"),desc: "\(temp)°C")
-                self.detailCollection.reloadRows(rows, in: sectionTrip)
-
+                let sectionMoto = 1
+                let rows = self.detailCollection.getAllRows(in: sectionMoto)
+                guard rows.count > 2 else { return }
+                
+                let newEngineDesc = PTDashboardLabels.engineStatusLabel(raw: engineStatus)
+                let newTempDesc = "\(temp)°C"
+                
+                if let oldModel = rows[0].dataModel as? PTFusionCellModel, oldModel.desc == newEngineDesc {
+                    // 即使文字没变，电压进度条可能变了，单独更新电压
+                    self.voltageLabel.modelSet = self.modelvoltageSet(currentValue: volt)
+                    return
+                }
+                
+                rows[0].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_engine"), desc: newEngineDesc)
+                rows[2].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_tem"), desc: newTempDesc)
+                
+                self.detailCollection.reloadRows(rows, in: sectionMoto)
                 self.voltageLabel.modelSet = self.modelvoltageSet(currentValue: volt)
             }
         } else if let data3 = notification.object as? PTDashboardData3 {
-            
             let autonomyKm = data3.autonomyKm
             let distToMaintenance = data3.distToMaintenance
             let language = data3.languageType.getTypeName()
             
-            // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
             DispatchQueue.main.async {
-                
-                if let row = self.detailCollection.getRow(at: IndexPath.SubSequence(row: 1, section: 0)) {
-                    row.dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_oil_trip"),desc: "\(PTDashboardConfig.shared.appShowMileageValueString(autonomyKm))\(PTDashboardConfig.shared.appShowUniLabel)")
-                    self.detailCollection.reloadRows([row], in: 0)
+                if let row = self.detailCollection.getRow(at: IndexPath(row: 1, section: 0)) {
+                    let newAutonomyDesc = "\(PTDashboardConfig.shared.appShowMileageValueString(autonomyKm))\(PTDashboardConfig.shared.appShowUniLabel)"
+                    if let oldModel = row.dataModel as? PTFusionCellModel, oldModel.desc != newAutonomyDesc {
+                        row.dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_oil_trip"), desc: newAutonomyDesc)
+                        self.detailCollection.reloadRows([row], in: 0)
+                    }
                 }
-                let sectionTrip = 1
-                let rows = self.detailCollection.getAllRows(in: sectionTrip)
-                rows[3].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_lan"),desc: language)
-                self.detailCollection.reloadRows(rows, in: sectionTrip)
-                                
-                self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(max: PTDashboardConfig.shared.appShowMileage(2500), current: PTDashboardConfig.shared.appShowMileage(Double(distToMaintenance)))
+                
+                let sectionMoto = 1
+                let rows = self.detailCollection.getAllRows(in: sectionMoto)
+                if rows.indices.contains(3) {
+                    let newLangDesc = language
+                    if let oldModel = rows[3].dataModel as? PTFusionCellModel, oldModel.desc != newLangDesc {
+                        rows[3].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_lan"), desc: newLangDesc)
+                        self.detailCollection.reloadRows([rows[3]], in: sectionMoto)
+                    }
+                }
+                
+                self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(
+                    max: PTDashboardConfig.shared.appShowMileage(2500),
+                    current: PTDashboardConfig.shared.appShowMileage(Double(distToMaintenance))
+                )
             }
         } else if let control = notification.object as? PTDashboardControl {
-            
             let vehicleSpeedKmh = control.vehicleSpeedKmh
             let engineRpm = control.engineRpm
 
-            // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
+            // 💡 车速和转速驱动的是 CoreAnimation 动画指针（PTSpeedometerView），本身不会闪烁，直接驱动即可
             DispatchQueue.main.async {
                 self.speedometer.updateSpeed(vehicleSpeedKmh)
                 self.speedometerReversed.updateSpeed(CGFloat(engineRpm))
                 self.speedometerReversed.applyShiftLightLogic(currentRpm: engineRpm)
             }
         } else if let abs = notification.object as? PTAbsStatus {
-            
             let absRaw = abs.absRaw
-
-            // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
             DispatchQueue.main.async {
-                let sectionTrip = 1
-                let rows = self.detailCollection.getAllRows(in: sectionTrip)
-                rows[1].dataModel = PTDashboardConfig.baseNormalCellModel(name: "ABS",desc: PTDashboardLabels.absLabel(raw: absRaw))
-                self.detailCollection.reloadRows(rows, in: sectionTrip)
+                let sectionMoto = 1
+                let rows = self.detailCollection.getAllRows(in: sectionMoto)
+                guard rows.indices.contains(1) else { return }
+                
+                let newAbsDesc = PTDashboardLabels.absLabel(raw: absRaw)
+                if let oldModel = rows[1].dataModel as? PTFusionCellModel, oldModel.desc != newAbsDesc {
+                    rows[1].dataModel = PTDashboardConfig.baseNormalCellModel(name: "ABS", desc: newAbsDesc)
+                    self.detailCollection.reloadRows([rows[1]], in: sectionMoto)
+                }
             }
         }
     }
-    
+
     @objc func dashBoardReload() {
         PTGCDManager.shared.runOnMain {
             self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(max: PTDashboardConfig.shared.appShowMileage(2500), current: PTDashboardConfig.shared.appShowMileage(Double(PTBluetoothServerManager.shared.latestData3?.distToMaintenance ?? 0)))
