@@ -12,6 +12,7 @@ import SnapKit
 
 class PTPTTViewController: PTMotoBaseViewController {
 
+    private var connectFriend:Int = 0
     // MARK: - UI 组件
     private let statusLabel = UILabel()
     private let peersCountLabel = UILabel()
@@ -71,7 +72,7 @@ class PTPTTViewController: PTMotoBaseViewController {
         }
         
         // 2. 附近车友数量
-        peersCountLabel.text = PTDashboardConfig.language(key: "ptt_ready_connect_count", 0)
+        peersCountLabel.text = PTDashboardConfig.language(key: "ptt_ready_connect_count", self.connectFriend)
         peersCountLabel.textColor = .systemGreen
         peersCountLabel.font = .appfont(size: 14,bold: true)
         view.addSubview(peersCountLabel)
@@ -97,6 +98,15 @@ class PTPTTViewController: PTMotoBaseViewController {
             make.center.equalToSuperview()
             make.width.height.equalTo(150) // 150x150 的巨型圆钮
         }
+        
+        pt_observerLanguage {
+            if self.vcDidLoad {
+                self.statusLabel.text = PTDashboardConfig.languageFunc(text: "ptt_ready_connect")
+                self.peersCountLabel.text = PTDashboardConfig.language(key: "ptt_ready_connect_count", self.connectFriend)
+                self.pttButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_push"), for: .normal)
+            }
+        }
+        vcDidLoad = true
     }
     
     // MARK: - 按键交互逻辑
@@ -138,6 +148,7 @@ extension PTPTTViewController: PTLocalIntercomDelegate {
     
     public func intercomManager(_ manager: PTLocalIntercomManager, didUpdatePeers count: Int) {
         DispatchQueue.main.async {
+            self.connectFriend = count
             self.peersCountLabel.text = PTDashboardConfig.language(key: "ptt_ready_connect_count", count)
             self.peersCountLabel.textColor = count > 0 ? .systemGreen : .gray
         }

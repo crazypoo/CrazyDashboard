@@ -14,7 +14,7 @@ import AttributedString
 import AMapNaviKit
 import SafeSFSymbols
 
-class PTTripDataCell: PTBaseNormalCell {
+class PTTripDataCell: PTBaseSwipeCell {
     static let ID = "PTTripDataCell"
     
     static let ChartHeight:CGFloat = 150
@@ -174,11 +174,11 @@ class PTTripDataCell: PTBaseNormalCell {
     public override init(frame: CGRect) {
         super.init(frame: frame)
         
-        contentView.backgroundColor = UIColor(white: 0.05, alpha: 1.0)
-        contentView.layer.cornerRadius = 12
-        contentView.clipsToBounds = true
+        contentContainer.backgroundColor = UIColor(white: 0.05, alpha: 1.0)
+        contentContainer.layer.cornerRadius = 12
+        contentContainer.clipsToBounds = true
         
-        contentView.addSubviews([timeLabel, thumbnailImageView, gpxButton, chartsStackView])
+        contentContainer.addSubviews([timeLabel, thumbnailImageView, gpxButton, chartsStackView])
         
         // 1. 地图缩略图 (右上角)
         thumbnailImageView.snp.makeConstraints { make in

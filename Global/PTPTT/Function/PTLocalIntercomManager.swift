@@ -30,9 +30,10 @@ public class PTLocalIntercomManager: NSObject {
     private var browser: MCNearbyServiceBrowser!
     
     // 音频引擎组件
-    private let audioEngine = AVAudioEngine()
-    private let playerNode = AVAudioPlayerNode()
-    private var audioFormat: AVAudioFormat!
+    private var audioEngine = AVAudioEngine()
+    private var playerNode = AVAudioPlayerNode()
+    private let commonFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 44100, channels: 1, interleaved: false)!
+    private var isTalking: Bool = false
     
     private override init() {
         self.myPeerId = MCPeerID(displayName: UIDevice.current.name)
@@ -40,9 +41,10 @@ public class PTLocalIntercomManager: NSObject {
         setupMultipeer()
         setupAudioSession()
         setupAudioEngine()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(handleAudioRouteChange), name: AVAudioSession.routeChangeNotification, object: nil)
     }
     
-    // MARK: - 1. 组网逻辑
     private func setupMultipeer() {
         session = MCSession(peer: myPeerId, securityIdentity: nil, encryptionPreference: .none)
         session.delegate = self
@@ -55,7 +57,7 @@ public class PTLocalIntercomManager: NSObject {
     public func startOfflineIntercom() {
         advertiser.startAdvertisingPeer()
         browser.startBrowsingForPeers()
-        delegate?.intercomManager(self, didChangeStatus: "正在扫描附近的车友...")
+        delegate?.intercomManager(self, didChangeStatus: PTDashboardConfig.languageFunc(text: "ptt_find_friend"))
     }
     
     public func stopOfflineIntercom() {
@@ -63,14 +65,13 @@ public class PTLocalIntercomManager: NSObject {
         browser.stopBrowsingForPeers()
         session.disconnect()
         audioEngine.stop()
-        delegate?.intercomManager(self, didChangeStatus: "对讲机已关闭")
+        delegate?.intercomManager(self, didChangeStatus: PTDashboardConfig.languageFunc(text: "ptt_close"))
     }
     
-    // MARK: - 2. 音频环境与引擎搭建
     private func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetoothHFP])
+            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker,.allowBluetoothA2DP, .allowBluetoothHFP])
             try session.setActive(true)
         } catch {
             PTNSLogConsole("音频Session配置失败: \(error)")
@@ -78,53 +79,115 @@ public class PTLocalIntercomManager: NSObject {
     }
     
     private func setupAudioEngine() {
+        audioEngine.stop() // 停掉旧的
+        
+        audioEngine = AVAudioEngine()
+        playerNode = AVAudioPlayerNode()
+        
         audioEngine.attach(playerNode)
-        let inputNode = audioEngine.inputNode
-        let outputNode = audioEngine.outputNode
-        audioFormat = inputNode.inputFormat(forBus: 0)
-        
-        audioEngine.connect(playerNode, to: outputNode, format: audioFormat)
-        
-        do {
-            try audioEngine.start()
-        } catch {
-            PTNSLogConsole("音频引擎启动失败: \(error)")
-        }
+        audioEngine.connect(playerNode, to: audioEngine.mainMixerNode, format: commonFormat)
+        restartEngineHard()
     }
     
-    // MARK: - 3. 对讲操作 (录音与发送)
+    private func restartEngineHard() {
+        do {
+            audioEngine.prepare()
+            try audioEngine.start()
+            PTNSLogConsole("🔄 [音频引擎] 成功从休克状态中硬重启！")
+        } catch {
+            PTNSLogConsole("❌ [音频引擎] 硬重启失败: \(error)")
+        }
+    }
+
+    @objc private func handleAudioRouteChange(notification: Notification) {
+        PTGCDManager.shared.runOnMain {
+            self.setupAudioEngine()
+        }
+    }
+
     public func startTalking() {
-        playerNode.pause() // 说话时禁止播放，防回音
+        guard !isTalking else { return }
+        
+        if !audioEngine.isRunning {
+            setupAudioEngine()
+        }
+        playerNode.pause()
         
         let inputNode = audioEngine.inputNode
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: audioFormat) { [weak self] (buffer, time) in
-            if let data = buffer.toData() {
-                self?.sendAudioData(data)
+        inputNode.removeTap(onBus: 0)
+        
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: nil) { [weak self] (buffer, time) in
+            guard let self = self else { return }
+            
+            if buffer.format == self.commonFormat {
+                if let data = buffer.toData() {
+                    self.sendAudioData(data)
+                }
+            } else {
+                if let convertedBuffer = self.convert(buffer: buffer, from: buffer.format, to: self.commonFormat),
+                   let data = convertedBuffer.toData() {
+                    self.sendAudioData(data)
+                }
             }
         }
-        delegate?.intercomManager(self, didChangeStatus: "正在广播语音...")
+        
+        isTalking = true
+        delegate?.intercomManager(self, didChangeStatus: PTDashboardConfig.languageFunc(text: "ptt_radio"))
     }
     
     public func stopTalking() {
+        guard isTalking else { return }
+        isTalking = false
+        
+        // 安全地移除 Tap
         audioEngine.inputNode.removeTap(onBus: 0)
+        
         playerNode.play() // 恢复接收状态
-        delegate?.intercomManager(self, didChangeStatus: session.connectedPeers.isEmpty ? "等待连接" : "已连接，随时对讲")
+        delegate?.intercomManager(self, didChangeStatus: session.connectedPeers.isEmpty ? PTDashboardConfig.languageFunc(text: "ptt_ready_connect") : PTDashboardConfig.languageFunc(text: "ptt_ready_connected"))
     }
-    
+
     private func sendAudioData(_ data: Data) {
         guard !session.connectedPeers.isEmpty else { return }
         try? session.send(data, toPeers: session.connectedPeers, with: .unreliable)
     }
     
-    // MARK: - 4. 接收与播放
     fileprivate func receiveAndPlay(data: Data) {
-        // 如果正在说话，过滤掉收到的声音
-        guard !audioEngine.inputNode.numberOfInputs.isMultiple(of: 0) else { return }
+        guard !isTalking else { return }
         
-        if let buffer = data.toPCMBuffer(format: audioFormat) {
+        // 用全网统一的 commonFormat 去解码对方发来的 Data
+        if let buffer = data.toPCMBuffer(format: commonFormat) {
             if !playerNode.isPlaying { playerNode.play() }
             playerNode.scheduleBuffer(buffer, completionHandler: nil)
         }
+    }
+    
+    // MARK: - 引擎内部音频重采样器
+    private func convert(buffer: AVAudioPCMBuffer, from inputFormat: AVAudioFormat, to outputFormat: AVAudioFormat) -> AVAudioPCMBuffer? {
+        guard let converter = AVAudioConverter(from: inputFormat, to: outputFormat) else {
+            return nil
+        }
+        
+        // 计算转换后的 Buffer 应该多大
+        let sampleRateRatio = outputFormat.sampleRate / inputFormat.sampleRate
+        let capacity = AVAudioFrameCount(Double(buffer.frameCapacity) * sampleRateRatio)
+        
+        guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: outputFormat, frameCapacity: capacity) else {
+            return nil
+        }
+        
+        var error: NSError? = nil
+        let inputBlock: AVAudioConverterInputBlock = { inNumPackets, outStatus in
+            outStatus.pointee = .haveData
+            return buffer
+        }
+        
+        // 执行重采样转换
+        let status = converter.convert(to: outputBuffer, error: &error, withInputFrom: inputBlock)
+        
+        if status == .haveData || status == .inputRanDry {
+            return outputBuffer
+        }
+        return nil
     }
 }
 
@@ -143,7 +206,7 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
         DispatchQueue.main.async {
             self.delegate?.intercomManager(self, didUpdatePeers: session.connectedPeers.count)
             if state == .connected {
-                self.delegate?.intercomManager(self, didChangeStatus: "已连接到: \(peerID.displayName)")
+                self.delegate?.intercomManager(self, didChangeStatus: PTDashboardConfig.language(key: "ptt_ready_connected_name", peerID.displayName))
             }
         }
     }

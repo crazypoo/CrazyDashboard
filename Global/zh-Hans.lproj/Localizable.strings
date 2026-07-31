@@ -92,3 +92,8 @@
 "vechicle_pitch" = "车身姿态 (Pitch)";
 "moto_down_title" = "侦测到摔车 / 倒地";
 "moto_down_msg" = "车辆姿态极度异常，请立即检查车辆与人员状况\n（扶正车身将自动解除警报）";
+"ptt_find_friend" = "正在扫描附近的车友...";
+"ptt_close" = "对讲机已关闭";
+"ptt_radio" = "正在广播语音...";
+"ptt_ready_connected" = "已连接，随时对讲";
+"ptt_ready_connected_name" = "已连接到: %@";

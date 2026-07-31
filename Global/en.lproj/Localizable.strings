@@ -92,3 +92,8 @@
 "vechicle_pitch" = "Vehicle Pitch";
 "moto_down_title" = "Detected car fall / fall to the ground";
 "moto_down_msg" = "The posture of the vehicle is extremely abnormal. Please check the condition of the vehicle and the personnel immediately\n (the correct body will automatically lift the alarm)";
+"ptt_find_friend" = "Nearby car friends are being scanned...";
+"ptt_close" = "The walkie-talkie is turned off.";
+"ptt_radio" = "Broadcast sound...";
+"ptt_ready_connected" = "Connected, intercom at any time";
+"ptt_ready_connected_name" = "Connected to: %@";

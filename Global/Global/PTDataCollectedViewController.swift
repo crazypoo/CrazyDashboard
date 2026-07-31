@@ -32,9 +32,23 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
         let view = PTCollectionView(viewConfig: collectionConfig)
         view.registerClassCells(classs: [PTTripDataCell.ID:PTTripDataCell.self])
         view.customerLayout = { sectionIndex,section in
-            
             let itemHeight:CGFloat = PTTripDataCell.lineMaxHeight * PTTripDataCell.lineCount + (PTTripDataCell.lineCount - 1) * PTTripDataCell.textLineSpacing + PTTripDataCell.ChartHeight * 8 + CGFloat.GlobalItemSpacing * 11
             return UICollectionView.girdCollectionLayout(data: section.rows, itemHeight: itemHeight,cellRowCount: 1,originalX: PTAppBaseConfig.share.defaultViewSpace,cellTrailingSpace: CGFloat.GlobalItemSpacing)
+        }
+        view.indexPathSwipe = { sModel,indexPath in
+            return true
+        }
+        view.swipeRightHandler = { collectionView,sectionModel,indexPath in
+            let deleteAction = PTSwipeAction(name: PTDashboardConfig.languageFunc(text: "Delete"),image: nil, nameColor:.white,nameFont:.appfont(size: 14), backgroundColor: .systemRed) { sender in
+                UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "Delete") + "?",okBtns: [PTDashboardConfig.languageFunc(text: "button_confirm")],cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
+                    let ready = PTTripManager.shared.tripHistory[indexPath.row]
+                    if let findIndex = PTTripManager.shared.tripHistory.firstIndex(where: { $0.startTime == ready.startTime }),let findRow = self.detailCollection.getRow(at: indexPath) {
+                        self.detailCollection.deleteRows([findRow], from: 0)
+                        PTTripManager.shared.deleteTrip(ready)
+                    }
+                })
+            }
+            return [deleteAction]
         }
         view.cellInCollection = { collectionView,sectionModel,indexPath in
             if let itemRow = sectionModel.rows?[indexPath.row] {

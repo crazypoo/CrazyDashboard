@@ -92,3 +92,8 @@
 "vechicle_pitch" = "Araç Sahası";
 "moto_down_title" = "Arabadan düştüğü / yere düştüğü tespit edildi";
 "moto_down_msg" = "Aracın duruşu son derece anormal. Lütfen aracın ve personelin durumunu derhal kontrol edin\n (doğru gövde alarmı otomatik olarak kaldıracaktır)";
+"ptt_find_friend" = "Yakındaki araba arkadaşları taranıyor...";
+"ptt_close" = "Telsiz kapalı.";
+"ptt_radio" = "Yayın sesi...";
+"ptt_ready_connected" = "Bağlı, herhangi bir zamanda interkom";
+"ptt_ready_connected_name" = "Bağlı: %@";
