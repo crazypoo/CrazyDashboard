@@ -75,6 +75,7 @@
 "ptt_push" = "按住说话";
 "ptt_ready_connect" = "准备连接。。。";
 "ptt_ready_connect_count" = "当前连接车友数: 0";
+"ptt_release" = "松开结束";
 "route_plan1" = "躲避拥堵";
 "route_plan2" = "避免收费";
 "route_plan3" = "不走高速";
@@ -89,4 +90,5 @@
 "tab_navigation" = "导航";
 "tab_setting" = "设置";
 "vechicle_pitch" = "车身姿态 (Pitch)";
-"ptt_release" = "松开结束";
+"moto_down_title" = "侦测到摔车 / 倒地";
+"moto_down_msg" = "车辆姿态极度异常，请立即检查车辆与人员状况\n（扶正车身将自动解除警报）";

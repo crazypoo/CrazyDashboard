@@ -75,6 +75,7 @@
 "ptt_push" = "Tutun ve konuşun.";
 "ptt_ready_connect" = "Bağlanmaya hazır olun...";
 "ptt_ready_connect_count" = "Şu anda bağlı araba arkadaşlarının sayısı: %d";
+"ptt_release" = "Bırakmak";
 "route_plan1" = "Trafik sıkışıklığından kaçının";
 "route_plan2" = "Şarj etmekten kaçının";
 "route_plan3" = "Otoyola girme.";
@@ -89,4 +90,5 @@
 "tab_navigation" = "Seyrüsefer";
 "tab_setting" = "Batma";
 "vechicle_pitch" = "Araç Sahası";
-"ptt_release" = "Bırakmak";
+"moto_down_title" = "Arabadan düştüğü / yere düştüğü tespit edildi";
+"moto_down_msg" = "Aracın duruşu son derece anormal. Lütfen aracın ve personelin durumunu derhal kontrol edin\n (doğru gövde alarmı otomatik olarak kaldıracaktır)";

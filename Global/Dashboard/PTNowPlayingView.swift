@@ -111,7 +111,7 @@ public class PTNowPlayingView: UIView {
         view.imageSize = .init(width: 24, height: 24)
         view.midSpacing = 0
         view.setTitleColor(.white, state: .normal)
-        view.setTitleFont(UIFont.systemFont(ofSize: 14), state: .normal)
+        view.setTitleFont(.appfont(size: 14,bold:true), state: .normal)
         view.setImage(UIImage(.bolt.circle).withTintColor(.white, renderingMode: .alwaysOriginal), state: .normal)
         view.isUserInteractionEnabled = false
         return view

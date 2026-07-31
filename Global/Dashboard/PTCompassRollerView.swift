@@ -7,6 +7,7 @@
 
 import UIKit
 import SnapKit
+import PooTools
 
 @objcMembers
 public class PTCompassRollerView: PTDashboardBaseView {
@@ -69,7 +70,7 @@ public class PTCompassRollerView: PTDashboardBaseView {
         // 4. 底部固定的精确度数标签 (例如: "351° 北")
         degreeLabel.textColor = .white
         degreeLabel.textAlignment = .center
-        degreeLabel.font = UIFont.systemFont(ofSize: 15, weight: .bold)
+        degreeLabel.font = .appfont(size: 15,bold:true)
         degreeLabel.text = "0° 北"
         addSubview(degreeLabel)
         degreeLabel.snp.makeConstraints { make in
@@ -107,7 +108,7 @@ public class PTCompassRollerView: PTDashboardBaseView {
                     // 文字用稍微暗一点的灰色，凸显底部的纯白精确度数
                     label.textColor = UIColor.white.withAlphaComponent(0.7)
                     label.textAlignment = .center
-                    label.font = UIFont.systemFont(ofSize: 13, weight: .medium)
+                    label.font = .appfont(size: 13,bold:true)
                     scaleContainer.addSubview(label)
                     
                     label.snp.makeConstraints { make in

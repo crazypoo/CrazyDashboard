@@ -52,6 +52,12 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
         // 视图即将消失（比如返回上一页）时：强制恢复为竖屏
         PTRotationManager.shared.rotationToPortrait()
         
+        if let scene = SceneDelegate.sceneDelegate() as? SceneDelegate {
+            scene.weatherOverlay.snp.remakeConstraints { make in
+                make.edges.equalToSuperview()
+            }
+        }
+        
         if !PTDashboardConfig.shared.blueConnected {
             PTTripManager.shared.handleDisconnect()
         }
@@ -101,6 +107,12 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
     
     override func viewControllerOrientation(_ orientationMask: UIInterfaceOrientationMask) {
         super.viewControllerOrientation(orientationMask)
+        
+        if let scene = SceneDelegate.sceneDelegate() as? SceneDelegate {
+            scene.weatherOverlay.snp.remakeConstraints { make in
+                make.edges.equalToSuperview()
+            }
+        }
         
         view.addSubviews([dashBoard])
         dashBoard.snp.makeConstraints { make in

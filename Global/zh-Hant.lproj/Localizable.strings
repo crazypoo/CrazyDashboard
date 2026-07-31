@@ -75,6 +75,7 @@
 "ptt_push" = "按住並說話。";
 "ptt_ready_connect" = "準備好連線...";
 "ptt_ready_connect_count" = "當前連線的汽車朋友數量：%d";
+"ptt_release" = "松出結束";
 "route_plan1" = "避免交通堵塞";
 "route_plan2" = "避免收費";
 "route_plan3" = "不走高速";
@@ -89,4 +90,5 @@
 "tab_navigation" = "導航";
 "tab_setting" = "設置";
 "vechicle_pitch" = "車身姿態(Pitch)";
-"ptt_release" = "松出結束";
+"moto_down_title" = "偵測到摔車 / 倒地";
+"moto_down_msg" = "車輛的姿態非常不正常。 請立即檢查車輛和人員的狀況\n（正確的車身將自動解除警報）";

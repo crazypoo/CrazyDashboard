@@ -7,6 +7,8 @@
 
 import UIKit
 import SnapKit
+import PooTools
+import SafeSFSymbols
 
 @objcMembers
 public class PTCrashWarningView: UIView {
@@ -30,22 +32,22 @@ public class PTCrashWarningView: UIView {
         
         // 2. 警告图标
         // 这里使用了系统原生的三角形感叹号图标，非常标准化
-        warningIcon.image = UIImage(systemName: "exclamationmark.triangle.fill")
+        warningIcon.image = UIImage(.exclamationmark.triangleFill)
         warningIcon.tintColor = .white
         warningIcon.contentMode = .scaleAspectFit
         addSubview(warningIcon)
         
         // 3. 巨型主标题
-        titleLabel.text = "🚨 侦测到摔车 / 倒地 🚨"
+        titleLabel.text = "🚨 \(PTDashboardConfig.languageFunc(text: "moto_down_title")) 🚨"
         titleLabel.textColor = .white
-        titleLabel.font = UIFont.systemFont(ofSize: 32, weight: .heavy)
+        titleLabel.font = .appfont(size: 32,bold:true)
         titleLabel.textAlignment = .center
         addSubview(titleLabel)
         
         // 4. 副标题说明
-        subtitleLabel.text = "车辆姿态极度异常，请立即检查车辆与人员状况\n（扶正车身将自动解除警报）"
+        subtitleLabel.text = PTDashboardConfig.languageFunc(text: "moto_down_msg")
         subtitleLabel.textColor = UIColor.white.withAlphaComponent(0.9)
-        subtitleLabel.font = UIFont.systemFont(ofSize: 18, weight: .medium)
+        subtitleLabel.font = .appfont(size: 18,bold:true)
         subtitleLabel.textAlignment = .center
         subtitleLabel.numberOfLines = 0
         addSubview(subtitleLabel)
@@ -61,13 +63,13 @@ public class PTCrashWarningView: UIView {
         titleLabel.snp.makeConstraints { make in
             make.top.equalTo(warningIcon.snp.bottom).offset(20)
             make.centerX.equalToSuperview()
-            make.left.right.equalToSuperview().inset(20)
+            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
         }
         
         subtitleLabel.snp.makeConstraints { make in
-            make.top.equalTo(titleLabel.snp.bottom).offset(15)
+            make.top.equalTo(titleLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
             make.centerX.equalToSuperview()
-            make.left.right.equalToSuperview().inset(20)
+            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
         }
         
         // 启动危险呼吸动画

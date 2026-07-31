@@ -8,6 +8,7 @@
 import UIKit
 import SnapKit
 import SwifterSwift
+import PooTools
 
 @objcMembers
 public class PTBumpMeterView: UIView {
@@ -31,11 +32,11 @@ public class PTBumpMeterView: UIView {
     private func setupUI() {
         titleLabel.text = PTDashboardConfig.languageFunc(text: "shake_value")
         titleLabel.textColor = .lightGray
-        titleLabel.font = UIFont.systemFont(ofSize: 12, weight: .bold)
+        titleLabel.font = .appfont(size: 12,bold:true)
         
         valueLabel.text = "0.00"
         valueLabel.textColor = .white
-        valueLabel.font = UIFont.systemFont(ofSize: 12, weight: .bold)
+        valueLabel.font = .appfont(size: 12,bold:true)
         valueLabel.textAlignment = .right
         
         progressBar.trackTintColor = UIColor.darkGray.withAlphaComponent(0.5)

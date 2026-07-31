@@ -8,6 +8,7 @@
 import UIKit
 import SnapKit
 import SwifterSwift
+import PooTools
 
 @objcMembers
 public class PTLeanAngleView: UIView {
@@ -91,17 +92,17 @@ public class PTLeanAngleView: UIView {
         
         // 4. 文字标签配置
         currentAngleLabel.textColor = .white
-        currentAngleLabel.font = UIFont.systemFont(ofSize: 22, weight: .bold)
+        currentAngleLabel.font = .appfont(size: 22,bold:true)
         currentAngleLabel.textAlignment = .center
         currentAngleLabel.text = "0°"
         
         maxLeftLabel.textColor = .lightGray
-        maxLeftLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
+        maxLeftLabel.font = .appfont(size: 12,bold:true)
         maxLeftLabel.textAlignment = .left
         maxLeftLabel.text = "MAX L: 0°"
         
         maxRightLabel.textColor = .lightGray
-        maxRightLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
+        maxRightLabel.font = .appfont(size: 12,bold:true)
         maxRightLabel.textAlignment = .right
         maxRightLabel.text = "MAX R: 0°"
         

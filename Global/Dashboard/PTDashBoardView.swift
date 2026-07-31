@@ -103,7 +103,6 @@ class PTDashBoardView: UIView {
     // MARK: - UI 排版
     private func setupDashboardUI() {
         
-        // 🌟 核心优化 2：严格管理 Z-Index (添加视图的顺序决定了层级关系)
         // 1. 底层：地图
         // 2. 中层：各种仪表盘
         // 3. 顶层：警告图层

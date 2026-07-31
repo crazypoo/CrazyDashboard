@@ -29,6 +29,7 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
     
     public static let shared = PTLocationEngine()
     
+    private var lastWidgetUpdateTime: Date?
     // 🌟 核心替换：使用高德定位管理器
     private let locationManager = AMapLocationManager()
     
@@ -180,6 +181,41 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
         PTWeatherManager.shared.fetchCurrentWeather(for: location)
         if currentMode == .antiTheft {
             return
+        }
+        
+        if PTDashboardConfig.shared.blueConnected {
+            let now = Date()
+            let shouldUpdateWidget: Bool
+            
+            if let lastTime = lastWidgetUpdateTime {
+                // 计算距离上次更新过去了几秒 (10分钟 = 600秒)
+                shouldUpdateWidget = now.timeIntervalSince(lastTime) >= 600.0
+            } else {
+                // 首次连接或刚启动时，直接允许更新
+                shouldUpdateWidget = true
+            }
+            
+            if shouldUpdateWidget {
+                // 刷新时间戳记录
+                lastWidgetUpdateTime = now
+                
+                // 获取最新的机车数据
+                let currentFuel = PTBluetoothServerManager.shared.latestData1?.fuelLevelPct ?? 0
+                let currentTrip = PTBluetoothServerManager.shared.latestData1?.tripKm ?? 0
+                let isConnected = PTDashboardConfig.shared.blueConnected
+                
+                // 调用数据管理器，推送到小组件！
+                PTWidgetDataManager.shared.updateWidgetData(
+                    fuelLevel: currentFuel,
+                    tripKm: currentTrip,
+                    isConnected: isConnected,
+                    parkedLat: location.coordinate.latitude,
+                    parkedLon: location.coordinate.longitude,
+                    address: reGeocode.formattedAddress
+                )
+                
+                PTNSLogConsole("⏱️ [小组件同步] 10分钟定时刷新触发成功")
+            }
         }
         
         currentAltitude = location.altitude
