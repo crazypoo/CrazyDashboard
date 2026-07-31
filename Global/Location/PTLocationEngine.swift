@@ -63,6 +63,8 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
         locationManager.allowsBackgroundLocationUpdates = true
         // 针对机车业务，不进行连续的逆地理编码（省电、省流量）
         locationManager.locatingWithReGeocode = false
+        locationManager.locationTimeout = 10   // 定位超时时间设为 10 秒
+        locationManager.reGeocodeTimeout = 10  // 逆地理编码超时设为 10 秒
         applyModeConfiguration()
     }
     
@@ -140,12 +142,22 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
     /// 专供防盗系统使用的后台单次快速定位
     public func requestSingleLocationForAntiTheft(completion: @escaping (CLLocation?) -> Void) {
         // 高德单次定位 API
+        if isTracking, let recentLocation = self.lastLocation {
+            PTNSLogConsole("⚡️ [单次定位] 当前正在连续定位，直接返回最新缓存位置")
+            completion(recentLocation)
+            return
+        }
+        PTNSLogConsole("📡 [单次定位] 正在唤醒 GPS 硬件获取最新单次位置...")
         locationManager.requestLocation(withReGeocode: false, completionBlock: { (location, reGeocode, error) in
             if let error = error {
                 PTNSLogConsole("❌ [单次定位] 获取防盗位置失败: \(error.localizedDescription)")
                 completion(nil)
             } else {
-                completion(location)
+                if let validLocation = location {
+                    PTNSLogConsole("✅ [单次定位] 获取成功: 纬度 \(validLocation.coordinate.latitude), 经度 \(validLocation.coordinate.longitude)")
+                    // 顺手更新一下全局缓存
+                    self.lastLocation = validLocation
+                }
             }
         })
     }

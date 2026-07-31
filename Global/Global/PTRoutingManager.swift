@@ -97,12 +97,14 @@ public class PTRoutingManager: NSObject {
                     // 模拟触发低油量广播，唤醒 HUD 弹窗
                     let promptText = PTDashboardConfig.language(key: "short_cut_fuel", latestData1.fuelLevelPct)
                     SpeechSynthesizer.Shared.speak(promptText)
-                    NotificationCenter.default.post(name: MotorcycleLowFuelActionRequired, object: promptText)
+                    PTFuelRoutingManager.shared.confirmAndSendGasStationRoute()
                 } else {
                     PTMessagePusher.pushToDashboard(title: PTDashboardConfig.languageFunc(text: "short_cut_fuel_title"), body: PTDashboardConfig.language(key: "short_cut_fuel_msg", latestData1.fuelLevelPct))
                 }
             } else {
-                PTNSLogConsole("⚠️ [路由引擎] 蓝牙未连接，无法查询实时油量。")
+                PTGCDManager.shared.delayOnMain(time: 0.55) {
+                    PTProgressHUD.show(text: "⚠️ [路由引擎] 蓝牙未连接，无法查询实时油量。")
+                }
             }
             
         case .toggleAntiTheft(let enable):
@@ -125,14 +127,17 @@ public class PTRoutingManager: NSObject {
             // 直接调用你写好的确认下发方法
             PTFuelRoutingManager.shared.confirmAndSendGasStationRoute()
             // 贴心小优化：触发语音反馈，让戴着头盔的骑手知道指令已经成功执行了
-            SpeechSynthesizer.Shared.speak(PTDashboardConfig.languageFunc(text: "button_done"))
         case .navigateTo(let destination):
-            NotificationCenter.default.post(name: MotorcycleSearchAndNavigate, object: destination)
             if let vc = PTUtils.getCurrentVC() as? PTMotoBaseViewController,let tabbar = vc.tabBarController as? PTMotoBaseTabbarController {
                 tabbar.ptCustomBar.select(1)
+                PTGCDManager.shared.delayOnMain(time: 0.55) {
+                    NotificationCenter.default.post(name: MotorcycleSearchAndNavigate, object: destination)
+                }
             }
         case .unknown:
-            PTNSLogConsole("❓ [路由引擎] 收到无法解析的外部指令")
+            PTGCDManager.shared.delayOnMain(time: 0.55) {
+                PTProgressHUD.show(text: "❓ [路由引擎] 收到无法解析的外部指令")
+            }
         }
     }
 }

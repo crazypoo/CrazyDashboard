@@ -11,7 +11,6 @@ import AMapSearchKit
 import PooTools
 
 // 🚨 新增：定义一个新的广播通知，专门用于唤起 UI 的手动确认
-public let MotorcycleLowFuelActionRequired = NSNotification.Name("MotorcycleLowFuelActionRequired")
 public let MotorcycleStartRealNavigation = NSNotification.Name("MotorcycleStartRealNavigation")
 
 @objcMembers
@@ -19,6 +18,7 @@ public class PTFuelRoutingManager: NSObject, AMapSearchDelegate {
     
     public static let shared = PTFuelRoutingManager()
     
+    private var findFuelStationSelf:Bool = false
     private let lowFuelThreshold: Int = 15
     private var hasTriggeredLowFuel: Bool = false
     private lazy var searchAPI: AMapSearchAPI = {
@@ -61,6 +61,10 @@ public class PTFuelRoutingManager: NSObject, AMapSearchDelegate {
     
     private func startSearchingNearbyGasStation() {
         // 复用高德单次定位
+        PTLocationEngine.shared.switchEngineMode(to: .riding)
+        if !PTDashboardConfig.shared.blueConnected {
+            PTLocationEngine.shared.startTracking()
+        }
         PTMOTOParkingManager.shared.requestSingleLocationForAntiTheft { [weak self] location in
             guard let self = self, let currentLoc = location else { return }
             self.currentLocationForSearch = currentLoc
@@ -92,8 +96,29 @@ public class PTFuelRoutingManager: NSObject, AMapSearchDelegate {
         
         let promptText = "油量告急，点击导航至: \(stationName) (\(Int(distanceMeters))米)"
         
-        NotificationCenter.default.post(name: MotorcycleLowFuelActionRequired, object: promptText)
         PTNSLogConsole("⛽️ [加油管家] 已找到加油站，正在等待骑手手动确认...")
+        if findFuelStationSelf {
+            guard let coordinate = pendingGasStationCoordinate, let name = pendingGasStationName else {
+                PTNSLogConsole("⚠️ [加油管家] 没有缓存的救援坐标可发送")
+                return
+            }
+            
+            // 🚨 完美衔接：发送全局通知，把坐标和名字丢给高德导航引擎去真实规划！
+            
+            if let vc = PTUtils.getCurrentVC() as? PTMotoBaseViewController,let tabbar = vc.tabBarController as? PTMotoBaseTabbarController {
+                tabbar.ptCustomBar.select(1)
+                PTGCDManager.shared.delayOnMain(time: 0.55, block: {
+                    let targetDict: [String: Any] = ["coordinate": coordinate, "title": name]
+                    NotificationCenter.default.post(name: MotorcycleStartRealNavigation, object: targetDict)
+                })
+            }
+            
+            // 发送完毕后清空缓存
+            pendingGasStationCoordinate = nil
+            pendingGasStationName = nil
+            findFuelStationSelf = false
+            PTNSLogConsole("🚀 [加油管家] 骑手已确认！已唤醒高德地图真实导航引擎！")
+        }
     }
     
     public func aMapSearchRequest(_ request: Any!, didFailWithError error: Error!) {
@@ -103,23 +128,7 @@ public class PTFuelRoutingManager: NSObject, AMapSearchDelegate {
     // MARK: - 🚨 暴露给 UI 调用的确认接口
     /// 当骑手在 HUD 上点击了提示容器后，调用此方法真正下发导航
     public func confirmAndSendGasStationRoute() {
-        guard let coordinate = pendingGasStationCoordinate, let name = pendingGasStationName else {
-            PTNSLogConsole("⚠️ [加油管家] 没有缓存的救援坐标可发送")
-            return
-        }
-        
-        // 🚨 完美衔接：发送全局通知，把坐标和名字丢给高德导航引擎去真实规划！
-        let targetDict: [String: Any] = ["coordinate": coordinate, "title": name]
-        NotificationCenter.default.post(name: MotorcycleStartRealNavigation, object: targetDict)
-        
-        if let vc = PTUtils.getCurrentVC() as? PTMotoBaseViewController,let tabbar = vc.tabBarController as? PTMotoBaseTabbarController {
-            tabbar.ptCustomBar.select(1)
-        }
-        
-        // 发送完毕后清空缓存
-        pendingGasStationCoordinate = nil
-        pendingGasStationName = nil
-        
-        PTNSLogConsole("🚀 [加油管家] 骑手已确认！已唤醒高德地图真实导航引擎！")
+        findFuelStationSelf = true
+        startSearchingNearbyGasStation()
     }
 }
