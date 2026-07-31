@@ -38,11 +38,6 @@ def shared_pods
   pod 'AMapSearch-NO-IDFA'
   pod 'AMapLocation-NO-IDFA'
   pod 'AMapNavi-NO-IDFA'
-#  pod 'AMap3DMap-NO-IDFA'
-end
-
-target 'CrazyDashboard' do
-  shared_pods
 end
 
 target 'PTSpeed' do
