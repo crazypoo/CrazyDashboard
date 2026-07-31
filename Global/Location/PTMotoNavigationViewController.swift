@@ -234,30 +234,97 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         view.bounds = .init(origin: .zero, size: .init(width: 100, height: PTAppBaseConfig.share.navBarButtonSize))
         return view
     }()
+    
+    private lazy var floatingToolbarBackground: UIVisualEffectView = {
+        let blurEffect = UIBlurEffect(style: .systemThinMaterialDark)
+        let view = UIVisualEffectView(effect: blurEffect)
+        view.layer.cornerRadius = 16
+        view.clipsToBounds = true
+        // 增加精美的原生阴影
+        view.layer.shadowColor = UIColor.black.cgColor
+        view.layer.shadowOffset = CGSize(width: 0, height: 4)
+        view.layer.shadowOpacity = 0.3
+        view.layer.shadowRadius = 8
+        view.layer.masksToBounds = false
+        return view
+    }()
+
+    private lazy var toolbarStack: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.distribution = .fillEqually
+        stack.alignment = .center
+        stack.spacing = 2.5// 紧凑排列
+        return stack
+    }()
+
     private lazy var searchResultsTableView:UITableView = {
         let view = UITableView()
         view.delegate = self
         view.dataSource = self
         view.isHidden = true // 默认隐藏
         view.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+        view.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.9) // 半透明背景
+        // Apple 风卡片
+        view.layer.cornerRadius = 16
+        view.layer.shadowColor = UIColor.black.cgColor
+        view.layer.shadowOpacity = 0.15
+        view.layer.shadowRadius = 10
+        view.layer.shadowOffset = CGSize(width: 0, height: 5)
         return view
     }()
     private lazy var homeButton:PTBaseButton = {
         let view = PTBaseButton(type: .system)
-        view.setTitle("🏠", for: .normal)
+        view.setImage(UIImage(.house.fill), for: .normal)
         view.addActionHandlers(handler: { _ in
             self.routeToSavedLocation(key: "PT_HomeLocation")
         })
+        view.bounds = .init(origin: .zero, size: .init(width: self.homeSize, height: self.homeSize))
         return view
     }()
     private lazy var officeButton:PTBaseButton = {
         let view = PTBaseButton(type: .system)
-        view.setTitle("🏢", for: .normal)
+        view.setImage(UIImage(.briefcase.fill), for: .normal)
         view.addActionHandlers(handler: { _ in
             self.routeToSavedLocation(key: "PT_OfficeLocation")
         })
+        view.bounds = .init(origin: .zero, size: .init(width: self.homeSize, height: self.homeSize))
         return view
     }()
+    private lazy var locationButton: PTBaseButton = {
+        let view = PTBaseButton(type: .system)
+        // 使用 SF Symbols 的定位图标
+        view.setImage(UIImage(systemName: "location.fill")?.withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
+        view.addActionHandlers(handler: { [weak self] _ in
+            self?.backToCurrentLocation()
+        })
+        view.bounds = .init(origin: .zero, size: .init(width: self.homeSize, height: self.homeSize))
+        return view
+    }()
+    
+    private func backToCurrentLocation() {
+        // 确保我们有有效的坐标数据
+        guard userCurrentLocation.latitude != 0, userCurrentLocation.longitude != 0 else {
+            return
+        }
+        
+        let coordinate = CLLocationCoordinate2D(latitude: Double(userCurrentLocation.latitude),
+                                                longitude: Double(userCurrentLocation.longitude))
+        
+        // 方案 1：强制将地图模式切回跟随状态
+        if amapView.userTrackingMode != .follow {
+            amapView.setUserTrackingMode(.follow, animated: true)
+        }
+        // 方案 2：直接平滑移动地图中心并恢复合适的缩放级别
+        amapView.setCenter(coordinate, animated: true)
+        amapView.setZoomLevel(16.5, animated: true)
+        
+        // 给出轻微的触觉反馈，提升操作手感
+        let impact = UIImpactFeedbackGenerator(style: .light)
+        impact.prepare()
+        impact.impactOccurred()
+    }
+
     private lazy var startNavigationButton:UIButton = {
         let view = UIButton(type: .system)
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -378,6 +445,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
             PTMotoUserDefaultStruct.NavMute = !sender.isSelected
         })
         view.isSelected = !PTMotoUserDefaultStruct.NavMute
+        view.bounds = .init(origin: .zero, size: .init(width: self.homeSize, height: self.homeSize))
         return view
     }()
     
@@ -390,7 +458,8 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
                 self.updateMapModeForCarPlayConnection(isActive: PTCarPlayManager.isCarPlayActive)
             })
         })
-        view.isHidden = true
+        view.isEnabled = false
+        view.bounds = .init(origin: .zero, size: .init(width: self.homeSize, height: self.homeSize))
         return view
     }()
     
@@ -504,14 +573,14 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         if isActive {
             if PTDashboardConfig.shared.naving {
                 mapSet()
-                stopCarplyButton.isHidden = false
+                stopCarplyButton.isEnabled = true
             } else {
                 navReset()
-                stopCarplyButton.isHidden = true
+                stopCarplyButton.isEnabled = false
             }
         } else {
             navReset()
-            stopCarplyButton.isHidden = true
+            stopCarplyButton.isEnabled = false
         }
     }
     
@@ -575,30 +644,38 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     private func setupUI() {
         NotificationCenter.default.addObserver(self, selector: #selector(dashBoardReload), name: MotorcycleDashBoardChange, object: nil)
 
-        view.addSubviews([homeButton,officeButton,searchResultsTableView,startNavigationButton,preferenceView,routePlantList,muteButton,stopCarplyButton])
-        
-        homeButton.snp.makeConstraints { make in
-            make.size.equalTo(self.homeSize)
-            make.left.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing)
-        }
-        
-        officeButton.snp.makeConstraints { make in
-            make.size.top.equalTo(self.homeButton)
-            make.left.equalTo(self.homeButton.snp.right).offset(CGFloat.GlobalItemSpacing)
-        }
-        homeButton.layoutIfNeeded()
-        officeButton.layoutIfNeeded()
-        homeButton.viewCorner(radius: self.homeSize / 2)
-        officeButton.viewCorner(radius: self.homeSize / 2)
+        view.addSubview(floatingToolbarBackground)
+        floatingToolbarBackground.contentView.addSubview(toolbarStack)
+        toolbarStack.addArrangedSubview(homeButton)
+        toolbarStack.addArrangedSubview(officeButton)
+        toolbarStack.addArrangedSubview(muteButton)
+        toolbarStack.addArrangedSubview(stopCarplyButton)
+        toolbarStack.addArrangedSubview(locationButton)
 
+        floatingToolbarBackground.snp.makeConstraints { make in
+            make.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing)
+            make.width.equalTo(self.homeSize)
+            // 高度由内部 StackView 撑开
+        }
+        
+        toolbarStack.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+        
+        for btn in toolbarStack.arrangedSubviews {
+            btn.snp.makeConstraints { make in
+                make.size.equalTo(btn.bounds.size)
+            }
+        }
+
+        view.addSubviews([searchResultsTableView,startNavigationButton,preferenceView,routePlantList])
+        
         searchResultsTableView.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.top.equalTo(homeButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-            make.height.equalTo(250.adapter)
+            make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing)
+            make.height.equalTo(300.adapter)
         }
-        searchResultsTableView.layoutIfNeeded()
-        searchResultsTableView.viewCorner(radius: 16)
         
         startNavigationButton.snp.makeConstraints { make in
             make.bottom.equalToSuperview().inset(CGFloat.kTabbarHeight_Total + CGFloat.GlobalItemSpacing)
@@ -607,26 +684,16 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         }
         
         preferenceView.snp.makeConstraints { make in
-            make.height.top.equalTo(self.homeButton)
-            make.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.left.equalTo(self.officeButton.snp.right).offset(CGFloat.GlobalItemSpacing)
+            make.top.equalTo(self.floatingToolbarBackground)
+            make.height.equalTo(self.homeSize)
+            make.left.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.right.equalTo(self.floatingToolbarBackground.snp.left).offset(-CGFloat.GlobalItemSpacing)
         }
         
         routePlantList.snp.makeConstraints { make in
             make.left.right.equalToSuperview()
             make.bottom.equalTo(self.startNavigationButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
             make.height.equalTo(self.routePlantItemHeight + CGFloat.GlobalItemSpacing * 2)
-        }
-        
-        muteButton.snp.makeConstraints { make in
-            make.size.equalTo(self.homeSize)
-            make.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.top.equalTo(self.preferenceView.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-        }
-        
-        stopCarplyButton.snp.makeConstraints { make in
-            make.size.top.equalTo(self.muteButton)
-            make.right.equalTo(self.muteButton.snp.left).offset(-CGFloat.GlobalItemSpacing)
         }
     }
     

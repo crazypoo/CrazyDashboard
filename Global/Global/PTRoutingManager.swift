@@ -89,9 +89,6 @@ public class PTRoutingManager: NSObject {
     private func execute(intent: PTAppIntent) {
         switch intent {
         case .checkFuel:
-            PTNSLogConsole("🗣️ [路由引擎] 收到 Siri 指令：检查油量")
-            // 获取当前最新的油量数据 (这里需要你的数据管家提供最新数据的读取接口)
-            // 如果处于低油量，直接触发你之前写好的高德搜索
             if let latestData1 = PTBluetoothServerManager.shared.latestData1 {
                 if latestData1.fuelLevelPct <= 15 {
                     // 模拟触发低油量广播，唤醒 HUD 弹窗
@@ -119,14 +116,12 @@ public class PTRoutingManager: NSObject {
             }
             
         case .openHUD:
-            PTNSLogConsole("🗣️ [路由引擎] 收到 Siri 指令：开启 HUD")
-            let vc = PTDashBoardBaseBoardViewController()
-            PTUtils.getCurrentVC()?.navigationController?.pushViewController(vc, animated: true)
+            PTGCDManager.shared.delayOnMain(time: 0.55) {
+                let vc = PTDashBoardBaseBoardViewController()
+                PTUtils.getCurrentVC()?.navigationController?.pushViewController(vc, animated: true)
+            }
         case .confirmGasStationRoute:
-            PTNSLogConsole("🗣️ [路由引擎] 收到 Siri 指令：确认前往加油站")
-            // 直接调用你写好的确认下发方法
             PTFuelRoutingManager.shared.confirmAndSendGasStationRoute()
-            // 贴心小优化：触发语音反馈，让戴着头盔的骑手知道指令已经成功执行了
         case .navigateTo(let destination):
             if let vc = PTUtils.getCurrentVC() as? PTMotoBaseViewController,let tabbar = vc.tabBarController as? PTMotoBaseTabbarController {
                 tabbar.ptCustomBar.select(1)
