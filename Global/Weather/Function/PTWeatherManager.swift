@@ -24,7 +24,7 @@ class PTWeatherManager {
     private var lastFetchLocation: CLLocation?
 
     /// 时间阈值：15分钟 (15 * 60 秒)。15分钟内不再重复请求。
-    private let timeThreshold: TimeInterval = 15 * 60
+    private let timeThreshold: TimeInterval = 30 * 60
     /// 距离阈值：10000米 (10公里)。如果机车跨区行驶超过10公里，即使没到15分钟也重新请求。
     private let distanceThreshold: CLLocationDistance = 10000
 
@@ -106,7 +106,6 @@ class PTWeatherManager {
                 let parameter = WeatherParameter(location: locationString)
                 
                 let response =  try await QWeather.instance.weatherNow(parameter)
-                PTNSLogConsole(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\(response.now.icon)")
                 self.applyQWeatherAnimation(iconCode: response.now.icon)
             } catch QWeatherError.errorResponse(let error) {
                 PTNSLogConsole(error)

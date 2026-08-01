@@ -20,6 +20,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
 
     let buttonCount:Int = 4
     let stackHeight:CGFloat = 54.adapter
+    let headerHeight:CGFloat = 32
     
     var isFirstLoad:Bool = true
     
@@ -125,7 +126,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             return nil
         }
         view.customerLayout = { sectionIndex,section in
-            return UICollectionView.girdCollectionLayout(data: section.rows, itemHeight: 64,cellRowCount: 2,originalX: PTAppBaseConfig.share.defaultViewSpace,cellLeadingSpace: CGFloat.GlobalItemSpacing,cellTrailingSpace: CGFloat.GlobalItemSpacing)
+            return UICollectionView.girdCollectionLayout(data: section.rows, itemHeight: 60,cellRowCount: 2,originalX: PTAppBaseConfig.share.defaultViewSpace,cellLeadingSpace: CGFloat.GlobalItemSpacing,cellTrailingSpace: CGFloat.GlobalItemSpacing)
         }
         view.cellInCollection = { collectionView,sectionModel,indexPath in
             if let itemRow = sectionModel.rows?[indexPath.row] {
@@ -133,12 +134,12 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                 if let cell = getCell as? PTFusionCell,let cellModel = itemRow.dataModel as? PTFusionCellModel {
                     cell.cellModel = cellModel
                     cell.backgroundColor = .white.withAlphaComponent(0.1)
+                    cell.dataContent.layoutIfNeeded()
+                    cell.dataContent.viewCorner(radius: 4)
                     return cell
                 }
             }
             return nil
-        }
-        view.collectionDidSelect = { collectionView,sectionModel,indexPath in
         }
         return view
     }()
@@ -366,14 +367,14 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             let row = PTRows(ID:PTFusionCell.ID,dataModel: value)
             return row
         }
-        let sectionTrip = PTSection(headerTitle: PTDashboardConfig.languageFunc(text: "casa_card_distance_title"),headerID: .TRIPSECTION,headerHeight: 44,rows: rowsTrip)
+        let sectionTrip = PTSection(headerTitle: PTDashboardConfig.languageFunc(text: "casa_card_distance_title"),headerID: .TRIPSECTION,headerHeight: self.headerHeight,rows: rowsTrip)
         sections.append(sectionTrip)
         
         let rowsMoto = motoModels.map { value in
             let row = PTRows(ID:PTFusionCell.ID,dataModel: value)
             return row
         }
-        let sectionMoto = PTSection(headerTitle: PTDashboardConfig.languageFunc(text: "MOTO"),headerID: .MOTOSECTION,headerHeight: 44,rows: rowsMoto)
+        let sectionMoto = PTSection(headerTitle: PTDashboardConfig.languageFunc(text: "MOTO"),headerID: .MOTOSECTION,headerHeight: self.headerHeight,rows: rowsMoto)
         sections.append(sectionMoto)
 
         detailCollection.showCollectionDetail(collectionData: sections,finishTask: finishTask)

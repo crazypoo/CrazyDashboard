@@ -77,7 +77,7 @@ class PTBLEConnectViewController: PTMotoBaseViewController,@unchecked Sendable {
     
     lazy var globalButton:PTBaseButton = {
         let view = PTBaseButton(type: .custom)
-        view.setImage(UIImage(.globe), for: .normal)
+        view.setImage(UIImage(.globe).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
         view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers(handler: { _ in
             PTDashboardConfig.globalLanguageAlert()
