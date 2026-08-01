@@ -9,8 +9,64 @@ import UIKit
 import PooTools
 import SwifterSwift
 import SnapKit
+import MultipeerConnectivity
+
+class PTPeerAvatarView: UIView {
+    let peerID: MCPeerID
+    private let nameLabel = UILabel()
+    
+    init(peerID: MCPeerID) {
+        self.peerID = peerID
+        super.init(frame: .zero)
+        
+        backgroundColor = UIColor.white.withAlphaComponent(0.1)
+        layer.cornerRadius = 25 // 50x50 的圆形
+        
+        // 截取名字的前两个字当头像显示
+        let displayName = peerID.displayName
+        nameLabel.text = String(displayName.prefix(2)).uppercased()
+        nameLabel.textColor = .white
+        nameLabel.font = .appfont(size: 16, bold: true)
+        nameLabel.textAlignment = .center
+        
+        addSubview(nameLabel)
+        nameLabel.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+    }
+    
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    
+    // 控制光晕特效的方法
+    func setSpeakingGlow(_ isSpeaking: Bool) {
+        if isSpeaking {
+            // 说话时：亮起绿色荧光，卡片稍微放大
+            UIView.animate(withDuration: 0.2) {
+                self.layer.shadowColor = UIColor.systemGreen.cgColor
+                self.layer.shadowRadius = 12
+                self.layer.shadowOpacity = 1.0
+                self.layer.shadowOffset = .zero
+                self.layer.masksToBounds = false
+                self.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
+                self.backgroundColor = UIColor.systemGreen.withAlphaComponent(0.3)
+            }
+        } else {
+            // 不说话时：恢复原状
+            UIView.animate(withDuration: 0.3) {
+                self.layer.shadowOpacity = 0.0
+                self.transform = .identity
+                self.backgroundColor = UIColor.white.withAlphaComponent(0.1)
+            }
+        }
+    }
+}
 
 class PTPTTViewController: PTMotoBaseViewController {
+
+    private let peersScrollView = UIScrollView()
+    private let peersStackView = UIStackView()
+    // 追踪当前渲染在屏幕上的头像
+    private var peerViews: [MCPeerID: PTPeerAvatarView] = [:]
 
     private var connectFriend:Int = 0
     // MARK: - UI 组件
@@ -89,7 +145,7 @@ class PTPTTViewController: PTMotoBaseViewController {
     // MARK: - UI 布局设置 (SnapKit)
     private func setupUI() {
         view.backgroundColor = .black // 极客暗黑风
-        
+                
         // 1. 状态文本
         statusLabel.text = PTDashboardConfig.languageFunc(text: "ptt_ready_connect")
         statusLabel.textColor = .white
@@ -115,6 +171,25 @@ class PTPTTViewController: PTMotoBaseViewController {
             make.left.right.equalTo(self.statusLabel)
         }
         
+        peersScrollView.showsHorizontalScrollIndicator = false
+        view.addSubview(peersScrollView)
+        
+        peersStackView.axis = .horizontal
+        peersStackView.spacing = 20
+        peersStackView.alignment = .center
+        peersScrollView.addSubview(peersStackView)
+        
+        peersScrollView.snp.makeConstraints { make in
+            make.top.equalTo(peersCountLabel.snp.bottom).offset(20)
+            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.height.equalTo(70) // 容纳发光动画的高度
+        }
+        
+        peersStackView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+            make.height.equalToSuperview()
+        }
+
         // 3. 巨大的 PTT 按键
         pttButton.backgroundColor = .systemOrange
         pttButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_push"), for: .normal)
@@ -129,7 +204,7 @@ class PTPTTViewController: PTMotoBaseViewController {
         view.addSubview(pttButton)
         pttButton.snp.makeConstraints { make in
             make.centerX.equalToSuperview()
-            make.top.equalTo(self.peersCountLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing * 3)
+            make.top.equalTo(peersScrollView.snp.bottom).offset(CGFloat.GlobalItemSpacing * 3)
             make.width.height.equalTo(tapButtonSize)
         }
         
@@ -271,6 +346,36 @@ extension PTPTTViewController: PTLocalIntercomDelegate {
             self.connectFriend = count
             self.peersCountLabel.text = PTDashboardConfig.language(key: "ptt_ready_connect_count", count)
             self.peersCountLabel.textColor = count > 0 ? .systemGreen : .gray
+        }
+    }
+    
+    public func intercomManager(_ manager: PTLocalIntercomManager, didUpdatePeerList peers: [MCPeerID]) {
+        DispatchQueue.main.async {
+            // 清理旧的头像
+            self.peersStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+            self.peerViews.removeAll()
+            
+            // 为每一个车友生成一个新的圆形头像
+            for peer in peers {
+                let avatar = PTPeerAvatarView(peerID: peer)
+                avatar.snp.makeConstraints { make in
+                    make.width.height.equalTo(50) // 头像基础大小
+                }
+                self.peersStackView.addArrangedSubview(avatar)
+                self.peerViews[peer] = avatar
+            }
+        }
+    }
+    
+    public func intercomManager(_ manager: PTLocalIntercomManager, speakingPeersChanged speakingPeers: [MCPeerID]) {
+        DispatchQueue.main.async {
+            let speakingSet = Set(speakingPeers)
+            
+            for (peer, avatarView) in self.peerViews {
+                let isSpeaking = speakingSet.contains(peer)
+                // 开/关发光动画
+                avatarView.setSpeakingGlow(isSpeaking)
+            }
         }
     }
 }

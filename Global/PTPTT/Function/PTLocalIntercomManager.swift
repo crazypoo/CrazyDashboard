@@ -16,6 +16,8 @@ public let PTIntercomGlobalStatusChanged = NSNotification.Name("PTIntercomGlobal
 public protocol PTLocalIntercomDelegate: AnyObject {
     func intercomManager(_ manager: PTLocalIntercomManager, didChangeStatus status: String)
     func intercomManager(_ manager: PTLocalIntercomManager, didUpdatePeers count: Int)
+    func intercomManager(_ manager: PTLocalIntercomManager, didUpdatePeerList peers: [MCPeerID])
+    func intercomManager(_ manager: PTLocalIntercomManager, speakingPeersChanged speakingPeers: [MCPeerID])
 }
 
 @objcMembers
@@ -49,6 +51,10 @@ public class PTLocalIntercomManager: NSObject {
     
     public var micVolumeMultiplier: Float = 3.0
     
+    private var lastReceivedAudio: [MCPeerID: Date] = [:]
+    private var currentSpeakingPeers: Set<MCPeerID> = []
+    private var speakingTimer: Timer?
+
     private override init() {
         self.myPeerId = MCPeerID(displayName: UIDevice.current.name)
         super.init()
@@ -78,6 +84,7 @@ public class PTLocalIntercomManager: NSObject {
         
         currentStatusText = PTDashboardConfig.languageFunc(text: "ptt_find_friend")
         updateStatusAndBroadcast(currentStatusText)
+        startSpeakingDetector()
     }
     
     public func stopOfflineIntercom() {
@@ -96,8 +103,42 @@ public class PTLocalIntercomManager: NSObject {
         
         currentStatusText = PTDashboardConfig.languageFunc(text: "ptt_close")
         updateStatusAndBroadcast(currentStatusText)
+        stopSpeakingDetector()
     }
     
+    private func startSpeakingDetector() {
+        stopSpeakingDetector()
+        // 每 0.2 秒轮询一次，判断有没有人很久没发声音了
+        speakingTimer = Timer.scheduledTimer(timeInterval: 0.2, target: self, selector: #selector(checkSpeakingStatus), userInfo: nil, repeats: true)
+    }
+    
+    private func stopSpeakingDetector() {
+        speakingTimer?.invalidate()
+        speakingTimer = nil
+        lastReceivedAudio.removeAll()
+        currentSpeakingPeers.removeAll()
+    }
+    
+    @objc private func checkSpeakingStatus() {
+        let now = Date()
+        var newSpeaking: Set<MCPeerID> = []
+        
+        for (peer, lastTime) in lastReceivedAudio {
+            // 如果在过去 0.5 秒内收到过他的声音，判定为正在说话！
+            if now.timeIntervalSince(lastTime) < 0.5 {
+                newSpeaking.insert(peer)
+            }
+        }
+        
+        // 状态发生改变时，通知 UI
+        if newSpeaking != currentSpeakingPeers {
+            currentSpeakingPeers = newSpeaking
+            DispatchQueue.main.async {
+                self.delegate?.intercomManager(self, speakingPeersChanged: Array(self.currentSpeakingPeers))
+            }
+        }
+    }
+
     private func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
@@ -333,7 +374,13 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
     
     public func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
         DispatchQueue.main.async {
-            self.delegate?.intercomManager(self, didUpdatePeers: session.connectedPeers.count)
+            var safePeersList = session.connectedPeers
+            if state == .notConnected {
+                safePeersList.removeAll { $0 == peerID }
+            }
+
+            self.delegate?.intercomManager(self, didUpdatePeers: safePeersList.count)
+            self.delegate?.intercomManager(self, didUpdatePeerList: safePeersList)
             switch state {
             case .connected:
                 // 有车友加入网络
@@ -343,6 +390,7 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
                 // 有车友掉线或主动离开网络
                 PTNSLogConsole("❌ [组网] \(peerID.displayName) 已断开连接")
                 // 检查车队里是否还有其他人
+                self.lastReceivedAudio.removeValue(forKey: peerID) // 清理掉线的人
                 if session.connectedPeers.isEmpty {
                     // 车队空了，恢复到等待状态
                     self.updateStatusAndBroadcast(PTDashboardConfig.languageFunc(text: "ptt_ready_connect"))
@@ -363,6 +411,7 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
     }
     
     public func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
+        lastReceivedAudio[peerID] = Date()
         self.receiveAndPlay(data: data)
     }
     
