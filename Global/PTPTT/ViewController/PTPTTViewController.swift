@@ -29,10 +29,39 @@ class PTPTTViewController: PTMotoBaseViewController {
         view.clipsToBounds = false
         return view
     }()
-                                    
+             
+    private lazy var modeSwitchButton: UIButton = {
+        let btn = UIButton(type: .system)
+        btn.setTitle(PTDashboardConfig.languageFunc(text: "ptt_change_hand_free"), for: .normal)
+        btn.setTitleColor(.white, for: .normal)
+        btn.titleLabel?.font = .appfont(size: 16)
+        btn.backgroundColor = .darkGray
+        btn.layer.cornerRadius = 8
+        btn.addTarget(self, action: #selector(togglePTTMode), for: .touchUpInside)
+        return btn
+    }()
+    
+    private lazy var powerButton: UIButton = {
+        let btn = UIButton(type: .system)
+        btn.setTitle(PTDashboardConfig.languageFunc(text: "ptt_in"), for: .normal)
+        btn.setTitleColor(.white, for: .normal)
+        btn.titleLabel?.font = .appfont(size: 16, bold: true)
+        btn.backgroundColor = PTDashboardConfig.shared.appMainColor
+        btn.layer.cornerRadius = 8
+        btn.addTarget(self, action: #selector(togglePower), for: .touchUpInside)
+        return btn
+    }()
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
+        
+        self.connectFriend = PTLocalIntercomManager.shared.connectedPeersCount
+        self.peersCountLabel.text = PTDashboardConfig.language(key: "ptt_ready_connect_count", self.connectFriend)
+        self.peersCountLabel.textColor = self.connectFriend > 0 ? .systemGreen : .gray
+        self.statusLabel.text = PTLocalIntercomManager.shared.currentStatusText
+        
+        updateUIState()
     }
 
     public override func viewDidLoad() {
@@ -47,6 +76,7 @@ class PTPTTViewController: PTMotoBaseViewController {
         super.viewDidAppear(animated)
         // 界面出现时，自动开启局域网搜索
         PTLocalIntercomManager.shared.startOfflineIntercom()
+        updateUIState()
     }
     
     public override func viewDidDisappear(_ animated: Bool) {
@@ -99,6 +129,22 @@ class PTPTTViewController: PTMotoBaseViewController {
             make.width.height.equalTo(150) // 150x150 的巨型圆钮
         }
         
+        view.addSubview(modeSwitchButton)
+        modeSwitchButton.snp.makeConstraints { make in
+            make.top.equalTo(pttButton.snp.bottom).offset(40)
+            make.centerX.equalToSuperview()
+            make.width.equalTo(200)
+            make.height.equalTo(44)
+        }
+
+        view.addSubview(powerButton)
+        powerButton.snp.makeConstraints { make in
+            make.top.equalTo(modeSwitchButton.snp.bottom).offset(20)
+            make.centerX.equalToSuperview()
+            make.width.equalTo(200)
+            make.height.equalTo(44)
+        }
+
         pt_observerLanguage {
             if self.vcDidLoad {
                 self.statusLabel.text = PTDashboardConfig.languageFunc(text: "ptt_ready_connect")
@@ -109,6 +155,44 @@ class PTPTTViewController: PTMotoBaseViewController {
         vcDidLoad = true
     }
     
+    @objc private func togglePTTMode() {
+        let isCurrentlyHandsFree = PTLocalIntercomManager.shared.isHandsFreeMode
+        
+        // 翻转状态
+        let willBeHandsFree = !isCurrentlyHandsFree
+        PTLocalIntercomManager.shared.toggleHandsFreeMode(isOn: willBeHandsFree)
+        
+        if willBeHandsFree {
+            // 进入免提模式
+            modeSwitchButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_change_ptt"), for: .normal)
+            modeSwitchButton.backgroundColor = .systemGreen
+            
+            // 禁用大圆钮（因为已经免提了）
+            pttButton.isEnabled = false
+            pttButton.backgroundColor = .systemGray
+            pttButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_hand_free_listening"), for: .normal)
+        } else {
+            // 恢复按键对讲模式
+            modeSwitchButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_change_hand_free"), for: .normal)
+            modeSwitchButton.backgroundColor = .darkGray
+            
+            pttButton.isEnabled = true
+            pttButton.backgroundColor = .systemOrange
+            pttButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_push"), for: .normal)
+        }
+    }
+    
+    @objc private func togglePower() {
+        if PTLocalIntercomManager.shared.isRunning {
+            // 主动关机
+            PTLocalIntercomManager.shared.stopOfflineIntercom()
+        } else {
+            // 主动开机
+            PTLocalIntercomManager.shared.startOfflineIntercom()
+        }
+        updateUIState()
+    }
+
     // MARK: - 按键交互逻辑
     @objc private func pttButtonTouchDown() {
         hapticGenerator.impactOccurred() // 物理震动反馈
@@ -134,6 +218,39 @@ class PTPTTViewController: PTMotoBaseViewController {
         
         // 触发底层引擎停止
         PTLocalIntercomManager.shared.stopTalking()
+    }
+    
+    private func updateUIState() {
+        let isRunning = PTLocalIntercomManager.shared.isRunning
+        let isHandsFree = PTLocalIntercomManager.shared.isHandsFreeMode
+        
+        if isRunning {
+            powerButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_out"), for: .normal)
+            powerButton.backgroundColor = .systemRed
+            modeSwitchButton.isHidden = false
+            pttButton.isHidden = false
+            
+            // 恢复免提状态下的 UI
+            if isHandsFree {
+                modeSwitchButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_change_ptt"), for: .normal)
+                modeSwitchButton.backgroundColor = .systemGreen
+                pttButton.isEnabled = false
+                pttButton.backgroundColor = .systemGray
+                pttButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_hand_free_listening"), for: .normal)
+            } else {
+                modeSwitchButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_change_hand_free"), for: .normal)
+                modeSwitchButton.backgroundColor = .darkGray
+                pttButton.isEnabled = true
+                pttButton.backgroundColor = .systemOrange
+                pttButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_push"), for: .normal)
+            }
+        } else {
+            // 引擎没开，禁用这些按钮
+            powerButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_in"), for: .normal)
+            powerButton.backgroundColor = PTDashboardConfig.shared.appMainColor
+            modeSwitchButton.isHidden = true
+            pttButton.isHidden = true
+        }
     }
 }
 

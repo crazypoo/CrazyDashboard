@@ -17,7 +17,6 @@
 "button_pro" = "Professional mode";
 "casa_batt" = "Voltage";
 "casa_bluetooth_status" = "Bluetooth connection status";
-"casa_card_avg_oil" = "Avg fuel";
 "casa_card_distance_title" = "Mileage-related";
 "casa_card_engine" = "Engine status";
 "casa_card_lan" = "Dashboard language";
@@ -97,3 +96,8 @@
 "ptt_radio" = "Broadcast sound...";
 "ptt_ready_connected" = "Connected, intercom at any time";
 "ptt_ready_connected_name" = "Connected to: %@";
+"ptt_hand_free_listening" = "In the monitoring of the handless mode...";
+"ptt_in" = "Join the team intercom";
+"ptt_out" = "Exit the team intercom";
+"ptt_change_hand_free" = "Switch to: free voice control mode";
+"ptt_change_ptt" = "Switch to: key intercom mode";

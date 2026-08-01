@@ -17,7 +17,6 @@
 "button_pro" = "专业模式";
 "casa_batt" = "电压";
 "casa_bluetooth_status" = "蓝牙连接状态";
-"casa_card_avg_oil" = "平均油耗";
 "casa_card_distance_title" = "里程相关";
 "casa_card_engine" = "发动机状态";
 "casa_card_lan" = "仪表盘语言";
@@ -97,3 +96,8 @@
 "ptt_radio" = "正在广播语音...";
 "ptt_ready_connected" = "已连接，随时对讲";
 "ptt_ready_connected_name" = "已连接到: %@";
+"ptt_hand_free_listening" = "免提模式监控中...";
+"ptt_in" = "加入车队对讲";
+"ptt_out" = "退出车队对讲";
+"ptt_change_hand_free" = "切换为：免提声控模式";
+"ptt_change_ptt" = "切换为：按键对讲模式";

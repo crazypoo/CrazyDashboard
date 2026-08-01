@@ -302,6 +302,13 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         return view
     }()
     
+    private lazy var globalMicStatusButton: PTBaseButton = {
+        let view = PTBaseButton(type: .system)
+        view.setImage(UIImage(.mic.slashFill).withTintColor(.gray, renderingMode: .alwaysOriginal), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: self.homeSize, height: self.homeSize))
+        return view
+    }()
+    
     private func backToCurrentLocation() {
         // 确保我们有有效的坐标数据
         guard userCurrentLocation.latitude != 0, userCurrentLocation.longitude != 0 else {
@@ -545,7 +552,8 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         
         NotificationCenter.default.addObserver(self, selector: #selector(carplayIsInBackground), name: PTCarPlayDidEnterBackgroundNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(carplayIsNotInBackground), name: PTCarPlayDidBecomeActiveNotification, object: nil)
-
+        NotificationCenter.default.addObserver(self, selector: #selector(handleIntercomStatusChange(_:)), name: PTIntercomGlobalStatusChanged, object: nil)
+        
         NotificationCenter.default.addObserver(forName: UIScene.willConnectNotification, object: nil, queue: .main) { [weak self] notification in
             if let scene = notification.object as? UIScene, scene.session.role == .carTemplateApplication {
                 PTNSLogConsole("🔗 CarPlay 刚刚连接！让手机界面做出反应")
@@ -559,8 +567,46 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
                 self?.updateMapModeForCarPlayConnection(isActive: false)
             }
         }
+        
+        updateMicStatusUI(isRunning: PTLocalIntercomManager.shared.isRunning,
+                                  isHandsFree: PTLocalIntercomManager.shared.isHandsFreeMode,
+                                  isTalking: PTLocalIntercomManager.shared.isTalking)
     }
     
+    @objc private func handleIntercomStatusChange(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let isRunning = userInfo["isRunning"] as? Bool,
+              let isHandsFree = userInfo["isHandsFree"] as? Bool,
+              let isTalking = userInfo["isTalking"] as? Bool else { return }
+        
+        updateMicStatusUI(isRunning: isRunning, isHandsFree: isHandsFree, isTalking: isTalking)
+    }
+    
+    private func updateMicStatusUI(isRunning: Bool, isHandsFree: Bool, isTalking: Bool) {
+        // 如果对讲机根本没开        
+        if isTalking {
+            // 正在讲话 (按下了按键，或者免提检测到了声音) -> 醒目的绿色麦克风
+            globalMicStatusButton.setImage(UIImage(.mic.fill).withTintColor(.systemGreen, renderingMode: .alwaysOriginal), for: .normal)
+            
+            // 可以加个轻微的缩放动画，提示正在收音
+            UIView.animate(withDuration: 0.2, animations: {
+                self.globalMicStatusButton.transform = CGAffineTransform(scaleX: 1.2, y: 1.2)
+            })
+        } else {
+            UIView.animate(withDuration: 0.2, animations: {
+                self.globalMicStatusButton.transform = .identity
+            })
+            
+            if isHandsFree {
+                // 免提静默监听中 -> 橙色麦克风
+                globalMicStatusButton.setImage(UIImage(.mic.fill).withTintColor(.systemOrange, renderingMode: .alwaysOriginal), for: .normal)
+            } else {
+                // 普通按键模式，当前没按 -> 白色麦克风，带斜杠
+                globalMicStatusButton.setImage(UIImage(.mic.slashFill).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
+            }
+        }
+    }
+
     func carplayIsInBackground() {
         updateMapModeForCarPlayConnection(isActive: false)
     }
@@ -651,6 +697,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         toolbarStack.addArrangedSubview(muteButton)
         toolbarStack.addArrangedSubview(stopCarplyButton)
         toolbarStack.addArrangedSubview(locationButton)
+        toolbarStack.addArrangedSubview(globalMicStatusButton)
 
         floatingToolbarBackground.snp.makeConstraints { make in
             make.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)

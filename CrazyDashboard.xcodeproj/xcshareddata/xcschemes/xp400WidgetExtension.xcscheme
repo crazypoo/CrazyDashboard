@@ -30,7 +30,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "5577E6372FD657030004733F"
-               BuildableName = "PTSpeed.app"
+               BuildableName = "XP400Ride.app"
                ReferencedContainer = "container:CrazyDashboard.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -70,7 +70,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "5577E6372FD657030004733F"
-            BuildableName = "PTSpeed.app"
+            BuildableName = "XP400Ride.app"
             ReferencedContainer = "container:CrazyDashboard.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -105,7 +105,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "5577E6372FD657030004733F"
-            BuildableName = "PTSpeed.app"
+            BuildableName = "XP400Ride.app"
             ReferencedContainer = "container:CrazyDashboard.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

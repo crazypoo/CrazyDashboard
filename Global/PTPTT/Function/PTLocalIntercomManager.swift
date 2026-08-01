@@ -10,6 +10,8 @@ import MultipeerConnectivity
 import AVFoundation
 import PooTools
 
+public let PTIntercomGlobalStatusChanged = NSNotification.Name("PTIntercomGlobalStatusChanged")
+
 // MARK: - 状态回调协议，用于通知 UI 更新
 public protocol PTLocalIntercomDelegate: AnyObject {
     func intercomManager(_ manager: PTLocalIntercomManager, didChangeStatus status: String)
@@ -33,7 +35,17 @@ public class PTLocalIntercomManager: NSObject {
     private var audioEngine = AVAudioEngine()
     private var playerNode = AVAudioPlayerNode()
     private let commonFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 44100, channels: 1, interleaved: false)!
-    private var isTalking: Bool = false
+    public private(set) var isTalking: Bool = false
+    
+    public private(set) var isHandsFreeMode: Bool = false
+    public var voiceThreshold: Float = 0.05
+
+    public private(set) var isRunning: Bool = false
+    public var connectedPeersCount: Int {
+        return session?.connectedPeers.count ?? 0
+    }
+    public private(set) var currentStatusText: String = PTDashboardConfig.languageFunc(text: "ptt_ready_connect")
+    private let intercomPowerStateKey = "PTIntercomPowerStateKey"
     
     private override init() {
         self.myPeerId = MCPeerID(displayName: UIDevice.current.name)
@@ -55,17 +67,33 @@ public class PTLocalIntercomManager: NSObject {
     }
     
     public func startOfflineIntercom() {
+        guard !isRunning else { return }
+        isRunning = true
+        
+        UserDefaults.standard.set(true, forKey: intercomPowerStateKey)
         advertiser.startAdvertisingPeer()
         browser.startBrowsingForPeers()
-        delegate?.intercomManager(self, didChangeStatus: PTDashboardConfig.languageFunc(text: "ptt_find_friend"))
+        
+        currentStatusText = PTDashboardConfig.languageFunc(text: "ptt_find_friend")
+        updateStatusAndBroadcast(currentStatusText)
     }
     
     public func stopOfflineIntercom() {
+        guard isRunning else { return }
+        isRunning = false
+        
+        UserDefaults.standard.set(false, forKey: intercomPowerStateKey)
         advertiser.stopAdvertisingPeer()
         browser.stopBrowsingForPeers()
         session.disconnect()
         audioEngine.stop()
-        delegate?.intercomManager(self, didChangeStatus: PTDashboardConfig.languageFunc(text: "ptt_close"))
+        
+        // 如果开启了免提，重置它
+        isHandsFreeMode = false
+        isTalking = false
+        
+        currentStatusText = PTDashboardConfig.languageFunc(text: "ptt_close")
+        updateStatusAndBroadcast(currentStatusText)
     }
     
     private func setupAudioSession() {
@@ -132,7 +160,7 @@ public class PTLocalIntercomManager: NSObject {
         }
         
         isTalking = true
-        delegate?.intercomManager(self, didChangeStatus: PTDashboardConfig.languageFunc(text: "ptt_radio"))
+        updateStatusAndBroadcast(PTDashboardConfig.languageFunc(text: "ptt_radio"))
     }
     
     public func stopTalking() {
@@ -143,7 +171,7 @@ public class PTLocalIntercomManager: NSObject {
         audioEngine.inputNode.removeTap(onBus: 0)
         
         playerNode.play() // 恢复接收状态
-        delegate?.intercomManager(self, didChangeStatus: session.connectedPeers.isEmpty ? PTDashboardConfig.languageFunc(text: "ptt_ready_connect") : PTDashboardConfig.languageFunc(text: "ptt_ready_connected"))
+        updateStatusAndBroadcast(session.connectedPeers.isEmpty ? PTDashboardConfig.languageFunc(text: "ptt_ready_connect") : PTDashboardConfig.languageFunc(text: "ptt_ready_connected"))
     }
 
     private func sendAudioData(_ data: Data) {
@@ -189,6 +217,100 @@ public class PTLocalIntercomManager: NSObject {
         }
         return nil
     }
+    
+    public func toggleHandsFreeMode(isOn: Bool) {
+        isHandsFreeMode = isOn
+        
+        if isOn {
+            PTNSLogConsole("🎙️ [音频引擎] 已开启免提声控模式")
+            startContinuousListening()
+        } else {
+            PTNSLogConsole("🎙️ [音频引擎] 已关闭免提模式，恢复按键对讲")
+            stopContinuousListening()
+        }
+    }
+    
+    private func startContinuousListening() {
+        guard !isTalking else { return }
+        if !audioEngine.isRunning { setupAudioEngine() }
+        
+        playerNode.pause() // 停止播放，防止回音
+        
+        let inputNode = audioEngine.inputNode
+        inputNode.removeTap(onBus: 0)
+        
+        let hardwareFormat = inputNode.outputFormat(forBus: 0)
+        guard hardwareFormat.sampleRate > 0 && hardwareFormat.channelCount > 0 else {
+            restartEngineHard()
+            return
+        }
+        
+        // 挂载长期的监听 Tap
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: nil) { [weak self] (buffer, time) in
+            guard let self = self, self.isHandsFreeMode else { return }
+            
+            // 🌟 核心：计算当前瞬间的音量
+            let currentVolume = buffer.calculateRMS()
+            
+            // 🌟 只有说话声音盖过了背景阈值，才处理和发送数据！
+            if currentVolume > self.voiceThreshold {
+                if buffer.format == self.commonFormat {
+                    if let data = buffer.toData() { self.sendAudioData(data) }
+                } else {
+                    if let convertedBuffer = self.convert(buffer: buffer, from: buffer.format, to: self.commonFormat),
+                       let data = convertedBuffer.toData() {
+                        self.sendAudioData(data)
+                    }
+                }
+            }
+        }
+        
+        isTalking = true
+        updateStatusAndBroadcast(PTDashboardConfig.languageFunc(text: "ptt_hand_free_listening"))
+    }
+    
+    private func stopContinuousListening() {
+        guard isTalking else { return }
+        isTalking = false
+        
+        audioEngine.inputNode.removeTap(onBus: 0)
+        playerNode.play()
+        updateStatusAndBroadcast(session.connectedPeers.isEmpty ? PTDashboardConfig.languageFunc(text: "ptt_ready_connect") : PTDashboardConfig.languageFunc(text: "ptt_ready_connected"))
+    }
+    
+    private func updateStatusAndBroadcast(_ status: String) {
+        // 更新本地记录
+        self.currentStatusText = status
+        
+        // 1. 通知原本的 Delegate (比如 PTPTTViewController)
+        self.delegate?.intercomManager(self, didChangeStatus: status)
+        
+        // 2. 广播给全 App (其他界面如地图、仪表盘也能收到)
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(
+                name: PTIntercomGlobalStatusChanged,
+                object: nil,
+                userInfo: [
+                    "isRunning": self.isRunning,
+                    "isTalking": self.isTalking,
+                    "isHandsFree": self.isHandsFreeMode,
+                    "peersCount": self.connectedPeersCount
+                ]
+            )
+        }
+    }
+    
+    public func restoreIntercomStateAtLaunch() {
+        // 读取上一次的电源状态，默认为 false（即新用户首次打开时不强制开启）
+        let shouldAutoStart = UserDefaults.standard.bool(forKey: intercomPowerStateKey)
+        
+        if shouldAutoStart {
+            PTNSLogConsole("🚀 [音频引擎] 检测到上次对讲机为开启状态，正在后台自动组网...")
+            startOfflineIntercom()
+        } else {
+            PTNSLogConsole("💤 [音频引擎] 上次对讲机为关闭状态，保持静默，省电模式")
+        }
+    }
 }
 
 // MARK: - 组网代理回调
@@ -206,7 +328,7 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
         DispatchQueue.main.async {
             self.delegate?.intercomManager(self, didUpdatePeers: session.connectedPeers.count)
             if state == .connected {
-                self.delegate?.intercomManager(self, didChangeStatus: PTDashboardConfig.language(key: "ptt_ready_connected_name", peerID.displayName))
+                self.updateStatusAndBroadcast(PTDashboardConfig.language(key: "ptt_ready_connected_name", peerID.displayName))
             }
         }
     }
@@ -226,6 +348,20 @@ extension AVAudioPCMBuffer {
     func toData() -> Data? {
         let channels = UnsafeBufferPointer(start: self.floatChannelData, count: Int(self.format.channelCount))
         return Data(bytes: channels[0], count: Int(self.frameLength) * MemoryLayout<Float>.size)
+    }
+    
+    func calculateRMS() -> Float {
+        guard let channelData = self.floatChannelData else { return 0.0 }
+        let channelDataValue = channelData[0]
+        let frames = Int(self.frameLength)
+        
+        var rms: Float = 0.0
+        for i in 0..<frames {
+            let sample = channelDataValue[i]
+            rms += sample * sample
+        }
+        rms = sqrt(rms / Float(frames))
+        return rms
     }
 }
 

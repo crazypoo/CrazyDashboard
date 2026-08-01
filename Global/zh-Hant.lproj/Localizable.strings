@@ -17,7 +17,6 @@
 "button_pro" = "專業模式";
 "casa_batt" = "電壓";
 "casa_bluetooth_status" = "藍芽連線狀態";
-"casa_card_avg_oil" = "平均油耗";
 "casa_card_distance_title" = "與里程相關的";
 "casa_card_engine" = "發動機狀態";
 "casa_card_lan" = "儀表板語言";
@@ -97,3 +96,8 @@
 "ptt_radio" = "廣播聲音...";
 "ptt_ready_connected" = "連線，隨時對講機";
 "ptt_ready_connected_name" = "連線到：%@";
+"ptt_hand_free_listening" = "在處理模式的監控中......";
+"ptt_in" = "加入團隊對講機";
+"ptt_out" = "退出團隊對講機";
+"ptt_change_hand_free" = "切換到：自由語音控制模式";
+"ptt_change_ptt" = "切換到：按鍵對講模式";

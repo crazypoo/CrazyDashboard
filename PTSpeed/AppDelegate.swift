@@ -104,6 +104,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             }
         }
         
+        PTLocalIntercomManager.shared.restoreIntercomStateAtLaunch()
+        
         return true
     }
 
