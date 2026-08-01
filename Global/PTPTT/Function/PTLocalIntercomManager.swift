@@ -47,6 +47,8 @@ public class PTLocalIntercomManager: NSObject {
     public private(set) var currentStatusText: String = PTDashboardConfig.languageFunc(text: "ptt_ready_connect")
     private let intercomPowerStateKey = "PTIntercomPowerStateKey"
     
+    public var micVolumeMultiplier: Float = 3.0
+    
     private override init() {
         self.myPeerId = MCPeerID(displayName: UIDevice.current.name)
         super.init()
@@ -146,6 +148,8 @@ public class PTLocalIntercomManager: NSObject {
         
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: nil) { [weak self] (buffer, time) in
             guard let self = self else { return }
+            
+            buffer.applyGain(self.micVolumeMultiplier)
             
             if buffer.format == self.commonFormat {
                 if let data = buffer.toData() {
@@ -254,6 +258,9 @@ public class PTLocalIntercomManager: NSObject {
             
             // 🌟 只有说话声音盖过了背景阈值，才处理和发送数据！
             if currentVolume > self.voiceThreshold {
+                
+                buffer.applyGain(self.micVolumeMultiplier)
+                
                 if buffer.format == self.commonFormat {
                     if let data = buffer.toData() { self.sendAudioData(data) }
                 } else {
@@ -327,8 +334,30 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
     public func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
         DispatchQueue.main.async {
             self.delegate?.intercomManager(self, didUpdatePeers: session.connectedPeers.count)
-            if state == .connected {
+            switch state {
+            case .connected:
+                // 有车友加入网络
                 self.updateStatusAndBroadcast(PTDashboardConfig.language(key: "ptt_ready_connected_name", peerID.displayName))
+                
+            case .notConnected:
+                // 有车友掉线或主动离开网络
+                PTNSLogConsole("❌ [组网] \(peerID.displayName) 已断开连接")
+                // 检查车队里是否还有其他人
+                if session.connectedPeers.isEmpty {
+                    // 车队空了，恢复到等待状态
+                    self.updateStatusAndBroadcast(PTDashboardConfig.languageFunc(text: "ptt_ready_connect"))
+                } else {
+                    // 车队里还有人，拿当前列表里的第一个车友名字来显示
+                    if let remainingPeer = session.connectedPeers.first {
+                        self.updateStatusAndBroadcast(PTDashboardConfig.language(key: "ptt_ready_connected_name", remainingPeer.displayName))
+                    }
+                }
+            case .connecting:
+                // 正在尝试建立连接时（可选：通常底层瞬间完成，这里仅打印日志方便调试）
+                PTNSLogConsole("⏳ [组网] 正在与 \(peerID.displayName) 建立连接...")
+                
+            @unknown default:
+                break
             }
         }
     }
@@ -362,6 +391,30 @@ extension AVAudioPCMBuffer {
         }
         rms = sqrt(rms / Float(frames))
         return rms
+    }
+    
+    func applyGain(_ multiplier: Float) {
+        // 如果倍数是 1.0 就不浪费 CPU 算力了
+        guard multiplier != 1.0, let floatChannelData = self.floatChannelData else { return }
+        
+        let channelCount = Int(self.format.channelCount)
+        let frames = Int(self.frameLength)
+        
+        for channel in 0..<channelCount {
+            let channelData = floatChannelData[channel]
+            for i in 0..<frames {
+                // 1. 将音频波幅乘以放大倍数
+                var sample = channelData[i] * multiplier
+                
+                // 2. 硬件防爆音裁剪 (Hard Clipping)
+                // 保证数值绝对不能溢出 -1.0 到 1.0 的安全区，否则会导致设备扬声器破音
+                if sample > 1.0 { sample = 1.0 }
+                else if sample < -1.0 { sample = -1.0 }
+                
+                // 3. 写回内存
+                channelData[i] = sample
+            }
+        }
     }
 }
 

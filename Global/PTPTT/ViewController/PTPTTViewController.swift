@@ -52,6 +52,8 @@ class PTPTTViewController: PTMotoBaseViewController {
         return btn
     }()
 
+    let tapButtonSize:CGFloat = 150.adapter
+    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
@@ -82,7 +84,6 @@ class PTPTTViewController: PTMotoBaseViewController {
     public override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         // 界面消失时关闭，省电
-        PTLocalIntercomManager.shared.stopOfflineIntercom()
     }
     
     // MARK: - UI 布局设置 (SnapKit)
@@ -97,19 +98,21 @@ class PTPTTViewController: PTMotoBaseViewController {
         view.addSubview(statusLabel)
         
         statusLabel.snp.makeConstraints { make in
-            make.top.equalTo(view.safeAreaLayoutGuide).offset(60)
+            make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing)
+            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.centerX.equalToSuperview()
         }
         
         // 2. 附近车友数量
         peersCountLabel.text = PTDashboardConfig.language(key: "ptt_ready_connect_count", self.connectFriend)
         peersCountLabel.textColor = .systemGreen
+        peersCountLabel.textAlignment = .center
         peersCountLabel.font = .appfont(size: 14,bold: true)
         view.addSubview(peersCountLabel)
         
         peersCountLabel.snp.makeConstraints { make in
-            make.top.equalTo(statusLabel.snp.bottom).offset(10)
-            make.centerX.equalToSuperview()
+            make.top.equalTo(statusLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.left.right.equalTo(self.statusLabel)
         }
         
         // 3. 巨大的 PTT 按键
@@ -117,7 +120,7 @@ class PTPTTViewController: PTMotoBaseViewController {
         pttButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_push"), for: .normal)
         pttButton.titleLabel?.font = .appfont(size: 28,bold: true)
         pttButton.setTitleColor(.white, for: .normal)
-        pttButton.layer.cornerRadius = 75 // 变圆
+        pttButton.layer.cornerRadius = tapButtonSize / 2 // 变圆
         
         // 🚨 核心交互：绑定按下和松开的事件
         pttButton.addTarget(self, action: #selector(pttButtonTouchDown), for: .touchDown)
@@ -125,15 +128,16 @@ class PTPTTViewController: PTMotoBaseViewController {
         
         view.addSubview(pttButton)
         pttButton.snp.makeConstraints { make in
-            make.center.equalToSuperview()
-            make.width.height.equalTo(150) // 150x150 的巨型圆钮
+            make.centerX.equalToSuperview()
+            make.top.equalTo(self.peersCountLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing * 3)
+            make.width.height.equalTo(tapButtonSize)
         }
         
         view.addSubview(modeSwitchButton)
         modeSwitchButton.snp.makeConstraints { make in
             make.top.equalTo(pttButton.snp.bottom).offset(40)
             make.centerX.equalToSuperview()
-            make.width.equalTo(200)
+            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.height.equalTo(44)
         }
 
@@ -141,8 +145,7 @@ class PTPTTViewController: PTMotoBaseViewController {
         powerButton.snp.makeConstraints { make in
             make.top.equalTo(modeSwitchButton.snp.bottom).offset(20)
             make.centerX.equalToSuperview()
-            make.width.equalTo(200)
-            make.height.equalTo(44)
+            make.left.right.height.equalTo(self.modeSwitchButton)
         }
 
         pt_observerLanguage {
