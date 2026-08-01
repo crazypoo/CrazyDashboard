@@ -7,6 +7,7 @@
 
 import UIKit
 import WeatherKit
+import PooTools
 
 // 定义天气强度枚举，用于控制粒子的数量和速度
 public enum PTWeatherIntensity {
@@ -349,6 +350,50 @@ extension PTWeatherOverlayView {
             showSandstorm()
             
         default:
+            stopWeather()
+        }
+    }
+    
+    public func updateWeatherEffect(byAppleDescription description: String) {
+        // 统一转换为小写，方便英文匹配
+        let lowerDesc = description.lowercased()
+        
+        PTNSLogConsole("🎬 [天气动画引擎] 正在通过缓存记录恢复动画: \(description)")
+        
+        // 1. 冰雨、雨夹雪 (优先级最高，因为它同时包含雨和雪的字眼)
+        if lowerDesc.contains("sleet") || lowerDesc.contains("freezing") || lowerDesc.contains("wintry") || lowerDesc.contains("冰") || lowerDesc.contains("冻") || lowerDesc.contains("雨夹雪") {
+            showSleet()
+        }
+        // 2. 下雪系列
+        else if lowerDesc.contains("snow") || lowerDesc.contains("flurries") || lowerDesc.contains("blizzard") || lowerDesc.contains("雪") {
+            if lowerDesc.contains("heavy") || lowerDesc.contains("blizzard") || lowerDesc.contains("暴") || lowerDesc.contains("大") {
+                showSnow(intensity: .heavy)
+            } else if lowerDesc.contains("flurries") || lowerDesc.contains("小") || lowerDesc.contains("零星") {
+                showSnow(intensity: .light)
+            } else {
+                showSnow(intensity: .normal)
+            }
+        }
+        // 3. 下雨系列
+        else if lowerDesc.contains("rain") || lowerDesc.contains("drizzle") || lowerDesc.contains("shower") || lowerDesc.contains("thunder") || lowerDesc.contains("雨") || lowerDesc.contains("雷") {
+            if lowerDesc.contains("heavy") || lowerDesc.contains("thunder") || lowerDesc.contains("storm") || lowerDesc.contains("暴") || lowerDesc.contains("大") || lowerDesc.contains("雷") {
+                showRain(intensity: .heavy)
+            } else if lowerDesc.contains("drizzle") || lowerDesc.contains("小") || lowerDesc.contains("毛") {
+                showRain(intensity: .light)
+            } else {
+                showRain(intensity: .normal)
+            }
+        }
+        // 4. 雾霾系列
+        else if lowerDesc.contains("fog") || lowerDesc.contains("haze") || lowerDesc.contains("smoky") || lowerDesc.contains("雾") || lowerDesc.contains("霾") {
+            showFog()
+        }
+        // 5. 沙尘系列
+        else if lowerDesc.contains("dust") || lowerDesc.contains("sand") || lowerDesc.contains("沙") || lowerDesc.contains("尘") {
+            showSandstorm()
+        }
+        // 6. 晴天、多云及其他 (清空动画)
+        else {
             stopWeather()
         }
     }
