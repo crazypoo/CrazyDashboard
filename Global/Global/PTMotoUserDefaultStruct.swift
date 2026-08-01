@@ -14,4 +14,5 @@ struct PTMotoUserDefaultStruct {
     @PTUserDefault(withKey: "ble_data_hex_get", defaultValue: false) public static var BleTestDataGet:Bool
     @PTUserDefault(withKey: "NavMute", defaultValue: false) public static var NavMute:Bool
     @PTUserDefault(withKey: "MotoLinkedAPP", defaultValue: false) public static var MotoLinkedAPP:Bool
+    @PTUserDefault(withKey: "CoachFirst", defaultValue: true) public static var CoachFirst:Bool
 }

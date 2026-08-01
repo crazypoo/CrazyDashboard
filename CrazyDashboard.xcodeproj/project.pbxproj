@@ -119,7 +119,7 @@
 		5577E6212FD656D20004733F /* PTLocationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLocationEngine.swift; sourceTree = "<group>"; };
 		5577E6222FD656D20004733F /* PTNowPlayingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTNowPlayingView.swift; sourceTree = "<group>"; };
 		5577E6232FD656D20004733F /* PTSpeedometerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTSpeedometerView.swift; sourceTree = "<group>"; };
-		5577E6382FD657030004733F /* PTSpeed.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PTSpeed.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5577E6382FD657030004733F /* XP400Ride.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = XP400Ride.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5577E6752FD657D20004733F /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		5577E6AA2FD662C20004733F /* PTMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMapView.swift; sourceTree = "<group>"; };
 		5577E6D02FD680730004733F /* PTTripStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTripStatsView.swift; sourceTree = "<group>"; };
@@ -309,7 +309,7 @@
 		5577E5BE2FD5C1DB0004733F /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				5577E6382FD657030004733F /* PTSpeed.app */,
+				5577E6382FD657030004733F /* XP400Ride.app */,
 				55499E08301AFCE800A1A2D9 /* xp400WidgetExtension.appex */,
 			);
 			name = Products;
@@ -482,8 +482,6 @@
 				55499E0D301AFCE800A1A2D9 /* xp400Widget */,
 			);
 			name = xp400WidgetExtension;
-			packageProductDependencies = (
-			);
 			productName = xp400WidgetExtension;
 			productReference = 55499E08301AFCE800A1A2D9 /* xp400WidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -510,7 +508,7 @@
 			);
 			name = PTSpeed;
 			productName = PTSpeed;
-			productReference = 5577E6382FD657030004733F /* PTSpeed.app */;
+			productReference = 5577E6382FD657030004733F /* XP400Ride.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -1059,7 +1057,7 @@
 					"\"SwiftUI\"",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.yd.PTSpeed;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = XP400Ride;
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -1209,7 +1207,7 @@
 					"\"SwiftUI\"",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.yd.PTSpeed;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = XP400Ride;
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

@@ -10,6 +10,7 @@ import PooTools
 import SafeSFSymbols
 import SwifterSwift
 import SnapKit
+import Instructions
 
 fileprivate extension String {
     static let TRIPSECTION = "TRIPSECTION"
@@ -17,6 +18,17 @@ fileprivate extension String {
 }
 
 class PTMotoInfoViewController: PTMotoBaseViewController {
+
+    fileprivate var instructionsModels:[PTInstructionsModel] = {
+        
+        let fitstTime = PTInstructionsModel()
+        fitstTime.infoString = "If you first time to use this app tap here"
+        fitstTime.buttonName = "ok"
+
+        return [fitstTime]
+    }()
+
+    let coachMarksController = CoachMarksController()
 
     let buttonCount:Int = 4
     let stackHeight:CGFloat = 54.adapter
@@ -235,6 +247,20 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         if PTMotoUserDefaultStruct.MotoLinkedAPP,!PTDashboardConfig.shared.blueConnected {
             PTGCDManager.shared.delayOnMain(time: 3) {
                 PTBluetoothServerManager.shared.startBaseStationAndScan()
+            }
+        }
+        
+        if PTMotoUserDefaultStruct.CoachFirst {
+            coachMarksController.overlay.isUserInteractionEnabled = true
+            coachMarksController.delegate = self
+            coachMarksController.dataSource = self
+            coachMarksController.animationDelegate = self
+            PTGCDManager.shared.delayOnMain(time: 0.5) {
+                self.coachMarksController.start(in: .window(over: self))
+            }
+        } else {
+            PTGCDManager.shared.delayOnMain(time: 0.5) {
+                self.showWahtsnews()
             }
         }
     }
@@ -542,4 +568,132 @@ extension PTMotoInfoViewController {
             }
         }
     }
+}
+
+extension PTMotoInfoViewController:CoachMarksControllerDataSource {
+    func numberOfCoachMarks(for coachMarksController: CoachMarksController) -> Int {
+        return instructionsModels.count
+    }
+    
+    func coachMarksController(_ coachMarksController: CoachMarksController,
+                              coachMarkAt index: Int) -> CoachMark {
+        return coachMarksController.helper.makeCoachMark(for: bleConnectStatusLabel)
+    }
+    
+    func coachMarksController(_ coachMarksController: CoachMarksController, coachMarkViewsAt index: Int, madeFrom coachMark: CoachMark) -> (bodyView: UIView & CoachMarkBodyView, arrowView: (UIView & CoachMarkArrowView)?) {
+        let coachViews = coachMarksController.helper.makeDefaultCoachViews(
+            withArrow: true,
+            arrowOrientation: coachMark.arrowOrientation
+        )
+
+        coachViews.bodyView.hintLabel.font = .appfont(size: 16)
+        coachViews.bodyView.hintLabel.text = instructionsModels[index].infoString
+        coachViews.bodyView.nextLabel.font = .appfont(size: 16)
+        coachViews.bodyView.nextLabel.text = instructionsModels[index].buttonName
+
+        return (bodyView: coachViews.bodyView, arrowView: coachViews.arrowView)
+    }
+}
+
+extension PTMotoInfoViewController: CoachMarksControllerAnimationDelegate {
+    public func coachMarksController(_ coachMarksController: CoachMarksController,
+                                     fetchAppearanceTransitionOfCoachMark coachMarkView: UIView,
+                                     at index: Int,
+                                     using manager: CoachMarkTransitionManager) {
+        manager.parameters.options = [.beginFromCurrentState]
+        manager.animate(.regular, animations: { _ in
+            coachMarkView.transform = .identity
+            coachMarkView.alpha = 1
+        }, fromInitialState: {
+            coachMarkView.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
+            coachMarkView.alpha = 0
+        })
+    }
+
+    public func coachMarksController(_ coachMarksController: CoachMarksController,
+                                     fetchDisappearanceTransitionOfCoachMark coachMarkView: UIView,
+                                     at index: Int,
+                                     using manager: CoachMarkTransitionManager) {
+        manager.parameters.keyframeOptions = [.beginFromCurrentState]
+        manager.animate(.keyframe, animations: { _ in
+            UIView.addKeyframe(withRelativeStartTime: 0.0, relativeDuration: 1.0, animations: {
+                coachMarkView.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
+            })
+
+            UIView.addKeyframe(withRelativeStartTime: 0.5, relativeDuration: 0.5, animations: {
+                coachMarkView.alpha = 0
+            })
+        })
+    }
+
+    public func coachMarksController(_ coachMarksController: CoachMarksController,
+                                     fetchIdleAnimationOfCoachMark coachMarkView: UIView,
+                                     at index: Int,
+                                     using manager: CoachMarkAnimationManager) {
+        manager.parameters.options = [.repeat, .autoreverse, .allowUserInteraction]
+        manager.parameters.duration = 0.7
+
+        manager.animate(.regular, animations: { context in
+            let offset: CGFloat = context.coachMark.arrowOrientation == .top ? 10 : -10
+            coachMarkView.transform = CGAffineTransform(translationX: 0, y: offset)
+        })
+    }
+}
+
+extension PTMotoInfoViewController : CoachMarksControllerDelegate {
+    func coachMarksController(_ coachMarksController: CoachMarksController, didHide coachMark: CoachMark, at index: Int) {
+        if index == (instructionsModels.count - 1) {
+            PTMotoUserDefaultStruct.CoachFirst = false
+            showWahtsnews()
+        }
+    }
+    
+    func coachMarksController(_ coachMarksController: CoachMarksController, didEndShowingBySkipping skipped: Bool) {
+        PTMotoUserDefaultStruct.CoachFirst = false
+        showWahtsnews()
+    }
+}
+
+extension PTMotoInfoViewController {
+    func showWahtsnews() {
+        let showOption:PTWhatsNewsPresentationOption = .always
+        if PTWhatsNews.shouldPresent(with: showOption) {
+            self.showWhatNews()
+        }
+    }
+    
+    func showWhatNews() {
+        let titleItem = PTWhatsNewsTitleItem(title: PTDashboardConfig.languageFunc(text: "Whats news!!!!!!!!!!"))
+        let welcomeString = PTDashboardConfig.languageFunc(text: "Welcome to \(kAppName!)")
+        let item1 = PTWhatsNewsItem()
+        item1.newsImage = "🎉".emojiToImage(emojiFont: .appfont(size: 34))
+        item1.title = welcomeString
+        
+        let item2 = PTWhatsNewsItem()
+        item2.newsImage = "🏍️".emojiToImage(emojiFont: .appfont(size: 34))
+        item2.title = "Moto"
+        item2.subTitle = "The same regular functions as the official APP"
+        
+        let item3 = PTWhatsNewsItem()
+        item3.newsImage = "🗺️".emojiToImage(emojiFont: .appfont(size: 34))
+        item3.title = "Navigation"
+        item3.subTitle = "Replace the official APP's navigation with the brand-new navigation SDK."
+        
+        let item4 = PTWhatsNewsItem()
+        item4.newsImage = "📈".emojiToImage(emojiFont: .appfont(size: 34))
+        item4.title = "Data"
+        item4.subTitle = "Collect the riding data of motorcycles and present it in a visual form. And it will also be synchronized to one's own iCloud."
+        
+        let item5 = PTWhatsNewsItem()
+        item5.newsImage = "📞".emojiToImage(emojiFont: .appfont(size: 34))
+        item5.title = "PTT"
+        item5.subTitle = "When there are other car enthusiasts traveling with you and also using the app, and if there is no signal in your area, you can use the PTT function to communicate."
+
+
+        let iKnowItem = PTWhatsNewsIKnowItem(title:PTDashboardConfig.languageFunc(text: "I Known"))
+        let view = PTWhatsNewsViewController(titleItem: titleItem,iKnowItem: iKnowItem,newsItem: [item1,item2,item3,item4,item5])
+        view.whatsNewsShow(vc: self)
+        view.iKnowTapHandler = { }
+    }
+
 }

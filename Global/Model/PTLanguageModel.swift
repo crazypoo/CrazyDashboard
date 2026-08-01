@@ -15,3 +15,8 @@ class PTLanguageModel: NSObject {
     var flag:UIImage = UIImage()
     var voiceValue:String = ""
 }
+
+class PTInstructionsModel:NSObject {
+    var infoString:String = ""
+    var buttonName:String = ""
+}

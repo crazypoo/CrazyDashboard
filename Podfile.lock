@@ -16,6 +16,7 @@ PODS:
     - CocoaLumberjack/Core
   - DeviceKit (5.8.0)
   - FlagKit (2.2)
+  - Instructions (2.3.0)
   - IQKeyboardCore (1.0.9)
   - IQKeyboardManagerSwift (8.0.3):
     - IQKeyboardManagerSwift/Appearance (= 8.0.3)
@@ -92,6 +93,9 @@ PODS:
   - PooTools/Hud (4.5.7):
     - PooTools/Core
     - PooTools/ProgressBar
+  - PooTools/Instructions (4.5.7):
+    - Instructions
+    - PooTools/Core
   - PooTools/Loading (4.5.7):
     - PooTools/Core
   - PooTools/LocationPermission (4.5.7):
@@ -175,6 +179,7 @@ DEPENDENCIES:
   - PooTools/DEBUG (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/Flag (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/Hud (from `https://github.com/crazypoo/PTools.git`)
+  - PooTools/Instructions (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/LocationPermission (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/Motion (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/NetWork (from `https://github.com/crazypoo/PTools.git`)
@@ -194,6 +199,7 @@ SPEC REPOS:
     - CocoaLumberjack
     - DeviceKit
     - FlagKit
+    - Instructions
     - IQKeyboardCore
     - IQKeyboardManagerSwift
     - IQKeyboardNotification
@@ -234,6 +240,7 @@ SPEC CHECKSUMS:
   CocoaLumberjack: e4ba3b414dfca8c1916c6303d37f63b3a95134c6
   DeviceKit: 57636054c827d171a22baa3fd320b65a70f3fda7
   FlagKit: eca7dc89064b0c986302ba9acefad1bf80a435b1
+  Instructions: 3aac22d036495ba4c40e00747e0a275da40ce53d
   IQKeyboardCore: 250a88dfc713b2ecbe1dce250811d054fc016959
   IQKeyboardManagerSwift: 7f6a9a1e2285732d3ff5f485ff921215253ea77e
   IQKeyboardNotification: 3b9bc812a5af2cf97df08a363d9daa9fc0dc1848
@@ -255,6 +262,6 @@ SPEC CHECKSUMS:
   SwifterSwift: 517fa61daf5b4c5e3ed13b9f35f4c26b310cfb97
   SwiftyUserDefaults: 63f80248cf5bfb3458825d9a78f2eb7e1293a040
 
-PODFILE CHECKSUM: 46ea2d71464464f242a584014f86fb394e18cbca
+PODFILE CHECKSUM: 271cb133d3d53494aeca7929ccac9db24278fa09
 
 COCOAPODS: 1.16.2
