@@ -145,7 +145,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                 let getCell = collectionView.dequeueReusableCell(withReuseIdentifier: itemRow.ID, for: indexPath)
                 if let cell = getCell as? PTFusionCell,let cellModel = itemRow.dataModel as? PTFusionCellModel {
                     cell.cellModel = cellModel
-                    cell.backgroundColor = .white.withAlphaComponent(0.1)
+                    cell.dataContent.backgroundColor = .white.withAlphaComponent(0.1)
                     cell.dataContent.layoutIfNeeded()
                     cell.dataContent.viewCorner(radius: 4)
                     return cell
