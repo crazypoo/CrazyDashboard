@@ -115,16 +115,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         return view
     }()
     
-    lazy var messageTestButton:UIButton = {
-        let view = UIButton()
-        view.backgroundColor = PTDashboardConfig.shared.appMainColor
-        view.addActionHandlers { sender in
-            PTMessagePusher.pushToDashboard(title: "1111", body: "222222222222")
-        }
-        view.isHidden = true
-        return view
-    }()
-    
     lazy var disconnect:UIButton = {
         let view = UIButton(type: .custom)
         view.titleLabel?.font = .appfont(size: 16)
@@ -176,6 +166,29 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         return view
     }()
         
+    lazy var versionLabel: UILabel = {
+        let label = UILabel()
+        // 自动读取 Xcode 中的版本号配置
+        let version = kAppVersion ?? "1.0.0"
+        let build = kAppBuildVersion ?? "0"
+        label.text = "Version \(version) (\(build))"
+        label.font = .appfont(size: 12)
+        label.textColor = .systemGray
+        label.textAlignment = .center
+        return label
+    }()
+
+    lazy var socialStackView: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .horizontal
+        stack.distribution = .equalSpacing
+        stack.alignment = .center
+        stack.spacing = 25
+        return stack
+    }()
+    
+    var antiTheftTest:Bool = false
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
@@ -197,23 +210,19 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         settingsContainer.layer.cornerRadius = 12
         view.addSubview(settingsContainer)
         
-        // 将设置项统一加入卡片容器
         settingsContainer.addSubviews([dashBoadColorTitle, dashBoardColorButton,
-                                       dashUniTitle, dashBoardUniButton,
-                                       dashLanguageTitle, dashBoardLanguageButton])
+                                        dashUniTitle, dashBoardUniButton,
+                                        dashLanguageTitle, dashBoardLanguageButton])
         
-        // 其他独立组件直接加入主视图
-        view.addSubviews([shortCut, messageTestButton, proButton, disconnect])
+        view.addSubviews([shortCut, proButton, disconnect, socialStackView, versionLabel])
         
-        // MARK: - 2. 开始优雅的 SnapKit 布局
-        
-        // 卡片容器的整体位置
+        setupSocialButtons()
+                
         settingsContainer.snp.makeConstraints { make in
-            make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + 20)
+            make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing)
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
         }
         
-        // 第一行：仪表盘颜色 (左标题，右按钮)
         dashBoadColorTitle.snp.makeConstraints { make in
             make.left.equalToSuperview().inset(16)
             make.centerY.equalTo(dashBoardColorButton)
@@ -225,7 +234,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             make.width.greaterThanOrEqualTo(54) // 允许按钮根据文字自动加宽
         }
         
-        // 第二行：单位设置
         dashUniTitle.snp.makeConstraints { make in
             make.left.equalToSuperview().inset(16)
             make.centerY.equalTo(dashBoardUniButton)
@@ -237,7 +245,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             make.width.greaterThanOrEqualTo(54)
         }
         
-        // 第三行：语言设置
         dashLanguageTitle.snp.makeConstraints { make in
             make.left.equalToSuperview().inset(16)
             make.centerY.equalTo(dashBoardLanguageButton)
@@ -250,43 +257,69 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             make.bottom.equalToSuperview().inset(16)
         }
         
-        // 快捷指令说明 (紧贴卡片下方)
         shortCut.snp.makeConstraints { make in
-            make.top.equalTo(settingsContainer.snp.bottom).offset(20)
+            make.top.equalTo(settingsContainer.snp.bottom).offset(CGFloat.GlobalItemSpacing)
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
         }
+
+        versionLabel.snp.makeConstraints { make in
+            make.bottom.equalToSuperview().inset(CGFloat.kTabbarHeight_Total + CGFloat.GlobalItemSpacing)
+            make.centerX.equalToSuperview()
+        }
         
-        // 底部断开连接按钮 (紧贴底部安全区)
+        socialStackView.snp.makeConstraints { make in
+            make.bottom.equalTo(versionLabel.snp.top).offset(-CGFloat.GlobalItemSpacing)
+            make.centerX.equalToSuperview()
+            make.height.equalTo(40)
+        }
+        
         disconnect.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.height.equalTo(44)
-            make.bottom.equalToSuperview().inset(CGFloat.kTabbarHeight_Total + 20)
+            make.bottom.equalTo(socialStackView.snp.top).offset(-30)
         }
         
-        // 底部高级功能按钮 (在断开连接按钮的上方)
         proButton.snp.makeConstraints { make in
             make.left.right.height.equalTo(disconnect)
-            make.bottom.equalTo(disconnect.snp.top).offset(-16)
+            make.bottom.equalTo(disconnect.snp.top).offset(-CGFloat.GlobalItemSpacing)
         }
-        
-        // 隐藏的测试按钮
-        messageTestButton.snp.makeConstraints { make in
-            make.size.equalTo(34)
-            make.centerX.equalToSuperview()
-            make.bottom.equalTo(proButton.snp.top).offset(-20)
-        }
-        
-        // MARK: - 3. 逻辑与样式装配
-        
+                
+        let checkFuelString = "xp400://checkFuel"
+        let checkAntiTheftString = "xp400://antiTheft?enable="
+        let hudString = "xp400://openHUD"
+        let fuelStationString = "xp400://confirmGasStationRoute"
+        let navString = "xp400://navigate?destination="
+
         let shortAtt: ASAttributedString = """
         \(wrap: .embedding("""
         \(PTDashboardConfig.languageFunc(text: "Support shortcut"),.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
-        \("xp400://checkFuel",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
-        \("xp400://antiTheft?enable=true OR xp400://antiTheft?enable=false",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
-        \("xp400://openHUD",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
-        \("xp400://confirmGasStationRoute",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
-        \("xp400://navigate?destination=",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
-        """),.paragraph(.alignment(.left)))
+        \(checkFuelString,.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)),.underline(.single, color: PTDashboardConfig.shared.appMainColor),.action {
+            if let url = URL(string: checkFuelString),UIApplication.shared.canOpenURL(url) {
+                PTAppStoreFunction.jumpLink(url: url)
+            }
+        })
+        \("\(checkAntiTheftString)true OR \(checkAntiTheftString)false",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)),.underline(.single, color: PTDashboardConfig.shared.appMainColor),.action {
+            if let url = URL(string: "\(checkAntiTheftString)\(self.antiTheftTest.string)"),UIApplication.shared.canOpenURL(url) {
+                self.antiTheftTest.toggle()
+                PTAppStoreFunction.jumpLink(url: url)
+            }
+        },.paragraph(.alignment(.left),.lineSpacing(2.5)))
+        \(hudString,.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)),.underline(.single, color: PTDashboardConfig.shared.appMainColor),.action {
+            if let url = URL(string: hudString),UIApplication.shared.canOpenURL(url) {
+                PTAppStoreFunction.jumpLink(url: url)
+            }
+        })
+        \(fuelStationString,.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)),.underline(.single, color: PTDashboardConfig.shared.appMainColor),.action {
+            if let url = URL(string: fuelStationString),UIApplication.shared.canOpenURL(url) {
+                PTAppStoreFunction.jumpLink(url: url)
+            }
+        })
+        \(navString + "????????",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)),.underline(.single, color: PTDashboardConfig.shared.appMainColor),.action {
+            if let url = URL(string: "\(navString)珠江新城"),UIApplication.shared.canOpenURL(url) {
+                PTAppStoreFunction.jumpLink(url: url)
+            }
+        })
+        """),.paragraph(.alignment(.left),.lineSpacing(CGFloat.GlobalItemSpacing)))
         """
         shortCut.attributed.text = shortAtt
                 
@@ -295,7 +328,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         dashBoardLanguageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         disconnect.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         
-        // 利用异步队列保证 AutoLayout 已经完成 frame 计算，切圆角才不会发生偏移或失效
         DispatchQueue.main.async {
             self.dashBoardColorButton.viewCorner(radius: 4)
             self.dashBoardUniButton.viewCorner(radius: 4)
@@ -316,6 +348,39 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         vcDidLoad = true
     }
     
+    private func setupSocialButtons() {
+        let socials = [
+            ("X", "https://twitter.com/crazypeepoo", "icon_x"),
+            ("IG", "https://instagram.com/jaxdeng_", "icon_ig"),
+            ("TG", "https://t.me/JaxTsang", "icon_tg"),
+            ("GitHub", "https://github.com/crazypoo", "icon_github"),
+            ("FB", "https://facebook.com/jiehao.deng", "icon_fb"),
+            ("WA", "https://wa.me/8615336934140", "icon_wa")
+        ]
+        
+        for social in socials {
+            let btn = PTBaseButton(type: .custom)
+            
+            let iconImage = UIImage(named: social.2) ?? UIImage(systemName: "globe")
+            
+            btn.setImage(iconImage?.withRenderingMode(.alwaysOriginal).transformImage(size: .init(width: 32, height: 32)), for: .normal)
+            btn.tintColor = .white // 图标颜色统一设为白色，更具极客感
+            
+            btn.snp.makeConstraints { make in
+                make.width.height.equalTo(36)
+            }
+            
+            // 点击事件：跳转 Safari
+            btn.addActionHandlers { _ in
+                if let url = URL(string: social.1) {
+                    UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                }
+            }
+            
+            socialStackView.addArrangedSubview(btn)
+        }
+    }
+
     func baseTitle(value:String) -> UILabel {
         let view = UILabel()
         view.text = value
