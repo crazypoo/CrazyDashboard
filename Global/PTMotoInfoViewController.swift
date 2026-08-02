@@ -93,69 +93,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         view.redlineRange = 9000...10000
         return view
     }()
-    
-    var tripModels:[PTFusionCellModel] {
-        get {
-            let oilModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_oil"),desc: "0%")
-            let oilTrip = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_oil_trip"),desc: "0\(PTDashboardConfig.shared.appShowUniLabel)")
-            let littleTrip = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_little_trip"),desc: "0\(PTDashboardConfig.shared.appShowUniLabel)")
-            let ODOTrip = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_odo_trip"),desc: "0\(PTDashboardConfig.shared.appShowUniLabel)")
-            let avgOil = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_avg_oil"),desc: "0L/\(PTDashboardConfig.shared.appShowMileageValueString(100))\(PTDashboardConfig.shared.appShowUniLabel)")
-            return [oilModel,oilTrip,littleTrip,ODOTrip,avgOil]
-        } set{ }
-    }
-    
-    var motoModels:[PTFusionCellModel] {
-        get {
-            let motoModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_engine"),desc: "-")
-            let absModel = PTDashboardConfig.baseNormalCellModel(name: "ABS",desc: "-")
-            let temModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_tem"),desc: "0°C")
-            let lanTrip = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_lan"),desc: "\(PTConfigLanguage.english.getTypeName())")
-            return [motoModel,absModel,temModel,lanTrip]
-        } set{ }
-    }
-
-    lazy var detailCollection:PTCollectionView = {
-                                
-        let collectionConfig = PTCollectionViewConfig()
-        collectionConfig.viewType = .Custom
-        collectionConfig.footerRefresh = false
-        collectionConfig.topRefresh = false
-
-        let view = PTCollectionView(viewConfig: collectionConfig)
-        view.registerClassCells(classs: [PTFusionCell.ID:PTFusionCell.self])
-        view.registerHeaderIdsNClasss(ids: [.TRIPSECTION,.MOTOSECTION], viewClass: PTGlobalActionHeader.self, kind: UICollectionView.elementKindSectionHeader)
-        view.headerInCollection = { kind,collectionView,model,index in
-            if let headerID = model.headerID,!headerID.stringIsEmpty() {
-                if let header = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: headerID, for: index) as? PTGlobalActionHeader {
-                    header.titleName.text = model.headerTitle
-                    header.titleName.snp.updateConstraints { make in
-                        make.left.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-                    }
-                    return header
-                }
-            }
-            return nil
-        }
-        view.customerLayout = { sectionIndex,section in
-            return UICollectionView.girdCollectionLayout(data: section.rows, itemHeight: 60,cellRowCount: 2,originalX: PTAppBaseConfig.share.defaultViewSpace,cellLeadingSpace: CGFloat.GlobalItemSpacing,cellTrailingSpace: CGFloat.GlobalItemSpacing)
-        }
-        view.cellInCollection = { collectionView,sectionModel,indexPath in
-            if let itemRow = sectionModel.rows?[indexPath.row] {
-                let getCell = collectionView.dequeueReusableCell(withReuseIdentifier: itemRow.ID, for: indexPath)
-                if let cell = getCell as? PTFusionCell,let cellModel = itemRow.dataModel as? PTFusionCellModel {
-                    cell.cellModel = cellModel
-                    cell.dataContent.backgroundColor = .white.withAlphaComponent(0.1)
-                    cell.dataContent.layoutIfNeeded()
-                    cell.dataContent.viewCorner(radius: 4)
-                    return cell
-                }
-            }
-            return nil
-        }
-        return view
-    }()
-    
+        
     var bleStatusConnectImage:UIImage {
         let imageSize:CGFloat = 5
         let image = UIColor.systemGreen.createImageWithColor().transformImage(size: .init(width: imageSize, height: imageSize)).withRoundedCorners(radius: imageSize / 2) ?? UIImage()
@@ -209,7 +147,57 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         let view = PTIndicatorPanel()
         return view
     }()
+    
+    lazy var fuelModelView:PTMotoFuelInfoView = {
+        let view = PTMotoFuelInfoView()
+        return view
+    }()
+    
+    lazy var tripItem:PTStatusItemView = {
+        let view = PTStatusItemView()
+        view.configure(systemIcon: UIImage(.point.topleftDownToPointBottomrightCurvepath),
+                       iconColor: PTDashboardConfig.shared.appMainColor,
+                                   title: PTDashboardConfig.languageFunc(text: "casa_card_little_trip"),
+                                   value: "0\(PTDashboardConfig.shared.appShowUniLabel)")
+        return view
+    }()
         
+    lazy var odoItem:PTStatusItemView = {
+        let view = PTStatusItemView()
+        view.configure(systemIcon: UIImage(systemName: "speedometer")!,
+                                   iconColor: PTDashboardConfig.shared.appMainColor,
+                                   title: PTDashboardConfig.languageFunc(text: "casa_card_odo_trip"),
+                                   value: "0\(PTDashboardConfig.shared.appShowUniLabel)")
+        return view
+    }()
+
+    lazy var engineItem:PTStatusItemView = {
+        let view = PTStatusItemView()
+        view.configure(systemIcon: UIImage(.engine.combustion),
+                                   iconColor: PTDashboardConfig.shared.appMainColor,
+                                   title: PTDashboardConfig.languageFunc(text: "casa_card_engine"),
+                                   value: "-")
+        return view
+    }()
+
+    lazy var temItem:PTStatusItemView = {
+        let view = PTStatusItemView()
+        view.configure(systemIcon: UIImage(.thermometer),
+                                   iconColor: PTDashboardConfig.shared.appMainColor,
+                                   title: PTDashboardConfig.languageFunc(text: "casa_card_tem"),
+                                   value: "0°C")
+        return view
+    }()
+
+    lazy var globeItem:PTStatusItemView = {
+        let view = PTStatusItemView()
+        view.configure(systemIcon: UIImage(.globe),
+                                   iconColor: PTDashboardConfig.shared.appMainColor,
+                                   title: PTDashboardConfig.languageFunc(text: "casa_card_lan"),
+                                   value: PTConfigLanguage.english.getTypeName())
+        return view
+    }()
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
@@ -236,7 +224,6 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleDATA2, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleDATA3, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleCONTROL, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleABS, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(dashBoardReload), name: MotorcycleDashBoardChange, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleRawDataTCSShow, object: nil)
 
@@ -285,12 +272,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
     private func setupUI() {
         view.backgroundColor = .black
         
-        let collectionInset:CGFloat = CGFloat.kTabbarHeight_Total
-        detailCollection.contentCollectionView.contentInsetAdjustmentBehavior = .never
-        detailCollection.contentCollectionView.contentInset.bottom = collectionInset
-        detailCollection.contentCollectionView.verticalScrollIndicatorInsets.bottom = collectionInset
-
-        view.addSubviews([actionStack,speedometer,speedometerReversed,detailCollection,lightControl])
+        view.addSubviews([actionStack,speedometer,speedometerReversed,lightControl,fuelModelView,tripItem,odoItem,engineItem,temItem,globeItem])
         actionStack.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.height.equalTo(54)
@@ -325,22 +307,50 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         }
         speedometerReversed.layoutIfNeeded()
         speedometerReversed.viewCorner(radius: speedometerReversed.bounds.size.height / 2)
-        
-        detailCollection.snp.makeConstraints { make in
-            make.left.right.equalToSuperview()
-            make.top.equalTo(self.speedometer.snp.bottom)
-            make.bottom.equalToSuperview()
-        }
-                        
+                                
         lightControl.snp.makeConstraints { make in
-            make.width.equalTo(250)
-            make.height.equalTo(34)
-            make.top.equalTo(self.speedometer.snp.bottom).offset(-35)
+            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.height.equalTo(44)
+            make.top.equalTo(self.speedometer.snp.bottom)
             make.centerX.equalToSuperview()
         }
         
-        listSet()
+        fuelModelView.snp.makeConstraints { make in
+            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.top.equalTo(self.lightControl.snp.bottom)
+            make.height.equalTo(70)
+        }
         
+        tripItem.snp.makeConstraints { make in
+            make.left.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.height.equalTo(60)
+            make.right.equalTo(self.view.snp.centerX).offset(-(CGFloat.GlobalItemSpacing / 2))
+            make.top.equalTo(self.fuelModelView.snp.bottom)
+        }
+        
+        odoItem.snp.makeConstraints { make in
+            make.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.height.equalTo(self.tripItem)
+            make.left.equalTo(self.view.snp.centerX).offset((CGFloat.GlobalItemSpacing / 2))
+            make.top.equalTo(self.tripItem)
+        }
+        
+        engineItem.snp.makeConstraints { make in
+            make.height.left.right.equalTo(self.tripItem)
+            make.top.equalTo(self.tripItem.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+        }
+        
+        temItem.snp.makeConstraints { make in
+            make.height.equalTo(self.tripItem)
+            make.right.left.equalTo(self.odoItem)
+            make.top.equalTo(self.engineItem)
+        }
+        
+        globeItem.snp.makeConstraints { make in
+            make.height.left.right.equalTo(self.tripItem)
+            make.top.equalTo(self.temItem.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+        }
+            
         if isFirstLoad {
             isFirstLoad.toggle()
             PTGCDManager.shared.delayOnMain(time: 1) {
@@ -350,6 +360,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             }
         }
         
+        
         pt_observerLanguage {
             if self.vcDidLoad {
                 self.voltageLabel.modelSet = self.modelvoltageSet(currentValue: 0)
@@ -357,6 +368,35 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                 self.bleConnectStatusLabel.setTitle(PTDashboardConfig.languageFunc(text: "casa_bluetooth_status"), state: .normal)
                 self.bleConnectStatusLabel.setTitle(PTDashboardConfig.languageFunc(text: "casa_bluetooth_status"), state: .disabled)
                 self.bleConnectStatusLabel.bounds = .init(origin: .zero, size: .init(width:self.bleConnectStatusLabel.getKitCurrentDimension() + 5, height:PTAppBaseConfig.share.navBarButtonSize))
+                
+                self.tripItem.configure(systemIcon: UIImage(.point.topleftDownToPointBottomrightCurvepath),
+                                           iconColor: PTDashboardConfig.shared.appMainColor,
+                                           title: PTDashboardConfig.languageFunc(text: "casa_card_little_trip"),
+                                           value: "\(PTDashboardConfig.shared.appShowMileageValueString(PTBluetoothServerManager.shared.latestData1?.tripKm ?? 0))\(PTDashboardConfig.shared.appShowUniLabel)")
+                
+                self.odoItem.configure(systemIcon: UIImage(systemName: "speedometer")!,
+                                           iconColor: PTDashboardConfig.shared.appMainColor,
+                                           title: PTDashboardConfig.languageFunc(text: "casa_card_odo_trip"),
+                                           value: "\(PTDashboardConfig.shared.appShowMileageValueString(PTBluetoothServerManager.shared.latestData1?.odoKm ?? 0))\(PTDashboardConfig.shared.appShowUniLabel)")
+                
+                var engineStatus = "-"
+                if let engineStatusValue = PTBluetoothServerManager.shared.latestData2?.engineStatus {
+                    engineStatus = PTDashboardLabels.engineStatusLabel(raw: engineStatusValue)
+                }
+                self.engineItem.configure(systemIcon: UIImage(.engine.combustion),
+                                           iconColor: PTDashboardConfig.shared.appMainColor,
+                                           title: PTDashboardConfig.languageFunc(text: "casa_card_engine"),
+                                           value: engineStatus)
+                
+                self.temItem.configure(systemIcon: UIImage(.thermometer),
+                                           iconColor: PTDashboardConfig.shared.appMainColor,
+                                           title: PTDashboardConfig.languageFunc(text: "casa_card_tem"),
+                                           value: "\(PTBluetoothServerManager.shared.latestData2?.outsideTempC ?? 0)°C")
+                
+                self.globeItem.configure(systemIcon: UIImage(.globe),
+                                           iconColor: PTDashboardConfig.shared.appMainColor,
+                                           title: PTDashboardConfig.languageFunc(text: "casa_card_lan"),
+                                           value: PTBluetoothServerManager.shared.latestData3?.languageType.getTypeName() ?? PTConfigLanguage.english.getTypeName())
             }
         }
         
@@ -386,56 +426,26 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         distToMaintenancemodel.uni = PTDashboardConfig.shared.appShowUniLabel
         return distToMaintenancemodel
     }
-    
-    func listSet(finishTask:PTCollectionCallback? = nil) {
-        var sections = [PTSection]()
-        let rowsTrip = tripModels.map { value in
-            let row = PTRows(ID:PTFusionCell.ID,dataModel: value)
-            return row
-        }
-        let sectionTrip = PTSection(headerTitle: PTDashboardConfig.languageFunc(text: "casa_card_distance_title"),headerID: .TRIPSECTION,headerHeight: self.headerHeight,rows: rowsTrip)
-        sections.append(sectionTrip)
-        
-        let rowsMoto = motoModels.map { value in
-            let row = PTRows(ID:PTFusionCell.ID,dataModel: value)
-            return row
-        }
-        let sectionMoto = PTSection(headerTitle: PTDashboardConfig.languageFunc(text: "MOTO"),headerID: .MOTOSECTION,headerHeight: self.headerHeight,rows: rowsMoto)
-        sections.append(sectionMoto)
-
-        detailCollection.showCollectionDetail(collectionData: sections,finishTask: finishTask)
-    }
-        
+            
     // MARK: - 状态回调
     @objc func handleDataNotification(_ notification: Notification) {
         if let data1 = notification.object as? PTDashboardData1 {
             let tripKm = data1.tripKm
             let odoKm = data1.odoKm
-            let fuelLevelPct = data1.fuelLevelPct
-            let avgConsumptionLt = data1.avgConsumptionLt
             
             DispatchQueue.main.async {
-                let sectionTrip = 0
-                let rows = self.detailCollection.getAllRows(in: sectionTrip)
-                guard rows.count > 4 else { return }
-                
-                // 💡 优化点：对比当前 Cell 的旧数据，如果内容没变就不做无用渲染，彻底消除闪烁
-                let newFuelDesc = "\(fuelLevelPct)%"
                 let newTripDesc = "\(PTDashboardConfig.shared.appShowMileageValueString(tripKm))\(PTDashboardConfig.shared.appShowUniLabel)"
                 let newOdoDesc = "\(PTDashboardConfig.shared.appShowMileageValueString(odoKm))\(PTDashboardConfig.shared.appShowUniLabel)"
-                let newAvgDesc = "\(avgConsumptionLt)L/\(PTDashboardConfig.shared.appShowMileageValueString(100))\(PTDashboardConfig.shared.appShowUniLabel)"
                 
-                if let oldModel = rows[0].dataModel as? PTFusionCellModel, oldModel.desc == newFuelDesc {
-                    return // 数据无变化，直接拦截，防止闪烁！
-                }
-                
-                rows[0].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_oil"), desc: newFuelDesc)
-                rows[2].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_little_trip"), desc: newTripDesc)
-                rows[3].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_odo_trip"), desc: newOdoDesc)
-                rows[4].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_avg_oil"), desc: newAvgDesc)
-                
-                // 优先只刷新对应的可见 Cell，而不是粗暴地 reloadRows 整个 Section
-                self.detailCollection.reloadRows(rows, in: sectionTrip)
+                self.tripItem.configure(systemIcon: UIImage(.point.topleftDownToPointBottomrightCurvepath),
+                                           iconColor: PTDashboardConfig.shared.appMainColor,
+                                           title: PTDashboardConfig.languageFunc(text: "casa_card_little_trip"),
+                                           value: newTripDesc)
+                self.odoItem.configure(systemIcon: UIImage(systemName: "speedometer")!,
+                                           iconColor: PTDashboardConfig.shared.appMainColor,
+                                           title: PTDashboardConfig.languageFunc(text: "casa_card_odo_trip"),
+                                           value: newOdoDesc)
+                self.fuelModelView.viewModel = data1
             }
         } else if let data2 = notification.object as? PTDashboardData2 {
             let volt = data2.batteryVolt
@@ -443,53 +453,38 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             let engineStatus = data2.engineStatus
             
             DispatchQueue.main.async {
-                let sectionMoto = 1
-                let rows = self.detailCollection.getAllRows(in: sectionMoto)
-                guard rows.count > 2 else { return }
-                
                 let newEngineDesc = PTDashboardLabels.engineStatusLabel(raw: engineStatus)
                 let newTempDesc = "\(temp)°C"
-                
-                if let oldModel = rows[0].dataModel as? PTFusionCellModel, oldModel.desc == newEngineDesc {
-                    // 即使文字没变，电压进度条可能变了，单独更新电压
-                    self.voltageLabel.modelSet = self.modelvoltageSet(currentValue: volt)
-                    return
-                }
-                
-                rows[0].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_engine"), desc: newEngineDesc)
-                rows[2].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_tem"), desc: newTempDesc)
-                
-                self.detailCollection.reloadRows(rows, in: sectionMoto)
                 self.voltageLabel.modelSet = self.modelvoltageSet(currentValue: volt)
+                
+                self.engineItem.configure(systemIcon: UIImage(.engine.combustion),
+                                           iconColor: PTDashboardConfig.shared.appMainColor,
+                                           title: PTDashboardConfig.languageFunc(text: "casa_card_engine"),
+                                           value: newEngineDesc)
+                
+                self.temItem.configure(systemIcon: UIImage(.thermometer),
+                                           iconColor: PTDashboardConfig.shared.appMainColor,
+                                           title: PTDashboardConfig.languageFunc(text: "casa_card_tem"),
+                                           value: newTempDesc)
             }
         } else if let data3 = notification.object as? PTDashboardData3 {
-            let autonomyKm = data3.autonomyKm
             let distToMaintenance = data3.distToMaintenance
             let language = data3.languageType.getTypeName()
             
             DispatchQueue.main.async {
-                if let row = self.detailCollection.getRow(at: IndexPath(row: 1, section: 0)) {
-                    let newAutonomyDesc = "\(PTDashboardConfig.shared.appShowMileageValueString(autonomyKm))\(PTDashboardConfig.shared.appShowUniLabel)"
-                    if let oldModel = row.dataModel as? PTFusionCellModel, oldModel.desc != newAutonomyDesc {
-                        row.dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_oil_trip"), desc: newAutonomyDesc)
-                        self.detailCollection.reloadRows([row], in: 0)
-                    }
-                }
-                
-                let sectionMoto = 1
-                let rows = self.detailCollection.getAllRows(in: sectionMoto)
-                if rows.indices.contains(3) {
-                    let newLangDesc = language
-                    if let oldModel = rows[3].dataModel as? PTFusionCellModel, oldModel.desc != newLangDesc {
-                        rows[3].dataModel = PTDashboardConfig.baseNormalCellModel(name: PTDashboardConfig.languageFunc(text: "casa_card_lan"), desc: newLangDesc)
-                        self.detailCollection.reloadRows([rows[3]], in: sectionMoto)
-                    }
-                }
                 
                 self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(
                     max: PTDashboardConfig.shared.appShowMileage(2500),
                     current: PTDashboardConfig.shared.appShowMileage(Double(distToMaintenance))
                 )
+                
+                self.fuelModelView.fuelTripModel = data3
+                
+                self.globeItem.configure(systemIcon: UIImage(.globe),
+                                           iconColor: PTDashboardConfig.shared.appMainColor,
+                                           title: PTDashboardConfig.languageFunc(text: "casa_card_lan"),
+                                           value: language)
+
             }
         } else if let control = notification.object as? PTDashboardControl {
             let vehicleSpeedKmh = control.vehicleSpeedKmh
@@ -501,20 +496,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                 self.speedometerReversed.updateSpeed(CGFloat(engineRpm))
                 self.speedometerReversed.applyShiftLightLogic(currentRpm: engineRpm)
             }
-        } else if let abs = notification.object as? PTAbsStatus {
-            let absRaw = abs.absRaw
-            DispatchQueue.main.async {
-                let sectionMoto = 1
-                let rows = self.detailCollection.getAllRows(in: sectionMoto)
-                guard rows.indices.contains(1) else { return }
-                
-                let newAbsDesc = PTDashboardLabels.absLabel(raw: absRaw)
-                if let oldModel = rows[1].dataModel as? PTFusionCellModel, oldModel.desc != newAbsDesc {
-                    rows[1].dataModel = PTDashboardConfig.baseNormalCellModel(name: "ABS", desc: newAbsDesc)
-                    self.detailCollection.reloadRows([rows[1]], in: sectionMoto)
-                }
-            }
-        }
+        } 
     }
 
     @objc func dashBoardReload() {

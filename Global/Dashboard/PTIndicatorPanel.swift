@@ -150,7 +150,14 @@ public class PTIndicatorPanel: PTDashboardBaseView {
     }
     
     func updateABS(abs: PTAbsStatus) {
-        toggleGlow(for: absIcon, isOn: abs.isAbsLightOn, activeColor: .systemOrange)
+        switch abs.absRaw {
+        case 2:
+            toggleGlow(for: absIcon, isOn: true, activeColor: .systemOrange)
+        case 1:
+            toggleGlow(for: absIcon, isOn: abs.isAbsLightOn, activeColor: .systemOrange)
+        default:
+            toggleGlow(for: absIcon, isOn: false, activeColor: .systemOrange)
+        }
     }
     
     func updateTCS(tcsShow: String) {
