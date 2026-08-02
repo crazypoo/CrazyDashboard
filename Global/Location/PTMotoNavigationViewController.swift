@@ -241,7 +241,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         view.layer.cornerRadius = 16
         view.clipsToBounds = true
         // 增加精美的原生阴影
-        view.layer.shadowColor = UIColor.black.cgColor
+        view.layer.shadowColor = UIColor.clear.cgColor
         view.layer.shadowOffset = CGSize(width: 0, height: 4)
         view.layer.shadowOpacity = 0.3
         view.layer.shadowRadius = 8

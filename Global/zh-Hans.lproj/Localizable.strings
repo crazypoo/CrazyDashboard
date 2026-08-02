@@ -101,3 +101,4 @@
 "ptt_out" = "退出车队对讲";
 "ptt_change_hand_free" = "切换为：免提声控模式";
 "ptt_change_ptt" = "切换为：按键对讲模式";
+"casa_card_avg_oil" = "平均油耗";

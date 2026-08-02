@@ -220,8 +220,7 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
                 let isConnected = PTDashboardConfig.shared.blueConnected
 
                 // 🚨 核心修复：安全解包！
-                // 如果 reGeocode 是 nil，或者 formattedAddress 是 nil，就安全地使用 "未知位置"
-                let safeAddress = reGeocode?.formattedAddress ?? "未知位置"
+                let safeAddress = reGeocode?.formattedAddress ?? "Unknown"
 
                 // 调用数据管理器，推送到小组件！
                 PTWidgetDataManager.shared.updateWidgetData(
