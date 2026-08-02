@@ -188,17 +188,20 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
     
     // MARK: - 高德地图位置更新回调
     public func amapLocationManager(_ manager: AMapLocationManager!, didUpdate location: CLLocation!, reGeocode: AMapLocationReGeocode!) {
+        // 1. 确保定位数据存在
         guard let location = location else { return }
         self.lastLocation = location
+        
         PTWeatherManager.shared.fetchCurrentWeather(for: location)
+        
         if currentMode == .antiTheft {
             return
         }
-        
+
         if PTDashboardConfig.shared.blueConnected {
             let now = Date()
             let shouldUpdateWidget: Bool
-            
+
             if let lastTime = lastWidgetUpdateTime {
                 // 计算距离上次更新过去了几秒 (10分钟 = 600秒)
                 shouldUpdateWidget = now.timeIntervalSince(lastTime) >= 600.0
@@ -206,16 +209,20 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
                 // 首次连接或刚启动时，直接允许更新
                 shouldUpdateWidget = true
             }
-            
+
             if shouldUpdateWidget {
                 // 刷新时间戳记录
                 lastWidgetUpdateTime = now
-                
+
                 // 获取最新的机车数据
                 let currentFuel = PTBluetoothServerManager.shared.latestData1?.fuelLevelPct ?? 0
                 let currentTrip = PTBluetoothServerManager.shared.latestData1?.tripKm ?? 0
                 let isConnected = PTDashboardConfig.shared.blueConnected
-                
+
+                // 🚨 核心修复：安全解包！
+                // 如果 reGeocode 是 nil，或者 formattedAddress 是 nil，就安全地使用 "未知位置"
+                let safeAddress = reGeocode?.formattedAddress ?? "未知位置"
+
                 // 调用数据管理器，推送到小组件！
                 PTWidgetDataManager.shared.updateWidgetData(
                     fuelLevel: currentFuel,
@@ -223,24 +230,24 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
                     isConnected: isConnected,
                     parkedLat: location.coordinate.latitude,
                     parkedLon: location.coordinate.longitude,
-                    address: reGeocode.formattedAddress
+                    address: safeAddress
                 )
-                
-                PTNSLogConsole("⏱️ [小组件同步] 10分钟定时刷新触发成功")
+
+                PTNSLogConsole("⏱️ [小组件同步] 10分钟定时刷新触发成功，当前位置：\(safeAddress)")
             }
         }
-        
+
         currentAltitude = location.altitude
         let tripData = PTTripData(
             courseDegree: location.course,
             altitude: location.altitude,
             currentLocation: location
         )
-        
+
         DispatchQueue.main.async {
             NotificationCenter.default.post(name: PTLocationEngineDidUpdate, object: tripData)
         }
-    }
+    }  
     
     // MARK: - 高德地图方向 (罗盘) 回调
     public func amapLocationManager(_ manager: AMapLocationManager!, didUpdate newHeading: CLHeading!) {
