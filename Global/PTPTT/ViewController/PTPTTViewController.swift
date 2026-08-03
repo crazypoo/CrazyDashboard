@@ -378,4 +378,8 @@ extension PTPTTViewController: PTLocalIntercomDelegate {
             }
         }
     }
+    
+    public func intercomManager(_ manager: PTLocalIntercomManager, localUserIsSpeaking: Bool) {
+        
+    }
 }
