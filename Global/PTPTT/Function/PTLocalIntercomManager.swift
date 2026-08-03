@@ -36,7 +36,7 @@ public class PTLocalIntercomManager: NSObject {
     
     // 多点连接组件
     private let serviceType = "pt-moto-voice"
-    private var myPeerId: MCPeerID!
+    private let myPeerId: MCPeerID
     private var session: MCSession!
     private var advertiser: MCNearbyServiceAdvertiser!
     private var browser: MCNearbyServiceBrowser!
@@ -82,9 +82,17 @@ public class PTLocalIntercomManager: NSObject {
         return activePeers.count
     }
 
+    private lazy var myUUID: String = {
+        let key = "PT_Device_Unique_UUID"
+        if let savedUUID = UserDefaults.standard.string(forKey: key) { return savedUUID }
+        let newUUID = UUID().uuidString
+        UserDefaults.standard.set(newUUID, forKey: key)
+        return newUUID
+    }()
+
     private override init() {
+        self.myPeerId = MCPeerID(displayName: UIDevice.current.name)
         super.init()
-        setupPeerID()
         setupMultipeer()
         setupAudioSession()
         setupAudioEngine()
@@ -92,24 +100,6 @@ public class PTLocalIntercomManager: NSObject {
         NotificationCenter.default.addObserver(self, selector: #selector(handleAudioRouteChange), name: AVAudioSession.routeChangeNotification, object: nil)
     }
     
-    private func setupPeerID() {
-        let peerIDKey = "PT_SavedMCPeerID"
-        // 尝试从本地沙盒读取上一把的身份
-        if let data = UserDefaults.standard.data(forKey: peerIDKey),
-           let savedPeer = try? NSKeyedUnarchiver.unarchivedObject(ofClass: MCPeerID.self, from: data) {
-            self.myPeerId = savedPeer
-            PTNSLogConsole("✅ [组网] 成功读取固化的身份: \(savedPeer.displayName)")
-        } else {
-            // 如果是全新安装，生成一个并死死写进沙盒里
-            let newPeer = MCPeerID(displayName: UIDevice.current.name)
-            if let data = try? NSKeyedArchiver.archivedData(withRootObject: newPeer, requiringSecureCoding: true) {
-                UserDefaults.standard.set(data, forKey: peerIDKey)
-            }
-            self.myPeerId = newPeer
-            PTNSLogConsole("🆕 [组网] 首次生成并固化新身份: \(newPeer.displayName)")
-        }
-    }
-
     private func startPingTimer() {
         stopPingTimer()
         // 每 2 秒钟对所有成员进行一次网络测速
@@ -146,7 +136,7 @@ public class PTLocalIntercomManager: NSObject {
         session = MCSession(peer: myPeerId, securityIdentity: nil, encryptionPreference: .none)
         session.delegate = self
         
-        advertiser = MCNearbyServiceAdvertiser(peer: myPeerId, discoveryInfo: nil, serviceType: serviceType)
+        advertiser = MCNearbyServiceAdvertiser(peer: myPeerId, discoveryInfo: ["uuid": myUUID], serviceType: serviceType)
         advertiser.delegate = self
         
         browser = MCNearbyServiceBrowser(peer: myPeerId, serviceType: serviceType)
@@ -484,7 +474,18 @@ public class PTLocalIntercomManager: NSObject {
 extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDelegate, MCNearbyServiceBrowserDelegate {
     
     public func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String : String]?) {
-        browser.invitePeer(peerID, to: session, withContext: nil, timeout: 15)
+        guard let peerUUID = info?["uuid"] else {
+            PTNSLogConsole("⚠️ [组网] 发现未携带 UUID 的异常节点，抛弃")
+            return
+        }
+        
+        // 🌟 核心突破 3：字符串严格对比！谁的 UUID 字母大，谁就当“队长”去主动拉人！
+        if self.myUUID > peerUUID {
+            PTNSLogConsole("➡️ [组网决断] 我方(UUID大) 主动发起邀请给: \(peerID.displayName)")
+            browser.invitePeer(peerID, to: session, withContext: nil, timeout: 15)
+        } else {
+            PTNSLogConsole("⬅️ [组网决断] 我方(UUID小) 保持安静，等待 \(peerID.displayName) 拉我...")
+        }
     }
     
     public func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didReceiveInvitationFromPeer peerID: MCPeerID, withContext context: Data?, invitationHandler: @escaping (Bool, MCSession?) -> Void) {
