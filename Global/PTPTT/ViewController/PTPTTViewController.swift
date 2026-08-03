@@ -212,6 +212,7 @@ class PTPTTViewController: PTMotoBaseViewController {
         pttButton.backgroundColor = .systemOrange
         pttButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_push"), for: .normal)
         pttButton.titleLabel?.font = .appfont(size: 28,bold: true)
+        pttButton.titleLabel?.numberOfLines = 0
         pttButton.setTitleColor(.white, for: .normal)
         pttButton.layer.cornerRadius = tapButtonSize / 2 // 变圆
         
@@ -422,7 +423,6 @@ extension PTPTTViewController: PTLocalIntercomDelegate {
         // 假设你有一个字典存储了每个车友的卡片视图：peerViews[peer]
         guard let avatarView = peerViews[peer] else { return }
         avatarView.signalLabel.setTitle("\(latency)ms", state: .normal)
-        // 2. 根据信号强弱改变图标的颜色
         switch signal {
         case .strong:
             avatarView.signalLabel.setTitleColor(.systemGreen, state: .normal)
