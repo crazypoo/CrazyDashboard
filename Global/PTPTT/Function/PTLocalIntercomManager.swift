@@ -133,7 +133,7 @@ public class PTLocalIntercomManager: NSObject {
         browser?.stopBrowsingForPeers()
         
         // 🌟 2. 每次都生成一个极其纯净、全新的 Session！
-        session = MCSession(peer: myPeerId, securityIdentity: nil, encryptionPreference: .none)
+        session = MCSession(peer: myPeerId, securityIdentity: nil, encryptionPreference: .required)
         session.delegate = self
         
         advertiser = MCNearbyServiceAdvertiser(peer: myPeerId, discoveryInfo: ["uuid": myUUID], serviceType: serviceType)
@@ -236,6 +236,16 @@ public class PTLocalIntercomManager: NSObject {
         restartEngineHard()
     }
     
+    private func safeStartPlayerNode() {
+        if !audioEngine.isRunning {
+            restartEngineHard()
+        }
+        
+        if !playerNode.isPlaying {
+            playerNode.play()
+        }
+    }
+
     private func restartEngineHard() {
         do {
             audioEngine.prepare()
@@ -287,16 +297,16 @@ public class PTLocalIntercomManager: NSObject {
     public func stopTalking() {
         guard isTalking else { return }
         isTalking = false
-        
+        self.isLocalUserSpeaking = false // 重置状态
         // 安全地移除 Tap
         audioEngine.inputNode.removeTap(onBus: 0)
         
-        playerNode.play() // 恢复接收状态
+        safeStartPlayerNode()
         updateStatusAndBroadcast(session.connectedPeers.isEmpty ? PTDashboardConfig.languageFunc(text: "ptt_ready_connect") : PTDashboardConfig.languageFunc(text: "ptt_ready_connected"))
     }
 
     private func sendAudioData(_ data: Data) {
-        let peers = session.connectedPeers
+        let peers = activePeers
         guard !peers.isEmpty else { return }
         PTNSLogConsole(">>>>>>>>>>>>>>>> 发送了 \(data.count) bytes 数据")
         do {
@@ -312,7 +322,7 @@ public class PTLocalIntercomManager: NSObject {
         
         // 用全网统一的 commonFormat 去解码对方发来的 Data
         if let buffer = data.toPCMBuffer(format: commonFormat) {
-            if !playerNode.isPlaying { playerNode.play() }
+            safeStartPlayerNode()
             playerNode.scheduleBuffer(buffer, completionHandler: nil)
         }
     }
@@ -474,6 +484,9 @@ public class PTLocalIntercomManager: NSObject {
 extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDelegate, MCNearbyServiceBrowserDelegate {
     
     public func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String : String]?) {
+        if session.connectedPeers.contains(peerID) || self.activePeers.contains(peerID) {
+            return
+        }
         guard let peerUUID = info?["uuid"] else {
             PTNSLogConsole("⚠️ [组网] 发现未携带 UUID 的异常节点，抛弃")
             return
@@ -481,8 +494,16 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
         
         // 🌟 核心突破 3：字符串严格对比！谁的 UUID 字母大，谁就当“队长”去主动拉人！
         if self.myUUID > peerUUID {
-            PTNSLogConsole("➡️ [组网决断] 我方(UUID大) 主动发起邀请给: \(peerID.displayName)")
-            browser.invitePeer(peerID, to: session, withContext: nil, timeout: 15)
+            PTNSLogConsole("➡️ [组网决断] 我方准备发起邀请给: \(peerID.displayName)")
+            
+            // 🚨 核心防线 3：延迟 0.5 秒缓冲！
+            // 给 iOS 底层的 Bonjour 发现机制一点时间来稳定端口，防止瞬间拥堵
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                // 再次确认没有连上，再发邀请
+                if !self.session.connectedPeers.contains(peerID) {
+                    browser.invitePeer(peerID, to: self.session, withContext: nil, timeout: 15)
+                }
+            }
         } else {
             PTNSLogConsole("⬅️ [组网决断] 我方(UUID小) 保持安静，等待 \(peerID.displayName) 拉我...")
         }
@@ -508,6 +529,7 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
                 if !self.activePeers.contains(peerID) {
                     self.activePeers.append(peerID)
                 }
+                PTNSLogConsole(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\(self.activePeers)")
                 // 有车友加入网络
                 self.updateStatusAndBroadcast(PTDashboardConfig.language(key: "ptt_ready_connected_name", peerID.displayName))
                 

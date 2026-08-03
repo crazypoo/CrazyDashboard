@@ -37,7 +37,6 @@ class PTGlobalActionHeader: PTBaseCollectionReusableView {
         view.imageSize = CGSize(width: 16, height: 16)
         view.midSpacing = 0
         view.normalTitleFont = .appfont(size: 12)
-//        view.normalImage = UIImage(named: "arrow_right_gray")
         view.isHidden = true
         view.isUserInteractionEnabled = false
         view.normalTitleColor = .red
