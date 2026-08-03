@@ -12,6 +12,12 @@ import PooTools
 
 public let PTIntercomGlobalStatusChanged = NSNotification.Name("PTIntercomGlobalStatusChanged")
 
+public enum PTNetworkSignalLevel {
+    case strong // 满格绿信号 (< 50ms)
+    case normal // 两格黄信号 (50 ~ 150ms)
+    case weak   // 一格红信号 (> 150ms)
+}
+
 // MARK: - 状态回调协议，用于通知 UI 更新
 public protocol PTLocalIntercomDelegate: AnyObject {
     func intercomManager(_ manager: PTLocalIntercomManager, didChangeStatus status: String)
@@ -19,6 +25,7 @@ public protocol PTLocalIntercomDelegate: AnyObject {
     func intercomManager(_ manager: PTLocalIntercomManager, didUpdatePeerList peers: [MCPeerID])
     func intercomManager(_ manager: PTLocalIntercomManager, speakingPeersChanged speakingPeers: [MCPeerID])
     func intercomManager(_ manager: PTLocalIntercomManager, localUserIsSpeaking: Bool)
+    func intercomManager(_ manager: PTLocalIntercomManager, didUpdateNetworkStatusFor peer: MCPeerID, latency: Int, signal: PTNetworkSignalLevel)
 }
 
 @objcMembers
@@ -56,6 +63,8 @@ public class PTLocalIntercomManager: NSObject {
     private var currentSpeakingPeers: Set<MCPeerID> = []
     private var speakingTimer: Timer?
 
+    private var pingTimer: Timer?
+    
     public private(set) var isLocalUserSpeaking: Bool = false {
         didSet {
             // 只有状态发生翻转时，才通知外部 UI
@@ -69,7 +78,6 @@ public class PTLocalIntercomManager: NSObject {
 
     public private(set) var activePeers: [MCPeerID] = []
     
-    // 🌟 2. 覆盖原来的数量计算逻辑：读取我们的自定义列表
     public var connectedPeersCount: Int {
         return activePeers.count
     }
@@ -84,6 +92,28 @@ public class PTLocalIntercomManager: NSObject {
         NotificationCenter.default.addObserver(self, selector: #selector(handleAudioRouteChange), name: AVAudioSession.routeChangeNotification, object: nil)
     }
     
+    private func startPingTimer() {
+        stopPingTimer()
+        // 每 2 秒钟对所有成员进行一次网络测速
+        pingTimer = Timer.scheduledTimer(timeInterval: 2.0, target: self, selector: #selector(sendPingToAll), userInfo: nil, repeats: true)
+    }
+    
+    private func stopPingTimer() {
+        pingTimer?.invalidate()
+        pingTimer = nil
+    }
+
+    @objc private func sendPingToAll() {
+        guard !activePeers.isEmpty else { return }
+        
+        // 生成极小的时间戳文本数据
+        let pingString = "PING:\(Date().timeIntervalSince1970)"
+        guard let pingData = pingString.data(using: .utf8) else { return }
+        
+        // 发送给所有人 (.reliable 保证数据必达)
+        try? session.send(pingData, toPeers: activePeers, with: .reliable)
+    }
+
     private func setupMultipeer() {
         session?.disconnect()
         advertiser?.stopAdvertisingPeer()
@@ -115,6 +145,7 @@ public class PTLocalIntercomManager: NSObject {
         currentStatusText = PTDashboardConfig.languageFunc(text: "ptt_find_friend")
         updateStatusAndBroadcast(currentStatusText)
         startSpeakingDetector()
+        startPingTimer()
     }
     
     public func stopOfflineIntercom() {
@@ -135,6 +166,7 @@ public class PTLocalIntercomManager: NSObject {
         currentStatusText = PTDashboardConfig.languageFunc(text: "ptt_close")
         updateStatusAndBroadcast(currentStatusText)
         stopSpeakingDetector()
+        stopPingTimer()
     }
     
     private func startSpeakingDetector() {
@@ -475,9 +507,44 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
     
     public func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
         lastReceivedAudio[peerID] = Date()
+        
+        // 🌟 5. 核心拦截：尝试将数据解析为字符串，以区分是测速包还是语音包
+        if let text = String(data: data, encoding: .utf8) {
+            
+            if text.hasPrefix("PING:") {
+                // 情况 A：收到别人发来的 PING，立刻改为 PONG 反射回去
+                let pongText = text.replacingOccurrences(of: "PING:", with: "PONG:")
+                if let pongData = pongText.data(using: .utf8) {
+                    try? session.send(pongData, toPeers: [peerID], with: .reliable)
+                }
+                return // 🚨 拦截完毕，不能让它流进音频播放器
+                
+            } else if text.hasPrefix("PONG:") {
+                // 情况 B：收到别人反射回来的 PONG，计算并发布延迟！
+                let timeString = text.replacingOccurrences(of: "PONG:", with: "")
+                if let sentTime = Double(timeString) {
+                    // 计算往返毫秒数 (RTT)
+                    let latencyMs = Int((Date().timeIntervalSince1970 - sentTime) * 1000)
+                    
+                    // 根据延迟换算信号强度
+                    let signalLevel: PTNetworkSignalLevel
+                    if latencyMs < 50 { signalLevel = .strong }
+                    else if latencyMs < 150 { signalLevel = .normal }
+                    else { signalLevel = .weak }
+                    
+                    // 回调给外部 UI
+                    DispatchQueue.main.async {
+                        self.delegate?.intercomManager(self, didUpdateNetworkStatusFor: peerID, latency: latencyMs, signal: signalLevel)
+                    }
+                }
+                return // 🚨 拦截完毕，不能让它流进音频播放器
+            }
+        }
+        
+        // 🌟 6. 如果无法解析为上面的文本，说明它是实打实的对讲机浮点音频流，放行播放！
         self.receiveAndPlay(data: data)
     }
-    
+
     public func browser(_ browser: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {}
     public func session(_ session: MCSession, didReceive stream: InputStream, withName streamName: String, fromPeer peerID: MCPeerID) {}
     public func session(_ session: MCSession, didStartReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, with progress: Progress) {}

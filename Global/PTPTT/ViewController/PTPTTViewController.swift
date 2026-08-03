@@ -15,6 +15,17 @@ class PTPeerAvatarView: UIView {
     let peerID: MCPeerID
     private let nameLabel = UILabel()
     
+    lazy var signalLabel:PTActionLayoutButton = {
+        let view = PTActionLayoutButton()
+        view.midSpacing = 0
+        view.layoutStyle = .leftImageRightTitle
+        view.imageSize = .init(width: 18, height: 18)
+        view.setTitleColor(.white, state: .normal)
+        view.setTitleFont(.appfont(size: 13), state: .normal)
+        view.isUserInteractionEnabled = false
+        return view
+    }()
+    
     init(peerID: MCPeerID) {
         self.peerID = peerID
         super.init(frame: .zero)
@@ -32,6 +43,12 @@ class PTPeerAvatarView: UIView {
         addSubview(nameLabel)
         nameLabel.snp.makeConstraints { make in
             make.edges.equalToSuperview()
+        }
+        
+        addSubviews([signalLabel])
+        signalLabel.snp.makeConstraints { make in
+            make.top.left.right.equalToSuperview()
+            make.height.equalTo(self.signalLabel.imageSize.height)
         }
     }
     
@@ -380,6 +397,41 @@ extension PTPTTViewController: PTLocalIntercomDelegate {
     }
     
     public func intercomManager(_ manager: PTLocalIntercomManager, localUserIsSpeaking: Bool) {
-        
+        DispatchQueue.main.async {
+            if localUserIsSpeaking {
+                // 🗣️ 正在说话：为 PTT 按钮添加向外发散的强烈光晕
+                UIView.animate(withDuration: 0.2) {
+                    // 使用鲜艳的颜色作为光晕（如果是按压状态本身是红色，用红色阴影会非常有冲击力）
+                    self.pttButton.layer.shadowColor = UIColor.systemRed.cgColor
+                    self.pttButton.layer.shadowRadius = 25    // 光晕扩散的范围
+                    self.pttButton.layer.shadowOpacity = 1.0  // 光晕的亮度 (0.0 ~ 1.0)
+                    self.pttButton.layer.shadowOffset = .zero // 居中发散，不偏移
+                    self.pttButton.layer.masksToBounds = false // 🚨 核心：允许阴影渲染到按钮外部
+                }
+            } else {
+                // 🔇 停止说话：平滑地收起光晕
+                UIView.animate(withDuration: 0.3) {
+                    self.pttButton.layer.shadowOpacity = 0.0
+                }
+            }
+        }
+    }
+    
+    public func intercomManager(_ manager: PTLocalIntercomManager, didUpdateNetworkStatusFor peer: MCPeerID, latency: Int, signal: PTNetworkSignalLevel) {
+        // 假设你有一个字典存储了每个车友的卡片视图：peerViews[peer]
+        guard let avatarView = peerViews[peer] else { return }
+        avatarView.signalLabel.setTitle("\(latency)ms", state: .normal)
+        // 2. 根据信号强弱改变图标的颜色
+        switch signal {
+        case .strong:
+            avatarView.signalLabel.setTitleColor(.systemGreen, state: .normal)
+            avatarView.signalLabel.setImage(UIImage(systemName: "wifi", withConfiguration: UIImage.SymbolConfiguration(weight: .bold)), state: .normal)
+        case .normal:
+            avatarView.signalLabel.setTitleColor(.systemYellow, state: .normal)
+            avatarView.signalLabel.setImage(UIImage(systemName: "wifi", withConfiguration: UIImage.SymbolConfiguration(weight: .regular)), state: .normal)
+        case .weak:
+            avatarView.signalLabel.setTitleColor(.systemRed, state: .normal)
+            avatarView.signalLabel.setImage(UIImage(systemName: "wifi.exclamationmark"), state: .normal)
+        }
     }
 }
