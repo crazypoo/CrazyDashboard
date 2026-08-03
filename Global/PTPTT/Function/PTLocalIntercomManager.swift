@@ -485,8 +485,7 @@ public class PTLocalIntercomManager: NSObject {
 extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDelegate, MCNearbyServiceBrowserDelegate {
     
     public func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String : String]?) {
-        if session.connectedPeers.contains(peerID) || self.activePeers.contains(peerID) {
-            return
+        if session.connectedPeers.contains(peerID) || self.activePeers.contains(peerID) || self.connectingPeers.contains(peerID) {  return
         }
         guard let peerUUID = info?["uuid"] else {
             PTNSLogConsole("⚠️ [组网] 发现未携带 UUID 的异常节点，抛弃")
