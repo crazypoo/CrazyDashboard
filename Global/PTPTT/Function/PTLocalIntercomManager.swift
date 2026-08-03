@@ -36,7 +36,7 @@ public class PTLocalIntercomManager: NSObject {
     
     // 多点连接组件
     private let serviceType = "pt-moto-voice"
-    private let myPeerId: MCPeerID
+    private var myPeerId: MCPeerID!
     private var session: MCSession!
     private var advertiser: MCNearbyServiceAdvertiser!
     private var browser: MCNearbyServiceBrowser!
@@ -92,8 +92,8 @@ public class PTLocalIntercomManager: NSObject {
     }()
 
     private override init() {
-        self.myPeerId = MCPeerID(displayName: UIDevice.current.name)
         super.init()
+        setupPeerID()
         setupMultipeer()
         setupAudioSession()
         setupAudioEngine()
@@ -101,6 +101,22 @@ public class PTLocalIntercomManager: NSObject {
         NotificationCenter.default.addObserver(self, selector: #selector(handleAudioRouteChange), name: AVAudioSession.routeChangeNotification, object: nil)
     }
     
+    private func setupPeerID() {
+        let peerIDKey = "PT_SavedMCPeerID"
+        if let data = UserDefaults.standard.data(forKey: peerIDKey),
+           let savedPeer = try? NSKeyedUnarchiver.unarchivedObject(ofClass: MCPeerID.self, from: data) {
+            self.myPeerId = savedPeer
+            PTNSLogConsole("✅ [组网] 成功读取固化身份: \(savedPeer.displayName)")
+        } else {
+            let newPeer = MCPeerID(displayName: UIDevice.current.name)
+            if let data = try? NSKeyedArchiver.archivedData(withRootObject: newPeer, requiringSecureCoding: true) {
+                UserDefaults.standard.set(data, forKey: peerIDKey)
+            }
+            self.myPeerId = newPeer
+            PTNSLogConsole("🆕 [组网] 生成新身份: \(newPeer.displayName)")
+        }
+    }
+
     private func startPingTimer() {
         stopPingTimer()
         // 每 2 秒钟对所有成员进行一次网络测速
@@ -134,7 +150,7 @@ public class PTLocalIntercomManager: NSObject {
         browser?.stopBrowsingForPeers()
         
         // 🌟 2. 每次都生成一个极其纯净、全新的 Session！
-        session = MCSession(peer: myPeerId, securityIdentity: nil, encryptionPreference: .none)
+        session = MCSession(peer: myPeerId, securityIdentity: nil, encryptionPreference: .required)
         session.delegate = self
         
         advertiser = MCNearbyServiceAdvertiser(peer: myPeerId, discoveryInfo: ["uuid": myUUID], serviceType: serviceType)
@@ -485,13 +501,15 @@ public class PTLocalIntercomManager: NSObject {
 extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDelegate, MCNearbyServiceBrowserDelegate {
     
     public func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String : String]?) {
-        if session.connectedPeers.contains(peerID) || self.activePeers.contains(peerID) || self.connectingPeers.contains(peerID) {  return
-        }
-        guard let peerUUID = info?["uuid"] else {
-            PTNSLogConsole("⚠️ [组网] 发现未携带 UUID 的异常节点，抛弃")
+        if session.connectedPeers.contains(peerID) || self.activePeers.contains(peerID) || self.connectingPeers.contains(peerID) {
+            self.delegate?.intercomManager(self, didUpdatePeers: self.activePeers.count)
             return
         }
-        
+        guard let peerUUID = info?["uuid"], peerUUID != self.myUUID else {
+            PTNSLogConsole("⚠️ [组网] 发现非法或幽灵节点，已抛弃")
+            return
+        }
+
         // 🌟 核心突破 3：字符串严格对比！谁的 UUID 字母大，谁就当“队长”去主动拉人！
         if self.myUUID > peerUUID {
             self.connectingPeers.insert(peerID)
@@ -526,7 +544,9 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
                 }
                 // 有车友加入网络
                 self.updateStatusAndBroadcast(PTDashboardConfig.language(key: "ptt_ready_connected_name", peerID.displayName))
-                
+                self.delegate?.intercomManager(self, didUpdatePeers: self.activePeers.count)
+                self.delegate?.intercomManager(self, didUpdatePeerList: self.activePeers)
+
             case .notConnected:
                 // 有车友掉线或主动离开网络
                 self.connectingPeers.remove(peerID)
@@ -543,6 +563,9 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
                         self.updateStatusAndBroadcast(PTDashboardConfig.language(key: "ptt_ready_connected_name", remainingPeer.displayName))
                     }
                 }
+                self.delegate?.intercomManager(self, didUpdatePeers: self.activePeers.count)
+                self.delegate?.intercomManager(self, didUpdatePeerList: self.activePeers)
+
             case .connecting:
                 // 正在尝试建立连接时（可选：通常底层瞬间完成，这里仅打印日志方便调试）
                 PTNSLogConsole("⏳ [组网] 正在与 \(peerID.displayName) 建立连接...")
@@ -550,49 +573,38 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
             @unknown default:
                 break
             }
-            
-            self.delegate?.intercomManager(self, didUpdatePeers: self.activePeers.count)
-            self.delegate?.intercomManager(self, didUpdatePeerList: self.activePeers)
         }
     }
     
     public func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
-        lastReceivedAudio[peerID] = Date()
-        
-        // 🌟 5. 核心拦截：尝试将数据解析为字符串，以区分是测速包还是语音包
         if let text = String(data: data, encoding: .utf8) {
-            
             if text.hasPrefix("PING:") {
-                // 情况 A：收到别人发来的 PING，立刻改为 PONG 反射回去
                 let pongText = text.replacingOccurrences(of: "PING:", with: "PONG:")
                 if let pongData = pongText.data(using: .utf8) {
                     try? session.send(pongData, toPeers: [peerID], with: .reliable)
                 }
-                return // 🚨 拦截完毕，不能让它流进音频播放器
+                return // 🚨 拦截完毕，这是心跳包，直接 Return！
                 
             } else if text.hasPrefix("PONG:") {
-                // 情况 B：收到别人反射回来的 PONG，计算并发布延迟！
                 let timeString = text.replacingOccurrences(of: "PONG:", with: "")
                 if let sentTime = Double(timeString) {
-                    // 计算往返毫秒数 (RTT)
                     let latencyMs = Int((Date().timeIntervalSince1970 - sentTime) * 1000)
-                    
-                    // 根据延迟换算信号强度
                     let signalLevel: PTNetworkSignalLevel
                     if latencyMs < 50 { signalLevel = .strong }
                     else if latencyMs < 150 { signalLevel = .normal }
                     else { signalLevel = .weak }
                     
-                    // 回调给外部 UI
                     DispatchQueue.main.async {
                         self.delegate?.intercomManager(self, didUpdateNetworkStatusFor: peerID, latency: latencyMs, signal: signalLevel)
                     }
                 }
-                return // 🚨 拦截完毕，不能让它流进音频播放器
+                return // 🚨 拦截完毕，这是心跳包，直接 Return！
             }
         }
         
-        // 🌟 6. 如果无法解析为上面的文本，说明它是实打实的对讲机浮点音频流，放行播放！
+        // 🌟 7. 解决头像错误闪烁：只有确实没有被上面的 Return 拦截，走到这里的才是真正的音频流！
+        // 此时我们才记录它的说话时间！
+        lastReceivedAudio[peerID] = Date()
         self.receiveAndPlay(data: data)
     }
 
