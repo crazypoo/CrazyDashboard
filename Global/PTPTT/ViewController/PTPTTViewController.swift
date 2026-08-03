@@ -17,6 +17,7 @@ class PTPeerAvatarView: UIView {
     
     lazy var signalLabel:PTActionLayoutButton = {
         let view = PTActionLayoutButton()
+        view.progressLayerBorderColor = .clear
         view.midSpacing = 0
         view.layoutStyle = .leftImageRightTitle
         view.imageSize = .init(width: 18, height: 18)

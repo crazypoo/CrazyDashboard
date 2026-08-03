@@ -104,14 +104,19 @@ public class PTLocalIntercomManager: NSObject {
     }
 
     @objc private func sendPingToAll() {
-        guard !activePeers.isEmpty else { return }
-        
+        let peers = session.connectedPeers
+        guard !peers.isEmpty else { return }
+
         // 生成极小的时间戳文本数据
         let pingString = "PING:\(Date().timeIntervalSince1970)"
         guard let pingData = pingString.data(using: .utf8) else { return }
         
         // 发送给所有人 (.reliable 保证数据必达)
-        try? session.send(pingData, toPeers: activePeers, with: .reliable)
+        do {
+            try session.send(pingData, toPeers: peers, with: .reliable)
+        } catch {
+            PTNSLogConsole("❌ 心跳包发送失败: \(error.localizedDescription)")
+        }
     }
 
     private func setupMultipeer() {
@@ -120,7 +125,7 @@ public class PTLocalIntercomManager: NSObject {
         browser?.stopBrowsingForPeers()
         
         // 🌟 2. 每次都生成一个极其纯净、全新的 Session！
-        session = MCSession(peer: myPeerId, securityIdentity: nil, encryptionPreference: .required)
+        session = MCSession(peer: myPeerId, securityIdentity: nil, encryptionPreference: .none)
         session.delegate = self
         
         advertiser = MCNearbyServiceAdvertiser(peer: myPeerId, discoveryInfo: nil, serviceType: serviceType)
@@ -283,9 +288,15 @@ public class PTLocalIntercomManager: NSObject {
     }
 
     private func sendAudioData(_ data: Data) {
-        guard !activePeers.isEmpty else { return }
+        let peers = session.connectedPeers
+        guard !peers.isEmpty else { return }
         PTNSLogConsole(">>>>>>>>>>>>>>>> 发送了 \(data.count) bytes 数据")
-        try? session.send(data, toPeers: activePeers, with: .unreliable)
+        do {
+            // 使用 do-catch，如果发送失败，立刻在控制台打印出致命原因！
+            try session.send(data, toPeers: peers, with: .unreliable)
+        } catch {
+            PTNSLogConsole("❌ 语音数据发送彻底失败: \(error.localizedDescription)")
+        }
     }
     
     fileprivate func receiveAndPlay(data: Data) {
@@ -455,7 +466,7 @@ public class PTLocalIntercomManager: NSObject {
 extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDelegate, MCNearbyServiceBrowserDelegate {
     
     public func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String : String]?) {
-        if self.myPeerId.displayName > peerID.displayName {
+        if self.myPeerId.hashValue > peerID.hashValue {
             PTNSLogConsole("➡️ [组网决断] 我方发起邀请给: \(peerID.displayName)")
             browser.invitePeer(peerID, to: session, withContext: nil, timeout: 15)
         } else {
@@ -469,6 +480,15 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
     
     public func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
         DispatchQueue.main.async {
+            let stateName: String
+            switch state {
+            case .notConnected: stateName = "未连接"
+            case .connecting: stateName = "连接中"
+            case .connected: stateName = "已连接"
+            @unknown default: stateName = "未知"
+            }
+            PTNSLogConsole("📡 [MCSession] 车友 \(peerID.displayName) 底层网络跳变: \(stateName)")
+
             switch state {
             case .connected:
                 if !self.activePeers.contains(peerID) {
