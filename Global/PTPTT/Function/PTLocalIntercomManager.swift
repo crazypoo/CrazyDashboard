@@ -77,6 +77,7 @@ public class PTLocalIntercomManager: NSObject {
     }
 
     public private(set) var activePeers: [MCPeerID] = []
+    private var connectingPeers: Set<MCPeerID> = []
     
     public var connectedPeersCount: Int {
         return activePeers.count
@@ -133,7 +134,7 @@ public class PTLocalIntercomManager: NSObject {
         browser?.stopBrowsingForPeers()
         
         // 🌟 2. 每次都生成一个极其纯净、全新的 Session！
-        session = MCSession(peer: myPeerId, securityIdentity: nil, encryptionPreference: .required)
+        session = MCSession(peer: myPeerId, securityIdentity: nil, encryptionPreference: .none)
         session.delegate = self
         
         advertiser = MCNearbyServiceAdvertiser(peer: myPeerId, discoveryInfo: ["uuid": myUUID], serviceType: serviceType)
@@ -494,16 +495,9 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
         
         // 🌟 核心突破 3：字符串严格对比！谁的 UUID 字母大，谁就当“队长”去主动拉人！
         if self.myUUID > peerUUID {
+            self.connectingPeers.insert(peerID)
             PTNSLogConsole("➡️ [组网决断] 我方准备发起邀请给: \(peerID.displayName)")
-            
-            // 🚨 核心防线 3：延迟 0.5 秒缓冲！
-            // 给 iOS 底层的 Bonjour 发现机制一点时间来稳定端口，防止瞬间拥堵
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                // 再次确认没有连上，再发邀请
-                if !self.session.connectedPeers.contains(peerID) {
-                    browser.invitePeer(peerID, to: self.session, withContext: nil, timeout: 15)
-                }
-            }
+            browser.invitePeer(peerID, to: self.session, withContext: nil, timeout: 15)
         } else {
             PTNSLogConsole("⬅️ [组网决断] 我方(UUID小) 保持安静，等待 \(peerID.displayName) 拉我...")
         }
@@ -526,15 +520,17 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
 
             switch state {
             case .connected:
+                self.connectingPeers.remove(peerID)
+                
                 if !self.activePeers.contains(peerID) {
                     self.activePeers.append(peerID)
                 }
-                PTNSLogConsole(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\(self.activePeers)")
                 // 有车友加入网络
                 self.updateStatusAndBroadcast(PTDashboardConfig.language(key: "ptt_ready_connected_name", peerID.displayName))
                 
             case .notConnected:
                 // 有车友掉线或主动离开网络
+                self.connectingPeers.remove(peerID)
                 PTNSLogConsole("❌ [组网] \(peerID.displayName) 已断开连接")
                 // 检查车队里是否还有其他人
                 self.activePeers.removeAll { $0 == peerID }
