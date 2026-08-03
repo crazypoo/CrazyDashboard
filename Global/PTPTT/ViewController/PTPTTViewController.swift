@@ -362,8 +362,8 @@ extension PTPTTViewController: PTLocalIntercomDelegate {
     public func intercomManager(_ manager: PTLocalIntercomManager, didUpdatePeers count: Int) {
         DispatchQueue.main.async {
             self.connectFriend = count
-            self.peersCountLabel.text = PTDashboardConfig.language(key: "ptt_ready_connect_count", count)
-            self.peersCountLabel.textColor = count > 0 ? .systemGreen : .gray
+            self.peersCountLabel.text = PTDashboardConfig.language(key: "ptt_ready_connect_count", self.connectFriend)
+            self.peersCountLabel.textColor = self.connectFriend > 0 ? .systemGreen : .gray
         }
     }
     

@@ -36,7 +36,7 @@ public class PTLocalIntercomManager: NSObject {
     
     // 多点连接组件
     private let serviceType = "pt-moto-voice"
-    private let myPeerId: MCPeerID
+    private var myPeerId: MCPeerID!
     private var session: MCSession!
     private var advertiser: MCNearbyServiceAdvertiser!
     private var browser: MCNearbyServiceBrowser!
@@ -83,8 +83,8 @@ public class PTLocalIntercomManager: NSObject {
     }
 
     private override init() {
-        self.myPeerId = MCPeerID(displayName: UIDevice.current.name)
         super.init()
+        setupPeerID()
         setupMultipeer()
         setupAudioSession()
         setupAudioEngine()
@@ -92,6 +92,24 @@ public class PTLocalIntercomManager: NSObject {
         NotificationCenter.default.addObserver(self, selector: #selector(handleAudioRouteChange), name: AVAudioSession.routeChangeNotification, object: nil)
     }
     
+    private func setupPeerID() {
+        let peerIDKey = "PT_SavedMCPeerID"
+        // 尝试从本地沙盒读取上一把的身份
+        if let data = UserDefaults.standard.data(forKey: peerIDKey),
+           let savedPeer = try? NSKeyedUnarchiver.unarchivedObject(ofClass: MCPeerID.self, from: data) {
+            self.myPeerId = savedPeer
+            PTNSLogConsole("✅ [组网] 成功读取固化的身份: \(savedPeer.displayName)")
+        } else {
+            // 如果是全新安装，生成一个并死死写进沙盒里
+            let newPeer = MCPeerID(displayName: UIDevice.current.name)
+            if let data = try? NSKeyedArchiver.archivedData(withRootObject: newPeer, requiringSecureCoding: true) {
+                UserDefaults.standard.set(data, forKey: peerIDKey)
+            }
+            self.myPeerId = newPeer
+            PTNSLogConsole("🆕 [组网] 首次生成并固化新身份: \(newPeer.displayName)")
+        }
+    }
+
     private func startPingTimer() {
         stopPingTimer()
         // 每 2 秒钟对所有成员进行一次网络测速
@@ -466,12 +484,7 @@ public class PTLocalIntercomManager: NSObject {
 extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDelegate, MCNearbyServiceBrowserDelegate {
     
     public func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String : String]?) {
-        if self.myPeerId.hashValue > peerID.hashValue {
-            PTNSLogConsole("➡️ [组网决断] 我方发起邀请给: \(peerID.displayName)")
-            browser.invitePeer(peerID, to: session, withContext: nil, timeout: 15)
-        } else {
-            PTNSLogConsole("⬅️ [组网决断] 等待 \(peerID.displayName) 向我方发起邀请...")
-        }
+        browser.invitePeer(peerID, to: session, withContext: nil, timeout: 15)
     }
     
     public func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didReceiveInvitationFromPeer peerID: MCPeerID, withContext context: Data?, invitationHandler: @escaping (Bool, MCSession?) -> Void) {
