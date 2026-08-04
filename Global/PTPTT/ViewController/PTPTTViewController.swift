@@ -20,7 +20,7 @@ class PTPeerAvatarView: UIView {
         view.progressLayerBorderColor = .clear
         view.midSpacing = 0
         view.layoutStyle = .leftImageRightTitle
-        view.imageSize = .init(width: 18, height: 18)
+        view.imageSize = .init(width: 15, height: 15)
         view.setTitleColor(.white, state: .normal)
         view.setTitleFont(.appfont(size: 13), state: .normal)
         view.isUserInteractionEnabled = false
@@ -32,7 +32,7 @@ class PTPeerAvatarView: UIView {
         super.init(frame: .zero)
         
         backgroundColor = UIColor.white.withAlphaComponent(0.1)
-        layer.cornerRadius = 25 // 50x50 的圆形
+        layer.cornerRadius = 32
         
         // 截取名字的前两个字当头像显示
         let displayName = peerID.displayName
@@ -190,17 +190,20 @@ class PTPTTViewController: PTMotoBaseViewController {
         }
         
         peersScrollView.showsHorizontalScrollIndicator = false
+        peersScrollView.clipsToBounds = false
         view.addSubview(peersScrollView)
         
         peersStackView.axis = .horizontal
-        peersStackView.spacing = 20
+        peersStackView.spacing = CGFloat.GlobalItemSpacing
         peersStackView.alignment = .center
+        peersStackView.distribution = .equalCentering
+        peersStackView.clipsToBounds = false
         peersScrollView.addSubview(peersStackView)
         
         peersScrollView.snp.makeConstraints { make in
             make.top.equalTo(peersCountLabel.snp.bottom).offset(20)
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.height.equalTo(70) // 容纳发光动画的高度
+            make.height.equalTo(88) // 容纳发光动画的高度
         }
         
         peersStackView.snp.makeConstraints { make in
@@ -378,7 +381,7 @@ extension PTPTTViewController: PTLocalIntercomDelegate {
             for peer in peers {
                 let avatar = PTPeerAvatarView(peerID: peer)
                 avatar.snp.makeConstraints { make in
-                    make.width.height.equalTo(50) // 头像基础大小
+                    make.width.height.equalTo(64) // 头像基础大小
                 }
                 self.peersStackView.addArrangedSubview(avatar)
                 self.peerViews[peer] = avatar
