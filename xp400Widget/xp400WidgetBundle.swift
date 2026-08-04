@@ -13,5 +13,6 @@ struct xp400WidgetBundle: WidgetBundle {
     var body: some Widget {
         XP400Widget()
         MotoNaviLiveActivity()
+        MotoIntercomLiveActivity()
     }
 }

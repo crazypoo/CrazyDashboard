@@ -287,3 +287,126 @@ struct MotoNaviLiveActivity: Widget {
         }
     }
 }
+
+struct AvatarImageView: View {
+    let filename: String
+    let appGroupID = "group.com.yd.PTSpeed.xp400" // 替换为你的 App Group ID
+    
+    var body: some View {
+        // 尝试从 App Group 中读取队友发来的自定义头像
+        if !filename.isEmpty,
+           let url = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID)?.appendingPathComponent(filename),
+           let uiImage = UIImage(contentsOfFile: url.path) {
+            
+            Image(uiImage: uiImage)
+                .resizable()
+                .scaledToFill()
+                
+        } else {
+            // ✅ 完美回退：由于我们在 Xcode 里把 default_user_avatar 配置给了 Widget Target，这里可以直接读取！
+            Image("placeholder")
+                .resizable()
+                .scaledToFill()
+        }
+    }
+}
+
+// 🌟 2. 锁屏展示卡片 UI
+struct IntercomLiveActivityView: View {
+    let context: ActivityViewContext<MotoIntercomAttributes>
+
+    var body: some View {
+        VStack(spacing: 12) {
+            // 顶部信息 (保持不变)
+            HStack {
+                Text(context.attributes.channelName)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                Spacer()
+                Text(context.state.statusText)
+                    .font(.subheadline)
+                    .foregroundColor(context.state.isLocalTalking ? .green : .gray)
+            }
+            
+            // 🌟 修复部分：移除 ScrollView，改为静态计算
+            // 1. 我们限制最多只显示屏幕能装下的 4 个车友
+            let displayPeers = Array(context.state.activePeers.prefix(4))
+            // 2. 计算是否还有没显示出来的车友
+            let overflowCount = context.state.activePeers.count - displayPeers.count
+            
+            // 🌟 直接使用 HStack 进行静态横向排列
+            HStack(spacing: 16) {
+                ForEach(displayPeers, id: \.peerID) { peer in
+                    VStack(spacing: 4) {
+                        AvatarImageView(filename: peer.avatarFileName)
+                            .frame(width: 44, height: 44)
+                            .clipShape(Circle())
+                            .overlay(Circle().stroke(Color.white.opacity(0.3), lineWidth: 1))
+                            // 🌟 核心动效：讲话时的发光和放大动画
+                            .shadow(color: peer.isSpeaking ? Color.green : Color.clear, radius: peer.isSpeaking ? 10 : 0)
+                            .scaleEffect(peer.isSpeaking ? 1.15 : 1.0)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.5), value: peer.isSpeaking)
+                        
+                        Text(peer.peerName)
+                            .font(.caption2)
+                            .foregroundColor(.white.opacity(0.8))
+                            .lineLimit(1)
+                            .frame(maxWidth: 50)
+                    }
+                }
+                
+                // 🌟 新增：如果车友数量超过了 4 个，显示一个溢出提示
+                if overflowCount > 0 {
+                    VStack(spacing: 4) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.white.opacity(0.15))
+                                .frame(width: 44, height: 44)
+                            Text("+\(overflowCount)")
+                                .font(.subheadline.bold())
+                                .foregroundColor(.white)
+                        }
+                        Text("更多")
+                            .font(.caption2)
+                            .foregroundColor(.white.opacity(0.5))
+                            .lineLimit(1)
+                            .frame(maxWidth: 50)
+                    }
+                }
+            }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 8)
+        }
+        .padding()
+        .background(Color.black.opacity(0.85)) // 酷炫暗黑风
+    }
+}
+
+struct MotoIntercomLiveActivity: Widget {
+    
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: MotoIntercomAttributes.self) { context in
+            IntercomLiveActivityView(context: context)
+        } dynamicIsland: { context in
+            // 这里可以灵活配置灵动岛的三种形态 (Expanded, Compact, Minimal)
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) { Text("机车通讯").font(.caption) }
+                DynamicIslandExpandedRegion(.center) {
+                    HStack(spacing: 8) {
+                        ForEach(context.state.activePeers.filter { $0.isSpeaking }, id: \.peerID) { peer in
+                            AvatarImageView(filename: peer.avatarFileName)
+                                .frame(width: 24, height: 24)
+                                .clipShape(Circle())
+                        }
+                    }
+                }
+            } compactLeading: {
+                Image(systemName: "mic")
+            } compactTrailing: {
+                Text(context.state.activePeers.contains(where: { $0.isSpeaking }) ? "🗣️" : "🤫")
+            } minimal: {
+                Image(systemName: "mic")
+            }
+        }
+    }
+}

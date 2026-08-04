@@ -7,7 +7,9 @@
 
 import UIKit
 import ActivityKit
+import Foundation
 
+//MRAK: NAV
 public struct MotoNaviAttributes: ActivityAttributes {
     
     // 动态数据：随着高德导航回调不断刷新的数据
@@ -32,6 +34,7 @@ public class PTLiveActivityManager: NSObject {
     
     // 保持对当前活动实例的引用
     private var currentNaviActivity: Activity<MotoNaviAttributes>?
+    private var currentIntercomActivity: Activity<MotoIntercomAttributes>?
     
     private override init() { super.init() }
     
@@ -79,5 +82,84 @@ public class PTLiveActivityManager: NSObject {
             currentNaviActivity = nil
             print("🛑 [LiveActivity] 导航实时活动已结束。")
         }
+    }
+    
+    public func startIntercomActivity(channel: String) {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        if currentIntercomActivity != nil { return } // 防重复开启
+        
+        let attributes = MotoIntercomAttributes(channelName: channel)
+        let initialState = MotoIntercomAttributes.ContentState(
+            isLocalTalking: false,
+            statusText: "正在组网...",
+            activePeers: []
+        )
+        
+        do {
+            let content = ActivityContent(state: initialState, staleDate: nil)
+            currentIntercomActivity = try Activity.request(attributes: attributes, content: content, pushType: nil)
+        } catch {
+            print("❌ [LiveActivity] 对讲机开启失败: \(error.localizedDescription)")
+        }
+    }
+    
+    public func updateIntercomActivity(isTalking: Bool, status: String, peers: [PeerLiveState]) {
+        guard let activity = currentIntercomActivity else { return }
+        
+        let updatedState = MotoIntercomAttributes.ContentState(
+            isLocalTalking: isTalking,
+            statusText: status,
+            activePeers: peers
+        )
+        
+        Task {
+            let content = ActivityContent(state: updatedState, staleDate: nil)
+            await activity.update(content, alertConfiguration: nil)
+        }
+    }
+
+    public func stopIntercomActivity() {
+        guard let activity = currentIntercomActivity else { return }
+        Task {
+            await activity.end(activity.content, dismissalPolicy: .immediate)
+            currentIntercomActivity = nil
+        }
+    }
+}
+
+//MARK: PTT
+public struct PeerLiveState: Codable, Hashable {
+    public var peerID: String
+    public var peerName: String
+    public var avatarFileName: String // 存放在 App Group 中的文件名，如果为空 ""，则使用系统默认头像
+    public var isSpeaking: Bool       // 用来触发绿色光晕动画
+    
+    public init(peerID: String, peerName: String, avatarFileName: String, isSpeaking: Bool) {
+        self.peerID = peerID
+        self.peerName = peerName
+        self.avatarFileName = avatarFileName
+        self.isSpeaking = isSpeaking
+    }
+}
+
+public struct MotoIntercomAttributes: ActivityAttributes {
+    
+    // 动态变化的属性
+    public struct ContentState: Codable, Hashable {
+        public var isLocalTalking: Bool          // 自己是否在说话
+        public var statusText: String            // 当前对讲机底部的状态文字
+        public var activePeers: [PeerLiveState]  // 当前在线的所有车友
+        
+        public init(isLocalTalking: Bool, statusText: String, activePeers: [PeerLiveState]) {
+            self.isLocalTalking = isLocalTalking
+            self.statusText = statusText
+            self.activePeers = activePeers
+        }
+    }
+
+    // 静态属性：如频道名称
+    public var channelName: String
+    public init(channelName: String) {
+        self.channelName = channelName
     }
 }

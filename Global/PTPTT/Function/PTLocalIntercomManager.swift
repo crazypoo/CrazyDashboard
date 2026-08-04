@@ -123,6 +123,10 @@ public class PTLocalIntercomManager: NSObject {
 
     private let myAvatarFileName = "PT_MyCustomAvatar.jpg"
     
+    private let appGroupID = "group.com.yd.PTSpeed.xp400"
+    
+    private var peerAvatars: [MCPeerID: UIImage] = [:]
+    
     public func currentMyAvatar() -> UIImage {
         guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
             // 如果沙盒异常，直接兜底返回 Assets 里的默认头像 (请确保 Assets 中存在 "default_user_avatar" 图片)
@@ -305,6 +309,8 @@ public class PTLocalIntercomManager: NSObject {
         updateStatusAndBroadcast(currentStatusText)
         startSpeakingDetector()
         startPingTimer()
+        
+        PTLiveActivityManager.shared.startIntercomActivity(channel: PTDashboardConfig.languageFunc(text: "Team channel"))
     }
     
     public func stopOfflineIntercom() {
@@ -330,6 +336,7 @@ public class PTLocalIntercomManager: NSObject {
         updateStatusAndBroadcast(currentStatusText)
         stopSpeakingDetector()
         stopPingTimer()
+        PTLiveActivityManager.shared.stopIntercomActivity()
     }
     
     private func startSpeakingDetector() {
@@ -688,6 +695,29 @@ public class PTLocalIntercomManager: NSObject {
     }
     
     func globalStatusChangeSet() {
+        var peerStates: [PeerLiveState] = []
+        for peer in self.activePeers {
+            // 如果你在内存字典里有这个人的自定义头像，就去 App Group 拿到它的文件名；如果没有，传 ""
+            var fileName = ""
+            if let customAvatar = self.self.peerAvatars[peer] {
+                // 这里调用我们上面的辅助方法存入共享沙盒，并拿到文件名
+                fileName = savePeerAvatarToAppGroup(image: customAvatar, peerID: peer)
+            }
+            
+            // 判断这个人当前是否正在说话 (基于 currentSpeakingPeers 集合)
+            let isSpeaking = self.currentSpeakingPeers.contains(peer)
+            
+            let state = PeerLiveState(peerID: peer.displayName, peerName: peer.displayName, avatarFileName: fileName, isSpeaking: isSpeaking)
+            peerStates.append(state)
+        }
+        
+        // 通知锁屏组件更新！
+        PTLiveActivityManager.shared.updateIntercomActivity(
+            isTalking: self.isTalking,
+            status: self.currentStatusText,
+            peers: peerStates
+        )
+
         DispatchQueue.main.async {
             NotificationCenter.default.post(
                 name: PTIntercomGlobalStatusChanged,
@@ -712,6 +742,18 @@ public class PTLocalIntercomManager: NSObject {
         } else {
             PTNSLogConsole("💤 [音频引擎] 上次对讲机为关闭状态，保持静默，省电模式")
         }
+    }
+    
+    private func savePeerAvatarToAppGroup(image: UIImage, peerID: MCPeerID) -> String {
+        let fileName = "avatar_\(peerID.displayName).jpg"
+        guard let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) else { return "" }
+        
+        let fileURL = groupURL.appendingPathComponent(fileName)
+        if let data = image.jpegData(compressionQuality: 0.8) {
+            try? data.write(to: fileURL)
+            return fileName
+        }
+        return ""
     }
 }
 
@@ -766,6 +808,7 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
 
                 let currentAvatar = self.currentMyAvatar()
                 self.sendMyAvatar(to: peerID, avatarImage: currentAvatar)
+                
             case .notConnected:
                 // 有车友掉线或主动离开网络
                 self.connectingPeers.remove(peerID)
@@ -773,6 +816,7 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
                 // 检查车队里是否还有其他人
                 self.activePeers.removeAll { $0 == peerID }
                 self.lastReceivedAudio.removeValue(forKey: peerID) // 清理掉线的人
+                self.peerAvatars.removeValue(forKey: peerID)
                 if self.activePeers.isEmpty {
                     // 车队空了，恢复到等待状态
                     self.updateStatusAndBroadcast(PTDashboardConfig.languageFunc(text: "ptt_ready_connect"))
@@ -860,6 +904,8 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
             if let receivedImage = UIImage(data: imageData) {
                 PTNSLogConsole("🖼️ [头像传输] 成功接收到队友 \(peerID.displayName) 的头像！")
                 
+                self.peerAvatars[peerID] = receivedImage
+                self.globalStatusChangeSet()
                 // 🌟 发送全局通知，把照片扔给外部 UI 进行刷新
                 DispatchQueue.main.async {
                     NotificationCenter.default.post(
