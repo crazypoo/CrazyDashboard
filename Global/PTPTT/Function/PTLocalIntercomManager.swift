@@ -121,6 +121,26 @@ public class PTLocalIntercomManager: NSObject {
         set { UserDefaults.standard.set(newValue, forKey: "PT_CustomUserName") }
     }
 
+    private let myAvatarFileName = "PT_MyCustomAvatar.jpg"
+    
+    public func currentMyAvatar() -> UIImage {
+        guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            // 如果沙盒异常，直接兜底返回 Assets 里的默认头像 (请确保 Assets 中存在 "default_user_avatar" 图片)
+            return UIImage(named: "placeholder")!
+        }
+        
+        let fileURL = documentsDirectory.appendingPathComponent(myAvatarFileName)
+        
+        // 如果沙盒里有用户选过的相册图片，优先返回它
+        if FileManager.default.fileExists(atPath: fileURL.path),
+           let savedImage = UIImage(contentsOfFile: fileURL.path) {
+            return savedImage
+        }
+        
+        // 否则，返回 Assets 里的默认头像
+        return UIImage(named: "placeholder")!
+    }
+
     private override init() {
         super.init()
         setupPeerID()
@@ -132,6 +152,46 @@ public class PTLocalIntercomManager: NSObject {
         NotificationCenter.default.addObserver(self, selector: #selector(handleAudioRouteChange), name: AVAudioSession.routeChangeNotification, object: nil)
     }
     
+    private func sendMyAvatar(to peer: MCPeerID, avatarImage: UIImage) {
+        guard let jpegData = avatarImage.jpegData(compressionQuality: 0.5) else { return }
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("my_avatar_\(myUUID).jpg")
+        
+        do {
+            try jpegData.write(to: tempURL)
+            // 发送资源文件，"AVATAR_IMAGE" 是我们约定的标识符
+            session.sendResource(at: tempURL, withName: "AVATAR_IMAGE", toPeer: peer) { error in
+                if let err = error {
+                    PTNSLogConsole("❌ [头像同步] 发送给 \(peer.displayName) 失败: \(err.localizedDescription)")
+                } else {
+                    PTNSLogConsole("✅ [头像同步] 头像已成功发送给 \(peer.displayName)")
+                }
+            }
+        } catch {
+            PTNSLogConsole("❌ [头像同步] 临时文件写入失败: \(error)")
+        }
+    }
+    
+    public func updateAndBroadcastMyAvatar(_ image: UIImage) {
+        // 第一步：持久化保存到本地沙盒
+        guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+        let fileURL = documentsDirectory.appendingPathComponent(myAvatarFileName)
+        if let data = image.jpegData(compressionQuality: 0.8) {
+            try? data.write(to: fileURL)
+            PTNSLogConsole("✅ [头像持久化] 新头像已保存至本地")
+        }
+        
+        // 第二步：立刻把新头像同步给当前局域网内的所有队友
+        let peers = session.connectedPeers
+        guard !peers.isEmpty else {
+            PTNSLogConsole("ℹ️ [头像同步] 当前没有连接的队友，仅保存在本地。")
+            return
+        }
+        
+        for peer in peers {
+            sendMyAvatar(to: peer, avatarImage: image)
+        }
+    }
+
     private func setupPeerID() {
         let peerIDKey = "PT_SavedMCPeerID"
         if let data = UserDefaults.standard.data(forKey: peerIDKey),
@@ -704,6 +764,8 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
                 self.delegate?.intercomManager(self, didUpdatePeers: self.activePeers.count)
                 self.delegate?.intercomManager(self, didUpdatePeerList: self.activePeers)
 
+                let currentAvatar = self.currentMyAvatar()
+                self.sendMyAvatar(to: peerID, avatarImage: currentAvatar)
             case .notConnected:
                 // 有车友掉线或主动离开网络
                 self.connectingPeers.remove(peerID)

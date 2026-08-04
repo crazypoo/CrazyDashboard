@@ -68,6 +68,7 @@ class PTMapView: UIView, MAMapViewDelegate {
         
         NotificationCenter.default.addObserver(self, selector: #selector(handlePeerLocationUpdate(_:)), name: PTPeerLocationDidUpdateNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handlePeerLeave(_:)), name: PTPeerDidLeaveNetworkNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handlePeerAvatarUpdate(_:)), name: PTPeerAvatarDidUpdateNotification, object: nil)
     }
     
     deinit {
@@ -163,14 +164,18 @@ class PTMapView: UIView, MAMapViewDelegate {
             var view = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
             
             if view == nil {
-                // 注意使用 MAAnnotationView，方便我们做任意角度的旋转
                 view = MAAnnotationView(annotation: peerAnno, reuseIdentifier: identifier)
-                view?.canShowCallout = true // 允许点击弹出车友名字
-                // TODO: 换成你准备好的队友图标名称
-                view?.image = UIImage(named: "teammate_moto_icon")?.transformImage(size: .init(width: 32, height: 32))
+                view?.canShowCallout = true
             }
             
             view?.annotation = peerAnno
+            
+            // 🌟 8. 判定赋值图片
+            if let customAvatar = peerAnno.avatarImage {
+                view?.image = customAvatar.pt_toMapCircleAvatar()
+            } else {
+                view?.image = UIImage(named: "placeholder")?.pt_toMapCircleAvatar()
+            }
             // 确保第一次渲染出来时，车头方向也是准的
             view?.transform = CGAffineTransform(rotationAngle: CGFloat(peerAnno.course * .pi / 180.0))
             
@@ -292,6 +297,27 @@ extension PTMapView:AMapNaviDriveDataRepresentable {
 
 //MARK: MultipeerConnectivity
 extension PTMapView {
+    @objc private func handlePeerAvatarUpdate(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let peerID = userInfo["peerID"] as? MCPeerID,
+              let avatarImage = userInfo["avatarImage"] as? UIImage else { return }
+        
+        if let existingAnno = peerAnnotations[peerID] {
+            existingAnno.avatarImage = avatarImage
+            
+            DispatchQueue.main.async {
+                let circularAvatar = avatarImage.pt_toMapCircleAvatar()
+                // 同时更新手机专业模式地图和 CarPlay 地图的视图！
+                if let mainView = self.mapView.view(for: existingAnno) {
+                    mainView.image = circularAvatar
+                }
+                if let carPlayView = self.carPlayMapView.view(for: existingAnno) {
+                    carPlayView.image = circularAvatar
+                }
+            }
+        }
+    }
+
     // MARK: - 队友地图位置同步 (支持双屏双重渲染)
     @objc private func handlePeerLocationUpdate(_ notification: Notification) {
         guard let userInfo = notification.userInfo,

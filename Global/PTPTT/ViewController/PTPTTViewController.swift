@@ -146,10 +146,55 @@ class PTPTTViewController: PTMotoBaseViewController {
         return view
     }()
     
+    lazy var avatarButton:PTBaseButton = {
+        let view = PTBaseButton(type: .custom)
+        view.imageView?.contentMode = .scaleAspectFit
+        view.setImage(PTLocalIntercomManager.shared.currentMyAvatar().pt_toMapCircleAvatar(), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { _ in
+            let share = PTMediaLibConfig.share
+            PTMediaLibUIConfig.share.selectedBorderColor = PTDashboardConfig.shared.appMainColor
+//            PTMediaLibUIConfig.share.backImage = UIImage(named: "nav_close_black")!
+//            PTMediaLibUIConfig.share.submitImage = UIImage(named: "cart_add_success")!
+//            PTMediaLibUIConfig.share.arrowDownImage = UIImage(named: "arrow_down_black")!
+//            PTMediaLibUIConfig.share.ablumListBackImage = UIImage(named: "nav_close_black")!
+//            PTMediaLibUIConfig.share.albumSelectedImage = UIImage(named: "cart_add_success")!
+            PTMediaLibUIConfig.share.albumListNavName = PTDashboardConfig.languageFunc(text: "ALbum list")
+            share.allowTakePhotoInLibrary = false
+            share.allowEditImage = false
+            share.allowSelectImage = true
+            share.allowSelectVideo = false
+            share.allowSelectGif = false
+            share.allowEditVideo = false
+            share.maxSelectCount = 1
+            share.allowEditImage = false
+            PTMediaLibUIConfig.share.selectLibTitleFont = .appfont(size: 15)
+            PTMediaLibUIConfig.share.selectLibSubTitleFont = .appfont(size: 12)
+            PTMediaLibUIConfig.share.albumCellTitleFont = .appfont(size: 18,bold: true)
+            PTMediaLibUIConfig.share.albumCellDescFont = .appfont(size: 14)
+            let cam = PTCameraConfig()
+            cam.allowTakePhoto = false
+            cam.allowRecordVideo = false
+            share.cameraConfiguration = cam
+
+            let vc = PTMediaLibViewController()
+            vc.mediaLibShow()
+            vc.selectImageBlock = { result, isOriginal in
+                if !result.isEmpty,let firstImge = result.first?.image {
+                    PTLocalIntercomManager.shared.updateAndBroadcastMyAvatar(firstImge)
+                    self.avatarButton.setImage(firstImge, for: .normal)
+                } else {
+                    PTGCDManager.shared.runOnMain {}
+                }
+            }
+        })
+        return view
+    }()
+    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
-        setCustomRightButtons(buttons: [pencilButton])
+        setCustomRightButtons(buttons: [pencilButton,avatarButton],buttonSpacing: CGFloat.GlobalItemSpacing)
 
         self.connectFriend = PTLocalIntercomManager.shared.connectedPeersCount
         self.peersCountLabel.text = PTDashboardConfig.language(key: "ptt_ready_connect_count", self.connectFriend)

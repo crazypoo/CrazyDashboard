@@ -17,6 +17,10 @@ post_install do |installer|
   end
 end
 
+pre_install do |installer|
+Pod::Installer::Xcode::TargetValidator.send(:define_method, :verify_no_static_framework_transitive_dependencies) {}
+end
+
 def shared_pods
   ### DEBUG
   pod 'LookinServer', :subspecs => ['Swift'], :configurations => ['Debug']
@@ -35,6 +39,7 @@ def shared_pods
   pod 'PooTools/Instructions', :git => 'https://github.com/crazypoo/PTools.git'
   pod 'PooTools/WhatsNewsKit', :git => 'https://github.com/crazypoo/PTools.git'
   pod 'PooTools/MicPermission', :git => 'https://github.com/crazypoo/PTools.git'
+  pod 'PooTools/PhotoPicker', :git => 'https://github.com/crazypoo/PTools.git'
 
   pod 'SwiftyUserDefaults'
   

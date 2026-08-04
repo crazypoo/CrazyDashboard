@@ -36,6 +36,13 @@ class NaviPointAnnotation: MAPointAnnotation {
 class PTPeerAnnotation: MAPointAnnotation {
     var peerID: MCPeerID!
     var course: Double = 0.0 // 记录车头方向
+    var avatarImage: UIImage? // 暂存队友的真实头像
+}
+
+extension UIImage {
+    func pt_toMapCircleAvatar(size: CGSize = CGSize(width: 32, height: 32)) -> UIImage? {
+        return self.transformImage(size: size)
+    }
 }
 
 struct RouteCollectionViewInfo {
@@ -581,13 +588,34 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         
         NotificationCenter.default.addObserver(self, selector: #selector(handlePeerLocationUpdate(_:)), name: PTPeerLocationDidUpdateNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handlePeerLeave(_:)), name: PTPeerDidLeaveNetworkNotification, object: nil)
-
+        NotificationCenter.default.addObserver(self, selector: #selector(handlePeerAvatarUpdate(_:)), name: PTPeerAvatarDidUpdateNotification, object: nil)
+        
         updateMicStatusUI(isRunning: PTLocalIntercomManager.shared.isRunning,
                           isHandsFree: PTLocalIntercomManager.shared.isHandsFreeMode,
                           isTalking: PTLocalIntercomManager.shared.isTalking,
                           otherMemberTalking:PTLocalIntercomManager.shared.otherMemberTalking)
     }
     
+    @objc private func handlePeerAvatarUpdate(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let peerID = userInfo["peerID"] as? MCPeerID,
+              let avatarImage = userInfo["avatarImage"] as? UIImage else { return }
+        
+        // 找到该队友在地图上的数据模型
+        if let existingAnno = peerAnnotations[peerID] {
+            // 存入数据模型，防止滑出屏幕后复用丢失
+            existingAnno.avatarImage = avatarImage
+            
+            // 立即刷新地图上正在显示的 View
+            if let annoView = amapView.view(for: existingAnno) {
+                DispatchQueue.main.async {
+                    // 使用切圆工具处理后贴到大头针上
+                    annoView.image = avatarImage.pt_toMapCircleAvatar()
+                }
+            }
+        }
+    }
+
     @objc private func handleIntercomStatusChange(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
               let isRunning = userInfo["isRunning"] as? Bool,
@@ -994,14 +1022,19 @@ extension PTMotoNavigationViewController:MAMapViewDelegate {
             var view = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
             
             if view == nil {
-                // 注意：这里使用 MAAnnotationView 而不是 MAPinAnnotationView，因为我们要用自定义图片和自由旋转
                 view = MAAnnotationView(annotation: peerAnno, reuseIdentifier: identifier)
                 view?.canShowCallout = true
-                // TODO: 替换为你工程里代表队友摩托车的图片名称
-                view?.image = UIImage(named: "placeholder")?.transformImage(size: .init(width: 32, height: 32))
             }
             
             view?.annotation = peerAnno
+
+            if let customAvatar = peerAnno.avatarImage {
+                view?.image = customAvatar.pt_toMapCircleAvatar()
+            } else {
+                // 没收到头像前，用默认图标兜底
+                view?.image = UIImage(named: "placeholder")?.pt_toMapCircleAvatar()
+            }
+
             // 保证刚添加上来时，车头方向也是对的
             view?.transform = CGAffineTransform(rotationAngle: CGFloat(peerAnno.course * .pi / 180.0))
             return view
