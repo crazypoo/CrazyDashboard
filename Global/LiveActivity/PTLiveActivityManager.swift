@@ -7,7 +7,6 @@
 
 import UIKit
 import ActivityKit
-//import PooTools
 
 public struct MotoNaviAttributes: ActivityAttributes {
     
@@ -47,11 +46,8 @@ public class PTLiveActivityManager: NSObject {
         
         do {
             // 请求开启实时活动
-            currentNaviActivity = try Activity.request(
-                attributes: attributes,
-                contentState: initialState,
-                pushType: nil // 我们使用本地主动更新，不需要远程推送
-            )
+            let content = ActivityContent(state: initialState, staleDate: nil)
+            currentNaviActivity = try Activity.request(attributes: attributes, content: content, pushType: nil)
             print("🚀 [LiveActivity] 导航实时活动已成功开启！")
         } catch {
             print("❌ [LiveActivity] 开启失败: \(error.localizedDescription)")
@@ -68,17 +64,18 @@ public class PTLiveActivityManager: NSObject {
             estimatedArrivalTime: expectedArrival
         )
         
-        Task {
-            await activity.update(using: updatedState, alertConfiguration: nil)
+        Task { @MainActor in
+            let content = ActivityContent(state: updatedState, staleDate: nil)
+            await activity.update(content, alertConfiguration: nil)
         }
     }
 
     /// 结束导航 Live Activity
     public func stopNavigationActivity() {
         guard let activity = currentNaviActivity else { return }
-        Task {
+        Task {  @MainActor in
             // 立即结束并从锁屏移除
-            await activity.end(using: activity.contentState, dismissalPolicy: .immediate)
+            await activity.end(activity.content, dismissalPolicy: .immediate)
             currentNaviActivity = nil
             print("🛑 [LiveActivity] 导航实时活动已结束。")
         }

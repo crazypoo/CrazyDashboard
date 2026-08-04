@@ -263,7 +263,7 @@ public class PTRouteSnapshotManager: NSObject, MAMapViewDelegate {
             
             // 延迟等待底图加载完成
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                mapView.takeSnapshot(in: mapView.bounds) { [weak self] (image, state) in
+                mapView.takeSnapshot(in: mapView.bounds) { [weak self = self] (image, state) in
                     var resultURL: URL? = nil
                     
                     if let img = image, let data = img.jpegData(compressionQuality: 0.8) {

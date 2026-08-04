@@ -288,12 +288,20 @@ public class PTLocalIntercomManager: NSObject {
 
     public func startTalking() {
         guard !isTalking else { return }
-        AVAudioSession.sharedInstance().requestRecordPermission { [weak self] allowed in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                if allowed {
-                    self.internalStartTalking()
-                } else {
+        micRequest {
+            self.internalStartTalking()
+        }
+    }
+    
+    func micRequest(authorized:PTActionTask? = nil) {
+        PTPermission.microphone.request {
+            PTGCDManager.shared.runOnMain {
+                switch PTPermission.microphone.status {
+                case .authorized:
+                    authorized?()
+                case .notDetermined:
+                    self.micRequest()
+                default:
                     PTNSLogConsole("❌ [音频引擎] 麦克风权限被拒绝，无法开启对讲！")
                     self.updateStatusAndBroadcast(PTDashboardConfig.languageFunc(text: "ptt_mic_denied")) // 你可以在语言包里加个提示
                 }
@@ -420,73 +428,67 @@ public class PTLocalIntercomManager: NSObject {
     
     private func startContinuousListening() {
         // 同样加入权限校验
-        AVAudioSession.sharedInstance().requestRecordPermission { [weak self] allowed in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                guard allowed else {
-                    PTNSLogConsole("❌ [音频引擎] 免提模式启动失败，麦克风权限被拒绝！")
-                    return
-                }
-                
-                if !self.audioEngine.isRunning { self.setupAudioEngine() }
-                
-                let inputNode = self.audioEngine.inputNode
-                inputNode.removeTap(onBus: 0)
-                
-                let hardwareFormat = inputNode.outputFormat(forBus: 0)
-                guard hardwareFormat.sampleRate > 0 && hardwareFormat.channelCount > 0 else {
-                    self.restartEngineHard()
-                    return
-                }
-                
-                // 显式传入 hardwareFormat
-                inputNode.installTap(onBus: 0, bufferSize: 1024, format: hardwareFormat) { [weak self] (buffer, time) in
-                    guard let self = self, self.isHandsFreeMode else { return }
-                    
-                    let currentVolume = buffer.calculateRMS()
-                    let now = Date()
-                    var isCurrentlySpeaking = false
-                    
-                    if currentVolume > self.voiceThreshold {
-                        self.lastSpokenTime = now
-                        isCurrentlySpeaking = true
-                    } else if now.timeIntervalSince(self.lastSpokenTime) < self.voxHangTime {
-                        isCurrentlySpeaking = true
-                    }
-                    
-                    self.isLocalUserSpeaking = isCurrentlySpeaking
-                    
-                    if isCurrentlySpeaking {
-                        if !self.isTalking {
-                            self.isTalking = true
-                            DispatchQueue.main.async { self.playerNode.pause() }
-                            self.updateStatusAndBroadcast(PTDashboardConfig.languageFunc(text: "ptt_radio"))
-                        }
-                        
-                        buffer.applyGain(self.micVolumeMultiplier)
-                        
-                        if buffer.format == self.commonFormat {
-                            if let data = buffer.toData() { self.sendAudioData(data) }
-                        } else {
-                            if let convertedBuffer = self.convert(buffer: buffer, from: buffer.format, to: self.commonFormat),
-                               let data = convertedBuffer.toData() {
-                                self.sendAudioData(data)
-                            } else {
-                                PTNSLogConsole("❌ [免提模式] 音频重采样转换失败，跳过发送")
-                            }
-                        }
-                        
-                    } else {
-                        if self.isTalking {
-                            self.isTalking = false
-                            DispatchQueue.main.async { self.playerNode.play() }
-                            self.updateStatusAndBroadcast(PTDashboardConfig.languageFunc(text: "ptt_hand_free_listening"))
-                        }
-                    }
-                }
-                
-                self.updateStatusAndBroadcast(PTDashboardConfig.languageFunc(text: "ptt_hand_free_listening"))
+        micRequest { [weak self] in
+            guard let self = self else { return }
+            
+            if !self.audioEngine.isRunning { self.setupAudioEngine() }
+            
+            let inputNode = self.audioEngine.inputNode
+            inputNode.removeTap(onBus: 0)
+            
+            let hardwareFormat = inputNode.outputFormat(forBus: 0)
+            guard hardwareFormat.sampleRate > 0 && hardwareFormat.channelCount > 0 else {
+                self.restartEngineHard()
+                return
             }
+            
+            // 显式传入 hardwareFormat
+            inputNode.installTap(onBus: 0, bufferSize: 1024, format: hardwareFormat) { [weak self] (buffer, time) in
+                guard let self = self, self.isHandsFreeMode else { return }
+                
+                let currentVolume = buffer.calculateRMS()
+                let now = Date()
+                var isCurrentlySpeaking = false
+                
+                if currentVolume > self.voiceThreshold {
+                    self.lastSpokenTime = now
+                    isCurrentlySpeaking = true
+                } else if now.timeIntervalSince(self.lastSpokenTime) < self.voxHangTime {
+                    isCurrentlySpeaking = true
+                }
+                
+                self.isLocalUserSpeaking = isCurrentlySpeaking
+                
+                if isCurrentlySpeaking {
+                    if !self.isTalking {
+                        self.isTalking = true
+                        DispatchQueue.main.async { self.playerNode.pause() }
+                        self.updateStatusAndBroadcast(PTDashboardConfig.languageFunc(text: "ptt_radio"))
+                    }
+                    
+                    buffer.applyGain(self.micVolumeMultiplier)
+                    
+                    if buffer.format == self.commonFormat {
+                        if let data = buffer.toData() { self.sendAudioData(data) }
+                    } else {
+                        if let convertedBuffer = self.convert(buffer: buffer, from: buffer.format, to: self.commonFormat),
+                           let data = convertedBuffer.toData() {
+                            self.sendAudioData(data)
+                        } else {
+                            PTNSLogConsole("❌ [免提模式] 音频重采样转换失败，跳过发送")
+                        }
+                    }
+                    
+                } else {
+                    if self.isTalking {
+                        self.isTalking = false
+                        DispatchQueue.main.async { self.playerNode.play() }
+                        self.updateStatusAndBroadcast(PTDashboardConfig.languageFunc(text: "ptt_hand_free_listening"))
+                    }
+                }
+            }
+            
+            self.updateStatusAndBroadcast(PTDashboardConfig.languageFunc(text: "ptt_hand_free_listening"))
         }
     }
     

@@ -275,11 +275,12 @@ extension PTDashboardConfig {
         return collectionConfig
     }
     
-    @MainActor class public func gobalListEmptySet(image:String = "placeholder",emptyString:String = PTDashboardConfig.languageFunc(text: "empty_data_normal"),width:CGFloat? = nil,emptyTap:PTActionTask? = nil) -> PTEmptyDataViewConfig {
+    @MainActor class public func gobalListEmptySet(image:String = "placeholder",emptyString:String? = nil,width:CGFloat? = nil,emptyTap:PTActionTask? = nil) -> PTEmptyDataViewConfig {
+        let emptyStringValue = emptyString ?? PTDashboardConfig.languageFunc(text: "empty_data_normal")
         let newWidth = width ?? (CGFloat.kSCREEN_WIDTH - 24)
         let emptyConfig = PTEmptyDataViewConfig()
         let emptyHeight:CGFloat = 188
-        let emptyView = PTDashboardConfig.emptyEmptyView(image: image, emptyString: emptyString,viewWidth: newWidth,emptyTap: emptyTap)
+        let emptyView = PTDashboardConfig.emptyEmptyView(image: image, emptyString: emptyStringValue,viewWidth: newWidth,emptyTap: emptyTap)
         emptyView.frame = CGRectMake(0, 0, newWidth, emptyHeight)
         emptyConfig.customerView = emptyView
         emptyConfig.verticalOffSet = -(emptyHeight / 2)
@@ -287,7 +288,10 @@ extension PTDashboardConfig {
         return emptyConfig
     }
     
-    @MainActor class func emptyEmptyView(image:String = "placeholder",emptyString:String = PTDashboardConfig.languageFunc(text: "empty_data_normal"),viewWidth:CGFloat? = nil,emptyTap:PTActionTask? = nil) ->UIView {
+    @MainActor class func emptyEmptyView(image:String = "placeholder",emptyString:String? = nil,viewWidth:CGFloat? = nil,emptyTap:PTActionTask? = nil) ->UIView {
+        
+        let emptyStringValue = emptyString ?? PTDashboardConfig.languageFunc(text: "empty_data_normal")
+
         let newWidth = viewWidth ?? (CGFloat.kSCREEN_WIDTH - 24)
         let view = UIView()
         
@@ -297,7 +301,7 @@ extension PTDashboardConfig {
         
         let emptyLabel = UILabel()
         emptyLabel.font = .appfont(size: 14)
-        emptyLabel.text = emptyString
+        emptyLabel.text = emptyStringValue
         emptyLabel.textAlignment = .center
         emptyLabel.textColor = .gray7F
         emptyLabel.numberOfLines = 0

@@ -1095,7 +1095,7 @@ extension PTBluetoothServerManager {
         let notif = PTAncsNotif(uid: alertUid, title: title, message: message, category: 1, appId: "com.ptools.moto")
         
         // 2. 生成“通知到达”帧
-        let sourceFrame = PTFrameBuilder.buildAncsNotifSourceFrame(notif: notif)
+        let _ = PTFrameBuilder.buildAncsNotifSourceFrame(notif: notif)
         
         // 3. 将数据压入蓝牙发送队列 (假设你有一个特征值专门处理 ANCS 数据)
         // sendChunkedData(data: sourceFrame, to: ancsCharacteristic)

@@ -100,6 +100,8 @@ PODS:
     - PooTools/Core
   - PooTools/LocationPermission (4.5.7):
     - PooTools/Core
+  - PooTools/MicPermission (4.5.7):
+    - PooTools/Core
   - PooTools/Motion (4.5.7):
     - PooTools/Core
     - PooTools/MotionPermission
@@ -181,6 +183,7 @@ DEPENDENCIES:
   - PooTools/Hud (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/Instructions (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/LocationPermission (from `https://github.com/crazypoo/PTools.git`)
+  - PooTools/MicPermission (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/Motion (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/NetWork (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/ProgressBar (from `https://github.com/crazypoo/PTools.git`)
@@ -262,6 +265,6 @@ SPEC CHECKSUMS:
   SwifterSwift: 517fa61daf5b4c5e3ed13b9f35f4c26b310cfb97
   SwiftyUserDefaults: 63f80248cf5bfb3458825d9a78f2eb7e1293a040
 
-PODFILE CHECKSUM: 271cb133d3d53494aeca7929ccac9db24278fa09
+PODFILE CHECKSUM: 3f1545afde6f1c406b9ceaa45f846cca6c75dd50
 
 COCOAPODS: 1.16.2

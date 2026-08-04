@@ -192,7 +192,9 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
         stopRefreshTimer()
         // 每 0.2 秒 (5Hz) 批量更新一次 UI，既保证了视觉实时性，又解放了 CPU
         uiRefreshTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in
-            self.flushPendingLogsToUI()
+            PTGCDManager.shared.runOnMain {
+                self.flushPendingLogsToUI()
+            }
         }
     }
     

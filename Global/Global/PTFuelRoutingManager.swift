@@ -94,7 +94,7 @@ public class PTFuelRoutingManager: NSObject, AMapSearchDelegate {
         self.pendingGasStationCoordinate = stationLoc
         self.pendingGasStationName = stationName
         
-        let promptText = "油量告急，点击导航至: \(stationName) (\(Int(distanceMeters))米)"
+        let _ = "油量告急，点击导航至: \(stationName) (\(Int(distanceMeters))米)"
         
         PTNSLogConsole("⛽️ [加油管家] 已找到加油站，正在等待骑手手动确认...")
         if findFuelStationSelf {
