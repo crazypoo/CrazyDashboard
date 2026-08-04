@@ -46,6 +46,16 @@ class ViewController: UIViewController {
         }
         
         NotificationCenter.default.addObserver(self, selector: #selector(carplayStopNav), name: PTCarPlayStopNavNotification, object: nil)
+        
+        if PTMotoUserDefaultStruct.MotoLinkedAPP {
+            NotificationCenter.default.addObserver(self, selector: #selector(handleAuthSuccess), name: BLEConnectSuccess, object: nil)
+        }
+        
+        if PTMotoUserDefaultStruct.MotoLinkedAPP,!PTDashboardConfig.shared.blueConnected {
+            PTGCDManager.shared.delayOnMain(time: 3) {
+                PTBluetoothServerManager.shared.startBaseStationAndScan()
+            }
+        }
     }
     
     @objc func carplayStopNav() {
@@ -60,6 +70,11 @@ class ViewController: UIViewController {
         } else {
             self.dashBoard.mapView.setNormalMapView()
         }
+    }
+    
+    @objc func handleAuthSuccess() {
+        PTDashboardConfig.shared.blueConnected = true
+        dashBoard.lightControl.isHidden = false
     }
 }
 
