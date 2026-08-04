@@ -2,6 +2,10 @@
 
 Peugeot XP400 connector 是一款专为极客骑手打造的硬核 iOS 机车仪表盘与通讯助理。项目深度整合了局域网底层通讯、高精度导航引擎以及苹果最新的系统特性，致力于打破传统机车仪表的孤岛效应，提供车规级的骑行与车队社交体验。
 
+![iOS](https://img.shields.io/badge/iOS-17.0+-black.svg?logo=apple)
+![Swift](https://img.shields.io/badge/Swift-5.8+-orange.svg?logo=swift)
+![License](https://img.shields.io/badge/License-MIT-blue.svg)
+
 ## ✨ 核心特性 (Core Features)
 
 ### 1. 战术级车队对讲 (Tactical Intercom)
