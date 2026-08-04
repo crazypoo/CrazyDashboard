@@ -256,6 +256,8 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         PTDashboardConfig.shared.blueConnected = true
         PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "connect_success")) {
             self.bleConnectStatusLabel.isSelected = !PTDashboardConfig.shared.blueConnected
+            self.speedometer.playStartupSweep(duration: 1.5)
+            self.speedometerReversed.playStartupSweep(duration: 1.5)
         }
     }
     
@@ -263,8 +265,8 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         super.handleMotorcycleDisconnect()
         PTGCDManager.shared.delayOnMain(time: 0.35) {
             self.bleConnectStatusLabel.isSelected = !PTDashboardConfig.shared.blueConnected
-            self.speedometer.updateSpeed(0)
-            self.speedometerReversed.updateSpeed(0)
+            self.speedometer.resetToZeroWithAnimation()
+            self.speedometerReversed.resetToZeroWithAnimation()
         }
     }
     
@@ -484,6 +486,9 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                                            iconColor: PTDashboardConfig.shared.appMainColor,
                                            title: PTDashboardConfig.languageFunc(text: "casa_card_lan"),
                                            value: language)
+                self.fuelModelView.dataProgress.barColor = data3.dashboardColor.getColor()
+                self.speedometer.progressColor = data3.dashboardColor.getColor()
+                self.speedometerReversed.progressColor = data3.dashboardColor.getColor()
 
             }
         } else if let control = notification.object as? PTDashboardControl {

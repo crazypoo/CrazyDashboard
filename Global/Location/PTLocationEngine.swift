@@ -285,6 +285,30 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
         PTNSLogConsole("❌ [PTLocationEngine] 引擎定位失败: \(error.localizedDescription)")
     }
     
+    // MARK: - 小组件状态补救
+    /// 车辆断开连接时，强制将最后的缓存数据推送到小组件
+    public func forceUpdateWidgetOnDisconnect() {
+        // 1. 获取最后一次有效的 GPS 位置
+        let lat = lastLocation?.coordinate.latitude ?? 0.0
+        let lon = lastLocation?.coordinate.longitude ?? 0.0
+        
+        // 2. 从蓝牙数据单例中抓取最后一次记录的仪表盘数据
+        let finalFuel = PTBluetoothServerManager.shared.latestData1?.fuelLevelPct ?? 0
+        let finalTrip = PTBluetoothServerManager.shared.latestData1?.tripKm ?? 0
+        
+        // 3. 强制推送给小组件管理器 (此时 isConnected 传 false，代表已停车)
+        // 地址暂传 "停车打卡中..."，因为逆地理编码需要网络时间
+        PTWidgetDataManager.shared.updateWidgetData(
+            fuelLevel: finalFuel,
+            tripKm: finalTrip,
+            isConnected: false,
+            parkedLat: lat,
+            parkedLon: lon,
+            address: PTDashboardConfig.languageFunc(text: "停车定位已更新")
+        )
+        
+        PTNSLogConsole("✅ [小组件同步] 蓝牙已断开，成功强制推送最终骑行数据到小组件！")
+    }
 }
 
 extension PTLocationEngine:AMapSearchDelegate {

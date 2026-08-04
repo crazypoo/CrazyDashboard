@@ -61,7 +61,6 @@ class PTDashBoardView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    // 🌟 核心优化 1：彻底消灭魔法延迟，使用系统原生布局周期切圆角！
     override func layoutSubviews() {
         super.layoutSubviews()
         

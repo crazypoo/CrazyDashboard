@@ -50,7 +50,8 @@ class ViewController: UIViewController {
         if PTMotoUserDefaultStruct.MotoLinkedAPP {
             NotificationCenter.default.addObserver(self, selector: #selector(handleAuthSuccess), name: BLEConnectSuccess, object: nil)
         }
-        
+        NotificationCenter.default.addObserver(self, selector: #selector(handleMotorcycleDisconnect), name: MotorcycleDisconnected, object: nil)
+
         if PTMotoUserDefaultStruct.MotoLinkedAPP,!PTDashboardConfig.shared.blueConnected {
             PTGCDManager.shared.delayOnMain(time: 3) {
                 PTBluetoothServerManager.shared.startBaseStationAndScan()
@@ -75,6 +76,13 @@ class ViewController: UIViewController {
     @objc func handleAuthSuccess() {
         PTDashboardConfig.shared.blueConnected = true
         dashBoard.lightControl.isHidden = false
+        self.dashBoard.speedometer.playStartupSweep(duration: 1.5)
+    }
+    
+    @objc func handleMotorcycleDisconnect() {
+        self.dashBoard.speedometer.resetToZeroWithAnimation()
+        PTLocationEngine.shared.forceUpdateWidgetOnDisconnect()
+        PTMOTOParkingManager.shared.saveCurrentLocationAsParkingSpot()
     }
 }
 

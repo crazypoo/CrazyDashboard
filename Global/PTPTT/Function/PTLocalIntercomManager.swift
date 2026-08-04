@@ -331,7 +331,6 @@ public class PTLocalIntercomManager: NSObject {
         updateStatusAndBroadcast(currentStatusText)
         startSpeakingDetector()
         startPingTimer()
-        
         PTLiveActivityManager.shared.startIntercomActivity(channel: PTDashboardConfig.languageFunc(text: "Team channel"))
     }
     

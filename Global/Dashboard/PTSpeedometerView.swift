@@ -213,8 +213,14 @@ public class PTSpeedometerView: UIView {
     private var sweepDuration: TimeInterval = 1.2 // 自检动画总时长 (1.2秒极速扫表)
     private var sweepCompletion: (() -> Void)?
 
+    private var resetDisplayLink: CADisplayLink?
+    private var resetStartTime: CFTimeInterval = 0
+    private var resetStartSpeed: CGFloat = 0
+    private let resetDuration: TimeInterval = 0.85 // 归零总时长：0.85秒物理惯性感最好
+
     deinit {
         sweepDisplayLink?.invalidate()
+        resetDisplayLink?.invalidate()
     }
 
     // MARK: - 初始化
@@ -462,6 +468,7 @@ public class PTSpeedometerView: UIView {
     // MARK: - 更新数据
     public func updateSpeed(_ currentSpeed: CGFloat, animated: Bool = true) {
         guard !isStartupAnimating else { return }
+        if resetDisplayLink != nil { return } // 正在归零中，屏蔽残余的蓝牙数据
         _internalUpdateSpeed(currentSpeed, animated: animated)
     }
     
@@ -557,6 +564,49 @@ public class PTSpeedometerView: UIView {
         
         // 3. 以非动画模式（依赖 60Hz/120Hz 极速刷新）静默更新仪表盘
         // 这会让指针、高亮光条和中间的数字一起飞速滚动！
+        _internalUpdateSpeed(virtualSpeed, animated: false)
+    }
+    
+    // MARK: - 断开连接归零动画
+    
+    /// 触发仪表盘带物理惯性的平滑归零
+    public func resetToZeroWithAnimation() {
+        // 如果正在播放通电自检动画，或者当前速度已经是 0，则忽略
+        guard !isStartupAnimating else { return }
+        guard currentSpeedRaw > 0 else { return }
+        
+        // 记录开始归零时的瞬时速度
+        resetStartSpeed = currentSpeedRaw
+        resetStartTime = CACurrentMediaTime()
+        
+        // 清理并启动高刷定时器
+        resetDisplayLink?.invalidate()
+        resetDisplayLink = CADisplayLink(target: self, selector: #selector(handleResetUpdate))
+        resetDisplayLink?.add(to: .main, forMode: .common)
+    }
+    
+    @objc private func handleResetUpdate() {
+        let elapsed = CACurrentMediaTime() - resetStartTime
+        let progress = CGFloat(elapsed / resetDuration) // 进度：0.0 到 1.0
+        
+        // 1. 动画结束判断
+        if progress >= 1.0 {
+            resetDisplayLink?.invalidate()
+            resetDisplayLink = nil
+            
+            // 确保最终精确锁定在 0
+            _internalUpdateSpeed(0, animated: false)
+            return
+        }
+        
+        // 2. 核心魔法：使用 Ease-Out (缓出) 曲线计算物理惯性
+        // 公式：f(t) = 1 - (1 - t)^2，一开始下降快，快到 0 时逐渐变慢
+        let easeOutProgress = 1.0 - (1.0 - progress) * (1.0 - progress)
+        
+        // 3. 计算当前应当显示的递减速度
+        let virtualSpeed = resetStartSpeed * (1.0 - easeOutProgress)
+        
+        // 4. 以非动画模式（依赖高刷）静默更新仪表盘的所有组件！
         _internalUpdateSpeed(virtualSpeed, animated: false)
     }
 }
