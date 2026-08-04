@@ -37,7 +37,7 @@ class PTPeerAvatarView: UIView {
         
         // 截取名字的前两个字当头像显示
         let displayName = peerID.displayName
-        nameLabel.text = String(displayName.prefix(2)).uppercased()
+        nameLabel.text = displayName
         nameLabel.textColor = .white
         nameLabel.font = .appfont(size: 16, bold: true)
         nameLabel.textAlignment = .center
