@@ -26,6 +26,19 @@ public struct PTPeerLocation: Codable {
     public let lon: Double     // 经度
     public let course: Double  // 车头朝向 (用于地图上旋转图标)
     public let speed: Double   // 车速
+    public let originalSender: String // 源头发件人的 UUID
+    public let messageID: String
+    public var ttl: Int = 10
+    public init(lat: Double, lon: Double, course: Double, speed: Double, originalSender: String, ttl: Int = 10) {
+        self.lat = lat
+        self.lon = lon
+        self.course = course
+        self.speed = speed
+        self.originalSender = originalSender
+        self.ttl = ttl
+        // 使用 UUID 结合时间戳作为绝对唯一的 ID
+        self.messageID = "\(originalSender)_\(Date().timeIntervalSince1970)_\(UUID().uuidString.prefix(6))"
+    }
 }
 
 // MARK: - 状态回调协议，用于通知 UI 更新
@@ -145,6 +158,8 @@ public class PTLocalIntercomManager: NSObject {
         return UIImage(named: "placeholder")!
     }
 
+    private var processedMessageIDs: [String: Date] = [:]
+    
     private override init() {
         super.init()
         setupPeerID()
@@ -263,8 +278,15 @@ public class PTLocalIntercomManager: NSObject {
         let peers = session.connectedPeers
         guard !peers.isEmpty else { return }
         
-        let locData = PTPeerLocation(lat: lat, lon: lon, course: course, speed: speed)
-        
+        let locData = PTPeerLocation(
+            lat: lat,
+            lon: lon,
+            course: course,
+            speed: speed,
+            originalSender: self.myUUID,
+            ttl: 10
+        )
+
         if let jsonData = try? JSONEncoder().encode(locData),
            let jsonString = String(data: jsonData, encoding: .utf8) {
             
@@ -866,7 +888,19 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
                 // 🌟 新增：拦截并解析位置数据包
                 let jsonString = text.replacingOccurrences(of: "LOC:", with: "")
                 if let jsonData = jsonString.data(using: .utf8),
-                   let location = try? JSONDecoder().decode(PTPeerLocation.self, from: jsonData) {
+                   var location = try? JSONDecoder().decode(PTPeerLocation.self, from: jsonData) {
+                    
+                    guard location.originalSender != self.myUUID else { return }
+                    
+                    let now = Date()
+                    self.processedMessageIDs = self.processedMessageIDs.filter { now.timeIntervalSince($0.value) < 10 }
+                    
+                    if self.processedMessageIDs.keys.contains(location.messageID) {
+                        return
+                    }
+                    
+                    // 记录这个新的包，打上时间戳
+                    self.processedMessageIDs[location.messageID] = now
                     
                     // 利用全局通知将位置发送给外部地图控制器
                     DispatchQueue.main.async {
@@ -878,6 +912,26 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
                                 "location": location
                             ]
                         )
+                    }
+                    
+                    if location.ttl > 0 {
+                        location.ttl -= 1 // 消耗掉一次跳数寿命
+                        
+                        // 重新打包降级后的数据
+                        if let relayData = try? JSONEncoder().encode(location),
+                           let relayString = String(data: relayData, encoding: .utf8) {
+                            
+                            let payloadData = "LOC:\(relayString)".data(using: .utf8)!
+                            
+                            // 找到除发给我这条消息的兄弟之外的其他在线节点
+                            let otherPeers = session.connectedPeers.filter { $0 != peerID }
+                            
+                            if !otherPeers.isEmpty {
+                                // 以接力赛的方式扔给下一个人！
+                                try? session.send(payloadData, toPeers: otherPeers, with: .unreliable)
+                                PTNSLogConsole("📡 [Mesh 中继] 成功将 \(location.originalSender) 的坐标继续向后接力！剩余跳数: \(location.ttl)")
+                            }
+                        }
                     }
                 }
                 return // 🚨 拦截完毕，不能让定位数据流入音频播放器！
