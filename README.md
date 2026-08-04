@@ -28,11 +28,13 @@ Peugeot XP400 connector 是一款专为极客骑手打造的硬核 iOS 机车仪
 - **硬件与传感器**：CoreBluetooth, CoreMotion, AVFoundation
 - **基础依赖组件**：项目底层强依赖于高可用、模块化的自定义组件库 `ptools`。
 
-## ⚙️ 编译与运行要求 (Requirements)
-- **iOS 版本**：iOS 17+
-- **必需配置**：
-  - 请确保在 Xcode 的 `Signing & Capabilities` 中为主 App 和 Widget 扩展配置了相同的 **App Groups**。
-  - 需要在 `Info.plist` 中开启后台音频、后台定位等 `Background Modes`。
+## ⚙️ 安装与编译指南 (Installation)
+
+1. **环境要求**：Xcode 26.6+，目标设备运行 iOS 17.0 及以上版本。
+2. **权限配置**：请在项目的 `Signing & Capabilities` 中：
+   - 开启 **Background Modes** (Audio, Location, Bluetooth)。
+   - 配置统一的 **App Groups**（例如 `group.com.crazydashboard`），用于主 App 与 Widget 之间共享队友头像数据。
+3. **隐私声明**：在 `Info.plist` 中配置好蓝牙、麦克风、本地网络、定位的相关说明文本。
 
 ## 👨‍💻 开发者 (Author)
 **Jax Tsang**
