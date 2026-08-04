@@ -183,7 +183,7 @@ class PTPTTViewController: PTMotoBaseViewController {
                 if !result.isEmpty,let firstImge = result.first?.image {
                     PTLocalIntercomManager.shared.updateAndBroadcastMyAvatar(firstImge)
                     self.avatarButton.setImage(firstImge, for: .normal)
-                } else {
+                } else {      
                     PTGCDManager.shared.runOnMain {}
                 }
             }

@@ -848,8 +848,34 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
 
     public func browser(_ browser: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {}
     public func session(_ session: MCSession, didReceive stream: InputStream, withName streamName: String, fromPeer peerID: MCPeerID) {}
-    public func session(_ session: MCSession, didStartReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, with progress: Progress) {}
-    public func session(_ session: MCSession, didFinishReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, at localURL: URL?, withError error: Error?) {}
+    public func session(_ session: MCSession, didStartReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, with progress: Progress) { }
+    public func session(_ session: MCSession, didFinishReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, at localURL: URL?, withError error: Error?) {
+        guard error == nil,
+              let url = localURL,
+              resourceName == "AVATAR_IMAGE" else { return }
+        
+        do {
+            // 从临时路径读取收到的图片数据
+            let imageData = try Data(contentsOf: url)
+            if let receivedImage = UIImage(data: imageData) {
+                PTNSLogConsole("🖼️ [头像传输] 成功接收到队友 \(peerID.displayName) 的头像！")
+                
+                // 🌟 发送全局通知，把照片扔给外部 UI 进行刷新
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(
+                        name: PTPeerAvatarDidUpdateNotification,
+                        object: nil,
+                        userInfo: [
+                            "peerID": peerID,
+                            "avatarImage": receivedImage
+                        ]
+                    )
+                }
+            }
+        } catch {
+            PTNSLogConsole("❌ [头像传输] 读取接收到的文件失败: \(error)")
+        }
+    }
 }
 
 // MARK: - 底层内存转换扩展
