@@ -10,6 +10,7 @@ import PooTools
 import SwifterSwift
 import SnapKit
 import MultipeerConnectivity
+import SafeSFSymbols
 
 class PTPeerAvatarView: UIView {
     let peerID: MCPeerID
@@ -128,10 +129,28 @@ class PTPTTViewController: PTMotoBaseViewController {
 
     let tapButtonSize:CGFloat = 150.adapter
     
+    lazy var pencilButton:PTBaseButton = {
+        
+        let view = PTBaseButton(type: .custom)
+        view.setImage(UIImage(.pencil.line).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { _ in
+            UIAlertController.base_textfield_alertVC(title:PTDashboardConfig.languageFunc(text: "Edit name"),okBtn: PTDashboardConfig.languageFunc(text: "button_confirm"), cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), placeHolders: ["Name"], textFieldTexts: [PTLocalIntercomManager.shared.customUserName], keyboardType: [.default], textFieldDelegate: self) { result in
+                if let resultValue = result["Name"] {
+                    if PTLocalIntercomManager.shared.customUserName != resultValue {
+                        PTLocalIntercomManager.shared.updateUserName(newName: resultValue)
+                    }
+                }
+            }
+        })
+        return view
+    }()
+    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
-        
+        setCustomRightButtons(buttons: [pencilButton])
+
         self.connectFriend = PTLocalIntercomManager.shared.connectedPeersCount
         self.peersCountLabel.text = PTDashboardConfig.language(key: "ptt_ready_connect_count", self.connectFriend)
         self.peersCountLabel.textColor = self.connectFriend > 0 ? .systemGreen : .gray
@@ -439,3 +458,5 @@ extension PTPTTViewController: PTLocalIntercomDelegate {
         }
     }
 }
+
+extension PTPTTViewController:UITextFieldDelegate {}

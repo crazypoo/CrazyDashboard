@@ -13,6 +13,7 @@ import PooTools
 public let PTIntercomGlobalStatusChanged = NSNotification.Name("PTIntercomGlobalStatusChanged")
 public let PTPeerLocationDidUpdateNotification = NSNotification.Name("PTPeerLocationDidUpdateNotification")
 public let PTPeerDidLeaveNetworkNotification = NSNotification.Name("PTPeerDidLeaveNetworkNotification")
+public let PTPeerAvatarDidUpdateNotification = NSNotification.Name("PTPeerAvatarDidUpdateNotification")
 
 public enum PTNetworkSignalLevel {
     case strong // 满格绿信号 (< 50ms)
