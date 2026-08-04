@@ -18,6 +18,7 @@ import CoreMotion
 import SafeSFSymbols
 import AttributedString
 import CarPlay
+import MultipeerConnectivity
 
 public let PTCarPlayStopNavNotification = NSNotification.Name("PTCarPlayStopNavNotification")
 
@@ -30,6 +31,11 @@ enum NaviPointAnnotationType: Int {
 
 class NaviPointAnnotation: MAPointAnnotation {
     var naviPointType: NaviPointAnnotationType?
+}
+
+class PTPeerAnnotation: MAPointAnnotation {
+    var peerID: MCPeerID!
+    var course: Double = 0.0 // 记录车头方向
 }
 
 struct RouteCollectionViewInfo {
@@ -354,7 +360,8 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         self.startNavigationTapped()
         self.driveView.isHidden = false
         self.routePlantList.isHidden = true
-        self.amapView.removeAnnotations(self.amapView.annotations)
+        let annotationsToRemove = self.amapView.annotations.filter { !($0 is PTPeerAnnotation) }
+        self.amapView.removeAnnotations(annotationsToRemove)
         self.amapView.removeOverlays(self.amapView.overlays)
         if self.testButton.isSelected {
             AMapNaviDriveManager.sharedInstance().startEmulatorNavi()
@@ -362,9 +369,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
             AMapNaviDriveManager.sharedInstance().startGPSNavi()
         }
         if let _ = self.routeIndicatorInfoArray.first(where: { $0.isSelected }) {
-//            let eta = Date().addingTimeInterval(TimeInterval(estimatedTimeToDestinationSec))
-                PTLiveActivityManager.shared.startNavigationActivity(destination: "目标地点", expectedArrival: Date())
-//            }
+            PTLiveActivityManager.shared.startNavigationActivity(destination: "目标地点", expectedArrival: Date())
         }
     }
         
@@ -472,6 +477,8 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     
     var isKeywordSearch:Bool = false
     
+    private var peerAnnotations: [MCPeerID: PTPeerAnnotation] = [:]
+    
     @MainActor deinit {
         NotificationCenter.default.removeObserver(self)
     }
@@ -572,6 +579,9 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
             }
         }
         
+        NotificationCenter.default.addObserver(self, selector: #selector(handlePeerLocationUpdate(_:)), name: PTPeerLocationDidUpdateNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handlePeerLeave(_:)), name: PTPeerDidLeaveNetworkNotification, object: nil)
+
         updateMicStatusUI(isRunning: PTLocalIntercomManager.shared.isRunning,
                           isHandsFree: PTLocalIntercomManager.shared.isHandsFreeMode,
                           isTalking: PTLocalIntercomManager.shared.isTalking,
@@ -943,7 +953,9 @@ extension PTMotoNavigationViewController: UISearchBarDelegate, UITableViewDelega
 
 extension PTMotoNavigationViewController:MAMapViewDelegate {
     func setPointPin(location: CLLocationCoordinate2D) {
-        amapView.removeAnnotations(amapView.annotations)
+        let annotationsToRemove = self.amapView.annotations.filter { !($0 is PTPeerAnnotation) }
+        self.amapView.removeAnnotations(annotationsToRemove)
+
         let beginAnnotation = NaviPointAnnotation()
         beginAnnotation.coordinate = CLLocationCoordinate2D(latitude: Double(userCurrentLocation.latitude), longitude: Double(userCurrentLocation.longitude))
         beginAnnotation.title = PTDashboardConfig.languageFunc(text: "address_start")
@@ -974,10 +986,27 @@ extension PTMotoNavigationViewController:MAMapViewDelegate {
         return nil
     }
     
-    // 🚨 核心修复 2：移除 @nonobjc，允许高德 SDK 调用大头针渲染器
     func mapView(_ mapView: MAMapView!, viewFor annotation: MAAnnotation!) -> MAAnnotationView! {
         
         // 过滤我们自定义的导航大头针
+        if let peerAnno = annotation as? PTPeerAnnotation {
+            let identifier = "PTPeerAnnotationView"
+            var view = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
+            
+            if view == nil {
+                // 注意：这里使用 MAAnnotationView 而不是 MAPinAnnotationView，因为我们要用自定义图片和自由旋转
+                view = MAAnnotationView(annotation: peerAnno, reuseIdentifier: identifier)
+                view?.canShowCallout = true
+                // TODO: 替换为你工程里代表队友摩托车的图片名称
+                view?.image = UIImage(named: "placeholder")?.transformImage(size: .init(width: 32, height: 32))
+            }
+            
+            view?.annotation = peerAnno
+            // 保证刚添加上来时，车头方向也是对的
+            view?.transform = CGAffineTransform(rotationAngle: CGFloat(peerAnno.course * .pi / 180.0))
+            return view
+        }
+
         if let naviAnno = annotation as? NaviPointAnnotation {
             switch naviAnno.naviPointType {
             case .parking:
@@ -1250,7 +1279,8 @@ extension PTMotoNavigationViewController : AMapNaviDriveViewDelegate {
         self.driveView.isHidden = true
         self.startNavigationButton.isHidden = true
         self.startNavigationButton.isEnabled = false
-        self.amapView.removeAnnotations(amapView.annotations)
+        let annotationsToRemove = self.amapView.annotations.filter { !($0 is PTPeerAnnotation) }
+        self.amapView.removeAnnotations(annotationsToRemove)
         self.amapView.removeOverlays(amapView.overlays)
         //停止语音
         if muteButton.isSelected {
@@ -1289,5 +1319,54 @@ extension PTMotoNavigationViewController:AMapNaviDriveDataRepresentable {
         }
         PTNSLogConsole("\(naviInfo)")
         PTMotoDashBoardNavFunction.sendNavDataToDashboard(naviInfo: naviInfo, currentSpeedLimit: self.currentSpeedLimit)
+    }
+}
+
+//MARK: MultipeerConnectivity
+extension PTMotoNavigationViewController {
+    // MARK: - 队友地图位置更新逻辑
+    @objc private func handlePeerLocationUpdate(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let peerID = userInfo["peerID"] as? MCPeerID,
+              let location = userInfo["location"] as? PTPeerLocation else { return }
+        
+        let coordinate = CLLocationCoordinate2D(latitude: location.lat, longitude: location.lon)
+        
+        // 1. 如果队友已经在地图上了 -> 平滑更新位置和方向
+        if let existingAnno = peerAnnotations[peerID] {
+            // 高德地图支持直接修改 coordinate，大头针会自动平移
+            existingAnno.coordinate = coordinate
+            existingAnno.course = location.course
+            
+            // 找到对应的 View 并旋转它指向正确的车头方向
+            if let annoView = amapView.view(for: existingAnno) {
+                UIView.animate(withDuration: 0.3) {
+                    // 将角度转换为弧度进行旋转
+                    annoView.transform = CGAffineTransform(rotationAngle: CGFloat(location.course * .pi / 180.0))
+                }
+            }
+        }
+        // 2. 如果是新队友 -> 创建大头针并添加到地图
+        else {
+            let newAnno = PTPeerAnnotation()
+            newAnno.peerID = peerID
+            newAnno.coordinate = coordinate
+            newAnno.course = location.course
+            newAnno.title = peerID.displayName
+            
+            peerAnnotations[peerID] = newAnno
+            amapView.addAnnotation(newAnno)
+        }
+    }
+
+    @objc private func handlePeerLeave(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let peerID = userInfo["peerID"] as? MCPeerID else { return }
+        
+        // 队友掉线，从地图和字典中抹除他
+        if let existingAnno = peerAnnotations[peerID] {
+            amapView.removeAnnotation(existingAnno)
+            peerAnnotations.removeValue(forKey: peerID)
+        }
     }
 }

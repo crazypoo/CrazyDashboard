@@ -10,6 +10,7 @@ import AMapNaviKit
 import SnapKit
 import PooTools
 import SwifterSwift
+import MultipeerConnectivity
 
 @objcMembers
 class PTMapView: UIView, MAMapViewDelegate {
@@ -59,11 +60,20 @@ class PTMapView: UIView, MAMapViewDelegate {
     
     private let gradientMaskLayer = CAGradientLayer()
     
+    private var peerAnnotations: [MCPeerID: PTPeerAnnotation] = [:]
+    
     public override init(frame: CGRect) {
         super.init(frame: frame)
         setupUI()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(handlePeerLocationUpdate(_:)), name: PTPeerLocationDidUpdateNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handlePeerLeave(_:)), name: PTPeerDidLeaveNetworkNotification, object: nil)
     }
     
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -143,6 +153,31 @@ class PTMapView: UIView, MAMapViewDelegate {
             mapView.setZoomLevel(17.5, animated: true)
             mapView.setUserTrackingMode(.followWithHeading, animated: true)
         }
+    }
+    
+    public func mapView(_ mapView: MAMapView!, viewFor annotation: MAAnnotation!) -> MAAnnotationView! {
+        
+        if let peerAnno = annotation as? PTPeerAnnotation {
+            // 使用特定的 Identifier，确保不和导航系统的起点/终点大头针混淆
+            let identifier = "PTCarPlayPeerAnnotationView"
+            var view = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
+            
+            if view == nil {
+                // 注意使用 MAAnnotationView，方便我们做任意角度的旋转
+                view = MAAnnotationView(annotation: peerAnno, reuseIdentifier: identifier)
+                view?.canShowCallout = true // 允许点击弹出车友名字
+                // TODO: 换成你准备好的队友图标名称
+                view?.image = UIImage(named: "teammate_moto_icon")?.transformImage(size: .init(width: 32, height: 32))
+            }
+            
+            view?.annotation = peerAnno
+            // 确保第一次渲染出来时，车头方向也是准的
+            view?.transform = CGAffineTransform(rotationAngle: CGFloat(peerAnno.course * .pi / 180.0))
+            
+            return view
+        }
+        
+        return nil // 如果不是队友的大头针，返回 nil，让高德地图用默认方式渲染其他东西
     }
 }
 
@@ -252,5 +287,57 @@ extension PTMapView:AMapNaviDriveDataRepresentable {
         PTNSLogConsole("\(naviInfo)")
         self.driveView.isHidden = false
         PTMotoDashBoardNavFunction.sendNavDataToDashboard(naviInfo: naviInfo, currentSpeedLimit: self.currentSpeedLimit)
+    }
+}
+
+//MARK: MultipeerConnectivity
+extension PTMapView {
+    // MARK: - 队友地图位置同步 (支持双屏双重渲染)
+    @objc private func handlePeerLocationUpdate(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let peerID = userInfo["peerID"] as? MCPeerID,
+              let location = userInfo["location"] as? PTPeerLocation else { return }
+        
+        let coordinate = CLLocationCoordinate2D(latitude: location.lat, longitude: location.lon)
+        
+        if let existingAnno = peerAnnotations[peerID] {
+            // 队友已存在，平滑更新坐标
+            existingAnno.coordinate = coordinate
+            existingAnno.course = location.course
+            
+            // 🚨 核心处理：遍历两块屏幕的地图，同时旋转它们的 UI 图标
+            [self.mapView, self.carPlayMapView].forEach { map in
+                if let annoView = map.view(for: existingAnno) {
+                    UIView.animate(withDuration: 0.3) {
+                        annoView.transform = CGAffineTransform(rotationAngle: CGFloat(location.course * .pi / 180.0))
+                    }
+                }
+            }
+        } else {
+            // 新队友，创建大头针
+            let newAnno = PTPeerAnnotation()
+            newAnno.peerID = peerID
+            newAnno.coordinate = coordinate
+            newAnno.course = location.course
+            newAnno.title = peerID.displayName
+            
+            peerAnnotations[peerID] = newAnno
+            
+            // 🚨 核心处理：同时将大头针投射到手机主地图和 CarPlay 地图上
+            self.mapView.addAnnotation(newAnno)
+            self.carPlayMapView.addAnnotation(newAnno)
+        }
+    }
+
+    @objc private func handlePeerLeave(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let peerID = userInfo["peerID"] as? MCPeerID else { return }
+        
+        if let existingAnno = peerAnnotations[peerID] {
+            // 队友掉线，同时从双屏地图上抹除
+            self.mapView.removeAnnotation(existingAnno)
+            self.carPlayMapView.removeAnnotation(existingAnno)
+            peerAnnotations.removeValue(forKey: peerID)
+        }
     }
 }

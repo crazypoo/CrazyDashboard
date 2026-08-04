@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import AMapLocationKit // 🌟 引入高德定位 SDK
+import AMapLocationKit
 import PooTools
 import AMapSearchKit
 
@@ -237,6 +237,16 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
         }
 
         currentAltitude = location.altitude
+        
+        let currentSpeedKmh = max(0, location.speed * 3.6)
+        let validCourse = (location.course >= 0) ? location.course : currentHeading
+        PTLocalIntercomManager.shared.broadcastMyLocation(
+            lat: location.coordinate.latitude,
+            lon: location.coordinate.longitude,
+            course: validCourse,
+            speed: currentSpeedKmh
+        )
+
         let tripData = PTTripData(
             courseDegree: location.course,
             altitude: location.altitude,

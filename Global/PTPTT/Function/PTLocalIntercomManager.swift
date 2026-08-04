@@ -11,11 +11,20 @@ import AVFoundation
 import PooTools
 
 public let PTIntercomGlobalStatusChanged = NSNotification.Name("PTIntercomGlobalStatusChanged")
+public let PTPeerLocationDidUpdateNotification = NSNotification.Name("PTPeerLocationDidUpdateNotification")
+public let PTPeerDidLeaveNetworkNotification = NSNotification.Name("PTPeerDidLeaveNetworkNotification")
 
 public enum PTNetworkSignalLevel {
     case strong // 满格绿信号 (< 50ms)
     case normal // 两格黄信号 (50 ~ 150ms)
     case weak   // 一格红信号 (> 150ms)
+}
+
+public struct PTPeerLocation: Codable {
+    public let lat: Double     // 纬度
+    public let lon: Double     // 经度
+    public let course: Double  // 车头朝向 (用于地图上旋转图标)
+    public let speed: Double   // 车速
 }
 
 // MARK: - 状态回调协议，用于通知 UI 更新
@@ -105,6 +114,11 @@ public class PTLocalIntercomManager: NSObject {
         UserDefaults.standard.set(newUUID, forKey: key)
         return newUUID
     }()
+    
+    public var customUserName: String {
+        get { return UserDefaults.standard.string(forKey: "PT_CustomUserName") ?? UIDevice.current.name }
+        set { UserDefaults.standard.set(newValue, forKey: "PT_CustomUserName") }
+    }
 
     private override init() {
         super.init()
@@ -121,16 +135,36 @@ public class PTLocalIntercomManager: NSObject {
         let peerIDKey = "PT_SavedMCPeerID"
         if let data = UserDefaults.standard.data(forKey: peerIDKey),
            let savedPeer = try? NSKeyedUnarchiver.unarchivedObject(ofClass: MCPeerID.self, from: data) {
-            self.myPeerId = savedPeer
-            PTNSLogConsole("✅ [组网] 成功读取固化身份: \(savedPeer.displayName)")
-        } else {
-            let newPeer = MCPeerID(displayName: UIDevice.current.name)
-            if let data = try? NSKeyedArchiver.archivedData(withRootObject: newPeer, requiringSecureCoding: true) {
-                UserDefaults.standard.set(data, forKey: peerIDKey)
+            
+            // 验证缓存的名字是否和当前设置的名字一致
+            if savedPeer.displayName == customUserName {
+                self.myPeerId = savedPeer
+                PTNSLogConsole("✅ [组网] 成功读取固化身份: \(savedPeer.displayName)")
+                return
+            } else {
+                PTNSLogConsole("🔄 [组网] 检测到昵称已更改，正在废弃旧身份...")
             }
-            self.myPeerId = newPeer
-            PTNSLogConsole("🆕 [组网] 生成新身份: \(newPeer.displayName)")
         }
+        
+        // 创建新身份
+        let newPeer = MCPeerID(displayName: customUserName)
+        if let data = try? NSKeyedArchiver.archivedData(withRootObject: newPeer, requiringSecureCoding: true) {
+            UserDefaults.standard.set(data, forKey: peerIDKey)
+        }
+        self.myPeerId = newPeer
+        PTNSLogConsole("🆕 [组网] 生成新身份: \(newPeer.displayName)")
+    }
+
+    public func updateUserName(newName: String) {
+        guard newName != customUserName else { return }
+        customUserName = newName
+        
+        let wasRunning = self.isRunning
+        if wasRunning { stopOfflineIntercom() }
+        
+        setupPeerID() // 重新生成身份
+        
+        if wasRunning { startOfflineIntercom() }
     }
 
     private func startPingTimer() {
@@ -157,6 +191,24 @@ public class PTLocalIntercomManager: NSObject {
             try session.send(pingData, toPeers: peers, with: .reliable)
         } catch {
             PTNSLogConsole("❌ 心跳包发送失败: \(error.localizedDescription)")
+        }
+    }
+
+    public func broadcastMyLocation(lat: Double, lon: Double, course: Double, speed: Double) {
+        let peers = session.connectedPeers
+        guard !peers.isEmpty else { return }
+        
+        let locData = PTPeerLocation(lat: lat, lon: lon, course: course, speed: speed)
+        
+        if let jsonData = try? JSONEncoder().encode(locData),
+           let jsonString = String(data: jsonData, encoding: .utf8) {
+            
+            // 加上 "LOC:" 前缀，打包发送
+            let payloadString = "LOC:\(jsonString)"
+            guard let payloadData = payloadString.data(using: .utf8) else { return }
+            
+            // 使用 .unreliable 发送，确保即使瞬间断网也不阻塞音频流
+            try? session.send(payloadData, toPeers: peers, with: .unreliable)
         }
     }
 
@@ -703,6 +755,25 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
                     }
                 }
                 return // 🚨 拦截完毕，这是心跳包，直接 Return！
+            } else if text.hasPrefix("LOC:") {
+                // 🌟 新增：拦截并解析位置数据包
+                let jsonString = text.replacingOccurrences(of: "LOC:", with: "")
+                if let jsonData = jsonString.data(using: .utf8),
+                   let location = try? JSONDecoder().decode(PTPeerLocation.self, from: jsonData) {
+                    
+                    // 利用全局通知将位置发送给外部地图控制器
+                    DispatchQueue.main.async {
+                        NotificationCenter.default.post(
+                            name: PTPeerLocationDidUpdateNotification,
+                            object: nil,
+                            userInfo: [
+                                "peerID": peerID,
+                                "location": location
+                            ]
+                        )
+                    }
+                }
+                return // 🚨 拦截完毕，不能让定位数据流入音频播放器！
             }
         }
         
