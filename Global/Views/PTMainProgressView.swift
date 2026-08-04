@@ -83,23 +83,13 @@ class PTMotoFuelInfoView:UIView {
             
             dataProgress.animationProgress(duration: 0.35, value: fuelDouble / 100)
 
-            var avgFuelValue = "0"
-            if let avgFuel = self.viewModel {
-                avgFuelValue = "\(avgFuel.avgConsumptionLt)"
-            }
-            self.avgFuelLabel.text = PTDashboardConfig.languageFunc(text: "casa_card_avg_oil") + " \(avgFuelValue)L/\(PTDashboardConfig.shared.appShowMileageValueString(100))\(PTDashboardConfig.shared.appShowUniLabel)"
+            self.fuelModelStringSet(avgFuel: self.viewModel)
         }
     }
     
     var fuelTripModel:PTDashboardData3? {
         didSet {
-            var value:String = ""
-            if let fuelTripModel = self.fuelTripModel {
-                value = PTDashboardConfig.shared.appShowMileageValueString(fuelTripModel.autonomyKm)
-            } else {
-                value = "0"
-            }
-            self.fuelTripLabel.text = PTDashboardConfig.languageFunc(text: "casa_card_oil_trip") + "\(value)\(PTDashboardConfig.shared.appShowUniLabel)"
+            self.fuelTripStringSet(fuelTripModel: self.fuelTripModel)
         }
     }
     
@@ -139,7 +129,7 @@ class PTMotoFuelInfoView:UIView {
         view.font = .appfont(size: 14)
         view.textAlignment = .right
         view.textColor = .white
-        view.text = PTDashboardConfig.languageFunc(text: "casa_card_avg_oil") + " 0L/\(PTDashboardConfig.shared.appShowMileageValueString(100))\(PTDashboardConfig.shared.appShowUniLabel)"
+        view.text = PTDashboardConfig.languageFunc(text: "casa_card_avg_oil") + " 0.0L/\(PTDashboardConfig.shared.appShowMileageValueString(100))\(PTDashboardConfig.shared.appShowUniLabel)"
         return view
     }()
     
@@ -182,20 +172,27 @@ class PTMotoFuelInfoView:UIView {
         
         pt_viewObserverLanguage(didChanged: {
             if self.viewLoaded {
-                var value:String = "0"
-                if let fuelTripModel = self.fuelTripModel {
-                    value = PTDashboardConfig.shared.appShowMileageValueString(fuelTripModel.autonomyKm)
-                }
-                self.fuelTripLabel.text = PTDashboardConfig.languageFunc(text: "casa_card_oil_trip") + "\(value)\(PTDashboardConfig.shared.appShowUniLabel)"
-                
-                var avgFuelValue = "0"
-                if let avgFuel = self.viewModel {
-                    avgFuelValue = "\(avgFuel.avgConsumptionLt)"
-                }
-                self.avgFuelLabel.text = PTDashboardConfig.languageFunc(text: "casa_card_avg_oil") + " \(avgFuelValue)L/\(PTDashboardConfig.shared.appShowMileageValueString(100))\(PTDashboardConfig.shared.appShowUniLabel)"
+                self.fuelTripStringSet(fuelTripModel: self.fuelTripModel)
+                self.fuelModelStringSet(avgFuel: self.viewModel)
             }
         })
         viewLoaded = true
+    }
+    
+    func fuelTripStringSet(fuelTripModel:PTDashboardData3?) {
+        var value:String = "0"
+        if let fuelTripModel = self.fuelTripModel {
+            value = PTDashboardConfig.shared.appShowMileageValueString(fuelTripModel.autonomyKm)
+        }
+        self.fuelTripLabel.text = PTDashboardConfig.languageFunc(text: "casa_card_oil_trip") + "\(value)\(PTDashboardConfig.shared.appShowUniLabel)"
+    }
+    
+    func fuelModelStringSet(avgFuel:PTDashboardData1?) {
+        var avgFuelValue = "0.0"
+        if let avgFuel = self.viewModel {
+            avgFuelValue = String(format: "%.1f", avgFuel.avgConsumptionLt)
+        }
+        self.avgFuelLabel.text = PTDashboardConfig.languageFunc(text: "casa_card_avg_oil") + " \(avgFuelValue)L/\(PTDashboardConfig.shared.appShowMileageValueString(100))\(PTDashboardConfig.shared.appShowUniLabel)"
     }
     
     required init?(coder: NSCoder) {

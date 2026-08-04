@@ -234,8 +234,17 @@ public class PTLocalIntercomManager: NSObject {
 
     private func setupAudioSession() {
         do {
+            
+            let options: AVAudioSession.CategoryOptions = [
+                .defaultToSpeaker,    // 默认使用外放扬声器
+                .allowBluetoothA2DP,  // 允许使用高音质蓝牙立体声（如头盔蓝牙耳机听歌用）
+                .allowBluetoothHFP,   // 允许使用蓝牙免提协议（如头盔麦克风录音用）
+                .mixWithOthers,       // 允许与其他 App 的音频混音，绝不打断/暂停后台音乐！
+                .duckOthers           // 允许当有人说话的时候，背景音乐自动变小声
+            ]
+
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker,.allowBluetoothA2DP, .allowBluetoothHFP])
+            try session.setCategory(.playAndRecord, mode: .voiceChat, options: options)
             try session.setActive(true)
         } catch {
             PTNSLogConsole("音频Session配置失败: \(error)")
