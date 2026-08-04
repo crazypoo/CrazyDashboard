@@ -487,6 +487,10 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         updateMapModeForCarPlayConnection(isActive: PTCarPlayManager.isCarPlayActive)
+        updateMicStatusUI(isRunning: PTLocalIntercomManager.shared.isRunning,
+                          isHandsFree: PTLocalIntercomManager.shared.isHandsFreeMode,
+                          isTalking: PTLocalIntercomManager.shared.isTalking,
+                          otherMemberTalking:PTLocalIntercomManager.shared.otherMemberTalking)
     }
     
     func mapSet() {
@@ -569,41 +573,68 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         }
         
         updateMicStatusUI(isRunning: PTLocalIntercomManager.shared.isRunning,
-                                  isHandsFree: PTLocalIntercomManager.shared.isHandsFreeMode,
-                                  isTalking: PTLocalIntercomManager.shared.isTalking)
+                          isHandsFree: PTLocalIntercomManager.shared.isHandsFreeMode,
+                          isTalking: PTLocalIntercomManager.shared.isTalking,
+                          otherMemberTalking:PTLocalIntercomManager.shared.otherMemberTalking)
     }
     
     @objc private func handleIntercomStatusChange(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
               let isRunning = userInfo["isRunning"] as? Bool,
               let isHandsFree = userInfo["isHandsFree"] as? Bool,
-              let isTalking = userInfo["isTalking"] as? Bool else { return }
+              let isTalking = userInfo["isTalking"] as? Bool,
+              let otherMemberTalking = userInfo["otherMemberTalking"] as? Bool else { return }
         
-        updateMicStatusUI(isRunning: isRunning, isHandsFree: isHandsFree, isTalking: isTalking)
+        updateMicStatusUI(isRunning: isRunning, isHandsFree: isHandsFree, isTalking: isTalking,otherMemberTalking:otherMemberTalking)
     }
     
-    private func updateMicStatusUI(isRunning: Bool, isHandsFree: Bool, isTalking: Bool) {
-        // 如果对讲机根本没开        
+    private func updateMicStatusUI(isRunning: Bool, isHandsFree: Bool, isTalking: Bool,otherMemberTalking:Bool) {
+        guard isRunning else {
+            // 未开启状态 -> 灰色斜杠麦克风，没有任何动画
+            globalMicStatusButton.setImage(UIImage(systemName: "mic.slash.fill")?.withTintColor(.darkGray, renderingMode: .alwaysOriginal), for: .normal)
+            UIView.animate(withDuration: 0.2) {
+                self.globalMicStatusButton.transform = .identity
+            }
+            return
+        }
+
+        // 我自己正在讲话 (主动发送)
         if isTalking {
-            // 正在讲话 (按下了按键，或者免提检测到了声音) -> 醒目的绿色麦克风
-            globalMicStatusButton.setImage(UIImage(.mic.fill).withTintColor(.systemGreen, renderingMode: .alwaysOriginal), for: .normal)
+            // 醒目的绿色麦克风
+            globalMicStatusButton.setImage(UIImage(systemName: "mic.fill")?.withTintColor(.systemGreen, renderingMode: .alwaysOriginal), for: .normal)
             
-            // 可以加个轻微的缩放动画，提示正在收音
+            // 放大 1.2 倍，提示正在强力收音
             UIView.animate(withDuration: 0.2, animations: {
                 self.globalMicStatusButton.transform = CGAffineTransform(scaleX: 1.2, y: 1.2)
             })
-        } else {
-            UIView.animate(withDuration: 0.2, animations: {
-                self.globalMicStatusButton.transform = .identity
-            })
+            return // 命中此状态后直接返回，拦截后续判断
+        }
+        
+        // 我自己没说，但是队友正在讲话 (被动接收)
+        if otherMemberTalking {
+            // 将图标变成代表发声的“喇叭”，并使用代表安全的蓝色（与绿色的发送区分开）
+            // 注: PooTools 或 SwifterSwift 里的系统图标调用方式如果不同，请替换为对应的枚举，如 .speakerWave2Fill
+            globalMicStatusButton.setImage(UIImage(systemName: "speaker.wave.2.fill")?.withTintColor(.systemBlue, renderingMode: .alwaysOriginal), for: .normal)
             
-            if isHandsFree {
-                // 免提静默监听中 -> 橙色麦克风
-                globalMicStatusButton.setImage(UIImage(.mic.fill).withTintColor(.systemOrange, renderingMode: .alwaysOriginal), for: .normal)
-            } else {
-                // 普通按键模式，当前没按 -> 白色麦克风，带斜杠
-                globalMicStatusButton.setImage(UIImage(.mic.slashFill).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
-            }
+            // 轻微放大 1.1 倍，表示当前通道有声音在活动
+            UIView.animate(withDuration: 0.2, animations: {
+                self.globalMicStatusButton.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
+            })
+            return
+        }
+        
+        // 全频道安静，处于待机状态
+        // 恢复图标原始大小
+        UIView.animate(withDuration: 0.2, animations: {
+            self.globalMicStatusButton.transform = .identity
+        })
+        
+        if isHandsFree {
+            // 待机 + 免提模式 -> 橙色麦克风，代表时刻保持监听
+            globalMicStatusButton.setImage(UIImage(systemName: "mic.fill")?.withTintColor(.systemOrange, renderingMode: .alwaysOriginal), for: .normal)
+        } else {
+            // 待机 + 普通按键模式 -> 白色斜杠麦克风，代表通道闭锁
+            globalMicStatusButton.setImage(UIImage(systemName: "mic.slash.fill")?.withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
         }
     }
 

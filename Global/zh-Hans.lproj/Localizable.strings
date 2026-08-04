@@ -73,7 +73,7 @@
 "pitch_up" = "▲ %d° 上坡";
 "ptt_push" = "按住说话";
 "ptt_ready_connect" = "准备连接。。。";
-"ptt_ready_connect_count" = "当前连接车友数: 0";
+"ptt_ready_connect_count" = "当前连接车友数: %d";
 "ptt_release" = "松开结束";
 "route_plan1" = "躲避拥堵";
 "route_plan2" = "避免收费";

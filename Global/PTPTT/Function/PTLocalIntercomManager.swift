@@ -46,16 +46,24 @@ public class PTLocalIntercomManager: NSObject {
     private var audioEngine = AVAudioEngine()
     private var playerNode = AVAudioPlayerNode()
     private let commonFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 44100, channels: 1, interleaved: false)!
-    public private(set) var isTalking: Bool = false
+    public private(set) var isTalking: Bool = false {
+        didSet { if oldValue != isTalking { globalStatusChangeSet() } }
+    }
     
-    public private(set) var isHandsFreeMode: Bool = false
+    public private(set) var isHandsFreeMode: Bool = false {
+        didSet { if oldValue != isHandsFreeMode { globalStatusChangeSet() } }
+    }
     public var voiceThreshold: Float = 0.009
     private var lastSpokenTime: Date = Date.distantPast
     private let voxHangTime: TimeInterval = 0.8
     
-    public private(set) var isRunning: Bool = false
+    public private(set) var isRunning: Bool = false {
+        didSet { if oldValue != isRunning { globalStatusChangeSet() } }
+    }
     
-    public private(set) var currentStatusText: String = PTDashboardConfig.languageFunc(text: "ptt_ready_connect")
+    public private(set) var currentStatusText: String = PTDashboardConfig.languageFunc(text: "ptt_ready_connect") {
+        didSet { if oldValue != currentStatusText { globalStatusChangeSet() } }
+    }
     private let intercomPowerStateKey = "PTIntercomPowerStateKey"
     
     public var micVolumeMultiplier: Float = 3.0
@@ -66,6 +74,10 @@ public class PTLocalIntercomManager: NSObject {
 
     private var pingTimer: Timer?
     
+    public private(set) var otherMemberTalking: Bool = false {
+        didSet { if oldValue != otherMemberTalking { globalStatusChangeSet() } }
+    }
+
     public private(set) var isLocalUserSpeaking: Bool = false {
         didSet {
             // 只有状态发生翻转时，才通知外部 UI
@@ -77,7 +89,9 @@ public class PTLocalIntercomManager: NSObject {
         }
     }
 
-    public private(set) var activePeers: [MCPeerID] = []
+    public private(set) var activePeers: [MCPeerID] = [] {
+        didSet { if oldValue.count != activePeers.count { globalStatusChangeSet() } }
+    }
     private var connectingPeers: Set<MCPeerID> = []
     
     public var connectedPeersCount: Int {
@@ -230,9 +244,12 @@ public class PTLocalIntercomManager: NSObject {
         // 状态发生改变时，通知 UI
         if newSpeaking != currentSpeakingPeers {
             currentSpeakingPeers = newSpeaking
+            otherMemberTalking = !newSpeaking.isEmpty
             DispatchQueue.main.async {
                 self.delegate?.intercomManager(self, speakingPeersChanged: Array(self.currentSpeakingPeers))
             }
+        } else {
+            otherMemberTalking = false
         }
     }
 
@@ -555,6 +572,9 @@ public class PTLocalIntercomManager: NSObject {
     private func updateStatusAndBroadcast(_ status: String) {
         self.currentStatusText = status
         self.delegate?.intercomManager(self, didChangeStatus: status)
+    }
+    
+    func globalStatusChangeSet() {
         DispatchQueue.main.async {
             NotificationCenter.default.post(
                 name: PTIntercomGlobalStatusChanged,
@@ -563,7 +583,9 @@ public class PTLocalIntercomManager: NSObject {
                     "isRunning": self.isRunning,
                     "isTalking": self.isTalking,
                     "isHandsFree": self.isHandsFreeMode,
-                    "peersCount": self.connectedPeersCount
+                    "peersCount": self.connectedPeersCount,
+                    "otherMemberTalking":self.otherMemberTalking,
+                    "statusText":self.currentStatusText
                 ]
             )
         }
