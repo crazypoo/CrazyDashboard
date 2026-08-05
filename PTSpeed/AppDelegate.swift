@@ -128,7 +128,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func registerBackgroundTasks() {
-        // 这里的 "com.yourcompany.yourapp.refresh" 就是你的 Identifier
         BGTaskScheduler.shared.register(forTaskWithIdentifier: "com.yd.PTSpeed.refresh", using: nil) { task in
             // 处理后台任务的逻辑
             self.handleAppRefresh(task: task as! BGAppRefreshTask)
@@ -152,6 +151,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // 告知后台任务调度器任务已完成
         task.setTaskCompleted(success: true)
     }
+    
+    func applicationWillTerminate(_ application: UIApplication) { }
 }
 
 extension AppDelegate:UNUserNotificationCenterDelegate {
