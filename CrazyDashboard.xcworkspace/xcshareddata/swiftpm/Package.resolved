@@ -1,5 +1,5 @@
 {
-  "originHash" : "b7545fda25549059adf299dd697b3d61d576b992970c8f0cd9133c99fba15341",
+  "originHash" : "be9e97c665cfe0eb77e03a48c8bf548b4e0f892186fa4553ccfe4f30ca5c8964",
   "pins" : [
     {
       "identity" : "qweather-ios-sdk",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "34fd2053e57cbf57c0897c8c0471a82707b133e8",
         "version" : "5.2.2"
+      }
+    },
+    {
+      "identity" : "swiftobd2",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kkonteh97/SwiftOBD2/",
+      "state" : {
+        "branch" : "main",
+        "revision" : "fe6def4e8599671dfc1b9597dbcdbc6a7c078b96"
       }
     }
   ],

@@ -46,6 +46,7 @@ def shared_pods
   pod 'AMapSearch-NO-IDFA'
   pod 'AMapLocation-NO-IDFA'
   pod 'AMapNavi-NO-IDFA'
+  
 end
 
 target 'PTSpeed' do

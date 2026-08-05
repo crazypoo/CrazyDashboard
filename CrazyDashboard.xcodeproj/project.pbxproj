@@ -558,6 +558,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				55E61690301B45B50075F883 /* XCRemoteSwiftPackageReference "qweather-ios-sdk" */,
+				554114513022E0780059BFCF /* XCRemoteSwiftPackageReference "SwiftOBD2" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5577E5BE2FD5C1DB0004733F /* Products */;
@@ -600,13 +601,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -643,13 +640,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -1274,6 +1267,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		554114513022E0780059BFCF /* XCRemoteSwiftPackageReference "SwiftOBD2" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kkonteh97/SwiftOBD2/";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 		55E61690301B45B50075F883 /* XCRemoteSwiftPackageReference "qweather-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/qwd/qweather-ios-sdk.git";
