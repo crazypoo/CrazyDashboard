@@ -39,6 +39,8 @@
 		5577E7CC2FD6FF890004733F /* PTLeanAngleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7CB2FD6FF890004733F /* PTLeanAngleView.swift */; };
 		5577E7D02FD704790004733F /* PTBumpMeterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7CE2FD704790004733F /* PTBumpMeterView.swift */; };
 		5577E7D32FD704AD0004733F /* PTPitchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7D12FD704AD0004733F /* PTPitchView.swift */; };
+		5587899D30231DD700B94E91 /* SwiftOBD2 in Frameworks */ = {isa = PBXBuildFile; productRef = 5587899C30231DD700B94E91 /* SwiftOBD2 */; };
+		5587899F30231DE700B94E91 /* PTMotoTelemetryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5587899E30231DE700B94E91 /* PTMotoTelemetryManager.swift */; };
 		55901837300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55901836300FE37100A77571 /* PTMotoBaseViewController.swift */; };
 		5590187230107A1C00A77571 /* PTRoutePlantCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5590187130107A1C00A77571 /* PTRoutePlantCell.swift */; };
 		55986640301138A30049684D /* PTTripManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598663E301138A30049684D /* PTTripManager.swift */; };
@@ -134,6 +136,7 @@
 		5577E7CE2FD704790004733F /* PTBumpMeterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBumpMeterView.swift; sourceTree = "<group>"; };
 		5577E7D12FD704AD0004733F /* PTPitchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPitchView.swift; sourceTree = "<group>"; };
 		55878957302301B200B94E91 /* xp400WidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = xp400WidgetExtension.entitlements; sourceTree = "<group>"; };
+		5587899E30231DE700B94E91 /* PTMotoTelemetryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoTelemetryManager.swift; sourceTree = "<group>"; };
 		55901836300FE37100A77571 /* PTMotoBaseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoBaseViewController.swift; sourceTree = "<group>"; };
 		5590187130107A1C00A77571 /* PTRoutePlantCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRoutePlantCell.swift; sourceTree = "<group>"; };
 		5598663E301138A30049684D /* PTTripManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTripManager.swift; sourceTree = "<group>"; };
@@ -226,6 +229,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5A200D40EF300920887AD052 /* Pods_PTSpeed.framework in Frameworks */,
+				5587899D30231DD700B94E91 /* SwiftOBD2 in Frameworks */,
 				55E61692301B45B50075F883 /* QWeatherSDK in Frameworks */,
 				5577E6762FD657F30004733F /* libz.tbd in Frameworks */,
 			);
@@ -361,6 +365,7 @@
 			children = (
 				55FE295A300CA4E8000E741F /* PTBluetoothManager.swift */,
 				55FE2A5C300DF42A000E741F /* PTBLEConnectViewController.swift */,
+				5587899E30231DE700B94E91 /* PTMotoTelemetryManager.swift */,
 			);
 			path = BLE;
 			sourceTree = "<group>";
@@ -703,6 +708,7 @@
 				55FE2A0B300CE2B0000E741F /* PTMapKitNavigationHelper.swift in Sources */,
 				55499D97301A21F500A1A2D9 /* PTIndicatorPanel.swift in Sources */,
 				5577E7812FD6EEEF0004733F /* PTGForceView.swift in Sources */,
+				5587899F30231DE700B94E91 /* PTMotoTelemetryManager.swift in Sources */,
 				55FDBCAC3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift in Sources */,
 				5577E6512FD657330004733F /* PTSpeedometerView.swift in Sources */,
 				55FE29A1300CC1F1000E741F /* PTMotoInfoViewController.swift in Sources */,
@@ -764,7 +770,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 26;
+				CURRENT_PROJECT_VERSION = 27;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -797,7 +803,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 26;
+				CURRENT_PROJECT_VERSION = 27;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -956,7 +962,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 26;
+				CURRENT_PROJECT_VERSION = 27;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -1107,7 +1113,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 26;
+				CURRENT_PROJECT_VERSION = 27;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -1300,6 +1306,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		5587899C30231DD700B94E91 /* SwiftOBD2 */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 554114513022E0780059BFCF /* XCRemoteSwiftPackageReference "SwiftOBD2" */;
+			productName = SwiftOBD2;
+		};
 		55E61691301B45B50075F883 /* QWeatherSDK */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 55E61690301B45B50075F883 /* XCRemoteSwiftPackageReference "qweather-ios-sdk" */;
