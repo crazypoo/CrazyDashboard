@@ -27,6 +27,9 @@ public protocol PTMotoTelemetryDelegate: AnyObject {
     
     /// 故障码扫描完成时调用
     func telemetryManager(_ manager: PTMotoTelemetryManager, didFinishScanningTroubleCodes codes: [String])
+    
+    /// 燃油、气压与行程数据更新时调用
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateTripAndFuelData fuelLevel: Double, fuelRate: Double, barometricPressure: Int, tripDistance: Int)
 }
 
 // 为协议提供默认实现，这样 ViewController 可以按需实现，不需要全部重写
@@ -36,6 +39,7 @@ public extension PTMotoTelemetryDelegate {
     func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateHealthData coolantTemp: Int, voltage: Double, intakeAirTemp: Int) {}
     func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateAdvancedData map: Int, timingAdvance: Double, maf: Double, runTime: Int) {}
     func telemetryManager(_ manager: PTMotoTelemetryManager, didFinishScanningTroubleCodes codes: [String]) {}
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateTripAndFuelData fuelLevel: Double, fuelRate: Double, barometricPressure: Int, tripDistance: Int) {}
 }
 
 // MARK: - 2. 机车遥测核心管理器
@@ -111,7 +115,11 @@ public class PTMotoTelemetryManager {
         let commands: [OBDCommand] = [
             .mode1(.rpm), .mode1(.speed), .mode1(.throttlePos), // 基础
             .mode1(.coolantTemp), .mode1(.controlModuleVoltage), .mode1(.intakeTemp), // 健康
-            .mode1(.intakePressure), .mode1(.timingAdvance), .mode1(.maf), .mode1(.runTime) // 进阶
+            .mode1(.intakePressure), .mode1(.timingAdvance), .mode1(.maf), .mode1(.runTime), // 进阶
+            .mode1(.fuelLevel),                     // 燃油百分比
+            .mode1(.barometricPressure),                 // 大气压强
+            .mode1(.fuelRate),                     // 瞬时油耗
+            .mode1(.distanceSinceDTCCleared)   // 清码后行驶距离 (用作小计里程)
         ]
         
         obdService.startContinuousUpdates(commands)
@@ -147,6 +155,14 @@ public class PTMotoTelemetryManager {
                 let runTime = self.toInt(measurements[.mode1(.runTime)]?.value)
                 
                 self.delegate?.telemetryManager(self, didUpdateAdvancedData: map, timingAdvance: timing, maf: maf, runTime: runTime)
+                
+                let fuelLevel = measurements[.mode1(.fuelLevel)]?.value as? Double ?? 0.0
+                let fuelRate = measurements[.mode1(.fuelRate)]?.value as? Double ?? 0.0
+                let barometric = self.toInt(measurements[.mode1(.barometricPressure)]?.value)
+                let tripDistance = self.toInt(measurements[.mode1(.distanceSinceDTCCleared)]?.value)
+                
+                // 3. 触发新的代理回调，将数据抛给 ViewController
+                self.delegate?.telemetryManager(self, didUpdateTripAndFuelData: fuelLevel, fuelRate: fuelRate, barometricPressure: barometric, tripDistance: tripDistance)
 
             })
             .store(in: &cancellables)

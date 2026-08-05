@@ -197,11 +197,41 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                                    value: PTConfigLanguage.english.getTypeName())
         return view
     }()
+    
+    lazy var obdButton:PTBaseButton = {
+        let baseImage = UIImage(.engine.combustionBadgeExclamationmarkFill)
+        let view = PTBaseButton()
+        view.setImage(baseImage, for: .normal)
+        view.setImage(baseImage.withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal), for: .selected)
+        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.isSelected = PTMotoTelemetryManager.shared.isConnected
+        view.addActionHandlers(handler: { sender in
+            if !sender.isSelected {
+                PTMotoTelemetryManager.shared.connectToMotorcycle()
+            } else {
+                let actions = ["Error Code","Disconnect"]
+                UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: actions, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
+                    switch index {
+                    case 0:
+                        PTMotoTelemetryManager.shared.scanForEngineFaultCodes()
+                    case 1:
+                        PTMotoTelemetryManager.shared.disconnect()
+                        PTGCDManager.shared.delayOnMain(time: 0.5) {
+                            self.obdButton.isSelected = false
+                        }
+                    default:
+                        break
+                    }
+                })
+            }
+        })
+        return view
+    }()
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
-        setCustomRightButtons(buttons: [bleConnectStatusLabel])
+        setCustomRightButtons(buttons: [obdButton,bleConnectStatusLabel],buttonSpacing: CGFloat.GlobalItemSpacing)
         
         self.bleConnectStatusLabel.isSelected = !PTDashboardConfig.shared.blueConnected
     }
@@ -250,6 +280,8 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                 self.showWahtsnews()
             }
         }
+        
+        PTMotoTelemetryManager.shared.delegate = self
     }
         
     @objc func handleAuthSuccess() {
@@ -369,7 +401,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                 self.voltageLabel.modelSet = self.modelvoltageSet(currentValue: 0)
                 self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(max: 2500, current: 0)
                 self.bleConnectStatusLabel.setTitle(PTDashboardConfig.languageFunc(text: "casa_bluetooth_status"), state: .normal)
-                self.bleConnectStatusLabel.setTitle(PTDashboardConfig.languageFunc(text: "casa_bluetooth_status"), state: .disabled)
+                self.bleConnectStatusLabel.setTitle(PTDashboardConfig.languageFunc(text: "casa_bluetooth_status"), state: .selected)
                 self.bleConnectStatusLabel.bounds = .init(origin: .zero, size: .init(width:self.bleConnectStatusLabel.getKitCurrentDimension() + 5, height:PTAppBaseConfig.share.navBarButtonSize))
                 
                 self.tripItem.configure(systemIcon: UIImage(.point.topleftDownToPointBottomrightCurvepath),
@@ -683,5 +715,35 @@ extension PTMotoInfoViewController {
         view.whatsNewsShow(vc: self)
         view.iKnowTapHandler = { }
     }
+}
 
+extension PTMotoInfoViewController:PTMotoTelemetryDelegate {
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didChangeConnectionState isConnected: Bool) {
+        obdButton.isSelected = isConnected
+    }
+    
+    /// 基础动力数据更新时调用 (适合高刷仪表盘指针)
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateBaseData rpm: Double, speed: Double, throttle: Double) {
+        PTNSLogConsole("throttle:\(throttle)")
+    }
+    
+    /// 环境与健康数据更新时调用 (适合侧边栏状态监测)
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateHealthData coolantTemp: Int, voltage: Double, intakeAirTemp: Int) {
+        PTNSLogConsole("coolantTemp:\(coolantTemp),voltage:\(voltage),intakeAirTemp:\(intakeAirTemp)")
+    }
+    
+    /// 进阶硬核工况数据更新时调用 (适合极客性能面板)
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateAdvancedData map: Int, timingAdvance: Double, maf: Double, runTime: Int) {
+        PTNSLogConsole("map:\(map),timingAdvance:\(timingAdvance),maf:\(maf),runTime:\(runTime)")
+    }
+    
+    /// 故障码扫描完成时调用
+    
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didFinishScanningTroubleCodes codes: [String]) {
+        var code = "No codes"
+        if !codes.isEmpty {
+            code = codes.joined(separator: "\n")
+        }
+        UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD error Codes"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: code,cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
+    }
 }
