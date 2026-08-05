@@ -9,7 +9,7 @@ import WidgetKit
 import SwiftUI
 import CoreLocation
 
-// MARK: - 1. 数据模型
+// MARK: -  数据模型
 struct MotoStatusEntry: TimelineEntry {
     let date: Date
     let fuelLevel: Int
@@ -17,18 +17,18 @@ struct MotoStatusEntry: TimelineEntry {
     let isConnected: Bool
     let parkedLat: Double
     let parkedLon: Double
-    let address: String // 🌟 新增地址属性
+    let address: String
     let lastUpdateTime: Date
 }
 
-// MARK: - 2. 数据提供者
+// MARK: - 数据提供者
 struct MotoWidgetProvider: TimelineProvider {
     
     // 🚨 保持与主 App 一致的 App Group ID
     let appGroupID = "group.com.yd.PTSpeed.xp400"
     
     func placeholder(in context: Context) -> MotoStatusEntry {
-        MotoStatusEntry(date: Date(), fuelLevel: 100, tripKm: 125.5, isConnected: false, parkedLat: 22.5833, parkedLon: 113.0833, address: "广东省江门市蓬江区建设二路", lastUpdateTime: Date())
+        MotoStatusEntry(date: Date(), fuelLevel: 0, tripKm: 0, isConnected: false, parkedLat: 0, parkedLon: 0, address: "XXXX", lastUpdateTime: Date())
     }
 
     func getSnapshot(in context: Context, completion: @escaping (MotoStatusEntry) -> ()) {
@@ -60,7 +60,7 @@ struct MotoWidgetProvider: TimelineProvider {
     }
 }
 
-// MARK: - 3. 视觉呈现 (SwiftUI)
+// MARK: - 视觉呈现 (SwiftUI)
 struct MotoWidgetEntryView : View {
     var entry: MotoWidgetProvider.Entry
     let mainColor = Color(red: 0.2, green: 0.6, blue: 1.0)
@@ -168,7 +168,7 @@ struct MotoWidgetEntryView : View {
     }
 }
 
-// MARK: - 4. 小组件注册入口
+// MARK: - 小组件注册入口
 struct XP400Widget: Widget {
     // 这个 ID 必须和主 App 调用 reloadTimelines 时的 ID 绝对一致！
     let kind: String = "XP400Widget"
@@ -177,8 +177,8 @@ struct XP400Widget: Widget {
         StaticConfiguration(kind: kind, provider: MotoWidgetProvider()) { entry in
             MotoWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("机车状态看板")
-        .description("在桌面上快速查看机车油量、里程与停车位置。")
+        .configurationDisplayName("Moto simple info")
+        .description("Can check fule,trip and last position")
         .supportedFamilies([.systemLarge]) // 限制只支持中号尺寸，最适合这种排版
     }
 }
@@ -290,7 +290,7 @@ struct MotoNaviLiveActivity: Widget {
 
 struct AvatarImageView: View {
     let filename: String
-    let appGroupID = "group.com.yd.PTSpeed.xp400" // 替换为你的 App Group ID
+    let appGroupID = "group.com.yd.PTSpeed.xp400"
     
     var body: some View {
         // 尝试从 App Group 中读取队友发来的自定义头像

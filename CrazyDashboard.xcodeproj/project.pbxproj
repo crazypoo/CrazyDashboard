@@ -133,6 +133,7 @@
 		5577E7CB2FD6FF890004733F /* PTLeanAngleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLeanAngleView.swift; sourceTree = "<group>"; };
 		5577E7CE2FD704790004733F /* PTBumpMeterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBumpMeterView.swift; sourceTree = "<group>"; };
 		5577E7D12FD704AD0004733F /* PTPitchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPitchView.swift; sourceTree = "<group>"; };
+		55878957302301B200B94E91 /* xp400WidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = xp400WidgetExtension.entitlements; sourceTree = "<group>"; };
 		55901836300FE37100A77571 /* PTMotoBaseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoBaseViewController.swift; sourceTree = "<group>"; };
 		5590187130107A1C00A77571 /* PTRoutePlantCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRoutePlantCell.swift; sourceTree = "<group>"; };
 		5598663E301138A30049684D /* PTTripManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTripManager.swift; sourceTree = "<group>"; };
@@ -310,6 +311,7 @@
 		5577E5B42FD5C1DB0004733F = {
 			isa = PBXGroup;
 			children = (
+				55878957302301B200B94E91 /* xp400WidgetExtension.entitlements */,
 				5577E64D2FD657110004733F /* Global */,
 				5577E6392FD657030004733F /* PTSpeed */,
 				55499E0D301AFCE800A1A2D9 /* xp400Widget */,
@@ -601,9 +603,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -640,9 +646,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -752,6 +762,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 25;
 				DEVELOPMENT_TEAM = 5U99J43536;
@@ -768,6 +779,7 @@
 				MARKETING_VERSION = 2.0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.yd.PTSpeed.xp400Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -783,6 +795,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 25;
 				DEVELOPMENT_TEAM = 5U99J43536;
@@ -799,6 +812,7 @@
 				MARKETING_VERSION = 2.0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.yd.PTSpeed.xp400Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;

@@ -146,12 +146,5 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
             
     @MainActor deinit {
         NotificationCenter.default.removeObserver(self)
-    }
-    
-    override func handleMotorcycleDisconnect() {
-        super.handleMotorcycleDisconnect()
-        PTGCDManager.shared.delayOnMain(time: 0.35) {
-            self.dashBoard.speedometer.resetToZeroWithAnimation()
-        }
-    }
+    }    
 }

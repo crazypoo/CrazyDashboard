@@ -40,6 +40,7 @@ class PTMotoBaseViewController: PTBaseViewController {
     }
     
     func handleMotorcycleDisconnect() {
+        PTLocationEngine.shared.switchEngineMode(to: .antiTheft)
         PTLocationEngine.shared.forceUpdateWidgetOnDisconnect()
         PTMOTOParkingManager.shared.saveCurrentLocationAsParkingSpot()
     }

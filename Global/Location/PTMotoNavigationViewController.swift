@@ -785,8 +785,15 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
             }
         }
 
-        view.addSubviews([searchResultsTableView,startNavigationButton,preferenceView,routePlantList])
+        view.addSubviews([preferenceView,searchResultsTableView,startNavigationButton,routePlantList])
         
+        preferenceView.snp.makeConstraints { make in
+            make.top.equalTo(self.floatingToolbarBackground)
+            make.height.equalTo(self.homeSize)
+            make.left.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.right.equalTo(self.floatingToolbarBackground.snp.left).offset(-CGFloat.GlobalItemSpacing)
+        }
+
         searchResultsTableView.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing)
@@ -797,13 +804,6 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
             make.bottom.equalToSuperview().inset(CGFloat.kTabbarHeight_Total + CGFloat.GlobalItemSpacing)
             make.height.equalTo(50)
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-        }
-        
-        preferenceView.snp.makeConstraints { make in
-            make.top.equalTo(self.floatingToolbarBackground)
-            make.height.equalTo(self.homeSize)
-            make.left.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.right.equalTo(self.floatingToolbarBackground.snp.left).offset(-CGFloat.GlobalItemSpacing)
         }
         
         routePlantList.snp.makeConstraints { make in

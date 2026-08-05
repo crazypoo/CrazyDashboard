@@ -11,6 +11,9 @@ import PooTools
 import SnapKit
 import SwifterSwift
 
+let CarPlayDidDisconnectNotification = NSNotification.Name("CarPlayDidDisconnectNotification")
+let CarPlayDidConnectNotification = NSNotification.Name("CarPlayDidConnectNotification")
+
 class PTCarPlaySceneDelegate: UIResponder,CPTemplateApplicationSceneDelegate {
     var interfaceController: CPInterfaceController?
     var carWindow: CPWindow?
@@ -28,6 +31,23 @@ class PTCarPlaySceneDelegate: UIResponder,CPTemplateApplicationSceneDelegate {
         // 1. 创建地图模板作为底层（这是拿到 Window 权限的前提）
         let mapTemplate = CPMapTemplate()
         interfaceController.setRootTemplate(mapTemplate, animated: true, completion: nil)
+        
+        dashboardVC.updateMapModeForCarPlayConnection(isActive: true)
         window.rootViewController = dashboardVC
+        
+        NotificationCenter.default.post(
+            name: CarPlayDidConnectNotification,
+            object: nil
+        )
+    }
+    
+    func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene, didDisconnectInterfaceController interfaceController: CPInterfaceController) {
+        
+        // 🌟 拔下线时，也发一个断开的广播，让手机端恢复正常 UI
+        NotificationCenter.default.post(
+            name: CarPlayDidDisconnectNotification,
+            object: nil
+        )
+        PTNSLogConsole("📱 [CarPlay] Scene已断开，发送恢复通知。")
     }
 }

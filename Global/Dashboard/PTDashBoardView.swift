@@ -203,6 +203,11 @@ class PTDashBoardView: UIView {
         }
         NotificationCenter.default.addObserver(self, selector: #selector(handleLocationUpdate(_:)), name: PTLocationEngineDidUpdate, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleMotionUpdate(_:)), name: PTMotionEngineDidUpdate, object: nil)
+        
+        if PTMotoUserDefaultStruct.MotoLinkedAPP {
+            NotificationCenter.default.addObserver(self, selector: #selector(handleAuthSuccess), name: BLEConnectSuccess, object: nil)
+        }
+        NotificationCenter.default.addObserver(self, selector: #selector(handleMotorcycleDisconnect), name: MotorcycleDisconnected, object: nil)
     }
     
     @objc private func handleMotionUpdate(_ notification: Notification) {
@@ -217,5 +222,18 @@ class PTDashBoardView: UIView {
         UIView.transition(with: crashOverlay, duration: 0.3, options: .transitionCrossDissolve, animations: {
             self.crashOverlay.isHidden = !show
         }, completion: nil)
+    }
+    
+    @objc func handleAuthSuccess() {
+        PTDashboardConfig.shared.blueConnected = true
+        lightControl.isHidden = false
+        speedometer.playStartupSweep(duration: 1.5)
+    }
+    
+    @objc func handleMotorcycleDisconnect() {
+        speedometer.resetToZeroWithAnimation()
+        PTLocationEngine.shared.switchEngineMode(to: .antiTheft)
+        PTLocationEngine.shared.forceUpdateWidgetOnDisconnect()
+        PTMOTOParkingManager.shared.saveCurrentLocationAsParkingSpot()
     }
 }
