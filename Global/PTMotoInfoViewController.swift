@@ -254,6 +254,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         
     @objc func handleAuthSuccess() {
         PTDashboardConfig.shared.blueConnected = true
+        PTMOTOParkingManager.shared.clearParkingSpot()
         PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "connect_success")) {
             self.bleConnectStatusLabel.isSelected = !PTDashboardConfig.shared.blueConnected
             self.speedometer.playStartupSweep(duration: 1.5)

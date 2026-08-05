@@ -143,6 +143,7 @@ class PTBLEConnectViewController: PTMotoBaseViewController,@unchecked Sendable {
     
     @objc func handleAuthSuccess() {
         PTDashboardConfig.shared.blueConnected = true
+        PTMOTOParkingManager.shared.clearParkingSpot()
         PTGCDManager.shared.delayOnMain(time: 3) {
             PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "connect_success")) {
                 self.bleSuccessCallback?()

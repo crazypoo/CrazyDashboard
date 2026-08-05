@@ -367,7 +367,17 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         self.startNavigationTapped()
         self.driveView.isHidden = false
         self.routePlantList.isHidden = true
-        let annotationsToRemove = self.amapView.annotations.filter { !($0 is PTPeerAnnotation) }
+        let annotationsToRemove = self.amapView.annotations.filter { annotation in
+            if annotation is PTPeerAnnotation {
+                return false
+            }
+            if let _ = PTMOTOParkingManager.shared.getLastParkedLocation() {
+                if let naviAnno = annotation as? NaviPointAnnotation, naviAnno.naviPointType == .parking {
+                    return false
+                }
+            }
+            return true
+        }
         self.amapView.removeAnnotations(annotationsToRemove)
         self.amapView.removeOverlays(self.amapView.overlays)
         if self.testButton.isSelected {
@@ -505,6 +515,12 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
                           isHandsFree: PTLocalIntercomManager.shared.isHandsFreeMode,
                           isTalking: PTLocalIntercomManager.shared.isTalking,
                           otherMemberTalking:PTLocalIntercomManager.shared.otherMemberTalking)
+        if PTDashboardConfig.shared.blueConnected {
+            PTMOTOParkingManager.shared.clearParkingSpot()
+            if let findValue = self.amapView.annotations.first(where: { $0 is NaviPointAnnotation }),let findRealValue = findValue as? NaviPointAnnotation,findRealValue.naviPointType == .parking {
+                self.amapView.removeAnnotation(findRealValue)
+            }
+        }
     }
     
     func mapSet() {
@@ -898,6 +914,8 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
             amapView.addAnnotation(beginAnnotation)
             
             amapView.setZoomLevel(17.5, animated: true)
+        } else {
+            self.amapView.removeAnnotations(self.amapView.annotations)
         }
         
         driveViewCloseButtonClicked(self.driveView)
@@ -981,7 +999,17 @@ extension PTMotoNavigationViewController: UISearchBarDelegate, UITableViewDelega
 
 extension PTMotoNavigationViewController:MAMapViewDelegate {
     func setPointPin(location: CLLocationCoordinate2D) {
-        let annotationsToRemove = self.amapView.annotations.filter { !($0 is PTPeerAnnotation) }
+        let annotationsToRemove = self.amapView.annotations.filter { annotation in
+            if annotation is PTPeerAnnotation {
+                return false
+            }
+            if let _ = PTMOTOParkingManager.shared.getLastParkedLocation() {
+                if let naviAnno = annotation as? NaviPointAnnotation, naviAnno.naviPointType == .parking {
+                    return false
+                }
+            }
+            return true
+        }
         self.amapView.removeAnnotations(annotationsToRemove)
 
         let beginAnnotation = NaviPointAnnotation()
@@ -1049,7 +1077,7 @@ extension PTMotoNavigationViewController:MAMapViewDelegate {
                 if pointAnnotationView == nil {
                     pointAnnotationView = PTMOTOParkingAnotationView(annotation: naviAnno, reuseIdentifier: parkID)
                 }
-                pointAnnotationView?.image = UIImage(named: "app_connect_logo")?.transformImage(size: .init(width: 44, height: 24))
+                pointAnnotationView?.image = PTLocalIntercomManager.shared.currentMyAvatar().pt_toMapCircleAvatar()
                 pointAnnotationView?.canShowCallout = true
                 pointAnnotationView?.isDraggable = false
                 return pointAnnotationView
@@ -1312,7 +1340,17 @@ extension PTMotoNavigationViewController : AMapNaviDriveViewDelegate {
         self.driveView.isHidden = true
         self.startNavigationButton.isHidden = true
         self.startNavigationButton.isEnabled = false
-        let annotationsToRemove = self.amapView.annotations.filter { !($0 is PTPeerAnnotation) }
+        let annotationsToRemove = self.amapView.annotations.filter { annotation in
+            if annotation is PTPeerAnnotation {
+                return false
+            }
+            if let _ = PTMOTOParkingManager.shared.getLastParkedLocation() {
+                if let naviAnno = annotation as? NaviPointAnnotation, naviAnno.naviPointType == .parking {
+                    return false
+                }
+            }
+            return true
+        }
         self.amapView.removeAnnotations(annotationsToRemove)
         self.amapView.removeOverlays(amapView.overlays)
         //停止语音

@@ -228,6 +228,7 @@ class PTDashBoardView: UIView {
         PTDashboardConfig.shared.blueConnected = true
         lightControl.isHidden = false
         speedometer.playStartupSweep(duration: 1.5)
+        PTMOTOParkingManager.shared.clearParkingSpot()
     }
     
     @objc func handleMotorcycleDisconnect() {
