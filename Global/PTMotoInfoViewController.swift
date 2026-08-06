@@ -106,20 +106,13 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         return image
     }
     
-    lazy var bleConnectStatusLabel:PTActionLayoutButton = {
-        let view = PTActionLayoutButton()
-        view.layoutStyle = .leftImageRightTitle
-        view.midSpacing = CGFloat.GlobalItemSpacing / 2
-        view.imageSize = .init(width: 5, height: 5)
-        view.setImage(bleStatusConnectImage, state: .normal)
-        view.setImage(bleStatusNoConnectImage, state: .selected)
-        view.setTitleFont(.appfont(size: 14), state: .normal)
-        view.setTitleFont(.appfont(size: 14), state: .selected)
-        view.setTitleColor(.white, state: .normal)
-        view.setTitleColor(.white, state: .selected)
-        view.setTitle(PTDashboardConfig.languageFunc(text: "casa_bluetooth_status"), state: .normal)
-        view.setTitle(PTDashboardConfig.languageFunc(text: "casa_bluetooth_status"), state: .selected)
-        view.bounds = .init(origin: .zero, size: .init(width:view.getKitCurrentDimension() + 5, height:PTAppBaseConfig.share.navBarButtonSize))
+    lazy var bleConnectStatusLabel:PTBaseButton = {
+        
+        let baseImage = UIImage(.dot.radiowavesLeftAndRight)
+        let view = PTBaseButton()
+        view.setImage(baseImage.withTintColor(.systemRed, renderingMode: .alwaysOriginal), for: .normal)
+        view.setImage(baseImage.withTintColor(.systemGreen, renderingMode: .alwaysOriginal), for: .selected)
+        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers { sender in
             if !PTDashboardConfig.shared.blueConnected {
                 PTGCDManager.shared.runOnMain {
@@ -201,7 +194,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
     lazy var obdButton:PTBaseButton = {
         let baseImage = UIImage(.engine.combustionBadgeExclamationmarkFill)
         let view = PTBaseButton()
-        view.setImage(baseImage, for: .normal)
+        view.setImage(baseImage.withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
         view.setImage(baseImage.withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal), for: .selected)
         view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
         view.isSelected = PTMotoTelemetryManager.shared.isConnected
@@ -239,17 +232,30 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         return view
     }()
 
+    lazy var motionDeviceButton:PTBaseButton = {
+        let view = PTBaseButton()
+        view.titleLabel?.font = .appfont(size: 24)
+        view.setTitle(PTMotionDataSource.iphone.rawValue, for: .normal)
+        view.setTitle(PTMotionDataSource.airpods.rawValue, for: .selected)
+        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.isSelected = false
+        view.addActionHandlers(handler: { _ in
+            UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "Motion device"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: PTDashboardConfig.languageFunc(text: "This icon is mean,user use the motion device to show the drive data source."),cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
+        })
+        return view
+    }()
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
-        setCustomRightButtons(buttons: [obdButton,bleConnectStatusLabel],buttonSpacing: CGFloat.GlobalItemSpacing)
+        setCustomRightButtons(buttons: [motionDeviceButton,obdButton,bleConnectStatusLabel],buttonSpacing: CGFloat.GlobalItemSpacing)
         
-        self.bleConnectStatusLabel.isSelected = !PTDashboardConfig.shared.blueConnected
+        self.bleConnectStatusLabel.isSelected = PTDashboardConfig.shared.blueConnected
     }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        self.bleConnectStatusLabel.isSelected = !PTDashboardConfig.shared.blueConnected
+        self.bleConnectStatusLabel.isSelected = PTDashboardConfig.shared.blueConnected
         if !vcDidLoad {
             speedometer.playStartupSweep(duration: 1.5)
             speedometerReversed.playStartupSweep(duration: 1.5)
@@ -293,13 +299,14 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         }
         
         PTMotoTelemetryManager.shared.addDelegate(self)
+        PTMotion.shared.addDelegate(self)
     }
         
     @objc func handleAuthSuccess() {
         PTDashboardConfig.shared.blueConnected = true
         PTMOTOParkingManager.shared.clearParkingSpot()
         PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "connect_success")) {
-            self.bleConnectStatusLabel.isSelected = !PTDashboardConfig.shared.blueConnected
+            self.bleConnectStatusLabel.isSelected = PTDashboardConfig.shared.blueConnected
             self.speedometer.playStartupSweep(duration: 1.5)
             self.speedometerReversed.playStartupSweep(duration: 1.5)
         }
@@ -308,7 +315,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
     override func handleMotorcycleDisconnect() {
         super.handleMotorcycleDisconnect()
         PTGCDManager.shared.delayOnMain(time: 0.35) {
-            self.bleConnectStatusLabel.isSelected = !PTDashboardConfig.shared.blueConnected
+            self.bleConnectStatusLabel.isSelected = PTDashboardConfig.shared.blueConnected
             self.speedometer.resetToZeroWithAnimation()
             self.speedometerReversed.resetToZeroWithAnimation()
         }
@@ -406,14 +413,10 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             }
         }
         
-        
         pt_observerLanguage {
             if self.vcDidLoad {
                 self.voltageLabel.modelSet = self.modelvoltageSet(currentValue: 0)
                 self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(max: 2500, current: 0)
-                self.bleConnectStatusLabel.setTitle(PTDashboardConfig.languageFunc(text: "casa_bluetooth_status"), state: .normal)
-                self.bleConnectStatusLabel.setTitle(PTDashboardConfig.languageFunc(text: "casa_bluetooth_status"), state: .selected)
-                self.bleConnectStatusLabel.bounds = .init(origin: .zero, size: .init(width:self.bleConnectStatusLabel.getKitCurrentDimension() + 5, height:PTAppBaseConfig.share.navBarButtonSize))
                 
                 self.tripItem.configure(systemIcon: UIImage(.point.topleftDownToPointBottomrightCurvepath),
                                            iconColor: PTDashboardConfig.shared.appMainColor,
@@ -756,5 +759,18 @@ extension PTMotoInfoViewController:PTMotoTelemetryDelegate {
             code = codes.joined(separator: "\n")
         }
         UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD error Codes"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: code,cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
+    }
+}
+
+extension PTMotoInfoViewController:PTMotionDelegate {
+    func motionManager(_ manager: PooTools.PTMotion, didUpdateData data: PooTools.PTMotionData) { }
+    
+    func motionManager(_ manager: PTMotion, didChangeDataSource source: PTMotionDataSource) {
+        switch source {
+        case .iphone:
+            motionDeviceButton.isSelected = false
+        case .airpods:
+            motionDeviceButton.isSelected = true
+        }
     }
 }

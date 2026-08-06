@@ -286,8 +286,8 @@ public class PTTripManager: NSObject {
         nc.addObserver(self, selector: #selector(handleDisconnect), name: MotorcycleDisconnected, object: nil)
         nc.addObserver(self, selector: #selector(handleControlData(_:)), name: MotorcycleCONTROL, object: nil)
         nc.addObserver(self, selector: #selector(handleData1(_:)), name: MotorcycleDATA1, object: nil)
-        nc.addObserver(self, selector: #selector(handleMotion(_:)), name: PTMotionEngineDidUpdate, object: nil)
         nc.addObserver(self, selector: #selector(handleABSData(_:)), name: MotorcycleABS, object: nil)
+        PTMotion.shared.addDelegate(self)
     }
     
     // MARK: - 业务逻辑处理
@@ -367,27 +367,7 @@ public class PTTripManager: NSObject {
         PTLocationEngine.shared.startTracking()
         NotificationCenter.default.addObserver(self, selector: #selector(handleLocationUpdate(_:)), name: PTLocationEngineDidUpdate, object: nil)
     }
-    
-    @objc private func handleMotion(_ notification: Notification) {
-        guard let data = notification.object as? PTMotionData else { return }
-        self.maxLeanLeft = data.maxLeftLean
-        self.maxLeanRight = data.maxRightLean
-        self.currentLiveRoll = data.roll
-        self.currentLivePitch = data.pitch
-        self.currentLiveGForceX = data.gForceX
-        self.currentLiveGForceY = data.gForceY
-        self.currentLiveGForceZ = data.gForceZ
-        self.currentLiveAltitude = data.relativeAltitude
-        self.currentLivePressure = data.pressure
         
-        if data.gForceY > self.maxAccelG { self.maxAccelG = data.gForceY }
-        if data.gForceY < self.maxBrakeG { self.maxBrakeG = data.gForceY } // 刹车通常为负值
-        if abs(data.gForceX) > self.maxCornerG { self.maxCornerG = abs(data.gForceX) }
-        if abs(data.gForceZ) > self.maxBump { self.maxBump = abs(data.gForceZ) }
-        if data.pitch > self.maxPitchUp { self.maxPitchUp = data.pitch }
-        if data.pitch < self.maxPitchDown { self.maxPitchDown = data.pitch }
-    }
-    
     @objc private func handleLocationUpdate(_ notification: Notification) {
         guard let tripData = notification.object as? PTTripData,
               let coordinate = tripData.currentLocation,
@@ -684,5 +664,26 @@ extension PTTripManager {
         
         // 🚨 联动清理 iCloud：如果你在 PTiCloudFileManager 中写过 delete 方法，可以在这里顺手调用
         PTiCloudFileManager.shared.deleteCloudFile(fileName: fileName)
+    }
+}
+
+extension PTTripManager:PTMotionDelegate {
+    public func motionManager(_ manager: PTMotion, didUpdateData data: PTMotionData) {
+        self.maxLeanLeft = data.maxLeftLean
+        self.maxLeanRight = data.maxRightLean
+        self.currentLiveRoll = data.roll
+        self.currentLivePitch = data.pitch
+        self.currentLiveGForceX = data.gForceX
+        self.currentLiveGForceY = data.gForceY
+        self.currentLiveGForceZ = data.gForceZ
+        self.currentLiveAltitude = data.relativeAltitude
+        self.currentLivePressure = data.pressure
+        
+        if data.gForceY > self.maxAccelG { self.maxAccelG = data.gForceY }
+        if data.gForceY < self.maxBrakeG { self.maxBrakeG = data.gForceY } // 刹车通常为负值
+        if abs(data.gForceX) > self.maxCornerG { self.maxCornerG = abs(data.gForceX) }
+        if abs(data.gForceZ) > self.maxBump { self.maxBump = abs(data.gForceZ) }
+        if data.pitch > self.maxPitchUp { self.maxPitchUp = data.pitch }
+        if data.pitch < self.maxPitchDown { self.maxPitchDown = data.pitch }
     }
 }
