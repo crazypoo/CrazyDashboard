@@ -49,7 +49,13 @@ public class PTMotoTelemetryManager {
     public static let shared = PTMotoTelemetryManager()
     
     /// 🌟 对外暴露的 Delegate，ViewController 将自身设为代理即可接收数据
-    public weak var delegate: PTMotoTelemetryDelegate?
+    private class WeakDelegateWrapper {
+        weak var delegate: PTMotoTelemetryDelegate?
+        init(_ delegate: PTMotoTelemetryDelegate) {
+            self.delegate = delegate
+        }
+    }
+    private var delegates: [WeakDelegateWrapper] = []
     
     // 内部私有属性
     private var obdService: OBDService
@@ -65,6 +71,27 @@ public class PTMotoTelemetryManager {
         setupConnectionListener()
     }
     
+    public func addDelegate(_ delegate: PTMotoTelemetryDelegate) {
+        cleanupDelegates() // 每次添加前先清理一下已经销毁的旧界面
+        
+        // 防止同一个 ViewController 重复添加
+        let isAlreadyAdded = delegates.contains { $0.delegate === delegate }
+        if !isAlreadyAdded {
+            delegates.append(WeakDelegateWrapper(delegate))
+            PTNSLogConsole("📡 [OBD2] 新增了一个数据监听者。当前监听者数量: \(delegates.count)")
+        }
+    }
+    
+    /// 主动移除数据监听者 (通常不需要手动调，因为用了弱引用，页面销毁会自动失效)
+    public func removeDelegate(_ delegate: PTMotoTelemetryDelegate) {
+        delegates.removeAll { $0.delegate === delegate || $0.delegate == nil }
+    }
+    
+    /// 清理所有已经被系统销毁的空代理
+    private func cleanupDelegates() {
+        delegates.removeAll { $0.delegate == nil }
+    }
+
     // MARK: - 连接控制
     
     /// 监听底层蓝牙连接状态
@@ -74,17 +101,24 @@ public class PTMotoTelemetryManager {
             .sink { [weak self] state in
                 guard let self = self else { return }
                 
+                self.cleanupDelegates()
                 switch state {
                 case .connectedToVehicle:
                     self.isConnected = true
                     PTNSLogConsole("✅ [OBD2] 成功连接 ECU，开始数据抓取！")
-                    self.delegate?.telemetryManager(self, didChangeConnectionState: true)
+                    self.delegates.forEach { wrapper in
+                        guard let delegate = wrapper.delegate else { return }
+                        delegate.telemetryManager(self, didChangeConnectionState: true)
+                    }
                     self.startFetchingLiveTelemetry()
                     
                 case .disconnected:
                     self.isConnected = false
                     PTNSLogConsole("❌ [OBD2] 连接断开。")
-                    self.delegate?.telemetryManager(self, didChangeConnectionState: false)
+                    self.delegates.forEach { wrapper in
+                        guard let delegate = wrapper.delegate else { return }
+                        delegate.telemetryManager(self, didChangeConnectionState: false)
+                    }
                     // 全局广播：适合在 AppDelegate 或其他非 UI 类中监听断开事件
                     NotificationCenter.default.post(name: NSNotification.Name("PTMotoOBDDisconnected"), object: nil)
                     
@@ -129,6 +163,7 @@ public class PTMotoTelemetryManager {
             }, receiveValue: { [weak self] measurements in
                 guard let self = self else { return }
                 
+                self.cleanupDelegates()
                 // 1. 解析基础动力数据
                 let rpm = measurements[.mode1(.rpm)]?.value as? Double ?? 0.0
                 let speed = measurements[.mode1(.speed)]?.value as? Double ?? 0.0
@@ -137,33 +172,36 @@ public class PTMotoTelemetryManager {
                 // 缓存最新值
                 self.currentRPM = rpm
                 self.currentSpeed = speed
-                
-                // 触发代理回调
-                self.delegate?.telemetryManager(self, didUpdateBaseData: rpm, speed: speed, throttle: throttle)
-                
-                // 2. 解析健康数据
+                                
                 let coolant = self.toInt(measurements[.mode1(.coolantTemp)]?.value)
                 let voltage = measurements[.mode1(.controlModuleVoltage)]?.value as? Double ?? 0.0
                 let airTemp = self.toInt(measurements[.mode1(.intakeTemp)]?.value)
-                
-                self.delegate?.telemetryManager(self, didUpdateHealthData: coolant, voltage: voltage, intakeAirTemp: airTemp)
-                
-                // 3. 解析进阶工况数据
+                                
                 let map = self.toInt(measurements[.mode1(.intakePressure)]?.value)
                 let timing = measurements[.mode1(.timingAdvance)]?.value as? Double ?? 0.0
                 let maf = measurements[.mode1(.maf)]?.value as? Double ?? 0.0
                 let runTime = self.toInt(measurements[.mode1(.runTime)]?.value)
-                
-                self.delegate?.telemetryManager(self, didUpdateAdvancedData: map, timingAdvance: timing, maf: maf, runTime: runTime)
-                
+                                
                 let fuelLevel = measurements[.mode1(.fuelLevel)]?.value as? Double ?? 0.0
                 let fuelRate = measurements[.mode1(.fuelRate)]?.value as? Double ?? 0.0
                 let barometric = self.toInt(measurements[.mode1(.barometricPressure)]?.value)
                 let tripDistance = self.toInt(measurements[.mode1(.distanceSinceDTCCleared)]?.value)
                 
-                // 3. 触发新的代理回调，将数据抛给 ViewController
-                self.delegate?.telemetryManager(self, didUpdateTripAndFuelData: fuelLevel, fuelRate: fuelRate, barometricPressure: barometric, tripDistance: tripDistance)
-
+                self.delegates.forEach { wrapper in
+                    guard let delegate = wrapper.delegate else { return }
+                    
+                    // 1. 发送基础数据
+                    delegate.telemetryManager(self, didUpdateBaseData: rpm, speed: speed, throttle: throttle)
+                    
+                    // 2. 发送健康数据
+                    delegate.telemetryManager(self, didUpdateHealthData: coolant, voltage: voltage, intakeAirTemp: airTemp)
+                    
+                    // 3. 发送进阶数据
+                    delegate.telemetryManager(self, didUpdateAdvancedData: map, timingAdvance: timing, maf: maf, runTime: runTime)
+                    
+                    // 4. 发送油耗与行程数据
+                    delegate.telemetryManager(self, didUpdateTripAndFuelData: fuelLevel, fuelRate: fuelRate, barometricPressure: barometric, tripDistance: tripDistance)
+                }
             })
             .store(in: &cancellables)
     }
@@ -178,7 +216,11 @@ public class PTMotoTelemetryManager {
                     let map:[String] = success.troubleCode?.compactMap { value in
                         return value.description
                     } ?? []
-                    self.delegate?.telemetryManager(self, didFinishScanningTroubleCodes: map)
+                    self.cleanupDelegates()
+                    self.delegates.forEach { wrapper in
+                        guard let delegate = wrapper.delegate else { return }
+                        delegate.telemetryManager(self, didFinishScanningTroubleCodes: map)
+                    }
                 case .failure(let failure):
                     PTNSLogConsole("❌ [OBD诊断] 失败: \(failure.localizedDescription)")
                 }

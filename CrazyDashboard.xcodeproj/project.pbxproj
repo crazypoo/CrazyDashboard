@@ -41,6 +41,8 @@
 		5577E7D32FD704AD0004733F /* PTPitchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7D12FD704AD0004733F /* PTPitchView.swift */; };
 		5587899D30231DD700B94E91 /* SwiftOBD2 in Frameworks */ = {isa = PBXBuildFile; productRef = 5587899C30231DD700B94E91 /* SwiftOBD2 */; };
 		5587899F30231DE700B94E91 /* PTMotoTelemetryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5587899E30231DE700B94E91 /* PTMotoTelemetryManager.swift */; };
+		558789E4302420CB00B94E91 /* PTCarplayMainController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 558789E3302420CB00B94E91 /* PTCarplayMainController.swift */; };
+		558789E630242B9400B94E91 /* PTCarPlayContainerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 558789E530242B9400B94E91 /* PTCarPlayContainerViewController.swift */; };
 		55901837300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55901836300FE37100A77571 /* PTMotoBaseViewController.swift */; };
 		5590187230107A1C00A77571 /* PTRoutePlantCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5590187130107A1C00A77571 /* PTRoutePlantCell.swift */; };
 		55986640301138A30049684D /* PTTripManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598663E301138A30049684D /* PTTripManager.swift */; };
@@ -137,6 +139,8 @@
 		5577E7D12FD704AD0004733F /* PTPitchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPitchView.swift; sourceTree = "<group>"; };
 		55878957302301B200B94E91 /* xp400WidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = xp400WidgetExtension.entitlements; sourceTree = "<group>"; };
 		5587899E30231DE700B94E91 /* PTMotoTelemetryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoTelemetryManager.swift; sourceTree = "<group>"; };
+		558789E3302420CB00B94E91 /* PTCarplayMainController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCarplayMainController.swift; sourceTree = "<group>"; };
+		558789E530242B9400B94E91 /* PTCarPlayContainerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCarPlayContainerViewController.swift; sourceTree = "<group>"; };
 		55901836300FE37100A77571 /* PTMotoBaseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoBaseViewController.swift; sourceTree = "<group>"; };
 		5590187130107A1C00A77571 /* PTRoutePlantCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRoutePlantCell.swift; sourceTree = "<group>"; };
 		5598663E301138A30049684D /* PTTripManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTripManager.swift; sourceTree = "<group>"; };
@@ -337,6 +341,7 @@
 		5577E64D2FD657110004733F /* Global */ = {
 			isa = PBXGroup;
 			children = (
+				558789E2302420B500B94E91 /* Carplay */,
 				554110D9301E658D0059BFCF /* LiDar */,
 				55E616B8301B89AA0075F883 /* Chat */,
 				55E616B7301B89960075F883 /* Dev */,
@@ -358,6 +363,15 @@
 				55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */,
 			);
 			path = Global;
+			sourceTree = "<group>";
+		};
+		558789E2302420B500B94E91 /* Carplay */ = {
+			isa = PBXGroup;
+			children = (
+				558789E3302420CB00B94E91 /* PTCarplayMainController.swift */,
+				558789E530242B9400B94E91 /* PTCarPlayContainerViewController.swift */,
+			);
+			path = Carplay;
 			sourceTree = "<group>";
 		};
 		55E616B4301B88BF0075F883 /* BLE */ = {
@@ -682,6 +696,7 @@
 				559866C23011A71E0049684D /* SpeechSynthesizer.swift in Sources */,
 				55FE2995300CBCB4000E741F /* PTMotoBaseTabbarController.swift in Sources */,
 				55FE29A6300CC2E2000E741F /* PTMotoSettingViewController.swift in Sources */,
+				558789E630242B9400B94E91 /* PTCarPlayContainerViewController.swift in Sources */,
 				5598667C301147FD0049684D /* PTCustomRouteManager.swift in Sources */,
 				55499E03301AFC2200A1A2D9 /* PTWidgetManager.swift in Sources */,
 				5577E6502FD6572E0004733F /* PTNowPlayingView.swift in Sources */,
@@ -712,6 +727,7 @@
 				55FDBCAC3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift in Sources */,
 				5577E6512FD657330004733F /* PTSpeedometerView.swift in Sources */,
 				55FE29A1300CC1F1000E741F /* PTMotoInfoViewController.swift in Sources */,
+				558789E4302420CB00B94E91 /* PTCarplayMainController.swift in Sources */,
 				55499CFE3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift in Sources */,
 				55FE2A77300DF95C000E741F /* PTMainProgressView.swift in Sources */,
 				55FE29A3300CC258000E741F /* PTMotoNavigationViewController.swift in Sources */,

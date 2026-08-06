@@ -281,7 +281,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             }
         }
         
-        PTMotoTelemetryManager.shared.delegate = self
+        PTMotoTelemetryManager.shared.addDelegate(self)
     }
         
     @objc func handleAuthSuccess() {

@@ -18,17 +18,22 @@ class ViewController: UIViewController {
         let view = PTDashBoardView()
         return view
     }()
-
+        
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        self.view.layoutIfNeeded()
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+                
         view.addSubviews([dashBoard])
         dashBoard.snp.makeConstraints { make in
             make.left.equalToSuperview().inset(50)
             make.top.bottom.right.equalToSuperview()
         }
         dashBoard.speedometer.playStartupSweep(duration: 1.5)
-        
+
         updateMapModeForCarPlayConnection(isActive: PTCarPlayManager.isCarPlayActive)
         
         NotificationCenter.default.addObserver(forName: UIScene.willConnectNotification, object: nil, queue: .main) { [weak self] notification in
@@ -54,6 +59,13 @@ class ViewController: UIViewController {
         }
     }
     
+    @objc private func swallowTap() {
+        // 这里什么都不需要做！
+        // 它的唯一使命就是拦截点击，让底层的 CarPlay 系统收不到点击信号。
+        // 系统收不到信号，顶部的原生导航栏（返回按钮）就永远不会隐藏了。
+        PTNSLogConsole("🚗 [CarPlay] 背景点击被成功拦截，原生导航栏保持常驻。")
+    }
+
     @objc func carplayStopNav() {
         AMapNaviDriveManager.sharedInstance().stopNavi()
         PTDashboardConfig.shared.naving = false
@@ -66,6 +78,6 @@ class ViewController: UIViewController {
         } else {
             self.dashBoard.mapView.setNormalMapView()
         }
-    }
+    }    
 }
 
