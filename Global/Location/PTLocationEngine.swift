@@ -47,7 +47,7 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
     private var currentAltitude: Double = 0.0
     
     // MARK: - 行程统计核心变量
-    private var lastLocation: CLLocation?
+    public private(set) var lastLocation: CLLocation?
 
     private var searchAPI: AMapSearchAPI?
     

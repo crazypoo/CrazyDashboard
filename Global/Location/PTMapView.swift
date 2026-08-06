@@ -11,6 +11,7 @@ import SnapKit
 import PooTools
 import SwifterSwift
 import MultipeerConnectivity
+import AMapLocationKit
 
 @objcMembers
 class PTMapView: UIView, MAMapViewDelegate {
@@ -23,7 +24,6 @@ class PTMapView: UIView, MAMapViewDelegate {
         view.showsUserLocation = true
         view.userTrackingMode = .follow
         view.mapType = .standardNight
-        view.mapLanguage = PTDashboardConfig.appIsInChinese() ? 0 : 1
         view.userTrackingMode = .followWithHeading // 【灵魂属性】跟随车头方向，自动呈现 3D 导航视角
         view.showsCompass = false // 隐藏原生指南针，因为我们有 PTCompassRollerView
         view.showsScale = false
@@ -69,6 +69,14 @@ class PTMapView: UIView, MAMapViewDelegate {
         NotificationCenter.default.addObserver(self, selector: #selector(handlePeerLocationUpdate(_:)), name: PTPeerLocationDidUpdateNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handlePeerLeave(_:)), name: PTPeerDidLeaveNetworkNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handlePeerAvatarUpdate(_:)), name: PTPeerAvatarDidUpdateNotification, object: nil)
+        
+        PTGCDManager.shared.delayOnMain(time: 0.55) {
+            let flag = AMapLocationDataAvailableForCoordinate(PTLocationEngine.shared.lastLocation?.coordinate ?? .init(latitude: 0, longitude: 0))
+            self.mapView.mapLanguage = flag ? 0 : 1
+            self.mapView.mapType = .standardNight
+            self.carPlayMapView.mapLanguage = flag ? 0 : 1
+            self.carPlayMapView.mapType = .standardNight
+        }
     }
     
     deinit {

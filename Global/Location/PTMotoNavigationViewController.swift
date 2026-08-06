@@ -209,7 +209,6 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         view.showsUserLocation = true
         view.userTrackingMode = .follow
         view.mapType = .standardNight
-        view.mapLanguage = PTDashboardConfig.appIsInChinese() ? 0 : 1
         view.delegate = self
         view.compassOrigin = .init(x: -(CGFloat.kSCREEN_WIDTH - PTAppBaseConfig.share.defaultViewSpace), y: CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing * 2 + homeSize)
         return view
@@ -610,6 +609,14 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
                           isHandsFree: PTLocalIntercomManager.shared.isHandsFreeMode,
                           isTalking: PTLocalIntercomManager.shared.isTalking,
                           otherMemberTalking:PTLocalIntercomManager.shared.otherMemberTalking)
+        
+        PTGCDManager.shared.delayOnMain(time: 0.55) {
+            let flag = AMapLocationDataAvailableForCoordinate(PTLocationEngine.shared.lastLocation?.coordinate ?? .init(latitude: 0, longitude: 0))
+            self.amapNormalView.mapLanguage = flag ? 0 : 1
+            self.amapNormalView.mapType = .standardNight
+            self.amapView.mapLanguage = flag ? 0 : 1
+            self.amapView.mapType = .standardNight
+        }
     }
     
     @objc private func handlePeerAvatarUpdate(_ notification: Notification) {
