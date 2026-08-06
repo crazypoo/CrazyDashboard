@@ -40,6 +40,7 @@ def shared_pods
   pod 'PooTools/WhatsNewsKit', :git => 'https://github.com/crazypoo/PTools.git'
   pod 'PooTools/MicPermission', :git => 'https://github.com/crazypoo/PTools.git'
   pod 'PooTools/PhotoPicker', :git => 'https://github.com/crazypoo/PTools.git'
+  pod 'PooTools/CustomerLabel', :git => 'https://github.com/crazypoo/PTools.git'
 
   pod 'SwiftyUserDefaults'
   

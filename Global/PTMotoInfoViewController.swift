@@ -207,9 +207,17 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         view.isSelected = PTMotoTelemetryManager.shared.isConnected
         view.addActionHandlers(handler: { sender in
             if !sender.isSelected {
-                PTMotoTelemetryManager.shared.connectToMotorcycle()
+                let actions = ["Connect"]
+                UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD info"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: PTDashboardConfig.languageFunc(text: "If you have about elm327 obd2 moudle,you can connect it."), okBtns: actions, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
+                    switch index {
+                    case 0:
+                        PTMotoTelemetryManager.shared.connectToMotorcycle()
+                    default:
+                        break
+                    }
+                })
             } else {
-                let actions = ["Error Code","Disconnect"]
+                let actions = ["Error Code","Disconnect","Data"]
                 UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: actions, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
                     switch index {
                     case 0:
@@ -219,6 +227,9 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                         PTGCDManager.shared.delayOnMain(time: 0.5) {
                             self.obdButton.isSelected = false
                         }
+                    case 2:
+                        let vc = PTOBDDataViewController()
+                        self.navigationController?.pushViewController(vc, animated: true)
                     default:
                         break
                     }
