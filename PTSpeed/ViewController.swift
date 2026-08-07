@@ -34,12 +34,21 @@ class ViewController: UIViewController {
         }
         dashBoard.speedometer.playStartupSweep(duration: 1.5)
 
-        updateMapModeForCarPlayConnection(isActive: PTCarPlayManager.isCarPlayActive)
+        if PTDashboardConfig.shared.naving,PTDashboardConfig.shared.blueConnected {
+            updateMapModeForCarPlayConnection(isActive: false)
+        } else {
+            updateMapModeForCarPlayConnection(isActive: PTCarPlayManager.isCarPlayActive)
+        }
         
         NotificationCenter.default.addObserver(forName: UIScene.willConnectNotification, object: nil, queue: .main) { [weak self] notification in
             if let scene = notification.object as? UIScene, scene.session.role == .carTemplateApplication {
                 PTNSLogConsole("🔗 CarPlay 刚刚连接！让手机界面做出反应")
-                self?.updateMapModeForCarPlayConnection(isActive: true)
+                
+                if PTDashboardConfig.shared.naving,PTDashboardConfig.shared.blueConnected {
+                    self?.updateMapModeForCarPlayConnection(isActive: false)
+                } else {
+                    self?.updateMapModeForCarPlayConnection(isActive: true)
+                }
             }
         }
         
@@ -56,6 +65,16 @@ class ViewController: UIViewController {
             PTGCDManager.shared.delayOnMain(time: 3) {
                 PTBluetoothServerManager.shared.startBaseStationAndScan()
             }
+        }
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(navStart), name: PTCarPlayStarNavNotification, object: nil)
+    }
+    
+    @objc private func navStart() {
+        if PTDashboardConfig.shared.naving,PTDashboardConfig.shared.blueConnected {
+            self.updateMapModeForCarPlayConnection(isActive: false)
+        } else {
+            self.updateMapModeForCarPlayConnection(isActive: PTCarPlayManager.isCarPlayActive)
         }
     }
     

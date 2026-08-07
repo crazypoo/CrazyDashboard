@@ -21,6 +21,7 @@ import CarPlay
 import MultipeerConnectivity
 
 public let PTCarPlayStopNavNotification = NSNotification.Name("PTCarPlayStopNavNotification")
+public let PTCarPlayStarNavNotification = NSNotification.Name("PTCarPlayStarNavNotification")
 
 enum NaviPointAnnotationType: Int {
     case start
@@ -387,6 +388,8 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         if let _ = self.routeIndicatorInfoArray.first(where: { $0.isSelected }) {
             PTLiveActivityManager.shared.startNavigationActivity(destination: "目标地点", expectedArrival: Date())
         }
+        NotificationCenter.default.post(name: PTCarPlayStarNavNotification, object: nil)
+        
     }
         
     private var amapSearchResults:[MAPointAnnotation] = []
