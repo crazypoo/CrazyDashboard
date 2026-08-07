@@ -506,6 +506,17 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     
     private var peerAnnotations: [MCPeerID: PTPeerAnnotation] = [:]
     
+    private lazy var resetMotionButton: PTBaseButton = {
+        let view = PTBaseButton(type: .system)
+        view.setImage(UIImage(.figure.walkMotion).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: self.homeSize, height: self.homeSize))
+        view.addActionHandlers(handler: { _ in
+            PTMotion.shared.calibrateZeroPoint()
+            PTMotion.shared.resetLeanAngles()
+        })
+        return view
+    }()
+
     @MainActor deinit {
         NotificationCenter.default.removeObserver(self)
     }
@@ -601,7 +612,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         NotificationCenter.default.addObserver(forName: UIScene.willConnectNotification, object: nil, queue: .main) { [weak self] notification in
             if let scene = notification.object as? UIScene, scene.session.role == .carTemplateApplication {
                 PTNSLogConsole("🔗 CarPlay 刚刚连接！让手机界面做出反应")
-                self?.updateMapModeForCarPlayConnection(isActive: true)
+//                self?.updateMapModeForCarPlayConnection(isActive: true)
             }
         }
         
@@ -621,6 +632,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(handlePeerLocationUpdate(_:)), name: PTPeerLocationDidUpdateNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handlePeerLeave(_:)), name: PTPeerDidLeaveNetworkNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handlePeerAvatarUpdate(_:)), name: PTPeerAvatarDidUpdateNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(carplayViewLoad), name: PTCarVCShowedNotification, object: nil)
         
         updateMicStatusUI(isRunning: PTLocalIntercomManager.shared.isRunning,
                           isHandsFree: PTLocalIntercomManager.shared.isHandsFreeMode,
@@ -628,12 +640,20 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
                           otherMemberTalking:PTLocalIntercomManager.shared.otherMemberTalking)
         
         PTGCDManager.shared.delayOnMain(time: 0.55) {
-            let flag = AMapLocationDataAvailableForCoordinate(PTLocationEngine.shared.lastLocation?.coordinate ?? .init(latitude: 0, longitude: 0))
-            self.amapNormalView.mapLanguage = flag ? 0 : 1
-            self.amapNormalView.mapType = .standardNight
-            self.amapView.mapLanguage = flag ? 0 : 1
-            self.amapView.mapType = .standardNight
+            if !PTCarPlayManager.isCarPlayActive {
+                let flag = AMapLocationDataAvailableForCoordinate(PTLocationEngine.shared.lastLocation?.coordinate ?? .init(latitude: 0, longitude: 0))
+                self.amapNormalView.mapLanguage = flag ? 0 : 1
+                self.amapNormalView.mapType = .standardNight
+                self.amapView.mapLanguage = flag ? 0 : 1
+                self.amapView.mapType = .standardNight
+            }
         }
+    }
+    
+    @objc func carplayViewLoad() {
+        PTGCDManager.shared.delayOnMain(time: 0.55, block: {
+            self.updateMapModeForCarPlayConnection(isActive: false)
+        })
     }
     
     @objc private func handlePeerAvatarUpdate(_ notification: Notification) {
@@ -734,7 +754,11 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
                     if PTDashboardConfig.shared.naving {
                         mapSet()
                     } else {
-                        navReset()
+                        if !PTDashboardConfig.shared.appInBackground {
+                            navReset()
+                        } else {
+                            mapSet()
+                        }
                     }
                 } else {
                     navReset()
@@ -815,6 +839,8 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         toolbarStack.addArrangedSubview(stopCarplyButton)
         toolbarStack.addArrangedSubview(locationButton)
         toolbarStack.addArrangedSubview(globalMicStatusButton)
+        toolbarStack.addArrangedSubview(resetMotionButton)
+        
 
         floatingToolbarBackground.snp.makeConstraints { make in
             make.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)

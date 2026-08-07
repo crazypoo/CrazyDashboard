@@ -17,6 +17,7 @@ import Bugly
 import BackgroundTasks
 import SafeSFSymbols
 import QWeatherSDK
+import AVFoundation
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -153,6 +154,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
     
     func applicationWillTerminate(_ application: UIApplication) { }
+    
+    private func setupAudioSessionForBackground() {
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.playback, mode: .voicePrompt, options: [.defaultToSpeaker, .allowBluetoothA2DP, .allowBluetoothHFP, .mixWithOthers,.duckOthers])
+            try audioSession.setActive(true)
+        } catch {
+            // 处理错误
+        }
+    }
 }
 
 extension AppDelegate:UNUserNotificationCenterDelegate {

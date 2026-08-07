@@ -9,6 +9,7 @@ import UIKit
 import PooTools
 import SwifterSwift
 import SnapKit
+import SafeSFSymbols
 
 class PTDashBoardView: UIView {
     
@@ -42,6 +43,17 @@ class PTDashBoardView: UIView {
     lazy var lightControl: PTIndicatorPanel = {
         let view = PTIndicatorPanel()
         view.isHidden = !PTDashboardConfig.shared.blueConnected
+        return view
+    }()
+    
+    private lazy var resetMotionButton: PTBaseButton = {
+        let view = PTBaseButton(type: .system)
+        view.setImage(UIImage(.figure.walkMotion).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
+        view.addActionHandlers(handler: { _ in
+            PTNSLogConsole("1123123123123123")
+            PTMotion.shared.calibrateZeroPoint()
+            PTMotion.shared.resetLeanAngles()
+        })
         return view
     }()
 
@@ -107,7 +119,7 @@ class PTDashBoardView: UIView {
         // 3. 顶层：警告图层
         self.addSubviews([mapView,
                           speedometer, musicNowPlaying, leanAngleGauge, compassRoller,
-                          tripStatsView, gForceView, bumpMeter, pitchGauge, lightControl,
+                          tripStatsView, gForceView,resetMotionButton, bumpMeter, pitchGauge, lightControl,
                           crashOverlay])
         
         // --- 1. 背景层 ---
@@ -142,6 +154,12 @@ class PTDashBoardView: UIView {
             make.right.equalTo(self.musicNowPlaying)
             make.top.equalTo(self.mapView)
             make.width.height.equalTo(64)
+        }
+        
+        resetMotionButton.snp.makeConstraints { make in
+            make.right.equalTo(self.gForceView)
+            make.top.equalTo(self.gForceView.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.size.equalTo(PTAppBaseConfig.share.navBarButtonSize)
         }
         
         // --- 4. 中轴线组件 (由下至上堆叠) ---

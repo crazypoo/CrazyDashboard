@@ -86,6 +86,7 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
     
     var naving:Bool = false
     var blueConnected:Bool = false
+    var appInBackground:Bool = false
     
     var currentRouteDistance:Double = 0
     

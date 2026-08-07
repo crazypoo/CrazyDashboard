@@ -35,7 +35,6 @@ class PTCarPlaySceneDelegate: UIResponder,CPTemplateApplicationSceneDelegate,CPI
 
         let rootTemplate = createMainMenuTemplate()
         interfaceController.setRootTemplate(rootTemplate, animated: true, completion: nil)
-//        dashboardVC.updateMapModeForCarPlayConnection(isActive: true)
         
         NotificationCenter.default.post(
             name: CarPlayDidConnectNotification,
@@ -92,7 +91,11 @@ class PTCarPlaySceneDelegate: UIResponder,CPTemplateApplicationSceneDelegate,CPI
         
         let aVC = ViewController()
         self.dashboardVC.switchTo(viewController: aVC)
-        self.interfaceController?.pushTemplate(templateA, animated: true) { finish, error in }
+        self.interfaceController?.pushTemplate(templateA, animated: true) { finish, error in
+            PTGCDManager.shared.delayOnMain(time: 0.35) {
+                aVC.navStart()
+            }
+        }
     }
     
     private func navigateToScreenB() {

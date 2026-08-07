@@ -61,6 +61,7 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
         locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
         locationManager.distanceFilter = kCLDistanceFilterNone
         locationManager.allowsBackgroundLocationUpdates = true
+        locationManager.pausesLocationUpdatesAutomatically = false
         // 针对机车业务，不进行连续的逆地理编码（省电、省流量）
         locationManager.locatingWithReGeocode = false
         locationManager.locationTimeout = 10   // 定位超时时间设为 10 秒
