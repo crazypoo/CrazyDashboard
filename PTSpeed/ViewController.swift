@@ -87,7 +87,6 @@ class ViewController: UIViewController {
 
     @objc func carplayStopNav() {
         AMapNaviDriveManager.sharedInstance().stopNavi()
-        PTDashboardConfig.shared.naving = false
         self.dashBoard.mapView.setNormalMapView()
     }
     

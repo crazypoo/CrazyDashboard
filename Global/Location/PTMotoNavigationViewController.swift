@@ -364,6 +364,12 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     
     func navAction() {
         PTDashboardConfig.shared.naving = true
+        if PTCarPlayManager.isCarPlayActive,PTDashboardConfig.shared.naving {
+            self.stopCarplyButton.isEnabled = true
+            mapSet()
+        } else {
+            navReset()
+        }
         self.startNavigationTapped()
         self.driveView.isHidden = false
         self.routePlantList.isHidden = true
@@ -485,6 +491,8 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         view.setImage(UIImage(.stop.circleFill), for: .normal)
         view.addActionHandlers(handler: { sender in
             NotificationCenter.default.post(name: PTCarPlayStopNavNotification, object: nil)
+            PTDashboardConfig.shared.naving = false
+            PTLiveActivityManager.shared.stopNavigationActivity()
             PTGCDManager.shared.delayOnMain(time: 0.3, block: {
                 self.updateMapModeForCarPlayConnection(isActive: PTCarPlayManager.isCarPlayActive)
             })
@@ -593,6 +601,12 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         NotificationCenter.default.addObserver(forName: UIScene.willConnectNotification, object: nil, queue: .main) { [weak self] notification in
             if let scene = notification.object as? UIScene, scene.session.role == .carTemplateApplication {
                 PTNSLogConsole("🔗 CarPlay 刚刚连接！让手机界面做出反应")
+                self?.updateMapModeForCarPlayConnection(isActive: true)
+            }
+        }
+        
+        NotificationCenter.default.addObserver(forName: UIScene.didActivateNotification, object: nil, queue: .main) { [weak self] notification in
+            if let scene = notification.object as? UIScene, scene.session.role == .carTemplateApplication {
                 self?.updateMapModeForCarPlayConnection(isActive: true)
             }
         }
@@ -716,7 +730,15 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
                 mapSet()
                 stopCarplyButton.isEnabled = true
             } else {
-                navReset()
+                if PTCarPlayManager.isCarPlayActive {
+                    if PTDashboardConfig.shared.naving {
+                        mapSet()
+                    } else {
+                        navReset()
+                    }
+                } else {
+                    navReset()
+                }
                 stopCarplyButton.isEnabled = false
             }
         } else {
