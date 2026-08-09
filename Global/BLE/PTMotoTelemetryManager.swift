@@ -49,6 +49,9 @@ public class PTMotoTelemetryManager {
 
     public private(set) var supportedCommands: [String] = []
     
+    public private(set) var vin: String = ""
+    public private(set) var protocolName: String = ""
+
     private init() {}
     
     public func addDelegate(_ delegate: PTMotoTelemetryDelegate) {
@@ -95,11 +98,11 @@ public class PTMotoTelemetryManager {
         telemetryPollingTask = Task { [weak self] in
             guard let self = self else { return }
             
-            // 🌟 1. 动态探针：发送 0100 查询车机真实支持的指令
+            // 动态探针：发送 0100 查询车机真实支持的指令
             PTNSLogConsole("🔍 [自定义引擎] 正在向加密车机查询支持的 PID 列表 (0100)...")
             
             // ATRV 是芯片层面的直读电压指令，并非车机 ECU 协议，因此它必定支持，默认加入
-            var supportedPIDs: [String] = ["ATRV"]
+            var supportedPIDs: [String] = [OBDCommand.General.ATRV.properties.command]
             
             let pids = await self.fetchSupportedPIDsWithRetry()
             
@@ -108,14 +111,14 @@ public class PTMotoTelemetryManager {
                 PTNSLogConsole("📋 [自定义引擎] 最终车机支持清单: \(supportedPIDs)")
             } else {
                 PTNSLogConsole("⚠️ [自定义引擎] 0100 探针最终超时，回退至基础安全列表")
-                supportedPIDs.append(contentsOf: ["010C", "010D", "0104", "0105"])
+                supportedPIDs.append(contentsOf: [OBDCommand.mode1(.rpm).properties.command, OBDCommand.mode1(.speed).properties.command, OBDCommand.mode1(.engineLoad).properties.command, OBDCommand.mode1(.coolantTemp).properties.command])
             }
-
+            
             let desiredCommands = [
-                "010C", "010D", "0104",
-                "0105", "ATRV", "010F",
-                "010B", "010E", "0110", "011F",
-                "012F", "015E", "0133", "0131"
+                OBDCommand.mode1(.rpm).properties.command, OBDCommand.mode1(.speed).properties.command, OBDCommand.mode1(.engineLoad).properties.command,
+                OBDCommand.mode1(.coolantTemp).properties.command, OBDCommand.General.ATRV.properties.command, OBDCommand.mode1(.intakeTemp).properties.command,
+                OBDCommand.mode1(.intakePressure).properties.command, OBDCommand.mode1(.timingAdvance).properties.command, OBDCommand.mode1(.maf).properties.command, OBDCommand.mode1(.runTime).properties.command,
+                OBDCommand.mode1(.fuelLevel).properties.command, OBDCommand.mode1(.fuelRate).properties.command, OBDCommand.mode1(.barometricPressure).properties.command, OBDCommand.mode1(.distanceSinceDTCCleared).properties.command
             ]
                         
             var activeCommands: [String] = []
@@ -135,11 +138,38 @@ public class PTMotoTelemetryManager {
                 }
             }
             
+            // 构建官方加权轮询队列 (解决转速卡顿)
+            var pollingQueue: [String] = []
+            let hasRPM = activeCommands.contains(OBDCommand.mode1(.rpm).properties.command)
+            let hasSpeed = activeCommands.contains(OBDCommand.mode1(.speed).properties.command)
+            let hasTemp = activeCommands.contains(OBDCommand.mode1(.coolantTemp).properties.command)
+            let hasVolt = activeCommands.contains(OBDCommand.General.ATRV.properties.command)
+            
+            // 官方的 6 步小循环模式：010C, 010D, 010C, 0105, 010C, ATRV
+            let corePattern = [
+                hasRPM ? OBDCommand.mode1(.rpm).properties.command : nil,
+                hasSpeed ? OBDCommand.mode1(.speed).properties.command : nil,
+                hasRPM ? OBDCommand.mode1(.rpm).properties.command : nil,
+                hasTemp ? OBDCommand.mode1(.coolantTemp).properties.command : nil,
+                hasRPM ? OBDCommand.mode1(.rpm).properties.command : nil,
+                hasVolt ? OBDCommand.General.ATRV.properties.command : nil
+            ].compactMap { $0 } // 过滤掉不支持的 nil
+            
+            if corePattern.count >= 3 {
+                pollingQueue.append(contentsOf: corePattern)
+                // 把剩余的进阶指令追加在后面
+                let otherCommands = activeCommands.filter { ![OBDCommand.mode1(.rpm).properties.command, OBDCommand.mode1(.speed).properties.command, OBDCommand.mode1(.coolantTemp).properties.command, OBDCommand.General.ATRV.properties.command].contains($0) }
+                pollingQueue.append(contentsOf: otherCommands)
+            } else {
+                pollingQueue = activeCommands
+            }
+            PTNSLogConsole("⚡️ [性能优化] 最终执行的加权高频轮询队列: \(pollingQueue)")
+
             // 🌟 3. 开始死循环高频轮询 (只轮询激活的指令)
             while !Task.isCancelled && self.isConnected {
                 var currentMeasurements: [String: Any] = [:]
                 
-                for commandString in activeCommands {
+                for commandString in pollingQueue {
                     if Task.isCancelled { break }
                     
                     do {
@@ -157,7 +187,7 @@ public class PTMotoTelemetryManager {
                     self.dispatchMeasurementsToDelegates(measurements: currentMeasurements)
                 }
                 
-                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5秒刷新
+                try? await Task.sleep(nanoseconds: 200_000_000) // 0.5秒刷新
             }
         }
     }
@@ -202,6 +232,7 @@ public class PTMotoTelemetryManager {
     private func fetchSupportedPIDsWithRetry() async -> [String] {
         var retries = 0
         var debugFlagSent = false
+        var allSupportedPIDs: [String] = []
         
         // 官方示例使用了最多 20 次重试
         while retries < 20 {
@@ -209,8 +240,8 @@ public class PTMotoTelemetryManager {
             PTNSLogConsole("🔍 [自定义引擎] 发送 0100 探针 (第 \(retries) 次尝试)...")
             
             do {
-                let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0100")
-                let cleanResponse = response.replacingOccurrences(of: " ", with: "").uppercased()
+                let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(OBDCommand.mode1(.pidsA).properties.command)
+                let cleanResponse = clearString(response: response)
                 
                 // 1. 处理 UNABLE TO CONNECT，触发私有唤醒
                 if cleanResponse.contains("UNABLETOCONNECT") {
@@ -246,7 +277,26 @@ public class PTMotoTelemetryManager {
             try? await Task.sleep(nanoseconds: 500_000_000)
         }
         
-        return [] // 20次都失败了，返回空
+        if allSupportedPIDs.isEmpty { return [] }
+        
+        // 扩展 PID 探测 0120 和 0140
+        PTNSLogConsole("🔍 [自定义引擎] 协议已建立，开始扩展探测 0120 和 0140...")
+        if let res20 = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync(OBDCommand.mode1(.pidsB).properties.command) {
+            allSupportedPIDs.append(contentsOf: self.parseSupportedPIDs(response: res20, baseCommand: 0x20))
+        }
+        if let res40 = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync(OBDCommand.mode1(.pidsC).properties.command) {
+            allSupportedPIDs.append(contentsOf: self.parseSupportedPIDs(response: res40, baseCommand: 0x40))
+        }
+        
+        // 3. 读取车辆静态信息 (协议与 VIN 码)[cite: 2]
+        if let dpRes = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("ATDP") {
+            let cleanProtocol = dpRes.replacingOccurrences(of: "\r", with: "").replacingOccurrences(of: ">", with: "")
+            self.protocolName = cleanProtocol
+        }
+        if let vinRes = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync( OBDCommand.mode9(.VIN).properties.command) {
+            self.vin = vinRes
+        }
+        return allSupportedPIDs
     }
     
     private func parseSingleResponse(command: String, response: String) -> Double? {
@@ -254,7 +304,7 @@ public class PTMotoTelemetryManager {
         let cleanStr = clearString(response: response)
                 
         // 🌟 修复点 2：为 ATRV 开辟专属“绿色通道”，不经过 41 前缀校验
-        if command == "ATRV" {
+        if command == OBDCommand.General.ATRV.properties.command {
             // ATRV 的返回值通常是 "12.4V" 或 "12.4"
             let voltStr = cleanStr.replacingOccurrences(of: "V", with: "")
             return Double(voltStr)
@@ -275,18 +325,18 @@ public class PTMotoTelemetryManager {
         let B = getByte(at: 6)
         
         switch command {
-        case "010C": if let a = A, let b = B { return (a * 256 + b) / 4.0 }
-        case "010D": if let a = A { return a }
-        case "0104": if let a = A { return a * 100.0 / 255.0 }
-        case "0105", "010F": if let a = A { return a - 40.0 }
+        case OBDCommand.mode1(.rpm).properties.command: if let a = A, let b = B { return (a * 256 + b) / 4.0 }
+        case OBDCommand.mode1(.speed).properties.command: if let a = A { return a }
+        case OBDCommand.mode1(.engineLoad).properties.command: if let a = A { return a * 100.0 / 255.0 }
+        case OBDCommand.mode1(.coolantTemp).properties.command, OBDCommand.mode1(.intakeTemp).properties.command: if let a = A { return a - 40.0 }
         // 注意：这里的 0142 case 可以保留以防万一，但主要电压已经由上面的 ATRV 提供了
-        case "0142": if let a = A, let b = B { return (a * 256 + b) / 1000.0 }
-        case "015E": if let a = A, let b = B { return (a * 256 + b) / 20.0 }
-        case "010B", "0133": if let a = A { return a }
-        case "010E": if let a = A { return a / 2.0 - 64.0 }
-        case "0110": if let a = A, let b = B { return (a * 256 + b) / 100.0 }
-        case "011F", "0131": if let a = A, let b = B { return a * 256 + b }
-        case "012F": if let a = A { return a * 100.0 / 255.0 }
+        case OBDCommand.mode1(.controlModuleVoltage).properties.command: if let a = A, let b = B { return (a * 256 + b) / 1000.0 }
+        case OBDCommand.mode1(.fuelRate).properties.command: if let a = A, let b = B { return (a * 256 + b) / 20.0 }
+        case OBDCommand.mode1(.intakePressure).properties.command, OBDCommand.mode1(.barometricPressure).properties.command: if let a = A { return a }
+        case OBDCommand.mode1(.timingAdvance).properties.command: if let a = A { return a / 2.0 - 64.0 }
+        case OBDCommand.mode1(.maf).properties.command: if let a = A, let b = B { return (a * 256 + b) / 100.0 }
+        case OBDCommand.mode1(.runTime).properties.command, OBDCommand.mode1(.distanceSinceDTCCleared).properties.command: if let a = A, let b = B { return a * 256 + b }
+        case OBDCommand.mode1(.fuelLevel).properties.command: if let a = A { return a * 100.0 / 255.0 }
         default: break
         }
         return nil
@@ -296,111 +346,11 @@ public class PTMotoTelemetryManager {
     private func dispatchMeasurementsToDelegates(measurements: [String: Any]) {
         self.cleanupDelegates()
         
-        if let rpm = measurements["010C"] as? Double { self.currentRPM = rpm }
-        if let speed = measurements["010D"] as? Double { self.currentSpeed = speed }
+        if let rpm = measurements[OBDCommand.mode1(.rpm).properties.command] as? Double { self.currentRPM = rpm }
+        if let speed = measurements[OBDCommand.mode1(.speed).properties.command] as? Double { self.currentSpeed = speed }
         
         self.delegates.forEach { wrapper in
             wrapper.delegate?.telemetryManager(self, didUpdateMeasurements: measurements)
-        }
-    }
-
-    // MARK: - 极简 HEX 解析引擎
-    private func parseOBDResponse(command: String, response: String) {
-        let cleanHex = response.replacingOccurrences(of: " ", with: "")
-                                       .replacingOccurrences(of: ">", with: "")
-                                       .replacingOccurrences(of: "\r", with: "")
-                                       .replacingOccurrences(of: "\n", with: "")
-                                       .uppercased()
-                
-        // 确保收到的是有效的 41 开头的成功响应
-        guard cleanHex.hasPrefix("41") else { return }
-        
-        // 缓存当前轮询到的字典，用于传递给 UI
-        var currentMeasurements: [String: Any] = [:]
-        
-        // --- 内部安全提取字节的工具方法 ---
-        // A 的起始位是 4，B 的起始位是 6，C 的起始位是 8
-        func getByte(at index: Int) -> Double? {
-            guard cleanHex.count >= index + 2 else { return nil }
-            let start = cleanHex.index(cleanHex.startIndex, offsetBy: index)
-            let end = cleanHex.index(start, offsetBy: 2)
-            if let intVal = Int(cleanHex[start..<end], radix: 16) {
-                return Double(intVal)
-            }
-            return nil
-        }
-        
-        let A = getByte(at: 4)
-        let B = getByte(at: 6)
-        
-        // 🏎️ 基础动力数据
-        if command == "010C", let a = A, let b = B { // 转速
-            self.currentRPM = (a * 256 + b) / 4.0
-            currentMeasurements["010C"] = self.currentRPM
-        }
-        else if command == "010D", let a = A { // 车速
-            self.currentSpeed = a
-            currentMeasurements["010D"] = self.currentSpeed
-        }
-        else if command == "0104", let a = A { // 计算负荷值/节气门百分比
-            currentMeasurements["0104"] = a * 100.0 / 255.0
-        }
-        
-        // 🌡️ 环境与健康数据
-        else if command == "0105", let a = A { // 发动机水温 (℃)
-            currentMeasurements["0105"] = a - 40.0
-        }
-        else if command == "010F", let a = A { // 进气温度 (℃)
-            currentMeasurements["010F"] = a - 40.0
-        }
-        else if command == "0142", let a = A, let b = B { // 控制模块电压 (V)
-            currentMeasurements["0142"] = (a * 256 + b) / 1000.0
-        }
-        
-        // ⚙️ 进阶硬核工况数据
-        else if command == "010B", let a = A { // 进气歧管绝对压力 MAP (kPa)
-            currentMeasurements["010B"] = a
-        }
-        else if command == "010E", let a = A { // 1缸点火提前角 (°)
-            currentMeasurements["010E"] = a / 2.0 - 64.0
-        }
-        else if command == "0110", let a = A, let b = B { // 空气流量 MAF (g/s)
-            currentMeasurements["0110"] = (a * 256 + b) / 100.0
-        }
-        else if command == "011F", let a = A, let b = B { // 发动机启动后运行时间 (s)
-            currentMeasurements["011F"] = a * 256 + b
-        }
-        
-        // ⛽ 燃油与行程数据
-        else if command == "012F", let a = A { // 燃油液位输入 (%)
-            currentMeasurements["012F"] = a * 100.0 / 255.0
-        }
-        else if command == "015E", let a = A, let b = B { // 发动机瞬时燃油消耗率 (L/h)
-            currentMeasurements["015E"] = (a * 256 + b) / 20.0
-        }
-        else if command == "0133", let a = A { // 大气压强 (kPa)
-            currentMeasurements["0133"] = a
-        }
-        else if command == "0131", let a = A, let b = B { // 故障码清除后行驶距离 (km)
-            currentMeasurements["0131"] = a * 256 + b
-        }
-        
-        // 将成功解析出的数据分发给外部 UI 代理
-        if !currentMeasurements.isEmpty {
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                
-                // 打印调试日志，方便你在控制台观察解析结果是否正确
-                for (cmd, val) in currentMeasurements {
-                    PTNSLogConsole("📊 [数据解析] 成功解析指令 \(cmd): \(String(format: "%.2f", val as? Double ?? 0.0))")
-                }
-                
-                // 动态抛给 UI。注意由于之前修改了代理，这里可以复用你自定义的分发方法
-                // 或者直接通过统一的测量字典闭包抛出。
-                self.delegates.forEach { wrapper in
-                     wrapper.delegate?.telemetryManager(self, didUpdateMeasurements: currentMeasurements)
-                }
-            }
         }
     }
     

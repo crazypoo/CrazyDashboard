@@ -134,8 +134,8 @@ class PTOBDDataView: UIView {
             var isConfigured = false
             
             // 💡 匹配逻辑 A：首先拦截非标准库的自定义直读指令
-            if commandString == "ATRV" {
-                title = "Battery Voltage (ATRV)" // 自定义标题
+            if commandString == OBDCommand.General.ATRV.properties.command {
+                title = "Battery Voltage (\(OBDCommand.General.ATRV.properties.command))" // 自定义标题
                 format = "%.1f"
                 isConfigured = true
             }

@@ -8,7 +8,8 @@
 import Foundation
 import CoreBluetooth
 import PooTools
-import CryptoKit // 苹果官方加密库，需要 iOS 13.0+
+import CryptoKit
+import SwiftOBD2
 
 public struct YmobdCrypt {
     public static let defaultKey: Int32 = 0x263D9A7E
@@ -80,7 +81,7 @@ public class PTHiddenOBDConnector: NSObject {
     private var isUnlocked: Bool = false
     private var pendingConnection: Bool = false
     
-    private var initQueue: [String] = ["ATZ", "ATE0", "ATL0", "ATH1", "ATSP0", "AT+VERSION", "<AUTH>"]
+    private var initQueue: [String] = [OBDCommand.General.ATZ.properties.command, OBDCommand.General.ATE0.properties.command, OBDCommand.General.ATL0.properties.command, OBDCommand.General.ATH1.properties.command, OBDCommand.Protocols.ATSP0.properties.command, "AT+VERSION", "<AUTH>"]
     private var currentQueueIndex: Int = 0
     private var activeCommand: String? = nil
     private var rxBuffer: String = ""
@@ -262,14 +263,14 @@ extension PTHiddenOBDConnector: CBPeripheralDelegate {
         let cleanResponseForCheck = response.replacingOccurrences(of: " ", with: "").uppercased()
         
         // 1. 验证 ATZ[cite: 3]
-        if activeCommand == "ATZ" && cleanResponseForCheck.contains("STOPPED") {
+        if activeCommand == OBDCommand.General.ATZ.properties.command && cleanResponseForCheck.contains("STOPPED") {
             PTNSLogConsole("⚠️ [破冰船] ATZ 验证失败 (STOPPED)，根据协议要求原地重试...")
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.sendNextCommand() }
             return
         }
         
         // 2. 验证基础设置指令是否返回 OK[cite: 3]
-        let okCheckCommands = ["ATE0", "ATL0", "ATH1", "ATSP0"]
+        let okCheckCommands = [OBDCommand.General.ATE0.properties.command, OBDCommand.General.ATL0.properties.command, OBDCommand.General.ATH1.properties.command, OBDCommand.Protocols.ATSP0.properties.command]
         if let cmd = activeCommand, okCheckCommands.contains(cmd) {
             if !cleanResponseForCheck.contains("OK") {
                 PTNSLogConsole("⚠️ [破冰船] \(cmd) 未返回 OK，根据协议要求原地重试...")
