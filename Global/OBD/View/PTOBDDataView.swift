@@ -9,6 +9,7 @@ import UIKit
 import PooTools
 import SnapKit
 import SwifterSwift
+import SwiftOBD2
 
 class PTTelemetryItemView: UIView {
     
@@ -16,6 +17,8 @@ class PTTelemetryItemView: UIView {
     let titleLabel = UILabel()
     // 动画数值标签
     let valueLabel = PTCountingLabel()
+    
+    private var valueFormat: String = "%d"
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -29,18 +32,17 @@ class PTTelemetryItemView: UIView {
     private func setupUI() {
         // 极简风格设置
         titleLabel.textColor = .lightGray
-        titleLabel.font = .appfont(size: 14,bold:true)
+        titleLabel.font = .appfont(size: 14, bold:true)
         titleLabel.textAlignment = .center
         
-        // 数值标签：使用等宽字体防抖动，仅显示整数
+        // 数值标签
         valueLabel.textColor = .white
-        valueLabel.font = .appfont(size: 28,bold:true)
+        valueLabel.font = .appfont(size: 28, bold:true)
         valueLabel.textAlignment = .center
         valueLabel.format = "%d"
         valueLabel.countFromZero(toValue: 0)
         
-        self.addSubview(titleLabel)
-        self.addSubview(valueLabel)
+        self.addSubviews([titleLabel,valueLabel])
         
         // 紧凑的上下排列约束
         valueLabel.snp.makeConstraints { make in
@@ -57,40 +59,58 @@ class PTTelemetryItemView: UIView {
     /// 便捷配置方法
     func configure(title: String, format: String = "%d") {
         titleLabel.text = title
+        self.valueFormat = format
         valueLabel.format = format
+    }
+    
+    func updateValue(_ newValue: Double) {
+        // 高频刷新下，直接设置 text 防抖动；如果你的库支持平滑过渡，也可保留 countFrom
+        valueLabel.countFromCurrentValue(toValue: newValue)
     }
 }
 
 class PTOBDDataView: UIView {
-
-    // MARK: - 1. 声明所有的 14 个数据格子
-    // 基础
-    private let speedItem = PTTelemetryItemView()
-    private let rpmItem = PTTelemetryItemView()
-    private let throttleItem = PTTelemetryItemView()
-    // 健康
-    private let coolantItem = PTTelemetryItemView()
-    private let voltageItem = PTTelemetryItemView()
-    private let airTempItem = PTTelemetryItemView()
-    // 进阶
-    private let mapItem = PTTelemetryItemView()
-    private let timingAdvanceItem = PTTelemetryItemView()
-    private let mafItem = PTTelemetryItemView()
-    private let runTimeItem = PTTelemetryItemView()
-    // 燃油与行程
-    private let fuelLevelItem = PTTelemetryItemView()
-    private let fuelRateItem = PTTelemetryItemView()
-    private let baroItem = PTTelemetryItemView()
-    private let tripItem = PTTelemetryItemView()
-
+    
+    // 🌟 1. UI 字典：通过指令字符串(Key)快速找到对应的 View
+    private var itemViews: [String: PTTelemetryItemView] = [:]
+    
+    // 🌟 2. 大容器：用于承载所有动态生成的行 StackView
+    private let mainGridStack = UIStackView()
+    
+    // 🌟 3. 核心改进：利用 SwiftOBD2 枚举构建标准指令格式清单
+    // 在这里我们只绑定具体的枚举对象和 UI 数值显示格式
+    private let standardCommands: [(command: OBDCommand, format: String)] = [
+        (.mode1(.speed), "%d"),
+        (.mode1(.rpm), "%d"),
+        (.mode1(.throttlePos), "%d"),
+        (.mode1(.coolantTemp), "%d"),
+        (.mode1(.controlModuleVoltage), "%.1f"),
+        (.mode1(.intakeTemp), "%d"),
+        (.mode1(.intakePressure), "%d"),
+        (.mode1(.timingAdvance), "%.1f"),
+        (.mode1(.maf), "%.1f"),
+        (.mode1(.runTime), "%d"),
+        (.mode1(.fuelLevel), "%d"),
+        (.mode1(.fuelRate), "%.1f"),
+        (.mode1(.barometricPressure), "%d"),
+        (.mode1(.distanceSinceDTCCleared), "%d")
+    ]
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         
-        self.backgroundColor = UIColor(white: 0.05, alpha: 1.0) // 极简深色背景
-                
-        setupDynamicGrid()
+        self.backgroundColor = UIColor(white: 0.05, alpha: 1.0)
         
-        // 🌟 自动注册为 OBD 数据监听者
+        // 配置大容器属性
+        mainGridStack.axis = .vertical
+        mainGridStack.distribution = .fillEqually
+        mainGridStack.spacing = 10
+        self.addSubview(mainGridStack)
+        mainGridStack.snp.makeConstraints { make in
+            make.edges.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
+        }
+        
+        // 自动注册为 OBD 数据监听者
         PTMotoTelemetryManager.shared.addDelegate(self)
     }
     
@@ -98,114 +118,102 @@ class PTOBDDataView: UIView {
         super.init(coder: coder)
     }
     
-    // MARK: - 布局构建
-    private func setupDynamicGrid() {
-        // 配置所有格子的标题和格式
-        speedItem.configure(title: "时速 (km/h)")
-        rpmItem.configure(title: "转速 (RPM)")
-        throttleItem.configure(title: "节气门 (%)")
-        fuelLevelItem.configure(title: "燃油量 (%)")
+    // MARK: - 🌟 核心：根据支持的指令动态构建网格
+    private func buildDynamicGrid(with commands: [String]) {
+        // 1. 清理旧的视图，防止重复添加
+        mainGridStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        itemViews.removeAll()
         
-        coolantItem.configure(title: "水温 (℃)")
-        voltageItem.configure(title: "电压 (V)", format: "%.1f")
-        airTempItem.configure(title: "进气温 (℃)")
-        baroItem.configure(title: "气压 (kPa)")
+        // 2. 筛选并创建所有被支持的 View
+        var activeItems: [UIView] = []
         
-        mapItem.configure(title: "进气压 (kPa)")
-        fuelRateItem.configure(title: "瞬时油耗 (L/h)", format: "%.1f")
-        mafItem.configure(title: "空气流量 (g/s)", format: "%.1f")
-        tripItem.configure(title: "小计里程 (km)")
+        for commandString in commands {
+            var title = ""
+            var format = "%d"
+            var isConfigured = false
+            
+            // 💡 匹配逻辑 A：首先拦截非标准库的自定义直读指令
+            if commandString == "ATRV" {
+                title = "Battery Voltage (ATRV)" // 自定义标题
+                format = "%.1f"
+                isConfigured = true
+            }
+            // 💡 匹配逻辑 B：在 SwiftOBD2 标准库配置中寻找匹配项
+            else if let match = standardCommands.first(where: { $0.command.properties.command == commandString }) {
+                // 直接提取 SwiftOBD2 内置的描述名称作为标题！
+                title = match.command.properties.description
+                format = match.format
+                isConfigured = true
+            }
+            
+            // 如果成功配置，则生成对应的格子
+            if isConfigured {
+                let itemView = PTTelemetryItemView()
+                itemView.configure(title: title, format: format)
+                
+                // 将创建好的 View 存入字典，以便后续更新数据
+                itemViews[commandString] = itemView
+                activeItems.append(itemView)
+            }
+        }
         
-        // 补齐被遗漏的数据
-        timingAdvanceItem.configure(title: "点火提前角 (°)", format: "%.1f")
-        runTimeItem.configure(title: "运行时长 (秒)")
-        
-        // 🌟 将所有 14 个格子放入一个大数组 (你可以随意调整它们在这里的顺序)
-        let allItems = [
-            speedItem, rpmItem, throttleItem, fuelLevelItem,
-            coolantItem, voltageItem, airTempItem, baroItem,
-            mapItem, fuelRateItem, mafItem, tripItem,
-            timingAdvanceItem, runTimeItem // 第 13、14 个数据
-        ]
-        
-        let maxColumns = 4 // 每行最多 4 个
+        // 3. 经典的自动切块与排版算法 (4列)
+        let maxColumns = 4
         var rowStacks: [UIStackView] = []
         
-        // 🌟 自动切块算法：每次步进 4，遍历大数组
-        for i in stride(from: 0, to: allItems.count, by: maxColumns) {
-            
-            // 截取当前行的元素 (可能不足 4 个)
-            let endIndex = min(i + maxColumns, allItems.count)
-            let rowItems = Array(allItems[i..<endIndex])
+        for i in stride(from: 0, to: activeItems.count, by: maxColumns) {
+            let endIndex = min(i + maxColumns, activeItems.count)
+            let rowItems = Array(activeItems[i..<endIndex])
             
             let rowStack = UIStackView(arrangedSubviews: rowItems)
             rowStack.axis = .horizontal
             rowStack.distribution = .fillEqually
             rowStack.spacing = 10
             
-            // 🌟 完美对齐黑魔法：如果这一行不足 4 个，补齐透明的空 UIView！
+            // 完美对齐黑魔法：补齐透明的空 UIView
             if rowItems.count < maxColumns {
                 let emptySpaces = maxColumns - rowItems.count
                 for _ in 0..<emptySpaces {
                     let dummyView = UIView()
-                    dummyView.backgroundColor = .clear // 透明不可见
+                    dummyView.backgroundColor = .clear
                     rowStack.addArrangedSubview(dummyView)
                 }
             }
-            
             rowStacks.append(rowStack)
         }
         
-        // 将所有生成的行 StackView，放入垂直的 Main StackView 中
-        let mainGridStack = UIStackView(arrangedSubviews: rowStacks)
-        mainGridStack.axis = .vertical
-        mainGridStack.distribution = .fillEqually
-        mainGridStack.spacing = 10
-        
-        self.addSubview(mainGridStack)
-        mainGridStack.snp.makeConstraints { make in
-            make.edges.equalToSuperview().inset(16)
+        // 4. 将生成的所有行加入到主容器中
+        for stack in rowStacks {
+            mainGridStack.addArrangedSubview(stack)
         }
-    }
-    
-    /// 辅助方法：生成等宽的水平行
-    private func createRowStack(items: [UIView]) -> UIStackView {
-        let stack = UIStackView(arrangedSubviews: items)
-        stack.axis = .horizontal
-        stack.distribution = .fillEqually
-        stack.spacing = CGFloat.GlobalItemSpacing // 列间距
-        return stack
     }
 }
 
-extension PTOBDDataView:PTMotoTelemetryDelegate {
+extension PTOBDDataView: PTMotoTelemetryDelegate {
     // MARK: - 接收代理数据并驱动动画
-    
-    public func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateBaseData rpm: Double, speed: Double, throttle: Double) {
-        rpmItem.valueLabel.countFormCurrentValue(toValue: CGFloat(rpm), duration: 0.3)
-        speedItem.valueLabel.countFormCurrentValue(toValue: CGFloat(speed), duration: 0.3)
-        throttleItem.valueLabel.countFormCurrentValue(toValue: CGFloat(throttle), duration: 0.3)
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) {
+        // 数据高频更新
+        for (command, value) in measurements {
+            // 1. 从字典中提取对应的 Double 值
+            var doubleValue: Double = 0.0
+            if let v = value as? Double {
+                doubleValue = v
+            } else if let strV = value as? String, let v = Double(strV) {
+                doubleValue = v
+            } else {
+                continue
+            }
+            
+            // 2. 找到对应指令的 UI 组件并瞬间触发更新
+            if let itemView = itemViews[command] {
+                itemView.updateValue(doubleValue)
+            }
+        }
     }
     
-    public func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateHealthData coolantTemp: Int, voltage: Double, intakeAirTemp: Int) {
-        coolantItem.valueLabel.countFormCurrentValue(toValue: CGFloat(coolantTemp), duration: 0.5)
-        voltageItem.valueLabel.countFormCurrentValue(toValue: CGFloat(voltage), duration: 0.5)
-        airTempItem.valueLabel.countFormCurrentValue(toValue: CGFloat(intakeAirTemp), duration: 0.5)
-    }
-    
-    public func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateAdvancedData map: Int, timingAdvance: Double, maf: Double, runTime: Int) {
-        mapItem.valueLabel.countFormCurrentValue(toValue: CGFloat(map), duration: 0.5)
-        mafItem.valueLabel.countFormCurrentValue(toValue: CGFloat(maf), duration: 0.5)
-        
-        // 喂给刚刚补回来的 UI
-        timingAdvanceItem.valueLabel.countFormCurrentValue(toValue: CGFloat(timingAdvance), duration: 0.5)
-        runTimeItem.valueLabel.countFormCurrentValue(toValue: CGFloat(runTime), duration: 0.5)
-    }
-    
-    public func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateTripAndFuelData fuelLevel: Double, fuelRate: Double, barometricPressure: Int, tripDistance: Int) {
-        fuelLevelItem.valueLabel.countFormCurrentValue(toValue: CGFloat(fuelLevel), duration: 0.5)
-        baroItem.valueLabel.countFormCurrentValue(toValue: CGFloat(barometricPressure), duration: 0.5)
-        fuelRateItem.valueLabel.countFormCurrentValue(toValue: CGFloat(fuelRate), duration: 0.5)
-        tripItem.valueLabel.countFormCurrentValue(toValue: CGFloat(tripDistance), duration: 0.5)
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didDiscoverSupportedCommands commands: [String]) {
+        DispatchQueue.main.async { [weak self] in
+            self?.buildDynamicGrid(with: commands)
+        }
     }
 }

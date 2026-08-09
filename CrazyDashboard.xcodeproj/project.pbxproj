@@ -63,6 +63,7 @@
 		55CA9DF5302452AA00A3A677 /* PTOBDDataView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55CA9DF4302452AA00A3A677 /* PTOBDDataView.swift */; };
 		55CA9E193024582300A3A677 /* PTOBDDataViewControllerCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55CA9E183024582300A3A677 /* PTOBDDataViewControllerCollection.swift */; };
 		55E61692301B45B50075F883 /* QWeatherSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 55E61691301B45B50075F883 /* QWeatherSDK */; };
+		55F1E2F23026D2020032EAD5 /* PTHiddenOBDConnector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F1E2F13026D2020032EAD5 /* PTHiddenOBDConnector.swift */; };
 		55F503AC300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
 		55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */; };
 		55F503BB300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */; };
@@ -162,6 +163,7 @@
 		55986BAC30179D500049684D /* PTNativeTelemetryChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTNativeTelemetryChartView.swift; sourceTree = "<group>"; };
 		55CA9DF4302452AA00A3A677 /* PTOBDDataView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDDataView.swift; sourceTree = "<group>"; };
 		55CA9E183024582300A3A677 /* PTOBDDataViewControllerCollection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDDataViewControllerCollection.swift; sourceTree = "<group>"; };
+		55F1E2F13026D2020032EAD5 /* PTHiddenOBDConnector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTHiddenOBDConnector.swift; sourceTree = "<group>"; };
 		55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = GlobalAssets.xcassets; sourceTree = "<group>"; };
 		55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLanguageModel.swift; sourceTree = "<group>"; };
 		55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoUserDefaultStruct.swift; sourceTree = "<group>"; };
@@ -382,6 +384,7 @@
 		55CA9DF23024528A00A3A677 /* OBD */ = {
 			isa = PBXGroup;
 			children = (
+				55F1E2F03026D1DF0032EAD5 /* Function */,
 				55CA9E17302457F300A3A677 /* ViewController */,
 				55CA9DF33024529000A3A677 /* View */,
 			);
@@ -463,6 +466,14 @@
 				55986BAC30179D500049684D /* PTNativeTelemetryChartView.swift */,
 			);
 			path = Chat;
+			sourceTree = "<group>";
+		};
+		55F1E2F03026D1DF0032EAD5 /* Function */ = {
+			isa = PBXGroup;
+			children = (
+				55F1E2F13026D2020032EAD5 /* PTHiddenOBDConnector.swift */,
+			);
+			path = Function;
 			sourceTree = "<group>";
 		};
 		55F503B5300FC99000C5D085 /* Model */ = {
@@ -730,6 +741,7 @@
 				55CA9DF5302452AA00A3A677 /* PTOBDDataView.swift in Sources */,
 				558789E630242B9400B94E91 /* PTCarPlayContainerViewController.swift in Sources */,
 				5598667C301147FD0049684D /* PTCustomRouteManager.swift in Sources */,
+				55F1E2F23026D2020032EAD5 /* PTHiddenOBDConnector.swift in Sources */,
 				55499E03301AFC2200A1A2D9 /* PTWidgetManager.swift in Sources */,
 				5577E6502FD6572E0004733F /* PTNowPlayingView.swift in Sources */,
 				555C0FF9300E06630079D94F /* PTGlobalActionHeader.swift in Sources */,

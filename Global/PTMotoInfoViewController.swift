@@ -11,6 +11,7 @@ import SafeSFSymbols
 import SwifterSwift
 import SnapKit
 import Instructions
+import SwiftOBD2
 
 fileprivate extension String {
     static let TRIPSECTION = "TRIPSECTION"
@@ -205,6 +206,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     switch index {
                     case 0:
                         PTMotoTelemetryManager.shared.connectToMotorcycle()
+                        PTMotoTelemetryManager.shared.addDelegate(self)
                     default:
                         break
                     }
@@ -214,7 +216,8 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                 UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: actions, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
                     switch index {
                     case 0:
-                        PTMotoTelemetryManager.shared.scanForEngineFaultCodes()
+                        break
+//                        PTMotoTelemetryManager.shared.scanForEngineFaultCodes()
                     case 1:
                         PTMotoTelemetryManager.shared.disconnect()
                         PTGCDManager.shared.delayOnMain(time: 0.5) {
@@ -298,7 +301,6 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             }
         }
         
-        PTMotoTelemetryManager.shared.addDelegate(self)
         PTMotion.shared.addDelegate(self)
     }
         
@@ -736,29 +738,12 @@ extension PTMotoInfoViewController:PTMotoTelemetryDelegate {
         obdButton.isSelected = isConnected
     }
     
-    /// 基础动力数据更新时调用 (适合高刷仪表盘指针)
-    func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateBaseData rpm: Double, speed: Double, throttle: Double) {
-        PTNSLogConsole("throttle:\(throttle)")
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) {
+//        PTNSLogConsole("measurements>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\(measurements)")
     }
     
-    /// 环境与健康数据更新时调用 (适合侧边栏状态监测)
-    func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateHealthData coolantTemp: Int, voltage: Double, intakeAirTemp: Int) {
-        PTNSLogConsole("coolantTemp:\(coolantTemp),voltage:\(voltage),intakeAirTemp:\(intakeAirTemp)")
-    }
-    
-    /// 进阶硬核工况数据更新时调用 (适合极客性能面板)
-    func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateAdvancedData map: Int, timingAdvance: Double, maf: Double, runTime: Int) {
-        PTNSLogConsole("map:\(map),timingAdvance:\(timingAdvance),maf:\(maf),runTime:\(runTime)")
-    }
-    
-    /// 故障码扫描完成时调用
-    
-    func telemetryManager(_ manager: PTMotoTelemetryManager, didFinishScanningTroubleCodes codes: [String]) {
-        var code = "No codes"
-        if !codes.isEmpty {
-            code = codes.joined(separator: "\n")
-        }
-        UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD error Codes"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: code,cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didDiscoverSupportedCommands commands: [String]) {
+//        PTNSLogConsole("commands>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\(String(describing: commands.first))")
     }
 }
 
