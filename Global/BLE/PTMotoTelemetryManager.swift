@@ -45,7 +45,7 @@ public class PTMotoTelemetryManager {
     
     private var obdService = OBDService(connectionType: .bluetooth)
     private var cancellables = Set<AnyCancellable>()
-    private var isUsingSwiftOBD2: Bool = false
+    public private(set) var isUsingSwiftOBD2: Bool = false
 
     public private(set) var supportedCommands: [String] = []
     
@@ -575,65 +575,83 @@ extension PTMotoTelemetryManager {
             return ["error": "未连接车辆"]
         }
         
-        PTNSLogConsole("🩺 [深度诊断] 开始对车辆执行深度体检...")
+        PTNSLogConsole("🩺 [深度诊断] 开始对车辆执行全方位深度体检...")
         var diagnosticReport: [String: Any] = [:]
         
         // --------------------------------------------------------
-        // 步骤 1：扫描 Mode 3 (发动机排放相关故障码)
+        // 步骤 1：扫描各类发动机故障码 (Mode 03, 07, 0A)
         // --------------------------------------------------------
-        PTNSLogConsole("🩺 [深度诊断] 步骤 1/2：扫描发动机故障码 (Mode 3)...")
+        PTNSLogConsole("🩺 [深度诊断] 步骤 1/2：扫描发动机健康状态...")
+        
+        var confirmedDTCs: [String] = []
+        var pendingDTCs: [String] = []
+        var permanentDTCs: [String] = []
+        
         if isUsingSwiftOBD2 {
-            do {
-                let response = try await obdService.sendCommand(.mode3(.GET_DTC))
-                switch response {
-                case .success(let success):
-                    let dtcs = success.troubleCode?.compactMap { $0.description } ?? []
-                    diagnosticReport["DTCs"] = dtcs
-                    PTNSLogConsole("✅ [深度诊断] 读出故障码: \(dtcs)")
-                case .failure(let error):
-                    PTNSLogConsole("❌ [深度诊断] 读故障码失败: \(error.localizedDescription)")
-                }
-            } catch {
-                PTNSLogConsole("❌ [深度诊断] 请求异常: \(error)")
+            // SwiftOBD2 模式
+            if let res3 = try? await obdService.sendCommand(.mode3(.GET_DTC)), case .success(let suc3) = res3 {
+                confirmedDTCs = suc3.troubleCode?.compactMap { $0.description } ?? []
             }
+            // 注意：SwiftOBD2 早期版本可能未原生提供 07 和 0A 枚举，如果报错，可以直接用 sendCommand(RawCommand("07")) 等代替
+            // 此处为了严谨，若库不支持枚举，我们后续可通过添加 Custom Command 解决。假设暂只读 03
         } else {
-            // 如果是原生加密通道，手动发 03 指令 (注意：需要你写一个 Mode3 的 Hex 解析器，这里暂存原始数据)
-            if let res = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("03") {
-                diagnosticReport["RawDTC_HEX"] = self.clearString(response: res)
+            // 🌟 纯原生加密通道模式：全量读取 03(确认), 07(待定), 0A(永久)
+            if let res03 = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("03") {
+                confirmedDTCs = parseRawDTC(hexResponse: clearString(response: res03), modePrefix: "43")
+            }
+            if let res07 = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("07") {
+                pendingDTCs = parseRawDTC(hexResponse: clearString(response: res07), modePrefix: "47")
+            }
+            if let res0A = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0A") {
+                permanentDTCs = parseRawDTC(hexResponse: clearString(response: res0A), modePrefix: "4A")
             }
         }
+        
+        diagnosticReport["Confirmed_DTCs"] = confirmedDTCs
+        diagnosticReport["Pending_DTCs"] = pendingDTCs
+        diagnosticReport["Permanent_DTCs"] = permanentDTCs
+        
+        PTNSLogConsole("✅ [深度诊断] 确认故障: \(confirmedDTCs.count) 个, 潜在隐患: \(pendingDTCs.count) 个, 顽固故障: \(permanentDTCs.count) 个")
         
         // --------------------------------------------------------
         // 步骤 2：扫描 Mode 6 (特定的组件监视测试)
         // --------------------------------------------------------
-        PTNSLogConsole("🩺 [深度诊断] 步骤 2/2：扫描底层组件监视结果 (Mode 6)...")
+        PTNSLogConsole("🩺 [深度诊断] 步骤 2/2：扫描底层组件监视结果 (Mode 6)...此过程较长，请耐心等待")
         var mode6Results: [String: String] = [:]
         
         // 遍历 SwiftOBD2 中定义的所有 Mode 6 测试指令
         for command in OBDCommand.Mode6.allCases {
-            // 跳过 0600, 0620 这类查询支持表的指令
             let skipMIDs: [OBDCommand.Mode6] = [.MIDS_A, .MIDS_B, .MIDS_C, .MIDS_D, .MIDS_E, .MIDS_F]
             if skipMIDs.contains(command) { continue }
             
             let commandString = OBDCommand.mode6(command).properties.command
             
             do {
-                // 利用我们自己写的健壮的 Async 方法逐个盲扫
-                let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(commandString)
-                let cleanResponse = self.clearString(response: response)
+                var cleanResponse = ""
+                
+                // 🚨 致命 Bug 修复：必须根据当前使用的引擎来选择发送通道！
+                if isUsingSwiftOBD2 {
+                    let response = try await obdService.sendCommand(OBDCommand.mode6(command))
+                    switch response {
+                    case .success(let result):
+                        cleanResponse = "\(result.measurementResult?.value ?? 0) \(result.measurementResult?.unit ?? Unit(symbol: ""))"
+                    case .failure: break
+                    }
+                } else {
+                    let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(commandString)
+                    cleanResponse = self.clearString(response: response)
+                }
                 
                 // 正常的 Mode 6 响应以 46 开头
                 if cleanResponse.hasPrefix("46") && !cleanResponse.contains("NODATA") && !cleanResponse.contains("ERROR") {
                     PTNSLogConsole("✅ [深度诊断] 扫出 Mode 6 隐藏数据 (\(commandString)): \(cleanResponse)")
-                    // 记录：Key 是命令的中文/英文描述，Value 是原始返回的 HEX 数据
                     mode6Results[commandString] = cleanResponse
                 }
             } catch {
                 // 超时或失败忽略即可
             }
             
-            // 为避免把总线堵死，每扫一项休息 100 毫秒
-            try? await Task.sleep(nanoseconds: 100_000_000)
+            try? await Task.sleep(nanoseconds: 100_000_000) // 休息 100 毫秒
         }
         
         if !mode6Results.isEmpty {
@@ -642,5 +660,49 @@ extension PTMotoTelemetryManager {
         
         PTNSLogConsole("🏥 [深度诊断] 体检报告生成完毕！")
         return diagnosticReport
+    }
+
+    private func parseRawDTC(hexResponse: String, modePrefix: String) -> [String] {
+        var dtcList: [String] = []
+        var cleanHex = hexResponse
+        
+        // ECU 可能会返回多个报文合并的结果，例如 "4301040000 4301050000"，先去掉成功标头
+        cleanHex = cleanHex.replacingOccurrences(of: modePrefix, with: "")
+        
+        // OBD 故障码是按 2 个字节 (4 个十六进制字符) 一组存储的
+        // 前两个字符通常表示系统，后两个字符是具体的编码
+        var index = cleanHex.startIndex
+        while index < cleanHex.endIndex {
+            let nextIndex = cleanHex.index(index, offsetBy: 4, limitedBy: cleanHex.endIndex) ?? cleanHex.endIndex
+            let dtcHex = String(cleanHex[index..<nextIndex])
+            
+            // 一个完整的 DTC 必须是 4 个字符长，且 "0000" 表示无故障占位符
+            if dtcHex.count == 4 && dtcHex != "0000" {
+                // SAE J2012 标准解码规则：
+                // 第一位 Hex 转成 2 进制，前两位决定字母：00=P, 01=C, 10=B, 11=U
+                // 后两位决定第二位数字：0=0, 1=1, 2=2, 3=3
+                if let firstHexChar = dtcHex.first, let firstHexVal = Int(String(firstHexChar), radix: 16) {
+                    let systemChar: String
+                    switch (firstHexVal >> 2) & 0b11 {
+                    case 0: systemChar = "P" // Powertrain (动力系统)
+                    case 1: systemChar = "C" // Chassis (底盘系统)
+                    case 2: systemChar = "B" // Body (车身系统)
+                    case 3: systemChar = "U" // Network (网络系统)
+                    default: systemChar = "P"
+                    }
+                    
+                    let secondChar = String((firstHexVal & 0b11), radix: 16).uppercased()
+                    let remainingChars = String(dtcHex.dropFirst())
+                    
+                    let finalDTC = "\(systemChar)\(secondChar)\(remainingChars)"
+                    if !dtcList.contains(finalDTC) {
+                        dtcList.append(finalDTC)
+                    }
+                }
+            }
+            index = nextIndex
+        }
+        
+        return dtcList
     }
 }

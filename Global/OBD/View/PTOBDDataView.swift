@@ -39,7 +39,7 @@ class PTTelemetryItemView: UIView {
         valueLabel.textColor = .white
         valueLabel.font = .appfont(size: 28, bold:true)
         valueLabel.textAlignment = .center
-        valueLabel.format = "%d"
+        valueLabel.format = "%.0f"
         valueLabel.countFromZero(toValue: 0)
         
         self.addSubviews([titleLabel,valueLabel])
