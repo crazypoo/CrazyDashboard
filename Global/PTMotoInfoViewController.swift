@@ -738,13 +738,9 @@ extension PTMotoInfoViewController:PTMotoTelemetryDelegate {
         obdButton.isSelected = isConnected
     }
     
-    func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) {
-//        PTNSLogConsole("measurements>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\(measurements)")
-    }
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) { }
     
-    func telemetryManager(_ manager: PTMotoTelemetryManager, didDiscoverSupportedCommands commands: [String]) {
-//        PTNSLogConsole("commands>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\(String(describing: commands.first))")
-    }
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didDiscoverSupportedCommands commands: [String]) { }
 }
 
 extension PTMotoInfoViewController:PTMotionDelegate {
