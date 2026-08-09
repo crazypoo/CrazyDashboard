@@ -18,7 +18,7 @@ class PTTelemetryItemView: UIView {
     // 动画数值标签
     let valueLabel = PTCountingLabel()
     
-    private var valueFormat: String = "%d"
+    private var valueFormat: String = "%.0f"
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -53,11 +53,12 @@ class PTTelemetryItemView: UIView {
         titleLabel.snp.makeConstraints { make in
             make.top.equalTo(valueLabel.snp.bottom).offset(4)
             make.centerX.equalToSuperview()
+            make.left.right.equalToSuperview()
         }
     }
     
     /// 便捷配置方法
-    func configure(title: String, format: String = "%d") {
+    func configure(title: String, format: String = "%.0f") {
         titleLabel.text = title
         self.valueFormat = format
         valueLabel.format = format
@@ -71,29 +72,29 @@ class PTTelemetryItemView: UIView {
 
 class PTOBDDataView: UIView {
     
-    // 🌟 1. UI 字典：通过指令字符串(Key)快速找到对应的 View
+    // 🌟 UI 字典：通过指令字符串(Key)快速找到对应的 View
     private var itemViews: [String: PTTelemetryItemView] = [:]
     
-    // 🌟 2. 大容器：用于承载所有动态生成的行 StackView
+    // 🌟 大容器：用于承载所有动态生成的行 StackView
     private let mainGridStack = UIStackView()
     
-    // 🌟 3. 核心改进：利用 SwiftOBD2 枚举构建标准指令格式清单
+    // 🌟 核心改进：利用 SwiftOBD2 枚举构建标准指令格式清单
     // 在这里我们只绑定具体的枚举对象和 UI 数值显示格式
     private let standardCommands: [(command: OBDCommand, format: String)] = [
-        (.mode1(.speed), "%d"),
-        (.mode1(.rpm), "%d"),
-        (.mode1(.throttlePos), "%d"),
-        (.mode1(.coolantTemp), "%d"),
+        (.mode1(.speed), "%.0f"),
+        (.mode1(.rpm), "%.0f"),
+        (.mode1(.throttlePos), "%.0f"),
+        (.mode1(.coolantTemp), "%.0f"),
         (.mode1(.controlModuleVoltage), "%.1f"),
-        (.mode1(.intakeTemp), "%d"),
-        (.mode1(.intakePressure), "%d"),
+        (.mode1(.intakeTemp), "%.0f"),
+        (.mode1(.intakePressure), "%.0f"),
         (.mode1(.timingAdvance), "%.1f"),
         (.mode1(.maf), "%.1f"),
-        (.mode1(.runTime), "%d"),
-        (.mode1(.fuelLevel), "%d"),
+        (.mode1(.runTime), "%.0f"),
+        (.mode1(.fuelLevel), "%.0f"),
         (.mode1(.fuelRate), "%.1f"),
-        (.mode1(.barometricPressure), "%d"),
-        (.mode1(.distanceSinceDTCCleared), "%d")
+        (.mode1(.barometricPressure), "%.0f"),
+        (.mode1(.distanceSinceDTCCleared), "%.0f")
     ]
     
     override init(frame: CGRect) {
@@ -129,7 +130,7 @@ class PTOBDDataView: UIView {
         
         for commandString in commands {
             var title = ""
-            var format = "%d"
+            var format = "%.0f"
             var isConfigured = false
             
             // 💡 匹配逻辑 A：首先拦截非标准库的自定义直读指令
@@ -157,7 +158,7 @@ class PTOBDDataView: UIView {
             }
         }
         
-        // 3. 经典的自动切块与排版算法 (4列)
+        // 经典的自动切块与排版算法 (4列)
         let maxColumns = 4
         var rowStacks: [UIStackView] = []
         
@@ -182,7 +183,7 @@ class PTOBDDataView: UIView {
             rowStacks.append(rowStack)
         }
         
-        // 4. 将生成的所有行加入到主容器中
+        // 将生成的所有行加入到主容器中
         for stack in rowStacks {
             mainGridStack.addArrangedSubview(stack)
         }
