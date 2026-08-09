@@ -101,21 +101,16 @@ public class PTMotoTelemetryManager {
             // ATRV 是芯片层面的直读电压指令，并非车机 ECU 协议，因此它必定支持，默认加入
             var supportedPIDs: [String] = ["ATRV"]
             
-            do {
-                // 向车机发送 0100
-                let response0100 = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0100")
-                
-                // 解析返回的二进制掩码
-                let pids = self.parseSupportedPIDs(response: response0100, baseCommand: 0x00)
+            let pids = await self.fetchSupportedPIDsWithRetry()
+            
+            if !pids.isEmpty {
                 supportedPIDs.append(contentsOf: pids)
-                PTNSLogConsole("📋 [自定义引擎] 成功解析出车机支持的指令清单: \(supportedPIDs)")
-                
-            } catch {
-                PTNSLogConsole("⚠️ [自定义引擎] 查询 0100 失败，回退至基础安全列表")
+                PTNSLogConsole("📋 [自定义引擎] 最终车机支持清单: \(supportedPIDs)")
+            } else {
+                PTNSLogConsole("⚠️ [自定义引擎] 0100 探针最终超时，回退至基础安全列表")
                 supportedPIDs.append(contentsOf: ["010C", "010D", "0104", "0105"])
             }
-            
-            // 🌟 2. 菜单过滤：用你想查询的完整菜单，和车机真实支持的菜单进行“交集”过滤
+
             let desiredCommands = [
                 "010C", "010D", "0104",
                 "0105", "ATRV", "010F",
@@ -131,7 +126,6 @@ public class PTMotoTelemetryManager {
             }
             
             self.supportedCommands = activeCommands
-            
             PTNSLogConsole("💡 [自定义引擎] 动态轮询菜单装载完毕，共激活 \(activeCommands.count) 项: \(activeCommands)")
             
             // 通知 UI 层连接成功，并告知它当前激活了哪些指令
@@ -168,14 +162,19 @@ public class PTMotoTelemetryManager {
         }
     }
     
+    func clearString(response:String) ->String {
+        let cleanStr = response.replacingOccurrences(of: " ", with: "")
+                                       .replacingOccurrences(of: ">", with: "")
+                                       .replacingOccurrences(of: "\r", with: "")
+                                       .replacingOccurrences(of: "\n", with: "")
+                                       .uppercased()
+        return cleanStr
+    }
+    
     // MARK: - 原生 PID 掩码解析器 (还原官方算法)
     /// 专门用于解析 0100、0120 等指令返回的 32 位支持位掩码
     private func parseSupportedPIDs(response: String, baseCommand: Int) -> [String] {
-        let clean = response.replacingOccurrences(of: " ", with: "")
-                            .replacingOccurrences(of: ">", with: "")
-                            .replacingOccurrences(of: "\r", with: "")
-                            .replacingOccurrences(of: "\n", with: "")
-                            .uppercased()
+        let clean = clearString(response: response)
         
         // 如果查询的是 0100，成功的前缀应该是 4100
         let prefix = String(format: "41%02X", baseCommand)
@@ -199,13 +198,60 @@ public class PTMotoTelemetryManager {
         
         return supported
     }
-
+    
+    private func fetchSupportedPIDsWithRetry() async -> [String] {
+        var retries = 0
+        var debugFlagSent = false
+        
+        // 官方示例使用了最多 20 次重试
+        while retries < 20 {
+            retries += 1
+            PTNSLogConsole("🔍 [自定义引擎] 发送 0100 探针 (第 \(retries) 次尝试)...")
+            
+            do {
+                let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0100")
+                let cleanResponse = response.replacingOccurrences(of: " ", with: "").uppercased()
+                
+                // 1. 处理 UNABLE TO CONNECT，触发私有唤醒
+                if cleanResponse.contains("UNABLETOCONNECT") {
+                    PTNSLogConsole("⚠️ [自定义引擎] 收到 UNABLE TO CONNECT")
+                    if !debugFlagSent {
+                        PTNSLogConsole("🛠 [自定义引擎] 发送私有唤醒指令 AT+DEBUG_FLG")
+                        _ = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("AT+DEBUG_FLG")
+                        debugFlagSent = true
+                    }
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    continue // 继续下一轮重试
+                }
+                
+                // 2. 处理 NO DATA 或 SEARCHING 协议寻址超时[cite: 2]
+                if cleanResponse.contains("NODATA") || cleanResponse.contains("SEARCHING") {
+                    PTNSLogConsole("⏳ [自定义引擎] 协议寻址中 (\(cleanResponse))，继续等待重试...")
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    continue
+                }
+                
+                // 3. 尝试解析正常的 4100 数据
+                let pids = self.parseSupportedPIDs(response: response, baseCommand: 0x00)
+                if !pids.isEmpty {
+                    PTNSLogConsole("✅ [自定义引擎] 探针命中！成功获取支持的 PID。")
+                    return pids
+                }
+                
+            } catch {
+                PTNSLogConsole("❌ [自定义引擎] 探针请求异常: \(error)")
+            }
+            
+            // 每次失败后等 0.5 秒再试
+            try? await Task.sleep(nanoseconds: 500_000_000)
+        }
+        
+        return [] // 20次都失败了，返回空
+    }
+    
     private func parseSingleResponse(command: String, response: String) -> Double? {
-        let cleanStr = response.replacingOccurrences(of: " ", with: "")
-                                       .replacingOccurrences(of: ">", with: "")
-                                       .replacingOccurrences(of: "\r", with: "")
-                                       .replacingOccurrences(of: "\n", with: "")
-                                       .uppercased()
+        
+        let cleanStr = clearString(response: response)
                 
         // 🌟 修复点 2：为 ATRV 开辟专属“绿色通道”，不经过 41 前缀校验
         if command == "ATRV" {
