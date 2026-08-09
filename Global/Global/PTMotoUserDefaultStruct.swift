@@ -15,4 +15,5 @@ struct PTMotoUserDefaultStruct {
     @PTUserDefault(withKey: "NavMute", defaultValue: false) public static var NavMute:Bool
     @PTUserDefault(withKey: "MotoLinkedAPP", defaultValue: false) public static var MotoLinkedAPP:Bool
     @PTUserDefault(withKey: "CoachFirst", defaultValue: true) public static var CoachFirst:Bool
+    @PTUserDefault(withKey: "OBDID", defaultValue: "") public static var OBDID:String
 }

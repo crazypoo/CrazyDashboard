@@ -11,6 +11,8 @@ import PooTools
 import CryptoKit
 import SwiftOBD2
 
+let developerOBDID = "C688934C-8A62-4C35-872F-B07ED5415E94"
+
 public struct YmobdCrypt {
     public static let defaultKey: Int32 = 0x263D9A7E
 
@@ -95,7 +97,7 @@ public class PTHiddenOBDConnector: NSObject {
         "YM819", "BT529", "OBD114", "OBD147", "BROM S10", "BROM S15", "BROM S20"
     ]
     
-    private let targetDeviceUUIDString = "C688934C-8A62-4C35-872F-B07ED5415E94"
+    private let targetDeviceUUIDString = PTMotoUserDefaultStruct.OBDID.isEmpty ? developerOBDID : PTMotoUserDefaultStruct.OBDID
     
     private override init() {
         super.init()
