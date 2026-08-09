@@ -84,7 +84,7 @@ public class PTHiddenOBDConnector: NSObject {
     private var isUnlocked: Bool = false
     private var pendingConnection: Bool = false
     
-    private var initQueue: [String] = [OBDCommand.General.ATZ.properties.command, OBDCommand.General.ATE0.properties.command, OBDCommand.General.ATL0.properties.command, OBDCommand.General.ATH1.properties.command, OBDCommand.Protocols.ATSP0.properties.command, "AT+VERSION", "<AUTH>"]
+    private var initQueue: [String] = [OBDCommand.General.ATZ.properties.command, OBDCommand.General.ATE0.properties.command, OBDCommand.General.ATL0.properties.command, OBDCommand.General.ATH1.properties.command, OBDCommand.Protocols.ATSP0.properties.command, "AT+VERSION","ATI",OBDCommand.General.ATRV.properties.command, "<AUTH>"]
     private var currentQueueIndex: Int = 0
     private var activeCommand: String? = nil
     private var rxBuffer: String = ""
@@ -1014,5 +1014,52 @@ extension PTMotoTelemetryManager {
         }
         
         return dtcList
+    }
+    
+    // MARK: - 🌟 清除故障码 (Mode 04)
+    /// 发送 Mode 04 指令，请求 ECU 清除发动机故障码并重置相关监视器状态
+    /// 注意：执行此操作通常需要车辆处于 "通电但未启动发动机 (Key On Engine Off)" 状态
+    public func clearDiagnosticTroubleCodes() async -> Bool {
+        guard isConnected else {
+            PTNSLogConsole("⚠️ [清码系统] 未连接车辆，无法清除故障码。")
+            return false
+        }
+        
+        PTNSLogConsole("🧹 [清码系统] 正在向 ECU 发送清除故障码指令 (04)...")
+        
+        if isUsingSwiftOBD2 {
+            do {
+                let response = try await obdService.sendCommand(.mode1(.EGRError))
+                switch response {
+                case .success:
+                    PTNSLogConsole("✅ [清码系统] SwiftOBD2 通道清码指令执行成功！")
+                    return true
+                case .failure(let error):
+                    PTNSLogConsole("❌ [清码系统] SwiftOBD2 清码失败: \(error.localizedDescription)")
+                    return false
+                }
+            } catch {
+                PTNSLogConsole("❌ [清码系统] 请求异常: \(error)")
+                return false
+            }
+        } else {
+            // 原生加密通道模式
+            do {
+                let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync("04")
+                let cleanResponse = self.clearString(response: response)
+                
+                // 成功清除故障码时，ECU 通常会回复 "44"
+                if cleanResponse.hasPrefix("44") || cleanResponse.contains("OK") {
+                    PTNSLogConsole("✅ [清码系统] 原生通道清码指令执行成功！(响应: \(cleanResponse))")
+                    return true
+                } else {
+                    PTNSLogConsole("⚠️ [清码系统] 原生通道清码可能失败或被拒绝 (响应: \(cleanResponse))")
+                    return false
+                }
+            } catch {
+                PTNSLogConsole("❌ [清码系统] 原生通道请求异常: \(error)")
+                return false
+            }
+        }
     }
 }
