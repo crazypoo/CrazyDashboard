@@ -43,7 +43,7 @@ public struct YmobdCrypt {
 
     /// 生成随机的 Challenge
     public static func newChallenge() -> Int32 {
-        return Int32.random(in: 0x12345678...Int32.max)
+        return Int32.random(in: 0x12345678...0x7FFFFFFE)
     }
     
     /// 针对返回 crypt 字段的解锁指令生成器
@@ -80,7 +80,7 @@ public class PTHiddenOBDConnector: NSObject {
     private var isUnlocked: Bool = false
     private var pendingConnection: Bool = false
     
-    private var initQueue: [String] = ["ATZ", "ATE0", "ATL0", "ATH1", "ATSP0", "AT+VERSION", "<AUTH>", "0100"]
+    private var initQueue: [String] = ["ATZ", "ATE0", "ATL0", "ATH1", "ATSP0", "AT+VERSION", "<AUTH>"]
     private var currentQueueIndex: Int = 0
     private var activeCommand: String? = nil
     private var rxBuffer: String = ""
@@ -128,21 +128,33 @@ public class PTHiddenOBDConnector: NSObject {
     
     // 🌟 核心新增：真正防堵塞的 Async 发送方法
     public func sendOBDCommandAsync(_ command: String) async throws -> String {
-        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
+        return try await withCheckedThrowingContinuation { continuation in
             guard isUnlocked, let writeChar = self.writeCharacteristic,
                   let data = "\(command)\r".data(using: .ascii),
                   let peripheral = self.obdPeripheral else {
                 continuation.resume(throwing: NSError(domain: "OBDError", code: -1, userInfo: [NSLocalizedDescriptionKey: "底层未准备好"]))
                 return
             }
-            PTNSLogConsole("加密请求：\(command)")
-            // 记录当前的延续器，等待蓝牙回调时 resume
+            
             self.responseContinuation = continuation
             self.activeCommand = command
             self.rxBuffer = ""
+            
             let writeType: CBCharacteristicWriteType = writeChar.properties.contains(.writeWithoutResponse) ? .withoutResponse : .withResponse
-            // 遵循文档 8.3 节：保留原生 writeType[cite: 1]
             peripheral.writeValue(data, for: writeChar, type: writeType)
+            
+            // 启动一个 20 秒的倒计时任务。如果 20 秒后 responseContinuation 还没被清空，说明死锁了，抛出异常强制唤醒！
+            Task {
+                try? await Task.sleep(nanoseconds: 20_000_000_000) // 20秒
+                if self.responseContinuation != nil {
+                    PTNSLogConsole("⏳ [安全守护] 指令 \(command) 20秒未收到 '>'，触发强制断开超时机制。")
+                    self.responseContinuation?.resume(throwing: NSError(domain: "OBDError", code: -3, userInfo: [NSLocalizedDescriptionKey: "等待硬件响应超时"]))
+                    self.responseContinuation = nil
+                    
+                    // 根据文档，单条命令超时应主动断开蓝牙连接[cite: 3]
+                    self.centralManager.cancelPeripheralConnection(peripheral)
+                }
+            }
         }
     }
 }
@@ -155,7 +167,6 @@ extension PTHiddenOBDConnector: CBCentralManagerDelegate {
     public func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
         let deviceName = peripheral.name ?? advertisementData[CBAdvertisementDataLocalNameKey] as? String ?? ""
         
-        // 🌟 规避弹框：只连接官方白名单设备[cite: 1]
         if allowedDeviceNames.contains(deviceName) {
             PTNSLogConsole("🎯 [蓝牙直连] 发现官方白名单设备: \(deviceName)")
             centralManager.stopScan()
@@ -166,7 +177,6 @@ extension PTHiddenOBDConnector: CBCentralManagerDelegate {
     }
     
     public func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        // 🌟 规避弹框：文档 6.2 节要求仅锁定 FFF0 服务[cite: 1]
         let targetServiceUUID = CBUUID(string: "0000FFF0-0000-1000-8000-00805F9B34FB")
         peripheral.discoverServices([targetServiceUUID])
     }
@@ -228,28 +238,48 @@ extension PTHiddenOBDConnector: CBPeripheralDelegate {
         if let chunk = String(data: data, encoding: .ascii) {
             rxBuffer += chunk
             
-            // 🌟 严格等待官方定义的完整 prompt[cite: 1]
-            if rxBuffer.contains(">") {
-                let cleanResponse = rxBuffer.replacingOccurrences(of: ">", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
-                rxBuffer = ""
+            // 防粘包分割算法。只截取到 '>' 的位置，并保留 '>' 之后的数据给下一次读取
+            if let range = rxBuffer.range(of: ">") {
+                // 提取出一个完整的命令响应（不包含 '>'）
+                let completeResponse = String(rxBuffer[..<range.lowerBound])
+                
+                // 将缓冲区截断，保留 '>' 之后可能粘包带来的新数据
+                rxBuffer = String(rxBuffer[range.upperBound...])
+                
+                let cleanResponse = completeResponse.trimmingCharacters(in: .whitespacesAndNewlines)
                 
                 if isUnlocked {
-                    // 🌟 如果是轮询阶段，通过 continuation 返回，唤醒挂起的 async 任务
                     responseContinuation?.resume(returning: cleanResponse)
                     responseContinuation = nil
                 } else {
                     processCompleteResponse(cleanResponse)
                 }
             }
-            PTNSLogConsole("回复数据：\(chunk)")
-        } else {
-            PTNSLogConsole("没回复")
         }
     }
     
     private func processCompleteResponse(_ response: String) {
+        let cleanResponseForCheck = response.replacingOccurrences(of: " ", with: "").uppercased()
+        
+        // 1. 验证 ATZ[cite: 3]
+        if activeCommand == "ATZ" && cleanResponseForCheck.contains("STOPPED") {
+            PTNSLogConsole("⚠️ [破冰船] ATZ 验证失败 (STOPPED)，根据协议要求原地重试...")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.sendNextCommand() }
+            return
+        }
+        
+        // 2. 验证基础设置指令是否返回 OK[cite: 3]
+        let okCheckCommands = ["ATE0", "ATL0", "ATH1", "ATSP0"]
+        if let cmd = activeCommand, okCheckCommands.contains(cmd) {
+            if !cleanResponseForCheck.contains("OK") {
+                PTNSLogConsole("⚠️ [破冰船] \(cmd) 未返回 OK，根据协议要求原地重试...")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.sendNextCommand() }
+                return
+            }
+        }
+        
+        // 3. 处理 AT+VERSION 与加密
         if activeCommand == "AT+VERSION" {
-            // 如果 AT+VERSION 返回了错误 (例如 '?')，说明这不是 YMOBD 定制模块，直接切标准库！
             if response.contains("?") || response.isEmpty {
                 PTNSLogConsole("⚠️ [破冰船] 未发现官方加密特征，识别为普通 OBD 模块，转交 SwiftOBD2...")
                 self.obdPeripheral?.delegate = nil
@@ -273,6 +303,7 @@ extension PTHiddenOBDConnector: CBPeripheralDelegate {
             if currentQueueIndex + 1 < initQueue.count { initQueue[currentQueueIndex + 1] = cleanAuthCommand }
         }
         
+        // 推进到下一步
         currentQueueIndex += 1
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in self?.sendNextCommand() }
     }
