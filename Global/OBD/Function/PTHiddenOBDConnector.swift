@@ -91,6 +91,7 @@ public class PTHiddenOBDConnector: NSObject {
     
     // 🌟 核心异步延续器：用于将回调转换为 async/await
     private var responseContinuation: CheckedContinuation<String, any Error>?
+    private var timeoutTask: Task<Void, Never>?
     
     // 🌟 官方反编译文档 6.3 节：严格的本地默认白名单，规避乱连导致的弹框
     private let allowedDeviceNames: Set<String> = [
@@ -147,15 +148,19 @@ public class PTHiddenOBDConnector: NSObject {
             let writeType: CBCharacteristicWriteType = writeChar.properties.contains(.writeWithoutResponse) ? .withoutResponse : .withResponse
             peripheral.writeValue(data, for: writeChar, type: writeType)
             
-            // 启动一个 20 秒的倒计时任务。如果 20 秒后 responseContinuation 还没被清空，说明死锁了，抛出异常强制唤醒！
-            Task {
+            // 🌟 核心修复 2：每次发新指令前，先取消掉上一个还在倒数的旧定时器
+            self.timeoutTask?.cancel()
+            
+            // 启动全新的 20 秒倒计时任务
+            self.timeoutTask = Task {
                 try? await Task.sleep(nanoseconds: 20_000_000_000) // 20秒
-                if self.responseContinuation != nil {
+                
+                // 只有当这个任务没有被取消时，才代表是真的超时了！
+                if !Task.isCancelled {
                     PTNSLogConsole("⏳ [安全守护] 指令 \(command) 20秒未收到 '>'，触发强制断开超时机制。")
                     self.responseContinuation?.resume(throwing: NSError(domain: "OBDError", code: -3, userInfo: [NSLocalizedDescriptionKey: "等待硬件响应超时"]))
                     self.responseContinuation = nil
                     
-                    // 根据文档，单条命令超时应主动断开蓝牙连接[cite: 3]
                     self.centralManager.cancelPeripheralConnection(peripheral)
                 }
             }
@@ -242,13 +247,44 @@ extension PTHiddenOBDConnector: CBPeripheralDelegate {
         if let chunk = String(data: data, encoding: .ascii) {
             rxBuffer += chunk
             
-            // 防粘包分割算法。只截取到 '>' 的位置，并保留 '>' 之后的数据给下一次读取
+            // 💡 调试打印：把自带的 >>>>> 换成更清晰的包裹符，让你看清真实的 chunk 到底是什么
+            PTNSLogConsole("📦 [蓝牙接收] 收到真实数据切片: '\(chunk)'")
+            
+            var isComplete = false
+            var endRange: Range<String.Index>? = nil
+            
+            // 🌟 智能结束符判定
+            // 1. 正常情况：寻找标准的 '>' 提示符
             if let range = rxBuffer.range(of: ">") {
+                isComplete = true
+                endRange = range
+            }
+            // 2. 🛠 特判补丁：针对不守规矩的模块，如果查电压 (ATRV) 时收到了 "V"，就算它回答完毕！
+            else if activeCommand == OBDCommand.General.ATRV.properties.command && rxBuffer.contains("V") {
+                isComplete = true
+                // 我们伪造一个截断点，截到 'V' 的位置
+                if let vIndex = rxBuffer.firstIndex(of: "V") {
+                    let afterV = rxBuffer.index(after: vIndex)
+                    endRange = afterV..<afterV
+                }
+            }
+            
+            // 既然满足了完成条件，就开始处理数据
+            if isComplete, let range = endRange {
+                
+                // 🌟 核心修复：立刻取消 20 秒死亡倒计时！
+                self.timeoutTask?.cancel()
+                self.timeoutTask = nil
+                
                 // 提取出一个完整的命令响应（不包含 '>'）
                 let completeResponse = String(rxBuffer[..<range.lowerBound])
                 
-                // 将缓冲区截断，保留 '>' 之后可能粘包带来的新数据
-                rxBuffer = String(rxBuffer[range.upperBound...])
+                // 将缓冲区截断，保留结束符之后可能粘包带来的新数据
+                if range.upperBound < rxBuffer.endIndex {
+                    rxBuffer = String(rxBuffer[range.upperBound...])
+                } else {
+                    rxBuffer = ""
+                }
                 
                 let cleanResponse = completeResponse.trimmingCharacters(in: .whitespacesAndNewlines)
                 
@@ -355,6 +391,8 @@ public class PTMotoTelemetryManager {
     
     public private(set) var vin: String = ""
     public private(set) var protocolName: String = ""
+    public private(set) var ecuVersion: String = ""
+    public private(set) var cvn: String = ""
 
     private init() {}
     
@@ -414,7 +452,7 @@ public class PTMotoTelemetryManager {
                 return // 终止整个 Task，不再往下走
             }
             // 🌟 2. 菜单过滤：与 SwiftOBD2 指令库求交集
-            var activeCommands: [String] = ["ATRV"] // ATRV 是芯片层级直读电压指令，永远保留
+            var activeCommands: [String] = [OBDCommand.general(.ATRV).properties.command] // ATRV 是芯片层级直读电压指令，永远保留
             
             if !pids.isEmpty {
                 // 遍历 SwiftOBD2 中定义的所有 Mode1 (实时数据) 指令
@@ -441,7 +479,7 @@ public class PTMotoTelemetryManager {
                     OBDCommand.mode1(.speed).properties.command,
                     OBDCommand.mode1(.engineLoad).properties.command,
                     OBDCommand.mode1(.coolantTemp).properties.command,
-                    "ATRV"
+                    OBDCommand.general(.ATRV).properties.command
                 ]
             }
             
@@ -461,7 +499,7 @@ public class PTMotoTelemetryManager {
             let rpmCmd = OBDCommand.mode1(.rpm).properties.command
             let speedCmd = OBDCommand.mode1(.speed).properties.command
             let tempCmd = OBDCommand.mode1(.coolantTemp).properties.command
-            let voltCmd = "ATRV"
+            let voltCmd = OBDCommand.general(.ATRV).properties.command
             
             let hasRPM = activeCommands.contains(rpmCmd)
             let hasSpeed = activeCommands.contains(speedCmd)
@@ -498,7 +536,6 @@ public class PTMotoTelemetryManager {
                     
                     do {
                         let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(commandString)
-                        
                         // 交给自定义解析器处理
                         if let val = self.parseSingleResponse(command: commandString, response: response) {
                             currentMeasurements[commandString] = val
@@ -635,7 +672,7 @@ public class PTMotoTelemetryManager {
         _ = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0600")
         _ = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0900")
         
-        // 读取车辆协议[cite: 3]
+        // 读取车辆协议
         if let dpRes = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("ATDP") {
             let cleanProtocol = dpRes.replacingOccurrences(of: "\r", with: "").replacingOccurrences(of: ">", with: "")
             self.protocolName = cleanProtocol
@@ -654,12 +691,16 @@ public class PTMotoTelemetryManager {
             self.vin = vinRes
         }
         // 补齐最后的 0904, 0906[cite: 3]
-        _ = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0904")
-        _ = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0906")
+        if let ecuVersion = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0904") {
+            self.ecuVersion = ecuVersion
+        }
+        if let cvn = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0906") {
+            self.cvn = cvn
+        }
         
         return allSupportedPIDs
     }
-    
+        
     private func parseSingleResponse(command: String, response: String) -> Double? {
         
         let cleanStr = clearString(response: response)

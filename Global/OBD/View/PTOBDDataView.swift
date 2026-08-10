@@ -34,6 +34,7 @@ class PTTelemetryItemView: UIView {
         titleLabel.textColor = .lightGray
         titleLabel.font = .appfont(size: 14, bold:true)
         titleLabel.textAlignment = .center
+        titleLabel.numberOfLines = 0
         
         // 数值标签
         valueLabel.textColor = .white
@@ -113,6 +114,8 @@ class PTOBDDataView: UIView {
         
         // 自动注册为 OBD 数据监听者
         PTMotoTelemetryManager.shared.addDelegate(self)
+        
+        self.buildDynamicGrid(with: PTMotoTelemetryManager.shared.supportedCommands)
     }
     
     required init?(coder: NSCoder) {
@@ -134,8 +137,8 @@ class PTOBDDataView: UIView {
             var isConfigured = false
             
             // 💡 匹配逻辑 A：首先拦截非标准库的自定义直读指令
-            if commandString == OBDCommand.General.ATRV.properties.command {
-                title = "Battery Voltage (\(OBDCommand.General.ATRV.properties.command))" // 自定义标题
+            if commandString == OBDCommand.general(.ATRV).properties.command {
+                title = "Battery Voltage (\(commandString))" // 自定义标题
                 format = "%.1f"
                 isConfigured = true
             }
@@ -212,9 +215,5 @@ extension PTOBDDataView: PTMotoTelemetryDelegate {
         }
     }
     
-    func telemetryManager(_ manager: PTMotoTelemetryManager, didDiscoverSupportedCommands commands: [String]) {
-        DispatchQueue.main.async { [weak self] in
-            self?.buildDynamicGrid(with: commands)
-        }
-    }
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didDiscoverSupportedCommands commands: [String]) { }
 }

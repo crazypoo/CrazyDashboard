@@ -216,7 +216,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     }
                 })
             } else {
-                let actions = ["Error Code","Disconnect","Data"]
+                let actions = ["Error Code","Disconnect","Data","ECU info"]
                 UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: actions, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
                     switch index {
                     case 0:
@@ -248,6 +248,10 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     case 2:
                         let vc = PTOBDDataViewController()
                         self.navigationController?.pushViewController(vc, animated: true)
+                    case 3:
+                        let msgData = "Protocol:\(PTMotoTelemetryManager.shared.protocolName) \nVIN:\(PTMotoTelemetryManager.shared.vin) \nECU version:\(PTMotoTelemetryManager.shared.ecuVersion) \nCVN:\(PTMotoTelemetryManager.shared.cvn)"
+                        UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "ECU info"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: msgData, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
+
                     default:
                         break
                     }
@@ -760,7 +764,9 @@ extension PTMotoInfoViewController:PTMotoTelemetryDelegate {
         obdButton.isSelected = isConnected
     }
     
-    func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) { }
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) {
+        PTNSLogConsole(">>>>>>>>>>>>>>>>>>>>>>>\(measurements)")
+    }
     
     func telemetryManager(_ manager: PTMotoTelemetryManager, didDiscoverSupportedCommands commands: [String]) { }
 }
