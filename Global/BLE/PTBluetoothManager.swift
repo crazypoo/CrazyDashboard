@@ -74,9 +74,9 @@ class PTMessagePusher {
     static func requestPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if granted {
-                PTNSLogConsole("✅ [通知权限] 授权成功！车机弹窗功能已就绪。")
+//                PTNSLogConsole("✅ [通知权限] 授权成功！车机弹窗功能已就绪。")
             } else {
-                PTNSLogConsole("❌ [通知权限] 被拒绝，将无法推送到车机。")
+//                PTNSLogConsole("❌ [通知权限] 被拒绝，将无法推送到车机。")
             }
         }
     }
@@ -785,7 +785,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     private func ptLog(_ message: String) {
         let timeString = dateFormatter.string(from: Date())
         let formattedLog = "[\(timeString)] \(message)"
-        PTNSLogConsole(formattedLog)
+//        PTNSLogConsole(formattedLog)
         
         // 🚨 优化：将极其耗时的磁盘写入操作异步丢入后台队列
         ioQueue.async { [weak self] in
@@ -1507,9 +1507,9 @@ extension PTBluetoothServerManager {
                 try logFileHandle?.seekToEnd()
                 try logFileHandle?.write(contentsOf: data)
             }
-            PTNSLogConsole("📝 [日志记录] 已开始将底层数据流式写入本地文件: \(fileName)")
+//            PTNSLogConsole("📝 [日志记录] 已开始将底层数据流式写入本地文件: \(fileName)")
         } catch {
-            PTNSLogConsole("❌ [日志记录] 文件创建失败: \(error)")
+//            PTNSLogConsole("❌ [日志记录] 文件创建失败: \(error)")
         }
     }
     
@@ -1525,10 +1525,10 @@ extension PTBluetoothServerManager {
         do {
             try logFileHandle?.close()
         } catch {
-            PTNSLogConsole("❌ [日志记录] 关闭文件失败: \(error)")
+//            PTNSLogConsole("❌ [日志记录] 关闭文件失败: \(error)")
         }
         logFileHandle = nil
-        PTNSLogConsole("💾 [日志记录] 蓝牙会话结束，十六进制日志已安全封装在沙盒中。")
+//        PTNSLogConsole("💾 [日志记录] 蓝牙会话结束，十六进制日志已安全封装在沙盒中。")
     }
     
     /// 获取沙盒中所有的十六进制日志文件，供 UI 导出使用
