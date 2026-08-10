@@ -440,133 +440,167 @@ public class PTMotoTelemetryManager {
         telemetryPollingTask = Task { [weak self] in
             guard let self = self else { return }
             
-            PTNSLogConsole("🔍 [自定义引擎] 正在向加密车机查询支持的 PID 列表...")
+            // 初始状态：只轮询电压 (确保 UI 存活) 和 0100 探针 (尝试唤醒车机)
+            var activeCommands: [String] = ["ATRV", "0100"]
+            var isProtocolEstablished = false
+            var debugFlagSent = false
             
-            // 🌟 1. 动态探针：获取车机真实支持的 PID 掩码解析结果
-            let pids = await self.fetchSupportedPIDsWithRetry()
-            guard !pids.isEmpty else {
-                PTNSLogConsole("❌ [自定义引擎] 致命错误：0100 探针返回全 0，车辆不支持标准 OBD-II 协议！")
-                await MainActor.run {
-                    self.disconnect() // 强制断开连接并通知 UI 销毁
-                }
-                return // 终止整个 Task，不再往下走
-            }
-            // 🌟 2. 菜单过滤：与 SwiftOBD2 指令库求交集
-            var activeCommands: [String] = [OBDCommand.general(.ATRV).properties.command] // ATRV 是芯片层级直读电压指令，永远保留
+            // 🌟 新增：记录 NO DATA 的次数，用于触发强制协议切换
+            var noDataCount = 0
             
-            if !pids.isEmpty {
-                // 遍历 SwiftOBD2 中定义的所有 Mode1 (实时数据) 指令
-                for command in OBDCommand.Mode1.allCases {
-                    let cmdString = OBDCommand.mode1(command).properties.command
-                    
-                    // 排除掉用来查询支持列表的特殊指令，我们只要具体的数据 PID
-                    let skipPIDs = [
-                        OBDCommand.mode1(.pidsA).properties.command, // 0100
-                        OBDCommand.mode1(.pidsB).properties.command, // 0120
-                        OBDCommand.mode1(.pidsC).properties.command  // 0140
-                    ]
-                    
-                    // 💡 核心交集逻辑：如果 ECU 说支持，且不是查询指令，就加入激活菜单！
-                    if pids.contains(cmdString) && !skipPIDs.contains(cmdString) {
-                        activeCommands.append(cmdString)
-                    }
-                }
-                PTNSLogConsole("📋 [自定义引擎] 通过掩码交集，精准提取出 \(activeCommands.count) 项支持的实时数据: \(activeCommands)")
-            } else {
-                PTNSLogConsole("⚠️ [自定义引擎] 0100 探针最终超时或为空，回退至基础安全列表")
-                activeCommands = [
-                    OBDCommand.mode1(.rpm).properties.command,
-                    OBDCommand.mode1(.speed).properties.command,
-                    OBDCommand.mode1(.engineLoad).properties.command,
-                    OBDCommand.mode1(.coolantTemp).properties.command,
-                    OBDCommand.general(.ATRV).properties.command
-                ]
-            }
+            PTNSLogConsole("🚀 [状态机引擎] 启动！当前处于【探测模式】，优先保障电压数据刷新。")
             
-            // 将最终提取出的全量支持菜单持久化
-            self.supportedCommands = activeCommands
-            
-            // 通知 UI 层连接成功，可以开始构建格子了
             await MainActor.run {
                 self.delegates.forEach { wrapper in
                     wrapper.delegate?.telemetryManager(self, didChangeConnectionState: true)
                 }
             }
             
-            // 🌟 3. 构建官方加权轮询队列 (解决转速卡顿)
-            var pollingQueue: [String] = []
-            
-            let rpmCmd = OBDCommand.mode1(.rpm).properties.command
-            let speedCmd = OBDCommand.mode1(.speed).properties.command
-            let tempCmd = OBDCommand.mode1(.coolantTemp).properties.command
-            let voltCmd = OBDCommand.general(.ATRV).properties.command
-            
-            let hasRPM = activeCommands.contains(rpmCmd)
-            let hasSpeed = activeCommands.contains(speedCmd)
-            let hasTemp = activeCommands.contains(tempCmd)
-            let hasVolt = activeCommands.contains(voltCmd)
-            
-            // 官方的 6 步小循环模式
-            let corePattern = [
-                hasRPM ? rpmCmd : nil,
-                hasSpeed ? speedCmd : nil,
-                hasRPM ? rpmCmd : nil,
-                hasTemp ? tempCmd : nil,
-                hasRPM ? rpmCmd : nil,
-                hasVolt ? voltCmd : nil
-            ].compactMap { $0 }
-            
-            if corePattern.count >= 3 {
-                pollingQueue.append(contentsOf: corePattern)
-                // 把剩余的高级指令 (比如油耗、气压、进气温) 追加在基础循环的后面
-                let otherCommands = activeCommands.filter { !([rpmCmd, speedCmd, tempCmd, voltCmd].contains($0)) }
-                pollingQueue.append(contentsOf: otherCommands)
-            } else {
-                pollingQueue = activeCommands
-            }
-            
-            PTNSLogConsole("⚡️ [性能优化] 最终执行的高频轮询队列: \(pollingQueue)")
-            
-            // 🌟 4. 开始死循环高频轮询
             while !Task.isCancelled && self.isConnected {
                 var currentMeasurements: [String: Any] = [:]
                 
-                for commandString in pollingQueue {
+                for commandString in activeCommands {
                     if Task.isCancelled { break }
                     
                     do {
                         let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(commandString)
-                        // 交给自定义解析器处理
-                        if let val = self.parseSingleResponse(command: commandString, response: response) {
-                            currentMeasurements[commandString] = val
-                        } else {
-                            // 💡 调试利器：如果我们还没给这个指令写解析公式，就把原始 HEX 数据抛出去！
-                            let cleanResponse = self.clearString(response: response)
-                            if cleanResponse.hasPrefix("41") && cleanResponse.count > 4 {
-                                let rawData = String(cleanResponse.dropFirst(4))
-                                currentMeasurements[commandString] = rawData
+                        let cleanResponse = self.clearString(response: response)
+                        
+                        // ==========================================
+                        // 逻辑 A：处理 0100 探针的特殊响应
+                        // ==========================================
+                        if commandString == "0100" && !isProtocolEstablished {
+                            
+                            if cleanResponse.contains("UNABLETOCONNECT") || cleanResponse.contains("UNABLE TO CONNECT") {
+                                PTNSLogConsole("⚠️ [状态机引擎] 收到 UNABLE TO CONNECT")
+                                if !debugFlagSent {
+                                    PTNSLogConsole("🛠 [状态机引擎] 触发私有唤醒钩子 AT+DEBUG_FLG")
+                                    _ = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("AT+DEBUG_FLG")
+                                    debugFlagSent = true
+                                }
+                                continue
+                            }
+                            
+                            // 🌟 核心升级：将空字符串 (isEmpty) 与 NO DATA 视作同等物理故障
+                            if cleanResponse.isEmpty || cleanResponse.contains("NODATA") || cleanResponse.contains("SEARCHING") || cleanResponse.contains("NO DATA") {
+                                noDataCount += 1
+                                let failReason = cleanResponse.isEmpty ? "EMPTY_STRING" : cleanResponse
+                                PTNSLogConsole("⏳ [状态机引擎] 协议寻址中 (\(failReason))，已尝试 \(noDataCount) 次...")
+                                
+                                // 强制协议切换逻辑
+                                if noDataCount == 4 {
+                                    PTNSLogConsole("🔧 [状态机引擎] 自动寻址无果！强制锁定现代 CAN 协议 (ATSP6)...")
+                                    _ = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("ATSP6\r")
+                                }
+                                
+                                if noDataCount == 8 {
+                                    PTNSLogConsole("🔧 [状态机引擎] 尝试备用老式 K-Line 协议 (ATSP5)...")
+                                    _ = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("ATSP5\r")
+                                }
+                                
+                                // 如果超过 12 次还是空字符串或 NO DATA，重置芯片
+                                if noDataCount == 12 {
+                                    PTNSLogConsole("🔧 [状态机引擎] 硬件可能假死，发送 ATZ 强制重启模块...")
+                                    _ = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("ATZ\r")
+                                    noDataCount = 0 // 重置计数器，开启新一轮的轮回
+                                }
+                                
+                                continue
+                            }
+                            
+                            // 3. 尝试解析 0100 的支持位
+                            let pids = self.parseSupportedPIDs(response: response, baseCommand: 0x00)
+                            if !pids.isEmpty {
+                                PTNSLogConsole("✅ [状态机引擎] 协议握手成功！获取到支持列表：\(pids)")
+                                isProtocolEstablished = true
+                                noDataCount = 0
+                                
+                                // 读取一下最终成功连上的到底是什么协议
+                                if let dpRes = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("ATDP") {
+                                    let cleanProtocol = dpRes.replacingOccurrences(of: "\r", with: "").replacingOccurrences(of: ">", with: "")
+                                    self.protocolName = cleanProtocol
+                                    PTNSLogConsole("🚗 [车辆信息] 当前成功锁定的通讯协议是: \(cleanProtocol)")
+                                }
+                                
+                                // --- 后续的加权组装逻辑保持不变 ---
+                                let desiredCommands = ["010C", "010D", "0104", "0105", "ATRV", "010F", "010B", "010E", "0110", "011F"]
+                                var newCommands: [String] = ["ATRV"]
+                                
+                                for cmd in desiredCommands {
+                                    if pids.contains(cmd) && cmd != "ATRV" {
+                                        newCommands.append(cmd)
+                                    }
+                                }
+                                
+                                let hasRPM = newCommands.contains("010C")
+                                let hasSpeed = newCommands.contains("010D")
+                                let hasTemp = newCommands.contains("0105")
+                                
+                                var pollingQueue: [String] = []
+                                let corePattern = [
+                                    hasRPM ? "010C" : nil,
+                                    hasSpeed ? "010D" : nil,
+                                    hasRPM ? "010C" : nil,
+                                    hasTemp ? "0105" : nil,
+                                    hasRPM ? "010C" : nil,
+                                    "ATRV"
+                                ].compactMap { $0 }
+                                
+                                if corePattern.count >= 3 {
+                                    pollingQueue.append(contentsOf: corePattern)
+                                    let otherCommands = newCommands.filter { !["010C", "010D", "0105", "ATRV"].contains($0) }
+                                    pollingQueue.append(contentsOf: otherCommands)
+                                } else {
+                                    pollingQueue = newCommands
+                                }
+                                
+                                activeCommands = pollingQueue
+                                self.supportedCommands = activeCommands
+                                PTNSLogConsole("💡 [状态机引擎] 已无缝切换至【高频数据模式】，激活队列: \(activeCommands)")
+                                
+                                await MainActor.run {
+                                    self.delegates.forEach { wrapper in
+                                        wrapper.delegate?.telemetryManager(self, didDiscoverSupportedCommands: activeCommands)
+                                    }
+                                }
                             }
                         }
+                        
+                        // ==========================================
+                        // 逻辑 B：处理正常的数值解析 (电压、转速等)
+                        // ==========================================
+                        else if commandString != "0100" {
+                            // 💡 过滤掉空字符串，防止控制台刷出大量无意义的解析失败警告
+                            if !cleanResponse.isEmpty {
+                                if let val = self.parseSingleResponse(command: commandString, response: response) {
+                                    currentMeasurements[commandString] = val
+                                } else {
+                                    if cleanResponse.hasPrefix("41") && cleanResponse.count > 4 {
+                                        let rawData = String(cleanResponse.dropFirst(4))
+                                        currentMeasurements[commandString] = rawData
+                                    }
+                                }
+                            }
+                        }
+                        
                     } catch {
-                        // 忽略偶发的单条超时
+                        // 忽略超时，绝不阻塞！
                     }
-                }
-                
-                await MainActor.run {
-                    self.dispatchMeasurementsToDelegates(measurements: currentMeasurements)
                     
-                    // 因为我们可能提取出了几十个支持的指令，需要持续通知 UI，确保 UI 能够渲染出来
-                    self.delegates.forEach { wrapper in
-                        wrapper.delegate?.telemetryManager(self, didDiscoverSupportedCommands: activeCommands)
+                    try? await Task.sleep(nanoseconds: 50_000_000)
+                }
+                
+                if !currentMeasurements.isEmpty {
+                    await MainActor.run {
+                        self.dispatchMeasurementsToDelegates(measurements: currentMeasurements)
                     }
                 }
                 
-                // 为了保证大量数据轮询不过度拥挤，依然保持 0.3~0.5 秒左右的间隙
                 try? await Task.sleep(nanoseconds: 300_000_000)
             }
         }
     }
-    
+
     func clearString(response:String) ->String {
         let cleanStr = response.replacingOccurrences(of: " ", with: "")
                                        .replacingOccurrences(of: ">", with: "")
@@ -704,43 +738,77 @@ public class PTMotoTelemetryManager {
     private func parseSingleResponse(command: String, response: String) -> Double? {
         
         let cleanStr = clearString(response: response)
-                
-        // 🌟 修复点 2：为 ATRV 开辟专属“绿色通道”，不经过 41 前缀校验
-        if command == OBDCommand.General.ATRV.properties.command {
-            // ATRV 的返回值通常是 "12.4V" 或 "12.4"
+                        
+        // 1. 为 ATRV 开辟专属“绿色通道”
+        if command == OBDCommand.General.ATRV.properties.command || command == "ATRV" {
             let voltStr = cleanStr.replacingOccurrences(of: "V", with: "")
             return Double(voltStr)
         }
         
-        // 对于其他的标准 OBD 01 服务请求，依然严格校验 41 前缀
-        guard cleanStr.hasPrefix("41") else { return nil }
+        // 2. 确保这是 Mode 01 的指令请求 (例如 "010C")
+        guard command.hasPrefix("01") && command.count == 4 else { return nil }
         
-        func getByte(at index: Int) -> Double? {
-            guard cleanStr.count >= index + 2 else { return nil }
-            let start = cleanStr.index(cleanStr.startIndex, offsetBy: index)
-            let end = cleanStr.index(start, offsetBy: 2)
-            if let intVal = Int(cleanStr[start..<end], radix: 16) { return Double(intVal) }
+        // 3. 拦截物理层面的空数据
+        if cleanStr.contains("NODATA") || cleanStr.contains("ERROR") { return nil }
+        
+        // 4. 🌟 核心修复：构造预期的响应头，例如 "010C" -> "410C"
+        let expectedPrefix = "41" + command.dropFirst(2)
+        
+        // 5. 🌟 核心修复：在字符串中寻找 "410C" 的位置，彻底无视前面的 CAN 报头 (如 7E804)
+        guard let range = cleanStr.range(of: expectedPrefix) else {
             return nil
         }
         
-        let A = getByte(at: 4)
-        let B = getByte(at: 6)
+        // 截取 "41XX" 之后的所有纯数据部分，例如 "1AF8"
+        let dataPart = String(cleanStr[range.upperBound...])
         
-        switch command {
-        case OBDCommand.mode1(.rpm).properties.command: if let a = A, let b = B { return (a * 256 + b) / 4.0 }
-        case OBDCommand.mode1(.speed).properties.command: if let a = A { return a }
-        case OBDCommand.mode1(.engineLoad).properties.command: if let a = A { return a * 100.0 / 255.0 }
-        case OBDCommand.mode1(.coolantTemp).properties.command, OBDCommand.mode1(.intakeTemp).properties.command: if let a = A { return a - 40.0 }
-        // 注意：这里的 0142 case 可以保留以防万一，但主要电压已经由上面的 ATRV 提供了
-        case OBDCommand.mode1(.controlModuleVoltage).properties.command: if let a = A, let b = B { return (a * 256 + b) / 1000.0 }
-        case OBDCommand.mode1(.fuelRate).properties.command: if let a = A, let b = B { return (a * 256 + b) / 20.0 }
-        case OBDCommand.mode1(.intakePressure).properties.command, OBDCommand.mode1(.barometricPressure).properties.command: if let a = A { return a }
-        case OBDCommand.mode1(.timingAdvance).properties.command: if let a = A { return a / 2.0 - 64.0 }
-        case OBDCommand.mode1(.maf).properties.command: if let a = A, let b = B { return (a * 256 + b) / 100.0 }
-        case OBDCommand.mode1(.runTime).properties.command, OBDCommand.mode1(.distanceSinceDTCCleared).properties.command: if let a = A, let b = B { return a * 256 + b }
-        case OBDCommand.mode1(.fuelLevel).properties.command: if let a = A { return a * 100.0 / 255.0 }
-        default: break
+        // 安全提取十六进制字节的内部工具方法
+        func getByte(at index: Int) -> Double? {
+            // index: A=0, B=1, C=2, D=3. 每个字节占 2 个字符
+            let startOffset = index * 2
+            guard dataPart.count >= startOffset + 2 else { return nil }
+            
+            let start = dataPart.index(dataPart.startIndex, offsetBy: startOffset)
+            let end = dataPart.index(start, offsetBy: 2)
+            
+            if let intVal = Int(dataPart[start..<end], radix: 16) {
+                return Double(intVal)
+            }
+            return nil
         }
+        
+        // 提取 ABCD 字节
+        let A = getByte(at: 0)
+        let B = getByte(at: 1)
+        
+        // 6. SAE 标准工业数学公式匹配
+        switch command {
+        case OBDCommand.mode1(.rpm).properties.command:
+            if let a = A, let b = B { return (a * 256 + b) / 4.0 }
+        case OBDCommand.mode1(.speed).properties.command:
+            if let a = A { return a }
+        case OBDCommand.mode1(.engineLoad).properties.command:
+            if let a = A { return a * 100.0 / 255.0 }
+        case OBDCommand.mode1(.coolantTemp).properties.command, OBDCommand.mode1(.intakeTemp).properties.command:
+            if let a = A { return a - 40.0 }
+        case OBDCommand.mode1(.controlModuleVoltage).properties.command:
+            if let a = A, let b = B { return (a * 256 + b) / 1000.0 }
+        case OBDCommand.mode1(.fuelRate).properties.command:
+            if let a = A, let b = B { return (a * 256 + b) / 20.0 }
+        case OBDCommand.mode1(.intakePressure).properties.command, OBDCommand.mode1(.barometricPressure).properties.command:
+            if let a = A { return a }
+        case OBDCommand.mode1(.timingAdvance).properties.command:
+            if let a = A { return a / 2.0 - 64.0 }
+        case OBDCommand.mode1(.maf).properties.command:
+            if let a = A, let b = B { return (a * 256 + b) / 100.0 }
+        case OBDCommand.mode1(.runTime).properties.command, OBDCommand.mode1(.distanceSinceDTCCleared).properties.command:
+            if let a = A, let b = B { return a * 256 + b }
+        case OBDCommand.mode1(.fuelLevel).properties.command:
+            if let a = A { return a * 100.0 / 255.0 }
+        default:
+            break
+        }
+        
         return nil
     }
     
