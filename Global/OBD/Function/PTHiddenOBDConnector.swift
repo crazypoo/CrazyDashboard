@@ -433,158 +433,114 @@ public class PTMotoTelemetryManager {
         PTHiddenOBDConnector.shared.startIcebreakerConnection()
     }
     
-    // MARK: - 极简轮询引擎
+    // MARK: - 极简轮询引擎 (解除芯片拦截，带唤醒起搏器与官方安全队列)
     private func startLightweightPolling() {
         telemetryPollingTask?.cancel()
         
         telemetryPollingTask = Task { [weak self] in
             guard let self = self else { return }
             
-            // 初始状态：只轮询电压和 0100 探针
-            var activeCommands: [String] = ["ATRV", "0100"]
-            var isProtocolEstablished = false
-            var debugFlagSent = false
-            var noDataCount = 0
+            PTNSLogConsole("🔍 [自定义引擎] 正在向加密车机查询支持的 PID 列表...")
             
-            PTNSLogConsole("🚀 [状态机引擎] 启动！当前处于【探测模式】，优先保障电压数据刷新。")
+            let pids = await self.fetchSupportedPIDsWithRetry()
+            guard !pids.isEmpty else {
+                PTNSLogConsole("❌ [自定义引擎] 致命错误：0100 探针返回全 0，车辆不支持标准 OBD-II 协议！")
+                await MainActor.run { self.disconnect() }
+                return
+            }
+            
+            // 🌟 致命修复 2：彻底砍掉所有的动态贪心加载！为了防止标致 ECU 死机，只准发核心 4 指令！
+            let rpmCmd = OBDCommand.mode1(.rpm).properties.command       // 010C
+            let speedCmd = OBDCommand.mode1(.speed).properties.command     // 010D
+            let tempCmd = OBDCommand.mode1(.coolantTemp).properties.command // 0105
+            let voltCmd = "ATRV"
+            
+            let safeCommands = [rpmCmd, speedCmd, tempCmd, voltCmd]
+            self.supportedCommands = safeCommands
             
             await MainActor.run {
                 self.delegates.forEach { wrapper in
                     wrapper.delegate?.telemetryManager(self, didChangeConnectionState: true)
+                    wrapper.delegate?.telemetryManager(self, didDiscoverSupportedCommands: safeCommands)
                 }
             }
             
+            // 🌟 致命修复 3：1:1 像素级复刻官方 6 步小循环，严禁添加任何 otherCommands[cite: 4]
+            let pollingQueue: [String] = [
+                rpmCmd,
+                speedCmd,
+                rpmCmd,
+                tempCmd,
+                rpmCmd,
+                voltCmd
+            ]
+            
+            PTNSLogConsole("⚡️ [性能优化] 已启动官方安全队列，开始高频采集: \(pollingQueue)")
+            
+            // 🌟 致命修复 4：起搏器唤醒！由于前面的 0906 查询耗时，ECU 极大概率已经休眠。
+            PTNSLogConsole("🔔 [防休眠机制] 轮询前发送起搏器 0100，确保 ECU 诊断会话激活...")
+            _ = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0100")
+            
+            var continuousNoDataCount = 0 // 用于监控是否彻底掉线
+            
+            // 开始纯粹的高频轮询
             while !Task.isCancelled && self.isConnected {
                 var currentMeasurements: [String: Any] = [:]
                 
-                for commandString in activeCommands {
+                // 兜底机制：先把我们要的安全指令置为 0.0
+                for command in safeCommands {
+                    currentMeasurements[command] = 0.0
+                }
+                
+                for commandString in pollingQueue {
                     if Task.isCancelled { break }
                     
                     do {
                         let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(commandString)
                         let cleanResponse = self.clearString(response: response)
                         
-                        PTNSLogConsole("📡 [数据流动] command: \(commandString), cleanResponse: \(cleanResponse)")
-                        
-                        // ==========================================
-                        // 逻辑 A：处理 0100 探针的特殊响应 (严格遵循官方只重试 0100 的要求)
-                        // ==========================================
-                        if commandString == "0100" && !isProtocolEstablished {
-                            
-                            if cleanResponse.contains("UNABLETOCONNECT") || cleanResponse.contains("UNABLE TO CONNECT") {
-                                PTNSLogConsole("⚠️ [状态机引擎] 0100 收到 UNABLE TO CONNECT")
-                                if !debugFlagSent {
-                                    _ = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("AT+DEBUG_FLG")
-                                    debugFlagSent = true
-                                }
-                                continue
+                        if cleanResponse.contains("NODATA") || cleanResponse.contains("NO DATA") {
+                            continuousNoDataCount += 1
+                            // 🌟 防死机自愈：如果连续收到 3 次 NO DATA，说明 ECU 真的睡着了
+                            if continuousNoDataCount >= 3 {
+                                PTNSLogConsole("⚠️ [防休眠自愈] 连续收到 NO DATA，立刻发送 0100 唤醒...")
+                                _ = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0100")
+                                continuousNoDataCount = 0
                             }
+                        } else {
+                            // 成功拿到数据，重置掉线计数器
+                            continuousNoDataCount = 0
                             
-                            // 🌟 修复点 1：只针对 0100 的 NO DATA 进行协议重试，其他数据指令的 NO DATA 直接无视！
-                            if cleanResponse.isEmpty || cleanResponse.contains("NODATA") || cleanResponse.contains("SEARCHING") {
-                                noDataCount += 1
-                                PTNSLogConsole("⏳ [状态机引擎] 协议寻址中，已尝试 \(noDataCount) 次...")
-                                
-                                if noDataCount == 4 {
-                                    _ = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("ATSP6\r")
-                                }
-                                if noDataCount == 8 {
-                                    _ = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("ATSP5\r")
-                                }
-                                if noDataCount == 12 {
-                                    _ = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("ATZ\r")
-                                    noDataCount = 0
-                                }
-                                continue
-                            }
-                            
-                            // 尝试解析 0100 支持位
-                            let pids = self.parseSupportedPIDs(response: response, baseCommand: 0x00)
-                            if !pids.isEmpty {
-                                PTNSLogConsole("✅ [状态机引擎] 协议握手成功！获取到支持列表：\(pids)")
-                                isProtocolEstablished = true
-                                noDataCount = 0
-                                
-                                if let dpRes = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("ATDP") {
-                                    let cleanProtocol = dpRes.replacingOccurrences(of: "\r", with: "").replacingOccurrences(of: ">", with: "")
-                                    self.protocolName = cleanProtocol
-                                }
-                                
-                                let desiredCommands = ["010C", "010D", "0104", "0105", "ATRV", "010F", "010B", "010E", "0110", "011F"]
-                                var newCommands: [String] = ["ATRV"]
-                                
-                                for cmd in desiredCommands {
-                                    if pids.contains(cmd) && cmd != "ATRV" {
-                                        newCommands.append(cmd)
-                                    }
-                                }
-                                
-                                let hasRPM = newCommands.contains("010C")
-                                let hasSpeed = newCommands.contains("010D")
-                                let hasTemp = newCommands.contains("0105")
-                                
-                                var pollingQueue: [String] = []
-                                let corePattern = [
-                                    hasRPM ? "010C" : nil,
-                                    hasSpeed ? "010D" : nil,
-                                    hasRPM ? "010C" : nil,
-                                    hasTemp ? "0105" : nil,
-                                    hasRPM ? "010C" : nil,
-                                    "ATRV"
-                                ].compactMap { $0 }
-                                
-                                if corePattern.count >= 3 {
-                                    pollingQueue.append(contentsOf: corePattern)
-                                    let otherCommands = newCommands.filter { !["010C", "010D", "0105", "ATRV"].contains($0) }
-                                    pollingQueue.append(contentsOf: otherCommands)
-                                } else {
-                                    pollingQueue = newCommands
-                                }
-                                
-                                activeCommands = pollingQueue
-                                self.supportedCommands = activeCommands
-                                PTNSLogConsole("💡 [状态机引擎] 切换至【高频数据模式】，激活队列: \(activeCommands)")
-                                
-                                await MainActor.run {
-                                    self.delegates.forEach { wrapper in
-                                        wrapper.delegate?.telemetryManager(self, didDiscoverSupportedCommands: activeCommands)
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // ==========================================
-                        // 逻辑 B：处理正常的数值解析 (电压、转速等)
-                        // ==========================================
-                        else if commandString != "0100" {
-                            // 🌟 修复点 2：取消这里的恐慌机制！即便包含 NODATA，只要它里面混有有效数据，解析器就会把它捞出来！
-                            if !cleanResponse.isEmpty {
+                            if !cleanResponse.isEmpty && !cleanResponse.contains("ERROR") {
+                                // 淘金解析器
                                 if let val = self.parseSingleResponse(command: commandString, response: response) {
                                     currentMeasurements[commandString] = val
                                 } else {
-                                    // 只有在没解析出来的情况下，才判断是否要兜底抛出 rawData
                                     if cleanResponse.contains("41") {
-                                        currentMeasurements[commandString] = cleanResponse // 直接把混合字符串抛给 UI 观察
+                                        currentMeasurements[commandString] = cleanResponse
                                     }
                                 }
                             }
                         }
-                        
                     } catch {
-                        // 忽略超时
+                        // 忽略超时，绝不阻塞循环
                     }
                     
-                    // 🌟 修复点 3：增加指令间的喘息时间，摩托车 CAN 总线不能查询太快，防止被判定为恶意攻击
-                    try? await Task.sleep(nanoseconds: 150_000_000) // 150ms
+                    // 防抖延迟：100ms 黄金间隔，千万别改小，CAN总线受不了
+                    try? await Task.sleep(nanoseconds: 100_000_000)
                 }
                 
-                if !currentMeasurements.isEmpty {
-                    await MainActor.run {
-                        self.dispatchMeasurementsToDelegates(measurements: currentMeasurements)
+                // 主线程分发数据给 UI
+                await MainActor.run {
+                    var map:[String:Any] = [:]
+                    currentMeasurements.forEach { value in
+                        map[value.key] = value.value
                     }
+                    self.dispatchMeasurementsToDelegates(measurements: map)
                 }
                 
-                try? await Task.sleep(nanoseconds: 200_000_000)
+                // 轮询周期底噪间隔
+                try? await Task.sleep(nanoseconds: 300_000_000)
             }
         }
     }
@@ -654,7 +610,7 @@ public class PTMotoTelemetryManager {
                 let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(OBDCommand.mode1(.pidsA).properties.command)
                 let cleanResponse = clearString(response: response)
                 
-                // 处理 UNABLE TO CONNECT，触发私有唤醒[cite: 3]
+                // 处理 UNABLE TO CONNECT，触发私有唤醒[cite: 4]
                 if cleanResponse.contains("UNABLETOCONNECT") {
                     PTNSLogConsole("⚠️ [自定义引擎] 收到 UNABLE TO CONNECT")
                     if !debugFlagSent {
@@ -688,28 +644,39 @@ public class PTMotoTelemetryManager {
         
         if allSupportedPIDs.isEmpty { return [] }
         
-        // 🌟 修复点 2：严格遵循发送 020000, 0600, 0900
         PTNSLogConsole("🔍 [自定义引擎] 执行官方队列补全动作...")
         _ = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("020000")
         _ = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0600")
+        _ = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0900")
         
-        // 读取车辆协议
         if let dpRes = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("ATDP") {
             let cleanProtocol = dpRes.replacingOccurrences(of: "\r", with: "").replacingOccurrences(of: ">", with: "")
             self.protocolName = cleanProtocol
+            PTNSLogConsole("🚗 [车辆信息] 成功锁定协议: \(cleanProtocol)")
         }
         
-        // 扩展 PID 探测 0120 和 0140[cite: 3]
         if let res20 = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync(OBDCommand.mode1(.pidsB).properties.command) {
             allSupportedPIDs.append(contentsOf: self.parseSupportedPIDs(response: res20, baseCommand: 0x20))
         }
         if let res40 = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync(OBDCommand.mode1(.pidsC).properties.command) {
             allSupportedPIDs.append(contentsOf: self.parseSupportedPIDs(response: res40, baseCommand: 0x40))
         }
-                
+        
+        // 🌟 致命修复 1：严格补齐 0902，确保 19 步完整，防止芯片拉黑！[cite: 4]
+        PTNSLogConsole("🔐 [自定义引擎] 发送最后阶段解锁指令 (0902, 0904, 0906)...")
+        if let vinRes = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0902") {
+            self.vin = vinRes
+        }
+        if let ecuVersion = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0904") {
+            self.ecuVersion = ecuVersion
+        }
+        if let cvn = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0906") {
+            self.cvn = cvn
+        }
+        
         return allSupportedPIDs
     }
-    
+
     // MARK: - 🌟 车辆静态信息读取 (Mode 09)
     /// 独立抽取：仅在用户需要查看“车辆档案”时调用，避免堵塞底层的实时数据轮询
     public func fetchVehicleStaticInfo() async -> [String: String] {
