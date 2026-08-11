@@ -79,25 +79,6 @@ class PTOBDDataView: UIView {
     // 🌟 大容器：用于承载所有动态生成的行 StackView
     private let mainGridStack = UIStackView()
     
-    // 🌟 核心改进：利用 SwiftOBD2 枚举构建标准指令格式清单
-    // 在这里我们只绑定具体的枚举对象和 UI 数值显示格式
-    private let standardCommands: [(command: OBDCommand, format: String)] = [
-        (.mode1(.speed), "%.0f"),
-        (.mode1(.rpm), "%.0f"),
-        (.mode1(.throttlePos), "%.0f"),
-        (.mode1(.coolantTemp), "%.0f"),
-        (.mode1(.controlModuleVoltage), "%.1f"),
-        (.mode1(.intakeTemp), "%.0f"),
-        (.mode1(.intakePressure), "%.0f"),
-        (.mode1(.timingAdvance), "%.1f"),
-        (.mode1(.maf), "%.1f"),
-        (.mode1(.runTime), "%.0f"),
-        (.mode1(.fuelLevel), "%.0f"),
-        (.mode1(.fuelRate), "%.1f"),
-        (.mode1(.barometricPressure), "%.0f"),
-        (.mode1(.distanceSinceDTCCleared), "%.0f")
-    ]
-    
     override init(frame: CGRect) {
         super.init(frame: frame)
         
@@ -106,7 +87,7 @@ class PTOBDDataView: UIView {
         // 配置大容器属性
         mainGridStack.axis = .vertical
         mainGridStack.distribution = .fillEqually
-        mainGridStack.spacing = 10
+        mainGridStack.spacing = CGFloat.GlobalItemSpacing
         self.addSubview(mainGridStack)
         mainGridStack.snp.makeConstraints { make in
             make.edges.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
@@ -115,14 +96,17 @@ class PTOBDDataView: UIView {
         // 自动注册为 OBD 数据监听者
         PTMotoTelemetryManager.shared.addDelegate(self)
         
-        self.buildDynamicGrid(with: PTMotoTelemetryManager.shared.supportedCommands)
+        // 如果初始化时已经有缓存的支持指令，直接构建
+        if !PTMotoTelemetryManager.shared.supportedCommands.isEmpty {
+            self.buildDynamicGrid(with: PTMotoTelemetryManager.shared.supportedCommands)
+        }
     }
     
     required init?(coder: NSCoder) {
         super.init(coder: coder)
     }
     
-    // MARK: - 🌟 核心：根据支持的指令动态构建网格
+    // MARK: - 全频段动态构建网格
     private func buildDynamicGrid(with commands: [String]) {
         // 1. 清理旧的视图，防止重复添加
         mainGridStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
@@ -136,17 +120,32 @@ class PTOBDDataView: UIView {
             var format = "%.0f"
             var isConfigured = false
             
-            // 💡 匹配逻辑 A：首先拦截非标准库的自定义直读指令
-            if commandString == OBDCommand.general(.ATRV).properties.command {
-                title = "Battery Voltage (\(commandString))" // 自定义标题
+            // 拦截非标准库的自定义直读指令 (如电压)
+            if commandString == "ATRV" {
+                title = "Battery Voltage"
                 format = "%.1f"
                 isConfigured = true
             }
-            // 💡 匹配逻辑 B：在 SwiftOBD2 标准库配置中寻找匹配项
-            else if let match = standardCommands.first(where: { $0.command.properties.command == commandString }) {
-                // 直接提取 SwiftOBD2 内置的描述名称作为标题！
-                title = match.command.properties.description
-                format = match.format
+            // 利用 SwiftOBD2 的全局检索方法，动态提取属性！
+            else if let obdCommand = OBDCommand.from(command: commandString) {
+                // 直接提取标准库里写的精准英文描述
+                title = obdCommand.properties.description
+                
+                // 🤖 智能推断小数点精度
+                let desc = title.lowercased()
+                if desc.contains("voltage") && desc.contains("o2") {
+                    format = "%.2f" // 氧传感器电压变化微小，给2位小数
+                } else if desc.contains("voltage") || desc.contains("rate") || desc.contains("advance") || desc.contains("maf") {
+                    format = "%.1f" // 一般电压、流速、点火提前角给 1 位小数
+                } else {
+                    format = "%.0f" // 转速(RPM)、车速、温度、百分比全部抹除小数，保持 UI 干净
+                }
+                isConfigured = true
+            }
+            // 💡 匹配逻辑 C：探索未知的厂家私有指令，绝不放过任何一个数据！
+            else {
+                title = "Unknown [\(commandString)]"
+                format = "%.1f" // 未知数据保留 1 位小数方便观察
                 isConfigured = true
             }
             
@@ -194,11 +193,20 @@ class PTOBDDataView: UIView {
 }
 
 extension PTOBDDataView: PTMotoTelemetryDelegate {
+    
+    // 监听到指令列表发现后，触发 UI 重绘
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didDiscoverSupportedCommands commands: [String]) {
+        // 因为构建 UI 必须在主线程，所以确保安全派发
+//        DispatchQueue.main.async {
+//            self.buildDynamicGrid(with: commands)
+//        }
+    }
+    
     // MARK: - 接收代理数据并驱动动画
     func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) {
         // 数据高频更新
         for (command, value) in measurements {
-            // 1. 从字典中提取对应的 Double 值
+            // 从字典中提取对应的 Double 值
             var doubleValue: Double = 0.0
             if let v = value as? Double {
                 doubleValue = v
@@ -208,12 +216,10 @@ extension PTOBDDataView: PTMotoTelemetryDelegate {
                 continue
             }
             
-            // 2. 找到对应指令的 UI 组件并瞬间触发更新
+            // 找到对应指令的 UI 组件并瞬间触发更新
             if let itemView = itemViews[command] {
                 itemView.updateValue(doubleValue)
             }
         }
     }
-    
-    func telemetryManager(_ manager: PTMotoTelemetryManager, didDiscoverSupportedCommands commands: [String]) { }
 }

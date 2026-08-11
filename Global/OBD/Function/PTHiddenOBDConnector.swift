@@ -513,7 +513,6 @@ public class PTMotoTelemetryManager {
         PTHiddenOBDConnector.shared.startIcebreakerConnection()
     }
     
-    // MARK: - 极简轮询引擎 (0 延迟极速 UI 更新版)
     // MARK: - 极简轮询引擎 (全频段动态提取 + 核心加权狂闪版)
     private func startLightweightPolling(rawPIDs: [String]) {
         telemetryPollingTask?.cancel()
@@ -545,7 +544,6 @@ public class PTMotoTelemetryManager {
             
             PTOBDLogger.shared.ptLog("⚡️ [轮询引擎] 成功提取 \(allDynamicCommands.count) 条支持指令，开始构建加权火力网！")
             
-            // 3. 🌟 核心突破：构建“加权交替火力网”
             // 为了防止全频段扫描导致转速表(RPM)刷新率下降，我们将高优指令交替插入列队
             var pollingQueue: [String] = []
             let rpmCmd = "010C"
@@ -667,7 +665,7 @@ public class PTMotoTelemetryManager {
         return supported
     }
 
-    // MARK: - 🌟 无敌装甲解析器：使用硬编码字符串完美脱离 SwiftOBD2 评估依赖
+    // MARK: 使用硬编码字符串完美脱离 SwiftOBD2 评估依赖
     private func parseSingleResponse(command: String, response: String) -> Double? {
         // 1. 终极净化：只保留 0-9 和 A-F，彻底粉碎所有的空格、回车、甚至是不可见的 \0 (Null Byte)！
         let hexValid = "0123456789ABCDEF"
@@ -716,32 +714,45 @@ public class PTMotoTelemetryManager {
         let B = getByte(at: 1)
         
         // 5. 使用纯净的 4 位指令进行 Switch，彻底打通数据通路！
-        switch String(pureCommand.prefix(4)) {
-        case "010C":
-            if let a = A, let b = B { return (a * 256.0 + b) / 4.0 }
-        case "010D":
-            if let a = A { return a }
-        case "0104":
-            if let a = A { return a * 100.0 / 255.0 }
-        case "0105", "010F":
-            if let a = A { return a - 40.0 }
-        case "0142":
-            if let a = A, let b = B { return (a * 256.0 + b) / 1000.0 }
-        case "015E":
-            if let a = A, let b = B { return (a * 256.0 + b) / 20.0 }
-        case "010B", "0133":
-            if let a = A { return a }
-        case "010E":
-            if let a = A { return a / 2.0 - 64.0 }
-        case "0110":
-            if let a = A, let b = B { return (a * 256.0 + b) / 100.0 }
-        case "011F", "014D":
-            if let a = A, let b = B { return a * 256.0 + b }
-        case "012F":
-            if let a = A { return a * 100.0 / 255.0 }
+        var parsedValue: Double? = nil
+                
+        // 4. SwiftOBD2 公式！
+        switch modeAndPID {
+        case "010C": // RPM 转速
+            if let a = A, let b = B { parsedValue = (a * 256.0 + b) / 4.0 }
+        case "010D": // Vehicle Speed 车速
+            if let a = A { parsedValue = a }
+        case "0104", "0111", "0145", "014C", "0152", "015A": // 各种百分比 (节气门, 引擎负载等)
+            if let a = A { parsedValue = a * 100.0 / 255.0 }
+        case "0105", "010F", "0146", "015C": // 各种温度 (水温, 进气温, 机油温度)
+            if let a = A { parsedValue = a - 40.0 }
+        case "0106", "0107", "0108", "0109", "0155", "0156", "0157", "0158": // 长短期燃油修正 (百分比居中)
+            if let a = A { parsedValue = (a - 128.0) * 100.0 / 128.0 }
+        case "010B", "0133": // 进气压力 & 绝对大气压
+            if let a = A { parsedValue = a }
+        case "010E": // 点火提前角
+            if let a = A { parsedValue = a / 2.0 - 64.0 }
+        case "0110": // MAF 空气流量
+            if let a = A, let b = B { parsedValue = (a * 256.0 + b) / 100.0 }
+        case "0114", "0115", "0116", "0117", "0118", "0119", "011A", "011B": // O2 氧传感器电压
+            if let a = A { parsedValue = a / 200.0 }
+        case "011F", "0121", "0131", "014D", "014E": // 运行时间 & 行驶距离
+            if let a = A, let b = B { parsedValue = a * 256.0 + b }
+        case "0142": // 控制模块电压
+            if let a = A, let b = B { parsedValue = (a * 256.0 + b) / 1000.0 }
+        case "015E": // 发动机燃油率
+            if let a = A, let b = B { parsedValue = (a * 256.0 + b) / 20.0 }
+        case "0101", "0103", "0113", "011C", "0141", "0151": // 状态/协议/掩码类数据
+            if let a = A { parsedValue = a }
+        case "0100", "0120", "0140", "0160": // PID 支持探针 (本身不是 Double 测量值，给个占位符防止报错)
+            parsedValue = 1.0
         default:
-            PTOBDLogger.shared.ptLog("⚠️ 未适配计算公式: \(pureCommand)")
-            break
+            PTOBDLogger.shared.ptLog("⚠️ 未适配计算公式: \(modeAndPID)")
+        }
+        
+        if let val = parsedValue {
+            PTOBDLogger.shared.ptLog("🏎️ [解析成功] \(modeAndPID) -> \(val)")
+            return val
         }
         
         return nil
@@ -842,7 +853,7 @@ extension PTMotoTelemetryManager {
                 
                 telemetryPollingTask?.cancel()
                 let safeSwiftCommands: [OBDCommand] = [.mode1(.rpm), .mode1(.speed), .mode1(.coolantTemp)]
-                telemetryPollingTask = Task { [weak self] in
+                telemetryPollingTask = Task { [weak self = self] in
                     guard let self = self else { return }
                     while !Task.isCancelled && self.isConnected {
                         var currentMeasurements: [OBDCommand: Any] = [:]
