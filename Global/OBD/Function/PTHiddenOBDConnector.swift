@@ -12,6 +12,82 @@ import CryptoKit
 import SwiftOBD2
 import Combine
 
+extension PROTOCOL {
+    static func from(string: String) -> PROTOCOL {
+        let upper = string.uppercased()
+        if upper.contains("15765-4") && upper.contains("11/500") { return .protocol6 }
+        if upper.contains("15765-4") && upper.contains("29/500") { return .protocol7 }
+        if upper.contains("15765-4") && upper.contains("11/250") { return .protocol8 }
+        if upper.contains("15765-4") && upper.contains("29/250") { return .protocol9 }
+        if upper.contains("14230-4") && upper.contains("FAST") { return .protocol5 }
+        if upper.contains("14230-4") { return .protocol4 }
+        if upper.contains("9141-2") { return .protocol3 }
+        if upper.contains("J1850 VPW") { return .protocol2 }
+        if upper.contains("J1850 PWM") { return .protocol1 }
+        if upper.contains("J1939") { return .protocolA }
+        return .NONE
+    }
+}
+
+public class PTATVersionModel:NSObject {
+    var company:String = ""
+    var version:String = ""
+    var deviceType:String = ""
+    var deviceName:String = ""
+    var deviceMac:String = ""
+    var interfase:String = ""
+    var cust:String = ""
+    var crypt:String = ""
+}
+
+public class PTOBDInfo:NSObject {
+    var atzName:String = ""
+    var moudleInfo:PTATVersionModel = PTATVersionModel()
+    var aitName:String = ""
+    var atdpName:PROTOCOL = .NONE
+    var vin:String = ""
+    var ecuVersion:String = ""
+    var cvn:String = ""
+    var supportCommand:[OBDCommand] = []
+}
+
+public class PTMultiFrameParser {
+    /// 剥离 CAN 报头，提取纯正的 ASCII 字符串
+    public static func parseLongString(response: String) -> String {
+        let lines = response.components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty && $0 != ">" }
+        
+        var hexPayload = ""
+        for line in lines {
+            let cleanLine = line.filter { "0123456789ABCDEF".contains($0) }
+            guard cleanLine.count > 4 else { continue }
+            
+            // 提取 CAN 帧类型 (如 7E8，第 4 位是帧类型)
+            let frameTypeIndex = cleanLine.index(cleanLine.startIndex, offsetBy: 3)
+            let frameType = cleanLine[frameTypeIndex]
+            
+            if frameType == "1" {
+                if cleanLine.count > 13 { hexPayload += cleanLine[cleanLine.index(cleanLine.startIndex, offsetBy: 13)...] }
+            } else if frameType == "2" {
+                if cleanLine.count > 5 { hexPayload += cleanLine[cleanLine.index(cleanLine.startIndex, offsetBy: 5)...] }
+            } else if frameType == "0" {
+                if cleanLine.count > 11 { hexPayload += cleanLine[cleanLine.index(cleanLine.startIndex, offsetBy: 11)...] }
+            }
+        }
+        
+        var asciiStr = ""
+        var i = hexPayload.startIndex
+        while i < hexPayload.endIndex {
+            let nextI = hexPayload.index(i, offsetBy: 2, limitedBy: hexPayload.endIndex) ?? hexPayload.endIndex
+            if let byteVal = UInt8(hexPayload[i..<nextI], radix: 16), byteVal >= 32 && byteVal <= 126 {
+                asciiStr.append(Character(UnicodeScalar(byteVal)))
+            }
+            i = nextI
+        }
+        return asciiStr.trimmingCharacters(in: .whitespaces)
+    }
+}
+
 let developerOBDID = "C688934C-8A62-4C35-872F-B07ED5415E94"
 
 // MARK: - 🌟 全局底层 OBD 日志追踪引擎
@@ -394,6 +470,33 @@ extension PTHiddenOBDConnector: CBPeripheralDelegate {
             return
         }
         
+        let purePayload = response.replacingOccurrences(of: cmd, with: "", options: .caseInsensitive) .replacingOccurrences(of: ">", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if cmd == "ATZ" {
+            PTMotoTelemetryManager.shared.obdInfo.atzName = purePayload
+        }
+        
+        if cmd == "ATI" {
+            PTMotoTelemetryManager.shared.obdInfo.aitName = purePayload
+        }
+        
+        if cmd == "ATDP" {
+            PTMotoTelemetryManager.shared.obdInfo.atdpName = PROTOCOL.from(string: purePayload)
+        }
+        
+        if cmd == "0902" && !cleanResponseForCheck.contains("NODATA") {
+            PTMotoTelemetryManager.shared.obdInfo.vin = PTMultiFrameParser.parseLongString(response: response)
+        }
+        
+        if cmd == "0904" && !cleanResponseForCheck.contains("NODATA") {
+            let parsedCalID = PTMultiFrameParser.parseLongString(response: response)
+            PTMotoTelemetryManager.shared.obdInfo.ecuVersion = parsedCalID
+            PTOBDLogger.shared.ptLog("🏍️ [档案] 提取标定识别码: \(parsedCalID)")
+        }
+        
+        if cmd == "0906" && !cleanResponseForCheck.contains("NODATA") {
+            PTMotoTelemetryManager.shared.obdInfo.cvn = PTMultiFrameParser.parseLongString(response: response)
+        }
+
         if cmd == "AT+VERSION" {
             if response.contains("?") || response.isEmpty {
                 PTOBDLogger.shared.ptLog("⚠️ [认证] 未发现 YMOBD 加密特征，中断隐蔽初始化！")
@@ -403,6 +506,21 @@ extension PTHiddenOBDConnector: CBPeripheralDelegate {
                 }
                 return
             }
+            
+            let lines = response.components(separatedBy: .newlines).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+            if lines.count > 0 {
+                PTMotoTelemetryManager.shared.obdInfo.moudleInfo.company = lines[0] // 第一行通常是公司名
+            }
+            for line in lines {
+                let lower = line.lowercased()
+                if lower.hasPrefix("version:") { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.version = String(line.dropFirst(8)) }
+                else if lower.hasPrefix("device type:") { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceType = String(line.dropFirst(12)) }
+                else if lower.hasPrefix("device name:") { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceName = String(line.dropFirst(12)) }
+                else if lower.hasPrefix("device mac:") { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceMac = String(line.dropFirst(11)).uppercased() }
+                else if lower.hasPrefix("interface:") { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.interfase = String(line.dropFirst(10)) }
+                else if lower.hasPrefix("cust id:") { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.cust = String(line.dropFirst(8)) }
+            }
+
             var cryptSeed = ""
             if let regex = try? NSRegularExpression(pattern: "(?im)^\\s*crypt\\s*:\\s*([0-9a-f]{1,8})") {
                 let nsString = response as NSString
@@ -427,12 +545,7 @@ extension PTHiddenOBDConnector: CBPeripheralDelegate {
         if cmd == "0100" || cmd == "0120" || cmd == "0140" {
             collectedPIDResponses.append(response)
         }
-        
-        if cmd == "ATDP" { PTMotoTelemetryManager.shared.setProtocol(cleanResponseForCheck) }
-        if cmd == "0902" { PTMotoTelemetryManager.shared.setVin(cleanResponseForCheck.hasPrefix("4902") ? String(cleanResponseForCheck.dropFirst(4)) : cleanResponseForCheck) }
-        if cmd == "0904" { PTMotoTelemetryManager.shared.setEcuVersion(cleanResponseForCheck) }
-        if cmd == "0906" { PTMotoTelemetryManager.shared.setCvn(cleanResponseForCheck) }
-        
+                
         currentQueueIndex += 1
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in self?.sendNextCommand() }
     }
@@ -453,6 +566,8 @@ public extension PTMotoTelemetryDelegate {
 public class PTMotoTelemetryManager {
     public static let shared = PTMotoTelemetryManager()
     
+    public private(set) var obdInfo = PTOBDInfo()
+    
     private class WeakDelegateWrapper {
         weak var delegate: PTMotoTelemetryDelegate?
         init(_ delegate: PTMotoTelemetryDelegate) { self.delegate = delegate }
@@ -467,18 +582,7 @@ public class PTMotoTelemetryManager {
     private var obdService = OBDService(connectionType: .bluetooth)
     private var cancellables = Set<AnyCancellable>()
     public private(set) var isUsingSwiftOBD2: Bool = false
-
-    public private(set) var supportedCommands: [String] = []
-    public private(set) var vin: String = ""
-    public private(set) var protocolName: String = ""
-    public private(set) var ecuVersion: String = ""
-    public private(set) var cvn: String = ""
     
-    func setProtocol(_ p: String) { self.protocolName = p }
-    func setVin(_ v: String) { self.vin = v }
-    func setEcuVersion(_ v: String) { self.ecuVersion = v }
-    func setCvn(_ v: String) { self.cvn = v }
-
     private init() {}
     
     public func addDelegate(_ delegate: PTMotoTelemetryDelegate) {
@@ -486,8 +590,11 @@ public class PTMotoTelemetryManager {
         let isAlreadyAdded = delegates.contains { $0.delegate === delegate }
         if !isAlreadyAdded {
             delegates.append(WeakDelegateWrapper(delegate))
-            if isConnected && !supportedCommands.isEmpty {
-                delegate.telemetryManager(self, didDiscoverSupportedCommands: supportedCommands)
+            if isConnected && !obdInfo.supportCommand.isEmpty {
+                let commands = obdInfo.supportCommand.map { value in
+                    value.properties.command
+                }
+                delegate.telemetryManager(self, didDiscoverSupportedCommands: commands)
             }
         }
     }
@@ -533,7 +640,8 @@ public class PTMotoTelemetryManager {
             if !allDynamicCommands.contains("ATRV") {
                 allDynamicCommands.append("ATRV")
             }
-            self.supportedCommands = allDynamicCommands
+            let typedCommands = allDynamicCommands.compactMap { OBDCommand.from(command: $0) }
+            self.obdInfo.supportCommand = typedCommands
             
             await MainActor.run {
                 self.delegates.forEach { wrapper in
@@ -758,15 +866,6 @@ public class PTMotoTelemetryManager {
         return nil
     }
     
-    public func fetchVehicleStaticInfo() async -> [String: String] {
-        guard isConnected else { return [:] }
-        var infoReport: [String: String] = [:]
-        if !self.vin.isEmpty && !self.vin.contains("NODATA") { infoReport["VIN"] = self.vin }
-        if !self.ecuVersion.isEmpty && !self.ecuVersion.contains("NODATA") { infoReport["ECU_Version"] = self.ecuVersion }
-        if !self.cvn.isEmpty && !self.cvn.contains("NODATA") { infoReport["CVN"] = self.cvn }
-        return infoReport
-    }
-
     @MainActor
     private func dispatchMeasurementsToDelegates(measurements: [String: Any]) {
         self.cleanupDelegates()
@@ -796,7 +895,7 @@ extension PTMotoTelemetryManager {
         } else {
             telemetryPollingTask?.cancel()
             isConnected = false
-            supportedCommands = []
+            obdInfo.supportCommand = []
             delegates.forEach { $0.delegate?.telemetryManager(self, didChangeConnectionState: false) }
         }
         PTOBDLogger.shared.stopFileLogging()
@@ -837,11 +936,14 @@ extension PTMotoTelemetryManager {
     public func startOBDServiceHandshake() {
         Task {
             do {
-                let obdInfo = try await obdService.startConnection()
+                let swiftOBD2Info = try await obdService.startConnection()
                 let supportedPIDs = await obdService.getSupportedPIDs()
                 let map = supportedPIDs.map { $0.properties.command }
-                self.supportedCommands = map
 
+                obdInfo.supportCommand = swiftOBD2Info.supportedPIDs ?? []
+                obdInfo.vin = swiftOBD2Info.vin ?? ""
+                obdInfo.atdpName = swiftOBD2Info.obdProtocol ?? .NONE
+                
                 self.isConnected = true
                 await MainActor.run {
                     self.cleanupDelegates()

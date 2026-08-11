@@ -249,7 +249,12 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                         let vc = PTOBDDataViewController()
                         self.navigationController?.pushViewController(vc, animated: true)
                     case 3:
-                        let msgData = "Protocol:\(PTMotoTelemetryManager.shared.protocolName) \nVIN:\(PTMotoTelemetryManager.shared.vin) \nECU version:\(PTMotoTelemetryManager.shared.ecuVersion) \nCVN:\(PTMotoTelemetryManager.shared.cvn)"
+
+                        let supprotCommandsString = PTMotoTelemetryManager.shared.obdInfo.supportCommand.map { value in
+                            value.properties.description
+                        }
+                        
+                        let msgData = "Moudle info:\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.company)\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.version)\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceType)\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceName)\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceMac)\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.interfase)\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.cust)\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.crypt)\nATZ:\(PTMotoTelemetryManager.shared.obdInfo.atzName)\nATI:\(PTMotoTelemetryManager.shared.obdInfo.aitName)\nProtocol:\(PTMotoTelemetryManager.shared.obdInfo.atdpName.description)\nVIN:\(PTMotoTelemetryManager.shared.obdInfo.vin)\nECU info:\(PTMotoTelemetryManager.shared.obdInfo.ecuVersion)\nCVN:\(PTMotoTelemetryManager.shared.obdInfo.cvn)\nSupprot commands:\(supprotCommandsString.joined(separator: ","))"
                         UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "ECU info"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: msgData, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
 
                     default:

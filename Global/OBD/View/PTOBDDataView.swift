@@ -97,8 +97,11 @@ class PTOBDDataView: UIView {
         PTMotoTelemetryManager.shared.addDelegate(self)
         
         // 如果初始化时已经有缓存的支持指令，直接构建
-        if !PTMotoTelemetryManager.shared.supportedCommands.isEmpty {
-            self.buildDynamicGrid(with: PTMotoTelemetryManager.shared.supportedCommands)
+        if !PTMotoTelemetryManager.shared.obdInfo.supportCommand.isEmpty {
+            let map = PTMotoTelemetryManager.shared.obdInfo.supportCommand.map { value in
+                value.properties.command
+            }
+            self.buildDynamicGrid(with: map)
         }
     }
     
