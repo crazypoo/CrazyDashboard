@@ -1532,12 +1532,13 @@ extension PTBluetoothServerManager {
     }
     
     /// 获取沙盒中所有的十六进制日志文件，供 UI 导出使用
-    public func fetchAllHexLogFiles() -> [URL] {
+    public func fetchAllHexLogFiles(fileName:String = "MotoHexLog") -> [URL] {
+//        MotoOBDLog
         guard let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return [] }
         do {
             let files = try FileManager.default.contentsOfDirectory(at: docsDir, includingPropertiesForKeys: [.creationDateKey])
             // 过滤出以 MotoHexLog 开头并以 .txt 结尾的文件，并按时间倒序排列
-            let logFiles = files.filter { $0.lastPathComponent.hasPrefix("MotoHexLog") && $0.pathExtension == "txt" }
+            let logFiles = files.filter { $0.lastPathComponent.hasPrefix(fileName) && $0.pathExtension == "txt" }
             return logFiles.sorted { url1, url2 in
                 let date1 = (try? url1.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date.distantPast
                 let date2 = (try? url2.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date.distantPast

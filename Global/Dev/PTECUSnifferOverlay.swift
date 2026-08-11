@@ -269,30 +269,45 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
     }
     
     @objc private func exportLogsAction() {
-        let logFiles = PTBluetoothServerManager.shared.fetchAllHexLogFiles()
         
-        // 2. 提取最新的一份日志
-        guard let latestLogURL = logFiles.first else {
-            // 如果没有日志，给出友好的 UI 提示 (这里可以使用你封装的 PTProgressHUD)
-            PTNSLogConsole("⚠️ [导出拦截] 当前沙盒中暂无十六进制日志文件。请先连接机车录制。")
-            return
-        }
-        
-        PTNSLogConsole("📦 [准备导出] 正在打包文件: \(latestLogURL.lastPathComponent)")
-        
-        // 初始化系统分享面板
-        let activityVC = UIActivityViewController(activityItems: [latestLogURL], applicationActivities: nil)
-        
-        // 查找最顶层控制器以执行 Present 操作
-        if let topVC = PTUtils.getCurrentVC() {
-            // 兼容 iPad，防止崩溃（指定气泡弹出的源头）
-            if let popover = activityVC.popoverPresentationController {
-                popover.sourceView = self.exportButton
-                popover.sourceRect = self.exportButton.bounds
+        let actions = ["OBD","Dashboard"]
+        UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "File"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: PTDashboardConfig.languageFunc(text: "Get dev file"), okBtns: actions, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
+            var fileName:String = ""
+            switch index {
+            case 0:
+                fileName = "MotoOBDLog"
+            case 1:
+                fileName = "MotoHexLog"
+            default:
+                break
             }
-            
-            topVC.present(activityVC, animated: true, completion: nil)
-        }
+            if !fileName.isEmpty {
+                let logFiles = PTBluetoothServerManager.shared.fetchAllHexLogFiles(fileName: fileName)
+                
+                // 2. 提取最新的一份日志
+                guard let latestLogURL = logFiles.first else {
+                    // 如果没有日志，给出友好的 UI 提示 (这里可以使用你封装的 PTProgressHUD)
+                    PTNSLogConsole("⚠️ [导出拦截] 当前沙盒中暂无十六进制日志文件。请先连接机车录制。")
+                    return
+                }
+                
+                PTNSLogConsole("📦 [准备导出] 正在打包文件: \(latestLogURL.lastPathComponent)")
+                
+                // 初始化系统分享面板
+                let activityVC = UIActivityViewController(activityItems: [latestLogURL], applicationActivities: nil)
+                
+                // 查找最顶层控制器以执行 Present 操作
+                if let topVC = PTUtils.getCurrentVC() {
+                    // 兼容 iPad，防止崩溃（指定气泡弹出的源头）
+                    if let popover = activityVC.popoverPresentationController {
+                        popover.sourceView = self.exportButton
+                        popover.sourceRect = self.exportButton.bounds
+                    }
+                    
+                    topVC.present(activityVC, animated: true, completion: nil)
+                }
+            }
+        })
     }
 }
 
