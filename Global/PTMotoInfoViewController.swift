@@ -222,22 +222,14 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     case 0:
                         Task {
                             do {
-                                let result = await PTMotoTelemetryManager.shared.clearDiagnosticTroubleCodes()
-//                                var msgData = ""
-//                                if PTMotoTelemetryManager.shared.isUsingSwiftOBD2 {
-//                                    if let DTCS = result["DTCs"] {
-//                                        msgData.append("\(DTCS)")
-//                                    }
-//                                } else {
-//                                    if let DTCS = result["RawDTC_HEX"] {
-//                                        msgData.append("\(DTCS)")
-//                                    }
-//                                }
-//                                
-//                                if let Mode6 = result["Mode6"] {
-//                                    msgData.append("\(Mode6)")
-//                                }
-//                                UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD error code"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: msgData, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
+                                let result = await PTMotoTelemetryManager.shared.getDiagnosticTroubleCodes()
+                                var msgData = ""
+                                if result.isEmpty {
+                                    msgData = "Good"
+                                } else {
+                                    msgData = result.joined(separator: "\n")
+                                }
+                                UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD error code"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: msgData, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
                             }
                         }
                     case 1:

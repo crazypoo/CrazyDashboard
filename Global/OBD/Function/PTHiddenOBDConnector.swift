@@ -86,6 +86,57 @@ public class PTMultiFrameParser {
         }
         return asciiStr.trimmingCharacters(in: .whitespaces)
     }
+    
+    /// 🌟 提取纯净十六进制数据：专门用于剥离 CAN 报头 (如 7E81, 7E82)，提取纯粹的数据载荷。
+    public static func extractPureHexPayload(response: String) -> String {
+        let lines = response.components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty && $0 != ">" }
+        
+        var hexPayload = ""
+        for line in lines {
+            let cleanLine = line.filter { "0123456789ABCDEF".contains($0) }
+            guard cleanLine.count > 4 else { continue }
+            
+            // 提取 CAN 帧类型
+            let frameTypeIndex = cleanLine.index(cleanLine.startIndex, offsetBy: 3)
+            let frameType = cleanLine[frameTypeIndex]
+            
+            if frameType == "1" {
+                // 首帧：跳过 7 个字符 (例如 7E8 1 023)
+                if cleanLine.count > 7 { hexPayload += cleanLine[cleanLine.index(cleanLine.startIndex, offsetBy: 7)...] }
+            } else if frameType == "2" {
+                // 连续帧：跳过 5 个字符 (例如 7E8 2 1)
+                if cleanLine.count > 5 { hexPayload += cleanLine[cleanLine.index(cleanLine.startIndex, offsetBy: 5)...] }
+            } else if frameType == "0" {
+                // 单帧：跳过 5 个字符 (例如 7E8 0 4)
+                if cleanLine.count > 5 { hexPayload += cleanLine[cleanLine.index(cleanLine.startIndex, offsetBy: 5)...] }
+            } else {
+                 // 兼容非 CAN 协议的回传，直接拼接 (如直接返回 43 开头的数据)
+                 if cleanLine.hasPrefix("43") || cleanLine.hasPrefix("44") {
+                     hexPayload += cleanLine
+                 }
+            }
+        }
+        return hexPayload
+    }
+
+    /// 🌟 DTC 破译器：将 4 位十六进制解析为标准汽车 DTC 故障码 (如 0104 -> P0104)
+    public static func decodeSingleDTC(_ hex: String) -> String? {
+        guard hex.count == 4 else { return nil }
+        let firstChar = hex[hex.startIndex]
+        
+        // 汽车工业标准 DTC 映射表
+        let prefixMap: [Character: String] = [
+            "0": "P0", "1": "P1", "2": "P2", "3": "P3", // P = Powertrain 动力系统
+            "4": "C0", "5": "C1", "6": "C2", "7": "C3", // C = Chassis 底盘系统
+            "8": "B0", "9": "B1", "A": "B2", "B": "B3", // B = Body 车身系统
+            "C": "U0", "D": "U1", "E": "U2", "F": "U3"  // U = Network 网络通讯系统
+        ]
+        
+        guard let prefix = prefixMap[firstChar] else { return nil }
+        let suffix = String(hex.dropFirst())
+        return prefix + suffix
+    }
 }
 
 let developerOBDID = "C688934C-8A62-4C35-872F-B07ED5415E94"
@@ -1006,6 +1057,101 @@ extension PTMotoTelemetryManager {
                 if cleanResponse.hasPrefix("44") || cleanResponse.contains("OK") { return true }
                 else { return false }
             } catch { return false }
+        }
+    }
+}
+
+extension PTMotoTelemetryManager {
+    
+    // MARK: - 🚀 Mode 3: 获取车辆故障码 (DTCs)
+    public func getDiagnosticTroubleCodes() async -> [String] {
+        guard isConnected else { return [] }
+        
+        if isUsingSwiftOBD2 {
+            do {
+                // 方案 A：使用 SwiftOBD2 标准库调用
+                let response = try await obdService.sendCommand(.mode3(.GET_DTC))
+                switch response {
+                case .success(let result):
+                    if let dtcs = result.troubleCode {
+                        return dtcs.map { $0.code }
+                    }
+                    return []
+                case .failure:
+                    return []
+                }
+            } catch { return [] }
+            
+        } else {
+            // 方案 B：使用我们的底层隐藏连接调用
+            do {
+                // 发送 Mode 3 指令请求故障码
+                let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync("03")
+                
+                // 1. 剥离所有 CAN 包头，拿到纯净的数据体
+                let purePayload = PTMultiFrameParser.extractPureHexPayload(response: response)
+                
+                // 2. 找到 03 指令的成功响应头 (43)
+                guard let range = purePayload.range(of: "43") else { return [] }
+                
+                // 3. 截取 43 之后真正的故障码数据部分
+                let dtcData = String(purePayload[range.upperBound...])
+                var dtcs: [String] = []
+                
+                // 4. 每 4 个字符破译为一个故障码
+                var i = dtcData.startIndex
+                while i < dtcData.endIndex {
+                    let nextI = dtcData.index(i, offsetBy: 4, limitedBy: dtcData.endIndex) ?? dtcData.endIndex
+                    if dtcData.distance(from: i, to: nextI) == 4 {
+                        let dtcHex = String(dtcData[i..<nextI])
+                        
+                        // "0000" 代表数据补齐，后面没有更多故障码了
+                        if dtcHex != "0000" {
+                            if let parsedCode = PTMultiFrameParser.decodeSingleDTC(dtcHex) {
+                                dtcs.append(parsedCode)
+                                PTOBDLogger.shared.ptLog("⚠️ [Mode 3] 扫描到车辆异常故障码: \(parsedCode)")
+                            }
+                        }
+                    }
+                    i = nextI
+                }
+                return dtcs
+            } catch { return [] }
+        }
+    }
+    
+    // MARK: - 🚀 Mode 6: 获取非连续监控系统支持的 MIDs
+    public func getMode6SupportedMIDs() async -> [String] {
+        guard isConnected else { return [] }
+        
+        if isUsingSwiftOBD2 {
+            do {
+                let response = try await obdService.sendCommand(.mode6(.MIDS_A))
+                // SwiftOBD2 会自动解析支持的 MID
+                switch response {
+                case .success(let result):
+                    // 具体返回值视 SwiftOBD2 解析器的具体结构而定
+                    return ["Mode 6 Data Retrived via SwiftOBD2"]
+                case .failure:
+                    return []
+                }
+            } catch { return [] }
+            
+        } else {
+            do {
+                // 发送 0600 请求 Mode 6 支持的监控 ID 列表
+                let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0600")
+                let cleanResponse = self.clearString(response: response)
+                
+                // 如果返回包含了 46 (Mode 6 的响应头)
+                if cleanResponse.contains("46") {
+                    PTOBDLogger.shared.ptLog("🔬 [Mode 6] 成功探测到非连续监控系统数据: \(cleanResponse)")
+                    // 实际返回的数据会类似于 46 00 C0 00 00 01，表示支持特定的 MID。
+                    // 深度解析 Mode 6 通常需要对照车厂的工程手册，这里我们返回原始 Hex 供外部记录分析。
+                    return [cleanResponse]
+                }
+                return []
+            } catch { return [] }
         }
     }
 }
