@@ -200,16 +200,13 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         view.isSelected = PTMotoTelemetryManager.shared.isConnected
         view.addActionHandlers(handler: { sender in
             if !sender.isSelected {
-                let actions = ["Input OBD id","Connect"]
+                let actions = ["Input OBD id"]
                 UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD info"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: PTDashboardConfig.languageFunc(text: "If you have about elm327 obd2 moudle,you can connect it."), okBtns: actions, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
                     switch index {
                     case 0:
                         UIAlertController.base_textfield_alertVC(title:PTDashboardConfig.languageFunc(text: "If you already have OBD2 moudle id,here can remember your OBD2 moudle id"),okBtn: PTDashboardConfig.languageFunc(text: "button_confirm"),cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"),placeHolders: [PTDashboardConfig.languageFunc(text: "In put your OBD2 moudle id")],textFieldTexts:[PTMotoUserDefaultStruct.OBDID],keyboardType: [.default],textFieldDelegate: self) { result in
                             PTMotoUserDefaultStruct.OBDID = result[PTDashboardConfig.languageFunc(text: "In put your OBD2 moudle id")] ?? ""
                         }
-                    case 1:
-                        PTMotoTelemetryManager.shared.connectToMotorcycle()
-                        PTMotoTelemetryManager.shared.addDelegate(self)
                     default:
                         break
                     }
@@ -299,6 +296,11 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         }
     }
     
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        PTMotoTelemetryManager.shared.removeDelegate(self)
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
@@ -335,6 +337,16 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         }
         
         PTMotion.shared.addDelegate(self)
+        PTMotoTelemetryManager.shared.addDelegate(self)
+        PTMotoTelemetryManager.shared.connectToMotorcycle()
+        NotificationCenter.default.addObserver(self, selector: #selector(appDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
+    }
+    
+    @objc private func appDidBecomeActive() {
+        // 如果 App 回到前台发现掉线了，自动再次发起连接
+        if !PTMotoTelemetryManager.shared.isConnected {
+            PTMotoTelemetryManager.shared.connectToMotorcycle()
+        }
     }
         
     @objc func handleAuthSuccess() {
