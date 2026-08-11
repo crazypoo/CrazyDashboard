@@ -226,7 +226,10 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                                 if result.isEmpty {
                                     msgData = "Good"
                                 } else {
-                                    msgData = result.joined(separator: "\n")
+                                    let strings = result.map { value in
+                                        "\(value.code):\(value.description),level:\(value.severity.rawValue)"
+                                    }
+                                    msgData = strings.joined(separator: "\n")
                                 }
                                 UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD error code"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: msgData, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
                             }
