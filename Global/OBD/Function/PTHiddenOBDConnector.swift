@@ -109,26 +109,63 @@ public struct PTMode6Data {
     }
 }
 
+// MARK: - 🌟 J1979 标准燃料类型 (PID 0151 返回值)
+public enum PTFuelType: Int, Codable {
+    case notAvailable = 0
+    case gasoline = 1       // 汽油
+    case methanol = 2       // 甲醇
+    case ethanol = 3        // 乙醇
+    case diesel = 4         // 柴油
+    case lpg = 5            // 液化石油气
+    case cng = 6            // 压缩天然气
+    case propane = 7        // 丙烷
+    case electric = 8       // 🌟 纯电动
+    case bifuelGasoline = 9
+    case hybridGasoline = 15 // 🌟 混动汽油
+    case hybridElectric = 16
+    case hybridMixed = 17
+    case hybridDiesel = 18   // 混动柴油
+    case unknown = 255
+    
+    public var stringValue: String {
+        switch self {
+        case .gasoline: return "汽油"
+        case .diesel: return "柴油"
+        case .electric: return "纯电动"
+        case .hybridGasoline, .hybridElectric, .hybridMixed, .hybridDiesel: return "混合动力"
+        default: return "其他/未知"
+        }
+    }
+}
+
+// MARK: - 🌟 动力系统类型
+public enum PTEngineType: String, Codable {
+    case ice = "燃油车 (ICE)"
+    case ev = "纯电动 (EV)"
+    case hybrid = "混合动力 (HEV)"
+}
+
 public class PTATVersionModel:NSObject {
-    var company:String = ""
-    var version:String = ""
-    var deviceType:String = ""
-    var deviceName:String = ""
-    var deviceMac:String = ""
-    var interfase:String = ""
-    var cust:String = ""
-    var crypt:String = ""
+    public var company:String = ""
+    public var version:String = ""
+    public var deviceType:String = ""
+    public var deviceName:String = ""
+    public var deviceMac:String = ""
+    public var interfase:String = ""
+    public var cust:String = ""
+    public var crypt:String = ""
 }
 
 public class PTOBDInfo:NSObject {
-    var atzName:String = ""
-    var moudleInfo:PTATVersionModel = PTATVersionModel()
-    var aitName:String = ""
-    var atdpName:PROTOCOL = .NONE
-    var vin:String = ""
-    var ecuVersion:String = ""
-    var cvn:String = ""
-    var supportCommand:[OBDCommand] = []
+    public var atzName:String = ""
+    public var moudleInfo:PTATVersionModel = PTATVersionModel()
+    public var aitName:String = ""
+    public var atdpName:PROTOCOL = .NONE
+    public var vin:String = ""
+    public var ecuVersion:String = ""
+    public var cvn:String = ""
+    public var supportCommand:[OBDCommand] = []
+    public var engineType: PTEngineType = .ice
 }
 
 public class PTMultiFrameParser {
@@ -843,8 +880,9 @@ public class PTMotoTelemetryManager {
         }
     }
     
-    public func connectToMotorcycle(via type: PTOBDConnectionType = .bluetooth) {
+    public func connectToMotorcycle(via type: PTOBDConnectionType = .bluetooth, engineType: PTEngineType = .ice) {
         PTOBDLogger.shared.ptLog("📡 [OBD2 纯血引擎] 开始连接，模式: \(type)")
+        self.obdInfo.engineType = engineType // 保存动力配置
         self.activeConnectionType = type
         
         switch type {
@@ -877,7 +915,7 @@ public class PTMotoTelemetryManager {
         telemetryPollingTask = Task { [weak self] in
             guard let self = self else { return }
             
-            // 1. 动态解析所有车辆支持的 PID
+            // 动态解析所有车辆支持的 PID
             let parsedPIDs = self.parseAllPIDs(rawResponses: rawPIDs)
             guard !parsedPIDs.isEmpty else {
                 PTOBDLogger.shared.ptLog("❌ [轮询引擎] 探针解析全 0，主动断开！")
@@ -885,8 +923,23 @@ public class PTMotoTelemetryManager {
                 return
             }
             
+            await self.autoDetectEngineType(supportedHexPIDs: parsedPIDs)
+            
             // 2. 构建包含基础电压的动态总表
             var allDynamicCommands = parsedPIDs
+            if self.obdInfo.engineType == .ev {
+                PTOBDLogger.shared.ptLog("🔋 [EV 模式] 识别为纯电动车，启动总线带宽净化机制...")
+                // 剔除纯电车绝对没有的燃油属性探针：
+                // 0105(水温), 010A(燃油压力), 010E(点火提前角), 0110(MAF空气流量), 0114-011B(氧传感器) 等
+                let iceOnlyPIDs = [
+                    "0105", "0106", "0107", "0108", "0109", "010A", "010B", "010E", "0110",
+                    "0114", "0115", "0116", "0117", "0118", "0119", "011A", "011B", "013C",
+                    "013D", "013E", "013F", "015E","0151"
+                ]
+                allDynamicCommands.removeAll { iceOnlyPIDs.contains($0) }
+                PTOBDLogger.shared.ptLog("🔋 [EV 模式] 净化完毕！剔除了无用探针，将 100% 算力集中于电控系统。")
+            }
+
             if !allDynamicCommands.contains("ATRV") {
                 allDynamicCommands.append("ATRV")
             }
@@ -1126,7 +1179,12 @@ public class PTMotoTelemetryManager {
             if let a = A, let b = B { parsedValue = (a * 256.0 + b) / 4.0 }
         case "010D": // Vehicle Speed 车速
             if let a = A { parsedValue = a }
-        case "0104", "0111", "0145", "014C", "0152", "015A": // 各种百分比 (节气门, 引擎负载等)
+        case "0151": // 🌟 新增：燃料类型解析
+            if let a = A {
+                let fuelTypeInt = Int(a)
+                parsedValue = PTFuelType(rawValue: fuelTypeInt) ?? .unknown
+            }
+        case "0104", "0111", "0145", "014C", "0152", "015A", "015B": // 各种百分比 (节气门, 引擎负载等)
             if let a = A { parsedValue = a * 100.0 / 255.0 }
         case "0105", "010F", "0146", "015C": // 各种温度 (水温, 进气温, 机油温度)
             if let a = A { parsedValue = a - 40.0 }
@@ -1659,5 +1717,56 @@ extension PTMotoTelemetryManager {
         
         let rawPIDsToResume = PTHiddenOBDConnector.shared.collectedPIDResponses.isEmpty ? PTWifiOBDConnector.shared.collectedPIDResponses : PTHiddenOBDConnector.shared.collectedPIDResponses
         self.startLightweightPolling(rawPIDs: rawPIDsToResume)
+    }
+}
+
+extension PTMotoTelemetryManager {
+    
+    // MARK: - 🧠 智能动力类型指纹推断
+    internal func autoDetectEngineType(supportedHexPIDs: [String]) async {
+        PTOBDLogger.shared.ptLog("🧠 [智能推断] 开始对车辆进行动力系统侧写 (Profiling)...")
+        
+        // 1. 标准探针询问：如果车辆支持 0151，直接问它！
+        if supportedHexPIDs.contains("0151") {
+            if let response = try? await self.sendRawCommandAsync("0151"),
+               let fuelObj = self.parseSingleResponse(command: "0151", response: response) as? PTFuelType {
+                
+                PTOBDLogger.shared.ptLog("🧠 [智能推断] 车辆通过 0151 主动坦白燃料类型: \(fuelObj.stringValue)")
+                
+                switch fuelObj {
+                case .electric: self.obdInfo.engineType = .ev
+                case .hybridGasoline, .hybridDiesel, .hybridMixed, .hybridElectric: self.obdInfo.engineType = .hybrid
+                default: self.obdInfo.engineType = .ice
+                }
+                return // 成功拿到，直接结束推断
+            }
+        }
+        
+        // 2. 侧写指纹推断：根据支持的 PID 列表来猜
+        let supportsBatteryLife = supportedHexPIDs.contains("015B")
+        let supportsO2Sensors = supportedHexPIDs.contains(where: { $0.hasPrefix("0114") || $0.hasPrefix("0115") || $0 == "0113" })
+        let supportsFuelPressure = supportedHexPIDs.contains("010A") || supportedHexPIDs.contains("0122")
+        let supportsRPM = supportedHexPIDs.contains("010C")
+        
+        if supportsBatteryLife && !supportsO2Sensors && !supportsFuelPressure {
+            PTOBDLogger.shared.ptLog("🧠 [智能推断] 无氧传感器 + 支持电池寿命 = 纯电动 (EV)！")
+            self.obdInfo.engineType = .ev
+        }
+        else if supportsBatteryLife && supportsO2Sensors {
+            PTOBDLogger.shared.ptLog("🧠 [智能推断] 有氧传感器 + 支持电池寿命 = 混合动力 (HEV)！")
+            self.obdInfo.engineType = .hybrid
+        }
+        else if supportsRPM && supportsO2Sensors {
+            PTOBDLogger.shared.ptLog("🧠 [智能推断] 标准油车指纹 = 燃油车 (ICE)！")
+            self.obdInfo.engineType = .ice
+        }
+        else if supportedHexPIDs.isEmpty {
+            // 3. 极端情况：硬件连上了，但全频段不支持 Mode 1，大概率是全私有协议电车
+            PTOBDLogger.shared.ptLog("🧠 [智能推断] Mode 1 全盲，推测为使用私有协议的纯电车 (EV)。")
+            self.obdInfo.engineType = .ev
+        } else {
+            PTOBDLogger.shared.ptLog("🧠 [智能推断] 无法精准定性，默认降级为 燃油车 (ICE)。")
+            self.obdInfo.engineType = .ice
+        }
     }
 }
