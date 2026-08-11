@@ -2244,7 +2244,7 @@ extension PROTOCOL {
 }
 
 //MARK: 指令集
-// MARK: - 🌟 1. 核心属性结构体
+// MARK: - 核心属性结构体
 public struct CommandProperties: Encodable, Hashable {
     public let command: String
     public let description: String
@@ -2255,7 +2255,7 @@ public struct CommandProperties: Encodable, Hashable {
     }
 }
 
-// MARK: - 🌟 2. 纯血自研的 OBD 终极大字典
+// MARK: - OBD 终极大字典
 public enum OBDCommand: Codable, Hashable, Identifiable {
     case general(General)
     case protocols(Protocols)
@@ -2263,8 +2263,10 @@ public enum OBDCommand: Codable, Hashable, Identifiable {
     case mode2(Mode2)
     case mode3(Mode3)
     case mode4(Mode4)
+    case mode5(Mode5)
     case mode6(Mode6)
     case mode7(Mode7)
+    case mode8(Mode8)
     case mode9(Mode9)
     case modeA(ModeA)
     
@@ -2278,8 +2280,10 @@ public enum OBDCommand: Codable, Hashable, Identifiable {
         case let .mode2(cmd): return cmd.properties
         case let .mode3(cmd): return cmd.properties
         case let .mode4(cmd): return cmd.properties
+        case let .mode5(cmd): return cmd.properties
         case let .mode6(cmd): return cmd.properties
         case let .mode7(cmd): return cmd.properties
+        case let .mode8(cmd): return cmd.properties
         case let .mode9(cmd): return cmd.properties
         case let .modeA(cmd): return cmd.properties
         }
@@ -2300,8 +2304,10 @@ public enum OBDCommand: Codable, Hashable, Identifiable {
         Mode2.allCases.forEach { commands.append(.mode2($0)) }
         Mode3.allCases.forEach { commands.append(.mode3($0)) }
         Mode4.allCases.forEach { commands.append(.mode4($0)) }
+        Mode5.allCases.forEach { commands.append(.mode5($0)) }
         Mode6.allCases.forEach { commands.append(.mode6($0)) }
         Mode7.allCases.forEach { commands.append(.mode7($0)) }
+        Mode8.allCases.forEach { commands.append(.mode8($0)) }
         Mode9.allCases.forEach { commands.append(.mode9($0)) }
         ModeA.allCases.forEach { commands.append(.modeA($0)) }
         return commands
@@ -2485,7 +2491,26 @@ public enum OBDCommand: Codable, Hashable, Identifiable {
         var properties: CommandProperties { return CommandProperties("04", "Clear DTCs and Freeze Data") }
     }
     
-    // 🌟 全网最全 Mode 6 (化验单) 大满贯！
+    // MARK: Mode 5：氧传感器专项测试
+    public enum Mode5: CaseIterable, Codable, Comparable {
+        case PIDS_A
+        case O2_SENSOR_TEST_RICH_TO_LEAN_THRESHOLD
+        case O2_SENSOR_TEST_LEAN_TO_RICH_THRESHOLD
+        case O2_SENSOR_TEST_LOW_VOLTAGE_SWITCH_TIME
+        case O2_SENSOR_TEST_HIGH_VOLTAGE_SWITCH_TIME
+        
+        var properties: CommandProperties {
+            switch self {
+            case .PIDS_A: return CommandProperties("0500", "Supported Mode 5 PIDs")
+            case .O2_SENSOR_TEST_RICH_TO_LEAN_THRESHOLD: return CommandProperties("050101", "Rich to Lean sensor threshold voltage")
+            case .O2_SENSOR_TEST_LEAN_TO_RICH_THRESHOLD: return CommandProperties("050102", "Lean to Rich sensor threshold voltage")
+            case .O2_SENSOR_TEST_LOW_VOLTAGE_SWITCH_TIME: return CommandProperties("050103", "Low sensor voltage for switch time calculation")
+            case .O2_SENSOR_TEST_HIGH_VOLTAGE_SWITCH_TIME: return CommandProperties("050104", "High sensor voltage for switch time calculation")
+            }
+        }
+    }
+
+    // Mode 6 (化验单)
     public enum Mode6: CaseIterable, Codable {
         case MIDS_A
         case MONITOR_O2_B1S1, MONITOR_O2_B1S2, MONITOR_O2_B1S3, MONITOR_O2_B1S4
@@ -2616,6 +2641,20 @@ public enum OBDCommand: Codable, Hashable, Identifiable {
         var properties: CommandProperties { return CommandProperties("07", "Get Pending DTCs") }
     }
     
+    public enum Mode8: CaseIterable, Codable {
+        case PIDS_A
+        case EVAP_LEAK_TEST
+        case DPF_REGEN // 柴油车颗粒物捕捉器再生(示例)
+        
+        var properties: CommandProperties {
+            switch self {
+            case .PIDS_A: return CommandProperties("0800", "Supported Mode 8 PIDs")
+            case .EVAP_LEAK_TEST: return CommandProperties("0801", "EVAP System Leak Test")
+            case .DPF_REGEN: return CommandProperties("0802", "DPF Regeneration (Diesel)")
+            }
+        }
+    }
+
     public enum Mode9: CaseIterable, Codable {
         case PIDS_9A, VIN_MESSAGE_COUNT, VIN, CALIBRATION_ID_MESSAGE_COUNT, CALIBRATION_ID, CVN_MESSAGE_COUNT, CVN
         var properties: CommandProperties {
@@ -2668,7 +2707,7 @@ public extension OBDCommand {
     }
 }
 
-// MARK: - 🌟 5. 深度诊断机制解说库
+// MARK: 深度诊断机制解说库
 extension OBDCommand {
     public var detailedDescription: String? {
         switch self {
@@ -2679,8 +2718,11 @@ extension OBDCommand {
             }
         case .mode3: return "Mode 3 (Get Confirmed DTCs): Retrieves emissions-related DTCs that have turned on the Check Engine Light (MIL)."
         case .mode4: return "Mode 4 (Clear DTCs): Clears stored DTCs, freeze frame data, and resets monitoring tests."
+        case .mode5:
+            return "Mode 5 (O2 Sensor Monitoring Test Results): This mode returns test results for oxygen sensors to determine their health and reaction time. Note: On most newer CAN bus vehicles, Mode 5 functionality has been merged into Mode 6."
         case .mode6: return "Mode 6 (On-Board Monitoring): Retrieves specific test results for non-continuously monitored systems (Catalyst, EVAP, O2, Misfire)."
         case .mode7: return "Mode 7 (Get Pending DTCs): Retrieves 'pending' DTCs detected during the current or last driving cycle before MIL activation."
+        case .mode8: return "Mode 8 (Bi-Directional Control / System Test): Allows the scan tool to command the vehicle's ECU to perform specific self-tests or operate actuators. For example, triggering the EVAP system leak test. Note: Safety conditions (like engine off, ignition on) are often strictly required by the ECU to execute these commands."
         case .mode9: return "Mode 9 (Vehicle Info): Retrieves static vehicle information (VIN, Calibration IDs, CVN)."
         case .modeA: return "Mode A/10 (Get Permanent DTCs): Retrieves Permanent DTCs that CANNOT be cleared manually; the hardware fix must be verified by the ECU."
         default: return self.properties.description

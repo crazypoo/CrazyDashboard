@@ -408,6 +408,7 @@ public class PTOBDTransportBase: NSObject {
     internal var responseContinuation: CheckedContinuation<String, any Error>?
     internal var timeoutTask: Task<Void, Never>?
     
+    public var isSnifferMode: Bool = false
     // MARK: - ⚠️ 子类必须实现的方法
     
     /// 子类负责将具体的指令通过各自的硬件介质 (BLE/TCP) 发送出去
@@ -469,6 +470,26 @@ public class PTOBDTransportBase: NSObject {
     // MARK: - 🌟 共享逻辑：接收数据碎片并组装
     internal func handleIncomingChunk(_ chunk: String, sourceName: String) {
         rxBuffer += chunk
+        
+        // 狙击手/监听模式下的特殊处理 (实时瀑布流输出)
+        if isSnifferMode {
+            // 在监听模式下，ELM327 会疯狂输出带有 \r 的报文，且没有 ">"
+            if rxBuffer.contains("\r") {
+                let lines = rxBuffer.components(separatedBy: "\r")
+                // 打印除最后一段（可能不完整）之外的所有行
+                for i in 0..<(lines.count - 1) {
+                    let frame = lines[i].trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !frame.isEmpty {
+                        // 💥 这里直接把抓到的原厂私有报文狠狠地砸进日志！
+                        PTOBDLogger.shared.ptLog("🕵️‍♂️ [嗅探抓包] 截获报文: \(frame)")
+                    }
+                }
+                // 保留最后一段不完整的碎片
+                rxBuffer = lines.last ?? ""
+            }
+            return // 监听模式下，跳过后面的常规 ">" 判断逻辑
+        }
+
         
         let displayChunk = chunk.replacingOccurrences(of: "\r", with: "\\r").replacingOccurrences(of: "\n", with: "\\n")
         PTOBDLogger.shared.ptLog("⬇️ [RX \(sourceName) Chunk] '\(displayChunk)'")
@@ -1366,5 +1387,277 @@ extension PTMotoTelemetryManager {
                 return nil
             }
         } catch { return nil }
+    }
+}
+
+extension PTMotoTelemetryManager {
+    
+    // MARK: - 🎛️ Mode 8: 双向控制与执行器测试 (Bi-Directional Control)
+    
+    /// 执行车辆硬件系统测试
+    /// - Parameter command: Mode 8 的执行指令
+    /// - Returns: Bool 表示 ECU 是否接受并成功执行了该指令
+    public func executeSystemTest(command: OBDCommand.Mode8) async -> Bool {
+        guard isConnected else { return false }
+        
+        let hexCommand = command.properties.command // 例如 "0801"
+        PTOBDLogger.shared.ptLog("⚠️ [Mode 8] 准备执行双向控制硬件测试: \(command.properties.description) (\(hexCommand))")
+        
+        // 🌟 1. 挂起当前的轮询引擎！绝对不能让 10ms 的数据流打断硬件测试！
+        let wasPolling = (self.telemetryPollingTask != nil)
+        if wasPolling {
+            PTOBDLogger.shared.ptLog("⏸️ [Mode 8] 正在挂起高频轮询引擎...")
+            self.telemetryPollingTask?.cancel()
+            self.telemetryPollingTask = nil
+            // 稍作休眠，等待总线上最后一条常规指令处理完毕
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
+        
+        var isTestSuccessful = false
+        
+        do {
+            // 🌟 2. 发送 Mode 8 执行指令
+            let response = try await self.sendRawCommandAsync(hexCommand)
+            let purePayload = PTMultiFrameParser.extractPureHexPayload(response: response)
+            
+            // 🌟 3. 验证执行结果
+            // Mode 8 的成功响应头必定是 "48" 加上 PID (例如请求 0801，成功返回 4801)
+            let expectedHeader = "48" + hexCommand.dropFirst(2)
+            
+            if purePayload.contains(expectedHeader) {
+                PTOBDLogger.shared.ptLog("✅ [Mode 8] 测试命令已被 ECU 接受并成功执行！")
+                isTestSuccessful = true
+            } else if purePayload.contains("7F") {
+                // 7F 是 OBD2 的否定响应 (Negative Response)
+                PTOBDLogger.shared.ptLog("❌ [Mode 8] 被 ECU 拒绝。可能原因：引擎未熄火、车速不为零或该模块不支持被外部唤醒。原始回传: \(purePayload)")
+                isTestSuccessful = false
+            } else {
+                PTOBDLogger.shared.ptLog("❌ [Mode 8] 执行失败或设备不支持。回传: \(purePayload)")
+                isTestSuccessful = false
+            }
+        } catch {
+            PTOBDLogger.shared.ptLog("❌ [Mode 8] 指令发送发生异常: \(error)")
+            isTestSuccessful = false
+        }
+        
+        // 🌟 4. 无论测试成功还是失败，都必须恢复被挂起的轮询引擎
+        if wasPolling {
+            PTOBDLogger.shared.ptLog("▶️ [Mode 8] 测试结束，恢复高频轮询引擎...")
+            // 取出之前缓存的支持的 PID，重新启动轻量级轮询
+            let rawPIDsToResume = PTHiddenOBDConnector.shared.collectedPIDResponses.isEmpty ? PTWifiOBDConnector.shared.collectedPIDResponses : PTHiddenOBDConnector.shared.collectedPIDResponses
+            self.startLightweightPolling(rawPIDs: rawPIDsToResume)
+        }
+        
+        return isTestSuccessful
+    }
+}
+
+extension PTMotoTelemetryManager {
+    
+    // MARK: - 🥷 UDS 统一诊断服务 / 原生指令注入通道
+    
+    /// 发送任意原生的十六进制指令 (如 UDS 的 Service $22, $27, $2E，或 AT 嗅探指令)
+    /// - Parameters:
+    ///   - rawHex: 原生十六进制字符串 (例如 "22F190" 读取车辆特定 VIN，或 "ATMA" 启动总线监听)
+    ///   - requiresPause: 发送该指令时是否需要挂起后台的高频轮询引擎 (通常 UDS 或刷写指令必须独占总线)
+    /// - Returns: 未经业务层过滤的绝对原始底层回传字符串
+    public func injectRawHexCommand(_ rawHex: String, requiresPause: Bool = true) async -> String {
+        guard isConnected else { return "ERROR: NO_CONNECTION" }
+        
+        let cleanHex = rawHex.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        PTOBDLogger.shared.ptLog("🥷 [原生注入] 准备向总线发射深度指令: \(cleanHex)")
+        
+        let wasPolling = (self.telemetryPollingTask != nil)
+        
+        //  如果需要独占总线，挂起轮询引擎
+        if requiresPause && wasPolling {
+            PTOBDLogger.shared.ptLog("⏸️ [原生注入] 正在挂起轮询引擎以保障总线带宽...")
+            self.telemetryPollingTask?.cancel()
+            self.telemetryPollingTask = nil
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
+        
+        var rawResponse = ""
+        
+        // 直接透过我们封装好的多模网络层发向底层硬件
+        do {
+            let response = try await self.sendRawCommandAsync(cleanHex)
+            // 拿到绝对纯粹的底层返回，保留所有可能包含私有协议格式的字符
+            rawResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
+            PTOBDLogger.shared.ptLog("✅ [原生注入] 收到底层原始响应: \(rawResponse)")
+            
+        } catch {
+            rawResponse = "ERROR: \(error.localizedDescription)"
+            PTOBDLogger.shared.ptLog("❌ [原生注入] 发送发生异常: \(error)")
+        }
+        
+        // 释放总线，恢复日常生命体征监测
+        if requiresPause && wasPolling {
+            PTOBDLogger.shared.ptLog("▶️ [原生注入] 注入完毕，恢复轮询引擎...")
+            let rawPIDsToResume = PTHiddenOBDConnector.shared.collectedPIDResponses.isEmpty ? PTWifiOBDConnector.shared.collectedPIDResponses : PTHiddenOBDConnector.shared.collectedPIDResponses
+            self.startLightweightPolling(rawPIDs: rawPIDsToResume)
+        }
+        
+        return rawResponse
+    }
+    
+    // MARK: - 🥷 UDS 私有协议探针 (特定 ECU 数据窃取)
+    
+    /// 向特定的 ECU 节点发送私有指令并捕获返回值
+    /// - Parameters:
+    ///   - header: 目标 ECU 的发送报头 (例如: "7E0" 代表发动机, "7A0" 代表某些仪表)
+    ///   - receiveAddress: 期望接收响应的 ECU 报头 (例如: "7E8")
+    ///   - udsCommand: 原生 UDS 指令 (例如 "22F190" 读取私有 VIN)
+    /// - Returns: 目标 ECU 返回的绝对原始底层字符串
+    public func fetchProprietaryData(header: String, receiveAddress: String, udsCommand: String) async -> String {
+        guard isConnected else { return "ERROR: NO_CONNECTION" }
+        
+        let cleanHeader = header.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        let cleanCRA = receiveAddress.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        let cleanCommand = udsCommand.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        
+        PTOBDLogger.shared.ptLog("🥷 [私有探针] 目标: \(cleanHeader) | 监听: \(cleanCRA) | 指令: \(cleanCommand)")
+        
+        // 1. 统一挂起常规轮询，霸占总线绝对控制权
+        let wasPolling = (self.telemetryPollingTask != nil)
+        if wasPolling {
+            PTOBDLogger.shared.ptLog("⏸️ [私有探针] 霸占总线，挂起常规轮询...")
+            self.telemetryPollingTask?.cancel()
+            self.telemetryPollingTask = nil
+            // 确保总线安静下来
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
+        
+        var finalResult = ""
+        
+        do {
+            // 2. 更改 ELM327 发送地址 (Set Header)
+            _ = try await self.sendRawCommandAsync("ATSH\(cleanHeader)")
+            
+            // 3. 设置严格的接收过滤器 (CAN Receive Address)，防止收到总线垃圾信息
+            _ = try await self.sendRawCommandAsync("ATCRA\(cleanCRA)")
+            
+            // 4. 发射真正的 UDS 探针，并捕获回传
+            let response = try await self.sendRawCommandAsync(cleanCommand)
+            finalResult = response.trimmingCharacters(in: .whitespacesAndNewlines)
+            PTOBDLogger.shared.ptLog("✅ [私有探针] 截获目标返回: \(finalResult)")
+            
+        } catch {
+            finalResult = "ERROR: \(error.localizedDescription)"
+            PTOBDLogger.shared.ptLog("❌ [私有探针] 渗透失败: \(error)")
+        }
+        
+        // 5. 🧹 打扫战场 (极其关键！)
+        PTOBDLogger.shared.ptLog("🧹 [私有探针] 清洗配置，恢复标准 OBD2 通道...")
+        // ATD: 恢复 ELM327 所有出厂设置 (寻址变回标准的 7DF)
+        _ = try? await self.sendRawCommandAsync("ATD")
+        // 由于 ATD 会打开回显等功能，我们需要重新补发破冰船中的环境配置
+        _ = try? await self.sendRawCommandAsync("ATE0") // 关闭回显
+        _ = try? await self.sendRawCommandAsync("ATL0") // 关闭换行符
+        _ = try? await self.sendRawCommandAsync("ATH1") // 开启报头 (无敌解析器依赖 410C 这样的报头)
+        
+        // 6. 归还总线，恢复日常生命体征监测
+        if wasPolling {
+            PTOBDLogger.shared.ptLog("▶️ [私有探针] 总线归还，重新启动日常监测。")
+            let rawPIDsToResume = PTHiddenOBDConnector.shared.collectedPIDResponses.isEmpty ? PTWifiOBDConnector.shared.collectedPIDResponses : PTHiddenOBDConnector.shared.collectedPIDResponses
+            self.startLightweightPolling(rawPIDs: rawPIDsToResume)
+        }
+        
+        return finalResult
+    }
+}
+
+extension PTMotoTelemetryManager {
+    
+    // MARK: - 🕵️‍♂️ 黑客工具：CAN 总线全域嗅探 (Sniffer Mode)
+    
+    /// 启动 CAN 总线抓包模式 (需要配合 Y 型分线器和原厂诊断仪使用)
+    /// - Parameter filterHeader: 可选。如果只关心某个 ECU (例如仪表盘 "7A0")，传入该报头可防止 ELM327 缓冲区溢出。传 nil 则监听全车。
+    public func startCANSniperMode(filterHeader: String? = nil) async {
+        guard isConnected else { return }
+        
+        PTOBDLogger.shared.ptLog("🕵️‍♂️ [嗅探系统] 警告：正在进入总线监听模式！")
+        
+        // 1. 彻底挂起后台轮询，防止我们的指令污染抓包现场
+        if telemetryPollingTask != nil {
+            self.telemetryPollingTask?.cancel()
+            self.telemetryPollingTask = nil
+            try? await Task.sleep(nanoseconds: 200_000_000)
+        }
+        
+        do {
+            // 2. 配置 ELM327 为黑客窃听状态
+            _ = try await self.sendRawCommandAsync("ATZ")   // 复位
+            _ = try await self.sendRawCommandAsync("ATE0")  // 关闭回显
+            _ = try await self.sendRawCommandAsync("ATL1")  // 开启换行符 (瀑布流必须)
+            _ = try await self.sendRawCommandAsync("ATH1")  // 🌟 开启报头显示 (抓包最核心：必须知道是谁发的！)
+            _ = try await self.sendRawCommandAsync("ATS1")  // 🌟 开启空格显示 (让字节之间有空格，极大地提高人类阅读体验)
+            _ = try await self.sendRawCommandAsync("ATAL")  // 允许长度超过 7 字节的长报文
+            
+            // 3. (可选) 设置监听过滤器
+            if let target = filterHeader {
+                let cleanTarget = target.uppercased().trimmingCharacters(in: .whitespacesAndNewlines)
+                _ = try await self.sendRawCommandAsync("ATCRA" + cleanTarget)
+                PTOBDLogger.shared.ptLog("🎯 [嗅探系统] 过滤器已激活，仅监听地址: \(cleanTarget)")
+            }
+            
+            // 4. 拨下开关，进入瀑布流模式！
+            // 注意：底层的 isSnifferMode 必须在发 ATMA 之前设置为 true
+            switch activeConnectionType {
+            case .bluetooth:
+                PTHiddenOBDConnector.shared.isSnifferMode = true
+            default:
+                PTWifiOBDConnector.shared.isSnifferMode = true
+            }
+            
+            PTOBDLogger.shared.ptLog("🚀 [嗅探系统] 启动指令已发送，正在录制通讯流量，请操作原厂诊断仪...")
+            
+            // 发送 ATMA (Monitor All)。注意：ELM327 收到这个后就不会返回 ">" 了，直到我们打断它
+            // 所以我们不等待它的 await 结果，直接使用底层对象的 writeRawData
+            switch activeConnectionType {
+            case .bluetooth:
+                PTHiddenOBDConnector.shared.writeRawData("ATMA")
+            default:
+                PTWifiOBDConnector.shared.writeRawData("ATMA")
+            }
+        } catch {
+            PTOBDLogger.shared.ptLog("❌ [嗅探系统] 启动监听失败: \(error)")
+        }
+    }
+    
+    /// 停止抓包并恢复日常监控
+    public func stopCANSniperMode() async {
+        guard isConnected else { return }
+        
+        PTOBDLogger.shared.ptLog("🛑 [嗅探系统] 正在停止抓包...")
+        
+        // 发送任意字符 (如空回车) 可打断 ELM327 的 ATMA 监听状态
+        switch activeConnectionType {
+        case .bluetooth:
+            PTHiddenOBDConnector.shared.writeRawData("")
+        default:
+            PTWifiOBDConnector.shared.writeRawData("")
+        }
+        
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        
+        // 关闭底层的瀑布流开关
+        switch activeConnectionType {
+        case .bluetooth:
+            PTHiddenOBDConnector.shared.isSnifferMode = false
+        default:
+            PTWifiOBDConnector.shared.isSnifferMode = false
+        }
+        
+        // 恢复 ELM327 出厂设置，清洗掉我们刚才的黑客配置
+        _ = try? await self.sendRawCommandAsync("ATD")
+        _ = try? await self.sendRawCommandAsync("ATE0")
+        _ = try? await self.sendRawCommandAsync("ATL0")
+        _ = try? await self.sendRawCommandAsync("ATH1")
+        
+        PTOBDLogger.shared.ptLog("▶️ [嗅探系统] 抓包结束，正在恢复常规轮询引擎。")
+        
+        let rawPIDsToResume = PTHiddenOBDConnector.shared.collectedPIDResponses.isEmpty ? PTWifiOBDConnector.shared.collectedPIDResponses : PTHiddenOBDConnector.shared.collectedPIDResponses
+        self.startLightweightPolling(rawPIDs: rawPIDsToResume)
     }
 }
