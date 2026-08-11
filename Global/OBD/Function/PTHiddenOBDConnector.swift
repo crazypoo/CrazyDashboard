@@ -11,6 +11,19 @@ import PooTools
 import CryptoKit
 import Combine
 
+public struct PTVehicleStatus0101 {
+    public let isMILOn: Bool          // 发动机故障灯是否点亮
+    public let dtcCount: Int          // 故障码数量
+    
+    // 我们还可以扩展更多的监控就绪状态，这里作为示例提取最核心的
+    public let misfireSupported: Bool // 是否支持失火监控
+    public let misfireReady: Bool     // 失火监控是否就绪
+    
+    public var description: String {
+        return "MIL: \(isMILOn ? "ON 🔴" : "OFF 🟢"), 故障码数量: \(dtcCount)"
+    }
+}
+
 public extension OBDCommand {
     
     /// 返回该指令在公制标准下对应的物理单位字符串
