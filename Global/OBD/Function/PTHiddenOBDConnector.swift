@@ -514,46 +514,59 @@ public class PTMotoTelemetryManager {
     }
     
     // MARK: - 极简轮询引擎 (0 延迟极速 UI 更新版)
+    // MARK: - 极简轮询引擎 (全频段动态提取 + 核心加权狂闪版)
     private func startLightweightPolling(rawPIDs: [String]) {
         telemetryPollingTask?.cancel()
         
         telemetryPollingTask = Task { [weak self] in
             guard let self = self else { return }
             
-            let pids = self.parseAllPIDs(rawResponses: rawPIDs)
-            guard !pids.isEmpty else {
+            // 1. 动态解析所有车辆支持的 PID
+            let parsedPIDs = self.parseAllPIDs(rawResponses: rawPIDs)
+            guard !parsedPIDs.isEmpty else {
                 PTOBDLogger.shared.ptLog("❌ [轮询引擎] 探针解析全 0，主动断开！")
                 await MainActor.run { self.disconnect() }
                 return
             }
             
-            let rpmCmd = "010C"
-            let speedCmd = "010D"
-            let tempCmd = "0105"
-            let voltCmd = "ATRV"
-            
-            let safeCommands = [rpmCmd, speedCmd, tempCmd, voltCmd]
-            self.supportedCommands = safeCommands
+            // 2. 构建包含基础电压的动态总表
+            var allDynamicCommands = parsedPIDs
+            if !allDynamicCommands.contains("ATRV") {
+                allDynamicCommands.append("ATRV")
+            }
+            self.supportedCommands = allDynamicCommands
             
             await MainActor.run {
                 self.delegates.forEach { wrapper in
                     wrapper.delegate?.telemetryManager(self, didChangeConnectionState: true)
-                    wrapper.delegate?.telemetryManager(self, didDiscoverSupportedCommands: safeCommands)
+                    wrapper.delegate?.telemetryManager(self, didDiscoverSupportedCommands: allDynamicCommands)
                 }
             }
             
-            // 官方 24 步高频轮询队列[cite: 4]
-            let pollingQueue: [String] = [
-                rpmCmd, speedCmd, rpmCmd, tempCmd, rpmCmd, voltCmd,
-                rpmCmd, speedCmd, rpmCmd, tempCmd, rpmCmd, voltCmd,
-                rpmCmd, speedCmd, rpmCmd, tempCmd, rpmCmd, voltCmd,
-                rpmCmd, speedCmd, rpmCmd, tempCmd, rpmCmd, voltCmd
-            ]
-            PTOBDLogger.shared.ptLog("⚡️ [轮询引擎] 启动 24 步高速连射阵列，准备引爆指示灯！")
+            PTOBDLogger.shared.ptLog("⚡️ [轮询引擎] 成功提取 \(allDynamicCommands.count) 条支持指令，开始构建加权火力网！")
             
-            // 🌟 致命修正 1：建立一个持续保存数据的字典，避免在每次循环开头重置为 0.0！
+            // 3. 🌟 核心突破：构建“加权交替火力网”
+            // 为了防止全频段扫描导致转速表(RPM)刷新率下降，我们将高优指令交替插入列队
+            var pollingQueue: [String] = []
+            let rpmCmd = "010C"
+            let speedCmd = "010D"
+            
+            let otherCommands = allDynamicCommands.filter { $0 != rpmCmd && $0 != speedCmd }
+            
+            if otherCommands.isEmpty {
+                pollingQueue = allDynamicCommands
+            } else {
+                // 生成交替队列：[转速, 车速, 其它1, 转速, 车速, 其它2...]
+                for other in otherCommands {
+                    if allDynamicCommands.contains(rpmCmd) { pollingQueue.append(rpmCmd) }
+                    if allDynamicCommands.contains(speedCmd) { pollingQueue.append(speedCmd) }
+                    pollingQueue.append(other)
+                }
+            }
+            
+            // 4. 建立持续保存数据的字典
             var persistentMeasurements: [String: Any] = [:]
-            for command in safeCommands { persistentMeasurements[command] = 0.0 }
+            for command in allDynamicCommands { persistentMeasurements[command] = 0.0 }
             
             while !Task.isCancelled && self.isConnected {
                 
@@ -564,27 +577,35 @@ public class PTMotoTelemetryManager {
                         let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(commandString)
                         let cleanResponse = self.clearString(response: response)
                         
-                        // 过滤掉偶尔的 NO DATA 或杂音，绝不打断轮询！
+                        // 过滤掉偶尔的 NO DATA 或杂音，绝不打断轮询
                         if !cleanResponse.isEmpty && !cleanResponse.contains("NODATA") && !cleanResponse.contains("ERROR") && !cleanResponse.contains("NO DATA") {
                             
-                            // 交给强硬的解析器
+                            // 交给无敌装甲解析器
                             if let val = self.parseSingleResponse(command: commandString, response: response) {
                                 persistentMeasurements[commandString] = val
-                                PTOBDLogger.shared.ptLog("🏎️ [解析成功] 完美提取 \(commandString) 数据 = \(val)")
                                 
-                                // 一旦拿到哪怕一个新数据，瞬间推给 UI（0延迟派发）！
-                                // 彻底解决原来必须等满 4 秒才能更新 UI 的“界面假死”现象！
+                                // 为了防止日志爆炸，可以考虑只打印部分核心数据的解析结果
+                                // PTOBDLogger.shared.ptLog("🏎️ [解析成功] 完美提取 \(commandString) 数据 = \(val)")
+                                
+                                // 0 延迟派发机制，让 UI 极速响应
                                 let mapToDispatch = persistentMeasurements
                                 await MainActor.run {
                                     self.dispatchMeasurementsToDelegates(measurements: mapToDispatch)
                                 }
                             } else {
-                                PTOBDLogger.shared.ptLog("解析不出\(response)")
+                                // 如果是支持的 PID 但我们还没在 parseSingleResponse 里写公式，暂存原始 Hex
+                                if cleanResponse.contains("41") {
+                                    persistentMeasurements[commandString] = cleanResponse
+                                    let mapToDispatch = persistentMeasurements
+                                    await MainActor.run {
+                                        self.dispatchMeasurementsToDelegates(measurements: mapToDispatch)
+                                    }
+                                }
                             }
                         }
                     } catch {}
                     
-                    // 维持 10 毫秒极限微延迟，确保双灯完美同步狂闪！
+                    // 维持 10 毫秒极限微延迟，压榨硬件通讯极速
                     try? await Task.sleep(nanoseconds: 10_000_000)
                 }
                 
