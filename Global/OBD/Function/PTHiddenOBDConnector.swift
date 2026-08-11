@@ -10,17 +10,38 @@ import CoreBluetooth
 import PooTools
 import CryptoKit
 import Combine
+import Network
 
+// MARK: - 🌟 0101 车辆健康综合体检模型
 public struct PTVehicleStatus0101 {
-    public let isMILOn: Bool          // 发动机故障灯是否点亮
-    public let dtcCount: Int          // 故障码数量
+    // 1. 基础故障灯与故障码状态
+    public let isMILOn: Bool          // 发动机故障灯 (Check Engine Light) 是否点亮
+    public let dtcCount: Int          // 存储的故障码总数
     
-    // 我们还可以扩展更多的监控就绪状态，这里作为示例提取最核心的
+    // 2. 连续监控系统 (时刻都在监测的核心系统)
     public let misfireSupported: Bool // 是否支持失火监控
-    public let misfireReady: Bool     // 失火监控是否就绪
+    public let misfireReady: Bool     // 失火监控是否就绪/完成
     
-    public var description: String {
-        return "MIL: \(isMILOn ? "ON 🔴" : "OFF 🟢"), 故障码数量: \(dtcCount)"
+    public let fuelSystemSupported: Bool // 是否支持燃油系统监控
+    public let fuelSystemReady: Bool     // 燃油系统监控是否就绪
+    
+    public let componentsSupported: Bool // 是否支持综合组件监控
+    public let componentsReady: Bool     // 综合组件监控是否就绪
+    
+    // 3. 非连续监控系统 (部分核心汽油车监控项)
+    public let catalystSupported: Bool   // 是否支持三元催化器监控
+    public let catalystReady: Bool       // 三元催化器监控是否就绪
+    
+    public let o2SensorSupported: Bool   // 是否支持氧传感器监控
+    public let o2SensorReady: Bool       // 氧传感器监控是否就绪
+    
+    public let egrSupported: Bool        // 是否支持 EGR (废气再循环) 系统
+    public let egrReady: Bool            // EGR 系统是否就绪
+    
+    // UI 快速展示：体检综合评分描述
+    public var reportCard: String {
+        let milStatus = isMILOn ? "🔴 故障灯亮起" : "🟢 状态正常"
+        return "[\(milStatus)] 存在故障码: \(dtcCount) 个 | 氧传感器测试: \(o2SensorReady ? "及格" : "未完成") | 燃油系统: \(fuelSystemReady ? "及格" : "未完成")"
     }
 }
 
@@ -439,6 +460,313 @@ public struct YmobdCrypt {
     }
 }
 
+public enum PTOBDConnectionType {
+    case bluetooth
+    case wifi(ip: String, port: UInt16)
+}
+
+public class PTWifiOBDConnector: NSObject {
+    public static let shared = PTWifiOBDConnector()
+    
+    public var onIceBroken: (() -> Void)?
+    
+    // 🌟 核心：Network 框架连接对象
+    private var connection: NWConnection?
+    private let queue = DispatchQueue(label: "com.ptools.wifiOBDQueue")
+    
+    private var isUnlocked: Bool = false
+    
+    // 默认的 ELM327 WIFI 配置 (可根据你的实际硬件在外部修改)
+    public var targetIP: String = "192.168.0.10"
+    public var targetPort: UInt16 = 35000
+    
+    // 复用蓝牙的 19 步破冰列队
+    private var initQueue: [String] = [
+        "ATZ", "ATE0", "ATL0", "ATH1", "ATSP0", "AT+VERSION", "ATI", "ATRV", "<AUTH>",
+        "0100", "020000", "0600", "0900", "ATDP", "0120", "0140", "0902", "0904", "0906"
+    ]
+    private var currentQueueIndex: Int = 0
+    private var activeCommand: String? = nil
+    private var rxBuffer: String = ""
+    public var collectedPIDResponses: [String] = []
+    
+    private var responseContinuation: CheckedContinuation<String, any Error>?
+    private var timeoutTask: Task<Void, Never>?
+    
+    private override init() { super.init() }
+    
+    // MARK: - 1. 启动 TCP 连接
+    public func startConnection() {
+        PTOBDLogger.shared.startFileLogging()
+        PTOBDLogger.shared.ptLog("🔄 [WIFI] 开始连接局域网 OBD 节点: \(targetIP):\(targetPort)")
+        
+        isUnlocked = false
+        currentQueueIndex = 0
+        rxBuffer = ""
+        collectedPIDResponses.removeAll()
+        
+        // 恢复 <AUTH> 槽位
+        if let authIndex = initQueue.firstIndex(where: { $0.hasPrefix("AT+CRYPT") || $0.hasPrefix("AT+SETCRYPT") || $0 == "ATRV" }) {
+            initQueue[authIndex] = "<AUTH>"
+        }
+        
+        let host = NWEndpoint.Host(targetIP)
+        let port = NWEndpoint.Port(rawValue: targetPort)!
+        
+        // 创建 TCP 连接
+        connection = NWConnection(host: host, port: port, using: .tcp)
+        
+        connection?.stateUpdateHandler = { [weak self] state in
+            guard let self = self else { return }
+            switch state {
+            case .ready:
+                PTOBDLogger.shared.ptLog("✅ [WIFI] TCP 通道建立成功！开始持续监听并触发初始化列队...")
+                self.startReceiveLoop() // 开启死循环监听
+                
+                // 延迟一小会儿，给模块反应时间，然后发射第一条指令
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    self.sendNextCommand()
+                }
+                
+            case .failed(let error):
+                PTOBDLogger.shared.ptLog("❌ [WIFI] 连接失败: \(error)")
+                self.disconnect(error: error)
+                
+            case .cancelled:
+                PTOBDLogger.shared.ptLog("🛑 [WIFI] 连接已被取消")
+                self.disconnect(error: nil)
+                
+            default:
+                break
+            }
+        }
+        
+        connection?.start(queue: queue)
+    }
+    
+    public func disconnect(error: Error? = nil) {
+        connection?.cancel()
+        connection = nil
+        isUnlocked = false
+        if let err = error {
+            responseContinuation?.resume(throwing: err)
+        } else {
+            responseContinuation?.resume(throwing: NSError(domain: "WIFIError", code: -2, userInfo: [NSLocalizedDescriptionKey: "WIFI 断开"]))
+        }
+        responseContinuation = nil
+        PTOBDLogger.shared.stopFileLogging()
+        
+        NotificationCenter.default.post(name: NSNotification.Name("PTMotoOBDDisconnected"), object: nil)
+    }
+    
+    // MARK: - 2. 持续接收数据循环 (Data Stream Loop)
+    private func startReceiveLoop() {
+        connection?.receive(minimumIncompleteLength: 1, maximumLength: 1024) { [weak self] data, context, isComplete, error in
+            guard let self = self else { return }
+            
+            if let err = error {
+                PTOBDLogger.shared.ptLog("❌ [WIFI] 接收数据发生错误: \(err)")
+                self.disconnect(error: err)
+                return
+            }
+            
+            if let data = data, let chunk = String(data: data, encoding: .ascii) {
+                // 收到 TCP 碎片，放入缓冲区
+                self.handleIncomingChunk(chunk)
+            }
+            
+            if isComplete {
+                PTOBDLogger.shared.ptLog("🛑 [WIFI] TCP 流已结束 (EOF)")
+                self.disconnect()
+                return
+            }
+            
+            // 递归调用，形成死循环监听！
+            self.startReceiveLoop()
+        }
+    }
+    
+    // 处理 TCP 碎片并切分
+    private func handleIncomingChunk(_ chunk: String) {
+        rxBuffer += chunk
+        
+        let displayChunk = chunk.replacingOccurrences(of: "\r", with: "\\r").replacingOccurrences(of: "\n", with: "\\n")
+        PTOBDLogger.shared.ptLog("⬇️ [RX WIFI Chunk] '\(displayChunk)'")
+        
+        var isComplete = false
+        var endRange: Range<String.Index>? = nil
+        
+        // 只要遇到 ">"，说明 ECU 这一句话说完了
+        if let range = rxBuffer.range(of: ">") {
+            isComplete = true
+            endRange = range
+        }
+        
+        if isComplete, let range = endRange {
+            self.timeoutTask?.cancel()
+            self.timeoutTask = nil
+            
+            let completeResponse = String(rxBuffer[..<range.lowerBound])
+            
+            if range.upperBound < rxBuffer.endIndex {
+                rxBuffer = String(rxBuffer[range.upperBound...])
+            } else {
+                rxBuffer = ""
+            }
+            
+            let cleanResponse = completeResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            if isUnlocked {
+                PTOBDLogger.shared.ptLog("✅ [RX WIFI Complete] 抛出给上层: \(cleanResponse)")
+                responseContinuation?.resume(returning: cleanResponse)
+                responseContinuation = nil
+            } else {
+                PTOBDLogger.shared.ptLog("✅ [RX WIFI Init Complete] 状态机消化: \(cleanResponse)")
+                processCompleteResponse(cleanResponse)
+            }
+        }
+    }
+    
+    // MARK: - 3. 异步发送指令 (TCP Write)
+    public func sendOBDCommandAsync(_ command: String) async throws -> String {
+        return try await withCheckedThrowingContinuation { continuation in
+            guard isUnlocked, let conn = self.connection, conn.state == .ready else {
+                continuation.resume(throwing: NSError(domain: "WIFIError", code: -1, userInfo: [NSLocalizedDescriptionKey: "WIFI 底层未准备好"]))
+                return
+            }
+            
+            self.responseContinuation = continuation
+            self.activeCommand = command
+            self.rxBuffer = "" // 清空上一次的残余
+            
+            let cmdString = "\(command)\r"
+            let data = cmdString.data(using: .ascii)!
+            
+            PTOBDLogger.shared.ptLog("⬆️ [TX WIFI Async] \(command)\\r")
+            
+            conn.send(content: data, completion: .contentProcessed({ [weak self] error in
+                if let err = error {
+                    PTOBDLogger.shared.ptLog("❌ [TX WIFI] 发送失败: \(err)")
+                    self?.responseContinuation?.resume(throwing: err)
+                    self?.responseContinuation = nil
+                }
+            }))
+            
+            // 20秒超时保护
+            self.timeoutTask?.cancel()
+            self.timeoutTask = Task { [weak self] in
+                try? await Task.sleep(nanoseconds: 20_000_000_000)
+                if !Task.isCancelled {
+                    PTOBDLogger.shared.ptLog("⏳ [TX WIFI] 响应超时: \(command)")
+                    self?.responseContinuation?.resume(throwing: NSError(domain: "WIFIError", code: -3, userInfo: [NSLocalizedDescriptionKey: "响应超时"]))
+                    self?.responseContinuation = nil
+                    self?.disconnect()
+                }
+            }
+        }
+    }
+    
+    // MARK: - 4. 初始化队列状态机 (无缝复用蓝牙版逻辑)
+    private func sendNextCommand() {
+        guard currentQueueIndex < initQueue.count else {
+            PTOBDLogger.shared.ptLog("✅ [WIFI 破冰船] 19 步大满贯解锁完毕！移交控制权！")
+            self.isUnlocked = true
+            DispatchQueue.main.async { [weak self] in self?.onIceBroken?() }
+            return
+        }
+        
+        let rawCommand = initQueue[currentQueueIndex]
+        activeCommand = rawCommand
+        rxBuffer = ""
+        
+        PTOBDLogger.shared.ptLog("⬆️ [TX WIFI Init \(currentQueueIndex + 1)/\(initQueue.count)] \(rawCommand)\\r")
+        
+        let cmdString = "\(rawCommand)\r"
+        let data = cmdString.data(using: .ascii)!
+        
+        connection?.send(content: data, completion: .contentProcessed({ error in
+            if let err = error {
+                PTOBDLogger.shared.ptLog("❌ [TX WIFI Init] 发送失败: \(err)")
+            }
+        }))
+    }
+    
+    private func processCompleteResponse(_ response: String) {
+        let cleanResponseForCheck = response.replacingOccurrences(of: " ", with: "").uppercased()
+        let cmd = activeCommand ?? ""
+        
+        // 错误重试区
+        if cmd == "ATZ" && cleanResponseForCheck.contains("STOPPED") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.sendNextCommand() }
+            return
+        }
+        let okCheckCommands = ["ATE0", "ATL0", "ATH1", "ATS0"]
+        if okCheckCommands.contains(cmd) && !cleanResponseForCheck.contains("OK") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.sendNextCommand() }
+            return
+        }
+        
+        let purePayload = response.replacingOccurrences(of: cmd, with: "", options: .caseInsensitive) .replacingOccurrences(of: ">", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if cmd == "ATZ" { PTMotoTelemetryManager.shared.obdInfo.atzName = purePayload }
+        if cmd == "ATI" { PTMotoTelemetryManager.shared.obdInfo.aitName = purePayload }
+        if cmd == "ATDP" { PTMotoTelemetryManager.shared.obdInfo.atdpName = PROTOCOL.from(string: purePayload) }
+        if cmd == "0902" && !cleanResponseForCheck.contains("NODATA") { PTMotoTelemetryManager.shared.obdInfo.vin = PTMultiFrameParser.parseLongString(response: response) }
+        if cmd == "0904" && !cleanResponseForCheck.contains("NODATA") {
+            let parsedCalID = PTMultiFrameParser.parseLongString(response: response)
+            PTMotoTelemetryManager.shared.obdInfo.ecuVersion = parsedCalID
+        }
+        if cmd == "0906" && !cleanResponseForCheck.contains("NODATA") { PTMotoTelemetryManager.shared.obdInfo.cvn = PTMultiFrameParser.parseLongString(response: response) }
+
+        if cmd == "AT+VERSION" {
+            // 兼容普通 ELM327 WIFI 模块 (无 YMOBD 固件)
+            if response.contains("?") || response.isEmpty || cleanResponseForCheck.contains("ERROR") {
+                PTOBDLogger.shared.ptLog("⚠️ [WIFI 认证] 发现标准 ELM327 WIFI 设备，无需 YMOBD 握手，优雅降级！")
+                if let authIndex = initQueue.firstIndex(of: "<AUTH>") { initQueue[authIndex] = "ATRV" }
+                currentQueueIndex += 1
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in self?.sendNextCommand() }
+                return
+            }
+            
+            // 提取硬件信息
+            let lines = response.components(separatedBy: .newlines).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+            if lines.count > 0 { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.company = lines[0] }
+            for line in lines {
+                let parts = line.components(separatedBy: ":")
+                guard parts.count >= 2 else { continue }
+                let key = parts[0].lowercased().trimmingCharacters(in: .whitespaces)
+                let value = parts[1...].joined(separator: ":").trimmingCharacters(in: .whitespaces)
+                
+                if key == "version" { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.version = value }
+                else if key == "device type" { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceType = value }
+                else if key == "device name" { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceName = value }
+                else if key == "device mac" { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceMac = value.uppercased() }
+                else if key == "interface" { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.interfase = value }
+                else if key == "cust id" { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.cust = value }
+            }
+
+            var cryptSeed = ""
+            if let regex = try? NSRegularExpression(pattern: "(?im)^\\s*crypt\\s*:\\s*([0-9a-f]{1,8})") {
+                let nsString = response as NSString
+                if let match = regex.matches(in: response, range: NSRange(location: 0, length: nsString.length)).first {
+                    let seedPart = nsString.substring(with: match.range(at: 1))
+                    cryptSeed = String(seedPart.filter { "0123456789abcdefABCDEF".contains($0) })
+                }
+            }
+            
+            let authCommand = !cryptSeed.isEmpty ? YmobdCrypt.setCryptCommand(cryptFromVersion: cryptSeed) : YmobdCrypt.challengeCommand(challenge: YmobdCrypt.newChallenge())
+            if let authIndex = initQueue.firstIndex(of: "<AUTH>") {
+                initQueue[authIndex] = authCommand.replacingOccurrences(of: "\r", with: "")
+            }
+        }
+        
+        if cmd == "0100" || cmd == "0120" || cmd == "0140" { collectedPIDResponses.append(response) }
+                
+        currentQueueIndex += 1
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in self?.sendNextCommand() }
+    }
+}
+
 public class PTHiddenOBDConnector: NSObject {
     public static let shared = PTHiddenOBDConnector()
     
@@ -821,8 +1149,19 @@ public extension PTMotoTelemetryDelegate {
 public class PTMotoTelemetryManager {
     public static let shared = PTMotoTelemetryManager()
     
+    private var activeConnectionType: PTOBDConnectionType = .bluetooth
+    
     public private(set) var obdInfo = PTOBDInfo()
     
+    internal func sendRawCommandAsync(_ command: String) async throws -> String {
+        switch activeConnectionType {
+        case .bluetooth:
+            return try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(command)
+        case .wifi:
+            return try await PTWifiOBDConnector.shared.sendOBDCommandAsync(command)
+        }
+    }
+
     private class WeakDelegateWrapper {
         weak var delegate: PTMotoTelemetryDelegate?
         init(_ delegate: PTMotoTelemetryDelegate) { self.delegate = delegate }
@@ -851,19 +1190,33 @@ public class PTMotoTelemetryManager {
         }
     }
     
-    public func connectToMotorcycle() {
-        PTOBDLogger.shared.ptLog("📡 [OBD2] 开始连接入口调用...")
+    public func connectToMotorcycle(via type: PTOBDConnectionType = .bluetooth) {
+        PTOBDLogger.shared.ptLog("📡 [OBD2 纯血引擎] 开始连接，模式: \(type)")
+        self.activeConnectionType = type
         
-        PTHiddenOBDConnector.shared.onIceBroken = { [weak self] in
-            guard let self = self else { return }
-            self.isConnected = true
-            PTOBDLogger.shared.ptLog("✅ [Manager] 底层通知破冰完毕，移交轮询控制权！")
-            self.startLightweightPolling(rawPIDs: PTHiddenOBDConnector.shared.collectedPIDResponses)
+        switch type {
+        case .bluetooth:
+            PTHiddenOBDConnector.shared.onIceBroken = { [weak self] in
+                self?.handleIceBroken(rawPIDs: PTHiddenOBDConnector.shared.collectedPIDResponses)
+            }
+            PTHiddenOBDConnector.shared.startIcebreakerConnection()
+            
+        case .wifi(let ip, let port):
+            PTWifiOBDConnector.shared.targetIP = ip
+            PTWifiOBDConnector.shared.targetPort = port
+            PTWifiOBDConnector.shared.onIceBroken = { [weak self] in
+                self?.handleIceBroken(rawPIDs: PTWifiOBDConnector.shared.collectedPIDResponses)
+            }
+            PTWifiOBDConnector.shared.startConnection()
         }
-        
-        PTHiddenOBDConnector.shared.startIcebreakerConnection()
     }
     
+    private func handleIceBroken(rawPIDs: [String]) {
+        self.isConnected = true
+        PTOBDLogger.shared.ptLog("✅ [Manager] 底层通知破冰完毕，移交轮询控制权！")
+        self.startLightweightPolling(rawPIDs: rawPIDs)
+    }
+
     // MARK: - 极简轮询引擎 (全频段动态提取 + 核心加权狂闪版)
     private func startLightweightPolling(rawPIDs: [String]) {
         telemetryPollingTask?.cancel()
@@ -924,7 +1277,7 @@ public class PTMotoTelemetryManager {
                     if Task.isCancelled { break }
                     
                     do {
-                        let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(commandString)
+                        let response = try await self.sendRawCommandAsync(commandString)
                         let cleanResponse = self.clearString(response: response)
                         
                         // 过滤掉偶尔的 NO DATA 或杂音，绝不打断轮询
@@ -1018,7 +1371,7 @@ public class PTMotoTelemetryManager {
     }
 
     // MARK: 使用硬编码字符串完美脱离 SwiftOBD2 评估依赖
-    private func parseSingleResponse(command: String, response: String) -> Double? {
+    private func parseSingleResponse(command: String, response: String) -> Any? {
         // 只保留 0-9 和 A-F，彻底粉碎所有的空格、回车、甚至是不可见的 \0 (Null Byte)！
         let hexValid = "0123456789ABCDEF"
         let pureResponse = response.uppercased().filter { hexValid.contains($0) }
@@ -1065,12 +1418,58 @@ public class PTMotoTelemetryManager {
         
         let A = getByte(at: 0)
         let B = getByte(at: 1)
-        
+        let C = getByte(at: 2)
+        let D = getByte(at: 3)
+
         // 使用纯净的 4 位指令进行 Switch，彻底打通数据通路！
-        var parsedValue: Double? = nil
+        var parsedValue: Any? = nil
                 
         //
         switch modeAndPID {
+        case "0101":
+            break
+            if let a = A, let b = B, let c = C, let d = D {
+                // 将 Double 转回 Int 以进行位运算
+                let aInt = Int(a)
+                let bInt = Int(b)
+                let cInt = Int(c)
+                let dInt = Int(d)
+                
+                // 【Byte A】：Bit 7 是 MIL，Bit 0-6 是故障码数量
+                let milOn = (aInt & 0x80) != 0       // 1000 0000 掩码提取第 7 位
+                let count = (aInt & 0x7F)            // 0111 1111 掩码提取低 7 位
+                
+                // 【Byte B】：连续监控系统
+                // 支持位 (Supported): Bit 0, 1, 2
+                let misfireSup = (bInt & 0x01) != 0
+                let fuelSup    = (bInt & 0x02) != 0
+                let compSup    = (bInt & 0x04) != 0
+                // 就绪位 (Ready): Bit 4, 5, 6 (在 OBD 标准中，0 代表就绪，1 代表未就绪)
+                let misfireRdy = (bInt & 0x10) == 0
+                let fuelRdy    = (bInt & 0x20) == 0
+                let compRdy    = (bInt & 0x40) == 0
+                
+                // 【Byte C & D】：非连续监控系统 (以汽油机标准为例)
+                // 支持位 (Byte C 的 Bit 0, Bit 5, Bit 7)
+                let catSup = (cInt & 0x01) != 0 // 催化器
+                let o2Sup  = (cInt & 0x20) != 0 // 氧传感器
+                let egrSup = (cInt & 0x80) != 0 // EGR
+                // 就绪位 (Byte D 的 Bit 0, Bit 5, Bit 7)
+                let catRdy = (dInt & 0x01) == 0
+                let o2Rdy  = (dInt & 0x20) == 0
+                let egrRdy = (dInt & 0x80) == 0
+                
+                let status = PTVehicleStatus0101(
+                    isMILOn: milOn, dtcCount: count,
+                    misfireSupported: misfireSup, misfireReady: misfireRdy,
+                    fuelSystemSupported: fuelSup, fuelSystemReady: fuelRdy,
+                    componentsSupported: compSup, componentsReady: compRdy,
+                    catalystSupported: catSup, catalystReady: catRdy,
+                    o2SensorSupported: o2Sup, o2SensorReady: o2Rdy,
+                    egrSupported: egrSup, egrReady: egrRdy
+                )
+                parsedValue = status
+            }
         case "010C": // RPM 转速
             if let a = A, let b = B { parsedValue = (a * 256.0 + b) / 4.0 }
         case "010D": // Vehicle Speed 车速
@@ -1095,7 +1494,7 @@ public class PTMotoTelemetryManager {
             if let a = A, let b = B { parsedValue = (a * 256.0 + b) / 1000.0 }
         case "015E": // 发动机燃油率
             if let a = A, let b = B { parsedValue = (a * 256.0 + b) / 20.0 }
-        case "0101", "0103", "0113", "011C", "0141", "0151": // 状态/协议/掩码类数据
+        case "0103", "0113", "011C", "0141", "0151": // 状态/协议/掩码类数据
             if let a = A { parsedValue = a }
         case "0100", "0120", "0140", "0160": // PID 支持探针 (本身不是 Double 测量值，给个占位符防止报错)
             parsedValue = 1.0
@@ -1104,7 +1503,7 @@ public class PTMotoTelemetryManager {
         }
         
         if let val = parsedValue {
-            PTOBDLogger.shared.ptLog("🏎️ [解析成功] \(modeAndPID) -> \(val)")
+//            PTOBDLogger.shared.ptLog("🏎️ [解析成功] \(modeAndPID) -> \(val)")
             return val
         }
         
@@ -1145,7 +1544,7 @@ extension PTMotoTelemetryManager {
     public func clearDiagnosticTroubleCodes() async -> Bool {
         guard isConnected else { return false }
         do {
-            let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync("04")
+            let response = try await self.sendRawCommandAsync("04")
             let cleanResponse = self.clearString(response: response)
             if cleanResponse.hasPrefix("44") || cleanResponse.contains("OK") { return true }
             else { return false }
@@ -1173,7 +1572,7 @@ extension PTMotoTelemetryManager {
     private func fetchDTCs(command: String, expectedHeader: String) async -> [String] {
         guard isConnected else { return [] }
         do {
-            let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(command)
+            let response = try await self.sendRawCommandAsync(command)
             let purePayload = PTMultiFrameParser.extractPureHexPayload(response: response)
             
             // 找到对应的成功响应头
@@ -1224,7 +1623,7 @@ extension PTMotoTelemetryManager {
             let currentMid = directory.properties.command
             
             do {
-                let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(currentMid)
+                let response = try await self.sendRawCommandAsync(currentMid)
                 let cleanResponse = self.clearString(response: response)
                 
                 // 如果 ECU 明确表示不支持该页目录，直接跳过查下一页
@@ -1291,7 +1690,7 @@ extension PTMotoTelemetryManager {
         for cmdEnum in commands {
             let hexCommand = cmdEnum.properties.command // 提取如 "0601"
             do {
-                let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(hexCommand)
+                let response = try await self.sendRawCommandAsync(hexCommand)
                 let purePayload = PTMultiFrameParser.extractPureHexPayload(response: response)
                 
                 // 将纯净十六进制丢给我们的解析器，解析出数值、上限、下限
@@ -1319,7 +1718,7 @@ extension PTMotoTelemetryManager {
         let command = "02" + safePid + frameNumber
         
         do {
-            let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(command)
+            let response = try await self.sendRawCommandAsync(command)
             let cleanResponse = self.clearString(response: response)
             
             if cleanResponse.contains("NODATA") || cleanResponse.contains("ERROR") {
@@ -1328,10 +1727,12 @@ extension PTMotoTelemetryManager {
             
             // 丢给双模无敌装甲解析器
             let val = self.parseSingleResponse(command: command, response: response)
-            if let v = val {
+            if let v = val as? Double {
                 PTOBDLogger.shared.ptLog("📸 [冻结帧快照] 捕获 PID:\(safePid) 故障时数据 -> \(v)")
+                return v
+            } else {
+                return nil
             }
-            return val
         } catch { return nil }
     }
 }
