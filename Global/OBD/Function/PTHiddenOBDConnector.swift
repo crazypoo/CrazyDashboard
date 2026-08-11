@@ -325,7 +325,7 @@ extension PTHiddenOBDConnector: CBPeripheralDelegate {
         activeCommand = rawCommand
         rxBuffer = ""
         
-        PTOBDLogger.shared.ptLog("⬆️ [TX Init \(currentQueueIndex + 1)/19] \(rawCommand)\\r")
+        PTOBDLogger.shared.ptLog("⬆️ [TX Init \(currentQueueIndex + 1)/\(initQueue.count)] \(rawCommand)\\r")
         
         guard let writeChar = self.writeCharacteristic,
               let data = "\(rawCommand)\r".data(using: .ascii),
@@ -346,7 +346,6 @@ extension PTHiddenOBDConnector: CBPeripheralDelegate {
             var isComplete = false
             var endRange: Range<String.Index>? = nil
             
-            // 🌟 核心致命 Bug 修复：彻底废除 ATRV 包含 "V" 截断的逻辑，强迫状态机永远只在收到 ">" 符时才切断数据，避免状态机跳步引发断联！
             if let range = rxBuffer.range(of: ">") {
                 isComplete = true
                 endRange = range
@@ -424,31 +423,9 @@ extension PTHiddenOBDConnector: CBPeripheralDelegate {
             }
         }
         
+        // 我们不再重试 0100 的错误情况，保证 19 步行云流水跑通
         if cmd == "0100" || cmd == "0120" || cmd == "0140" {
-            let successHeader = "41" + cmd.dropFirst(2)
-            
-            // 🌟 完美避开 SEARCHING... 干扰：只要字符串里包含成功金块 4100，直接无视前面的 SEARCHING
-            if cleanResponseForCheck.contains(successHeader) {
-                collectedPIDResponses.append(response)
-            } else {
-                if cleanResponseForCheck.contains("UNABLETOCONNECT") {
-                    PTOBDLogger.shared.ptLog("⚠️ [状态机] \(cmd) 提示 UNABLE TO CONNECT")
-                    if !debugFlagSent {
-                        initQueue.insert("AT+DEBUG_FLG", at: currentQueueIndex)
-                        debugFlagSent = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in self?.sendNextCommand() }
-                        return
-                    } else {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.sendNextCommand() }
-                        return
-                    }
-                }
-                if cleanResponseForCheck.contains("NODATA") || cleanResponseForCheck.contains("SEARCHING") {
-                    PTOBDLogger.shared.ptLog("⚠️ [状态机] \(cmd) 收到 NO DATA/SEARCHING，继续死磕重试...")
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.sendNextCommand() }
-                    return
-                }
-            }
+            collectedPIDResponses.append(response)
         }
         
         if cmd == "ATDP" { PTMotoTelemetryManager.shared.setProtocol(cleanResponseForCheck) }
@@ -536,7 +513,7 @@ public class PTMotoTelemetryManager {
         PTHiddenOBDConnector.shared.startIcebreakerConnection()
     }
     
-    // MARK: - 极简轮询引擎 (双灯狂闪连发版)
+    // MARK: - 极简轮询引擎 (0 延迟极速 UI 更新版)
     private func startLightweightPolling(rawPIDs: [String]) {
         telemetryPollingTask?.cancel()
         
@@ -550,9 +527,9 @@ public class PTMotoTelemetryManager {
                 return
             }
             
-            let rpmCmd = OBDCommand.mode1(.rpm).properties.command
-            let speedCmd = OBDCommand.mode1(.speed).properties.command
-            let tempCmd = OBDCommand.mode1(.coolantTemp).properties.command
+            let rpmCmd = "010C"
+            let speedCmd = "010D"
+            let tempCmd = "0105"
             let voltCmd = "ATRV"
             
             let safeCommands = [rpmCmd, speedCmd, tempCmd, voltCmd]
@@ -565,7 +542,7 @@ public class PTMotoTelemetryManager {
                 }
             }
             
-            // 完全严格执行官方 24 步高速循环队列，绝对不再引入乱七八糟的 PID[cite: 4]
+            // 官方 24 步高频轮询队列[cite: 4]
             let pollingQueue: [String] = [
                 rpmCmd, speedCmd, rpmCmd, tempCmd, rpmCmd, voltCmd,
                 rpmCmd, speedCmd, rpmCmd, tempCmd, rpmCmd, voltCmd,
@@ -574,11 +551,11 @@ public class PTMotoTelemetryManager {
             ]
             PTOBDLogger.shared.ptLog("⚡️ [轮询引擎] 启动 24 步高速连射阵列，准备引爆指示灯！")
             
-            var consecutiveNoData = 0
+            // 🌟 致命修正 1：建立一个持续保存数据的字典，避免在每次循环开头重置为 0.0！
+            var persistentMeasurements: [String: Any] = [:]
+            for command in safeCommands { persistentMeasurements[command] = 0.0 }
             
             while !Task.isCancelled && self.isConnected {
-                var currentMeasurements: [String: Any] = [:]
-                for command in safeCommands { currentMeasurements[command] = 0.0 }
                 
                 for commandString in pollingQueue {
                     if Task.isCancelled { break }
@@ -587,41 +564,31 @@ public class PTMotoTelemetryManager {
                         let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(commandString)
                         let cleanResponse = self.clearString(response: response)
                         
-                        if cleanResponse.contains("NODATA") || cleanResponse.contains("NO DATA") {
-                            consecutiveNoData += 1
-                            if consecutiveNoData >= 3 {
-                                PTOBDLogger.shared.ptLog("⚠️ [防死机] 连续 NO DATA，中止队列连射，发送起搏器 0100 唤醒 ECU！")
-                                _ = try? await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0100")
-                                consecutiveNoData = 0
-                                try? await Task.sleep(nanoseconds: 500_000_000)
-                                break
-                            }
-                        } else {
-                            consecutiveNoData = 0
-                            if !cleanResponse.isEmpty && !cleanResponse.contains("ERROR") {
-                                if let val = self.parseSingleResponse(command: commandString, response: response) {
-                                    currentMeasurements[commandString] = val
-                                } else {
-                                    if cleanResponse.contains("41") {
-                                        currentMeasurements[commandString] = cleanResponse
-                                    }
+                        // 过滤掉偶尔的 NO DATA 或杂音，绝不打断轮询！
+                        if !cleanResponse.isEmpty && !cleanResponse.contains("NODATA") && !cleanResponse.contains("ERROR") && !cleanResponse.contains("NO DATA") {
+                            
+                            // 交给强硬的解析器
+                            if let val = self.parseSingleResponse(command: commandString, response: response) {
+                                persistentMeasurements[commandString] = val
+                                PTOBDLogger.shared.ptLog("🏎️ [解析成功] 完美提取 \(commandString) 数据 = \(val)")
+                                
+                                // 一旦拿到哪怕一个新数据，瞬间推给 UI（0延迟派发）！
+                                // 彻底解决原来必须等满 4 秒才能更新 UI 的“界面假死”现象！
+                                let mapToDispatch = persistentMeasurements
+                                await MainActor.run {
+                                    self.dispatchMeasurementsToDelegates(measurements: mapToDispatch)
                                 }
+                            } else {
+                                PTOBDLogger.shared.ptLog("解析不出\(response)")
                             }
                         }
-                    } catch {
-                        PTOBDLogger.shared.ptLog("❌ [轮询引擎] 指令 \(commandString) 发送异常")
-                    }
+                    } catch {}
                     
-                    // 🚀 维持高频连射，由于彻底清除了假 Bug，蓝牙将毫无顾虑地吞吐
+                    // 维持 10 毫秒极限微延迟，确保双灯完美同步狂闪！
                     try? await Task.sleep(nanoseconds: 10_000_000)
                 }
                 
-                await MainActor.run {
-                    var map:[String:Any] = [:]
-                    currentMeasurements.forEach { value in map[value.key] = value.value }
-                    self.dispatchMeasurementsToDelegates(measurements: map)
-                }
-                
+                // 周期底噪
                 try? await Task.sleep(nanoseconds: 50_000_000)
             }
         }
@@ -679,58 +646,80 @@ public class PTMotoTelemetryManager {
         return supported
     }
 
+    // MARK: - 🌟 无敌装甲解析器：使用硬编码字符串完美脱离 SwiftOBD2 评估依赖
     private func parseSingleResponse(command: String, response: String) -> Double? {
-        let cleanStr = clearString(response: response)
+        // 1. 终极净化：只保留 0-9 和 A-F，彻底粉碎所有的空格、回车、甚至是不可见的 \0 (Null Byte)！
+        let hexValid = "0123456789ABCDEF"
+        let pureResponse = response.uppercased().filter { hexValid.contains($0) }
+        let pureCommand = command.uppercased().filter { hexValid.contains($0) }
         
-        if command == OBDCommand.General.ATRV.properties.command || command == "ATRV" {
-            let voltStr = cleanStr.replacingOccurrences(of: "V", with: "")
+        // 为 ATRV 开辟专属“绿色通道”
+        if pureCommand == "ATRV" || command.uppercased().contains("ATRV") {
+            // 电压含有小数点，单独提纯
+            let voltStr = response.uppercased().replacingOccurrences(of: "V", with: "").filter { "0123456789.".contains($0) }
             return Double(voltStr)
         }
         
-        guard command.hasPrefix("01") && command.count == 4 else { return nil }
+        // 2. 确保指令前缀合法且长度足够
+        guard pureCommand.hasPrefix("01") && pureCommand.count >= 4 else {
+            PTOBDLogger.shared.ptLog("❌ 拦截：指令格式不合法 -> [\(pureCommand)]")
+            return nil
+        }
         
-        let expectedPrefix = "41" + command.dropFirst(2)
-        guard let range = cleanStr.range(of: expectedPrefix) else { return nil }
+        // 3. 提取预期报头，例如 "010C" -> "410C"
+        let modeAndPID = String(pureCommand.prefix(4))
+        let pidHex = String(modeAndPID.suffix(2))
         
-        let rawDataPart = String(cleanStr[range.upperBound...])
-        let dataPart = rawDataPart.filter { "0123456789ABCDEF".contains($0) }
+        // 拼接预期前缀 (41 + 0C = 410C)
+        let expectedPrefix = "41" + pidHex
+        
+        // 4. 在绝对纯净的响应中寻找报头
+        // 此时 "7E804410C196C".range(of: "410C") 绝对能完美匹配！
+        guard let range = pureResponse.range(of: expectedPrefix) else {
+            PTOBDLogger.shared.ptLog("❌ 拦截：纯净响应中找不到报头 | 纯净指令:[\(pureCommand)] 预期报头:[\(expectedPrefix)] 纯净响应:[\(pureResponse)]")
+            return nil
+        }
+        
+        let rawDataPart = String(pureResponse[range.upperBound...])
         
         func getByte(at index: Int) -> Double? {
             let startOffset = index * 2
-            guard dataPart.count >= startOffset + 2 else { return nil }
-            let start = dataPart.index(dataPart.startIndex, offsetBy: startOffset)
-            let end = dataPart.index(start, offsetBy: 2)
-            if let intVal = Int(dataPart[start..<end], radix: 16) { return Double(intVal) }
+            guard rawDataPart.count >= startOffset + 2 else { return nil }
+            let startIndex = rawDataPart.index(rawDataPart.startIndex, offsetBy: startOffset)
+            let endIndex = rawDataPart.index(startIndex, offsetBy: 2)
+            if let intVal = Int(rawDataPart[startIndex..<endIndex], radix: 16) { return Double(intVal) }
             return nil
         }
         
         let A = getByte(at: 0)
         let B = getByte(at: 1)
         
-        switch command {
-        case OBDCommand.mode1(.rpm).properties.command:
-            if let a = A, let b = B { return (a * 256 + b) / 4.0 }
-        case OBDCommand.mode1(.speed).properties.command:
+        // 5. 使用纯净的 4 位指令进行 Switch，彻底打通数据通路！
+        switch String(pureCommand.prefix(4)) {
+        case "010C":
+            if let a = A, let b = B { return (a * 256.0 + b) / 4.0 }
+        case "010D":
             if let a = A { return a }
-        case OBDCommand.mode1(.engineLoad).properties.command:
+        case "0104":
             if let a = A { return a * 100.0 / 255.0 }
-        case OBDCommand.mode1(.coolantTemp).properties.command, OBDCommand.mode1(.intakeTemp).properties.command:
+        case "0105", "010F":
             if let a = A { return a - 40.0 }
-        case OBDCommand.mode1(.controlModuleVoltage).properties.command:
-            if let a = A, let b = B { return (a * 256 + b) / 1000.0 }
-        case OBDCommand.mode1(.fuelRate).properties.command:
-            if let a = A, let b = B { return (a * 256 + b) / 20.0 }
-        case OBDCommand.mode1(.intakePressure).properties.command, OBDCommand.mode1(.barometricPressure).properties.command:
+        case "0142":
+            if let a = A, let b = B { return (a * 256.0 + b) / 1000.0 }
+        case "015E":
+            if let a = A, let b = B { return (a * 256.0 + b) / 20.0 }
+        case "010B", "0133":
             if let a = A { return a }
-        case OBDCommand.mode1(.timingAdvance).properties.command:
+        case "010E":
             if let a = A { return a / 2.0 - 64.0 }
-        case OBDCommand.mode1(.maf).properties.command:
-            if let a = A, let b = B { return (a * 256 + b) / 100.0 }
-        case OBDCommand.mode1(.runTime).properties.command, OBDCommand.mode1(.distanceSinceDTCCleared).properties.command:
-            if let a = A, let b = B { return a * 256 + b }
-        case OBDCommand.mode1(.fuelLevel).properties.command:
+        case "0110":
+            if let a = A, let b = B { return (a * 256.0 + b) / 100.0 }
+        case "011F", "014D":
+            if let a = A, let b = B { return a * 256.0 + b }
+        case "012F":
             if let a = A { return a * 100.0 / 255.0 }
         default:
+            PTOBDLogger.shared.ptLog("⚠️ 未适配计算公式: \(pureCommand)")
             break
         }
         
@@ -750,8 +739,9 @@ public class PTMotoTelemetryManager {
     private func dispatchMeasurementsToDelegates(measurements: [String: Any]) {
         self.cleanupDelegates()
         
-        if let rpm = measurements[OBDCommand.mode1(.rpm).properties.command] as? Double { self.currentRPM = rpm }
-        if let speed = measurements[OBDCommand.mode1(.speed).properties.command] as? Double { self.currentSpeed = speed }
+        // UI 回调，UI 需要监听 "010C" 等字符串
+        if let rpm = measurements["010C"] as? Double { self.currentRPM = rpm }
+        if let speed = measurements["010D"] as? Double { self.currentSpeed = speed }
         
         self.delegates.forEach { wrapper in
             wrapper.delegate?.telemetryManager(self, didUpdateMeasurements: measurements)
