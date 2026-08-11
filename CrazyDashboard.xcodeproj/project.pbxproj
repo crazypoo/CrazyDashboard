@@ -8,6 +8,28 @@
 
 /* Begin PBXBuildFile section */
 		55028F2C2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */; };
+		5512F31B302B5E8A001AFED4 /* BLEPeripheralManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F303302B5E8A001AFED4 /* BLEPeripheralManager.swift */; };
+		5512F31C302B5E8A001AFED4 /* BLEScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F304302B5E8A001AFED4 /* BLEScanner.swift */; };
+		5512F31D302B5E8A001AFED4 /* wifiManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F307302B5E8A001AFED4 /* wifiManager.swift */; };
+		5512F31E302B5E8A001AFED4 /* elm327.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F314302B5E8A001AFED4 /* elm327.swift */; };
+		5512F31F302B5E8A001AFED4 /* BLEConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F300302B5E8A001AFED4 /* BLEConnection.swift */; };
+		5512F320302B5E8A001AFED4 /* bleManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F302302B5E8A001AFED4 /* bleManager.swift */; };
+		5512F321302B5E8A001AFED4 /* BLEDataProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F301302B5E8A001AFED4 /* BLEDataProcessor.swift */; };
+		5512F322302B5E8A001AFED4 /* mockManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F306302B5E8A001AFED4 /* mockManager.swift */; };
+		5512F323302B5E8A001AFED4 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F319302B5E8A001AFED4 /* Utils.swift */; };
+		5512F324302B5E8A001AFED4 /* TroubleCodes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F318302B5E8A001AFED4 /* TroubleCodes.swift */; };
+		5512F325302B5E8A001AFED4 /* codes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F311302B5E8A001AFED4 /* codes.swift */; };
+		5512F326302B5E8A001AFED4 /* commands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F312302B5E8A001AFED4 /* commands.swift */; };
+		5512F327302B5E8A001AFED4 /* obd2service.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F316302B5E8A001AFED4 /* obd2service.swift */; };
+		5512F328302B5E8A001AFED4 /* garage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F315302B5E8A001AFED4 /* garage.swift */; };
+		5512F329302B5E8A001AFED4 /* parser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F317302B5E8A001AFED4 /* parser.swift */; };
+		5512F32A302B5E8A001AFED4 /* BLECharacteristicHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F2FF302B5E8A001AFED4 /* BLECharacteristicHandler.swift */; };
+		5512F32B302B5E8A001AFED4 /* protocol_can.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F30B302B5E8A001AFED4 /* protocol_can.swift */; };
+		5512F32C302B5E8A001AFED4 /* protocol_legacy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F30C302B5E8A001AFED4 /* protocol_legacy.swift */; };
+		5512F32D302B5E8A001AFED4 /* decoders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F313302B5E8A001AFED4 /* decoders.swift */; };
+		5512F32E302B5E8A001AFED4 /* OBDLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F309302B5E8A001AFED4 /* OBDLogger.swift */; };
+		5512F32F302B5E8A001AFED4 /* codes.json in Resources */ = {isa = PBXBuildFile; fileRef = 5512F30E302B5E8A001AFED4 /* codes.json */; };
+		5512F330302B5E8A001AFED4 /* commands.json in Resources */ = {isa = PBXBuildFile; fileRef = 5512F30F302B5E8A001AFED4 /* commands.json */; };
 		554110DB301E65AB0059BFCF /* PTLiDARCollisionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 554110DA301E65AB0059BFCF /* PTLiDARCollisionManager.swift */; };
 		5541111F301F2B630059BFCF /* PTStatusItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5541111E301F2B630059BFCF /* PTStatusItemView.swift */; };
 		554112933021DC830059BFCF /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
@@ -39,7 +61,6 @@
 		5577E7CC2FD6FF890004733F /* PTLeanAngleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7CB2FD6FF890004733F /* PTLeanAngleView.swift */; };
 		5577E7D02FD704790004733F /* PTBumpMeterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7CE2FD704790004733F /* PTBumpMeterView.swift */; };
 		5577E7D32FD704AD0004733F /* PTPitchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E7D12FD704AD0004733F /* PTPitchView.swift */; };
-		5587899D30231DD700B94E91 /* SwiftOBD2 in Frameworks */ = {isa = PBXBuildFile; productRef = 5587899C30231DD700B94E91 /* SwiftOBD2 */; };
 		558789E4302420CB00B94E91 /* PTCarplayMainController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 558789E3302420CB00B94E91 /* PTCarplayMainController.swift */; };
 		558789E630242B9400B94E91 /* PTCarPlayContainerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 558789E530242B9400B94E91 /* PTCarPlayContainerViewController.swift */; };
 		55901837300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55901836300FE37100A77571 /* PTMotoBaseViewController.swift */; };
@@ -109,6 +130,28 @@
 		2567A83A06A2B2498B880D19 /* Pods-CrazyDashboard.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.release.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.release.xcconfig"; sourceTree = "<group>"; };
 		33464FDDE31899C7F87FB6EC /* Pods_PTSpeed.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_PTSpeed.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashBoardBaseBoardViewController.swift; sourceTree = "<group>"; };
+		5512F2FF302B5E8A001AFED4 /* BLECharacteristicHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLECharacteristicHandler.swift; sourceTree = "<group>"; };
+		5512F300302B5E8A001AFED4 /* BLEConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEConnection.swift; sourceTree = "<group>"; };
+		5512F301302B5E8A001AFED4 /* BLEDataProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEDataProcessor.swift; sourceTree = "<group>"; };
+		5512F302302B5E8A001AFED4 /* bleManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = bleManager.swift; sourceTree = "<group>"; };
+		5512F303302B5E8A001AFED4 /* BLEPeripheralManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEPeripheralManager.swift; sourceTree = "<group>"; };
+		5512F304302B5E8A001AFED4 /* BLEScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEScanner.swift; sourceTree = "<group>"; };
+		5512F306302B5E8A001AFED4 /* mockManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = mockManager.swift; sourceTree = "<group>"; };
+		5512F307302B5E8A001AFED4 /* wifiManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = wifiManager.swift; sourceTree = "<group>"; };
+		5512F309302B5E8A001AFED4 /* OBDLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OBDLogger.swift; sourceTree = "<group>"; };
+		5512F30B302B5E8A001AFED4 /* protocol_can.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = protocol_can.swift; sourceTree = "<group>"; };
+		5512F30C302B5E8A001AFED4 /* protocol_legacy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = protocol_legacy.swift; sourceTree = "<group>"; };
+		5512F30E302B5E8A001AFED4 /* codes.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = codes.json; sourceTree = "<group>"; };
+		5512F30F302B5E8A001AFED4 /* commands.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = commands.json; sourceTree = "<group>"; };
+		5512F311302B5E8A001AFED4 /* codes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = codes.swift; sourceTree = "<group>"; };
+		5512F312302B5E8A001AFED4 /* commands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = commands.swift; sourceTree = "<group>"; };
+		5512F313302B5E8A001AFED4 /* decoders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = decoders.swift; sourceTree = "<group>"; };
+		5512F314302B5E8A001AFED4 /* elm327.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = elm327.swift; sourceTree = "<group>"; };
+		5512F315302B5E8A001AFED4 /* garage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = garage.swift; sourceTree = "<group>"; };
+		5512F316302B5E8A001AFED4 /* obd2service.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = obd2service.swift; sourceTree = "<group>"; };
+		5512F317302B5E8A001AFED4 /* parser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = parser.swift; sourceTree = "<group>"; };
+		5512F318302B5E8A001AFED4 /* TroubleCodes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TroubleCodes.swift; sourceTree = "<group>"; };
+		5512F319302B5E8A001AFED4 /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
 		554110DA301E65AB0059BFCF /* PTLiDARCollisionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLiDARCollisionManager.swift; sourceTree = "<group>"; };
 		5541111E301F2B630059BFCF /* PTStatusItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTStatusItemView.swift; sourceTree = "<group>"; };
 		55499CEB3018E6E100A1A2D9 /* PTDashBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashBoardView.swift; sourceTree = "<group>"; };
@@ -237,7 +280,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				5A200D40EF300920887AD052 /* Pods_PTSpeed.framework in Frameworks */,
-				5587899D30231DD700B94E91 /* SwiftOBD2 in Frameworks */,
 				55E61692301B45B50075F883 /* QWeatherSDK in Frameworks */,
 				5577E6762FD657F30004733F /* libz.tbd in Frameworks */,
 			);
@@ -246,6 +288,75 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		5512F305302B5E8A001AFED4 /* BLE */ = {
+			isa = PBXGroup;
+			children = (
+				5512F2FF302B5E8A001AFED4 /* BLECharacteristicHandler.swift */,
+				5512F300302B5E8A001AFED4 /* BLEConnection.swift */,
+				5512F301302B5E8A001AFED4 /* BLEDataProcessor.swift */,
+				5512F302302B5E8A001AFED4 /* bleManager.swift */,
+				5512F303302B5E8A001AFED4 /* BLEPeripheralManager.swift */,
+				5512F304302B5E8A001AFED4 /* BLEScanner.swift */,
+			);
+			path = BLE;
+			sourceTree = "<group>";
+		};
+		5512F308302B5E8A001AFED4 /* Communication */ = {
+			isa = PBXGroup;
+			children = (
+				5512F305302B5E8A001AFED4 /* BLE */,
+				5512F306302B5E8A001AFED4 /* mockManager.swift */,
+				5512F307302B5E8A001AFED4 /* wifiManager.swift */,
+			);
+			path = Communication;
+			sourceTree = "<group>";
+		};
+		5512F30A302B5E8A001AFED4 /* Logging */ = {
+			isa = PBXGroup;
+			children = (
+				5512F309302B5E8A001AFED4 /* OBDLogger.swift */,
+			);
+			path = Logging;
+			sourceTree = "<group>";
+		};
+		5512F30D302B5E8A001AFED4 /* protocols */ = {
+			isa = PBXGroup;
+			children = (
+				5512F30B302B5E8A001AFED4 /* protocol_can.swift */,
+				5512F30C302B5E8A001AFED4 /* protocol_legacy.swift */,
+			);
+			path = protocols;
+			sourceTree = "<group>";
+		};
+		5512F310302B5E8A001AFED4 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				5512F30E302B5E8A001AFED4 /* codes.json */,
+				5512F30F302B5E8A001AFED4 /* commands.json */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		5512F31A302B5E8A001AFED4 /* SwiftOBD2 */ = {
+			isa = PBXGroup;
+			children = (
+				5512F308302B5E8A001AFED4 /* Communication */,
+				5512F30A302B5E8A001AFED4 /* Logging */,
+				5512F30D302B5E8A001AFED4 /* protocols */,
+				5512F310302B5E8A001AFED4 /* Resources */,
+				5512F311302B5E8A001AFED4 /* codes.swift */,
+				5512F312302B5E8A001AFED4 /* commands.swift */,
+				5512F313302B5E8A001AFED4 /* decoders.swift */,
+				5512F314302B5E8A001AFED4 /* elm327.swift */,
+				5512F315302B5E8A001AFED4 /* garage.swift */,
+				5512F316302B5E8A001AFED4 /* obd2service.swift */,
+				5512F317302B5E8A001AFED4 /* parser.swift */,
+				5512F318302B5E8A001AFED4 /* TroubleCodes.swift */,
+				5512F319302B5E8A001AFED4 /* Utils.swift */,
+			);
+			path = SwiftOBD2;
+			sourceTree = "<group>";
+		};
 		554110D9301E658D0059BFCF /* LiDar */ = {
 			isa = PBXGroup;
 			children = (
@@ -385,6 +496,7 @@
 				55F1E2F03026D1DF0032EAD5 /* Function */,
 				55CA9E17302457F300A3A677 /* ViewController */,
 				55CA9DF33024529000A3A677 /* View */,
+				5512F31A302B5E8A001AFED4 /* SwiftOBD2 */,
 			);
 			path = OBD;
 			sourceTree = "<group>";
@@ -617,7 +729,6 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				55E61690301B45B50075F883 /* XCRemoteSwiftPackageReference "qweather-ios-sdk" */,
-				554114513022E0780059BFCF /* XCRemoteSwiftPackageReference "SwiftOBD2" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5577E5BE2FD5C1DB0004733F /* Products */;
@@ -645,6 +756,8 @@
 			files = (
 				55F503AC300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */,
 				5598676E3011C9720049684D /* Settings.bundle in Resources */,
+				5512F32F302B5E8A001AFED4 /* codes.json in Resources */,
+				5512F330302B5E8A001AFED4 /* commands.json in Resources */,
 				55FE2A6F300DF836000E741F /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -785,6 +898,26 @@
 				55986679301144840049684D /* PTGPXRecorder.swift in Sources */,
 				55499E1F301B1F4F00A1A2D9 /* PTWeatherOverlayView.swift in Sources */,
 				55F503BB300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift in Sources */,
+				5512F31B302B5E8A001AFED4 /* BLEPeripheralManager.swift in Sources */,
+				5512F31C302B5E8A001AFED4 /* BLEScanner.swift in Sources */,
+				5512F31D302B5E8A001AFED4 /* wifiManager.swift in Sources */,
+				5512F31E302B5E8A001AFED4 /* elm327.swift in Sources */,
+				5512F31F302B5E8A001AFED4 /* BLEConnection.swift in Sources */,
+				5512F320302B5E8A001AFED4 /* bleManager.swift in Sources */,
+				5512F321302B5E8A001AFED4 /* BLEDataProcessor.swift in Sources */,
+				5512F322302B5E8A001AFED4 /* mockManager.swift in Sources */,
+				5512F323302B5E8A001AFED4 /* Utils.swift in Sources */,
+				5512F324302B5E8A001AFED4 /* TroubleCodes.swift in Sources */,
+				5512F325302B5E8A001AFED4 /* codes.swift in Sources */,
+				5512F326302B5E8A001AFED4 /* commands.swift in Sources */,
+				5512F327302B5E8A001AFED4 /* obd2service.swift in Sources */,
+				5512F328302B5E8A001AFED4 /* garage.swift in Sources */,
+				5512F329302B5E8A001AFED4 /* parser.swift in Sources */,
+				5512F32A302B5E8A001AFED4 /* BLECharacteristicHandler.swift in Sources */,
+				5512F32B302B5E8A001AFED4 /* protocol_can.swift in Sources */,
+				5512F32C302B5E8A001AFED4 /* protocol_legacy.swift in Sources */,
+				5512F32D302B5E8A001AFED4 /* decoders.swift in Sources */,
+				5512F32E302B5E8A001AFED4 /* OBDLogger.swift in Sources */,
 				55FDBCA93010CD6E00EE7FA5 /* PTMOTOParkingManager.swift in Sources */,
 				5541111F301F2B630059BFCF /* PTStatusItemView.swift in Sources */,
 				55986676301144060049684D /* PTMaintenanceManager.swift in Sources */,
@@ -1343,14 +1476,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		554114513022E0780059BFCF /* XCRemoteSwiftPackageReference "SwiftOBD2" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/kkonteh97/SwiftOBD2/";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
-		};
 		55E61690301B45B50075F883 /* XCRemoteSwiftPackageReference "qweather-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/qwd/qweather-ios-sdk.git";
@@ -1362,11 +1487,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		5587899C30231DD700B94E91 /* SwiftOBD2 */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 554114513022E0780059BFCF /* XCRemoteSwiftPackageReference "SwiftOBD2" */;
-			productName = SwiftOBD2;
-		};
 		55E61691301B45B50075F883 /* QWeatherSDK */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 55E61690301B45B50075F883 /* XCRemoteSwiftPackageReference "qweather-ios-sdk" */;

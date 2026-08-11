@@ -9,7 +9,6 @@ import UIKit
 import PooTools
 import SnapKit
 import SwifterSwift
-import SwiftOBD2
 
 class PTTelemetryItemView: UIView {
     
@@ -135,14 +134,18 @@ class PTOBDDataView: UIView {
                 title = obdCommand.properties.description
                 
                 // 🤖 智能推断小数点精度
+                let unit = obdCommand.unitString
+                                
+                // 智能推断小数点精度，并将单位直接拼接到格式字符串的尾部！
                 let desc = title.lowercased()
                 if desc.contains("voltage") && desc.contains("o2") {
-                    format = "%.2f" // 氧传感器电压变化微小，给2位小数
+                    format = "%.2f \(unit)" // 如： 0.45 V
                 } else if desc.contains("voltage") || desc.contains("rate") || desc.contains("advance") || desc.contains("maf") {
-                    format = "%.1f" // 一般电压、流速、点火提前角给 1 位小数
+                    format = "%.1f \(unit)" // 如： 14.1 V, 3.2 g/s
                 } else {
-                    format = "%.0f" // 转速(RPM)、车速、温度、百分比全部抹除小数，保持 UI 干净
+                    format = "%.0f \(unit)" // 如： 1600 RPM, 95 ℃
                 }
+
                 isConfigured = true
             }
             // 💡 匹配逻辑 C：探索未知的厂家私有指令，绝不放过任何一个数据！

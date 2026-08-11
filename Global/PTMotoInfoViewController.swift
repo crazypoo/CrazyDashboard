@@ -11,7 +11,6 @@ import SafeSFSymbols
 import SwifterSwift
 import SnapKit
 import Instructions
-import SwiftOBD2
 
 fileprivate extension String {
     static let TRIPSECTION = "TRIPSECTION"
@@ -216,7 +215,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     }
                 })
             } else {
-                let actions = ["Error Code","Disconnect","Data","ECU info"]
+                let actions = ["Error Code","Disconnect","Data","ECU info","MIDs"]
                 UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: actions, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
                     switch index {
                     case 0:
@@ -248,7 +247,15 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                         
                         let msgData = "Moudle info:\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.company)\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.version)\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceType)\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceName)\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceMac)\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.interfase)\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.cust)\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.crypt)\nATZ:\n\(PTMotoTelemetryManager.shared.obdInfo.atzName)\nATI:\n\(PTMotoTelemetryManager.shared.obdInfo.aitName)\nProtocol:\n\(PTMotoTelemetryManager.shared.obdInfo.atdpName.description)\nVIN:\n\(PTMotoTelemetryManager.shared.obdInfo.vin)\nECU info:\n\(PTMotoTelemetryManager.shared.obdInfo.ecuVersion)\nCVN:\n\(PTMotoTelemetryManager.shared.obdInfo.cvn)\nSupprot commands:\n\(supprotCommandsString.joined(separator: "\n"))"
                         UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "ECU info"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: msgData, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
-
+                    case 4:
+                        Task {
+                            let ids = await PTMotoTelemetryManager.shared.scanSupportedMode6Commands()
+                            let rerort =  await PTMotoTelemetryManager.shared.fetchMode6TestReports(for: ids)
+                            let map = rerort.map { value in
+                                "\(value.componentName):\(value.isPassed ? "✅" : "⁉️")"
+                            }
+                            UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "MIDs info"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: map.joined(separator: "\n"), cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
+                        }
                     default:
                         break
                     }

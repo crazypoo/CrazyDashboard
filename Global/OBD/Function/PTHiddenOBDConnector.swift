@@ -9,8 +9,130 @@ import Foundation
 import CoreBluetooth
 import PooTools
 import CryptoKit
-import SwiftOBD2
 import Combine
+
+public extension OBDCommand {
+    
+    /// 返回该指令在公制标准下对应的物理单位字符串
+    var unitString: String {
+        switch self {
+        case .general(let generalCommand):
+            // 特殊处理我们自定义的电压探针
+            if generalCommand == .ATRV { return "V" }
+            return ""
+            
+        case .mode1(let mode1Command):
+            switch mode1Command {
+            // 速度与转速类
+            case .rpm: return "RPM"
+            case .speed: return "km/h"
+            
+            // 温度类 (摄氏度)
+            case .coolantTemp, .intakeTemp, .ambientAirTemp, .engineOilTemp, .catalystTempB1S1, .catalystTempB2S1, .catalystTempB1S2, .catalystTempB2S2:
+                return "℃"
+                
+            // 压力类 (千帕)
+            case .intakePressure, .barometricPressure, .evapVaporPressure, .evapVaporPressureAbs, .evapVaporPressureAlt, .fuelPressure, .fuelRailPressureVac, .fuelRailPressureDirect, .fuelRailPressureAbs:
+                return "kPa"
+                
+            // 百分比类 (负载、节气门、油量、燃油修正等)
+            case .engineLoad, .throttlePos, .relativeThrottlePos, .absoluteLoad, .throttleActuator, .throttlePosB, .throttlePosC, .throttlePosD, .throttlePosE, .throttlePosF: return "%"
+            case .fuelLevel, .hybridBatteryLife, .relativeAccelPos: return "%"
+            case .shortFuelTrim1, .longFuelTrim1, .shortFuelTrim2, .longFuelTrim2, .EGRError, .commandedEGR, .evaporativePurge, .shortO2TrimB1, .longO2TrimB1, .shortO2TrimB2, .longO2TrimB2: return "%"
+                
+            // 电压与电流类
+            case .controlModuleVoltage: return "V"
+            case .O2Bank1Sensor1, .O2Bank1Sensor2, .O2Bank1Sensor3, .O2Bank1Sensor4, .O2Bank2Sensor1, .O2Bank2Sensor2, .O2Bank2Sensor3, .O2Bank2Sensor4: return "V"
+            case .O2Sensor1WRVolatage, .O2Sensor2WRVolatage, .O2Sensor3WRVolatage, .O2Sensor4WRVolatage, .O2Sensor5WRVolatage, .O2Sensor6WRVolatage, .O2Sensor7WRVolatage, .O2Sensor8WRVolatage: return "V"
+            case .O2Sensor1WRCurrent, .O2Sensor2WRCurrent, .O2Sensor3WRCurrent, .O2Sensor4WRCurrent, .O2Sensor5WRCurrent, .O2Sensor6WRCurrent, .O2Sensor7WRCurrent, .O2Sensor8WRCurrent: return "mA"
+                
+            // 流量与时间类
+            case .maf: return "g/s"       // 空气质量流量
+            case .fuelRate: return "L/h"  // 燃油消耗率
+            case .timingAdvance: return "°" // 点火提前角
+            case .runTime, .timeSinceDTCCleared, .runTimeMIL: return "s" // 运行时间 (秒)
+            case .distanceWMIL, .distanceSinceDTCCleared: return "km" // 行驶距离
+                
+            // 计数器类
+            case .warmUpsSinceDTCCleared: return "times"
+                
+            // 其他没有明确数值单位的状态类
+            default: return ""
+            }
+            
+        // 如果你需要支持 Mode 6 化验单，由于单位是靠 UASI 动态解析的，此处返回空即可
+        case .mode6(_):
+            return ""
+            
+        default:
+            return ""
+        }
+    }
+}
+
+// MARK: - 🌟 Mode 6 “化验单”数据模型
+public struct PTMode6Data {
+    public let mid: String      // 监控部件 ID (如 01)
+    public let tid: String      // 测试项目 ID (如 81)
+    public let uasi: String     // 🌟 核心：UASI (单位和缩放 ID)，决定了用什么公式计算！
+    public let rawValue: Int    // 原始测试值
+    public let rawMinValue: Int // 原始及格下限
+    public let rawMaxValue: Int // 原始及格上限
+    
+    // 名称映射：完美复用 SwiftOBD2 的描述！
+    public var componentName: String {
+        // 拼接 "06" + "01" = "0601"
+        let commandString = "06" + mid
+        if let obdCommand = OBDCommand.from(command: commandString) {
+            return obdCommand.properties.description // 返回如 "O2 Sensor Monitor Bank 1 - Sensor 1"
+        }
+        return "Unknown Monitor (MID: \(mid))"
+    }
+    
+    // 智能判断该部件是否健康
+    public var isPassed: Bool {
+        // 在汽车标准中，0000 或 FFFF 通常代表该限制未被使用
+        let maxCheck = (rawMaxValue == 0 || rawMaxValue == 65535) ? true : (rawValue <= rawMaxValue)
+        let minCheck = (rawMinValue == 0) ? true : (rawValue >= rawMinValue)
+        return minCheck && maxCheck
+    }
+    
+    // 智能单位换算：利用 UASI 字节，将原始值转化为人类可读的物理单位
+    public var formattedValue: String { return decodeUASI(value: rawValue) }
+    public var formattedMin: String   { return decodeUASI(value: rawMinValue) }
+    public var formattedMax: String   { return decodeUASI(value: rawMaxValue) }
+    
+    // MARK: - 内部 UASI 工业标准解码引擎 (部分常用标准 J1979-DA 映射)
+    private func decodeUASI(value: Int) -> String {
+        // 对于未使用的极限值，显示 N/A
+        if value == 0 || value == 65535 { return "N/A" }
+        
+        let doubleVal = Double(value)
+        
+        // 解析 UASI 字节
+        switch uasi {
+        case "01":
+            return String(format: "%.0f Counts", doubleVal) // 计数器
+        case "04":
+            return String(format: "%.0f ms", doubleVal) // 时间 (毫秒)
+        case "08", "19", "1B":
+            return String(format: "%.3f V", doubleVal * 0.001) // 传感器电压 (1 bit = 1 mV)
+        case "0A":
+            return String(format: "%.3f A", doubleVal * 0.001) // 电流 (1 bit = 1 mA)
+        case "0B", "1E":
+            return String(format: "%.0f ℃", doubleVal * 0.1) // 温度 (需结合具体 PID 偏移，这里演示近似)
+        case "0F":
+            return String(format: "%.1f kPa", doubleVal * 0.1) // 压力 (1 bit = 0.1 kPa)
+        case "11":
+            return String(format: "%.1f g/s", doubleVal * 0.01) // 质量流量
+        case "1D":
+            return String(format: "%.2f %%", doubleVal * 0.0015259) // 占空比/百分比
+        default:
+            // 兜底方案：如果遇到不认识的 UASI，直接显示原始十六进制
+            return String(format: "Raw: %04X", value)
+        }
+    }
+}
 
 extension PROTOCOL {
     static func from(string: String) -> PROTOCOL {
@@ -136,6 +258,51 @@ public class PTMultiFrameParser {
         guard let prefix = prefixMap[firstChar] else { return nil }
         let suffix = String(hex.dropFirst())
         return prefix + suffix
+    }
+    
+    /// 🌟 新增：专门破译 Mode 6 复杂测试结果的方法
+    public static func parseMode6TestResults(pureHex: String) -> [PTMode6Data] {
+        guard pureHex.hasPrefix("46") else { return [] }
+        var results: [PTMode6Data] = []
+        let dataStr = String(pureHex.dropFirst(2))
+        
+        // CAN 总线格式： [MID:2位] [TID:2位] [UASI:2位] [Value:4位] [Min:4位] [Max:4位] = 共 18 字符
+        var i = dataStr.startIndex
+        while i < dataStr.endIndex {
+            let nextI = dataStr.index(i, offsetBy: 18, limitedBy: dataStr.endIndex) ?? dataStr.endIndex
+            
+            if dataStr.distance(from: i, to: nextI) == 18 {
+                let chunk = String(dataStr[i..<nextI])
+                
+                let midHex  = String(chunk.prefix(2))
+                let tidHex  = String(chunk.dropFirst(2).prefix(2))
+                let uasiHex = String(chunk.dropFirst(4).prefix(2)) // 🌟 提取出关键的 UASI 字节！
+                let valHex  = String(chunk.dropFirst(6).prefix(4))
+                let minHex  = String(chunk.dropFirst(10).prefix(4))
+                let maxHex  = String(chunk.dropFirst(14).prefix(4))
+                
+                if let val = Int(valHex, radix: 16),
+                   let min = Int(minHex, radix: 16),
+                   let max = Int(maxHex, radix: 16) {
+                    
+                    let testResult = PTMode6Data(
+                        mid: midHex,
+                        tid: tidHex,
+                        uasi: uasiHex, // 注入 UASI
+                        rawValue: val,
+                        rawMinValue: min,
+                        rawMaxValue: max
+                    )
+                    results.append(testResult)
+                    
+                    let status = testResult.isPassed ? "✅" : "❌"
+                    // 打印看看这炫酷的转换结果！
+                    PTOBDLogger.shared.ptLog("🔬 [\(testResult.componentName)] TID:\(tidHex) | 结果:\(testResult.formattedValue) (范围:\(testResult.formattedMin) ~ \(testResult.formattedMax)) | \(status)")
+                }
+            }
+            i = nextI
+        }
+        return results
     }
 }
 
@@ -563,13 +730,32 @@ extension PTHiddenOBDConnector: CBPeripheralDelegate {
                 PTMotoTelemetryManager.shared.obdInfo.moudleInfo.company = lines[0] // 第一行通常是公司名
             }
             for line in lines {
-                let lower = line.lowercased()
-                if lower.hasPrefix("version:") { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.version = String(line.dropFirst(8)) }
-                else if lower.hasPrefix("device type:") { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceType = String(line.dropFirst(12)) }
-                else if lower.hasPrefix("device name:") { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceName = String(line.dropFirst(12)) }
-                else if lower.hasPrefix("device mac:") { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceMac = String(line.dropFirst(11)).uppercased() }
-                else if lower.hasPrefix("interface:") { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.interfase = String(line.dropFirst(10)) }
-                else if lower.hasPrefix("cust id:") { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.cust = String(line.dropFirst(8)) }
+                // 使用冒号将当前行切分为数组
+                let parts = line.components(separatedBy: ":")
+                
+                // 确保这一行确实包含冒号和有效数据
+                guard parts.count >= 2 else { continue }
+                
+                // 左边是 Key：转小写并去除首尾空格，作为稳固的判断依据
+                let key = parts[0].lowercased().trimmingCharacters(in: .whitespaces)
+                
+                // 右边是 Value：如果数据本身包含冒号(如 MAC 地址)，用 joined 重新拼合，并剔除多余空格
+                let value = parts[1...].joined(separator: ":").trimmingCharacters(in: .whitespaces)
+                
+                // 极其清爽且绝对安全的赋值
+                if key == "version" {
+                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.version = value
+                } else if key == "device type" {
+                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceType = value
+                } else if key == "device name" {
+                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceName = value
+                } else if key == "device mac" {
+                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceMac = value.uppercased()
+                } else if key == "interface" {
+                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.interfase = value
+                } else if key == "cust id" {
+                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.cust = value
+                }
             }
 
             var cryptSeed = ""
@@ -1044,7 +1230,7 @@ extension PTMotoTelemetryManager {
         
         if isUsingSwiftOBD2 {
             do {
-                let response = try await obdService.sendCommand(.mode3(.GET_DTC))
+                let response = try await obdService.sendCommand(.mode4(.CLEAR_DTC))
                 switch response {
                 case .success: return true
                 case .failure: return false
@@ -1118,40 +1304,112 @@ extension PTMotoTelemetryManager {
                 return dtcs
             } catch { return [] }
         }
-    }
+    }    
+}
+
+extension PTMotoTelemetryManager {
     
-    // MARK: - 🚀 Mode 6: 获取非连续监控系统支持的 MIDs
-    public func getMode6SupportedMIDs() async -> [String] {
+    // MARK: - 🚀 步骤 1：深度扫描车辆支持的 Mode 6 指令 (强制全扫版)
+    /// 主动遍历 MIDS_A 到 MIDS_F 目录，找出所有支持的化验单项目
+    public func scanSupportedMode6Commands() async -> [OBDCommand.Mode6] {
         guard isConnected else { return [] }
         
-        if isUsingSwiftOBD2 {
-            do {
-                let response = try await obdService.sendCommand(.mode6(.MIDS_A))
-                // SwiftOBD2 会自动解析支持的 MID
-                switch response {
-                case .success(let result):
-                    // 具体返回值视 SwiftOBD2 解析器的具体结构而定
-                    return ["Mode 6 Data Retrived via SwiftOBD2"]
-                case .failure:
-                    return []
-                }
-            } catch { return [] }
+        var supportedHexCommands: [String] = []
+        
+        // 🌟 核心改进：不再依赖 ECU 的不靠谱翻页标志，直接强制列出所有目录清单
+        let directoryMIDs: [OBDCommand.Mode6] = [
+            .MIDS_A, // 0600
+            .MIDS_B, // 0620
+            .MIDS_C, // 0640
+            .MIDS_D, // 0660
+            .MIDS_E, // 0680
+            .MIDS_F  // 06A0
+        ]
+        
+        for directory in directoryMIDs {
+            let currentMid = directory.properties.command
             
-        } else {
             do {
-                // 发送 0600 请求 Mode 6 支持的监控 ID 列表
-                let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync("0600")
+                let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(currentMid)
                 let cleanResponse = self.clearString(response: response)
                 
-                // 如果返回包含了 46 (Mode 6 的响应头)
-                if cleanResponse.contains("46") {
-                    PTOBDLogger.shared.ptLog("🔬 [Mode 6] 成功探测到非连续监控系统数据: \(cleanResponse)")
-                    // 实际返回的数据会类似于 46 00 C0 00 00 01，表示支持特定的 MID。
-                    // 深度解析 Mode 6 通常需要对照车厂的工程手册，这里我们返回原始 Hex 供外部记录分析。
-                    return [cleanResponse]
+                // 如果 ECU 明确表示不支持该页目录，直接跳过查下一页
+                if cleanResponse.contains("NODATA") || cleanResponse.isEmpty {
+                    continue
                 }
-                return []
-            } catch { return [] }
+                
+                let purePayload = PTMultiFrameParser.extractPureHexPayload(response: response)
+                
+                // 预期报头，例如 "0600" -> "4600"
+                let expectedPrefix = "46" + currentMid.dropFirst(2)
+                guard let range = purePayload.range(of: expectedPrefix) else { continue }
+                
+                // 截取后面的 8 个字符 (32 位掩码)
+                let maskHex = String(purePayload[range.upperBound...].prefix(8))
+                guard maskHex.count == 8, let maskValue = UInt32(maskHex, radix: 16) else { continue }
+                
+                // 获取当前目录的基础值，例如 "0600" 提取出 0x00，"0620" 提取出 0x20
+                let baseHex = currentMid.dropFirst(2)
+                guard let baseInt = Int(baseHex, radix: 16) else { continue }
+                
+                // 解析 32 位掩码
+                for i in 0..<32 {
+                    let bit = (maskValue >> (31 - i)) & 1
+                    if bit == 1 {
+                        let supportedPidInt = baseInt + i + 1
+                        let supportedPidHex = String(format: "06%02X", supportedPidInt)
+                        supportedHexCommands.append(supportedPidHex)
+                    }
+                }
+                
+                // 保护 ECU 缓冲区的微小休眠
+                try? await Task.sleep(nanoseconds: 50_000_000)
+                
+            } catch {
+                PTOBDLogger.shared.ptLog("❌ [Mode 6] 扫描目录 \(currentMid) 失败")
+            }
         }
+        
+        // 🌟 将我们算出来的 Hex 字符串，统一映射为 SwiftOBD2 的原生对象！
+        var supportedMode6Enums: [OBDCommand.Mode6] = []
+        for hexCmd in supportedHexCommands {
+            // 过滤掉目录指针本身 (如 0620, 0640 代表翻页标志，并非真实测试项)
+            if hexCmd.hasSuffix("0") { continue }
+            
+            if let commandEnum = OBDCommand.from(command: hexCmd),
+               case .mode6(let mode6Cmd) = commandEnum {
+                supportedMode6Enums.append(mode6Cmd)
+            } else {
+                PTOBDLogger.shared.ptLog("⚠️ [Mode 6] 发现车厂私有监控项，SwiftOBD2 暂未收录: \(hexCmd)")
+            }
+        }
+        
+        PTOBDLogger.shared.ptLog("🔬 [Mode 6] 扫描完毕，支持 \(supportedMode6Enums.count) 项化验单")
+        return supportedMode6Enums
+    }
+    
+    // MARK: - 🚀 步骤 2：批量获取支持的化验单详情
+    /// 传入上一步扫描出的支持指令，真正去抽取车辆的化验单数据
+    public func fetchMode6TestReports(for commands: [OBDCommand.Mode6]) async -> [PTMode6Data] {
+        guard isConnected else { return [] }
+        var allReports: [PTMode6Data] = []
+        
+        for cmdEnum in commands {
+            let hexCommand = cmdEnum.properties.command // 提取如 "0601"
+            do {
+                let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(hexCommand)
+                let purePayload = PTMultiFrameParser.extractPureHexPayload(response: response)
+                
+                // 将纯净十六进制丢给我们的解析器，解析出数值、上限、下限
+                let reports = PTMultiFrameParser.parseMode6TestResults(pureHex: purePayload)
+                allReports.append(contentsOf: reports)
+                
+                // 稍微休眠，防止 ECU 拥堵
+                try? await Task.sleep(nanoseconds: 50_000_000)
+            } catch {
+                continue
+            }
+        }
+        return allReports
     }
 }
