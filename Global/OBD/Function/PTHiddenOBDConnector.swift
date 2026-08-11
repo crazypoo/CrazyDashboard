@@ -730,11 +730,16 @@ extension PTHiddenOBDConnector: CBPeripheralDelegate {
 
         if cmd == "AT+VERSION" {
             if response.contains("?") || response.isEmpty {
-                PTOBDLogger.shared.ptLog("⚠️ [认证] 未发现 YMOBD 加密特征，中断隐蔽初始化！")
-                self.obdPeripheral?.delegate = nil
-                if let p = self.obdPeripheral {
-                    DispatchQueue.main.async { [weak self] in self?.onStandardDeviceDetected?(p) }
+                PTOBDLogger.shared.ptLog("⚠️ [认证] 发现标准 ELM327 设备，无需 YMOBD 加密握手，优雅降级！")
+                                
+                // 将加密槽位替换为一条无害指令 (如 ATRV)，保证 19 步完美对齐
+                if let authIndex = initQueue.firstIndex(of: "<AUTH>") {
+                    initQueue[authIndex] = "ATRV"
                 }
+                
+                // 继续让状态机往下走
+                currentQueueIndex += 1
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in self?.sendNextCommand() }
                 return
             }
             
@@ -829,9 +834,6 @@ public class PTMotoTelemetryManager {
     public private(set) var currentSpeed: Double = 0.0
     
     private var telemetryPollingTask: Task<Void, Never>?
-    private var obdService = OBDService(connectionType: .bluetooth)
-    private var cancellables = Set<AnyCancellable>()
-    public private(set) var isUsingSwiftOBD2: Bool = false
     
     private init() {}
     
@@ -851,15 +853,7 @@ public class PTMotoTelemetryManager {
     
     public func connectToMotorcycle() {
         PTOBDLogger.shared.ptLog("📡 [OBD2] 开始连接入口调用...")
-        isUsingSwiftOBD2 = false
         
-        PTHiddenOBDConnector.shared.onStandardDeviceDetected = { [weak self] peripheral in
-            guard let self = self else { return }
-            self.isUsingSwiftOBD2 = true
-            self.setupConnectionListener()
-            self.startOBDServiceHandshake()
-        }
-
         PTHiddenOBDConnector.shared.onIceBroken = { [weak self] in
             guard let self = self else { return }
             self.isConnected = true
@@ -1025,7 +1019,7 @@ public class PTMotoTelemetryManager {
 
     // MARK: 使用硬编码字符串完美脱离 SwiftOBD2 评估依赖
     private func parseSingleResponse(command: String, response: String) -> Double? {
-        // 1. 终极净化：只保留 0-9 和 A-F，彻底粉碎所有的空格、回车、甚至是不可见的 \0 (Null Byte)！
+        // 只保留 0-9 和 A-F，彻底粉碎所有的空格、回车、甚至是不可见的 \0 (Null Byte)！
         let hexValid = "0123456789ABCDEF"
         let pureResponse = response.uppercased().filter { hexValid.contains($0) }
         let pureCommand = command.uppercased().filter { hexValid.contains($0) }
@@ -1037,8 +1031,8 @@ public class PTMotoTelemetryManager {
             return Double(voltStr)
         }
         
-        // 2. 确保指令前缀合法且长度足够
-        guard pureCommand.hasPrefix("01") && pureCommand.count >= 4 else {
+        // 确保指令前缀合法且长度足够
+        guard (pureCommand.hasPrefix("01") || pureCommand.hasPrefix("02")) && pureCommand.count >= 4 else {
             PTOBDLogger.shared.ptLog("❌ 拦截：指令格式不合法 -> [\(pureCommand)]")
             return nil
         }
@@ -1048,7 +1042,8 @@ public class PTMotoTelemetryManager {
         let pidHex = String(modeAndPID.suffix(2))
         
         // 拼接预期前缀 (41 + 0C = 410C)
-        let expectedPrefix = "41" + pidHex
+        let expectedMode = pidHex == "01" ? "41" : "42"
+        let expectedPrefix = expectedMode + pidHex
         
         // 4. 在绝对纯净的响应中寻找报头
         // 此时 "7E804410C196C".range(of: "410C") 绝对能完美匹配！
@@ -1071,10 +1066,10 @@ public class PTMotoTelemetryManager {
         let A = getByte(at: 0)
         let B = getByte(at: 1)
         
-        // 5. 使用纯净的 4 位指令进行 Switch，彻底打通数据通路！
+        // 使用纯净的 4 位指令进行 Switch，彻底打通数据通路！
         var parsedValue: Double? = nil
                 
-        // 4. SwiftOBD2 公式！
+        //
         switch modeAndPID {
         case "010C": // RPM 转速
             if let a = A, let b = B { parsedValue = (a * 256.0 + b) / 4.0 }
@@ -1140,184 +1135,70 @@ public class PTMotoTelemetryManager {
 
 extension PTMotoTelemetryManager {
     public func disconnect() {
-        if isUsingSwiftOBD2 {
-            obdService.stopConnection()
-        } else {
-            telemetryPollingTask?.cancel()
-            isConnected = false
-            obdInfo.supportCommand = []
-            delegates.forEach { $0.delegate?.telemetryManager(self, didChangeConnectionState: false) }
-        }
+        telemetryPollingTask?.cancel()
+        isConnected = false
+        obdInfo.supportCommand = []
+        delegates.forEach { $0.delegate?.telemetryManager(self, didChangeConnectionState: false) }
         PTOBDLogger.shared.stopFileLogging()
-    }
-
-    private func setupConnectionListener() {
-        obdService.$connectionState
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] state in
-                guard let self = self else { return }
-                
-                self.cleanupDelegates()
-                switch state {
-                case .connectedToVehicle:
-                    self.isConnected = true
-                    PTNSLogConsole("✅ [OBD2] 成功连接 ECU，开始数据抓取！")
-                    self.delegates.forEach { wrapper in
-                        guard let delegate = wrapper.delegate else { return }
-                        delegate.telemetryManager(self, didChangeConnectionState: true)
-                    }
-                case .disconnected:
-                    self.telemetryPollingTask?.cancel()
-                    self.isConnected = false
-                    PTNSLogConsole("❌ [OBD2] 连接断开。")
-                    self.delegates.forEach { wrapper in
-                        guard let delegate = wrapper.delegate else { return }
-                        delegate.telemetryManager(self, didChangeConnectionState: false)
-                    }
-                    NotificationCenter.default.post(name: NSNotification.Name("PTMotoOBDDisconnected"), object: nil)
-                    
-                default:
-                    break
-                }
-            }
-            .store(in: &cancellables)
-    }
-
-    public func startOBDServiceHandshake() {
-        Task {
-            do {
-                let swiftOBD2Info = try await obdService.startConnection()
-                let supportedPIDs = await obdService.getSupportedPIDs()
-                let map = supportedPIDs.map { $0.properties.command }
-
-                obdInfo.supportCommand = swiftOBD2Info.supportedPIDs ?? []
-                obdInfo.vin = swiftOBD2Info.vin ?? ""
-                obdInfo.atdpName = swiftOBD2Info.obdProtocol ?? .NONE
-                
-                self.isConnected = true
-                await MainActor.run {
-                    self.cleanupDelegates()
-                    self.delegates.forEach { wrapper in
-                        wrapper.delegate?.telemetryManager(self, didChangeConnectionState: true)
-                        wrapper.delegate?.telemetryManager(self, didDiscoverSupportedCommands: map)
-                    }
-                }
-                
-                telemetryPollingTask?.cancel()
-                let safeSwiftCommands: [OBDCommand] = [.mode1(.rpm), .mode1(.speed), .mode1(.coolantTemp)]
-                telemetryPollingTask = Task { [weak self = self] in
-                    guard let self = self else { return }
-                    while !Task.isCancelled && self.isConnected {
-                        var currentMeasurements: [OBDCommand: Any] = [:]
-                        for command in safeSwiftCommands { currentMeasurements[command] = 0.0 }
-                        
-                        for command in safeSwiftCommands {
-                            if Task.isCancelled { break }
-                            do {
-                                let response = try await self.obdService.sendCommand(command)
-                                switch response {
-                                case .success(let result):
-                                    if let val = result.measurementResult?.value {
-                                        currentMeasurements[command] = val
-                                    }
-                                case .failure: break
-                                }
-                            } catch {}
-                            try? await Task.sleep(nanoseconds: 10_000_000)
-                        }
-                        
-                        await MainActor.run {
-                            var map:[String:Any] = [:]
-                            currentMeasurements.forEach { value in map[value.key.properties.command] = value.value }
-                            self.dispatchMeasurementsToDelegates(measurements: map)
-                        }
-                        try? await Task.sleep(nanoseconds: 50_000_000)
-                    }
-                }
-            } catch {}
-        }
     }
     
     public func clearDiagnosticTroubleCodes() async -> Bool {
         guard isConnected else { return false }
-        
-        if isUsingSwiftOBD2 {
-            do {
-                let response = try await obdService.sendCommand(.mode4(.CLEAR_DTC))
-                switch response {
-                case .success: return true
-                case .failure: return false
-                }
-            } catch { return false }
-        } else {
-            do {
-                let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync("04")
-                let cleanResponse = self.clearString(response: response)
-                if cleanResponse.hasPrefix("44") || cleanResponse.contains("OK") { return true }
-                else { return false }
-            } catch { return false }
-        }
+        do {
+            let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync("04")
+            let cleanResponse = self.clearString(response: response)
+            if cleanResponse.hasPrefix("44") || cleanResponse.contains("OK") { return true }
+            else { return false }
+        } catch { return false }
     }
 }
 
 extension PTMotoTelemetryManager {
     
     // MARK: - 🚀 Mode 3: 获取车辆故障码 (DTCs)
-    public func getDiagnosticTroubleCodes() async -> [String] {
+    public func getConfirmedDTCs() async -> [String] {
+        return await fetchDTCs(command: "03", expectedHeader: "43")
+    }
+    
+    /// 2. 获取待定/偶发故障码 (潜伏期，尚未亮灯) - Mode 7
+    public func getPendingDTCs() async -> [String] {
+        return await fetchDTCs(command: "07", expectedHeader: "47")
+    }
+    
+    /// 3. 获取永久故障码 (无法手动清除，必须修复硬件) - Mode A (0A)
+    public func getPermanentDTCs() async -> [String] {
+        return await fetchDTCs(command: "0A", expectedHeader: "4A")
+    }
+
+    private func fetchDTCs(command: String, expectedHeader: String) async -> [String] {
         guard isConnected else { return [] }
-        
-        if isUsingSwiftOBD2 {
-            do {
-                // 方案 A：使用 SwiftOBD2 标准库调用
-                let response = try await obdService.sendCommand(.mode3(.GET_DTC))
-                switch response {
-                case .success(let result):
-                    if let dtcs = result.troubleCode {
-                        return dtcs.map { $0.code }
-                    }
-                    return []
-                case .failure:
-                    return []
-                }
-            } catch { return [] }
+        do {
+            let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(command)
+            let purePayload = PTMultiFrameParser.extractPureHexPayload(response: response)
             
-        } else {
-            // 方案 B：使用我们的底层隐藏连接调用
-            do {
-                // 发送 Mode 3 指令请求故障码
-                let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync("03")
-                
-                // 1. 剥离所有 CAN 包头，拿到纯净的数据体
-                let purePayload = PTMultiFrameParser.extractPureHexPayload(response: response)
-                
-                // 2. 找到 03 指令的成功响应头 (43)
-                guard let range = purePayload.range(of: "43") else { return [] }
-                
-                // 3. 截取 43 之后真正的故障码数据部分
-                let dtcData = String(purePayload[range.upperBound...])
-                var dtcs: [String] = []
-                
-                // 4. 每 4 个字符破译为一个故障码
-                var i = dtcData.startIndex
-                while i < dtcData.endIndex {
-                    let nextI = dtcData.index(i, offsetBy: 4, limitedBy: dtcData.endIndex) ?? dtcData.endIndex
-                    if dtcData.distance(from: i, to: nextI) == 4 {
-                        let dtcHex = String(dtcData[i..<nextI])
-                        
-                        // "0000" 代表数据补齐，后面没有更多故障码了
-                        if dtcHex != "0000" {
-                            if let parsedCode = PTMultiFrameParser.decodeSingleDTC(dtcHex) {
-                                dtcs.append(parsedCode)
-                                PTOBDLogger.shared.ptLog("⚠️ [Mode 3] 扫描到车辆异常故障码: \(parsedCode)")
-                            }
+            // 找到对应的成功响应头
+            guard let range = purePayload.range(of: expectedHeader) else { return [] }
+            let dtcData = String(purePayload[range.upperBound...])
+            
+            var dtcs: [String] = []
+            var i = dtcData.startIndex
+            
+            while i < dtcData.endIndex {
+                let nextI = dtcData.index(i, offsetBy: 4, limitedBy: dtcData.endIndex) ?? dtcData.endIndex
+                if dtcData.distance(from: i, to: nextI) == 4 {
+                    let dtcHex = String(dtcData[i..<nextI])
+                    if dtcHex != "0000" { // 0000 是 ECU 凑数用的空码
+                        if let parsedCode = PTMultiFrameParser.decodeSingleDTC(dtcHex) {
+                            dtcs.append(parsedCode)
+                            PTOBDLogger.shared.ptLog("⚠️ [Mode \(command) 异常] 发现故障码: \(parsedCode)")
                         }
                     }
-                    i = nextI
                 }
-                return dtcs
-            } catch { return [] }
-        }
-    }    
+                i = nextI
+            }
+            return dtcs
+        } catch { return [] }
+    }
 }
 
 extension PTMotoTelemetryManager {
@@ -1424,5 +1305,33 @@ extension PTMotoTelemetryManager {
             }
         }
         return allReports
+    }
+    
+    // MARK: - 📸 高阶诊断：抓取冻结帧数据 (Mode 2)
+    /// 传入想要查询的 PID (例如 "0C" 查转速)，获取故障发生那一刻的数据
+    public func getFreezeFrameData(forPID pidHex: String, frameNumber: String = "00") async -> Double? {
+        guard isConnected else { return nil }
+        
+        // 拼接指令：例如 02 0C 00
+        let safePid = pidHex.uppercased().filter { "0123456789ABCDEF".contains($0) }
+        guard safePid.count == 2 else { return nil }
+        
+        let command = "02" + safePid + frameNumber
+        
+        do {
+            let response = try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(command)
+            let cleanResponse = self.clearString(response: response)
+            
+            if cleanResponse.contains("NODATA") || cleanResponse.contains("ERROR") {
+                return nil // 说明没有故障，或者这个 PID 没有被冻结记录
+            }
+            
+            // 丢给双模无敌装甲解析器
+            let val = self.parseSingleResponse(command: command, response: response)
+            if let v = val {
+                PTOBDLogger.shared.ptLog("📸 [冻结帧快照] 捕获 PID:\(safePid) 故障时数据 -> \(v)")
+            }
+            return val
+        } catch { return nil }
     }
 }

@@ -221,7 +221,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     case 0:
                         Task {
                             do {
-                                let result = await PTMotoTelemetryManager.shared.getDiagnosticTroubleCodes()
+                                let result = await PTMotoTelemetryManager.shared.getConfirmedDTCs()
                                 var msgData = ""
                                 if result.isEmpty {
                                     msgData = "Good"
