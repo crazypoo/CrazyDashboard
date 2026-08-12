@@ -347,8 +347,8 @@ public class PTOBDLogger {
         guard logFileHandle != nil else { return }
         let footer = "\n=== SESSION END: \(Date()) ===\n"
         if let data = footer.data(using: .utf8) {
-            try? logFileHandle?.seekToEnd()
-            try? logFileHandle?.write(contentsOf: data)
+            _ = try? logFileHandle?.seekToEnd()
+            _ = try? logFileHandle?.write(contentsOf: data)
         }
         try? logFileHandle?.close()
         logFileHandle = nil
@@ -364,8 +364,8 @@ public class PTOBDLogger {
         ioQueue.async { [weak self] in
             guard let self = self, let handle = self.logFileHandle else { return }
             if let data = (formattedLog + "\n").data(using: .utf8) {
-                try? handle.seekToEnd()
-                try? handle.write(contentsOf: data)
+                _ = try? handle.seekToEnd()
+                _ = try? handle.write(contentsOf: data)
             }
         }
         
@@ -1098,10 +1098,11 @@ public class PTMotoTelemetryManager {
         
         // 3. 提取预期报头，例如 "010C" -> "410C"
         let modeAndPID = String(pureCommand.prefix(4))
-        let pidHex = String(modeAndPID.suffix(2))
-        
+        let modeStr = String(modeAndPID.prefix(2))     // 提取出 "01"
+        let pidHex = String(modeAndPID.suffix(2))      // 提取出 "0C"
+
         // 拼接预期前缀 (41 + 0C = 410C)
-        let expectedMode = pidHex == "01" ? "41" : "42"
+        let expectedMode = modeStr == "01" ? "41" : "42"
         let expectedPrefix = expectedMode + pidHex
         
         // 4. 在绝对纯净的响应中寻找报头
@@ -1204,7 +1205,7 @@ public class PTMotoTelemetryManager {
             if let a = A, let b = B { parsedValue = (a * 256.0 + b) / 1000.0 }
         case "015E": // 发动机燃油率
             if let a = A, let b = B { parsedValue = (a * 256.0 + b) / 20.0 }
-        case "0103", "0113", "011C", "0141", "0151": // 状态/协议/掩码类数据
+        case "0103", "0113", "011C", "0141": // 状态/协议/掩码类数据
             if let a = A { parsedValue = a }
         case "0100", "0120", "0140", "0160": // PID 支持探针 (本身不是 Double 测量值，给个占位符防止报错)
             parsedValue = 1.0
