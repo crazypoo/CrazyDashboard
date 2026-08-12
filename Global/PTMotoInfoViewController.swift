@@ -226,7 +226,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     }
                 })
             } else {
-                let actions = ["Error Code","Disconnect","Data","ECU info","MIDs","DID","VIN UDS","Animation","UDS command"]
+                let actions = ["Error Code","Disconnect","Data","ECU info","MIDs","DID","VIN UDS","Animation","UDS command","Dump","Sniff"]
                 UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: actions, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
                     switch index {
                     case 0:
@@ -369,7 +369,58 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                                 self.obdButton.stopLoading()
                             }
                         }
-
+                    case 9:
+                        // 1. 更新 UI 状态，提示用户操作已开始
+                        self.obdButton.startLoading(indicatorColor: .white)
+                        PTOBDLogger.shared.ptLog("=========================================")
+                        PTOBDLogger.shared.ptLog("☢️ 准备启动物理内存绝对寻址测试...")
+                        
+                        Task {
+                            // 2. 准备我们要试探的常见物理内存基地址
+                            // 00000000 通常是启动扇区，08000000 是很多主控芯片的程序存储区
+                            let suspectedAddresses = ["00000000", "08000000", "20000000"]
+                            
+                            for address in suspectedAddresses {
+                                await MainActor.run {
+                                    PTOBDLogger.shared.ptLog("➡️ 正在尝试 Dump 内存段，起始地址: 0x\(address)")
+                                }
+                                
+                                // 3. 执行核心调用！
+                                // 目标节点: 700 -> 708
+                                // 读取长度: 0x0040 (64个字节，非常安全的测试长度)
+                                await PTDashboardHacker.shared.dumpMemoryByAddress(
+                                    dashboardTx: "700",
+                                    dashboardRx: "708",
+                                    memoryAddress: address,
+                                    readSize: 0x0040
+                                )
+                                
+                                // 给硬件留出 2 秒的散热和缓冲区清理时间
+                                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                            }
+                            
+                            // 4. 扫尾工作，恢复 UI
+                            await MainActor.run {
+                                self.obdButton.stopLoading()
+                                PTOBDLogger.shared.ptLog("✅ 内存段探路执行完毕，请导出日志核对反馈！")
+                                PTOBDLogger.shared.ptLog("=========================================")
+                            }
+                        }
+                    case 10:
+                        Task {
+                                // 1. 开启抓包，指定只看 700 节点的流量（防止数据太多把日志撑爆）
+                                await PTMotoTelemetryManager.shared.startCANSniperMode(filterHeader: "700")
+                                
+                                PTOBDLogger.shared.ptLog("⏳ [实战演练] 抓包中... 请立刻在手机上操作原车蓝牙切换一次语言或颜色！")
+                                
+                                // 2. 留出 10 秒钟的操作时间窗口
+                                try? await Task.sleep(nanoseconds: 10_000_000_000)
+                                
+                                // 3. 自动停止抓包并恢复日常监控
+                                await PTMotoTelemetryManager.shared.stopCANSniperMode()
+                                
+                                PTOBDLogger.shared.ptLog("✅ [实战演练] 抓包已完成，请导出 MotoHexLog 日志文件查看捕获到的十六进制报文！")
+                            }
                     default:
                         break
                     }

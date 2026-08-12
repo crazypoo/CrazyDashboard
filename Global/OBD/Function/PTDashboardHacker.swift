@@ -597,3 +597,70 @@ public extension PTDashboardHacker {
         }
     }
 }
+
+public extension PTDashboardHacker {
+    
+    // MARK: - ☢️ 终极极客工具：UDS 绝对物理内存 Dump (Service 0x23)
+    
+    /// 尝试通过绝对内存地址强行 Dump 底层固件数据
+    /// - Parameters:
+    ///   - dashboardTx: 目标节点 (如 "700")
+    ///   - dashboardRx: 监听节点 (如 "708")
+    ///   - memoryAddress: 十六进制内存物理起始地址 (例如: "08000000")
+    ///   - readSize: 期望读取的字节数 (注意：受限于缓冲，通常单次最多读几十到几百字节)
+    func dumpMemoryByAddress(dashboardTx: String, dashboardRx: String, memoryAddress: String, readSize: UInt16) async {
+        let manager = PTMotoTelemetryManager.shared
+        guard manager.isConnected else { return }
+        
+        PTOBDLogger.shared.ptLog("☢️ [全字库 Dump] 启动绝对内存读取引擎...")
+        
+        // 挂起正常轮询
+        let wasPolling = (manager.telemetryPollingTask != nil)
+        if wasPolling { manager.telemetryPollingTask?.cancel() }
+        
+        // 1. 进入扩展会话 (必须的权限门槛)
+        _ = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: "1003")
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        
+        // 2. 构造 23 服务的 Payload
+        // 格式: [23] [格式标识符] [内存地址] [读取长度]
+        // 格式标识符(Address And Length Format Identifier)：例如 14 代表 "长度占1个字节，地址占4个字节"
+        // 假设我们读的是 32 位芯片，地址是 4 字节，读取长度我们用 2 字节表示
+        let formatIdentifier = "24" // 2=长度占2字节(Length), 4=地址占4字节(Address)
+        
+        // 转换长度为十六进制字符串 (如读取 256 字节 -> 0100)
+        let sizeHex = String(format: "%04X", readSize)
+        
+        let udsCommand = "23" + formatIdentifier + memoryAddress + sizeHex
+        PTOBDLogger.shared.ptLog("📡 正在向内存地址 0x\(memoryAddress) 发射 Dump 指令: \(udsCommand)")
+        
+        // 3. 执行读取并捕获反馈
+        let response = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: udsCommand)
+        let cleanResponse = response.replacingOccurrences(of: " ", with: "").uppercased()
+        
+        // 4. 分析提取结果
+        if cleanResponse.contains("63") {
+            // 成功响应 23 服务的标识是 63
+            PTOBDLogger.shared.ptLog("💎 [大满贯] 内存读取成功！底层数据泄露: \(cleanResponse)")
+        } else if cleanResponse.contains("7F23") {
+            if cleanResponse.contains("7F2333") {
+                PTOBDLogger.shared.ptLog("🔒 [Dump 失败] 内存被硬件级锁定，必须先用 27 服务算出 Seed-Key 才能读！")
+            } else if cleanResponse.contains("7F2331") {
+                PTOBDLogger.shared.ptLog("❌ [Dump 失败] 内存地址 0x\(memoryAddress) 越界或不存在。")
+            } else {
+                PTOBDLogger.shared.ptLog("⚠️ [Dump 失败] ECU 拒绝了物理内存读取请求，错误码: \(cleanResponse)")
+            }
+        } else if cleanResponse.contains("NODATA") {
+            PTOBDLogger.shared.ptLog("🕳️ [Dump 失败] 目标毫无反应 (NO DATA)。")
+        } else {
+            PTOBDLogger.shared.ptLog("❓ 收到未知反馈: \(cleanResponse)")
+        }
+        
+        // 恢复环境
+        _ = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: "1001")
+        if wasPolling {
+            let rawPIDsToResume = PTHiddenOBDConnector.shared.collectedPIDResponses.isEmpty ? PTWifiOBDConnector.shared.collectedPIDResponses : PTHiddenOBDConnector.shared.collectedPIDResponses
+            manager.startLightweightPolling(rawPIDs: rawPIDsToResume)
+        }
+    }
+}
