@@ -239,10 +239,25 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                                 if result.isEmpty {
                                     msgData = "Good"
                                 } else {
-                                    let strings = result.map { value in
-                                        "\(value.code):\(value.description),level:\(value.severity.rawValue)"
+                                    let ecuStrings = result.map { (ecuKey, dtcs) -> String in
+                                        
+                                        // 1. 将该 ECU 下的所有故障码数组，映射为字符串数组
+                                        let dtcStrings = dtcs.map { value in
+                                            // 前面加了缩进，视觉上更清晰
+                                            "  - \(value.code):\(value.description), level:\(value.severity.rawValue)"
+                                        }
+                                        
+                                        // 2. 将这组故障码用单换行拼接
+                                        let dtcJoined = dtcStrings.joined(separator: "\n")
+                                        
+                                        // 3. 加上 ECU 的大标题 (为了人类可读性，我们可以把 7E8 翻译成发动机)
+                                        let ecuName = (ecuKey == "7E8" || ecuKey.contains("18DAF110")) ? "发动机模块" :
+                                                      (ecuKey == "7E9" ? "变速箱模块" : "模块")
+                                        
+                                        return "🛠 \(ecuName) [\(ecuKey)]:\n\(dtcJoined)"
                                     }
-                                    msgData = strings.joined(separator: "\n")
+
+                                    msgData = ecuStrings.joined(separator: "\n\n")
                                 }
                                 UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD error code"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: msgData, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
                             }

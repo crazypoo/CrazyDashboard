@@ -747,11 +747,18 @@ public class PTOBDTransportBase: NSObject {
     }
 }
 
+public enum PTMockVehicleConfig {
+    case singleECU // 单 ECU (例如常规踏板车)
+    case dualECU   // 双 ECU (例如多缸复杂机车)
+}
+
 // MARK: 离线 OBD 沙盒虚拟引擎 (用于无车环境下的 UI 开发与测试)
 public class PTMockOBDConnector: PTOBDTransportBase {
     public static let shared = PTMockOBDConnector()
     
     private let mockQueue = DispatchQueue(label: "com.ptools.mockOBDQueue")
+    
+    public var vehicleConfig: PTMockVehicleConfig = .dualECU
     
     private override init() { super.init() }
     
@@ -792,44 +799,65 @@ public class PTMockOBDConnector: PTOBDTransportBase {
     
     // MARK: - 🧠 核心：虚拟 ECU 响应大脑
     private func generateMockResponse(for command: String) -> String {
-        // 根据传入的指令，伪造极其逼真的 ECU 回传报文
         switch command {
         case "ATZ", "ATD", "ATI":
             return "ELM327 v1.5\r\n>"
         case "ATE0", "ATL0", "ATH1", "ATS1", "ATAL", "ATSP0", "AT+SETCRYPT":
             return "OK\r\n>"
         case "ATRV":
-            // 模拟电瓶电压轻微波动
             let volt = Double.random(in: 13.8...14.2)
             return String(format: "%.1fV\r\n>", volt)
         case "ATDP":
             return "AUTO, ISO 15765-4 (CAN 11/500)\r\n>"
             
-        // 模拟车辆的探针支持情况 (告诉管理器我支持哪些数据)
-        case "0100": return "41 00 BE 3E B8 13\r\n>"
-        case "0120": return "41 20 90 15 B0 11\r\n>"
-        case "0140": return "41 40 FA DC 80 00\r\n>"
+        // 🌟 动态生成支持目录
+        case "0100":
+            let ecu1 = "7E8 06 41 00 BE 3E B8 13"
+            if vehicleConfig == .dualECU {
+                let ecu2 = "7E9 06 41 00 80 00 00 00"
+                return "\(ecu1)\r\(ecu2)\r\n>"
+            }
+            return "\(ecu1)\r\n>"
             
-        // 模拟车辆档案
-        case "0902": // 虚拟 VIN 码: WBAXXXXXXXXXXXXXX
-            return "49 02 01 00 00 00 31 57 42 41 31 32 33 34 35 36 37 38 39 30 31 32 33\r\n>"
+        case "0120":
+            let ecu1 = "7E8 06 41 20 90 15 B0 11"
+            if vehicleConfig == .dualECU {
+                return "\(ecu1)\r7E9 06 41 20 00 00 00 00\r\n>"
+            }
+            return "\(ecu1)\r\n>"
             
-        case "0101": // 虚拟健康状态 (无故障码)
-            return "41 01 00 07 65 00\r\n>"
+        case "0140":
+            let ecu1 = "7E8 06 41 40 FA DC 80 00"
+            if vehicleConfig == .dualECU {
+                return "\(ecu1)\r7E9 06 41 40 00 00 00 00\r\n>"
+            }
+            return "\(ecu1)\r\n>"
             
-        // 🌟 动态波动数据，完美模拟真实骑行！
+        case "0902":
+            return "7E8 14 49 02 01 00 00 00 31 57 42 41 31 32 33 34 35 36 37 38 39 30 31 32 33\r\n>"
+            
+        // 🌟 核心：动态生成并发波动数据
         case "010C": // 转速 RPM
-            let rpm = Int.random(in: 1500...8000) * 4 // 公式除以4，所以这里乘4
-            let hex = String(format: "%04X", rpm)
-            return "41 0C \(hex.prefix(2)) \(hex.suffix(2))\r\n>"
+            let rpm1 = Int.random(in: 1500...8000) * 4
+            let hex1 = String(format: "%04X", rpm1)
+            let ecu1Resp = "7E8 04 41 0C \(hex1.prefix(2)) \(hex1.suffix(2))"
+            
+            if vehicleConfig == .dualECU {
+                let rpm2 = rpm1 - 100 // 模拟轻微转速差
+                let hex2 = String(format: "%04X", rpm2)
+                let ecu2Resp = "7E9 04 41 0C \(hex2.prefix(2)) \(hex2.suffix(2))"
+                return "\(ecu1Resp)\r\(ecu2Resp)\r\n>" // 拼接双 ECU 报文
+            } else {
+                return "\(ecu1Resp)\r\n>" // 纯净的单 ECU 报文
+            }
             
         case "010D": // 车速 Speed
             let speed = Int.random(in: 0...120)
             let hex = String(format: "%02X", speed)
-            return "41 0D \(hex)\r\n>"
+            return "7E8 03 41 0D \(hex)\r\n>"
             
-        case "0151": // 燃料类型 (返回 1 = 汽油)
-            return "41 51 01\r\n>"
+        case "0151": // 燃料类型 (1 = 汽油)
+            return "7E8 03 41 51 01\r\n>"
             
         case "AT+VERSION":
             return "Company: PTools Mock Engine\r\nVersion: V1.0.0\r\n>"
@@ -1455,49 +1483,91 @@ extension PTMotoTelemetryManager {
 extension PTMotoTelemetryManager {
     
     // MARK: - 🚀 Mode 3: 获取车辆故障码 (DTCs)
-    public func getConfirmedDTCs() async -> [PTTroubleCode] {
+    public func getConfirmedDTCs() async -> [String: [PTTroubleCode]] {
         return await fetchDTCs(command: "03", expectedHeader: "43")
     }
     
     /// 2. 获取待定/偶发故障码 (潜伏期，尚未亮灯) - Mode 7
-    public func getPendingDTCs() async -> [PTTroubleCode] {
+    public func getPendingDTCs() async -> [String: [PTTroubleCode]] {
         return await fetchDTCs(command: "07", expectedHeader: "47")
     }
     
     /// 3. 获取永久故障码 (无法手动清除，必须修复硬件) - Mode A (0A)
-    public func getPermanentDTCs() async -> [PTTroubleCode] {
+    public func getPermanentDTCs() async -> [String: [PTTroubleCode]] {
         return await fetchDTCs(command: "0A", expectedHeader: "4A")
     }
 
-    private func fetchDTCs(command: String, expectedHeader: String) async -> [PTTroubleCode] {
-        guard isConnected else { return [] }
+    private func fetchDTCs(command: String, expectedHeader: String) async -> [String: [PTTroubleCode]] {
+        guard isConnected else { return [:] }
         do {
             let response = try await self.sendRawCommandAsync(command)
-            let purePayload = PTMultiFrameParser.extractPureHexPayload(response: response)
             
-            // 找到对应的成功响应头
-            guard let range = purePayload.range(of: expectedHeader) else { return [] }
-            let dtcData = String(purePayload[range.upperBound...])
+            // 🌟 1. 逐行剥离总线数据，防止 CAN 多帧交错污染
+            let hexValid = "0123456789ABCDEF"
+            let lines = response.uppercased().components(separatedBy: .newlines)
+                .flatMap { $0.components(separatedBy: "\r") }
+                .map { $0.filter { hexValid.contains($0) } }
+                .filter { !$0.isEmpty }
             
-            var dtcs: [PTTroubleCode] = []
-            var i = dtcData.startIndex
+            // 存放每个 ECU 的专属原始报文流
+            var ecuRawData: [String: String] = [:]
             
-            while i < dtcData.endIndex {
-                let nextI = dtcData.index(i, offsetBy: 4, limitedBy: dtcData.endIndex) ?? dtcData.endIndex
-                if dtcData.distance(from: i, to: nextI) == 4 {
-                    let dtcHex = String(dtcData[i..<nextI])
-                    if dtcHex != "0000" { // 0000 是 ECU 凑数用的空码
-                        if let parsedCode = PTMultiFrameParser.decodeSingleDTC(dtcHex) {
-                            let detailedDTC = PTDTCManager.getTroubleCodeDetails(for: parsedCode)
-                            dtcs.append(detailedDTC)
-                            PTOBDLogger.shared.ptLog("⚠️ [Mode \(command) 异常] 发现故障码: \(parsedCode)")
+            for line in lines {
+                var ecuHeader = "UNKNOWN"
+                // 识别 29-bit CAN 报头 (如 18DAF110) 或 11-bit CAN 报头 (如 7E8)
+                if line.count >= 8 && line.hasPrefix("18DA") {
+                    ecuHeader = String(line.prefix(8))
+                } else if line.count >= 3 {
+                    ecuHeader = String(line.prefix(3))
+                }
+                
+                // 将报文拼接到对应 ECU 的缓存中 (保留换行以便后续提取纯净负载)
+                ecuRawData[ecuHeader, default: ""] += line + "\n"
+            }
+            
+            // 🌟 2. 遍历每个 ECU，独立解析故障码
+            var finalResult: [String: [PTTroubleCode]] = [:]
+            
+            for (ecu, rawFlow) in ecuRawData {
+                // 使用我们强大的多帧解析器，针对单个 ECU 提取纯净数据
+                let purePayload = PTMultiFrameParser.extractPureHexPayload(response: rawFlow)
+                
+                // 寻找成功响应头 (例如 "43")
+                guard let range = purePayload.range(of: expectedHeader) else { continue }
+                let dtcData = String(purePayload[range.upperBound...])
+                
+                var dtcs: [PTTroubleCode] = []
+                var i = dtcData.startIndex
+                
+                // 每 4 个十六进制字符代表一个故障码
+                while i < dtcData.endIndex {
+                    let nextI = dtcData.index(i, offsetBy: 4, limitedBy: dtcData.endIndex) ?? dtcData.endIndex
+                    if dtcData.distance(from: i, to: nextI) == 4 {
+                        let dtcHex = String(dtcData[i..<nextI])
+                        
+                        // 过滤掉 ECU 用来补位的 "0000"
+                        if dtcHex != "0000" {
+                            if let parsedCode = PTMultiFrameParser.decodeSingleDTC(dtcHex) {
+                                let detailedDTC = PTDTCManager.getTroubleCodeDetails(for: parsedCode)
+                                dtcs.append(detailedDTC)
+                                PTOBDLogger.shared.ptLog("⚠️ [模块 \(ecu) 异常] 发现故障码: \(parsedCode)")
+                            }
                         }
                     }
+                    i = nextI
                 }
-                i = nextI
+                
+                // 如果该模块确实有故障码，存入最终结果
+                if !dtcs.isEmpty {
+                    finalResult[ecu] = dtcs
+                }
             }
-            return dtcs
-        } catch { return [] }
+            
+            return finalResult
+        } catch {
+            PTOBDLogger.shared.ptLog("❌ 读取故障码发生异常: \(error)")
+            return [:]
+        }
     }
 }
 
