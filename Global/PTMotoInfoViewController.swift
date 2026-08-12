@@ -218,7 +218,9 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     case 0:
                         Task {
                             do {
+                                self.obdButton.startLoading(indicatorColor: .white)
                                 let result = await PTMotoTelemetryManager.shared.getConfirmedDTCs()
+                                self.obdButton.startLoading()
                                 var msgData = ""
                                 if result.isEmpty {
                                     msgData = "Good"
@@ -232,9 +234,11 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                             }
                         }
                     case 1:
+                        self.obdButton.startLoading(indicatorColor: .white)
                         PTMotoTelemetryManager.shared.disconnect()
                         PTGCDManager.shared.delayOnMain(time: 0.5) {
                             self.obdButton.isSelected = false
+                            self.obdButton.startLoading()
                         }
                     case 2:
                         let vc = PTOBDDataViewController()
@@ -249,8 +253,10 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                         UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "ECU info"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: msgData, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
                     case 4:
                         Task {
+                            self.obdButton.startLoading(indicatorColor: .white)
                             let ids = await PTMotoTelemetryManager.shared.scanSupportedMode6Commands()
                             let rerort =  await PTMotoTelemetryManager.shared.fetchMode6TestReports(for: ids)
+                            self.obdButton.startLoading()
                             let map = rerort.map { value in
                                 "\(value.componentName):\(value.isPassed ? "✅" : "⁉️")"
                             }
@@ -339,6 +345,10 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         PTMotion.shared.addDelegate(self)
         PTMotoTelemetryManager.shared.addDelegate(self)
         PTMotoTelemetryManager.shared.connectToMotorcycle()
+        obdButton.startLoading(indicatorColor: .white)
+        PTMotoTelemetryManager.shared.onConnectionTimeout = {
+            self.obdButton.stopLoading()
+        }
         NotificationCenter.default.addObserver(self, selector: #selector(appDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
     }
     
@@ -781,6 +791,7 @@ extension PTMotoInfoViewController {
 extension PTMotoInfoViewController:PTMotoTelemetryDelegate {
     func telemetryManager(_ manager: PTMotoTelemetryManager, didChangeConnectionState isConnected: Bool) {
         obdButton.isSelected = isConnected
+        obdButton.stopLoading()
     }
     
     func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) {

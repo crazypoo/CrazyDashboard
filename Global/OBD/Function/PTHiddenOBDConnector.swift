@@ -878,6 +878,11 @@ public class PTMotoTelemetryManager {
         customParsers.removeValue(forKey: cleanCommand)
     }
 
+    // 连接超时的回调闭包 (UI 层使用)
+    public var onConnectionTimeout: (() -> Void)?
+    // 超时倒计时任务句柄
+    private var connectionTimeoutTask: Task<Void, Never>?
+
     private init() {}
     
     public func addDelegate(_ delegate: PTMotoTelemetryDelegate) {
@@ -899,6 +904,8 @@ public class PTMotoTelemetryManager {
         self.obdInfo.engineType = engineType // 保存动力配置
         self.activeConnectionType = type
         
+        self.startConnectionTimeoutTimer()
+        
         switch type {
         case .bluetooth:
             PTHiddenOBDConnector.shared.onIceBroken = { [weak self] in
@@ -918,6 +925,8 @@ public class PTMotoTelemetryManager {
     
     private func handleIceBroken(rawPIDs: [String]) {
         self.isConnected = true
+        self.connectionTimeoutTask?.cancel()
+        self.connectionTimeoutTask = nil
         PTOBDLogger.shared.ptLog("✅ [Manager] 底层通知破冰完毕，移交轮询控制权！")
         self.startLightweightPolling(rawPIDs: rawPIDs)
     }
@@ -1150,94 +1159,10 @@ public class PTMotoTelemetryManager {
         let C = getByte(at: 2)
         let D = getByte(at: 3)
 
-        // 使用纯净的 4 位指令进行 Switch，彻底打通数据通路！
-        var parsedValue: Any? = nil
-                
-        //
-        switch modeAndPID {
-        case "0101":
-            if let a = A, let b = B, let c = C, let d = D {
-                // 将 Double 转回 Int 以进行位运算
-                let aInt = Int(a)
-                let bInt = Int(b)
-                let cInt = Int(c)
-                let dInt = Int(d)
-                
-                // 【Byte A】：Bit 7 是 MIL，Bit 0-6 是故障码数量
-                let milOn = (aInt & 0x80) != 0       // 1000 0000 掩码提取第 7 位
-                let count = (aInt & 0x7F)            // 0111 1111 掩码提取低 7 位
-                
-                // 【Byte B】：连续监控系统
-                // 支持位 (Supported): Bit 0, 1, 2
-                let misfireSup = (bInt & 0x01) != 0
-                let fuelSup    = (bInt & 0x02) != 0
-                let compSup    = (bInt & 0x04) != 0
-                // 就绪位 (Ready): Bit 4, 5, 6 (在 OBD 标准中，0 代表就绪，1 代表未就绪)
-                let misfireRdy = (bInt & 0x10) == 0
-                let fuelRdy    = (bInt & 0x20) == 0
-                let compRdy    = (bInt & 0x40) == 0
-                
-                // 【Byte C & D】：非连续监控系统 (以汽油机标准为例)
-                // 支持位 (Byte C 的 Bit 0, Bit 5, Bit 7)
-                let catSup = (cInt & 0x01) != 0 // 催化器
-                let o2Sup  = (cInt & 0x20) != 0 // 氧传感器
-                let egrSup = (cInt & 0x80) != 0 // EGR
-                // 就绪位 (Byte D 的 Bit 0, Bit 5, Bit 7)
-                let catRdy = (dInt & 0x01) == 0
-                let o2Rdy  = (dInt & 0x20) == 0
-                let egrRdy = (dInt & 0x80) == 0
-                
-                let status = PTVehicleStatus0101(
-                    isMILOn: milOn, dtcCount: count,
-                    misfireSupported: misfireSup, misfireReady: misfireRdy,
-                    fuelSystemSupported: fuelSup, fuelSystemReady: fuelRdy,
-                    componentsSupported: compSup, componentsReady: compRdy,
-                    catalystSupported: catSup, catalystReady: catRdy,
-                    o2SensorSupported: o2Sup, o2SensorReady: o2Rdy,
-                    egrSupported: egrSup, egrReady: egrRdy
-                )
-                parsedValue = status
-            }
-        case "010C": // RPM 转速
-            if let a = A, let b = B { parsedValue = (a * 256.0 + b) / 4.0 }
-        case "010D": // Vehicle Speed 车速
-            if let a = A { parsedValue = a }
-        case "0151": // 🌟 新增：燃料类型解析
-            if let a = A {
-                let fuelTypeInt = Int(a)
-                parsedValue = PTFuelType(rawValue: fuelTypeInt) ?? .unknown
-            }
-        case "0104", "0111", "0145", "014C", "0152", "015A", "015B": // 各种百分比 (节气门, 引擎负载等)
-            if let a = A { parsedValue = a * 100.0 / 255.0 }
-        case "0105", "010F", "0146", "015C": // 各种温度 (水温, 进气温, 机油温度)
-            if let a = A { parsedValue = a - 40.0 }
-        case "0106", "0107", "0108", "0109", "0155", "0156", "0157", "0158": // 长短期燃油修正 (百分比居中)
-            if let a = A { parsedValue = (a - 128.0) * 100.0 / 128.0 }
-        case "010B", "0133": // 进气压力 & 绝对大气压
-            if let a = A { parsedValue = a }
-        case "010E": // 点火提前角
-            if let a = A { parsedValue = a / 2.0 - 64.0 }
-        case "0110": // MAF 空气流量
-            if let a = A, let b = B { parsedValue = (a * 256.0 + b) / 100.0 }
-        case "0114", "0115", "0116", "0117", "0118", "0119", "011A", "011B": // O2 氧传感器电压
-            if let a = A { parsedValue = a / 200.0 }
-        case "011F", "0121", "0131", "014D", "014E": // 运行时间 & 行驶距离
-            if let a = A, let b = B { parsedValue = a * 256.0 + b }
-        case "0142": // 控制模块电压
-            if let a = A, let b = B { parsedValue = (a * 256.0 + b) / 1000.0 }
-        case "015E": // 发动机燃油率
-            if let a = A, let b = B { parsedValue = (a * 256.0 + b) / 20.0 }
-        case "0103", "0113", "011C", "0141": // 状态/协议/掩码类数据
-            if let a = A { parsedValue = a }
-        case "0100", "0120", "0140", "0160": // PID 支持探针 (本身不是 Double 测量值，给个占位符防止报错)
-            parsedValue = 1.0
-        default:
-            PTOBDLogger.shared.ptLog("⚠️ 未适配计算公式: \(modeAndPID)")
-        }
-        
-        if let val = parsedValue {
-//            PTOBDLogger.shared.ptLog("🏎️ [解析成功] \(modeAndPID) -> \(val)")
-            return val
+        if let commandEnum = OBDCommand.from(command: modeAndPID) {
+            let result = commandEnum.decodeValue(A: A, B: B, C: C, D: D)
+            // if let val = result { PTOBDLogger.shared.ptLog("🏎️ [解析成功] \(modeAndPID) -> \(val)") }
+            return result
         }
         
         return nil
@@ -1268,6 +1193,8 @@ public class PTMotoTelemetryManager {
 extension PTMotoTelemetryManager {
     public func disconnect() {
         telemetryPollingTask?.cancel()
+        connectionTimeoutTask?.cancel()
+        connectionTimeoutTask = nil
         isConnected = false
         obdInfo.supportCommand = []
         delegates.forEach { $0.delegate?.telemetryManager(self, didChangeConnectionState: false) }
@@ -1790,6 +1717,30 @@ extension PTMotoTelemetryManager {
         } else {
             PTOBDLogger.shared.ptLog("🧠 [智能推断] 无法精准定性，默认降级为 燃油车 (ICE)。")
             self.obdInfo.engineType = .ice
+        }
+    }
+}
+
+extension PTMotoTelemetryManager {
+    // MARK: - 🌟 非阻塞式超时计时器
+    private func startConnectionTimeoutTimer() {
+        // 每次连接前，先取消上一次可能存在的旧计时器
+        connectionTimeoutTask?.cancel()
+        
+        connectionTimeoutTask = Task { [weak self] in
+            // 休眠 60 秒 (60_000_000_000 纳秒)
+            try? await Task.sleep(nanoseconds: 60_000_000_000)
+            
+            guard let self = self, !Task.isCancelled else { return }
+            
+            // 醒来后，如果依然没有连接成功，触发回调！
+            // ⚠️ 极其关键：这里绝对不调用底层的取消扫描方法，让硬件继续默默寻找！
+            if !self.isConnected {
+                PTOBDLogger.shared.ptLog("⏳ [连接管家] 60秒连接超时，触发 UI 提示，底层持续扫描中...")
+                DispatchQueue.main.async {
+                    self.onConnectionTimeout?()
+                }
+            }
         }
     }
 }

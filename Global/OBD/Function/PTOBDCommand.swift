@@ -2314,7 +2314,7 @@ public enum OBDCommand: Codable, Hashable, Identifiable {
         return commands
     }()
     
-    // MARK: - 🌟 3. 各大模式全量指令映射
+    // MARK: 各大模式全量指令映射
     
     public enum General: CaseIterable, Codable {
         case ATD, ATZ, ATRV, ATL0, ATE0, ATH1, ATH0, ATAT1, ATSTFF, ATDPN, ATDP
@@ -2696,7 +2696,7 @@ public extension OBDCommand {
             case .O2Sensor1WRCurrent, .O2Sensor2WRCurrent, .O2Sensor3WRCurrent, .O2Sensor4WRCurrent, .O2Sensor5WRCurrent, .O2Sensor6WRCurrent, .O2Sensor7WRCurrent, .O2Sensor8WRCurrent: return "mA"
             case .maf: return "g/s"
             case .fuelRate: return "L/h"
-            case .timingAdvance: return "°"
+            case .timingAdvance, .fuelInjectionTiming: return "°"
             case .runTime, .timeSinceDTCCleared, .runTimeMIL: return "s"
             case .distanceWMIL, .distanceSinceDTCCleared: return "km"
             case .warmUpsSinceDTCCleared: return "times"
@@ -2728,5 +2728,91 @@ extension OBDCommand {
         case .modeA: return "Mode A/10 (Get Permanent DTCs): Retrieves Permanent DTCs that CANNOT be cleared manually; the hardware fix must be verified by the ECU."
         default: return self.properties.description
         }
+    }
+}
+
+// MARK: 数据解码引擎 (物理公式库)
+public extension OBDCommand {
+    
+    /// 将底层提取出的纯净字节 (A, B, C, D) 注入对应公式，计算出真实的物理数值
+    func decodeValue(A: Double?, B: Double?, C: Double?, D: Double?) -> Any? {
+        switch self {
+        case .mode1(let m1):
+            switch m1 {
+            case .status:
+                if let a = A, let b = B, let c = C, let d = D {
+                    let aInt = Int(a); let bInt = Int(b); let cInt = Int(c); let dInt = Int(d)
+                    let status = PTVehicleStatus0101(
+                        isMILOn: (aInt & 0x80) != 0, dtcCount: (aInt & 0x7F),
+                        misfireSupported: (bInt & 0x01) != 0, misfireReady: (bInt & 0x10) == 0,
+                        fuelSystemSupported: (bInt & 0x02) != 0, fuelSystemReady: (bInt & 0x20) == 0,
+                        componentsSupported: (bInt & 0x04) != 0, componentsReady: (bInt & 0x40) == 0,
+                        catalystSupported: (cInt & 0x01) != 0, catalystReady: (dInt & 0x01) == 0,
+                        o2SensorSupported: (cInt & 0x20) != 0, o2SensorReady: (dInt & 0x20) == 0,
+                        egrSupported: (cInt & 0x80) != 0, egrReady: (dInt & 0x80) == 0
+                    )
+                    return status
+                }
+                return nil
+            case .rpm:
+                if let a = A, let b = B { return (a * 256.0 + b) / 4.0 }
+            case .speed:
+                if let a = A { return a }
+            case .fuelType:
+                if let a = A { return PTFuelType(rawValue: Int(a)) ?? .unknown }
+                // 🌟 精准修复：角度类 (Angle / Degrees)
+            case .timingAdvance:
+                // 点火提前角: A / 2 - 64
+                if let a = A { return a / 2.0 - 64.0 }
+            case .fuelInjectionTiming:
+                // 燃油喷射正时: (A*256 + B)/128 - 210
+                if let a = A, let b = B { return ((a * 256.0) + b) / 128.0 - 210.0 }
+                // 🌟 精准修复：单字节百分比类 (1 Byte Percentage) -> A * 100 / 255
+            case .engineLoad, .throttlePos, .relativeThrottlePos, .throttlePosB,
+                 .throttlePosC, .throttlePosD, .throttlePosE, .throttlePosF,
+                 .throttleActuator, .ethanoPercent, .relativeAccelPos, .hybridBatteryLife,
+                 .commandedEGR, .evaporativePurge, .fuelLevel:
+                if let a = A { return a * 100.0 / 255.0 }
+                // 🌟 精准修复：双字节百分比类 (2 Byte Percentage) -> (A*256 + B) * 100 / 255
+            case .absoluteLoad:
+                if let a = A, let b = B { return (a * 256.0 + b) * 100.0 / 255.0 }
+                // 🌟 精准修复：比率类 (Ratio)
+            case .commandedEquivRatio:
+                if let a = A, let b = B { return (a * 256.0 + b) * 2.0 / 65536.0 }
+                // 温度类
+            case .coolantTemp, .intakeTemp, .ambientAirTemp, .engineOilTemp:
+                if let a = A { return a - 40.0 }
+                // 燃油修正类 (居中百分比)
+            case .shortFuelTrim1, .longFuelTrim1, .shortFuelTrim2, .longFuelTrim2,
+                 .shortO2TrimB1, .longO2TrimB1, .shortO2TrimB2, .longO2TrimB2, .EGRError:
+                if let a = A { return (a - 128.0) * 100.0 / 128.0 }
+                // 压力类
+            case .intakePressure, .barometricPressure:
+                if let a = A { return a }
+            case .maf:
+                if let a = A, let b = B { return (a * 256.0 + b) / 100.0 }
+            case .O2Bank1Sensor1, .O2Bank1Sensor2, .O2Bank1Sensor3, .O2Bank1Sensor4,
+                 .O2Bank2Sensor1, .O2Bank2Sensor2, .O2Bank2Sensor3, .O2Bank2Sensor4:
+                if let a = A { return a / 200.0 }
+            // 距离与时间类 (2 字节组合)
+            case .runTime, .distanceWMIL, .distanceSinceDTCCleared, .runTimeMIL, .timeSinceDTCCleared:
+                if let a = A, let b = B { return a * 256.0 + b }
+            case .controlModuleVoltage:
+                if let a = A, let b = B { return (a * 256.0 + b) / 1000.0 }
+            case .fuelRate:
+                if let a = A, let b = B { return (a * 256.0 + b) / 20.0 }
+            // 直接返回原值或掩码的属性
+            case .fuelStatus, .O2Sensor, .obdcompliance, .statusDriveCycle, .O2SensorsALT, .auxInputStatus:
+                if let a = A { return a }
+            // 探针目录占位符
+            case .pidsA, .pidsB, .pidsC:
+                return 1.0
+            default:
+                return nil
+            }
+        default:
+            return nil
+        }
+        return nil
     }
 }

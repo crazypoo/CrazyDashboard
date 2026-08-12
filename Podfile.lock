@@ -1,11 +1,11 @@
 PODS:
   - Alamofire (5.12.0)
-  - AMapFoundation-NO-IDFA (1.9.0)
-  - AMapLocation-NO-IDFA (2.12.0):
+  - AMapFoundation-NO-IDFA (1.9.1)
+  - AMapLocation-NO-IDFA (2.12.2):
     - AMapFoundation-NO-IDFA (>= 1.9.0)
-  - AMapNavi-NO-IDFA (11.2.000):
+  - AMapNavi-NO-IDFA (11.2.100):
     - AMapFoundation-NO-IDFA (>= 1.9.0)
-  - AMapSearch-NO-IDFA (9.8.0):
+  - AMapSearch-NO-IDFA (9.8.1):
     - AMapFoundation-NO-IDFA (>= 1.9.0)
   - AttributedString (3.4.2):
     - AttributedString/Privacy (= 3.4.2)
@@ -64,9 +64,9 @@ PODS:
   - LookinServer/Swift (1.2.8):
     - LookinServer/Core
   - lottie-ios (4.6.1)
-  - PooTools/CameraPermission (4.5.7):
+  - PooTools/CameraPermission (4.5.9):
     - PooTools/Core
-  - PooTools/Core (4.5.7):
+  - PooTools/Core (4.5.9):
     - AttributedString
     - CocoaLumberjack/Swift
     - DeviceKit
@@ -82,53 +82,53 @@ PODS:
     - SnapKit
     - SwiftDate
     - SwifterSwift
-  - PooTools/CustomerLabel (4.5.7):
+  - PooTools/CustomerLabel (4.5.9):
     - PooTools/Core
-  - PooTools/DEBUG (4.5.7):
+  - PooTools/DEBUG (4.5.9):
     - PooTools/Core
     - PooTools/NetWork
     - PooTools/PDF
     - PooTools/SearchBar
     - PooTools/Share
-  - PooTools/Flag (4.5.7):
+  - PooTools/Flag (4.5.9):
     - FlagKit
     - PooTools/Core
-  - PooTools/Hud (4.5.7):
+  - PooTools/Hud (4.5.9):
     - PooTools/Core
     - PooTools/ProgressBar
-  - PooTools/Instructions (4.5.7):
+  - PooTools/Instructions (4.5.9):
     - Instructions
     - PooTools/Core
-  - PooTools/Loading (4.5.7):
+  - PooTools/Loading (4.5.9):
     - PooTools/Core
-  - PooTools/LocationPermission (4.5.7):
+  - PooTools/LocationPermission (4.5.9):
     - PooTools/Core
-  - PooTools/MicPermission (4.5.7):
+  - PooTools/MicPermission (4.5.9):
     - PooTools/Core
-  - PooTools/Motion (4.5.7):
+  - PooTools/Motion (4.5.9):
     - PooTools/Core
     - PooTools/MotionPermission
-  - PooTools/MotionPermission (4.5.7):
+  - PooTools/MotionPermission (4.5.9):
     - PooTools/Core
-  - PooTools/NetWork (4.5.7):
+  - PooTools/NetWork (4.5.9):
     - Alamofire
     - PooTools/Core
     - PooTools/Loading
-  - PooTools/PDF (4.5.7):
+  - PooTools/PDF (4.5.9):
     - PooTools/Core
-  - PooTools/PhotoPicker (4.5.7):
+  - PooTools/PhotoPicker (4.5.9):
     - Kakapos
     - PooTools/CameraPermission
     - PooTools/Core
     - PooTools/Loading
     - PooTools/NetWork
-  - PooTools/ProgressBar (4.5.7):
+  - PooTools/ProgressBar (4.5.9):
     - PooTools/Core
-  - PooTools/SearchBar (4.5.7):
+  - PooTools/SearchBar (4.5.9):
     - PooTools/Core
-  - PooTools/Share (4.5.7):
+  - PooTools/Share (4.5.9):
     - PooTools/CustomerLabel
-  - PooTools/WhatsNewsKit (4.5.7):
+  - PooTools/WhatsNewsKit (4.5.9):
     - PooTools/Core
   - pop (1.0.12)
   - SafeSFSymbols (2.0.0)
@@ -241,15 +241,15 @@ EXTERNAL SOURCES:
 
 CHECKOUT OPTIONS:
   PooTools:
-    :commit: 7a80d58134a51a345c414564296a8bd04506436c
+    :commit: a0e0aabf66cde57fe9ac5c94dd0b563058e8f8af
     :git: https://github.com/crazypoo/PTools.git
 
 SPEC CHECKSUMS:
   Alamofire: ddb8d5201667b256dbc225f3fc6e835a0753186f
-  AMapFoundation-NO-IDFA: a2e3c895398d7ee757278e1a0a8f9359da4b146e
-  AMapLocation-NO-IDFA: 7cd8fc837ea41edfbf4d937cd20572e277b77d18
-  AMapNavi-NO-IDFA: d55b9b138c6e540f737c689975cae2c9dbd1026a
-  AMapSearch-NO-IDFA: c0afd2a69a076d4228becda4401dbe4a279a03ef
+  AMapFoundation-NO-IDFA: b59e0f5bd904e747b34171f1f690e22e0003acaa
+  AMapLocation-NO-IDFA: a3d2b837559dc4adec98f2709d6ae82c807d64aa
+  AMapNavi-NO-IDFA: b53821d99883050512eb0ccf2b1df0964c06c74c
+  AMapSearch-NO-IDFA: 53362696f039f2266f727477f8d8b4401a648079
   AttributedString: 48343fcecea107c89319e09436b6d19e90e69981
   Bugly: 217ac2ce5f0f2626d43dbaa4f70764c953a26a31
   CocoaLumberjack: e4ba3b414dfca8c1916c6303d37f63b3a95134c6
@@ -269,7 +269,7 @@ SPEC CHECKSUMS:
   Kingfisher: ee4ff4936d5b399164b6d01a0dfc0388583287b6
   LookinServer: 1b2b61c6402ae29fa22182d48f5cd067b4e99e80
   lottie-ios: 6467ca7035120c5b0e0acee58bb679cf15875686
-  PooTools: 33f265762f7c1504744dcb74c8423a18a0aa3bad
+  PooTools: 9f4f245dd0713a0c46c074d608e57e4f57e01151
   pop: d582054913807fd11fd50bfe6a539d91c7e1a55a
   SafeSFSymbols: c57c8752149b2ddc0213d3d519a3a31a8bd76340
   SmartCodable: db7f9dc94eb9022ede18adf5052772432c5286c7
