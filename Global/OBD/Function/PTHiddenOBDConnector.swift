@@ -138,6 +138,21 @@ public enum PTFuelType: Int, Codable {
     }
 }
 
+// MARK: - 🌟 车辆详细档案 (VIN 解析结果)
+public struct PTVINDetails {
+    public let rawVIN: String       // 原始 17 位代码
+    public let region: String       // 产地 (如: "法国", "中国")
+    public let manufacturer: String // 厂商名称 (如: "标致 (Peugeot)")
+    public let modelYear: String    // 第 10 位: 生产年份 (如: "2026")
+    public let isStandardLength: Bool // 是否是标准的 17 位车架号
+    
+    // UI 快速展示格式
+    public var summary: String {
+        guard isStandardLength else { return "非标准 VIN 码 (\(rawVIN))" }
+        return "[\(modelYear) 款] \(region)产 \(manufacturer)"
+    }
+}
+
 // MARK: - 🌟 动力系统类型
 public enum PTEngineType: String, Codable {
     case ice = "燃油车 (ICE)"
@@ -161,11 +176,91 @@ public class PTOBDInfo:NSObject {
     public var moudleInfo:PTATVersionModel = PTATVersionModel()
     public var aitName:String = ""
     public var atdpName:PROTOCOL = .NONE
-    public var vin:String = ""
+    public var vin: String = "" {
+        didSet {
+            let cleanVIN = vin.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+            // 只要非空且发生改变，就立刻解析
+            if !cleanVIN.isEmpty {
+                self.vinDetails = self.decodeVIN(cleanVIN)
+            }
+        }
+    }
     public var ecuVersion:String = ""
     public var cvn:String = ""
     public var supportCommand:[OBDCommand] = []
     public var engineType: PTEngineType = .ice
+    public var vinDetails: PTVINDetails?
+    
+    // MARK: - 🧠 VIN 工业标准解码引擎
+    private func decodeVIN(_ raw: String) -> PTVINDetails {
+        let isStandard = raw.count == 17
+        
+        var regionStr = "未知产地"
+        var brandStr = "未知厂商"
+        var yearStr = "未知年份"
+        
+        if isStandard {
+            // 1. 提取区域 (第 1 位)
+            let regionChar = raw[raw.startIndex]
+            regionStr = getRegion(from: regionChar)
+            
+            // 2. 提取制造商 WMI (前 3 位)
+            let wmiIndex = raw.index(raw.startIndex, offsetBy: 3)
+            let wmi = String(raw[..<wmiIndex])
+            brandStr = getManufacturer(from: wmi)
+            
+            // 3. 提取年份 (第 10 位，索引为 9)
+            let yearCharIndex = raw.index(raw.startIndex, offsetBy: 9)
+            let yearChar = raw[yearCharIndex]
+            yearStr = getYear(from: yearChar)
+        }
+        
+        return PTVINDetails(
+            rawVIN: raw,
+            region: regionStr,
+            manufacturer: brandStr,
+            modelYear: yearStr,
+            isStandardLength: isStandard
+        )
+    }
+    
+    // MARK: - 私有字典与映射方法
+    
+    private func getRegion(from char: Character) -> String {
+        let regionMap: [Character: String] = [
+            "1": "美国", "2": "加拿大", "3": "墨西哥", "4": "美国", "5": "美国",
+            "J": "日本", "K": "韩国", "L": "中国", "M": "印度",
+            "S": "英国", "T": "瑞士", "V": "法国", "W": "德国", "Z": "意大利"
+        ]
+        return regionMap[char] ?? "其他区域"
+    }
+    
+    private func getManufacturer(from wmi: String) -> String {
+        // 汽车工业 WMI 常见映射 (这里仅做部分常用演示，你可以随时扩充)
+        if wmi.hasPrefix("VF3") { return "标致 (Peugeot)" }
+        if wmi.hasPrefix("WBA") { return "宝马 (BMW)" }
+        if wmi.hasPrefix("WDC") { return "戴姆勒-奔驰 (Mercedes-Benz)" }
+        if wmi.hasPrefix("WP0") { return "保时捷 (Porsche)" }
+        if wmi.hasPrefix("JT")  { return "丰田 (Toyota)" }
+        if wmi.hasPrefix("JH")  { return "本田 (Honda)" }
+        if wmi.hasPrefix("LSV") { return "上汽大众" }
+        if wmi.hasPrefix("LSG") { return "上汽通用" }
+        if wmi.hasPrefix("LRW") { return "特斯拉中国 (Tesla)" }
+        
+        return "代码: \(wmi)"
+    }
+    
+    private func getYear(from char: Character) -> String {
+        // ISO 3779 标准的第 10 位年份映射表 (2010 年之后)
+        // 标准中不使用字母 I, O, Q, U, Z 以及数字 0
+        let yearMap: [Character: String] = [
+            "A": "2010", "B": "2011", "C": "2012", "D": "2013", "E": "2014",
+            "F": "2015", "G": "2016", "H": "2017", "J": "2018", "K": "2019",
+            "L": "2020", "M": "2021", "N": "2022", "P": "2023", "R": "2024",
+            "S": "2025", "T": "2026", "V": "2027", "W": "2028", "X": "2029"
+        ]
+        return yearMap[char] ?? "2009或更早/未知"
+    }
 }
 
 public class PTMultiFrameParser {
@@ -424,6 +519,7 @@ public struct YmobdCrypt {
 public enum PTOBDConnectionType {
     case bluetooth
     case wifi(ip: String, port: UInt16)
+    case mock
 }
 
 // MARK: - 🌟 OBD 传输核心协议基类 (负责状态机与碎片组装)
@@ -651,6 +747,100 @@ public class PTOBDTransportBase: NSObject {
     }
 }
 
+// MARK: 离线 OBD 沙盒虚拟引擎 (用于无车环境下的 UI 开发与测试)
+public class PTMockOBDConnector: PTOBDTransportBase {
+    public static let shared = PTMockOBDConnector()
+    
+    private let mockQueue = DispatchQueue(label: "com.ptools.mockOBDQueue")
+    
+    private override init() { super.init() }
+    
+    // 重写物理发送方法，将指令发给我们的“虚拟 ECU”
+    override func writeRawData(_ command: String) {
+        let cleanCommand = command.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        
+        // 模拟网络和蓝牙的物理延迟 (50 毫秒)
+        mockQueue.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+            guard let self = self else { return }
+            let simulatedResponse = self.generateMockResponse(for: cleanCommand)
+            // 把虚拟的回传数据丢给基类去组装
+            self.handleIncomingChunk(simulatedResponse, sourceName: "MOCK")
+        }
+    }
+    
+    // 重写断开连接
+    override func dropPhysicalConnection() {
+        self.isUnlocked = false
+        if let cont = responseContinuation {
+            cont.resume(throwing: NSError(domain: "MockError", code: -2, userInfo: [NSLocalizedDescriptionKey: "模拟器断开"]))
+            self.responseContinuation = nil
+        }
+        NotificationCenter.default.post(name: NSNotification.Name("PTMotoOBDDisconnected"), object: nil)
+    }
+    
+    // 启动模拟连接
+    public func startMockConnection() {
+        PTOBDLogger.shared.startFileLogging()
+        PTOBDLogger.shared.ptLog("🎮 [模拟器] 正在启动离线沙盒引擎...")
+        
+        // 模拟 1 秒的连接耗时
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            PTOBDLogger.shared.ptLog("✅ [模拟器] 虚拟物理通道建立成功，启动状态机！")
+            self?.resetAndStartStateMachine() // 呼叫基类，开始 19 步破冰！
+        }
+    }
+    
+    // MARK: - 🧠 核心：虚拟 ECU 响应大脑
+    private func generateMockResponse(for command: String) -> String {
+        // 根据传入的指令，伪造极其逼真的 ECU 回传报文
+        switch command {
+        case "ATZ", "ATD", "ATI":
+            return "ELM327 v1.5\r\n>"
+        case "ATE0", "ATL0", "ATH1", "ATS1", "ATAL", "ATSP0", "AT+SETCRYPT":
+            return "OK\r\n>"
+        case "ATRV":
+            // 模拟电瓶电压轻微波动
+            let volt = Double.random(in: 13.8...14.2)
+            return String(format: "%.1fV\r\n>", volt)
+        case "ATDP":
+            return "AUTO, ISO 15765-4 (CAN 11/500)\r\n>"
+            
+        // 模拟车辆的探针支持情况 (告诉管理器我支持哪些数据)
+        case "0100": return "41 00 BE 3E B8 13\r\n>"
+        case "0120": return "41 20 90 15 B0 11\r\n>"
+        case "0140": return "41 40 FA DC 80 00\r\n>"
+            
+        // 模拟车辆档案
+        case "0902": // 虚拟 VIN 码: WBAXXXXXXXXXXXXXX
+            return "49 02 01 00 00 00 31 57 42 41 31 32 33 34 35 36 37 38 39 30 31 32 33\r\n>"
+            
+        case "0101": // 虚拟健康状态 (无故障码)
+            return "41 01 00 07 65 00\r\n>"
+            
+        // 🌟 动态波动数据，完美模拟真实骑行！
+        case "010C": // 转速 RPM
+            let rpm = Int.random(in: 1500...8000) * 4 // 公式除以4，所以这里乘4
+            let hex = String(format: "%04X", rpm)
+            return "41 0C \(hex.prefix(2)) \(hex.suffix(2))\r\n>"
+            
+        case "010D": // 车速 Speed
+            let speed = Int.random(in: 0...120)
+            let hex = String(format: "%02X", speed)
+            return "41 0D \(hex)\r\n>"
+            
+        case "0151": // 燃料类型 (返回 1 = 汽油)
+            return "41 51 01\r\n>"
+            
+        case "AT+VERSION":
+            return "Company: PTools Mock Engine\r\nVersion: V1.0.0\r\n>"
+            
+        default:
+            if command.hasPrefix("AT") { return "OK\r\n>" }
+            return "NO DATA\r\n>"
+        }
+    }
+}
+
 public class PTWifiOBDConnector: PTOBDTransportBase {
     public static let shared = PTWifiOBDConnector()
     
@@ -849,6 +1039,8 @@ public class PTMotoTelemetryManager {
             return try await PTHiddenOBDConnector.shared.sendOBDCommandAsync(command)
         case .wifi:
             return try await PTWifiOBDConnector.shared.sendOBDCommandAsync(command)
+        case .mock:
+            return try await PTMockOBDConnector.shared.sendOBDCommandAsync(command)
         }
     }
 
@@ -920,6 +1112,12 @@ public class PTMotoTelemetryManager {
                 self?.handleIceBroken(rawPIDs: PTWifiOBDConnector.shared.collectedPIDResponses)
             }
             PTWifiOBDConnector.shared.startConnection()
+        case .mock:
+            PTMockOBDConnector.shared.onIceBroken = { [weak self] in
+                // 模拟器破冰成功，将模拟器的 PID 转交上去
+                self?.handleIceBroken(rawPIDs: PTMockOBDConnector.shared.collectedPIDResponses)
+            }
+            PTMockOBDConnector.shared.startMockConnection()
         }
     }
     
@@ -1104,53 +1302,95 @@ public class PTMotoTelemetryManager {
 
     // MARK: 使用硬编码字符串完美脱离 SwiftOBD2 评估依赖
     private func parseSingleResponse(command: String, response: String) -> Any? {
-        // 只保留 0-9 和 A-F，彻底粉碎所有的空格、回车、甚至是不可见的 \0 (Null Byte)！
         let hexValid = "0123456789ABCDEF"
-        let pureResponse = response.uppercased().filter { hexValid.contains($0) }
         let pureCommand = command.uppercased().filter { hexValid.contains($0) }
         
-        // 为 ATRV 开辟专属“绿色通道”
+        // 1. 为 ATRV 开辟专属“绿色通道”
         if pureCommand == "ATRV" || command.uppercased().contains("ATRV") {
-            // 电压含有小数点，单独提纯
             let voltStr = response.uppercased().replacingOccurrences(of: "V", with: "").filter { "0123456789.".contains($0) }
             return Double(voltStr)
         }
         
-        // 如果这个指令是你手动注册的，直接把纯净回传丢给你的闭包处理，然后潇洒返回！
+        // 2. 为你注册的“私有黑客指令”开辟绿色通道
+        let globalPureResponse = response.uppercased().filter { hexValid.contains($0) }
         if let customParser = customParsers[pureCommand] {
-            return customParser(pureResponse)
+            return customParser(globalPureResponse)
         }
 
-        // 确保指令前缀合法且长度足够
+        // 3. 校验报文格式
         guard (pureCommand.hasPrefix("01") || pureCommand.hasPrefix("02")) && pureCommand.count >= 4 else {
             PTOBDLogger.shared.ptLog("❌ 拦截：指令格式不合法 -> [\(pureCommand)]")
             return nil
         }
         
-        // 3. 提取预期报头，例如 "010C" -> "410C"
         let modeAndPID = String(pureCommand.prefix(4))
-        let modeStr = String(modeAndPID.prefix(2))     // 提取出 "01"
-        let pidHex = String(modeAndPID.suffix(2))      // 提取出 "0C"
-
-        // 拼接预期前缀 (41 + 0C = 410C)
+        let modeStr = String(modeAndPID.prefix(2))
+        let pidHex = String(modeAndPID.suffix(2))
         let expectedMode = modeStr == "01" ? "41" : "42"
-        let expectedPrefix = expectedMode + pidHex
+        let expectedPrefix = expectedMode + pidHex // 例如 "410C"
         
-        // 4. 在绝对纯净的响应中寻找报头
-        // 此时 "7E804410C196C".range(of: "410C") 绝对能完美匹配！
-        guard let range = pureResponse.range(of: expectedPrefix) else {
-            PTOBDLogger.shared.ptLog("❌ 拦截：纯净响应中找不到报头 | 纯净指令:[\(pureCommand)] 预期报头:[\(expectedPrefix)] 纯净响应:[\(pureResponse)]")
+        // 🌟 4. 【核心重构】：多 ECU 节点防撞与分离 (逐行解析)
+        let lines = response.uppercased().components(separatedBy: .newlines)
+            .flatMap { $0.components(separatedBy: "\r") } // 兼容 \r 或 \n
+            .map { $0.filter { hexValid.contains($0) } }  // 每一行单独提纯 Hex
+            .filter { !$0.isEmpty }
+        
+        // 存放不同 ECU 返回的有效数据载荷
+        var parsedPayloadsByECU: [String: String] = [:]
+        
+        for line in lines {
+            if let range = line.range(of: expectedPrefix) {
+                // 提取发出这条回复的 ECU 报头 (通常在 expectedPrefix 之前)
+                // 例如 "7E804410C1A7C" 中，报头是 "7E8"
+                let headerPart = String(line[..<range.lowerBound])
+                
+                // 提取报头：取前 3 位 (11-bit CAN) 或 前 8 位 (29-bit CAN)
+                var ecuHeader = "UNKNOWN"
+                if headerPart.count >= 8 { ecuHeader = String(headerPart.prefix(8)) }
+                else if headerPart.count >= 3 { ecuHeader = String(headerPart.prefix(3)) }
+                
+                // 截取目标数据载荷
+                let rawDataPart = String(line[range.upperBound...])
+                parsedPayloadsByECU[ecuHeader] = rawDataPart
+            }
+        }
+        
+        // 如果没有收到任何有效载荷，拦截
+        guard !parsedPayloadsByECU.isEmpty else {
+            // PTOBDLogger.shared.ptLog("❌ 拦截：所有节点均未返回目标报头 [\(expectedPrefix)]")
             return nil
         }
         
-        let rawDataPart = String(pureResponse[range.upperBound...])
+        // 🌟 5. ECU 优先级仲裁引擎 (Priority Matrix)
+        var targetPayload: String? = nil
         
+        // 汽油/纯电/混动车的标准发动机主模块报头 (优先级最高)
+        let primaryECUHeaders = ["7E8", "18DAF110", "18DAF100"]
+        
+        for primary in primaryECUHeaders {
+            if let payload = parsedPayloadsByECU[primary] {
+                targetPayload = payload
+                break // 找到了主 ECU 的数据，立刻跳出！
+            }
+        }
+        
+        // 如果没有主模块的数据（例如某些特定探针只有变速箱 7E9 支持），则使用第一个拿到的数据作为备胎
+        if targetPayload == nil {
+            if let fallback = parsedPayloadsByECU.first {
+                targetPayload = fallback.value
+                PTOBDLogger.shared.ptLog("⚠️ [多模块仲裁] 未命中主ECU，采用备用节点数据: 节点[\(fallback.key)], 指令[\(modeAndPID)]")
+            }
+        }
+        
+        guard let finalRawDataPart = targetPayload else { return nil }
+        
+        // 🌟 6. 切分字节
         func getByte(at index: Int) -> Double? {
             let startOffset = index * 2
-            guard rawDataPart.count >= startOffset + 2 else { return nil }
-            let startIndex = rawDataPart.index(rawDataPart.startIndex, offsetBy: startOffset)
-            let endIndex = rawDataPart.index(startIndex, offsetBy: 2)
-            if let intVal = Int(rawDataPart[startIndex..<endIndex], radix: 16) { return Double(intVal) }
+            guard finalRawDataPart.count >= startOffset + 2 else { return nil }
+            let startIndex = finalRawDataPart.index(finalRawDataPart.startIndex, offsetBy: startOffset)
+            let endIndex = finalRawDataPart.index(startIndex, offsetBy: 2)
+            if let intVal = Int(finalRawDataPart[startIndex..<endIndex], radix: 16) { return Double(intVal) }
             return nil
         }
         
@@ -1159,12 +1399,12 @@ public class PTMotoTelemetryManager {
         let C = getByte(at: 2)
         let D = getByte(at: 3)
 
+        // 🌟 7. 去字典里找到对应的 Enum，命令它自己计算并返回！
         if let commandEnum = OBDCommand.from(command: modeAndPID) {
-            let result = commandEnum.decodeValue(A: A, B: B, C: C, D: D)
-            // if let val = result { PTOBDLogger.shared.ptLog("🏎️ [解析成功] \(modeAndPID) -> \(val)") }
-            return result
+            return commandEnum.decodeValue(A: A, B: B, C: C, D: D)
         }
         
+        PTOBDLogger.shared.ptLog("⚠️ 字典中未注册公式的指令: \(modeAndPID)")
         return nil
     }
     
