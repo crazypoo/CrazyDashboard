@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		55028F2C2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */; };
 		5512F332302B7F26001AFED4 /* PTOBDCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F331302B7F26001AFED4 /* PTOBDCommand.swift */; };
+		5512F334302C06A8001AFED4 /* PTOBDOTAUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F333302C06A8001AFED4 /* PTOBDOTAUpdater.swift */; };
 		554110DB301E65AB0059BFCF /* PTLiDARCollisionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 554110DA301E65AB0059BFCF /* PTLiDARCollisionManager.swift */; };
 		5541111F301F2B630059BFCF /* PTStatusItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5541111E301F2B630059BFCF /* PTStatusItemView.swift */; };
 		554112933021DC830059BFCF /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
@@ -110,6 +111,7 @@
 		33464FDDE31899C7F87FB6EC /* Pods_PTSpeed.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_PTSpeed.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashBoardBaseBoardViewController.swift; sourceTree = "<group>"; };
 		5512F331302B7F26001AFED4 /* PTOBDCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDCommand.swift; sourceTree = "<group>"; };
+		5512F333302C06A8001AFED4 /* PTOBDOTAUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDOTAUpdater.swift; sourceTree = "<group>"; };
 		554110DA301E65AB0059BFCF /* PTLiDARCollisionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLiDARCollisionManager.swift; sourceTree = "<group>"; };
 		5541111E301F2B630059BFCF /* PTStatusItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTStatusItemView.swift; sourceTree = "<group>"; };
 		55499CEB3018E6E100A1A2D9 /* PTDashBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashBoardView.swift; sourceTree = "<group>"; };
@@ -470,6 +472,7 @@
 			children = (
 				55F1E2F13026D2020032EAD5 /* PTHiddenOBDConnector.swift */,
 				5512F331302B7F26001AFED4 /* PTOBDCommand.swift */,
+				5512F333302C06A8001AFED4 /* PTOBDOTAUpdater.swift */,
 			);
 			path = Function;
 			sourceTree = "<group>";
@@ -775,6 +778,7 @@
 				55499DFF301AFA2300A1A2D9 /* PTLiveActivityManager.swift in Sources */,
 				55986642301141090049684D /* PTAntiTheftManager.swift in Sources */,
 				55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */,
+				5512F334302C06A8001AFED4 /* PTOBDOTAUpdater.swift in Sources */,
 				55499E29301B2BBB00A1A2D9 /* PTLocalIntercomManager.swift in Sources */,
 				5598667E301148290049684D /* PTDiagnosticManager.swift in Sources */,
 				55901837300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */,

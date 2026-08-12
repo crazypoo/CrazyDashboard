@@ -7,6 +7,7 @@
 
 import Foundation
 
+//MARK: DTCs
 public enum PTSeverity: String, Codable, Hashable, CaseIterable {
     case low = "Low"
     case moderate = "Moderate"
@@ -2676,7 +2677,7 @@ public enum OBDCommand: Codable, Hashable, Identifiable {
     }
 }
 
-// MARK: - 🌟 4. 智能物理单位提取引擎
+// MARK: 智能物理单位提取引擎
 public extension OBDCommand {
     var unitString: String {
         switch self {

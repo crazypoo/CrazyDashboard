@@ -864,6 +864,20 @@ public class PTMotoTelemetryManager {
     
     private var telemetryPollingTask: Task<Void, Never>?
     
+    private var customParsers: [String: (_ pureResponse: String) -> Any?] = [:]
+    // 🌟 热插拔 API：向系统注册你自己的私有探针！
+    public func registerCustomPollingCommand(commandHex: String, parser: @escaping (_ pureResponse: String) -> Any?) {
+        let cleanCommand = commandHex.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        customParsers[cleanCommand] = parser
+        PTOBDLogger.shared.ptLog("🔌 [热插拔] 成功注册自定义实时轮询指令: \(cleanCommand)")
+    }
+    
+    // 如果你想取消注册
+    public func removeCustomPollingCommand(commandHex: String) {
+        let cleanCommand = commandHex.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        customParsers.removeValue(forKey: cleanCommand)
+    }
+
     private init() {}
     
     public func addDelegate(_ delegate: PTMotoTelemetryDelegate) {
@@ -943,6 +957,9 @@ public class PTMotoTelemetryManager {
             if !allDynamicCommands.contains("ATRV") {
                 allDynamicCommands.append("ATRV")
             }
+            
+            allDynamicCommands.append(contentsOf: self.customParsers.keys)
+            
             let typedCommands = allDynamicCommands.compactMap { OBDCommand.from(command: $0) }
             self.obdInfo.supportCommand = typedCommands
             
@@ -1090,6 +1107,11 @@ public class PTMotoTelemetryManager {
             return Double(voltStr)
         }
         
+        // 如果这个指令是你手动注册的，直接把纯净回传丢给你的闭包处理，然后潇洒返回！
+        if let customParser = customParsers[pureCommand] {
+            return customParser(pureResponse)
+        }
+
         // 确保指令前缀合法且长度足够
         guard (pureCommand.hasPrefix("01") || pureCommand.hasPrefix("02")) && pureCommand.count >= 4 else {
             PTOBDLogger.shared.ptLog("❌ 拦截：指令格式不合法 -> [\(pureCommand)]")
