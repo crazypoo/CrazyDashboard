@@ -258,7 +258,7 @@ public extension PTDashboardHacker {
     
     /// 扫描 CAN 总线上的所有诊断节点，寻找存活的 ECU
     /// - Returns: 存活 ECU 的发送报头数组 (如 ["7E0", "7A0"])
-    public func scanAllActiveECUNodes() async -> [String] {
+    func scanAllActiveECUNodes() async -> [String] {
         let manager = PTMotoTelemetryManager.shared
         guard manager.isConnected else { return [] }
         
@@ -439,6 +439,158 @@ public extension PTDashboardHacker {
         
         PTOBDLogger.shared.ptLog("🏁 [防休眠探测] 测试结束。")
         
+        if wasPolling {
+            let rawPIDsToResume = PTHiddenOBDConnector.shared.collectedPIDResponses.isEmpty ? PTWifiOBDConnector.shared.collectedPIDResponses : PTHiddenOBDConnector.shared.collectedPIDResponses
+            manager.startLightweightPolling(rawPIDs: rawPIDsToResume)
+        }
+    }
+}
+
+extension PTDashboardHacker {
+    
+    /// 🚀 极客工具：通过 UDS 私有协议从车身控制器 (BSI) 强行提取隐藏的 VIN 码
+    /// 标致 (PSA) 车系的标准私有 VIN 存放地址通常为 F190
+    public func extractHiddenVINFromBSI() async -> String? {
+        let manager = PTMotoTelemetryManager.shared
+        guard manager.isConnected else { return nil }
+        
+        PTOBDLogger.shared.ptLog("🕵️‍♂️ [私有探针] 启动隐藏 VIN 提取，目标节点: 700")
+        
+        // 目标节点：700 (BSI/仪表主节点)，预期回复：708
+        let targetTx = "700"
+        let targetRx = "708"
+        
+        // 1. 尝试进入扩展诊断会话 (10 03)，读取敏感信息通常需要提权
+        _ = await manager.fetchProprietaryData(header: targetTx, receiveAddress: targetRx, udsCommand: "1003")
+        
+        // 给 ECU 一点切换会话的反应时间
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        
+        // 2. 发送 UDS 22 服务，读取 F190 (VIN 的工业惯用 DID)
+        let response = await manager.fetchProprietaryData(header: targetTx, receiveAddress: targetRx, udsCommand: "22F190")
+        let cleanResponse = response.replacingOccurrences(of: " ", with: "").uppercased()
+        
+        // 3. 验证是否成功返回 (成功标志为 62 F1 90)
+        if cleanResponse.contains("62F190") {
+            // 剥离掉非数据部分的 CAN 帧格式
+            let purePayload = PTMultiFrameParser.extractPureHexPayload(response: cleanResponse)
+            if let range = purePayload.range(of: "62F190") {
+                let vinHex = String(purePayload[range.upperBound...])
+                // 将十六进制 ASCII 转换为人类可读的字符串
+                if let decodedVIN = String(bytes: hexStringToBytes(vinHex), encoding: .ascii) {
+                    PTOBDLogger.shared.ptLog("💎 [私有探针] 成功从底层提取隐藏 VIN: \(decodedVIN)")
+                    // 自动存入模型，供 UI 刷新
+                    manager.obdInfo.vin = decodedVIN
+                    return decodedVIN
+                }
+            }
+        } else {
+            PTOBDLogger.shared.ptLog("❌ [私有探针] 提取失败，节点返回: \(response)")
+        }
+        
+        // 4. 退出扩展会话
+        _ = await manager.fetchProprietaryData(header: targetTx, receiveAddress: targetRx, udsCommand: "1001")
+        
+        return nil
+    }
+    
+    // 辅助工具：十六进制字符串转字节数组
+    private func hexStringToBytes(_ hex: String) -> [UInt8] {
+        var bytes = [UInt8]()
+        var startIndex = hex.startIndex
+        while startIndex < hex.endIndex {
+            let endIndex = hex.index(startIndex, offsetBy: 2, limitedBy: hex.endIndex) ?? hex.endIndex
+            if let byte = UInt8(hex[startIndex..<endIndex], radix: 16) {
+                bytes.append(byte)
+            }
+            startIndex = endIndex
+        }
+        return bytes
+    }
+}
+
+public extension PTDashboardHacker {
+    
+    // 动画类型枚举，方便你在 UI 界面中直接调用
+    enum PSABootLogoType: String {
+        case standard = "00"
+        case gtLine = "01"
+        case peugeotSport = "02"
+        case gti = "04"
+    }
+    
+    // MARK: - 🦁 法系车专属：仪表盘开机动画覆写引擎
+    
+    /// 尝试使用开源社区的 PSA UDS 指令修改仪表盘开机动画
+    /// - Parameters:
+    ///   - dashboardTx: 仪表盘的发送物理地址 (例如 "7A0" 或 "700")
+    ///   - dashboardRx: 仪表盘的接收物理地址 (例如 "7A8" 或 "708")
+    ///   - logoDID: 控制动画的配置内存地址 (需通过之前写的 Fuzzer 扫描并比对得出，例如 "2121")
+    ///   - logoType: 期望修改的动画类型 (GT Line, Peugeot Sport 等)
+    func testPSABootLogoCommands(dashboardTx: String, dashboardRx: String, logoDID: String, logoType: PSABootLogoType) async {
+        let manager = PTMotoTelemetryManager.shared
+        guard manager.isConnected else {
+            PTOBDLogger.shared.ptLog("❌ [动画修改] 模块未连接！")
+            return
+        }
+        
+        PTOBDLogger.shared.ptLog("🦁 [动画修改] 开始执行 PSA 集团标致专属开机动画提权程序...")
+        PTOBDLogger.shared.ptLog("🎯 目标写入值: [\(logoDID)] -> [\(logoType.rawValue)] (\(logoType))")
+        
+        // 挂起日常轮询，确保总线带宽完全属于 UDS 配置流
+        let wasPolling = (manager.telemetryPollingTask != nil)
+        if wasPolling { manager.telemetryPollingTask?.cancel() }
+        
+        // 步骤 1：进入扩展诊断会话 (PSA 标准配置提权)
+        PTOBDLogger.shared.ptLog("🔄 [步骤 1] 正在请求扩展编程会话 (10 03)...")
+        let sessionRes = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: "1003")
+        guard sessionRes.contains("5003") else {
+            PTOBDLogger.shared.ptLog("❌ ECU 拒绝扩展会话，可能车速不为 0 或引擎正在运转。响应: \(sessionRes)")
+            resumePollingIfNeeded(manager, wasPolling)
+            return
+        }
+        
+        // 给 ECU 预留切换会话的缓冲时间
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        
+        // 步骤 2：安全解锁尝试 (针对 PSA 27 03 配置模式)
+        // 提示：如果你的仪表盘该 DID 区域没有加锁，可以注释掉这段逻辑直接执行步骤 3
+        PTOBDLogger.shared.ptLog("🔑 [步骤 2] 尝试请求安全种子 (27 03)...")
+        let seedRes = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: "2703")
+        if seedRes.contains("6703") {
+            PTOBDLogger.shared.ptLog("⚠️ ECU 已上锁，返回 Seed: \(seedRes)。由于缺少开源 RSA 证书，后续写入可能被拒！")
+        } else {
+            PTOBDLogger.shared.ptLog("✅ ECU 未返回 Seed，可能当前配置区未上锁，继续执行。")
+        }
+        
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        
+        // 步骤 3：发送核心覆写指令 (Write Data By Identifier)
+        // 指令拼接：2E (写服务) + DID (如 2121) + 动画类型单字节 (如 02 代表 Peugeot Sport)
+        let writeCmd = "2E\(logoDID)\(logoType.rawValue)"
+        PTOBDLogger.shared.ptLog("💾 [步骤 3] 发射内存篡改指令: \(writeCmd)")
+        let writeRes = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: writeCmd)
+        
+        // 校验 6E (2E 的成功响应)
+        if writeRes.contains("6E\(logoDID)") {
+            PTOBDLogger.shared.ptLog("🎉 [修改成功] 成功向仪表盘写入动画配置！")
+            
+            // 步骤 4：下发软重启指令，使动画立刻生效 (PSA 标准重启指令)
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            PTOBDLogger.shared.ptLog("🔄 [步骤 4] 正在发送 ECU 软重启指令 (11 03)，请观察仪表盘是否黑屏重启...")
+            _ = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: "1103")
+            
+        } else {
+            PTOBDLogger.shared.ptLog("❌ [修改失败] 写入被 ECU 拒绝，错误信息: \(writeRes)")
+            // 退出扩展会话，恢复常态
+            _ = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: "1001")
+        }
+        
+        resumePollingIfNeeded(manager, wasPolling)
+    }
+    
+    // 恢复轮询的辅助方法
+    private func resumePollingIfNeeded(_ manager: PTMotoTelemetryManager, _ wasPolling: Bool) {
         if wasPolling {
             let rawPIDsToResume = PTHiddenOBDConnector.shared.collectedPIDResponses.isEmpty ? PTWifiOBDConnector.shared.collectedPIDResponses : PTHiddenOBDConnector.shared.collectedPIDResponses
             manager.startLightweightPolling(rawPIDs: rawPIDsToResume)

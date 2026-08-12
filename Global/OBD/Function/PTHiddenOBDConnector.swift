@@ -153,6 +153,19 @@ public struct PTVINDetails {
     }
 }
 
+// MARK: - 🌟 固件标定信息 (CAL ID 解析结果)
+public struct PTCALDetails {
+    public let rawString: String       // 原始字符串
+    public let detectedModel: String   // 自动推断的车型 (如: "Peugeot XP400")
+    public let softwareVersion: String // 提取出的软件版号 (如: "E540")
+    public let isSupportedModel: Bool  // 是否是我们的 App 完美支持的车型
+    
+    // UI 快速展示格式
+    public var summary: String {
+        return "车型: \(detectedModel) | 固件版号: \(softwareVersion)"
+    }
+}
+
 // MARK: - 🌟 动力系统类型
 public enum PTEngineType: String, Codable {
     case ice = "燃油车 (ICE)"
@@ -185,7 +198,14 @@ public class PTOBDInfo:NSObject {
             }
         }
     }
-    public var ecuVersion:String = ""
+    public var ecuVersion:String = "" {
+        didSet {
+            let cleanString = ecuVersion.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+            if !cleanString.isEmpty {
+                self.calDetails = self.decodeCALID(cleanString)
+            }
+        }
+    }
     public var cvn:String = ""
     public var supportCommand:[OBDCommand] = []
     public var engineType: PTEngineType = .ice
@@ -260,6 +280,37 @@ public class PTOBDInfo:NSObject {
             "S": "2025", "T": "2026", "V": "2027", "W": "2028", "X": "2029"
         ]
         return yearMap[char] ?? "2009或更早/未知"
+    }
+    
+    public var calDetails: PTCALDetails?
+    // MARK: - 🧠 固件标定信息解码大脑
+    private func decodeCALID(_ raw: String) -> PTCALDetails {
+        var model = "未知车型"
+        var isSupported = false
+        var swVersion = "未知版本"
+        
+        // 1. 自动嗅探 Peugeot XP40 系列
+        if raw.contains("XP40") {
+            model = "Peugeot XP400 GT"
+            isSupported = true
+            
+            // 2. 提取核心软件版本号 (通常紧跟在车型代号后面)
+            if let range = raw.range(of: "XP40") {
+                let suffix = String(raw[range.upperBound...])
+                // 提取开头的 4 个字符作为版本号 (例如 "E540")
+                if suffix.count >= 4 {
+                    swVersion = String(suffix.prefix(4))
+                } else {
+                    swVersion = suffix
+                }
+            }
+        }        
+        return PTCALDetails(
+            rawString: raw,
+            detectedModel: model,
+            softwareVersion: swVersion,
+            isSupportedModel: isSupported
+        )
     }
 }
 

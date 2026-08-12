@@ -18,18 +18,18 @@ fileprivate extension String {
 }
 
 class PTMotoInfoViewController: PTMotoBaseViewController {
-
+    
     fileprivate var instructionsModels:[PTInstructionsModel] = {
         
         let fitstTime = PTInstructionsModel()
         fitstTime.infoString = "If you first time to use this app tap here"
         fitstTime.buttonName = "ok"
-
+        
         return [fitstTime]
     }()
-
+    
     let coachMarksController = CoachMarksController()
-
+    
     let buttonCount:Int = 4
     let stackHeight:CGFloat = 54.adapter
     let headerHeight:CGFloat = 32
@@ -54,7 +54,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         let view = baseStackSubView()
         return view
     }()
-
+    
     func baseStackSubView() ->PTMainProgressView {
         let view = PTMainProgressView()
         view.bounds = .init(origin: .zero, size: .init(width: (CGFloat.kSCREEN_WIDTH - PTAppBaseConfig.share.defaultViewSpace * 2) / 2, height: stackHeight))
@@ -93,7 +93,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         view.redlineRange = 9000...10000
         return view
     }()
-        
+    
     var bleStatusConnectImage:UIImage {
         let imageSize:CGFloat = 5
         let image = UIColor.systemGreen.createImageWithColor().transformImage(size: .init(width: imageSize, height: imageSize)).withRoundedCorners(radius: imageSize / 2) ?? UIImage()
@@ -135,7 +135,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         view.clipsToBounds = false
         return view
     }()
-                            
+    
     lazy var lightControl:PTIndicatorPanel = {
         let view = PTIndicatorPanel()
         return view
@@ -150,44 +150,44 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         let view = PTStatusItemView()
         view.configure(systemIcon: UIImage(.point.topleftDownToPointBottomrightCurvepath),
                        iconColor: PTDashboardConfig.shared.appMainColor,
-                                   title: PTDashboardConfig.languageFunc(text: "casa_card_little_trip"),
-                                   value: "0\(PTDashboardConfig.shared.appShowUniLabel)")
+                       title: PTDashboardConfig.languageFunc(text: "casa_card_little_trip"),
+                       value: "0\(PTDashboardConfig.shared.appShowUniLabel)")
         return view
     }()
-        
+    
     lazy var odoItem:PTStatusItemView = {
         let view = PTStatusItemView()
         view.configure(systemIcon: UIImage(systemName: "speedometer")!,
-                                   iconColor: PTDashboardConfig.shared.appMainColor,
-                                   title: PTDashboardConfig.languageFunc(text: "casa_card_odo_trip"),
-                                   value: "0\(PTDashboardConfig.shared.appShowUniLabel)")
+                       iconColor: PTDashboardConfig.shared.appMainColor,
+                       title: PTDashboardConfig.languageFunc(text: "casa_card_odo_trip"),
+                       value: "0\(PTDashboardConfig.shared.appShowUniLabel)")
         return view
     }()
-
+    
     lazy var engineItem:PTStatusItemView = {
         let view = PTStatusItemView()
         view.configure(systemIcon: UIImage(.engine.combustion),
-                                   iconColor: PTDashboardConfig.shared.appMainColor,
-                                   title: PTDashboardConfig.languageFunc(text: "casa_card_engine"),
-                                   value: "-")
+                       iconColor: PTDashboardConfig.shared.appMainColor,
+                       title: PTDashboardConfig.languageFunc(text: "casa_card_engine"),
+                       value: "-")
         return view
     }()
-
+    
     lazy var temItem:PTStatusItemView = {
         let view = PTStatusItemView()
         view.configure(systemIcon: UIImage(.thermometer),
-                                   iconColor: PTDashboardConfig.shared.appMainColor,
-                                   title: PTDashboardConfig.languageFunc(text: "casa_card_tem"),
-                                   value: "0°C")
+                       iconColor: PTDashboardConfig.shared.appMainColor,
+                       title: PTDashboardConfig.languageFunc(text: "casa_card_tem"),
+                       value: "0°C")
         return view
     }()
-
+    
     lazy var globeItem:PTStatusItemView = {
         let view = PTStatusItemView()
         view.configure(systemIcon: UIImage(.globe),
-                                   iconColor: PTDashboardConfig.shared.appMainColor,
-                                   title: PTDashboardConfig.languageFunc(text: "casa_card_lan"),
-                                   value: PTConfigLanguage.english.getTypeName())
+                       iconColor: PTDashboardConfig.shared.appMainColor,
+                       title: PTDashboardConfig.languageFunc(text: "casa_card_lan"),
+                       value: PTConfigLanguage.english.getTypeName())
         return view
     }()
     
@@ -226,7 +226,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     }
                 })
             } else {
-                let actions = ["Error Code","Disconnect","Data","ECU info","MIDs","DID"]
+                let actions = ["Error Code","Disconnect","Data","ECU info","MIDs","DID","VIN UDS","Animation","UDS command"]
                 UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: actions, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
                     switch index {
                     case 0:
@@ -252,11 +252,11 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                                         
                                         // 3. 加上 ECU 的大标题 (为了人类可读性，我们可以把 7E8 翻译成发动机)
                                         let ecuName = (ecuKey == "7E8" || ecuKey.contains("18DAF110")) ? "发动机模块" :
-                                                      (ecuKey == "7E9" ? "变速箱模块" : "模块")
+                                        (ecuKey == "7E9" ? "变速箱模块" : "模块")
                                         
                                         return "🛠 \(ecuName) [\(ecuKey)]:\n\(dtcJoined)"
                                     }
-
+                                    
                                     msgData = ecuStrings.joined(separator: "\n\n")
                                 }
                                 UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD error code"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: msgData, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
@@ -273,7 +273,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                         let vc = PTOBDDataViewController()
                         self.navigationController?.pushViewController(vc, animated: true)
                     case 3:
-
+                        
                         let supprotCommandsString = PTMotoTelemetryManager.shared.obdInfo.supportCommand.map { value in
                             value.properties.description
                         }
@@ -295,12 +295,81 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                         Task {
                             self.obdButton.startLoading(indicatorColor: .white)
                             await PTDashboardHacker.shared.probeDeepDataSafely(
-                                    dashboardTx: "700",
-                                    dashboardRx: "708",
-                                    targetDIDs: ["F186", "F187", "F190", "F1A0"]
-                                )
+                                dashboardTx: "700",
+                                dashboardRx: "708",
+                                targetDIDs: ["F186", "F187", "F190", "F1A0"]
+                            )
                             self.obdButton.stopLoading()
                         }
+                    case 6:
+                        Task {
+                            self.obdButton.startLoading(indicatorColor: .white)
+                            let vin = await PTDashboardHacker.shared.extractHiddenVINFromBSI()
+                            self.obdButton.stopLoading()
+                            UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "VIN"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: vin ?? "NO DATA", cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
+                        }
+                    case 7:
+                        Task {
+                            self.obdButton.startLoading(indicatorColor: .white)
+                            
+                            await PTDashboardHacker.shared.testPSABootLogoCommands(
+                                dashboardTx: "700",
+                                dashboardRx: "708",
+                                logoDID: "F1A0",
+                                logoType: .peugeotSport
+                            )
+                            self.obdButton.stopLoading()
+                        }
+                    case 8:
+                        Task {
+                            self.obdButton.startLoading(indicatorColor: .white)
+                            // 🌟 1. 定义从开源社区提取的法系车高价值 DID 字典
+                            let psaExtendedDIDs = [
+                                // === 区域 1：身份、安全与版本 (Identity & Security) ===
+                                "F186", "F187", "F18A", "F18B", "F18C",
+                                "F190", // VIN 车架号
+                                "F193", "F194", "F195", // 软硬件版本号
+                                "F198", "F199", "F1A0", "F1A5", // 标定日期与变种代码
+                                
+                                // === 区域 2：仪表盘与基础参数 (Cluster & Basic Config) ===
+                                "2100", "2101", "2102", "2103", // 基础开关、国家区域限制
+                                "2104", "2105", "2106",         // 语言设定、度量单位 (公里/英里, 摄氏/华氏)
+                                "210A", "210B", "210C",         // 防盗器状态、钥匙匹配状态
+                                "210E", "210F",                 // 外部/内部灯光逻辑控制
+                                "2111", "2112", "2118", "2119", // 声音警告、保养里程阈值配置
+                                
+                                // === 区域 3：显示、动画与高级主题 (Display, Boot Logo & Theme) ===
+                                "2120", "2121", "2122", // 🚨 核心动画区：GT Line, Peugeot Sport 等开机画面开关
+                                "2124", "2125",         // 多媒体/蓝牙配置通道
+                                "2130", "2131"          // 导航显示参数、地图渲染偏好
+                            ]
+
+                            let batchSize = 10
+                            for i in stride(from: 0, to: psaExtendedDIDs.count, by: batchSize) {
+                                let end = min(i + batchSize, psaExtendedDIDs.count)
+                                let batchDIDs = Array(psaExtendedDIDs[i..<end])
+                                
+                                await MainActor.run {
+                                    PTOBDLogger.shared.ptLog("➡️ 发送批次 \(i/batchSize + 1): 正在探测 \(batchDIDs.first!) 到 \(batchDIDs.last!)...\n")
+                                }
+                                
+                                // 调用防休眠探针引擎 (每次读取前都会发送 10 03 提权)
+                                await PTDashboardHacker.shared.probeDeepDataSafely(
+                                    dashboardTx: "700",
+                                    dashboardRx: "708",
+                                    targetDIDs: batchDIDs
+                                )
+                                
+                                // 批次间休息 2 秒，给机车网关散热
+                                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                            }
+
+                            // 3. 扫尾与 UI 更新
+                            await MainActor.run {
+                                self.obdButton.stopLoading()
+                            }
+                        }
+
                     default:
                         break
                     }
@@ -309,7 +378,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         })
         return view
     }()
-
+    
     lazy var motionDeviceButton:PTBaseButton = {
         let view = PTBaseButton()
         view.titleLabel?.font = .appfont(size: 24)
