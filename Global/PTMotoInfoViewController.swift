@@ -226,7 +226,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     }
                 })
             } else {
-                let actions = ["Error Code","Disconnect","Data","ECU info","MIDs"]
+                let actions = ["Error Code","Disconnect","Data","ECU info","MIDs","DID"]
                 UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: actions, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
                     switch index {
                     case 0:
@@ -290,6 +290,13 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                                 "\(value.componentName):\(value.isPassed ? "✅" : "⁉️")"
                             }
                             UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "MIDs info"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: map.joined(separator: "\n"), cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
+                        }
+                    case 5:
+                        Task {
+                            self.obdButton.startLoading(indicatorColor: .white)
+                            let report = await PTDashboardHacker.shared.performFullVehicleDeepDump()
+                            PTOBDLogger.shared.ptLog(report)
+                            self.obdButton.stopLoading()
                         }
                     default:
                         break

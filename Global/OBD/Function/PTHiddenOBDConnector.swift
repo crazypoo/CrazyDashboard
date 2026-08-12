@@ -1082,7 +1082,7 @@ public class PTMotoTelemetryManager {
     public private(set) var currentRPM: Double = 0.0
     public private(set) var currentSpeed: Double = 0.0
     
-    private var telemetryPollingTask: Task<Void, Never>?
+    public var telemetryPollingTask: Task<Void, Never>?
     
     private var customParsers: [String: (_ pureResponse: String) -> Any?] = [:]
     // 🌟 热插拔 API：向系统注册你自己的私有探针！
@@ -1158,7 +1158,7 @@ public class PTMotoTelemetryManager {
     }
 
     // MARK: - 极简轮询引擎 (全频段动态提取 + 核心加权狂闪版)
-    private func startLightweightPolling(rawPIDs: [String]) {
+    func startLightweightPolling(rawPIDs: [String]) {
         telemetryPollingTask?.cancel()
         
         telemetryPollingTask = Task { [weak self] in

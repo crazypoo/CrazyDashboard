@@ -1,0 +1,365 @@
+//
+//  PTDashboardHacker.swift
+//  PTSpeed
+//
+//  Created by 邓杰豪 on 12/8/2026.
+//
+
+import Foundation
+
+public class PTDashboardHacker {
+    public static let shared = PTDashboardHacker()
+    
+    let manager = PTMotoTelemetryManager.shared
+    
+    private init() {}
+    
+    /// 🚀 扫描总线上所有的 ECU 节点，寻找可能是仪表盘的地址
+    /// 标致 (PSA集团) 的非动力模块地址通常在 7A0 - 7CF 之间
+    public func scanForDashboardAddress() async {
+        let manager = PTMotoTelemetryManager.shared
+        guard manager.isConnected else {
+            PTOBDLogger.shared.ptLog("❌ [仪表盘探查] 模块未连接！")
+            return
+        }
+        
+        PTOBDLogger.shared.ptLog("🕵️‍♂️ [仪表盘探查] 开始盲测总线活跃节点...")
+        
+        // UDS 服务 3E 00 (Tester Present) - 询问节点“你在吗？”
+        let pingCommand = "3E00"
+        
+        // 挂起你底层的 10ms 常规轮询，防止总线拥堵
+        let wasPolling = (manager.telemetryPollingTask != nil)
+        if wasPolling { manager.telemetryPollingTask?.cancel() }
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        
+        var foundNodes: [String] = []
+        
+        // 尝试遍历 7A0 到 7DF 的可能地址 (这里仅作示例，缩小范围提高速度)
+        for addressOffset in 0x00...0x3F {
+            let txAddress = String(format: "7%02X", 0xA0 + addressOffset)
+            let rxAddress = String(format: "7%02X", 0xA8 + addressOffset) // 假设响应地址是 TX + 8
+            
+            // 使用之前写好的万能私有探针发起探测
+            let response = await manager.fetchProprietaryData(header: txAddress, receiveAddress: rxAddress, udsCommand: pingCommand)
+            
+            // 7E 是 3E 成功的响应头
+            if response.contains("7E00") {
+                PTOBDLogger.shared.ptLog("🎯 [仪表盘探查] 发现活跃节点！地址: \(txAddress) -> 响应: \(rxAddress)")
+                foundNodes.append(txAddress)
+            }
+            
+            // 给总线留点喘息时间
+            try? await Task.sleep(nanoseconds: 20_000_000)
+        }
+        
+        PTOBDLogger.shared.ptLog("🏁 [仪表盘探查] 扫描完毕，活跃节点列表: \(foundNodes)")
+        
+        // 恢复日常轮询
+        if wasPolling {
+            // manager.startLightweightPolling(...) // 呼叫你的底层恢复方法
+        }
+    }
+    
+    /// 🚀 读取特定地址的固件标识符 (尝试提取当前动画配置项的特征码)
+    /// - Parameter dashboardTx: 你通过上面扫描确定的仪表盘地址 (如 "7A0")
+    public func readDashboardConfig(dashboardTx: String, dashboardRx: String) async {
+        let manager = PTMotoTelemetryManager.shared
+        guard manager.isConnected else { return }
+        
+        PTOBDLogger.shared.ptLog("💾 [仪表盘探查] 开始读取目标模块 (\(dashboardTx)) 的系统配置...")
+        
+        // 尝试进入扩展诊断会话 (UDS 服务 10 03)，修改配置通常需要此会话
+        let sessionRes = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: "1003")
+        PTOBDLogger.shared.ptLog("🔄 会话切换响应: \(sessionRes)")
+        
+        // UDS 服务 22 (Read Data By Identifier)
+        // F190 通常是 VIN 码，F187 是车厂备件号，F180 是 Bootloader 版本
+        // 这里我们可以尝试批量读取这些通用 DID，看看它吐出什么信息
+        let didsToProbe = ["F190", "F187", "F180", "F1A0"]
+        
+        for did in didsToProbe {
+            let readCmd = "22\(did)"
+            let response = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: readCmd)
+            
+            // 62 是 22 的成功响应头
+            if response.contains("62\(did)") {
+                PTOBDLogger.shared.ptLog("✅ 成功读取 DID [\(did)]: \(response)")
+            } else {
+                PTOBDLogger.shared.ptLog("⚠️ 模块拒绝读取 DID [\(did)] 或该地址不存在。响应: \(response)")
+            }
+        }
+        
+        // 退出会话，重置模块 (UDS 服务 11 01 硬重启，或 10 01 默认会话)
+        _ = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: "1001")
+    }
+}
+
+public extension PTDashboardHacker {
+    
+    // MARK: - 🛠 仪表盘高级配置修改引擎 (UDS Write Data By Identifier)
+    
+    /// 强制覆写仪表盘的特定配置项 (如: 更改启动动画、解锁隐藏语言)
+    /// - Parameters:
+    ///   - dashboardTx: 仪表盘的发送地址 (例如: "7A0")
+    ///   - dashboardRx: 仪表盘的接收响应地址 (例如: "7A8")
+    ///   - targetDID: 需要修改的配置项数据标识符 (例如: "F1A0" 代表动画区域)
+    ///   - newHexData: 需要写入的新数据十六进制 (例如: "01" 代表开启海外版)
+    func writeDashboardConfig(dashboardTx: String, dashboardRx: String, targetDID: String, newHexData: String) async -> Bool {
+        
+        let manager = PTMotoTelemetryManager.shared
+        guard manager.isConnected else {
+            PTOBDLogger.shared.ptLog("❌ [仪表盘破解] 模块未连接，无法执行写入！")
+            return false
+        }
+        
+        PTOBDLogger.shared.ptLog("⚠️ [仪表盘破解] 警告：正在启动底层写入程序，修改 DID: \(targetDID) -> \(newHexData)")
+        
+        // 步骤 1：进入扩展诊断会话 (UDS 10 03)
+        // 只有在这个会话下，仪表盘才允许进行安全解锁和写入
+        let sessionRes = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: "1003")
+        guard sessionRes.contains("5003") else {
+            PTOBDLogger.shared.ptLog("❌ [步骤 1 失败] 模块拒绝进入扩展会话: \(sessionRes)")
+            return false
+        }
+        PTOBDLogger.shared.ptLog("✅ [步骤 1 成功] 已进入扩展诊断会话")
+        
+        // 步骤 2：请求安全种子 (UDS 27 01)
+        let seedRes = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: "2701")
+        guard seedRes.contains("6701") else {
+            PTOBDLogger.shared.ptLog("❌ [步骤 2 失败] 无法获取安全 Seed: \(seedRes)")
+            return false
+        }
+        
+        // 提取返回的 Seed 数据 (假设 67 01 后面的字节就是 Seed)
+        let pureHex = PTMultiFrameParser.extractPureHexPayload(response: seedRes)
+        guard let seedStart = pureHex.range(of: "6701")?.upperBound else { return false }
+        let seedString = String(pureHex[seedStart...])
+        PTOBDLogger.shared.ptLog("🔑 获取到安全种子 Seed: \(seedString)")
+        
+        // 步骤 3：计算并发送密钥 Key (UDS 27 02)
+        // ⚠️ 注意：这里使用了一个模拟的演示计算算法。
+        // 在实战中，你需要根据标致机车的原厂 Seed-Key 算法来计算，否则仪表盘会返回 7F 27 35 (Invalid Key)
+        let keyString = calculatePeugeotSecurityKey(seedHex: seedString)
+        
+        let authRes = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: "2702" + keyString)
+        guard authRes.contains("6702") else {
+            PTOBDLogger.shared.ptLog("❌ [步骤 3 失败] 密钥验证失败 (安全访问被拒绝): \(authRes)")
+            return false
+        }
+        PTOBDLogger.shared.ptLog("✅ [步骤 3 成功] 安全访问解锁完成，获取写入权限！")
+        
+        // 步骤 4：写入新配置数据 (UDS 2E + DID + Data)
+        let writeCommand = "2E" + targetDID + newHexData
+        let writeRes = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: writeCommand)
+        
+        // 6E 是 2E 写入成功的标准返回报头
+        guard writeRes.contains("6E\(targetDID)") else {
+            PTOBDLogger.shared.ptLog("❌ [步骤 4 失败] 写入配置失败: \(writeRes)")
+            return false
+        }
+        PTOBDLogger.shared.ptLog("✅ [步骤 4 成功] 新配置数据已成功刷入仪表盘内存！")
+        
+        // 步骤 5：硬重启 ECU，让新配置生效 (UDS 11 01)
+        PTOBDLogger.shared.ptLog("🔄 [步骤 5] 正在发送重启指令，请观察仪表盘是否重启...")
+        _ = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: "1101")
+        
+        return true
+    }
+    
+    // MARK: - 🔒 原厂安全密钥计算器 (模拟)
+    private func calculatePeugeotSecurityKey(seedHex: String) -> String {
+        // TODO: 填入真实的逆向算法
+        // 这里仅作为代码演示：假设算法是将 Seed 原样返回，或者固定返回 "FFFFFFFF"
+        PTOBDLogger.shared.ptLog("正在使用内置算法计算 Key...")
+        return "FFFFFFFF"
+    }
+}
+
+
+public extension PTDashboardHacker {
+    
+    // MARK: - 🕵️‍♂️ 终极黑客工具：UDS 内存配置全量盲扫器 (DID Fuzzer)
+    
+    /// 自动遍历并读取目标 ECU 内的所有配置地址，生成内存转储报告
+    /// - Parameters:
+    ///   - dashboardTx: 仪表盘的发送报头 (如 "7A0")
+    ///   - dashboardRx: 仪表盘的接收报头 (如 "7A8")
+    ///   - startDID: 扫描起始十六进制地址 (如 0x0100)
+    ///   - endDID: 扫描结束十六进制地址 (如 0x02FF)
+    /// - Returns: 一个包含所有成功读取的 [DID: Hex数据] 的字典
+    func fuzzDashboardDIDs(dashboardTx: String, dashboardRx: String, startDID: UInt16 = 0x0100, endDID: UInt16 = 0x02FF) async -> [String: String] {
+        
+        let manager = PTMotoTelemetryManager.shared
+        guard manager.isConnected else {
+            PTOBDLogger.shared.ptLog("❌ [Fuzzer] 未连接到总线，扫描中止。")
+            return [:]
+        }
+        
+        let startHexStr = String(format: "%04X", startDID)
+        let endHexStr = String(format: "%04X", endDID)
+        let totalCount = endDID - startDID + 1
+        
+        PTOBDLogger.shared.ptLog("🚀 [Fuzzer] 开始执行暴力内存盲扫！区间: \(startHexStr) 到 \(endHexStr) (共 \(totalCount) 个地址)")
+        
+        // 挂起日常轮询，霸占总线绝对控制权
+        let wasPolling = (manager.telemetryPollingTask != nil)
+        if wasPolling { manager.telemetryPollingTask?.cancel() }
+        
+        // 尝试进入扩展会话 (10 03)，因为很多配置项在默认会话下会隐藏或拒绝读取
+        _ = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: "1003")
+        
+        var validConfigurations: [String: String] = [:]
+        
+        for currentDID in startDID...endDID {
+            let didHex = String(format: "%04X", currentDID)
+            let readCommand = "22\(didHex)"
+            
+            // 发送读取请求
+            let response = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: readCommand)
+            
+            let cleanResponse = response.replacingOccurrences(of: " ", with: "").uppercased()
+            let expectedSuccessHeader = "62\(didHex)"
+            
+            // 如果响应中包含了 62 + DID，说明提取成功！
+            if cleanResponse.contains(expectedSuccessHeader), let range = cleanResponse.range(of: expectedSuccessHeader) {
+                // 截取该 DID 背后隐藏的具体配置数据
+                let dataValue = String(cleanResponse[range.upperBound...])
+                
+                // 排除掉全 0 的空数据占位符
+                if !dataValue.isEmpty && dataValue.replacingOccurrences(of: "0", with: "").count > 0 {
+                    validConfigurations[didHex] = dataValue
+                    PTOBDLogger.shared.ptLog("💎 [Fuzzer 命中] 发现有效配置块！DID: [\(didHex)] -> 数据: [\(dataValue)]")
+                }
+            } else if cleanResponse.contains("7F2233") {
+                // 7F 22 33 代表 Security Access Denied，说明找对地方了，但需要密码解锁才能看
+                PTOBDLogger.shared.ptLog("🔒 [Fuzzer 遇阻] 发现加密块！DID: [\(didHex)] 需要 27 服务安全解锁。")
+            }
+            
+            // 极其关键的休眠：千万不能毫无间隔地轰炸 ECU，否则会导致仪表盘死机重启
+            try? await Task.sleep(nanoseconds: 30_000_000) // 30 毫秒间隔
+        }
+        
+        PTOBDLogger.shared.ptLog("🏁 [Fuzzer] 扫描完毕！共挖掘出 \(validConfigurations.count) 个有效配置项。")
+        
+        // 退出扩展会话，恢复常态
+        _ = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: "1001")
+        
+        // 如果要恢复日常数据轮询，可以在这里触发
+        // if wasPolling { ... }
+        
+        return validConfigurations
+    }
+}
+
+public extension PTDashboardHacker {
+    
+    // MARK: - 🌍 阶段一：全域 ECU 节点雷达扫描 (Ping Sweep)
+    
+    /// 扫描 CAN 总线上的所有诊断节点，寻找存活的 ECU
+    /// - Returns: 存活 ECU 的发送报头数组 (如 ["7E0", "7A0"])
+    public func scanAllActiveECUNodes() async -> [String] {
+        let manager = PTMotoTelemetryManager.shared
+        guard manager.isConnected else { return [] }
+        
+        PTOBDLogger.shared.ptLog("🌍 [全域雷达] 启动 11-bit CAN 总线地毯式扫描 (0x700 - 0x7DF)...")
+        
+        // 挂起轮询，霸占总线
+        let wasPolling = (manager.telemetryPollingTask != nil)
+        if wasPolling { manager.telemetryPollingTask?.cancel() }
+        
+        var activeNodes: [String] = []
+        
+        // 遍历标准的诊断地址段
+        for address in 0x700...0x7DF {
+            let txAddress = String(format: "%03X", address)
+            // 在 ISO 15765-4 协议中，接收地址通常是发送地址 + 8
+            let rxAddress = String(format: "%03X", address + 8)
+            
+            // 使用 UDS 10 01 (默认诊断会话) 作为 Ping 指令，它是最安全且各模块必须响应的指令
+            let response = await manager.fetchProprietaryData(header: txAddress, receiveAddress: rxAddress, udsCommand: "1001")
+            let cleanResponse = response.replacingOccurrences(of: " ", with: "").uppercased()
+            
+            // 5001 是成功响应，7F10 是否定响应(但证明节点存在)。排除 NO DATA
+            if !cleanResponse.contains("NODATA") && !cleanResponse.isEmpty {
+                PTOBDLogger.shared.ptLog("🎯 [全域雷达] 活捉 ECU 节点！地址: \(txAddress) -> 响应: \(cleanResponse)")
+                activeNodes.append(txAddress)
+            }
+            
+            // 极速扫描间隔，保护总线不崩溃
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+        
+        PTOBDLogger.shared.ptLog("🏁 [全域雷达] 扫描完成！共发现 \(activeNodes.count) 个存活 ECU: \(activeNodes)")
+        
+        return activeNodes
+    }
+    
+    // MARK: - 🚀 阶段二：一键全车脱壳 (Full Vehicle Dump)
+    
+    /// 执行终极脱壳：自动寻找全车 ECU，并逐一进行内存盲扫，生成最终的全车指纹档案
+    /// - Returns: 格式化好的纯文本报告，可直接写入文件
+    func performFullVehicleDeepDump() async -> String {
+        let manager = PTMotoTelemetryManager.shared
+        guard manager.isConnected else { return "错误：模块未连接" }
+        
+        var report = "=== PTOOLS 全车深度数字指纹 Dump ===\n"
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        report += "记录时间: \(formatter.string(from: Date()))\n"
+        report += "=========================================\n\n"
+        
+        // 1. 先雷达全域扫图
+        let activeNodes = await scanAllActiveECUNodes()
+        
+        if activeNodes.isEmpty {
+            report += "⚠️ 全域雷达未发现任何活跃诊断节点 (可能设备已断开或总线休眠)。\n"
+            return report
+        }
+        
+        // 2. 针对每一个抓到的 ECU，进行深度提权和 DID 盲扫
+        // 我们扫最常见的配置区域: 0x0100~0x02FF (常规配置), 以及 0xF100~0xF1FF (车厂识别区)
+        for txNode in activeNodes {
+            // 计算对应的接收地址
+            guard let hexVal = UInt16(txNode, radix: 16) else { continue }
+            let rxNode = String(format: "%03X", hexVal + 8)
+            
+            report += "-----------------------------------------\n"
+            report += "🛠 开始解析 ECU 节点: [TX: \(txNode) | RX: \(rxNode)]\n"
+            report += "-----------------------------------------\n"
+            
+            PTOBDLogger.shared.ptLog("☢️ [深度脱壳] 正在向 ECU \(txNode) 发起内存遍历攻击...")
+            
+            // 第一波：盲扫 0100 - 02FF
+            let configData = await fuzzDashboardDIDs(dashboardTx: txNode, dashboardRx: rxNode, startDID: 0x0100, endDID: 0x02FF)
+            // 第二波：盲扫 F100 - F1FF (这一段通常包含固件版本、零件号、开发商等绝对机密)
+            let infoData = await fuzzDashboardDIDs(dashboardTx: txNode, dashboardRx: rxNode, startDID: 0xF100, endDID: 0xF1FF)
+            
+            // 合并结果并写入报告
+            let combinedData = configData.merging(infoData) { (current, _) in current }
+            
+            if combinedData.isEmpty {
+                report += "  - 该节点拒绝访问或区间内无有效数据。\n\n"
+            } else {
+                let sortedKeys = combinedData.keys.sorted()
+                for key in sortedKeys {
+                    if let value = combinedData[key] {
+                        report += "  DID: [\(key)]  ->  DATA: [\(value)]\n"
+                    }
+                }
+                report += "\n"
+            }
+            
+            // 扫完一个节点，硬休眠 1 秒，让总线网络和手机蓝牙缓冲层散散热
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+        }
+        
+        report += "=== 全车 Dump 结束 ===\n"
+        
+        // 恢复被挂起的底层高频轮询引擎 (为了不破坏你的主逻辑，我们在扫描结束时重启日常数据)
+        let rawPIDsToResume = PTHiddenOBDConnector.shared.collectedPIDResponses.isEmpty ? PTWifiOBDConnector.shared.collectedPIDResponses : PTHiddenOBDConnector.shared.collectedPIDResponses
+        manager.startLightweightPolling(rawPIDs: rawPIDsToResume)
+        
+        return report
+    }
+}

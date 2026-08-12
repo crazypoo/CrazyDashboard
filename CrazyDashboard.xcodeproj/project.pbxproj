@@ -10,6 +10,7 @@
 		55028F2C2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */; };
 		5512F332302B7F26001AFED4 /* PTOBDCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F331302B7F26001AFED4 /* PTOBDCommand.swift */; };
 		5512F334302C06A8001AFED4 /* PTOBDOTAUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F333302C06A8001AFED4 /* PTOBDOTAUpdater.swift */; };
+		5512F399302C4CAC001AFED4 /* PTDashboardHacker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F398302C4CAC001AFED4 /* PTDashboardHacker.swift */; };
 		554110DB301E65AB0059BFCF /* PTLiDARCollisionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 554110DA301E65AB0059BFCF /* PTLiDARCollisionManager.swift */; };
 		5541111F301F2B630059BFCF /* PTStatusItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5541111E301F2B630059BFCF /* PTStatusItemView.swift */; };
 		554112933021DC830059BFCF /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
@@ -112,6 +113,7 @@
 		55028F2B2FDD3543003BB9F9 /* PTDashBoardBaseBoardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashBoardBaseBoardViewController.swift; sourceTree = "<group>"; };
 		5512F331302B7F26001AFED4 /* PTOBDCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDCommand.swift; sourceTree = "<group>"; };
 		5512F333302C06A8001AFED4 /* PTOBDOTAUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDOTAUpdater.swift; sourceTree = "<group>"; };
+		5512F398302C4CAC001AFED4 /* PTDashboardHacker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashboardHacker.swift; sourceTree = "<group>"; };
 		554110DA301E65AB0059BFCF /* PTLiDARCollisionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLiDARCollisionManager.swift; sourceTree = "<group>"; };
 		5541111E301F2B630059BFCF /* PTStatusItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTStatusItemView.swift; sourceTree = "<group>"; };
 		55499CEB3018E6E100A1A2D9 /* PTDashBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashBoardView.swift; sourceTree = "<group>"; };
@@ -473,6 +475,7 @@
 				55F1E2F13026D2020032EAD5 /* PTHiddenOBDConnector.swift */,
 				5512F331302B7F26001AFED4 /* PTOBDCommand.swift */,
 				5512F333302C06A8001AFED4 /* PTOBDOTAUpdater.swift */,
+				5512F398302C4CAC001AFED4 /* PTDashboardHacker.swift */,
 			);
 			path = Function;
 			sourceTree = "<group>";
@@ -787,6 +790,7 @@
 				55499E24301B204A00A1A2D9 /* PTWeatherManager.swift in Sources */,
 				5598668430114DF00049684D /* PTRoutingManager.swift in Sources */,
 				55986679301144840049684D /* PTGPXRecorder.swift in Sources */,
+				5512F399302C4CAC001AFED4 /* PTDashboardHacker.swift in Sources */,
 				55499E1F301B1F4F00A1A2D9 /* PTWeatherOverlayView.swift in Sources */,
 				55F503BB300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift in Sources */,
 				5512F332302B7F26001AFED4 /* PTOBDCommand.swift in Sources */,
