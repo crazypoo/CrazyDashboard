@@ -363,3 +363,85 @@ public extension PTDashboardHacker {
         return report
     }
 }
+
+public extension PTDashboardHacker {
+    
+    // MARK: - 🛡 高阶工具：防休眠与长延时的 UDS 探测器
+    
+    /// 针对容易 `NO DATA` 的深层 DID 进行极其稳定的强化读取
+    /// - Parameters:
+    ///   - dashboardTx: 目标 ECU 发送报头 (如 "700")
+    ///   - dashboardRx: 目标 ECU 接收报头 (如 "708")
+    ///   - targetDIDs: 需要重点探测的地址数组 (如 ["F186", "F190", "F1A0"])
+    func probeDeepDataSafely(dashboardTx: String, dashboardRx: String, targetDIDs: [String]) async {
+        let manager = PTMotoTelemetryManager.shared
+        guard manager.isConnected else { return }
+        
+        PTOBDLogger.shared.ptLog("🛡 [防休眠探测] 开始对 \(dashboardTx) 执行强化读取...")
+        
+        // 挂起日常轮询，霸占总线
+        let wasPolling = (manager.telemetryPollingTask != nil)
+        if wasPolling { manager.telemetryPollingTask?.cancel() }
+        
+        // 🌟 核心升级 1：延长 ELM327 的 CAN 接收超时时间
+        // AT ST FF 表示将模块的等待时间设置到最大值 (约 1020 毫秒)，给 ECU 充足的思考时间
+        _ = try? await manager.sendRawCommandAsync("ATSTFF")
+        
+        for did in targetDIDs {
+            PTOBDLogger.shared.ptLog("-----------------------------------------")
+            
+            // 🌟 核心升级 2：防休眠机制 (每次读取前，强行刷新 10 03 扩展会话)
+            // 这样保证无论前面经历了什么，ECU 此刻绝对处于最高权限状态！
+            PTOBDLogger.shared.ptLog("🔄 强行唤醒扩展诊断会话 (10 03)...")
+            let sessionRes = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: "1003")
+            
+            if sessionRes.contains("NODATA") {
+                PTOBDLogger.shared.ptLog("⚠️ ECU 拒绝进入扩展会话，可能当前车辆状态不允许 (如引擎正在运转)。")
+            }
+            
+            // 给 ECU 50 毫秒时间切换会话状态
+            try? await Task.sleep(nanoseconds: 50_000_000)
+            
+            // 🌟 发送真正的读取指令 (22 服务)
+            let readCmd = "22\(did)"
+            PTOBDLogger.shared.ptLog("📡 正在深层读取 DID [\(did)]...")
+            
+            let response = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: readCmd)
+            let cleanResponse = response.replacingOccurrences(of: " ", with: "").uppercased()
+            
+            // 🌟 核心升级 3：精准分析各种反馈结果
+            if cleanResponse.contains("62\(did)") {
+                // 成功读取！62 是 22 服务的成功回复
+                PTOBDLogger.shared.ptLog("💎 提取成功！DID [\(did)] 的数据为: \(cleanResponse)")
+            } else if cleanResponse.contains("7F22") {
+                // 收到 7F 报错，说明 ECU 听到了，但拒绝了你
+                if cleanResponse.contains("7F2231") {
+                    PTOBDLogger.shared.ptLog("❌ 提取失败：ECU 明确表示该地址 [\(did)] 没有数据 (Out of Range)。")
+                } else if cleanResponse.contains("7F2233") {
+                    PTOBDLogger.shared.ptLog("🔒 提取失败：地址 [\(did)] 被密码锁定了！必须先通过 27 服务安全解锁！")
+                } else {
+                    PTOBDLogger.shared.ptLog("⚠️ 提取被 ECU 拒绝，错误码: \(cleanResponse)")
+                }
+            } else if cleanResponse.contains("NODATA") {
+                // 如果在加长了超时时间、且确认了 10 03 会话后，还是 NO DATA
+                // 这 100% 说明这台标致机车在这个 DID 上是个空壳，ECU 选择了无视。
+                PTOBDLogger.shared.ptLog("🕳️ 提取结果：NO DATA。ECU 保持沉默，确定此地址无数据。")
+            } else {
+                PTOBDLogger.shared.ptLog("❓ 收到未知格式的回复: \(cleanResponse)")
+            }
+        }
+        
+        // 扫尾工作：恢复 ELM327 默认超时时间 (AT ST 32 = 约 200ms)，避免影响后续高频轮询的帧率
+        _ = try? await manager.sendRawCommandAsync("ATST32")
+        
+        // 退出扩展会话
+        _ = await manager.fetchProprietaryData(header: dashboardTx, receiveAddress: dashboardRx, udsCommand: "1001")
+        
+        PTOBDLogger.shared.ptLog("🏁 [防休眠探测] 测试结束。")
+        
+        if wasPolling {
+            let rawPIDsToResume = PTHiddenOBDConnector.shared.collectedPIDResponses.isEmpty ? PTWifiOBDConnector.shared.collectedPIDResponses : PTHiddenOBDConnector.shared.collectedPIDResponses
+            manager.startLightweightPolling(rawPIDs: rawPIDsToResume)
+        }
+    }
+}

@@ -282,7 +282,7 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
                 break
             }
             if !fileName.isEmpty {
-                let logFiles = PTBluetoothServerManager.shared.fetchAllHexLogFiles(fileName: fileName)
+                let logFiles = PTOBDLogger.shared.fetchAllLogFiles(prefix: fileName)
                 
                 // 2. 提取最新的一份日志
                 guard let latestLogURL = logFiles.first else {

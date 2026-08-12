@@ -294,8 +294,11 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     case 5:
                         Task {
                             self.obdButton.startLoading(indicatorColor: .white)
-                            let report = await PTDashboardHacker.shared.performFullVehicleDeepDump()
-                            PTOBDLogger.shared.ptLog(report)
+                            await PTDashboardHacker.shared.probeDeepDataSafely(
+                                    dashboardTx: "700",
+                                    dashboardRx: "708",
+                                    targetDIDs: ["F186", "F187", "F190", "F1A0"]
+                                )
                             self.obdButton.stopLoading()
                         }
                     default:

@@ -713,7 +713,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         // 当后轮速大于前轮速，且差值超过阈值时，判定为打滑
         if speedDelta > slipThreshold {
             let logMsg = "⚠️ [TCS 预警] 检测到打滑物理条件！后轮: \(currentRearSpeed) | 前轮: \(currentFrontSpeed) | 差值: \(String(format: "%.2f", speedDelta)) km/h"
-            ptLog(logMsg)
+            PTOBDLogger.shared.ptLog(logMsg)
             // 可在此发送额外的 Notification 让 UI 界面上高亮 TCS 图标
             NotificationCenter.default.post(name: MotorcycleRawDataTCSShow, object: "1")
         } else {
@@ -727,14 +727,6 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     public private(set) var latestControl: PTDashboardControl?
     public private(set) var latestAbsStatus: PTAbsStatus?
 
-    public private(set) var logHistory: [String] = []
-        
-    private lazy var dateFormatter: DateFormatter = {
-        let df = DateFormatter()
-        df.dateFormat = "HH:mm:ss.SSS"
-        return df
-    }()
-
     // 🚨 核心修复 1：必须使用 16-bit 短标识！否则会撑爆 iOS 的 31 字节广播包，导致摩托车看不见！
     let TIO_SERVICE = CBUUID(string: "FEFB")
     
@@ -745,9 +737,6 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         
     // 🚨 新增：用于缓存当前活跃的通知，等待车机来主动拉取内容
     private var activeNotifications = [UInt32: PTAncsNotif]()
-
-    private var logFileHandle: FileHandle?
-    public private(set) var currentLogFileURL: URL?
 
     var peripheralManager: CBPeripheralManager!
     let auth = PTScooterAuth()
@@ -763,9 +752,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     private var connectedCentral: CBCentral?
     
     private var sendCredits = 0
-    
-    var onLogUpdated: ((String) -> Void)?
-    
+        
     struct PTNotifyJob {
         let data: Data
         let characteristic: CBMutableCharacteristic
@@ -773,44 +760,18 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     }
     private var sendQueue: [PTNotifyJob] = []
     private var isSending = false
-    
-    private let ioQueue = DispatchQueue(label: "com.ptools.MotoLogIOQueue", qos: .utility)
-    
+        
     override init() {
         super.init()
-        ptLog("🛠️ [DEBUG] 初始化基站 (移除所有多余扫描干扰)")
+        PTOBDLogger.shared.ptLog("🛠️ [DEBUG] 初始化基站 (移除所有多余扫描干扰)")
         peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
     }
-    
-    private func ptLog(_ message: String) {
-        let timeString = dateFormatter.string(from: Date())
-        let formattedLog = "[\(timeString)] \(message)"
-//        PTNSLogConsole(formattedLog)
         
-        // 🚨 优化：将极其耗时的磁盘写入操作异步丢入后台队列
-        ioQueue.async { [weak self] in
-            guard let self = self, let handle = self.logFileHandle else { return }
-            if let data = (formattedLog + "\n").data(using: .utf8) {
-                try? handle.seekToEnd()
-                try? handle.write(contentsOf: data)
-            }
-        }
-        
-        // UI 更新仍然在主线程
-        DispatchQueue.main.async {
-            self.logHistory.append(formattedLog)
-            if self.logHistory.count > 500 {
-                self.logHistory.removeFirst()
-            }
-            self.onLogUpdated?(formattedLog)
-        }
-    }
-    
     // MARK: - 启动基站
     func startBaseStationAndScan() {
         if peripheralManager.state == .poweredOn {
             if peripheralManager.isAdvertising {
-                ptLog("⚠️ [状态] 基站已经在广播中了")
+                PTOBDLogger.shared.ptLog("⚠️ [状态] 基站已经在广播中了")
                 return
             }
             setupServices()
@@ -819,14 +780,14 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
             peripheralManager.startAdvertising([
                 CBAdvertisementDataServiceUUIDsKey: [TIO_SERVICE]
             ])
-            ptLog("📡 [状态] 信号发射！车机可以直接发现我们了...")
+            PTOBDLogger.shared.ptLog("📡 [状态] 信号发射！车机可以直接发现我们了...")
         } else {
-            ptLog("❌ [错误] 蓝牙未开启，状态: \(peripheralManager.state.rawValue)")
+            PTOBDLogger.shared.ptLog("❌ [错误] 蓝牙未开启，状态: \(peripheralManager.state.rawValue)")
         }
     }
     
     func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
-        ptLog("🛠️ [DEBUG] 硬件状态: \(peripheral.state.rawValue)")
+        PTOBDLogger.shared.ptLog("🛠️ [DEBUG] 硬件状态: \(peripheral.state.rawValue)")
     }
     
     private func setupServices() {
@@ -865,27 +826,27 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         service.characteristics = [rxChar, txChar, rxCreditsChar, txCreditsChar]
         peripheralManager.add(service)
                 
-        ptLog("🛠️ [DEBUG] 通道搭建完毕 (iOS 强制加密挂载完成)")
+        PTOBDLogger.shared.ptLog("🛠️ [DEBUG] 通道搭建完毕 (iOS 强制加密挂载完成)")
     }
     
     // MARK: - 监听订阅
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
         connectedCentral = central
-        ptLog("⚡️ [雷达] 摩托车订阅成功: \(characteristic.uuid.uuidString)")
+        PTOBDLogger.shared.ptLog("⚡️ [雷达] 摩托车订阅成功: \(characteristic.uuid.uuidString)")
         
         if characteristic.uuid == UART_TX { isTioSubscribed = true }
         if characteristic.uuid == UART_TX_CREDITS { isCreditsSubscribed = true }
 
         if isTioSubscribed && isCreditsSubscribed {
-            ptLog("🔗 [状态] 通道订阅完毕！等待车机写入 8758...")
+            PTOBDLogger.shared.ptLog("🔗 [状态] 通道订阅完毕！等待车机写入 8758...")
             authState = .waitKeyId
             authenticated = false
         }
     }
     
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didUnsubscribeFrom characteristic: CBCharacteristic) {
-        ptLog("⚠️ [状态] 摩托车断开了通道")
-        stopFileLogging()
+        PTOBDLogger.shared.ptLog("⚠️ [状态] 摩托车断开了通道")
+        PTOBDLogger.shared.stopFileLogging()
         authenticated = false
         isTioSubscribed = false
         isCreditsSubscribed = false
@@ -914,7 +875,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
                 // 🚨 核心修复 1：接收摩托车发放的发送令牌 (Credits)！
                 let addedCredits = Int(data[0])
                 self.sendCredits += addedCredits
-                self.ptLog("🎟️ [流控通道] 摩托车发放了 \(addedCredits) 个发送令牌，当前总余额: \(self.sendCredits)")
+                PTOBDLogger.shared.ptLog("🎟️ [流控通道] 摩托车发放了 \(addedCredits) 个发送令牌，当前总余额: \(self.sendCredits)")
                 
                 // 拿到令牌后，立刻启动发送泵，把积压的导航数据发出去
                 self.pumpQueue()
@@ -925,7 +886,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     // MARK: - 身份验证状态机
     private func handleIncoming(data: Data) {
         if authenticated {
-            ptLog("🔄 [DEBUG] 解析仪表盘数据包...")
+            PTOBDLogger.shared.ptLog("🔄 [DEBUG] 解析仪表盘数据包...")
             parseDashboardFrame(data)
             return
         }
@@ -936,7 +897,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
             if data.count >= 4 {
                 let productId = (Int(bytes[0]) << 24) | (Int(bytes[1]) << 16) | (Int(bytes[2]) << 8) | Int(bytes[3])
                 if productId == 8758 {
-                    ptLog("✅ [握手 1/4] 收到 8758！下发挑战码...")
+                    PTOBDLogger.shared.ptLog("✅ [握手 1/4] 收到 8758！下发挑战码...")
                     let challenge = auth.createChallenge()
                     var challengeData = Data()
                     for num in challenge {
@@ -950,19 +911,19 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
             
         case .waitAuthMsg:
             if auth.checkAuthMsg(scooterResponse: data) {
-                ptLog("✅ [握手 2/4] 车机答题正确！发送 KeyID，等待车机出题...")
+                PTOBDLogger.shared.ptLog("✅ [握手 2/4] 车机答题正确！发送 KeyID，等待车机出题...")
                 sendChunkedData(data: auth.getScooterKeyId(), to: txChar)
                 
                 // 🚨 核心修复：握手还没完，进入下半场！
                 authState = .waitRandomNums
             } else {
-                ptLog("❌ [错误] 密码本校验失败")
+                PTOBDLogger.shared.ptLog("❌ [错误] 密码本校验失败")
             }
             
         case .waitRandomNums:
             // 🚨 核心修复：这就是你抓到的 27b21814... (车机的考题)
             if data.count >= 20 {
-                ptLog("✅ [握手 3/4] 收到车机挑战码！正在计算答案并回复...")
+                PTOBDLogger.shared.ptLog("✅ [握手 3/4] 收到车机挑战码！正在计算答案并回复...")
                 var r = [UInt16](repeating: 0, count: 10)
                 let n = min(10, data.count / 2)
                 for i in 0..<n {
@@ -979,18 +940,18 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
                 // 答完题，等待车机的 0x16 确认信
                 authState = .waitConnectionFrame
             } else {
-                ptLog("⚠️ [握手干扰] 期待 20 字节挑战码，实际收到: \(data.count) 字节")
+                PTOBDLogger.shared.ptLog("⚠️ [握手干扰] 期待 20 字节挑战码，实际收到: \(data.count) 字节")
             }
             
         case .waitConnectionFrame:
             // 收到车机认可后的第一个真实数据帧 (以 0x16 开头)
             if data.count >= 4 && data[0] == 0x16 {
-                ptLog("🎉 [握手 4/4] 互信认证全部打通！蓝灯长亮！解锁数据通道！")
+                PTOBDLogger.shared.ptLog("🎉 [握手 4/4] 互信认证全部打通！蓝灯长亮！解锁数据通道！")
                 
                 authState = .success
                 authenticated = true
                 PTMotoUserDefaultStruct.MotoLinkedAPP = true
-                startFileLogging()
+                PTOBDLogger.shared.startFileLogging(prefix: "MotoHexLog", headerTitle: "PEUGEOT XP400GT RAW HEX LOG")
                 // 必须在互信彻底完成后，再发钱解锁仪表盘！
                 grantScooterCredits()
                 NotificationCenter.default.post(name: BLEConnectSuccess, object: nil)
@@ -998,7 +959,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
                 // 别浪费这第一包数据，立刻丢给仪表盘解析器
                 parseDashboardFrame(data)
             } else {
-                ptLog("⚠️ [握手干扰] 期待 0x16 确认帧，收到了其他数据")
+                PTOBDLogger.shared.ptLog("⚠️ [握手干扰] 期待 0x16 确认帧，收到了其他数据")
             }
         case .success:
             break
@@ -1023,7 +984,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     private func sendChunkedData(data: Data, to characteristic: CBMutableCharacteristic, completion: (() -> Void)? = nil) {
         var offset = 0
         let hexString = data.map { String(format: "%02hhx", $0) }.joined()
-        self.ptLog("⬆️ [发送包] 正在发射指令: \(hexString)")
+        PTOBDLogger.shared.ptLog("⬆️ [发送包] 正在发射指令: \(hexString)")
         // 🚨 优化：向订阅了该特征的中心设备查询它所支持的最大长度，如果没有则安全降级回默认值 20
         // 对于 WriteWithoutResponse 或 Notify，使用 .withoutResponse 类型的 MTU
         let maxChunkSize = 20
@@ -1104,7 +1065,7 @@ extension PTBluetoothServerManager {
     // 发送导航定位信息
     func sendNavigation(info: PTNavigationInfo) {
         guard authenticated else {
-            ptLog( "⚠️ 尚未完成认证，无法发送导航数据")
+            PTOBDLogger.shared.ptLog( "⚠️ 尚未完成认证，无法发送导航数据")
             return
         }
         let frame = PTFrameBuilder.buildNavigationFrame(info: info)
@@ -1125,7 +1086,7 @@ extension PTBluetoothServerManager {
             estimatedTimeToDestinationSec: 0
         )
         
-        ptLog("🎉 [视觉交互] 正在向仪表盘推送欢迎信息: \(welcomeInfo.nameCurrentRoad)")
+        PTOBDLogger.shared.ptLog("🎉 [视觉交互] 正在向仪表盘推送欢迎信息: \(welcomeInfo.nameCurrentRoad)")
         // 复用你已有的导航发送方法
         self.sendNavigation(info: welcomeInfo)
     }
@@ -1138,7 +1099,7 @@ extension PTBluetoothServerManager {
     ///   - payloadBytes: 十六进制载荷数组
     public func sendFuzzTest(targetID: UInt8, payloadBytes: [UInt8] = [0x00]) {
         guard authenticated else {
-            ptLog( "⚠️ 尚未完成认证，无法发送导航数据")
+            PTOBDLogger.shared.ptLog( "⚠️ 尚未完成认证，无法发送导航数据")
             return
         }
         let dataToWrite = PTFrameBuilder.buildFuzzFrame(idFrame: targetID, payload: payloadBytes)
@@ -1167,7 +1128,7 @@ extension PTBluetoothServerManager {
     func sendConfiguration(color: PTConfigColor, unit: PTConfigUnit, language: PTConfigLanguage, completion: @escaping (Bool) -> Void) {
         // 🚨 安全解包：彻底根除在此处点击导致的强制解包闪退
         guard authenticated, let targetChar = txChar else {
-            ptLog("⚠️ 尚未完成认证或 TX 通道未建立，拦截配置下发")
+            PTOBDLogger.shared.ptLog("⚠️ 尚未完成认证或 TX 通道未建立，拦截配置下发")
             completion(false)
             return
         }
@@ -1179,7 +1140,7 @@ extension PTBluetoothServerManager {
         )
         
         sendChunkedData(data: frame, to: targetChar) {
-            self.ptLog("🎨 [配置下发] 指令已成功发射！")
+            PTOBDLogger.shared.ptLog("🎨 [配置下发] 指令已成功发射！")
             completion(true)
         }
     }
@@ -1188,11 +1149,11 @@ extension PTBluetoothServerManager {
     /// 向配置通道 (ID: 7) 发送轮询请求，试图触发车机回传隐藏的物理数据
     public func startActiveDiagnosticScan() {
         guard authenticated else {
-            ptLog("⚠️ [查询拦截] 尚未完成认证，无法发送诊断探针。")
+            PTOBDLogger.shared.ptLog("⚠️ [查询拦截] 尚未完成认证，无法发送诊断探针。")
             return
         }
         
-        ptLog("🚀 [深度探测] 开始发送 ISO-TP 增强版主动查询指令 (OBD/UDS 模式)...")
+        PTOBDLogger.shared.ptLog("🚀 [深度探测] 开始发送 ISO-TP 增强版主动查询指令 (OBD/UDS 模式)...")
         currentProbeIndex = 0x00
         
         // 每 1.2 秒发送一次探针，给车机留出处理和回传的时间
@@ -1219,7 +1180,7 @@ extension PTBluetoothServerManager {
             // 使用现有的分包发送方法将探针压入蓝牙通道
             self.sendChunkedData(data: frame, to: self.txChar) {
                 let hexStr = payload.map { String(format: "%02X", $0) }.joined(separator: " ")
-                self.ptLog("📡 [ISO-TP 探针发射] 通道 ID: 0x\(String(format: "%02X", targetID)), 载荷: [ \(hexStr) ]")
+                PTOBDLogger.shared.ptLog("📡 [ISO-TP 探针发射] 通道 ID: 0x\(String(format: "%02X", targetID)), 载荷: [ \(hexStr) ]")
             }
             
             // 扫描结束条件
@@ -1236,12 +1197,12 @@ extension PTBluetoothServerManager {
     public func stopActiveDiagnosticScan() {
         diagnosticTimer?.invalidate()
         diagnosticTimer = nil
-        ptLog("🛑 [深度探测] 主动查询扫描已手动结束或完成全频段覆盖。")
+        PTOBDLogger.shared.ptLog("🛑 [深度探测] 主动查询扫描已手动结束或完成全频段覆盖。")
     }
 
     public func requestStaticConfiguration() {
         guard authenticated else {
-            ptLog("⚠️ [查询拦截] 尚未完成认证，无法发送查询请求。")
+            PTOBDLogger.shared.ptLog("⚠️ [查询拦截] 尚未完成认证，无法发送查询请求。")
             return
         }
         
@@ -1252,7 +1213,7 @@ extension PTBluetoothServerManager {
         let requestFrame = PTFrameBuilder.wrapTxFrame(idFrame: 7, payload: readPayload)
         
         sendChunkedData(data: requestFrame, to: txChar) {
-            self.ptLog("📡 [主动查询] 已向配置通道发射探针，请紧盯回传日志...")
+            PTOBDLogger.shared.ptLog("📡 [主动查询] 已向配置通道发射探针，请紧盯回传日志...")
         }
     }
 
@@ -1260,17 +1221,17 @@ extension PTBluetoothServerManager {
     /// 解析摩托车仪表盘的实时状态帧
     func parseDashboardFrame(_ value: Data) {
         let hexString = value.map { String(format: "%02hhx", $0) }.joined()
-        ptLog("📦 [原始包] 收到帧数据: \(hexString)")
+        PTOBDLogger.shared.ptLog("📦 [原始包] 收到帧数据: \(hexString)")
         
         // 1. 校验最基本长度 (包头1字节 + ID 1字节 + 包尾1字节 = 至少3字节)
         guard value.count >= 3, value[0] == 0x16 else {
-            ptLog("⚠️ [解析拦截] 包头不匹配或长度不足")
+            PTOBDLogger.shared.ptLog("⚠️ [解析拦截] 包头不匹配或长度不足")
             return
         }
         
         // 2. 校验包尾 (安卓协议定义最后 1 字节必须是 0x00)
         guard value.last == 0x00 else {
-            ptLog("⚠️ [解析拦截] 结尾不是 0x00")
+            PTOBDLogger.shared.ptLog("⚠️ [解析拦截] 结尾不是 0x00")
             return
         }
         
@@ -1285,9 +1246,9 @@ extension PTBluetoothServerManager {
         case 1:
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:1 (心跳/连接) -> \(hexString)")
             if let asciiString = String(bytes: bytes, encoding: .ascii) {
-                ptLog("🔗 [状态] 车机报告连接正常 (CONNECTION) | 设备序列号: \(asciiString)")
+                PTOBDLogger.shared.ptLog("🔗 [状态] 车机报告连接正常 (CONNECTION) | 设备序列号: \(asciiString)")
             } else {
-                ptLog("🔗 [状态] 车机报告连接正常 (CONNECTION)")
+                PTOBDLogger.shared.ptLog("🔗 [状态] 车机报告连接正常 (CONNECTION)")
             }
         case 2: // DATA1
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:2 (DATA1) -> \(hexString)")
@@ -1304,7 +1265,7 @@ extension PTBluetoothServerManager {
             let data1 = PTDashboardData1(tripKm: Double(tripRaw) * 0.1, odoKm: Double(odoRaw) * 0.1, fuelLevelPct: fuel, avgConsumptionLt: avg)
             self.latestData1 = data1
             NotificationCenter.default.post(name: MotorcycleDATA1, object: data1)
-            ptLog("📊 [DATA1] 油量: \(fuel)%, 消耗: \(avg)L, 总里程: \(Double(odoRaw) * 0.1)km")
+            PTOBDLogger.shared.ptLog("📊 [DATA1] 油量: \(fuel)%, 消耗: \(avg)L, 总里程: \(Double(odoRaw) * 0.1)km")
             
         case 3: // DATA2
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:3 (DATA2) -> \(hexString)")
@@ -1338,7 +1299,7 @@ extension PTBluetoothServerManager {
             let data2 = PTDashboardData2(batteryVolt: batt, outsideTempC: temp, engineStatus: engineStatus, maintenance: maint,backlightMode: currentBacklightMode,engineTempC: engineTempC,isKickstandDown: isKickstandDown,batteryDisplayState:batteryDisplayState)
             self.latestData2 = data2
             NotificationCenter.default.post(name: MotorcycleDATA2, object: data2)
-            ptLog("🔋 [DATA2] 引擎: \(PTDashboardLabels.engineStatusLabel(raw: engine)), 电压: \(batt)V")
+            PTOBDLogger.shared.ptLog("🔋 [DATA2] 引擎: \(PTDashboardLabels.engineStatusLabel(raw: engine)), 电压: \(batt)V")
             
         case 4: // DATA3
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:4 (DATA3) -> \(hexString)")
@@ -1355,7 +1316,7 @@ extension PTBluetoothServerManager {
             let data3 = PTDashboardData3(autonomyKm: Double(autoRaw) * 0.1, distToMaintenance: dist, colorMeasur: col, language: lang)
             self.latestData3 = data3
             NotificationCenter.default.post(name: MotorcycleDATA3, object: data3)
-            ptLog("🛣️ [DATA3] 剩余续航: \(Double(autoRaw) * 0.1)km")
+            PTOBDLogger.shared.ptLog("🛣️ [DATA3] 剩余续航: \(Double(autoRaw) * 0.1)km")
             
         case 5: // CONTROL
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:5 (CONTROL) -> \(hexString)")
@@ -1396,7 +1357,7 @@ extension PTBluetoothServerManager {
             let control = PTDashboardControl(vehicleSpeedKmh: Double(vehicleRaw) * 0.01, engineRpm: Int(Double(engineRaw) * 0.25),tcsMode: currentTCS,isLowBeamOn: isLowBeamOn,isHighBeamOn: isHighBeamOn,isLeftTurnOn: isLeftTurnOn,isRightTurnOn: isRightTurnOn,isHazardOn: isHazardOn,isTcsSystemReady: isTcsSystemReady)
             self.latestControl = control
             NotificationCenter.default.post(name: MotorcycleCONTROL, object: control)
-            ptLog("🏍️ [CONTROL] 车速: \(Double(vehicleRaw) * 0.01) km/h, 转速: \(Int(Double(engineRaw) * 0.25)) rpm")
+            PTOBDLogger.shared.ptLog("🏍️ [CONTROL] 车速: \(Double(vehicleRaw) * 0.01) km/h, 转速: \(Int(Double(engineRaw) * 0.25)) rpm")
             
         case 6: // ABS
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:6 (ABS) -> \(hexString)")
@@ -1417,12 +1378,12 @@ extension PTBluetoothServerManager {
             let absStatus = PTAbsStatus(absRaw: Int(bytes[2]),isAbsLightOn: isAbsLightOn,frontWheelSpeedKmh: frontSpeed)
             self.latestAbsStatus = absStatus
             NotificationCenter.default.post(name: MotorcycleABS, object: absStatus)
-            ptLog("🛑 [ABS] 状态: \(PTDashboardLabels.absLabel(raw: Int(bytes[2])))")
+            PTOBDLogger.shared.ptLog("🛑 [ABS] 状态: \(PTDashboardLabels.absLabel(raw: Int(bytes[2])))")
             
         default:
             let binaryMatrix = bytes.map { $0.binaryString }.joined(separator: " | ")
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "⚠️ [深挖] 捕获未知 ID 0x\(String(format: "%02X", id)) -> 二进制: [ \(binaryMatrix) ]")
-            ptLog("❓ [未知数据] ID: 0x\(String(format: "%02X", id)) -> \(binaryMatrix)")
+            PTOBDLogger.shared.ptLog("❓ [未知数据] ID: 0x\(String(format: "%02X", id)) -> \(binaryMatrix)")
         }
     }
 }
@@ -1433,11 +1394,11 @@ extension PTBluetoothServerManager {
     /// 启动全频段自动化指令探测
     public func startAutomatedFuzzing() {
         guard authenticated else {
-            ptLog("⚠️ 尚未完成认证，无法进行 Fuzz 扫描")
+            PTOBDLogger.shared.ptLog("⚠️ 尚未完成认证，无法进行 Fuzz 扫描")
             return
         }
         let startString = "🚀 [自动化 Fuzz] 扫描任务已启动！请密切观察机车仪表盘反应..."
-        ptLog(startString)
+        PTOBDLogger.shared.ptLog(startString)
         NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: startString)
         fuzzTimer?.invalidate()
         currentFuzzID = 0x00
@@ -1456,7 +1417,7 @@ extension PTBluetoothServerManager {
             // 扫描结束条件
             if self.currentFuzzID == 0xFF {
                 let finishString = "🏁 [自动化 Fuzz] 全频段扫描完成！"
-                self.ptLog(finishString)
+                PTOBDLogger.shared.ptLog(finishString)
                 NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: finishString)
                 self.fuzzTimer?.invalidate()
                 return
@@ -1466,7 +1427,7 @@ extension PTBluetoothServerManager {
             // 很多工厂指令使用 0x00(查询), 0x01(开启), 或 0xFF(出厂重置) 作为标识
             let testPayload: [UInt8] = [0x02, 0x10, 0x03]
             let searchingString = "📡 [自动化 Fuzz] 正在探测 ID: 0x\(String(format: "%02X", self.currentFuzzID)) ..."
-            self.ptLog(searchingString)
+            PTOBDLogger.shared.ptLog(searchingString)
             NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: searchingString)
             self.sendFuzzTest(targetID: self.currentFuzzID, payloadBytes: testPayload)
             
@@ -1479,73 +1440,7 @@ extension PTBluetoothServerManager {
         fuzzTimer?.invalidate()
         fuzzTimer = nil
         let stopString = "🛑 [自动化 Fuzz] 扫描已手动终止。"
-        ptLog(stopString)
+        PTOBDLogger.shared.ptLog(stopString)
         NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: stopString)
-    }
-}
-
-extension PTBluetoothServerManager {
-    // MARK: - 文本日志流控引擎
-        
-    private func startFileLogging() {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyyMMdd_HHmmss"
-        let fileName = "MotoHexLog_\(formatter.string(from: Date())).txt"
-        
-        guard let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
-        let fileURL = docsDir.appendingPathComponent(fileName)
-        currentLogFileURL = fileURL
-        
-        // 在沙盒中创建空文件
-        FileManager.default.createFile(atPath: fileURL.path, contents: nil, attributes: nil)
-        
-        do {
-            logFileHandle = try FileHandle(forWritingTo: fileURL)
-            // 写入友好的头部信息
-            let header = "=== PEUGEOT XP400GT RAW HEX LOG ===\n=== SESSION START: \(Date()) ===\n\n"
-            if let data = header.data(using: .utf8) {
-                try logFileHandle?.seekToEnd()
-                try logFileHandle?.write(contentsOf: data)
-            }
-//            PTNSLogConsole("📝 [日志记录] 已开始将底层数据流式写入本地文件: \(fileName)")
-        } catch {
-//            PTNSLogConsole("❌ [日志记录] 文件创建失败: \(error)")
-        }
-    }
-    
-    private func stopFileLogging() {
-        guard logFileHandle != nil else { return }
-        
-        let footer = "\n=== SESSION END: \(Date()) ===\n"
-        if let data = footer.data(using: .utf8) {
-            try? logFileHandle?.seekToEnd()
-            try? logFileHandle?.write(contentsOf: data)
-        }
-        
-        do {
-            try logFileHandle?.close()
-        } catch {
-//            PTNSLogConsole("❌ [日志记录] 关闭文件失败: \(error)")
-        }
-        logFileHandle = nil
-//        PTNSLogConsole("💾 [日志记录] 蓝牙会话结束，十六进制日志已安全封装在沙盒中。")
-    }
-    
-    /// 获取沙盒中所有的十六进制日志文件，供 UI 导出使用
-    public func fetchAllHexLogFiles(fileName:String = "MotoHexLog") -> [URL] {
-//        MotoOBDLog
-        guard let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return [] }
-        do {
-            let files = try FileManager.default.contentsOfDirectory(at: docsDir, includingPropertiesForKeys: [.creationDateKey])
-            // 过滤出以 MotoHexLog 开头并以 .txt 结尾的文件，并按时间倒序排列
-            let logFiles = files.filter { $0.lastPathComponent.hasPrefix(fileName) && $0.pathExtension == "txt" }
-            return logFiles.sorted { url1, url2 in
-                let date1 = (try? url1.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date.distantPast
-                let date2 = (try? url2.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date.distantPast
-                return date1 > date2
-            }
-        } catch {
-            return []
-        }
     }
 }
