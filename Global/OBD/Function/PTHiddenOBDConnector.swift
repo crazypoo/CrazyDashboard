@@ -564,6 +564,7 @@ public enum PTOBDConnectionType {
 public class PTOBDTransportBase: NSObject {
     
     public var onIceBroken: (() -> Void)?
+    public var onDisconnected: ((Error?) -> Void)?
     public var isUnlocked: Bool = false
     
     // 严丝合缝的 19 步解锁列队
@@ -820,6 +821,7 @@ public class PTMockOBDConnector: PTOBDTransportBase {
             cont.resume(throwing: NSError(domain: "MockError", code: -2, userInfo: [NSLocalizedDescriptionKey: "模拟器断开"]))
             self.responseContinuation = nil
         }
+        onDisconnected?(nil)
         NotificationCenter.default.post(name: NSNotification.Name("PTMotoOBDDisconnected"), object: nil)
     }
     
@@ -962,6 +964,7 @@ public class PTWifiOBDConnector: PTOBDTransportBase {
         else { responseContinuation?.resume(throwing: NSError(domain: "WIFIError", code: -2, userInfo: [NSLocalizedDescriptionKey: "WIFI 断开"])) }
         responseContinuation = nil
         PTOBDLogger.obd.stopFileLogging()
+        onDisconnected?(error)
         NotificationCenter.default.post(name: NSNotification.Name("PTMotoOBDDisconnected"), object: nil)
     }
     
@@ -1045,6 +1048,7 @@ extension PTHiddenOBDConnector: CBCentralManagerDelegate {
         responseContinuation?.resume(throwing: NSError(domain: "BLEError", code: -2, userInfo: [NSLocalizedDescriptionKey: "蓝牙断开"]))
         responseContinuation = nil
         PTOBDLogger.obd.stopFileLogging()
+        onDisconnected?(error)
         NotificationCenter.default.post(name: NSNotification.Name("PTMotoOBDDisconnected"), object: nil)
     }
 }
@@ -1169,6 +1173,9 @@ public class PTMotoTelemetryManager {
             PTHiddenOBDConnector.shared.onIceBroken = { [weak self] in
                 self?.handleIceBroken(rawPIDs: PTHiddenOBDConnector.shared.collectedPIDResponses)
             }
+            PTHiddenOBDConnector.shared.onDisconnected = { [weak self] error in
+                self?.handlePhysicalDisconnect(error: error)
+            }
             PTHiddenOBDConnector.shared.startIcebreakerConnection()
             
         case .wifi(let ip, let port):
@@ -1177,16 +1184,36 @@ public class PTMotoTelemetryManager {
             PTWifiOBDConnector.shared.onIceBroken = { [weak self] in
                 self?.handleIceBroken(rawPIDs: PTWifiOBDConnector.shared.collectedPIDResponses)
             }
+            PTWifiOBDConnector.shared.onDisconnected = { [weak self] error in
+                self?.handlePhysicalDisconnect(error: error)
+            }
             PTWifiOBDConnector.shared.startConnection()
         case .mock:
             PTMockOBDConnector.shared.onIceBroken = { [weak self] in
                 // 模拟器破冰成功，将模拟器的 PID 转交上去
                 self?.handleIceBroken(rawPIDs: PTMockOBDConnector.shared.collectedPIDResponses)
             }
+            PTMockOBDConnector.shared.onDisconnected = { [weak self] error in
+                self?.handlePhysicalDisconnect(error: error)
+            }
             PTMockOBDConnector.shared.startMockConnection()
         }
     }
     
+    private func handlePhysicalDisconnect(error: Error?) {
+        if let err = error {
+            PTOBDLogger.obd.ptLog("⚠️ [物理连接断开] 检测到硬件脱机: \(err.localizedDescription)")
+        } else {
+            PTOBDLogger.obd.ptLog("⚠️ [物理连接断开] 检测到硬件脱机")
+        }
+        
+        // 保证在主线程安全地更新所有挂载了的 Delegate UI
+        DispatchQueue.main.async { [weak self] in
+            // 这会调用你现有的 disconnect()，里面包含了中止轮询和触发 Delegate 的完美逻辑！
+            self?.disconnect()
+        }
+    }
+
     private func handleIceBroken(rawPIDs: [String]) {
         self.isConnected = true
         self.connectionTimeoutTask?.cancel()
@@ -2076,7 +2103,7 @@ extension PTMotoTelemetryManager {
         connectionTimeoutTask?.cancel()
         
         connectionTimeoutTask = Task { [weak self] in
-            let times:UInt64 = 30_000_000_000
+            let times:UInt64 = 10_000_000_000
             let seconds = times / 100000000
             try? await Task.sleep(nanoseconds: times)
             

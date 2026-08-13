@@ -200,21 +200,37 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         view.isSelected = PTMotoTelemetryManager.shared.isConnected
         view.addActionHandlers(handler: { sender in
             if !sender.isSelected {
-                let actions = ["Input OBD id","Connect"]
+                let actions = ["Connect"]
                 UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD info"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: PTDashboardConfig.languageFunc(text: "If you have about elm327 obd2 moudle,you can connect it."), okBtns: actions, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
                     switch index {
                     case 0:
-                        UIAlertController.base_textfield_alertVC(title:PTDashboardConfig.languageFunc(text: "If you already have OBD2 moudle id,here can remember your OBD2 moudle id"),okBtn: PTDashboardConfig.languageFunc(text: "button_confirm"),cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"),placeHolders: [PTDashboardConfig.languageFunc(text: "In put your OBD2 moudle id")],textFieldTexts:[PTMotoUserDefaultStruct.OBDID],keyboardType: [.default],textFieldDelegate: self) { result in
-                            PTMotoUserDefaultStruct.OBDID = result[PTDashboardConfig.languageFunc(text: "In put your OBD2 moudle id")] ?? ""
-                        }
-                    case 1:
                         let actionsConnect = ["BLE","WIFI","Mock"]
                         UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "Connect option"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: actionsConnect, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
                             switch index {
                             case 0:
-                                PTMotoTelemetryManager.shared.connectToMotorcycle(via: .bluetooth, engineType: .ice)
+                                let placeholder = PTDashboardConfig.languageFunc(text: "In put your OBD2 moudle id")
+                                let obdID = PTMotoUserDefaultStruct.OBDID.isEmpty ? developerOBDID : PTMotoUserDefaultStruct.OBDID
+                                UIAlertController.base_textfield_alertVC(title:PTDashboardConfig.languageFunc(text: "If you already have OBD2 moudle id,here can remember your OBD2 moudle id"),okBtn: PTDashboardConfig.languageFunc(text: "button_confirm"),cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"),placeHolders: [placeholder],textFieldTexts:[obdID],keyboardType: [.default],textFieldDelegate: self) { result in
+                                    PTMotoUserDefaultStruct.OBDID = result[placeholder] ?? developerOBDID
+                                    PTMotoTelemetryManager.shared.connectToMotorcycle(via: .bluetooth, engineType: .ice)
+                                }
                             case 1:
-                                PTMotoTelemetryManager.shared.connectToMotorcycle(via: .wifi(ip: "192.168.0.10", port: 35000), engineType: .ice)
+                                let placeholderWIFIAddress = PTDashboardConfig.languageFunc(text: "WIFI Address")
+                                let placeholderWIFIPort = PTDashboardConfig.languageFunc(text: "Port")
+
+                                UIAlertController.base_textfield_alertVC(title:PTDashboardConfig.languageFunc(text: "If you already have OBD2 moudle id,here can input you obd wifi address and port"),okBtn: PTDashboardConfig.languageFunc(text: "button_confirm"),cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"),placeHolders: [placeholderWIFIAddress,placeholderWIFIPort],textFieldTexts:["192.168.0.10","35000"],keyboardType: [.default],textFieldDelegate: self) { result in
+                                    var wifiAddress = result[placeholderWIFIAddress] ?? ""
+                                    var wifiPort = result[placeholderWIFIPort] ?? ""
+                                    if wifiAddress.isEmpty {
+                                        wifiAddress = "192.168.0.10"
+                                    }
+                                    if wifiPort.isEmpty {
+                                        wifiPort = "35000"
+                                    }
+                                    PTMotoTelemetryManager.shared.connectToMotorcycle(via: .bluetooth, engineType: .ice)
+                                    let wifi = PTOBDConnectionType.wifi(ip: wifiAddress, port: UInt16(wifiPort) ?? 35000)
+                                    PTMotoTelemetryManager.shared.connectToMotorcycle(via: wifi, engineType: .ice)
+                                }
                             case 2:
                                 PTMotoTelemetryManager.shared.connectToMotorcycle(via: .mock, engineType: .ice)
                             default:
@@ -226,7 +242,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     }
                 })
             } else {
-                let actions = ["Error Code","Disconnect","Data","ECU info"/*,"MIDs","DID","VIN UDS","Animation","UDS command","Dump","Sniff"*/]
+                let actions = ["Error Code","Disconnect","Data","ECU info","MIDs"/*,"DID","VIN UDS","Animation","UDS command","Dump","Sniff"*/]
                 UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: actions, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
                     switch index {
                     case 0:
@@ -267,7 +283,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                         PTMotoTelemetryManager.shared.disconnect()
                         PTGCDManager.shared.delayOnMain(time: 0.5) {
                             self.obdButton.isSelected = false
-                            self.obdButton.startLoading()
+                            self.obdButton.stopLoading()
                         }
                     case 2:
                         let vc = PTOBDDataViewController()
@@ -285,11 +301,17 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                             self.obdButton.startLoading(indicatorColor: .white)
                             let ids = await PTMotoTelemetryManager.shared.scanSupportedMode6Commands()
                             let rerort =  await PTMotoTelemetryManager.shared.fetchMode6TestReports(for: ids)
-                            self.obdButton.startLoading()
+                            self.obdButton.stopLoading()
+                            var msgData = ""
                             let map = rerort.map { value in
                                 "\(value.componentName):\(value.isPassed ? "✅" : "⁉️")"
                             }
-                            UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "MIDs info"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: map.joined(separator: "\n"), cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
+                            if map.isEmpty {
+                                msgData = "Thats good"
+                            } else {
+                                msgData = map.joined(separator: "\n")
+                            }
+                            UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "MIDs info"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: msgData, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
                         }
                     case 5:
                         Task {
@@ -408,19 +430,22 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                         }
                     case 10:
                         Task {
-                                // 1. 开启抓包，指定只看 700 节点的流量（防止数据太多把日志撑爆）
-                                await PTMotoTelemetryManager.shared.startCANSniperMode(filterHeader: nil)
-                                
-                                PTOBDLogger.shared.ptLog("⏳ [实战演练] 抓包中... 请立刻在手机上操作原车蓝牙切换一次语言或颜色！")
-                                
-                                // 2. 留出 10 秒钟的操作时间窗口
-                                try? await Task.sleep(nanoseconds: 10_000_000_000)
-                                
-                                // 3. 自动停止抓包并恢复日常监控
-                                await PTMotoTelemetryManager.shared.stopCANSniperMode()
-                                
-                                PTOBDLogger.shared.ptLog("✅ [实战演练] 抓包已完成，请导出 MotoHexLog 日志文件查看捕获到的十六进制报文！")
-                            }
+                            self.obdButton.startLoading(indicatorColor: .white)
+
+                            // 1. 开启抓包，指定只看 700 节点的流量（防止数据太多把日志撑爆）
+                            await PTMotoTelemetryManager.shared.startCANSniperMode(filterHeader: nil)
+                            
+                            PTOBDLogger.shared.ptLog("⏳ [实战演练] 抓包中... 请立刻在手机上操作原车蓝牙切换一次语言或颜色！")
+                            
+                            // 2. 留出 10 秒钟的操作时间窗口
+                            try? await Task.sleep(nanoseconds: 10_000_000_000)
+                            
+                            // 3. 自动停止抓包并恢复日常监控
+                            await PTMotoTelemetryManager.shared.stopCANSniperMode()
+                            
+                            self.obdButton.stopLoading()
+                            PTOBDLogger.shared.ptLog("✅ [实战演练] 抓包已完成，请导出 MotoHexLog 日志文件查看捕获到的十六进制报文！")
+                        }
                     default:
                         break
                     }
