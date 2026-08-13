@@ -770,6 +770,7 @@ public class PTOBDTransportBase: NSObject {
                 let nsString = response as NSString
                 if let match = regex.matches(in: response, range: NSRange(location: 0, length: nsString.length)).first {
                     cryptSeed = String(nsString.substring(with: match.range(at: 1)).filter { "0123456789abcdefABCDEF".contains($0) })
+                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.crypt = cryptSeed
                 }
             }
             
@@ -822,7 +823,6 @@ public class PTMockOBDConnector: PTOBDTransportBase {
             self.responseContinuation = nil
         }
         onDisconnected?(nil)
-        NotificationCenter.default.post(name: NSNotification.Name("PTMotoOBDDisconnected"), object: nil)
     }
     
     // 启动模拟连接
@@ -965,7 +965,6 @@ public class PTWifiOBDConnector: PTOBDTransportBase {
         responseContinuation = nil
         PTOBDLogger.obd.stopFileLogging()
         onDisconnected?(error)
-        NotificationCenter.default.post(name: NSNotification.Name("PTMotoOBDDisconnected"), object: nil)
     }
     
     private func startReceiveLoop() {
@@ -1049,7 +1048,6 @@ extension PTHiddenOBDConnector: CBCentralManagerDelegate {
         responseContinuation = nil
         PTOBDLogger.obd.stopFileLogging()
         onDisconnected?(error)
-        NotificationCenter.default.post(name: NSNotification.Name("PTMotoOBDDisconnected"), object: nil)
     }
 }
 
