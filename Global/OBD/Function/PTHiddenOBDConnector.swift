@@ -2122,7 +2122,7 @@ extension PTMotoTelemetryManager {
         
         connectionTimeoutTask = Task { [weak self] in
             let times:UInt64 = 10_000_000_000
-            let seconds = times / 100000000
+            let seconds = times / 1_000_000_000
             try? await Task.sleep(nanoseconds: times)
             
             guard let self = self, !Task.isCancelled else { return }
