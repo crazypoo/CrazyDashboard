@@ -12,6 +12,23 @@ import CryptoKit
 import Combine
 import Network
 
+// MARK: - ✂️ OBD 字符串专属公共扩展
+public extension String {
+    /// 提取纯净的 OBD 报文 (去除空格、换行符、>符号，并转为大写)
+    var obdCleaned: String {
+        return self.replacingOccurrences(of: " ", with: "")
+                   .replacingOccurrences(of: ">", with: "")
+                   .replacingOccurrences(of: "\r", with: "")
+                   .replacingOccurrences(of: "\n", with: "")
+                   .uppercased()
+    }
+    
+    /// 仅保留十六进制有效字符 (0-9, A-F)
+    var hexOnly: String {
+        return self.uppercased().filter { "0123456789ABCDEF".contains($0) }
+    }
+}
+
 // MARK: - 🌟 0101 车辆健康综合体检模型
 public struct PTVehicleStatus0101 {
     // 1. 基础故障灯与故障码状态
@@ -315,30 +332,35 @@ public class PTOBDInfo:NSObject {
 }
 
 public class PTMultiFrameParser {
-    /// 剥离 CAN 报头，提取纯正的 ASCII 字符串
-    public static func parseLongString(response: String) -> String {
-        let lines = response.components(separatedBy: .whitespacesAndNewlines)
-            .filter { !$0.isEmpty && $0 != ">" }
-        
+    /// 🌟 提取纯净十六进制数据：专门用于剥离 CAN 报头，提取纯粹的数据载荷。
+    public static func extractPureHexPayload(response: String) -> String {
+        let lines = response.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty && $0 != ">" }
         var hexPayload = ""
+        
         for line in lines {
-            let cleanLine = line.filter { "0123456789ABCDEF".contains($0) }
+            let cleanLine = line.hexOnly // 🌟 使用公共扩展
             guard cleanLine.count > 4 else { continue }
             
             let frameTypeIndex = cleanLine.index(cleanLine.startIndex, offsetBy: 3)
             let frameType = cleanLine[frameTypeIndex]
             
             if frameType == "1" {
-                if cleanLine.count > 13 { hexPayload += cleanLine[cleanLine.index(cleanLine.startIndex, offsetBy: 13)...] }
-            } else if frameType == "2" {
-                if cleanLine.count > 5 { hexPayload += cleanLine[cleanLine.index(cleanLine.startIndex, offsetBy: 5)...] }
-            } else if frameType == "0" {
-                if cleanLine.count > 11 { hexPayload += cleanLine[cleanLine.index(cleanLine.startIndex, offsetBy: 11)...] }
+                if cleanLine.count > 7 { hexPayload += cleanLine.dropFirst(7) }
+            } else if frameType == "2" || frameType == "0" {
+                if cleanLine.count > 5 { hexPayload += cleanLine.dropFirst(5) }
+            } else if cleanLine.hasPrefix("43") || cleanLine.hasPrefix("44") {
+                hexPayload += cleanLine
             }
         }
-        
+        return hexPayload
+    }
+
+    /// 剥离 CAN 报头，提取纯正的 ASCII 字符串
+    public static func parseLongString(response: String) -> String {
+        let hexPayload = extractPureHexPayload(response: response)
         var asciiStr = ""
         var i = hexPayload.startIndex
+        
         while i < hexPayload.endIndex {
             let nextI = hexPayload.index(i, offsetBy: 2, limitedBy: hexPayload.endIndex) ?? hexPayload.endIndex
             if let byteVal = UInt8(hexPayload[i..<nextI], radix: 16), byteVal >= 32 && byteVal <= 126 {
@@ -347,34 +369,6 @@ public class PTMultiFrameParser {
             i = nextI
         }
         return asciiStr.trimmingCharacters(in: .whitespaces)
-    }
-
-    /// 🌟 提取纯净十六进制数据：专门用于剥离 CAN 报头 (如 7E81, 7E82)，提取纯粹的数据载荷。
-    public static func extractPureHexPayload(response: String) -> String {
-        let lines = response.components(separatedBy: .whitespacesAndNewlines)
-                    .filter { !$0.isEmpty && $0 != ">" }
-        
-        var hexPayload = ""
-        for line in lines {
-            let cleanLine = line.filter { "0123456789ABCDEF".contains($0) }
-            guard cleanLine.count > 4 else { continue }
-            
-            let frameTypeIndex = cleanLine.index(cleanLine.startIndex, offsetBy: 3)
-            let frameType = cleanLine[frameTypeIndex]
-            
-            if frameType == "1" {
-                if cleanLine.count > 7 { hexPayload += cleanLine[cleanLine.index(cleanLine.startIndex, offsetBy: 7)...] }
-            } else if frameType == "2" {
-                if cleanLine.count > 5 { hexPayload += cleanLine[cleanLine.index(cleanLine.startIndex, offsetBy: 5)...] }
-            } else if frameType == "0" {
-                if cleanLine.count > 5 { hexPayload += cleanLine[cleanLine.index(cleanLine.startIndex, offsetBy: 5)...] }
-            } else {
-                if cleanLine.hasPrefix("43") || cleanLine.hasPrefix("44") {
-                    hexPayload += cleanLine
-                }
-            }
-        }
-        return hexPayload
     }
 
     /// 🌟 DTC 破译器：将 4 位十六进制解析为标准汽车 DTC 故障码 (如 0104 -> P0104)
@@ -446,56 +440,39 @@ public class PTMultiFrameParser {
     /// - Parameter rawLogChunk: 包含多帧响应的完整文本 (支持换行分隔)
     /// - Returns: 解密并拼接完成的纯净文本
     public static func assembleAndDecodeMultiFrameLog(_ rawLogChunk: String) -> String {
-        // 1. 按行分割
-        let lines = rawLogChunk.components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty && $0 != ">" }
+        parseLongString(response: rawLogChunk)
+    }
+    
+    // MARK: - ⚡️ 实时 ECU 电压解析器
         
-        var assembledHex = ""
+    /// 从 CAN 总线原始流中精准提取 0142 的控制模块电压
+    /// - Parameter hexChunk: 包含 4142 标识的十六进制字符串 (例如: "7E804414238D7")
+    /// - Returns: 解析后的双精度电压值 (例如: 14.55)
+    public static func parseControlModuleVoltage(hexChunk: String) -> Double? {
+        // 清洗掉可能的空格并统一大写
+        let cleanStr = hexChunk.replacingOccurrences(of: " ", with: "").uppercased()
         
-        // 2. 逐行剥离 CAN 帧头并按 ISO-TP 规则拼接
-        for line in lines {
-            let cleanLine = line.replacingOccurrences(of: " ", with: "").uppercased()
-            let hexOnly = cleanLine.filter { "0123456789ABCDEF".contains($0) }
+        // 确保包含 0142 的成功响应头 "4142"
+        guard cleanStr.contains("4142") else { return nil }
+        
+        if let range = cleanStr.range(of: "4142") {
+            // 截取 4142 后面的有效载荷
+            let payload = String(cleanStr[range.upperBound...])
             
-            guard hexOnly.count > 4 else { continue }
-            
-            // 提取 CAN 帧类型标志位 (通常在第 4 个字符位置，索引为 3)
-            let frameTypeIndex = hexOnly.index(hexOnly.startIndex, offsetBy: 3)
-            if frameTypeIndex < hexOnly.endIndex {
-                let frameType = hexOnly[frameTypeIndex]
+            // 0142 的载荷必须至少有 4 个字符 (2个字节 A 和 B)
+            if payload.count >= 4 {
+                let aHex = String(payload.prefix(2))
+                let bHex = String(payload.dropFirst(2).prefix(2))
                 
-                if frameType == "1" {
-                    // 首帧 (First Frame): 跳过前 7 个字符 (如 7E8 1 023...)
-                    if hexOnly.count > 7 {
-                        assembledHex += hexOnly[hexOnly.index(hexOnly.startIndex, offsetBy: 7)...]
-                    }
-                } else if frameType == "2" {
-                    // 连续帧 (Consecutive Frame): 跳过前 5 个字符 (如 7E8 2 1...)
-                    if hexOnly.count > 5 {
-                        assembledHex += hexOnly[hexOnly.index(hexOnly.startIndex, offsetBy: 5)...]
-                    }
-                } else if frameType == "0" {
-                    // 单帧 (Single Frame): 跳过前 5 个字符
-                    if hexOnly.count > 5 {
-                        assembledHex += hexOnly[hexOnly.index(hexOnly.startIndex, offsetBy: 5)...]
-                    }
+                // 将十六进制转换为整型后代入标准公式
+                if let aInt = Int(aHex, radix: 16), let bInt = Int(bHex, radix: 16) {
+                    let voltage = (Double(aInt) * 256.0 + Double(bInt)) / 1000.0
+                    return voltage
                 }
             }
         }
         
-        // 3. 将拼接好的完整十六进制字节流转换为人类可读的 ASCII 字符串
-        var asciiResult = ""
-        var i = assembledHex.startIndex
-        while i < assembledHex.endIndex {
-            let nextI = assembledHex.index(i, offsetBy: 2, limitedBy: assembledHex.endIndex) ?? assembledHex.endIndex
-            if let byteVal = UInt8(assembledHex[i..<nextI], radix: 16), byteVal >= 32 && byteVal <= 126 {
-                asciiResult.append(Character(UnicodeScalar(byteVal)))
-            }
-            i = nextI
-        }
-        
-        return asciiResult.trimmingCharacters(in: .whitespacesAndNewlines)
+        return nil
     }
 }
 
@@ -1290,7 +1267,7 @@ public class PTMotoTelemetryManager {
                     
                     do {
                         let response = try await self.sendRawCommandAsync(commandString)
-                        let cleanResponse = self.clearString(response: response)
+                        let cleanResponse = response.obdCleaned
                         
                         // 过滤掉偶尔的 NO DATA 或杂音，绝不打断轮询
                         if !cleanResponse.isEmpty && !cleanResponse.contains("NODATA") && !cleanResponse.contains("ERROR") && !cleanResponse.contains("NO DATA") {
@@ -1329,20 +1306,11 @@ public class PTMotoTelemetryManager {
             }
         }
     }
-
-    func clearString(response:String) ->String {
-        let cleanStr = response.replacingOccurrences(of: " ", with: "")
-                                       .replacingOccurrences(of: ">", with: "")
-                                       .replacingOccurrences(of: "\r", with: "")
-                                       .replacingOccurrences(of: "\n", with: "")
-                                       .uppercased()
-        return cleanStr
-    }
     
     private func parseAllPIDs(rawResponses: [String]) -> [String] {
         var allSupported: [String] = []
         for res in rawResponses {
-            let clean = clearString(response: res)
+            let clean = res.obdCleaned
             var base = 0x00
             if clean.contains("4120") { base = 0x20 }
             else if clean.contains("4140") { base = 0x40 }
@@ -1352,7 +1320,7 @@ public class PTMotoTelemetryManager {
     }
     
     private func parseSupportedPIDs(response: String, baseCommand: Int) -> [String] {
-        let clean = clearString(response: response)
+        let clean = response.obdCleaned
         let prefix = String(format: "41%02X", baseCommand)
         let pattern = "\(prefix)([0-9A-F]{8})"
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return [] }
@@ -1527,7 +1495,7 @@ extension PTMotoTelemetryManager {
         guard isConnected else { return false }
         do {
             let response = try await self.sendRawCommandAsync("04")
-            let cleanResponse = self.clearString(response: response)
+            let cleanResponse = response.obdCleaned
             if cleanResponse.hasPrefix("44") || cleanResponse.contains("OK") { return true }
             else { return false }
         } catch { return false }
@@ -1649,7 +1617,7 @@ extension PTMotoTelemetryManager {
             
             do {
                 let response = try await self.sendRawCommandAsync(currentMid)
-                let cleanResponse = self.clearString(response: response)
+                let cleanResponse = response.obdCleaned
                 
                 // 如果 ECU 明确表示不支持该页目录，直接跳过查下一页
                 if cleanResponse.contains("NODATA") || cleanResponse.isEmpty {
@@ -1737,14 +1705,14 @@ extension PTMotoTelemetryManager {
         guard isConnected else { return nil }
         
         // 拼接指令：例如 02 0C 00
-        let safePid = pidHex.uppercased().filter { "0123456789ABCDEF".contains($0) }
+        let safePid = pidHex.hexOnly
         guard safePid.count == 2 else { return nil }
         
         let command = "02" + safePid + frameNumber
         
         do {
             let response = try await self.sendRawCommandAsync(command)
-            let cleanResponse = self.clearString(response: response)
+            let cleanResponse = response.obdCleaned
             
             if cleanResponse.contains("NODATA") || cleanResponse.contains("ERROR") {
                 return nil // 说明没有故障，或者这个 PID 没有被冻结记录
@@ -1883,17 +1851,16 @@ extension PTMotoTelemetryManager {
     /// - Returns: 目标 ECU 返回的绝对原始底层字符串
     public func fetchProprietaryData(header: String, receiveAddress: String, udsCommand: String) async -> String {
         guard isConnected else { return "ERROR: NO_CONNECTION" }
-        
-        let cleanHeader = header.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-        let cleanCRA = receiveAddress.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-        let cleanCommand = udsCommand.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+                
+        let cleanHeader = header.obdCleaned
+        let cleanCRA = receiveAddress.obdCleaned
+        let cleanCommand = udsCommand.obdCleaned
         
         PTOBDLogger.obd.ptLog("🥷 [私有探针] 目标: \(cleanHeader) | 监听: \(cleanCRA) | 指令: \(cleanCommand)")
         
         // 1. 霸占总线
         let wasPolling = (self.telemetryPollingTask != nil)
         if wasPolling {
-            PTOBDLogger.obd.ptLog("⏸️ [私有探针] 霸占总线，挂起常规轮询...")
             self.telemetryPollingTask?.cancel()
             self.telemetryPollingTask = nil
             try? await Task.sleep(nanoseconds: 100_000_000)
@@ -1902,55 +1869,31 @@ extension PTMotoTelemetryManager {
         var finalResult = ""
         
         do {
-            // 2. 寻址与过滤配置
+            // 2. 寻址与底层流控制配置 (全自动支持长数据与车架号提取！)
             _ = try await self.sendRawCommandAsync("ATSH\(cleanHeader)")
             _ = try await self.sendRawCommandAsync("ATCRA\(cleanCRA)")
-            
-            // 🌟 核心升级 1：延长接收超时，给 ECU 思考时间 (约 1020ms)
-            _ = try await self.sendRawCommandAsync("ATSTFF")
-            
-            // 🌟 核心升级 2：接管硬件流控制 (Flow Control)，保证多帧长数据(如 VIN)不被截断
-            _ = try await self.sendRawCommandAsync("ATFCSM1")
+            _ = try await self.sendRawCommandAsync("ATSTFF") // 延长等待时间
+            _ = try await self.sendRawCommandAsync("ATFCSM1") // 自定义流控制
             _ = try await self.sendRawCommandAsync("ATFCSH\(cleanHeader)")
-            _ = try await self.sendRawCommandAsync("ATFCSD300000") // 发送 30 00 00 告诉 ECU: 我准备好了，无限制发包！
+            _ = try await self.sendRawCommandAsync("ATFCSD300000")
             
-            // 🌟 核心升级 3：强制唤醒扩展诊断会话，并拦截失败
-            PTOBDLogger.obd.ptLog("🔄 正在请求扩展诊断会话 (10 03)...")
-            let sessionRes = try await self.sendRawCommandAsync("1003")
-            let cleanSession = self.clearString(response: sessionRes)
-            
-            if cleanSession.contains("NODATA") || cleanSession.contains("7F10") {
-                PTOBDLogger.obd.ptLog("⚠️ [提权拦截] ECU 拒绝或未响应扩展会话 (\(cleanSession))，跳过深度读取！")
-                finalResult = "ERROR: SESSION_REJECTED"
-            } else {
-                // 提权成功，给 ECU 50ms 状态切换时间
-                try? await Task.sleep(nanoseconds: 50_000_000)
-                
-                // 4. 发射真正的 UDS 探针，并捕获回传 (现在可以接收无限长度的连续帧了)
-                let response = try await self.sendRawCommandAsync(cleanCommand)
-                
-                // 注意：这里原汁原味地保留 response 的换行符，以便交给 PTMultiFrameParser 去拼装！
-                finalResult = response.trimmingCharacters(in: .whitespacesAndNewlines)
-                PTOBDLogger.obd.ptLog("✅ [私有探针] 截获目标返回: \(finalResult)")
-            }
+            // 3. 发射探针
+            let response = try await self.sendRawCommandAsync(cleanCommand)
+            finalResult = response.trimmingCharacters(in: .whitespacesAndNewlines)
             
         } catch {
             finalResult = "ERROR: \(error.localizedDescription)"
             PTOBDLogger.obd.ptLog("❌ [私有探针] 渗透失败: \(error)")
         }
         
-        // 5. 🧹 打扫战场 (极其关键！)
-        PTOBDLogger.obd.ptLog("🧹 [私有探针] 清洗配置，恢复标准 OBD2 通道...")
-        _ = try? await self.sendRawCommandAsync("ATST32") // 恢复默认超时
-        _ = try? await self.sendRawCommandAsync("1001")   // 退出扩展会话，回退到默认会话
-        _ = try? await self.sendRawCommandAsync("ATD")    // 恢复出厂寻址
+        // 4. 清理现场
+        _ = try? await self.sendRawCommandAsync("ATST32")
+        _ = try? await self.sendRawCommandAsync("ATD")
         _ = try? await self.sendRawCommandAsync("ATE0")
         _ = try? await self.sendRawCommandAsync("ATL0")
         _ = try? await self.sendRawCommandAsync("ATH1")
         
-        // 6. 归还总线
         if wasPolling {
-            PTOBDLogger.obd.ptLog("▶️ [私有探针] 总线归还，重新启动日常监测。")
             let rawPIDsToResume = PTHiddenOBDConnector.shared.collectedPIDResponses.isEmpty ? PTWifiOBDConnector.shared.collectedPIDResponses : PTHiddenOBDConnector.shared.collectedPIDResponses
             self.startLightweightPolling(rawPIDs: rawPIDsToResume)
         }
@@ -2171,6 +2114,32 @@ extension PTMotoTelemetryManager {
             PTMotoTelemetryManager.testerPresentTask?.cancel()
             PTMotoTelemetryManager.testerPresentTask = nil
             PTOBDLogger.obd.ptLog("🛑 [心跳引擎] 已停止。车辆电源管理系统接管控制权。")
+        }
+    }
+}
+
+public extension PTMotoTelemetryManager {
+    // MARK: - 🛡️ 全局总线独占锁 (Bus Lock)
+    /// 执行连续的极客入侵、OTA 或刷写操作时，死锁总线，绝对禁止常规轮询介入
+    func performExclusiveTask(action: () async -> Void) async {
+        let wasPolling = (self.telemetryPollingTask != nil)
+        
+        // 1. 强制挂起并休眠，等待总线彻底安静
+        if wasPolling {
+            PTOBDLogger.obd.ptLog("⏸️ [总线锁] 已强制接管总线，挂起高频轮询引擎...")
+            self.telemetryPollingTask?.cancel()
+            self.telemetryPollingTask = nil
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
+        
+        // 2. 执行不可被打断的连续危险操作
+        await action()
+        
+        // 3. 释放锁，恢复生命体征监测
+        if wasPolling {
+            PTOBDLogger.obd.ptLog("▶️ [总线锁] 危险操作结束，交还总线控制权...")
+            let rawPIDsToResume = PTHiddenOBDConnector.shared.collectedPIDResponses.isEmpty ? PTWifiOBDConnector.shared.collectedPIDResponses : PTHiddenOBDConnector.shared.collectedPIDResponses
+            self.startLightweightPolling(rawPIDs: rawPIDsToResume)
         }
     }
 }
