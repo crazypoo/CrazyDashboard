@@ -8,9 +8,17 @@
 import Foundation
 import PooTools
 
-// MARK: - 🌟 全局底层统一日志追踪引擎
+// MARK: - 🌟 升级版：支持多实例隔离的底层日志追踪引擎
 public class PTOBDLogger {
+    
+    // 兼容旧代码的默认全局单例
     public static let shared = PTOBDLogger()
+    
+    // 💡 推荐：专门用于摩托车蓝牙通信的独立日志实例
+    public static let moto = PTOBDLogger()
+    
+    // 💡 推荐：专门用于 OBD/UDS 诊断与抓包的独立日志实例
+    public static let obd = PTOBDLogger()
     
     private var logFileHandle: FileHandle?
     public private(set) var currentLogFileURL: URL?
@@ -20,7 +28,7 @@ public class PTOBDLogger {
     public var onLogUpdated: ((String) -> Void)?
     
     // 独占的后台 I/O 队列，保障主线程 UI 绝对流畅
-    private let ioQueue = DispatchQueue(label: "com.ptools.MotoLogIOQueue", qos: .utility)
+    private let ioQueue = DispatchQueue(label: "com.ptools.MotoLogIOQueue.\(UUID().uuidString)", qos: .utility)
     
     private lazy var dateFormatter: DateFormatter = {
         let df = DateFormatter()
@@ -28,15 +36,16 @@ public class PTOBDLogger {
         return df
     }()
     
-    private init() {} // 单例私有化
+    // 允许外部自由实例化，实现日志完全隔离
+    public init() {}
     
     // MARK: - 📝 日志生命周期控制
     
     /// 开启文件日志记录 (支持自定义前缀和标题)
     /// - Parameters:
-    ///   - prefix: 文件名前缀，例如 "MotoOBDLog" 或 "MotoHexLog"
+    ///   - prefix: 文件名前缀，例如 "MotoHexLog" 或 "OBDTraceLog"
     ///   - headerTitle: 写入文件头部的说明文字
-    public func startFileLogging(prefix: String = "MotoOBDLog", headerTitle: String = "PEUGEOT XP400GT OBD TRACE LOG") {
+    public func startFileLogging(prefix: String = "MotoOBDLog", headerTitle: String = "PEUGEOT XP400GT TRACE LOG") {
         // 防止重复开启
         guard logFileHandle == nil else { return }
         
@@ -58,23 +67,23 @@ public class PTOBDLogger {
                 try logFileHandle?.seekToEnd()
                 try logFileHandle?.write(contentsOf: data)
             }
-            PTNSLogConsole("📝 [日志系统] 已开启全链路底层写入: \(fileName)")
+            PTNSLogConsole("📝 [日志系统 - \(prefix)] 已开启独立文件写入: \(fileName)")
         } catch {
-            PTNSLogConsole("❌ [日志系统] 文件创建失败: \(error)")
+            PTNSLogConsole("❌ [日志系统 - \(prefix)] 文件创建失败: \(error)")
         }
     }
     
     /// 停止日志记录并封装文件
     public func stopFileLogging() {
-        guard logFileHandle != nil else { return }
+        guard let handle = logFileHandle else { return }
         let footer = "\n=== SESSION END: \(Date()) ===\n"
         if let data = footer.data(using: .utf8) {
-            _ = try? logFileHandle?.seekToEnd()
-            _ = try? logFileHandle?.write(contentsOf: data)
+            _ = try? handle.seekToEnd()
+            _ = try? handle.write(contentsOf: data)
         }
-        try? logFileHandle?.close()
+        try? handle.close()
         logFileHandle = nil
-        PTNSLogConsole("💾 [日志系统] 会话结束，日志已安全封装。")
+        PTNSLogConsole("💾 [日志系统] 会话结束，独立日志文件已安全封装。")
     }
     
     // MARK: - 🖋 核心写入方法
@@ -98,7 +107,6 @@ public class PTOBDLogger {
         // 主线程派发 UI 更新
         DispatchQueue.main.async {
             self.logHistory.append(formattedLog)
-            // 设定缓冲区大小 (如 1000 条)
             if self.logHistory.count > 1000 { self.logHistory.removeFirst() }
             self.onLogUpdated?(formattedLog)
         }
@@ -106,15 +114,11 @@ public class PTOBDLogger {
     
     // MARK: - 📂 文件检索系统
     
-    /// 获取沙盒中所有的日志文件，供 UI 导出使用
-    /// - Parameter prefix: 检索的文件前缀，例如 "Moto" 可以搜出所有的日志
     public func fetchAllLogFiles(prefix: String = "Moto") -> [URL] {
         guard let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return [] }
         do {
             let files = try FileManager.default.contentsOfDirectory(at: docsDir, includingPropertiesForKeys: [.creationDateKey])
-            // 过滤出指定前缀并以 .txt 结尾的文件
             let logFiles = files.filter { $0.lastPathComponent.hasPrefix(prefix) && $0.pathExtension == "txt" }
-            // 按时间倒序排列 (最新的在最前)
             return logFiles.sorted { url1, url2 in
                 let date1 = (try? url1.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date.distantPast
                 let date2 = (try? url2.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date.distantPast

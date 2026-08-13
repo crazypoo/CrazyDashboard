@@ -226,7 +226,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     }
                 })
             } else {
-                let actions = ["Error Code","Disconnect","Data","ECU info","MIDs","DID","VIN UDS","Animation","UDS command","Dump","Sniff"]
+                let actions = ["Error Code","Disconnect","Data","ECU info"/*,"MIDs","DID","VIN UDS","Animation","UDS command","Dump","Sniff"*/]
                 UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: actions, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
                     switch index {
                     case 0:
@@ -241,16 +241,16 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                                 } else {
                                     let ecuStrings = result.map { (ecuKey, dtcs) -> String in
                                         
-                                        // 1. 将该 ECU 下的所有故障码数组，映射为字符串数组
+                                        // 将该 ECU 下的所有故障码数组，映射为字符串数组
                                         let dtcStrings = dtcs.map { value in
                                             // 前面加了缩进，视觉上更清晰
                                             "  - \(value.code):\(value.description), level:\(value.severity.rawValue)"
                                         }
                                         
-                                        // 2. 将这组故障码用单换行拼接
+                                        // 将这组故障码用单换行拼接
                                         let dtcJoined = dtcStrings.joined(separator: "\n")
                                         
-                                        // 3. 加上 ECU 的大标题 (为了人类可读性，我们可以把 7E8 翻译成发动机)
+                                        // 加上 ECU 的大标题 (为了人类可读性，我们可以把 7E8 翻译成发动机)
                                         let ecuName = (ecuKey == "7E8" || ecuKey.contains("18DAF110")) ? "发动机模块" :
                                         (ecuKey == "7E9" ? "变速箱模块" : "模块")
                                         
@@ -409,7 +409,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     case 10:
                         Task {
                                 // 1. 开启抓包，指定只看 700 节点的流量（防止数据太多把日志撑爆）
-                                await PTMotoTelemetryManager.shared.startCANSniperMode(filterHeader: "700")
+                                await PTMotoTelemetryManager.shared.startCANSniperMode(filterHeader: nil)
                                 
                                 PTOBDLogger.shared.ptLog("⏳ [实战演练] 抓包中... 请立刻在手机上操作原车蓝牙切换一次语言或颜色！")
                                 
@@ -953,9 +953,7 @@ extension PTMotoInfoViewController:PTMotoTelemetryDelegate {
         obdButton.stopLoading()
     }
     
-    func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) {
-        PTNSLogConsole(">>>>>>>>>>>>>>>>>>>>>>>\(measurements)")
-    }
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) { }
     
     func telemetryManager(_ manager: PTMotoTelemetryManager, didDiscoverSupportedCommands commands: [String]) { }
 }

@@ -387,6 +387,18 @@ public extension PTDashboardHacker {
         // AT ST FF 表示将模块的等待时间设置到最大值 (约 1020 毫秒)，给 ECU 充足的思考时间
         _ = try? await manager.sendRawCommandAsync("ATSTFF")
         
+        // 🌟 核心升级 2：霸道接管 ISO-TP 流控制 (Flow Control)
+        PTOBDLogger.shared.ptLog("🛡 正在接管 ELM327 硬件流控制，准备接收多帧超长数据...")
+        
+        // 设置流控制模式 1 (自定义模式)
+        _ = try? await manager.sendRawCommandAsync("ATFCSM1")
+        
+        // 设置流控制帧的发送报头 (与你的发送地址 dashboardTx 一致，如 700)
+        _ = try? await manager.sendRawCommandAsync("ATFCSH" + dashboardTx)
+        
+        // 设置流控制帧的有效载荷为 30 00 00 (Clear to Send, BlockSize 0, STmin 0)
+        _ = try? await manager.sendRawCommandAsync("ATFCSD300000")
+
         for did in targetDIDs {
             PTOBDLogger.shared.ptLog("-----------------------------------------")
             
@@ -413,6 +425,10 @@ public extension PTDashboardHacker {
             if cleanResponse.contains("62\(did)") {
                 // 成功读取！62 是 22 服务的成功回复
                 PTOBDLogger.shared.ptLog("💎 提取成功！DID [\(did)] 的数据为: \(cleanResponse)")
+                let decodedText = PTMultiFrameParser.assembleAndDecodeMultiFrameLog(response)
+                if !decodedText.isEmpty {
+                    PTOBDLogger.shared.ptLog("   🔤 文本破译结果: \(decodedText)")
+                }
             } else if cleanResponse.contains("7F22") {
                 // 收到 7F 报错，说明 ECU 听到了，但拒绝了你
                 if cleanResponse.contains("7F2231") {
