@@ -1899,29 +1899,49 @@ extension PTMotoTelemetryManager {
         
         PTOBDLogger.obd.ptLog("🥷 [私有探针] 目标: \(cleanHeader) | 监听: \(cleanCRA) | 指令: \(cleanCommand)")
         
-        // 1. 统一挂起常规轮询，霸占总线绝对控制权
+        // 1. 霸占总线
         let wasPolling = (self.telemetryPollingTask != nil)
         if wasPolling {
             PTOBDLogger.obd.ptLog("⏸️ [私有探针] 霸占总线，挂起常规轮询...")
             self.telemetryPollingTask?.cancel()
             self.telemetryPollingTask = nil
-            // 确保总线安静下来
             try? await Task.sleep(nanoseconds: 100_000_000)
         }
         
         var finalResult = ""
         
         do {
-            // 2. 更改 ELM327 发送地址 (Set Header)
+            // 2. 寻址与过滤配置
             _ = try await self.sendRawCommandAsync("ATSH\(cleanHeader)")
-            
-            // 3. 设置严格的接收过滤器 (CAN Receive Address)，防止收到总线垃圾信息
             _ = try await self.sendRawCommandAsync("ATCRA\(cleanCRA)")
             
-            // 4. 发射真正的 UDS 探针，并捕获回传
-            let response = try await self.sendRawCommandAsync(cleanCommand)
-            finalResult = response.trimmingCharacters(in: .whitespacesAndNewlines)
-            PTOBDLogger.obd.ptLog("✅ [私有探针] 截获目标返回: \(finalResult)")
+            // 🌟 核心升级 1：延长接收超时，给 ECU 思考时间 (约 1020ms)
+            _ = try await self.sendRawCommandAsync("ATSTFF")
+            
+            // 🌟 核心升级 2：接管硬件流控制 (Flow Control)，保证多帧长数据(如 VIN)不被截断
+            _ = try await self.sendRawCommandAsync("ATFCSM1")
+            _ = try await self.sendRawCommandAsync("ATFCSH\(cleanHeader)")
+            _ = try await self.sendRawCommandAsync("ATFCSD300000") // 发送 30 00 00 告诉 ECU: 我准备好了，无限制发包！
+            
+            // 🌟 核心升级 3：强制唤醒扩展诊断会话，并拦截失败
+            PTOBDLogger.obd.ptLog("🔄 正在请求扩展诊断会话 (10 03)...")
+            let sessionRes = try await self.sendRawCommandAsync("1003")
+            let cleanSession = self.clearString(response: sessionRes)
+            
+            if cleanSession.contains("NODATA") || cleanSession.contains("7F10") {
+                PTOBDLogger.obd.ptLog("⚠️ [提权拦截] ECU 拒绝或未响应扩展会话 (\(cleanSession))，跳过深度读取！")
+                finalResult = "ERROR: SESSION_REJECTED"
+            } else {
+                // 提权成功，给 ECU 50ms 状态切换时间
+                try? await Task.sleep(nanoseconds: 50_000_000)
+                
+                // 4. 发射真正的 UDS 探针，并捕获回传 (现在可以接收无限长度的连续帧了)
+                let response = try await self.sendRawCommandAsync(cleanCommand)
+                
+                // 注意：这里原汁原味地保留 response 的换行符，以便交给 PTMultiFrameParser 去拼装！
+                finalResult = response.trimmingCharacters(in: .whitespacesAndNewlines)
+                PTOBDLogger.obd.ptLog("✅ [私有探针] 截获目标返回: \(finalResult)")
+            }
             
         } catch {
             finalResult = "ERROR: \(error.localizedDescription)"
@@ -1930,14 +1950,14 @@ extension PTMotoTelemetryManager {
         
         // 5. 🧹 打扫战场 (极其关键！)
         PTOBDLogger.obd.ptLog("🧹 [私有探针] 清洗配置，恢复标准 OBD2 通道...")
-        // ATD: 恢复 ELM327 所有出厂设置 (寻址变回标准的 7DF)
-        _ = try? await self.sendRawCommandAsync("ATD")
-        // 由于 ATD 会打开回显等功能，我们需要重新补发破冰船中的环境配置
-        _ = try? await self.sendRawCommandAsync("ATE0") // 关闭回显
-        _ = try? await self.sendRawCommandAsync("ATL0") // 关闭换行符
-        _ = try? await self.sendRawCommandAsync("ATH1") // 开启报头 (无敌解析器依赖 410C 这样的报头)
+        _ = try? await self.sendRawCommandAsync("ATST32") // 恢复默认超时
+        _ = try? await self.sendRawCommandAsync("1001")   // 退出扩展会话，回退到默认会话
+        _ = try? await self.sendRawCommandAsync("ATD")    // 恢复出厂寻址
+        _ = try? await self.sendRawCommandAsync("ATE0")
+        _ = try? await self.sendRawCommandAsync("ATL0")
+        _ = try? await self.sendRawCommandAsync("ATH1")
         
-        // 6. 归还总线，恢复日常生命体征监测
+        // 6. 归还总线
         if wasPolling {
             PTOBDLogger.obd.ptLog("▶️ [私有探针] 总线归还，重新启动日常监测。")
             let rawPIDsToResume = PTHiddenOBDConnector.shared.collectedPIDResponses.isEmpty ? PTWifiOBDConnector.shared.collectedPIDResponses : PTHiddenOBDConnector.shared.collectedPIDResponses
@@ -2115,6 +2135,51 @@ extension PTMotoTelemetryManager {
                     self.onConnectionTimeout?()
                 }
             }
+        }
+    }
+}
+
+extension PTMotoTelemetryManager {
+    
+    // MARK: - 💓 ECU 防休眠心跳保活引擎 (Tester Present)
+    
+    // 维护一个专用的后台心跳任务
+    private static var testerPresentTask: Task<Void, Never>?
+    
+    /// 启动 UDS 3E 心跳保活服务，阻止仪表盘或 ECU 在 KOEO 状态下自动关机
+    /// 建议在通电且不打火的情况下，由 UI 层的 Switch 开关手动触发
+    public func startKeepAliveHeartbeat(targetTx: String = "700") {
+        guard isConnected else { return }
+        
+        // 防止重复启动
+        stopKeepAliveHeartbeat()
+        
+        PTMotoTelemetryManager.testerPresentTask = Task { [weak self] in
+            PTOBDLogger.obd.ptLog("💓 [心跳引擎] 启动！开始向 \(targetTx) 发送 3E 80 阻止系统休眠...")
+            
+            while !Task.isCancelled {
+                guard let self = self, self.isConnected else { break }
+                
+                // 直接使用我们写好的原生注入通道，要求其必须挂起高频轮询！
+                // 3E80: 3E 代表诊断仪在线，80 代表抑制肯定响应 (让 ECU 别回话，节约总线带宽)
+                _ = await self.injectRawHexCommand("ATSH\(targetTx)", requiresPause: true)
+                _ = await self.injectRawHexCommand("3E80", requiresPause: false)
+                
+                // 恢复默认寻址
+                _ = await self.injectRawHexCommand("ATD", requiresPause: false)
+                
+                // 行业标准：每隔 2000 毫秒 (2秒) 发送一次心跳
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+            }
+        }
+    }
+    
+    /// 停止心跳保活服务
+    public func stopKeepAliveHeartbeat() {
+        if PTMotoTelemetryManager.testerPresentTask != nil {
+            PTMotoTelemetryManager.testerPresentTask?.cancel()
+            PTMotoTelemetryManager.testerPresentTask = nil
+            PTOBDLogger.obd.ptLog("🛑 [心跳引擎] 已停止。车辆电源管理系统接管控制权。")
         }
     }
 }
