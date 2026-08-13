@@ -325,7 +325,6 @@ public class PTMultiFrameParser {
             let cleanLine = line.filter { "0123456789ABCDEF".contains($0) }
             guard cleanLine.count > 4 else { continue }
             
-            // 提取 CAN 帧类型 (如 7E8，第 4 位是帧类型)
             let frameTypeIndex = cleanLine.index(cleanLine.startIndex, offsetBy: 3)
             let frameType = cleanLine[frameTypeIndex]
             
@@ -349,35 +348,30 @@ public class PTMultiFrameParser {
         }
         return asciiStr.trimmingCharacters(in: .whitespaces)
     }
-    
+
     /// 🌟 提取纯净十六进制数据：专门用于剥离 CAN 报头 (如 7E81, 7E82)，提取纯粹的数据载荷。
     public static func extractPureHexPayload(response: String) -> String {
         let lines = response.components(separatedBy: .whitespacesAndNewlines)
-            .filter { !$0.isEmpty && $0 != ">" }
+                    .filter { !$0.isEmpty && $0 != ">" }
         
         var hexPayload = ""
         for line in lines {
             let cleanLine = line.filter { "0123456789ABCDEF".contains($0) }
             guard cleanLine.count > 4 else { continue }
             
-            // 提取 CAN 帧类型
             let frameTypeIndex = cleanLine.index(cleanLine.startIndex, offsetBy: 3)
             let frameType = cleanLine[frameTypeIndex]
             
             if frameType == "1" {
-                // 首帧：跳过 7 个字符 (例如 7E8 1 023)
                 if cleanLine.count > 7 { hexPayload += cleanLine[cleanLine.index(cleanLine.startIndex, offsetBy: 7)...] }
             } else if frameType == "2" {
-                // 连续帧：跳过 5 个字符 (例如 7E8 2 1)
                 if cleanLine.count > 5 { hexPayload += cleanLine[cleanLine.index(cleanLine.startIndex, offsetBy: 5)...] }
             } else if frameType == "0" {
-                // 单帧：跳过 5 个字符 (例如 7E8 0 4)
                 if cleanLine.count > 5 { hexPayload += cleanLine[cleanLine.index(cleanLine.startIndex, offsetBy: 5)...] }
             } else {
-                 // 兼容非 CAN 协议的回传，直接拼接 (如直接返回 43 开头的数据)
-                 if cleanLine.hasPrefix("43") || cleanLine.hasPrefix("44") {
-                     hexPayload += cleanLine
-                 }
+                if cleanLine.hasPrefix("43") || cleanLine.hasPrefix("44") {
+                    hexPayload += cleanLine
+                }
             }
         }
         return hexPayload
@@ -445,9 +439,6 @@ public class PTMultiFrameParser {
         }
         return results
     }
-}
-
-extension PTMultiFrameParser {
     
     // MARK: - 🧩 ISO-TP 多行日志流自动拼装与解码引擎
     
