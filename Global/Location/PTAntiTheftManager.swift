@@ -28,8 +28,7 @@ public class PTAntiTheftManager: NSObject {
         let nc = NotificationCenter.default
         // 监听引擎状态，决定是否进入警戒
         nc.addObserver(self, selector: #selector(handleData2(_:)), name: MotorcycleDATA2, object: nil)
-        // 监听物理断电，触发防盗逻辑推演
-        nc.addObserver(self, selector: #selector(handleDisconnect), name: MotorcycleDisconnected, object: nil)
+        PTBluetoothServerManager.shared.addDelegate(self)
     }
     
     // MARK: - 状态机流转
@@ -85,5 +84,13 @@ public class PTAntiTheftManager: NSObject {
     
     deinit {
         NotificationCenter.default.removeObserver(self)
+    }
+}
+
+extension PTAntiTheftManager:PTBLEDashboardDelegate {
+    func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool) {
+        if isConnected {
+            handleDisconnect()
+        }
     }
 }

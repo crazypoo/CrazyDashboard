@@ -467,6 +467,11 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         })
         return view
     }()
+    
+    override func handleMotorcycleConnect() {
+        super.handleMotorcycleConnect()
+        self.handleAuthSuccess()
+    }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
@@ -501,10 +506,6 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleCONTROL, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(dashBoardReload), name: MotorcycleDashBoardChange, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleRawDataTCSShow, object: nil)
-
-        if PTMotoUserDefaultStruct.MotoLinkedAPP {
-            NotificationCenter.default.addObserver(self, selector: #selector(handleAuthSuccess), name: BLEConnectSuccess, object: nil)
-        }
         
         if PTMotoUserDefaultStruct.MotoLinkedAPP,!PTDashboardConfig.shared.blueConnected {
             PTGCDManager.shared.delayOnMain(time: 3) {
@@ -978,7 +979,8 @@ extension PTMotoInfoViewController:PTMotoTelemetryDelegate {
         obdButton.stopLoading()
     }
     
-    func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) { }
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) {
+    }
     
     func telemetryManager(_ manager: PTMotoTelemetryManager, didDiscoverSupportedCommands commands: [String]) { }
 }

@@ -36,16 +36,31 @@ class PTMotoBaseViewController: PTBaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        NotificationCenter.default.addObserver(self, selector: #selector(handleMotorcycleDisconnect), name: MotorcycleDisconnected, object: nil)
+        PTBluetoothServerManager.shared.addDelegate(self)
     }
     
-    func handleMotorcycleDisconnect() {
+    open func handleMotorcycleDisconnect() {
         PTLocationEngine.shared.switchEngineMode(to: .antiTheft)
         PTLocationEngine.shared.forceUpdateWidgetOnDisconnect()
         PTMOTOParkingManager.shared.saveCurrentLocationAsParkingSpot()
+    }
+    
+    open func handleMotorcycleConnect() {
+        
     }
     
     @MainActor deinit {
         NotificationCenter.default.removeObserver(self)
     }
 }
+
+extension PTMotoBaseViewController:PTBLEDashboardDelegate {
+    func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool) {
+        if isConnected {
+            handleMotorcycleConnect()
+        } else {
+            handleMotorcycleDisconnect()
+        }
+    }
+}
+

@@ -222,10 +222,7 @@ class PTDashBoardView: UIView {
         NotificationCenter.default.addObserver(self, selector: #selector(handleLocationUpdate(_:)), name: PTLocationEngineDidUpdate, object: nil)
         PTMotion.shared.addDelegate(self)
         
-        if PTMotoUserDefaultStruct.MotoLinkedAPP {
-            NotificationCenter.default.addObserver(self, selector: #selector(handleAuthSuccess), name: BLEConnectSuccess, object: nil)
-        }
-        NotificationCenter.default.addObserver(self, selector: #selector(handleMotorcycleDisconnect), name: MotorcycleDisconnected, object: nil)
+        PTBluetoothServerManager.shared.addDelegate(self)
     }
         
     private func showEmergencyOverlay(_ show: Bool) {
@@ -255,5 +252,15 @@ class PTDashBoardView: UIView {
 extension PTDashBoardView : PTMotionDelegate {
     func motionManager(_ manager: PTMotion, didUpdateData data: PTMotionData) {
         self.motionSet(motionData: data)
+    }
+}
+
+extension PTDashBoardView:PTBLEDashboardDelegate {
+    func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool) {
+        if isConnected {
+            handleAuthSuccess()
+        } else {
+            handleMotorcycleDisconnect()
+        }
     }
 }

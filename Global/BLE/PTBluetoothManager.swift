@@ -10,14 +10,12 @@ import CoreBluetooth
 import PooTools
 import UserNotifications
 
-let BLEConnectSuccess = NSNotification.Name("MotorcycleAuthSuccess")
 let MotorcycleDATA1 = NSNotification.Name("MotorcycleDATA1")
 let MotorcycleDATA2 = NSNotification.Name("MotorcycleDATA2")
 let MotorcycleDATA3 = NSNotification.Name("MotorcycleDATA3")
 let MotorcycleCONTROL = NSNotification.Name("MotorcycleCONTROL")
 let MotorcycleABS = NSNotification.Name("MotorcycleABS")
 let MotorcycleDashBoardChange = NSNotification.Name("MotorcycleDashBoardChange")
-let MotorcycleDisconnected = NSNotification.Name("MotorcycleDisconnected")
 let MotorcycleRawDataReceived = NSNotification.Name("MotorcycleRawDataReceived")
 let MotorcycleRawDataTCSShow = NSNotification.Name("MotorcycleRawDataTCSShow")
 
@@ -686,11 +684,34 @@ enum PTAuthState {
     case success        // 验证完成，数据流通
 }
 
+//let MotorcycleDATA1 = NSNotification.Name("MotorcycleDATA1")
+//let MotorcycleDATA2 = NSNotification.Name("MotorcycleDATA2")
+//let MotorcycleDATA3 = NSNotification.Name("MotorcycleDATA3")
+//let MotorcycleCONTROL = NSNotification.Name("MotorcycleCONTROL")
+//let MotorcycleABS = NSNotification.Name("MotorcycleABS")
+//let MotorcycleDashBoardChange = NSNotification.Name("MotorcycleDashBoardChange")
+//let MotorcycleRawDataReceived = NSNotification.Name("MotorcycleRawDataReceived")
+//let MotorcycleRawDataTCSShow = NSNotification.Name("MotorcycleRawDataTCSShow")
+
+protocol PTBLEDashboardDelegate: AnyObject {
+    func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool)
+}
+
+extension PTBLEDashboardDelegate {
+    func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool) {}
+}
+
 // 只保留外设管理器，做纯粹的服务器
 class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     
     static let shared = PTBluetoothServerManager()
     
+    private class WeakDelegateWrapper {
+        weak var delegate: PTBLEDashboardDelegate?
+        init(_ delegate: PTBLEDashboardDelegate) { self.delegate = delegate }
+    }
+    private var delegates: [WeakDelegateWrapper] = []
+
     // MARK: - 深度 OBD 探针引擎 (Active Diagnostic Prober)
         
     private var diagnosticTimer: Timer?
@@ -852,7 +873,8 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         isCreditsSubscribed = false
         authState = .waitKeyId
         if PTDashboardConfig.shared.blueConnected {
-            NotificationCenter.default.post(name: MotorcycleDisconnected, object: nil)
+            self.cleanupDelegates()
+            self.delegates.forEach( { $0.delegate?.dashboardManager(self, didChangeConnectionState: false) })
         }
     }
     
@@ -954,7 +976,8 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
                 PTOBDLogger.moto.startFileLogging(prefix: "MotoHexLog", headerTitle: "PEUGEOT XP400GT RAW HEX LOG")
                 // 必须在互信彻底完成后，再发钱解锁仪表盘！
                 grantScooterCredits()
-                NotificationCenter.default.post(name: BLEConnectSuccess, object: nil)
+                
+                delegates.forEach( { $0.delegate?.dashboardManager(self, didChangeConnectionState: true) })
                 
                 // 别浪费这第一包数据，立刻丢给仪表盘解析器
                 parseDashboardFrame(data)
@@ -1046,6 +1069,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         }
     }
 }
+
 extension PTBluetoothServerManager {
     
     // MARK: - 发送导航与控制指令
@@ -1442,5 +1466,24 @@ extension PTBluetoothServerManager {
         let stopString = "🛑 [自动化 Fuzz] 扫描已手动终止。"
         PTOBDLogger.moto.ptLog(stopString)
         NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: stopString)
+    }
+}
+
+//MARK: Delegate
+extension PTBluetoothServerManager {
+    public func addDelegate(_ delegate: PTBLEDashboardDelegate) {
+        cleanupDelegates()
+        let isAlreadyAdded = delegates.contains { $0.delegate === delegate }
+        if !isAlreadyAdded {
+            delegates.append(WeakDelegateWrapper(delegate))
+        }
+    }
+    
+    private func cleanupDelegates() {
+        delegates.removeAll { $0.delegate == nil }
+    }
+    
+    public func removeDelegate(_ delegate: PTBLEDashboardDelegate) {
+        delegates.removeAll { $0.delegate === delegate || $0.delegate == nil }
     }
 }

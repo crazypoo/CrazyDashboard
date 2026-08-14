@@ -26,9 +26,8 @@ public class PTDiagnosticManager: NSObject {
     private func setupObserver() {
         // 监听包含电压和温度的 DATA2 数据流
         NotificationCenter.default.addObserver(self, selector: #selector(handleData2(_:)), name: MotorcycleDATA2, object: nil)
-        
-        // 当蓝牙重新连接时，重置报警状态，以便下一次骑行可以重新检测
-        NotificationCenter.default.addObserver(self, selector: #selector(resetWarnings), name: BLEConnectSuccess, object: nil)
+
+        PTBluetoothServerManager.shared.addDelegate(self)
     }
     
     @objc private func resetWarnings() {
@@ -73,5 +72,13 @@ public class PTDiagnosticManager: NSObject {
     
     deinit {
         NotificationCenter.default.removeObserver(self)
+    }
+}
+
+extension PTDiagnosticManager:PTBLEDashboardDelegate {
+    func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool) {
+        if isConnected {
+            resetWarnings()
+        }
     }
 }

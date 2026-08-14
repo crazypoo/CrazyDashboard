@@ -40,7 +40,7 @@ public class PTFuelRoutingManager: NSObject, AMapSearchDelegate {
     private func setupObservers() {
         let nc = NotificationCenter.default
         nc.addObserver(self, selector: #selector(handleData1(_:)), name: MotorcycleDATA1, object: nil)
-        nc.addObserver(self, selector: #selector(resetFuelState), name: BLEConnectSuccess, object: nil)
+        PTBluetoothServerManager.shared.addDelegate(self)
     }
     
     @objc private func resetFuelState() {
@@ -130,5 +130,13 @@ public class PTFuelRoutingManager: NSObject, AMapSearchDelegate {
     public func confirmAndSendGasStationRoute() {
         findFuelStationSelf = true
         startSearchingNearbyGasStation()
+    }
+}
+
+extension PTFuelRoutingManager:PTBLEDashboardDelegate {
+    func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool) {
+        if isConnected {
+            resetFuelState()
+        }
     }
 }

@@ -122,9 +122,7 @@ class PTBLEConnectViewController: PTMotoBaseViewController,@unchecked Sendable {
         connectBLE.viewCorner(radius: 8)
         bleScanButton.layoutIfNeeded()
         bleScanButton.viewCorner(radius: 8)
-        
-        NotificationCenter.default.addObserver(self, selector: #selector(handleAuthSuccess), name: BLEConnectSuccess, object: nil)
-        
+                
         pt_observerLanguage {
             if self.vcDidLoad {
                 self.stepInfo.text = PTDashboardConfig.languageFunc(text: "connect_step_title")
@@ -140,7 +138,7 @@ class PTBLEConnectViewController: PTMotoBaseViewController,@unchecked Sendable {
         }
         self.vcDidLoad = true
     }
-    
+        
     @objc func handleAuthSuccess() {
         PTDashboardConfig.shared.blueConnected = true
         PTMOTOParkingManager.shared.clearParkingSpot()
@@ -152,6 +150,11 @@ class PTBLEConnectViewController: PTMotoBaseViewController,@unchecked Sendable {
                 }
             }
         }
+    }
+    
+    override func handleMotorcycleConnect() {
+        super.handleMotorcycleConnect()
+        self.handleAuthSuccess()
     }
     
     @MainActor deinit {

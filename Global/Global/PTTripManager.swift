@@ -282,12 +282,11 @@ public class PTTripManager: NSObject {
     // MARK: - 绑定蓝牙数据源
     private func setupObservers() {
         let nc = NotificationCenter.default
-        nc.addObserver(self, selector: #selector(handleConnect), name: BLEConnectSuccess, object: nil)
-        nc.addObserver(self, selector: #selector(handleDisconnect), name: MotorcycleDisconnected, object: nil)
         nc.addObserver(self, selector: #selector(handleControlData(_:)), name: MotorcycleCONTROL, object: nil)
         nc.addObserver(self, selector: #selector(handleData1(_:)), name: MotorcycleDATA1, object: nil)
         nc.addObserver(self, selector: #selector(handleABSData(_:)), name: MotorcycleABS, object: nil)
         PTMotion.shared.addDelegate(self)
+        PTBluetoothServerManager.shared.addDelegate(self)
     }
     
     // MARK: - 业务逻辑处理
@@ -685,5 +684,15 @@ extension PTTripManager:PTMotionDelegate {
         if abs(data.gForceZ) > self.maxBump { self.maxBump = abs(data.gForceZ) }
         if data.pitch > self.maxPitchUp { self.maxPitchUp = data.pitch }
         if data.pitch < self.maxPitchDown { self.maxPitchDown = data.pitch }
+    }
+}
+
+extension PTTripManager:PTBLEDashboardDelegate {
+    func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool) {
+        if isConnected {
+            handleConnect()
+        } else {
+            handleDisconnect()
+        }
     }
 }
