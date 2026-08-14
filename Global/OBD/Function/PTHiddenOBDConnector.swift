@@ -332,42 +332,85 @@ public class PTOBDInfo:NSObject {
 }
 
 public class PTMultiFrameParser {
-    /// 🌟 提取纯净十六进制数据：专门用于剥离 CAN 报头，提取纯粹的数据载荷。
+    /// 🌟 提取纯净十六进制数据：专门用于剥离 CAN 报头 (支持 11-bit 和 29-bit CAN)
     public static func extractPureHexPayload(response: String) -> String {
-        let lines = response.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty && $0 != ">" }
-        var hexPayload = ""
+        let lines = response.components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty && $0 != ">" }
         
+        var hexPayload = ""
         for line in lines {
-            let cleanLine = line.hexOnly // 🌟 使用公共扩展
+            // 提取纯大写的 Hex 字符
+            let cleanLine = line.uppercased().filter { "0123456789ABCDEF".contains($0) }
             guard cleanLine.count > 4 else { continue }
             
-            let frameTypeIndex = cleanLine.index(cleanLine.startIndex, offsetBy: 3)
-            let frameType = cleanLine[frameTypeIndex]
+            // 🛡️ 自动嗅探 CAN 报头长度 (7E8 等 11-bit 通常为 3，18DAF110 等 29-bit 通常为 8)
+            var headerLength = 3
+            if cleanLine.hasPrefix("18D") || cleanLine.hasPrefix("18C") {
+                headerLength = 8
+            } else if cleanLine.hasPrefix("7E") || cleanLine.hasPrefix("7F") {
+                headerLength = 3
+            } else {
+                headerLength = 0 // 未知报头，默认不截断
+            }
             
-            if frameType == "1" {
-                if cleanLine.count > 7 { hexPayload += cleanLine.dropFirst(7) }
-            } else if frameType == "2" || frameType == "0" {
-                if cleanLine.count > 5 { hexPayload += cleanLine.dropFirst(5) }
-            } else if cleanLine.hasPrefix("43") || cleanLine.hasPrefix("44") {
+            if headerLength > 0 && cleanLine.count > headerLength {
+                let pciIndex = cleanLine.index(cleanLine.startIndex, offsetBy: headerLength)
+                let pciChar = cleanLine[pciIndex]
+                
+                if pciChar == "1" {
+                    // 首帧 (First Frame): 报头 + PCI(1) + 长度(3) = headerLength + 4
+                    let dropCount = headerLength + 4
+                    if cleanLine.count > dropCount { hexPayload += cleanLine.dropFirst(dropCount) }
+                } else if pciChar == "2" || pciChar == "0" {
+                    // 连续帧/单帧 (Consecutive/Single): 报头 + PCI(1) + 序列号/长度(1) = headerLength + 2
+                    let dropCount = headerLength + 2
+                    if cleanLine.count > dropCount { hexPayload += cleanLine.dropFirst(dropCount) }
+                } else {
+                    hexPayload += cleanLine // PCI 不匹配，保留原样
+                }
+            } else {
                 hexPayload += cleanLine
             }
         }
         return hexPayload
     }
 
-    /// 剥离 CAN 报头，提取纯正的 ASCII 字符串
+    /// 🌟 剥离所有底层协议头，提取纯正的 ASCII 字符串
     public static func parseLongString(response: String) -> String {
         let hexPayload = extractPureHexPayload(response: response)
-        var asciiStr = ""
-        var i = hexPayload.startIndex
         
+        // 1. 将 Hex 转为 Byte 数组
+        var bytes = [UInt8]()
+        var i = hexPayload.startIndex
         while i < hexPayload.endIndex {
             let nextI = hexPayload.index(i, offsetBy: 2, limitedBy: hexPayload.endIndex) ?? hexPayload.endIndex
-            if let byteVal = UInt8(hexPayload[i..<nextI], radix: 16), byteVal >= 32 && byteVal <= 126 {
-                asciiStr.append(Character(UnicodeScalar(byteVal)))
+            if let byteVal = UInt8(hexPayload[i..<nextI], radix: 16) {
+                bytes.append(byteVal)
             }
             i = nextI
         }
+        
+        // 2. 🛡️ 核心修复：智能剔除 OBD 业务层响应头！
+        // 防止 49 或 62 等控制指令被错误解析为字母
+        if bytes.count >= 3 {
+            if bytes[0] == 0x49 {
+                // 剔除 Mode 09 的头：例如 49 04 02 -> 剩下纯文本
+                bytes = Array(bytes.dropFirst(3))
+            } else if bytes[0] == 0x62 {
+                // 剔除 Mode 22 的头：例如 62 F1 90 -> 剩下纯文本
+                bytes = Array(bytes.dropFirst(3))
+            }
+        }
+        
+        // 3. 转成 ASCII 文本
+        var asciiStr = ""
+        for byte in bytes {
+            // 仅保留标准可见的 ASCII 字符 (32-126)，自动过滤掉所有的 \0 和奇葩乱码
+            if byte >= 32 && byte <= 126 {
+                asciiStr.append(Character(UnicodeScalar(byte)))
+            }
+        }
+        
         return asciiStr.trimmingCharacters(in: .whitespaces)
     }
 
@@ -845,7 +888,15 @@ public class PTMockOBDConnector: PTOBDTransportBase {
             
         case "0902":
             return "7E8 14 49 02 01 00 00 00 31 57 42 41 31 32 33 34 35 36 37 38 39 30 31 32 33\r\n>"
-            
+        case "0904": // 模拟读取 Calibration ID (固件标定号，包含 XP40 等特征)
+            let chunk1 = "7E8 10 23 49 04 02 31 31 37"
+            let chunk2 = "7E8 21 39 37 31 33 39 30 30"
+            let chunk3 = "7E8 22 30 30 31 39 35 33 58"
+            let chunk4 = "7E8 23 50 34 30 45 35 34 30"
+            let chunk5 = "7E8 24 30 30 33 37 30 30 30"
+            let chunk6 = "7E8 25 30 00 00 00 00 00 00"
+            // 按照 ELM327 的真实换行格式进行无缝拼接
+            return "\(chunk1)\r\(chunk2)\r\(chunk3)\r\(chunk4)\r\(chunk5)\r\(chunk6)\r\r>"
         // 🚀 高频动态数据 (转速与车速)
         case "010C": // Engine RPM: 1651
             let ecu1Resp = "7E8 04 41 0C 19 CC"
