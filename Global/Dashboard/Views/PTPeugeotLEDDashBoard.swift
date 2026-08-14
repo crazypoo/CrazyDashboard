@@ -9,11 +9,33 @@ import UIKit
 import PooTools
 import SnapKit
 import SwifterSwift
+import SafeSFSymbols
 
 class PTPeugeotLEDDashBoard: UIView {
     
-    let leftFuelGauge = PTArcGaugeView(isLeftAligned: true, color: .systemOrange)
-    let rightTempGauge = PTArcGaugeView(isLeftAligned: false, color: .systemRed)
+    let leftFuelGauge = PTArcGaugeView(type: .fuel)
+    let rightTempGauge = PTArcGaugeView(type: .temperature)
+    
+    lazy var ledNavView:PTPeugeotDashBoardNavView = {
+        let view = PTPeugeotDashBoardNavView()
+        view.navSuccess = {
+            PTGCDManager.shared.runOnMain {
+                self.speedLabel.isHidden = false
+                self.ledNavView.isHidden = true
+            }
+        }
+        return view
+    }()
+    
+    lazy var fuelIcon:UIImageView = {
+        let view = UIImageView(image: UIImage(.fuelpump.fill))
+        return view
+    }()
+    
+    lazy var therIcon:UIImageView = {
+        let view = UIImageView(image: UIImage(.thermometer))
+        return view
+    }()
     
     lazy var tempVoltageLabel : UILabel = {
         let view = UILabel()
@@ -41,24 +63,32 @@ class PTPeugeotLEDDashBoard: UIView {
     public let consumptionLabel = UILabel()
     public let tripLabel = UILabel()
 
+    lazy var speedLabel:UILabel = {
+        let view = UILabel()
+        view.font = .appfont(size: 34,bold:true)
+        view.textAlignment = .center
+        view.textColor = .white
+        view.text = "0"
+        return view
+    }()
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .black
         
-        addSubviews([leftFuelGauge,rightTempGauge,tempVoltageLabel,dateTimeLabel,bottomBar])
+        addSubviews([leftFuelGauge,rightTempGauge,tempVoltageLabel,dateTimeLabel,bottomBar,fuelIcon,therIcon,speedLabel,ledNavView])
         leftFuelGauge.snp.makeConstraints { make in
             make.centerY.equalToSuperview()
-            make.leading.equalToSuperview()
+            make.left.equalToSuperview()
             // 🌟 必须明确宽度和高度，否则 bounds.height 为 0，无法画圆！
-            make.width.equalTo(60)
+            make.width.equalTo(44)
             make.height.equalTo(150)
         }
         leftFuelGauge.progress = 0
         
         rightTempGauge.snp.makeConstraints { make in
-            make.trailing.equalToSuperview()
-            make.width.equalTo(60)
-            make.height.equalTo(150)
+            make.right.equalToSuperview()
+            make.width.height.equalTo(self.leftFuelGauge)
             make.centerY.equalToSuperview()
         }
         
@@ -77,7 +107,7 @@ class PTPeugeotLEDDashBoard: UIView {
         bottomBar.alignment = .center
         let bottomLabels = [odoLabel, rangeLabel, consumptionLabel, tripLabel]
         for label in bottomLabels {
-            label.font = .boldSystemFont(ofSize: 13)
+            label.font = .appfont(size: 13,bold:true)
             label.textColor = .white
             bottomBar.addArrangedSubview(label)
         }
@@ -87,6 +117,28 @@ class PTPeugeotLEDDashBoard: UIView {
             make.right.equalToSuperview()
             make.bottom.equalToSuperview()
             make.height.equalTo(44)
+        }
+        
+        fuelIcon.snp.makeConstraints { make in
+            make.size.equalTo(18.adapter)
+            make.left.equalTo(self.leftFuelGauge)
+            make.bottom.equalTo(self.leftFuelGauge)
+        }
+        
+        therIcon.snp.makeConstraints { make in
+            make.size.bottom.equalTo(self.fuelIcon)
+            make.right.equalTo(self.rightTempGauge)
+        }
+        
+        speedLabel.snp.makeConstraints { make in
+            make.centerX.centerY.equalToSuperview()
+        }
+        
+        ledNavView.snp.makeConstraints { make in
+            make.left.equalTo(self.leftFuelGauge.snp.right)
+            make.right.equalTo(self.rightTempGauge.snp.left)
+            make.bottom.equalTo(self.leftFuelGauge)
+            make.top.equalTo(self.dateTimeLabel.snp.bottom)
         }
     }
     

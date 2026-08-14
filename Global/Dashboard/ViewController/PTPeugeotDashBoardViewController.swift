@@ -62,6 +62,8 @@ class PTPeugeotDashBoardViewController: PTMotoBaseViewController {
         super.viewWillAppear(animated)
         PTRotationManager.shared.rotationToLandscapeRight()
         PTRotationManager.shared.isLockOrientationWhenDeviceOrientationDidChange = true
+        self.ledDashboard.speedLabel.isHidden = PTDashboardConfig.shared.naving
+        self.ledDashboard.ledNavView.isHidden = !PTDashboardConfig.shared.naving
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -128,7 +130,6 @@ class PTPeugeotDashBoardViewController: PTMotoBaseViewController {
         PTMotoTelemetryManager.shared.addDelegate(self)
     }
     
-    
     override func handleMotorcycleData(data: Any?) {
         if let data1 = data as? PTDashboardData1 {
             let fuelLevelPct = data1.fuelLevelPct
@@ -158,6 +159,7 @@ class PTPeugeotDashBoardViewController: PTMotoBaseViewController {
 
             // 💡 车速和转速驱动的是 CoreAnimation 动画指针（PTSpeedometerView），本身不会闪烁，直接驱动即可
             DispatchQueue.main.async {
+                self.ledDashboard.speedLabel.text = String(format: "%.0f", vehicleSpeedKmh)
                 self.speedometer.updateSpeed(vehicleSpeedKmh)
                 self.speedometerReversed.updateSpeed(CGFloat(engineRpm))
                 self.speedometerReversed.applyShiftLightLogic(currentRpm: engineRpm)

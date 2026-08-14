@@ -146,20 +146,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         })
         return view
     }()
-    
-    lazy var proButton:UIButton = {
-        let view = UIButton()
-        view.titleLabel?.font = .appfont(size: 16)
-        view.setTitleColor(.white, for: .normal)
-        view.setTitle(PTDashboardConfig.languageFunc(text: "button_pro"), for: .normal)
-        view.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
-        view.addActionHandlers { sender in
-            let vc = PTDashBoardBaseBoardViewController()
-            self.navigationController?.pushViewController(vc, animated: true)
-        }
-        return view
-    }()
-            
+                
     lazy var shortCut:UILabel = {
         let view = UILabel()
         view.numberOfLines = 0
@@ -214,7 +201,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                                         dashUniTitle, dashBoardUniButton,
                                         dashLanguageTitle, dashBoardLanguageButton])
         
-        view.addSubviews([shortCut, proButton, disconnect, socialStackView, versionLabel])
+        view.addSubviews([shortCut, disconnect, socialStackView, versionLabel])
         
         setupSocialButtons()
                 
@@ -279,11 +266,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             make.bottom.equalTo(socialStackView.snp.top).offset(-30)
         }
         
-        proButton.snp.makeConstraints { make in
-            make.left.right.height.equalTo(disconnect)
-            make.bottom.equalTo(disconnect.snp.top).offset(-CGFloat.GlobalItemSpacing)
-        }
-                
         let checkFuelString = "xp400://checkFuel"
         let checkAntiTheftString = "xp400://antiTheft?enable="
         let hudString = "xp400://openHUD"
@@ -333,7 +315,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             self.dashBoardUniButton.viewCorner(radius: 4)
             self.dashBoardLanguageButton.viewCorner(radius: 4)
             self.disconnect.viewCorner(radius: 4)
-            self.proButton.viewCorner(radius: 4)
         }
 
         pt_observerLanguage {
@@ -342,7 +323,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 self.dashBoadColorTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_color_set_title")
                 self.dashUniTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_set_title")
                 self.disconnect.setTitle(PTDashboardConfig.languageFunc(text: "button_dis_connect"), for: .normal)
-                self.proButton.setTitle(PTDashboardConfig.languageFunc(text: "button_pro"), for: .normal)
             }
         }
         vcDidLoad = true
@@ -417,7 +397,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             self.dashLanguageTitle.textColor = PTDashboardConfig.shared.appMainColor
                         
             self.disconnect.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
-            self.proButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         }
     }
 }
