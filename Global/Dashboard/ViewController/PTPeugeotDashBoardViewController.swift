@@ -144,8 +144,10 @@ class PTPeugeotDashBoardViewController: PTMotoBaseViewController {
             }
         } else if let data1 = data as? PTDashboardData2 {
             let outsideTempC = data1.outsideTempC
+            let batteryVolt = data1.batteryVolt
             DispatchQueue.main.async {
                 self.tempValue = "\(outsideTempC)"
+                self.voltageValue = "\(String(format: "%.1f", batteryVolt))"
                 self.outSideTemVoltageSet()
             }
         } else if let data1 = data as? PTDashboardData3 {
@@ -172,9 +174,6 @@ extension PTPeugeotDashBoardViewController:PTMotoTelemetryDelegate {
     func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String : Any]) {
         if let data = measurements[OBDCommand.mode1(.coolantTemp).properties.command] as? Double {
             self.ledDashboard.rightTempGauge.progress = CGFloat(data) / 120
-        } else if let voltageData = measurements[OBDCommand.mode1(.controlModuleVoltage).properties.command] {
-            self.voltageValue = "\(voltageData)"
-            outSideTemVoltageSet()
         }
     }
 }
