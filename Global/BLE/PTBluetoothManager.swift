@@ -10,14 +10,7 @@ import CoreBluetooth
 import PooTools
 import UserNotifications
 
-let MotorcycleDATA1 = NSNotification.Name("MotorcycleDATA1")
-let MotorcycleDATA2 = NSNotification.Name("MotorcycleDATA2")
-let MotorcycleDATA3 = NSNotification.Name("MotorcycleDATA3")
-let MotorcycleCONTROL = NSNotification.Name("MotorcycleCONTROL")
-let MotorcycleABS = NSNotification.Name("MotorcycleABS")
 let MotorcycleDashBoardChange = NSNotification.Name("MotorcycleDashBoardChange")
-let MotorcycleRawDataReceived = NSNotification.Name("MotorcycleRawDataReceived")
-let MotorcycleRawDataTCSShow = NSNotification.Name("MotorcycleRawDataTCSShow")
 
 let kmToMilOffset:Double = 0.621371
 
@@ -684,21 +677,16 @@ enum PTAuthState {
     case success        // 验证完成，数据流通
 }
 
-//let MotorcycleDATA1 = NSNotification.Name("MotorcycleDATA1")
-//let MotorcycleDATA2 = NSNotification.Name("MotorcycleDATA2")
-//let MotorcycleDATA3 = NSNotification.Name("MotorcycleDATA3")
-//let MotorcycleCONTROL = NSNotification.Name("MotorcycleCONTROL")
-//let MotorcycleABS = NSNotification.Name("MotorcycleABS")
-//let MotorcycleDashBoardChange = NSNotification.Name("MotorcycleDashBoardChange")
-//let MotorcycleRawDataReceived = NSNotification.Name("MotorcycleRawDataReceived")
-//let MotorcycleRawDataTCSShow = NSNotification.Name("MotorcycleRawDataTCSShow")
-
 protocol PTBLEDashboardDelegate: AnyObject {
     func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool)
+    func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?)
+    func dashboardManager(_ manager: PTBluetoothServerManager, unknownData data: String)
 }
 
 extension PTBLEDashboardDelegate {
     func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool) {}
+    func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {}
+    func dashboardManager(_ manager: PTBluetoothServerManager, unknownData data: String) {}
 }
 
 // 只保留外设管理器，做纯粹的服务器
@@ -736,9 +724,9 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
             let logMsg = "⚠️ [TCS 预警] 检测到打滑物理条件！后轮: \(currentRearSpeed) | 前轮: \(currentFrontSpeed) | 差值: \(String(format: "%.2f", speedDelta)) km/h"
             PTOBDLogger.moto.ptLog(logMsg)
             // 可在此发送额外的 Notification 让 UI 界面上高亮 TCS 图标
-            NotificationCenter.default.post(name: MotorcycleRawDataTCSShow, object: "1")
+            delegates.forEach( { $0.delegate?.dashboardManager(self, dashboardData: "1") })
         } else {
-            NotificationCenter.default.post(name: MotorcycleRawDataTCSShow, object: "0")
+            delegates.forEach( { $0.delegate?.dashboardManager(self, dashboardData: "0") })
         }
     }
 
@@ -1268,18 +1256,18 @@ extension PTBluetoothServerManager {
         
         switch id {
         case 1:
-            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:1 (心跳/连接) -> \(hexString)")
+            delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:1 (心跳/连接) -> \(hexString)") })
             if let asciiString = String(bytes: bytes, encoding: .ascii) {
                 PTOBDLogger.moto.ptLog("🔗 [状态] 车机报告连接正常 (CONNECTION) | 设备序列号: \(asciiString)")
             } else {
                 PTOBDLogger.moto.ptLog("🔗 [状态] 车机报告连接正常 (CONNECTION)")
             }
         case 2: // DATA1
-            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:2 (DATA1) -> \(hexString)")
+            delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:2 (DATA1) -> \(hexString)") })
             guard bytes.count >= 8 else { return }
             
             let hiddenBits = "b[1]:\(bytes[1].binaryString)"
-            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "🔬 [未知] DATA1 隐藏位: \(hiddenBits)")
+            delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "🔬 [未知] DATA1 隐藏位: \(hiddenBits)") })
             
             let fuelRaw = Double(bytes[0])
             let fuel = min(max(Int(round(fuelRaw * 0.3937)), 0), 100)
@@ -1288,11 +1276,11 @@ extension PTBluetoothServerManager {
             let odoRaw = (Int(bytes[5]) << 16) | (Int(bytes[6]) << 8) | Int(bytes[7])
             let data1 = PTDashboardData1(tripKm: Double(tripRaw) * 0.1, odoKm: Double(odoRaw) * 0.1, fuelLevelPct: fuel, avgConsumptionLt: avg)
             self.latestData1 = data1
-            NotificationCenter.default.post(name: MotorcycleDATA1, object: data1)
+            delegates.forEach( { $0.delegate?.dashboardManager(self, dashboardData: data1) })
             PTOBDLogger.moto.ptLog("📊 [DATA1] 油量: \(fuel)%, 消耗: \(avg)L, 总里程: \(Double(odoRaw) * 0.1)km")
             
         case 3: // DATA2
-            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:3 (DATA2) -> \(hexString)")
+            delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:3 (DATA2) -> \(hexString)") })
             guard bytes.count >= 6 else { return }
             
             // 🚨 深度嗅探：提取被忽略的 bytes[0], bytes[2]，以及如果存在的更靠后的字节
@@ -1300,8 +1288,7 @@ extension PTBluetoothServerManager {
             if bytes.count >= 9 { // 根据你提供的数据，DATA2 实际有 9 个 payload 字节
                 hiddenBits += " | b[6]:\(bytes[6].binaryString) | b[7]:\(bytes[7].binaryString) | b[8]:\(bytes[8].binaryString)"
             }
-            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "🔬 [未知] DATA2 隐藏位: \(hiddenBits)")
-            
+            delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "🔬 [未知] DATA2 隐藏位: \(hiddenBits)") })
 
             let engineRaw = Int(bytes[1])
             // 通过 rawValue 安全地转换为枚举对象，如果匹配失败则回退到 .unknown
@@ -1322,15 +1309,15 @@ extension PTBluetoothServerManager {
             let batt = Double(bytes[5]) * 0.1
             let data2 = PTDashboardData2(batteryVolt: batt, outsideTempC: temp, engineStatus: engineStatus, maintenance: maint,backlightMode: currentBacklightMode,engineTempC: engineTempC,isKickstandDown: isKickstandDown,batteryDisplayState:batteryDisplayState)
             self.latestData2 = data2
-            NotificationCenter.default.post(name: MotorcycleDATA2, object: data2)
+            delegates.forEach( { $0.delegate?.dashboardManager(self, dashboardData: data2) })
             PTOBDLogger.moto.ptLog("🔋 [DATA2] 引擎: \(PTDashboardLabels.engineStatusLabel(raw: engine)), 电压: \(batt)V")
             
         case 4: // DATA3
-            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:4 (DATA3) -> \(hexString)")
+            delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:4 (DATA3) -> \(hexString)") })
             guard bytes.count >= 6 else { return }
             if bytes.count >= 8 {
                 let hiddenBits = "b[6]:\(bytes[6].binaryString) | b[7]:\(bytes[7].binaryString)"
-                NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "🔬 [未知] DATA3 隐藏位: \(hiddenBits)")
+                delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "🔬 [未知] DATA3 隐藏位: \(hiddenBits)") })
             }
 
             let autoRaw = (Int(bytes[0]) << 8) | Int(bytes[1])
@@ -1339,11 +1326,11 @@ extension PTBluetoothServerManager {
             let lang = Int(bytes[5])
             let data3 = PTDashboardData3(autonomyKm: Double(autoRaw) * 0.1, distToMaintenance: dist, colorMeasur: col, language: lang)
             self.latestData3 = data3
-            NotificationCenter.default.post(name: MotorcycleDATA3, object: data3)
+            delegates.forEach( { $0.delegate?.dashboardManager(self, dashboardData: data3) })
             PTOBDLogger.moto.ptLog("🛣️ [DATA3] 剩余续航: \(Double(autoRaw) * 0.1)km")
             
         case 5: // CONTROL
-            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:5 (CONTROL) -> \(hexString)")
+            delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:5 (CONTROL) -> \(hexString)") })
             guard bytes.count >= 8 else { return }
                         
             let tcsRaw = bytes[3] & 0x0F // 提取低 4 位
@@ -1380,11 +1367,11 @@ extension PTBluetoothServerManager {
             let engineRaw = (Int(bytes[4]) << 8) | Int(bytes[5])
             let control = PTDashboardControl(vehicleSpeedKmh: Double(vehicleRaw) * 0.01, engineRpm: Int(Double(engineRaw) * 0.25),tcsMode: currentTCS,isLowBeamOn: isLowBeamOn,isHighBeamOn: isHighBeamOn,isLeftTurnOn: isLeftTurnOn,isRightTurnOn: isRightTurnOn,isHazardOn: isHazardOn,isTcsSystemReady: isTcsSystemReady)
             self.latestControl = control
-            NotificationCenter.default.post(name: MotorcycleCONTROL, object: control)
+            delegates.forEach( { $0.delegate?.dashboardManager(self, dashboardData: control) })
             PTOBDLogger.moto.ptLog("🏍️ [CONTROL] 车速: \(Double(vehicleRaw) * 0.01) km/h, 转速: \(Int(Double(engineRaw) * 0.25)) rpm")
             
         case 6: // ABS
-            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "[已知] ID:6 (ABS) -> \(hexString)")
+            delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:6 (ABS) -> \(hexString)") })
             guard bytes.count >= 3 else { return }
             
             // 🚨 新挖掘：提取前轮独立车速 (Byte 0 和 Byte 1)
@@ -1401,12 +1388,12 @@ extension PTBluetoothServerManager {
 
             let absStatus = PTAbsStatus(absRaw: Int(bytes[2]),isAbsLightOn: isAbsLightOn,frontWheelSpeedKmh: frontSpeed)
             self.latestAbsStatus = absStatus
-            NotificationCenter.default.post(name: MotorcycleABS, object: absStatus)
+            delegates.forEach( { $0.delegate?.dashboardManager(self, dashboardData: absStatus) })
             PTOBDLogger.moto.ptLog("🛑 [ABS] 状态: \(PTDashboardLabels.absLabel(raw: Int(bytes[2])))")
             
         default:
             let binaryMatrix = bytes.map { $0.binaryString }.joined(separator: " | ")
-            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: "⚠️ [深挖] 捕获未知 ID 0x\(String(format: "%02X", id)) -> 二进制: [ \(binaryMatrix) ]")
+            delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "⚠️ [深挖] 捕获未知 ID 0x\(String(format: "%02X", id)) -> 二进制: [ \(binaryMatrix) ]") })
             PTOBDLogger.moto.ptLog("❓ [未知数据] ID: 0x\(String(format: "%02X", id)) -> \(binaryMatrix)")
         }
     }
@@ -1423,7 +1410,7 @@ extension PTBluetoothServerManager {
         }
         let startString = "🚀 [自动化 Fuzz] 扫描任务已启动！请密切观察机车仪表盘反应..."
         PTOBDLogger.moto.ptLog(startString)
-        NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: startString)
+        delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: startString) })
         fuzzTimer?.invalidate()
         currentFuzzID = 0x00
         
@@ -1442,7 +1429,7 @@ extension PTBluetoothServerManager {
             if self.currentFuzzID == 0xFF {
                 let finishString = "🏁 [自动化 Fuzz] 全频段扫描完成！"
                 PTOBDLogger.moto.ptLog(finishString)
-                NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: finishString)
+                delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: finishString) })
                 self.fuzzTimer?.invalidate()
                 return
             }
@@ -1452,7 +1439,7 @@ extension PTBluetoothServerManager {
             let testPayload: [UInt8] = [0x02, 0x10, 0x03]
             let searchingString = "📡 [自动化 Fuzz] 正在探测 ID: 0x\(String(format: "%02X", self.currentFuzzID)) ..."
             PTOBDLogger.moto.ptLog(searchingString)
-            NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: searchingString)
+            delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: searchingString) })
             self.sendFuzzTest(targetID: self.currentFuzzID, payloadBytes: testPayload)
             
             self.currentFuzzID = self.currentFuzzID &+ 1
@@ -1465,7 +1452,7 @@ extension PTBluetoothServerManager {
         fuzzTimer = nil
         let stopString = "🛑 [自动化 Fuzz] 扫描已手动终止。"
         PTOBDLogger.moto.ptLog(stopString)
-        NotificationCenter.default.post(name: MotorcycleRawDataReceived, object: stopString)
+        delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: stopString) })
     }
 }
 
@@ -1485,5 +1472,149 @@ extension PTBluetoothServerManager {
     
     public func removeDelegate(_ delegate: PTBLEDashboardDelegate) {
         delegates.removeAll { $0.delegate === delegate || $0.delegate == nil }
+    }
+}
+
+extension PTBluetoothServerManager {
+    
+    // MARK: - 🎮 离线沙盒：仪表盘数据引擎 (Mock Dashboard Data Pump)
+    
+    /// 模拟机车的物理状态缓存
+    private struct PTMockPhysicsState {
+        static var timer: Timer?
+        static var mockSpeed: Double = 0.0      // 模拟车速 (km/h)
+        static var mockRPM: Double = 1200.0     // 模拟转速 (RPM)，默认怠速
+        static var mockFuel: Double = 254.0     // 模拟油量原始值 (约等于 100%)
+        static var isAccelerating = true        // 物理状态机：是否正在加速
+    }
+    
+    /// 启动本地模拟数据泵 (完全脱离机车进行 UI 联调)
+    func startMockDashboardData() {
+        guard !authenticated else {
+            PTOBDLogger.moto.ptLog("⚠️ 已连接真实设备，无法开启模拟器")
+            return
+        }
+        
+        PTOBDLogger.moto.ptLog("🎮 [模拟器] 正在启动仪表盘沙盒数据泵...")
+        
+        // 1. 强制击穿安全锁，伪造连接成功状态
+        self.authenticated = true
+        PTMotoUserDefaultStruct.MotoLinkedAPP = true
+        self.delegates.forEach({ $0.delegate?.dashboardManager(self, didChangeConnectionState: true) })
+        
+        // 2. 启动 10Hz (0.1秒) 的高频数据泵，实现 UI 丝滑刷新
+        PTMockPhysicsState.timer?.invalidate()
+        PTMockPhysicsState.timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            
+            // --- 动态物理状态更新 ---
+            if PTMockPhysicsState.isAccelerating {
+                PTMockPhysicsState.mockSpeed += 1.2
+                PTMockPhysicsState.mockRPM += 120.0
+                if PTMockPhysicsState.mockSpeed > 135.0 { PTMockPhysicsState.isAccelerating = false } // 极速 135km/h
+            } else {
+                PTMockPhysicsState.mockSpeed -= 1.8
+                PTMockPhysicsState.mockRPM -= 180.0
+                if PTMockPhysicsState.mockSpeed <= 0 {
+                    PTMockPhysicsState.mockSpeed = 0
+                    PTMockPhysicsState.mockRPM = 1200.0 // 恢复怠速
+                    PTMockPhysicsState.isAccelerating = true
+                }
+            }
+            // 油量缓慢减少
+            PTMockPhysicsState.mockFuel = max(0, PTMockPhysicsState.mockFuel - 0.05)
+            
+            // --- 组装并投递全套报文 ---
+            self.parseDashboardFrame(self.buildMockFrame(id: 2, payload: self.mockData1()))
+            self.parseDashboardFrame(self.buildMockFrame(id: 3, payload: self.mockData2()))
+            self.parseDashboardFrame(self.buildMockFrame(id: 4, payload: self.mockData3()))
+            self.parseDashboardFrame(self.buildMockFrame(id: 5, payload: self.mockControl()))
+            self.parseDashboardFrame(self.buildMockFrame(id: 6, payload: self.mockABS()))
+        }
+    }
+    
+    /// 停止模拟并恢复未连接状态
+    func stopMockDashboardData() {
+        PTMockPhysicsState.timer?.invalidate()
+        PTMockPhysicsState.timer = nil
+        self.authenticated = false
+        self.delegates.forEach({ $0.delegate?.dashboardManager(self, didChangeConnectionState: false) })
+        PTOBDLogger.moto.ptLog("🛑 [模拟器] 已停止沙盒引擎。")
+    }
+    
+    // MARK: - 逆向组包工具
+    
+    /// 将十六进制数组封装为仪表盘期望的 [0x16, ID, Payload, 0x00] 格式
+    private func buildMockFrame(id: UInt8, payload: [UInt8]) -> Data {
+        var frame = Data()
+        frame.append(0x16) // Preamble (包头)
+        frame.append(id)   // ID
+        frame.append(contentsOf: payload) // 载荷
+        frame.append(0x00) // EOF (包尾)
+        return frame
+    }
+    
+    /// 伪造 DATA1 (油量、平均油耗、小计里程、总里程)
+    private func mockData1() -> [UInt8] {
+        let fuel = UInt8(PTMockPhysicsState.mockFuel) // 逆向公式: (254 * 0.3937) ≈ 100%
+        let avg: UInt8 = 45 // 4.5 L/100km
+        let trip: UInt16 = 1250 // 125.0 km
+        let odo: UInt32 = 158000 // 15800.0 km
+        
+        return [
+            fuel, 0x00, avg,
+            UInt8((trip >> 8) & 0xFF), UInt8(trip & 0xFF),
+            UInt8((odo >> 16) & 0xFF), UInt8((odo >> 8) & 0xFF), UInt8(odo & 0xFF)
+        ]
+    }
+    
+    /// 伪造 DATA2 (引擎状态、水温、电瓶电压)
+    private func mockData2() -> [UInt8] {
+        let engineStatus: UInt8 = 0x02 // 运转中 (0x02)
+        let temp: UInt8 = 35 + 50 // 35°C (逆向公式: byte - 50)
+        let batt: UInt8 = 142 // 14.2V (逆向公式: byte * 0.1)
+        
+        // 此帧要求至少 9 个字节以规避解析拦截
+        return [0x00, engineStatus, 0x00, 0x00, temp, batt, 0x00, 0x00, 0x00]
+    }
+    
+    /// 伪造 DATA3 (续航里程、仪表盘颜色/单位、保养距离、语言)
+    private func mockData3() -> [UInt8] {
+        let auto: UInt16 = 2500 // 250.0 km 剩余续航
+        let col: UInt8 = 0x80 // Red (0x80) + 公制
+        let dist: UInt16 = 4500 // 4500 km 距离保养
+        let lang: UInt8 = 0x02 // 英文
+        
+        return [
+            UInt8((auto >> 8) & 0xFF), UInt8(auto & 0xFF),
+            col,
+            UInt8((dist >> 8) & 0xFF), UInt8(dist & 0xFF),
+            lang, 0x00, 0x00
+        ]
+    }
+    
+    /// 伪造 CONTROL (车速、转速、灯光、TCS状态)
+    private func mockControl() -> [UInt8] {
+        let speedRaw = UInt16(PTMockPhysicsState.mockSpeed / 0.01)
+        let rpmRaw = UInt16(PTMockPhysicsState.mockRPM / 0.25)
+        let tcsByte: UInt8 = 0x82 // mode1 (0x02) | ready (0x80)
+        let lightByte: UInt8 = 0x40 // 近光灯开启 (0x40)
+        
+        return [
+            0x00, 0x00, lightByte, tcsByte,
+            UInt8((rpmRaw >> 8) & 0xFF), UInt8(rpmRaw & 0xFF),
+            UInt8((speedRaw >> 8) & 0xFF), UInt8(speedRaw & 0xFF)
+        ]
+    }
+    
+    /// 伪造 ABS (前轮轮速、ABS灯光)
+    private func mockABS() -> [UInt8] {
+        let frontSpeedRaw = UInt16(PTMockPhysicsState.mockSpeed / 0.01)
+        let absByte: UInt8 = 0x01 // ABS 状态正常
+        
+        return [
+            UInt8((frontSpeedRaw >> 8) & 0xFF), UInt8(frontSpeedRaw & 0xFF),
+            absByte
+        ]
     }
 }

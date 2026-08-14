@@ -281,10 +281,6 @@ public class PTTripManager: NSObject {
     
     // MARK: - 绑定蓝牙数据源
     private func setupObservers() {
-        let nc = NotificationCenter.default
-        nc.addObserver(self, selector: #selector(handleControlData(_:)), name: MotorcycleCONTROL, object: nil)
-        nc.addObserver(self, selector: #selector(handleData1(_:)), name: MotorcycleDATA1, object: nil)
-        nc.addObserver(self, selector: #selector(handleABSData(_:)), name: MotorcycleABS, object: nil)
         PTMotion.shared.addDelegate(self)
         PTBluetoothServerManager.shared.addDelegate(self)
     }
@@ -561,14 +557,7 @@ extension PTTripManager {
 
 //MARK: - ADV 打滑率与事件引擎
 extension PTTripManager {
-    
-    // 🌟 新增 (ADV越野)：处理 ABS 帧带来的前轮速
-    @objc private func handleABSData(_ notification: Notification) {
-        guard isRiding, let absStatus = notification.object as? PTAbsStatus else { return }
-        self.lastFrontSpeed = absStatus.frontWheelSpeedKmh
-        calculateSlipRatio()
-    }
-    
+        
     // 🌟 需在原有的 processSpeedMetrics 中被调用：当你更新了 currentLiveSpeed (后轮速) 后，触发计算
     // 请确保在 handleControlData 结尾处，调用了 processSpeedMetrics 之后，加上 calculateSlipRatio()
     
@@ -693,6 +682,24 @@ extension PTTripManager:PTBLEDashboardDelegate {
             handleConnect()
         } else {
             handleDisconnect()
+        }
+    }
+    
+    func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
+        if isRiding, let data1 = data as? PTDashboardData1 {
+            if startOdo == 0 && data1.odoKm > 0 { startOdo = data1.odoKm }
+            latestOdo = data1.odoKm
+            latestConsumption = data1.avgConsumptionLt
+        } else if isRiding, let control = data as? PTDashboardControl {
+            let rpm = control.engineRpm
+            self.currentLiveRpm = rpm
+            if rpm > maxRpm { maxRpm = rpm }
+            
+            // 🌟 将最高精度的蓝牙车速喂给分析引擎
+            processSpeedMetrics(speedKmh: control.vehicleSpeedKmh, timestamp: Date())
+        } else if isRiding, let absStatus = data as? PTAbsStatus {
+            self.lastFrontSpeed = absStatus.frontWheelSpeedKmh
+            calculateSlipRatio()
         }
     }
 }

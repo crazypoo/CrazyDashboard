@@ -38,8 +38,6 @@ public class PTFuelRoutingManager: NSObject, AMapSearchDelegate {
     }
     
     private func setupObservers() {
-        let nc = NotificationCenter.default
-        nc.addObserver(self, selector: #selector(handleData1(_:)), name: MotorcycleDATA1, object: nil)
         PTBluetoothServerManager.shared.addDelegate(self)
     }
     
@@ -137,6 +135,16 @@ extension PTFuelRoutingManager:PTBLEDashboardDelegate {
     func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool) {
         if isConnected {
             resetFuelState()
+        }
+    }
+    
+    func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
+        if let data1 = data as? PTDashboardData1 {
+            if data1.fuelLevelPct <= lowFuelThreshold && !hasTriggeredLowFuel {
+                hasTriggeredLowFuel = true
+                PTNSLogConsole("⚠️ [加油管家] 检测到低油量 (\(data1.fuelLevelPct)%)，启动后台搜寻...")
+                startSearchingNearbyGasStation()
+            }
         }
     }
 }

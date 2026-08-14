@@ -167,24 +167,7 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
     
     // MARK: - 数据监听
     private func setupObservers() {
-        NotificationCenter.default.addObserver(forName: MotorcycleRawDataReceived, object: nil, queue: .main) { [weak self] notification in
-            guard let self = self, !self.isHidden, let rawText = notification.object as? String else { return }
-            PTGCDManager.shared.runOnMain {
-                // 🚨 核心逻辑：如果开启了过滤，且数据包含 "[已知]"，则直接丢弃不显示
-                if self.isFilterEnabled && rawText.contains("[已知]") {
-                    return
-                }
-                
-                let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
-                let newLog = "[\(timestamp)] RX: \(rawText)"
-                
-                // 🚨 只做极轻量的数组追加操作
-                DispatchQueue.main.async {
-                    guard !self.isHidden else { return }
-                    self.pendingLogs.append(newLog)
-                }
-            }
-        }
+        PTBluetoothServerManager.shared.addDelegate(self)
     }
     
     // MARK: - 🚨 性能优化：定时批量刷新 UI
@@ -311,3 +294,24 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
     }
 }
 
+extension PTECUSnifferOverlay:PTBLEDashboardDelegate {
+    func dashboardManager(_ manager: PTBluetoothServerManager, unknownData data: String) {
+        if !self.isHidden {
+            PTGCDManager.shared.runOnMain {
+                // 🚨 核心逻辑：如果开启了过滤，且数据包含 "[已知]"，则直接丢弃不显示
+                if self.isFilterEnabled && data.contains("[已知]") {
+                    return
+                }
+                
+                let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
+                let newLog = "[\(timestamp)] RX: \(data)"
+                
+                // 🚨 只做极轻量的数组追加操作
+                DispatchQueue.main.async {
+                    guard !self.isHidden else { return }
+                    self.pendingLogs.append(newLog)
+                }
+            }
+        }
+    }
+}

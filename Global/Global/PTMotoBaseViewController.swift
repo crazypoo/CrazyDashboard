@@ -45,9 +45,9 @@ class PTMotoBaseViewController: PTBaseViewController {
         PTMOTOParkingManager.shared.saveCurrentLocationAsParkingSpot()
     }
     
-    open func handleMotorcycleConnect() {
-        
-    }
+    open func handleMotorcycleConnect() { }
+    
+    open func handleMotorcycleData(data:Any?) {}
     
     @MainActor deinit {
         NotificationCenter.default.removeObserver(self)
@@ -61,6 +61,10 @@ extension PTMotoBaseViewController:PTBLEDashboardDelegate {
         } else {
             handleMotorcycleDisconnect()
         }
+    }
+    
+    func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
+        handleMotorcycleData(data: data)
     }
 }
 

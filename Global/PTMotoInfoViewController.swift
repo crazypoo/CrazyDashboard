@@ -116,10 +116,20 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         view.addActionHandlers { sender in
             if !PTDashboardConfig.shared.blueConnected {
                 PTGCDManager.shared.runOnMain {
-                    let vc = PTBLEConnectViewController()
-                    let nav = PTBaseNavControl(rootViewController: vc)
-                    nav.modalPresentationStyle = .fullScreen
-                    self.navigationController?.present(nav, animated: true)
+                    let actionsConnect = ["BLE","Mock"]
+                    UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "Connect option"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: actionsConnect, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
+                        switch index {
+                        case 0:
+                            let vc = PTBLEConnectViewController()
+                            let nav = PTBaseNavControl(rootViewController: vc)
+                            nav.modalPresentationStyle = .fullScreen
+                            self.navigationController?.present(nav, animated: true)
+                        case 1:
+                            PTBluetoothServerManager.shared.startMockDashboardData()
+                        default:
+                            break
+                        }
+                    })
                 }
             }
         }
@@ -500,12 +510,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         super.viewDidLoad()
         setupUI()
         
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleDATA1, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleDATA2, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleDATA3, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleCONTROL, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(dashBoardReload), name: MotorcycleDashBoardChange, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleRawDataTCSShow, object: nil)
         
         if PTMotoUserDefaultStruct.MotoLinkedAPP,!PTDashboardConfig.shared.blueConnected {
             PTGCDManager.shared.delayOnMain(time: 3) {
@@ -560,6 +565,80 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             self.bleConnectStatusLabel.isSelected = PTDashboardConfig.shared.blueConnected
             self.speedometer.resetToZeroWithAnimation()
             self.speedometerReversed.resetToZeroWithAnimation()
+        }
+    }
+    
+    override func handleMotorcycleData(data: Any?) {
+        super.handleMotorcycleData(data: data)
+        if let data1 = data as? PTDashboardData1 {
+            let tripKm = data1.tripKm
+            let odoKm = data1.odoKm
+            
+            DispatchQueue.main.async {
+                let newTripDesc = "\(PTDashboardConfig.shared.appShowMileageValueString(tripKm))\(PTDashboardConfig.shared.appShowUniLabel)"
+                let newOdoDesc = "\(PTDashboardConfig.shared.appShowMileageValueString(odoKm))\(PTDashboardConfig.shared.appShowUniLabel)"
+                
+                self.tripItem.configure(systemIcon: UIImage(.point.topleftDownToPointBottomrightCurvepath),
+                                           iconColor: PTDashboardConfig.shared.appMainColor,
+                                           title: PTDashboardConfig.languageFunc(text: "casa_card_little_trip"),
+                                           value: newTripDesc)
+                self.odoItem.configure(systemIcon: UIImage(systemName: "speedometer")!,
+                                           iconColor: PTDashboardConfig.shared.appMainColor,
+                                           title: PTDashboardConfig.languageFunc(text: "casa_card_odo_trip"),
+                                           value: newOdoDesc)
+                self.fuelModelView.viewModel = data1
+            }
+        } else if let data2 = data as? PTDashboardData2 {
+            let volt = data2.batteryVolt
+            let temp = data2.outsideTempC
+            let engineStatus = data2.engineStatus
+            
+            DispatchQueue.main.async {
+                let newEngineDesc = PTDashboardLabels.engineStatusLabel(raw: engineStatus)
+                let newTempDesc = "\(temp)°C"
+                self.voltageLabel.modelSet = self.modelvoltageSet(currentValue: volt)
+                
+                self.engineItem.configure(systemIcon: UIImage(.engine.combustion),
+                                           iconColor: PTDashboardConfig.shared.appMainColor,
+                                           title: PTDashboardConfig.languageFunc(text: "casa_card_engine"),
+                                           value: newEngineDesc)
+                
+                self.temItem.configure(systemIcon: UIImage(.thermometer),
+                                           iconColor: PTDashboardConfig.shared.appMainColor,
+                                           title: PTDashboardConfig.languageFunc(text: "casa_card_tem"),
+                                           value: newTempDesc)
+            }
+        } else if let data3 = data as? PTDashboardData3 {
+            let distToMaintenance = data3.distToMaintenance
+            let language = data3.languageType.getTypeName()
+            
+            DispatchQueue.main.async {
+                
+                self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(
+                    max: PTDashboardConfig.shared.appShowMileage(2500),
+                    current: PTDashboardConfig.shared.appShowMileage(Double(distToMaintenance))
+                )
+                
+                self.fuelModelView.fuelTripModel = data3
+                
+                self.globeItem.configure(systemIcon: UIImage(.globe),
+                                           iconColor: PTDashboardConfig.shared.appMainColor,
+                                           title: PTDashboardConfig.languageFunc(text: "casa_card_lan"),
+                                           value: language)
+                self.fuelModelView.dataProgress.barColor = data3.dashboardColor.getColor()
+                self.speedometer.progressColor = data3.dashboardColor.getColor()
+                self.speedometerReversed.progressColor = data3.dashboardColor.getColor()
+            }
+        } else if let control = data as? PTDashboardControl {
+            let vehicleSpeedKmh = control.vehicleSpeedKmh
+            let engineRpm = control.engineRpm
+
+            // 💡 车速和转速驱动的是 CoreAnimation 动画指针（PTSpeedometerView），本身不会闪烁，直接驱动即可
+            DispatchQueue.main.async {
+                self.speedometer.updateSpeed(vehicleSpeedKmh)
+                self.speedometerReversed.updateSpeed(CGFloat(engineRpm))
+                self.speedometerReversed.applyShiftLightLogic(currentRpm: engineRpm)
+            }
         }
     }
     
@@ -699,7 +778,6 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         }
     }
     
-    
     func modelvoltageSet(currentValue:Double) ->PTMainProgressViewModel {
         let modelvoltage = PTMainProgressViewModel()
         modelvoltage.name = PTDashboardConfig.languageFunc(text: "casa_batt")
@@ -719,80 +797,6 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
     }
             
     // MARK: - 状态回调
-    @objc func handleDataNotification(_ notification: Notification) {
-        if let data1 = notification.object as? PTDashboardData1 {
-            let tripKm = data1.tripKm
-            let odoKm = data1.odoKm
-            
-            DispatchQueue.main.async {
-                let newTripDesc = "\(PTDashboardConfig.shared.appShowMileageValueString(tripKm))\(PTDashboardConfig.shared.appShowUniLabel)"
-                let newOdoDesc = "\(PTDashboardConfig.shared.appShowMileageValueString(odoKm))\(PTDashboardConfig.shared.appShowUniLabel)"
-                
-                self.tripItem.configure(systemIcon: UIImage(.point.topleftDownToPointBottomrightCurvepath),
-                                           iconColor: PTDashboardConfig.shared.appMainColor,
-                                           title: PTDashboardConfig.languageFunc(text: "casa_card_little_trip"),
-                                           value: newTripDesc)
-                self.odoItem.configure(systemIcon: UIImage(systemName: "speedometer")!,
-                                           iconColor: PTDashboardConfig.shared.appMainColor,
-                                           title: PTDashboardConfig.languageFunc(text: "casa_card_odo_trip"),
-                                           value: newOdoDesc)
-                self.fuelModelView.viewModel = data1
-            }
-        } else if let data2 = notification.object as? PTDashboardData2 {
-            let volt = data2.batteryVolt
-            let temp = data2.outsideTempC
-            let engineStatus = data2.engineStatus
-            
-            DispatchQueue.main.async {
-                let newEngineDesc = PTDashboardLabels.engineStatusLabel(raw: engineStatus)
-                let newTempDesc = "\(temp)°C"
-                self.voltageLabel.modelSet = self.modelvoltageSet(currentValue: volt)
-                
-                self.engineItem.configure(systemIcon: UIImage(.engine.combustion),
-                                           iconColor: PTDashboardConfig.shared.appMainColor,
-                                           title: PTDashboardConfig.languageFunc(text: "casa_card_engine"),
-                                           value: newEngineDesc)
-                
-                self.temItem.configure(systemIcon: UIImage(.thermometer),
-                                           iconColor: PTDashboardConfig.shared.appMainColor,
-                                           title: PTDashboardConfig.languageFunc(text: "casa_card_tem"),
-                                           value: newTempDesc)
-            }
-        } else if let data3 = notification.object as? PTDashboardData3 {
-            let distToMaintenance = data3.distToMaintenance
-            let language = data3.languageType.getTypeName()
-            
-            DispatchQueue.main.async {
-                
-                self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(
-                    max: PTDashboardConfig.shared.appShowMileage(2500),
-                    current: PTDashboardConfig.shared.appShowMileage(Double(distToMaintenance))
-                )
-                
-                self.fuelModelView.fuelTripModel = data3
-                
-                self.globeItem.configure(systemIcon: UIImage(.globe),
-                                           iconColor: PTDashboardConfig.shared.appMainColor,
-                                           title: PTDashboardConfig.languageFunc(text: "casa_card_lan"),
-                                           value: language)
-                self.fuelModelView.dataProgress.barColor = data3.dashboardColor.getColor()
-                self.speedometer.progressColor = data3.dashboardColor.getColor()
-                self.speedometerReversed.progressColor = data3.dashboardColor.getColor()
-
-            }
-        } else if let control = notification.object as? PTDashboardControl {
-            let vehicleSpeedKmh = control.vehicleSpeedKmh
-            let engineRpm = control.engineRpm
-
-            // 💡 车速和转速驱动的是 CoreAnimation 动画指针（PTSpeedometerView），本身不会闪烁，直接驱动即可
-            DispatchQueue.main.async {
-                self.speedometer.updateSpeed(vehicleSpeedKmh)
-                self.speedometerReversed.updateSpeed(CGFloat(engineRpm))
-                self.speedometerReversed.applyShiftLightLogic(currentRpm: engineRpm)
-            }
-        } 
-    }
-
     @objc func dashBoardReload() {
         PTGCDManager.shared.runOnMain {
             self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(max: PTDashboardConfig.shared.appShowMileage(2500), current: PTDashboardConfig.shared.appShowMileage(Double(PTBluetoothServerManager.shared.latestData3?.distToMaintenance ?? 0)))

@@ -26,33 +26,9 @@ public class PTMaintenanceManager: NSObject {
     }
     
     private func setupObservers() {
-        let nc = NotificationCenter.default
-        // 根据协议，保养状态标志位在 DATA2 中
-        nc.addObserver(self, selector: #selector(handleData2(_:)), name: MotorcycleDATA2, object: nil)
-        // 根据协议，保养剩余里程在 DATA3 中
-        nc.addObserver(self, selector: #selector(handleData3(_:)), name: MotorcycleDATA3, object: nil)
+        PTBluetoothServerManager.shared.addDelegate(self)
     }
-    
-    @objc private func handleData2(_ notification: Notification) {
-        guard let data2 = notification.object as? PTDashboardData2 else { return }
-        
-        // 协议规定 maintenance 的 0x20 位表示“需要保养”
-        // 这里假设你在解析层已经处理好了 (raw & 0xE0) != 0 的判断
-        if data2.maintenance != 0 {
-            triggerWarningIfNeeded(title: "🛠️" + PTDashboardConfig.languageFunc(text: "maintenance_need_title"), body: PTDashboardConfig.languageFunc(text: "maintenance_need_msg"))
-        }
-    }
-    
-    @objc private func handleData3(_ notification: Notification) {
-        guard let data3 = notification.object as? PTDashboardData3 else { return }
-        
-        // 当剩余保养里程小于阈值且大于 0 时，触发预警
-        if data3.distToMaintenance <= warningThresholdKm && data3.distToMaintenance > 0 {
             
-            triggerWarningIfNeeded(title: "⚙️" + PTDashboardConfig.languageFunc(text: "maintenance_warning_title"), body: PTDashboardConfig.language(key: "maintenance_warning_msg", data3.distToMaintenance))
-        }
-    }
-    
     private func triggerWarningIfNeeded(title: String, body: String) {
         let now = Date()
         let lastDate = UserDefaults.standard.object(forKey: lastWarningDateKey) as? Date ?? Date(timeIntervalSince1970: 0)
@@ -65,7 +41,23 @@ public class PTMaintenanceManager: NSObject {
         }
     }
     
-    deinit {
-        NotificationCenter.default.removeObserver(self)
+    deinit { }
+}
+
+extension PTMaintenanceManager:PTBLEDashboardDelegate {
+    func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
+        if let data2 = data as? PTDashboardData2 {
+            // 协议规定 maintenance 的 0x20 位表示“需要保养”
+            // 这里假设你在解析层已经处理好了 (raw & 0xE0) != 0 的判断
+            if data2.maintenance != 0 {
+                triggerWarningIfNeeded(title: "🛠️" + PTDashboardConfig.languageFunc(text: "maintenance_need_title"), body: PTDashboardConfig.languageFunc(text: "maintenance_need_msg"))
+            }
+        } else if let data3 = data as? PTDashboardData3 {
+            // 当剩余保养里程小于阈值且大于 0 时，触发预警
+            if data3.distToMaintenance <= warningThresholdKm && data3.distToMaintenance > 0 {
+                
+                triggerWarningIfNeeded(title: "⚙️" + PTDashboardConfig.languageFunc(text: "maintenance_warning_title"), body: PTDashboardConfig.language(key: "maintenance_warning_msg", data3.distToMaintenance))
+            }
+        }
     }
 }

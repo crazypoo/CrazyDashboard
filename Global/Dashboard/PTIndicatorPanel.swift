@@ -42,11 +42,8 @@ public class PTIndicatorPanel: PTDashboardBaseView {
     public override init(frame: CGRect) {
         super.init(frame: frame)
         setupUI()
-        resetAllIndicators() // 初始状态全部置灰关闭
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleDATA2, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleCONTROL, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleABS, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataNotification), name: MotorcycleRawDataTCSShow, object: nil)
+        resetAllIndicators() // 初始状态全部置灰关闭        
+        PTBluetoothServerManager.shared.addDelegate(self)
     }
     
     required init?(coder: NSCoder) {
@@ -164,26 +161,6 @@ public class PTIndicatorPanel: PTDashboardBaseView {
         toggleGlow(for: tcsIcon, isOn: tcsShow.bool ?? false, activeColor: .systemOrange)
     }
     
-    @objc func handleDataNotification(_ notification: Notification) {
-        if let data2 = notification.object as? PTDashboardData2 {
-            DispatchQueue.main.async {
-                self.updateData2(data2: data2)
-            }
-        }  else if let control = notification.object as? PTDashboardControl {
-            // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
-            DispatchQueue.main.async {
-                self.updateTCS(tcsShow: control.isTcsSystemReady.string)
-                self.updateControl(control: control)
-            }
-        } else if let abs = notification.object as? PTAbsStatus {
-            DispatchQueue.main.async {
-                self.updateABS(abs: abs)
-            }
-        } else if let tcsShow = notification.object as? String {
-            updateTCS(tcsShow: tcsShow)
-        }
-    }
-
     private func setBlinkingGlow(for imageView: UIImageView, isBlinking: Bool, activeColor: UIColor) {
         if isBlinking {
             // 如果已经在执行闪烁动画，就不重复添加 (保留了你极佳的防重设计)
@@ -219,6 +196,28 @@ public class PTIndicatorPanel: PTDashboardBaseView {
             imageView.alpha = 1.0 // 恢复不透明，以便显示暗灰色
             imageView.tintColor = .darkGray // 熄灭颜色
             imageView.layer.shadowOpacity = 0.0 // 关闭光晕
+        }
+    }
+}
+
+extension PTIndicatorPanel:PTBLEDashboardDelegate {
+    func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
+        if let data2 = data as? PTDashboardData2 {
+            DispatchQueue.main.async {
+                self.updateData2(data2: data2)
+            }
+        } else if let control = data as? PTDashboardControl {
+            // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
+            DispatchQueue.main.async {
+                self.updateTCS(tcsShow: control.isTcsSystemReady.string)
+                self.updateControl(control: control)
+            }
+        } else if let abs = data as? PTAbsStatus {
+            DispatchQueue.main.async {
+                self.updateABS(abs: abs)
+            }
+        } else if let tcsShow = data as? String {
+            updateTCS(tcsShow: tcsShow)
         }
     }
 }
