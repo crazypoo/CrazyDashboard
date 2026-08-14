@@ -93,7 +93,7 @@ public class PTOBDLogger {
         let formattedLog = "[\(timeString)] \(message)"
         
         // 控制台打印
-        PTNSLogConsole(formattedLog)
+//        PTNSLogConsole(formattedLog)
         
         // 异步磁盘写入
         ioQueue.async { [weak self] in

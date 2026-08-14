@@ -50,7 +50,6 @@ class PTDashBoardView: UIView {
         let view = PTBaseButton(type: .system)
         view.setImage(UIImage(.figure.walkMotion).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
         view.addActionHandlers(handler: { _ in
-            PTNSLogConsole("1123123123123123")
             PTMotion.shared.calibrateZeroPoint()
             PTMotion.shared.resetLeanAngles()
         })

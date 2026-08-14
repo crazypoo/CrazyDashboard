@@ -765,7 +765,6 @@ public class PTMockOBDConnector: PTOBDTransportBase {
     public static let shared = PTMockOBDConnector()
     
     private let mockQueue = DispatchQueue(label: "com.ptools.mockOBDQueue")
-    
     public var vehicleConfig: PTMockVehicleConfig = .dualECU
     
     private override init() { super.init() }
@@ -805,70 +804,58 @@ public class PTMockOBDConnector: PTOBDTransportBase {
         }
     }
     
-    // MARK: - 🧠 核心：虚拟 ECU 响应大脑
+    // MARK: - 🧠 核心：虚拟 ECU 响应大脑 (完美还原实车工况)
     private func generateMockResponse(for command: String) -> String {
         switch command {
-        case "ATZ", "ATD", "ATI":
-            return "ELM327 v1.5\r\n>"
-        case "ATE0", "ATL0", "ATH1", "ATS1", "ATAL", "ATSP0", "AT+SETCRYPT":
-            return "OK\r\n>"
-        case "ATRV":
-            let volt = Double.random(in: 13.8...14.2)
-            return String(format: "%.1fV\r\n>", volt)
-        case "ATDP":
-            return "AUTO, ISO 15765-4 (CAN 11/500)\r\n>"
+        // 基础握手与配置
+        case "ATZ", "ATD", "ATI": return "ELM327 v1.5\r\n>"
+        case "ATE0", "ATL0", "ATH1", "ATS1", "ATAL", "ATSP0", "AT+SETCRYPT": return "OK\r\n>"
+        case "ATDP": return "AUTO, ISO 15765-4 (CAN 11/500)\r\n>"
+        case "AT+VERSION": return "Company: PTools Mock Engine\r\nVersion: V1.0.0\r\n>"
             
-        // 🌟 动态生成支持目录
-        case "0100":
-            let ecu1 = "7E8 06 41 00 BE 3E B8 13"
-            if vehicleConfig == .dualECU {
-                let ecu2 = "7E9 06 41 00 80 00 00 00"
-                return "\(ecu1)\r\(ecu2)\r\n>"
-            }
-            return "\(ecu1)\r\n>"
+        // 🔋 电池电压 (ATRV) -> 图中显示 14.6V
+        case "ATRV": return "14.6V\r\n>"
             
-        case "0120":
-            let ecu1 = "7E8 06 41 20 90 15 B0 11"
-            if vehicleConfig == .dualECU {
-                return "\(ecu1)\r7E9 06 41 20 00 00 00 00\r\n>"
-            }
-            return "\(ecu1)\r\n>"
+        // 🌟 动态生成支持目录 (宣告支持的 PID)
+        case "0100": return "7E8 06 41 00 1E 3E 10 01\r\n>" // 支持 01-20 中的关键 PID
+        case "0120": return "7E8 06 41 20 80 00 00 01\r\n>" // 支持 21-40
+        case "0140": return "7E8 06 41 40 48 08 00 01\r\n>" // 支持 41-60
             
-        case "0140":
-            let ecu1 = "7E8 06 41 40 FA DC 80 00"
-            if vehicleConfig == .dualECU {
-                return "\(ecu1)\r7E9 06 41 40 00 00 00 00\r\n>"
-            }
-            return "\(ecu1)\r\n>"
+        // 🌟 实况物理数据注入 (严格遵循图片数值逆向生成的报文)
+        case "0101": return "7E8 06 41 01 01 00 00 00\r\n>" // Status since DTCs cleared: 1
+        case "0103": return "7E8 04 41 03 02 00\r\n>"       // Fuel System Status: 2
+        case "0104": return "7E8 03 41 04 59\r\n>"          // Calculated Engine Load: 35%
+        case "0105": return "7E8 03 41 05 65\r\n>"          // Coolant temperature: 61°C
+        case "0106": return "7E8 03 41 06 73\r\n>"          // Short Term Fuel Trim: -10%
+        case "0107": return "7E8 03 41 07 80\r\n>"          // Long Term Fuel Trim: 0%
+        case "010B": return "7E8 03 41 0B 23\r\n>"          // Intake Manifold Pressure: 35 kPa
+        case "010E": return "7E8 03 41 0E 89\r\n>"          // Timing Advance: 4.4°
+        case "010F": return "7E8 03 41 0F 59\r\n>"          // Intake Air Temp: 49°C
+        case "0111": return "7E8 03 41 11 17\r\n>"          // Throttle Position: 9%
+        case "0113": return "7E8 03 41 13 01\r\n>"          // O2 Sensors Present: 1
+        case "0114": return "7E8 04 41 14 18 00\r\n>"       // O2: Bank 1 Sensor 1 Voltage: 0.12V
+        case "011C": return "7E8 03 41 1C 06\r\n>"          // OBD Standards Compliance: 6
+        case "011F": return "7E8 04 41 1F 00 32\r\n>"       // Engine Run Time: 50s
+        case "0121": return "7E8 04 41 21 00 00\r\n>"       // Distance Traveled with MIL on: 0
+        case "0141": return "7E8 06 41 41 00 00 00 00\r\n>" // Monitor status this drive cycle: 0
+        case "0142": return "7E8 04 41 42 39 6C\r\n>"       // Control module voltage: 14.7V
+        case "0145": return "7E8 03 41 45 00\r\n>"          // Relative throttle position: 0%
+        case "014D": return "7E8 04 41 4D 00 00\r\n>"       // Time run with MIL on: 0
+        case "0151": return "7E8 03 41 51 01\r\n>"          // 燃料类型 (1 = 汽油)
             
         case "0902":
             return "7E8 14 49 02 01 00 00 00 31 57 42 41 31 32 33 34 35 36 37 38 39 30 31 32 33\r\n>"
             
-        // 🌟 核心：动态生成并发波动数据
-        case "010C": // 转速 RPM
-            let rpm1 = Int.random(in: 1500...8000) * 4
-            let hex1 = String(format: "%04X", rpm1)
-            let ecu1Resp = "7E8 04 41 0C \(hex1.prefix(2)) \(hex1.suffix(2))"
-            
+        // 🚀 高频动态数据 (转速与车速)
+        case "010C": // Engine RPM: 1651
+            let ecu1Resp = "7E8 04 41 0C 19 CC"
             if vehicleConfig == .dualECU {
-                let rpm2 = rpm1 - 100 // 模拟轻微转速差
-                let hex2 = String(format: "%04X", rpm2)
-                let ecu2Resp = "7E9 04 41 0C \(hex2.prefix(2)) \(hex2.suffix(2))"
-                return "\(ecu1Resp)\r\(ecu2Resp)\r\n>" // 拼接双 ECU 报文
-            } else {
-                return "\(ecu1Resp)\r\n>" // 纯净的单 ECU 报文
+                return "\(ecu1Resp)\r7E9 04 41 0C 19 68\r\n>" // 模拟辅 ECU
             }
+            return "\(ecu1Resp)\r\n>"
             
-        case "010D": // 车速 Speed
-            let speed = Int.random(in: 0...120)
-            let hex = String(format: "%02X", speed)
-            return "7E8 03 41 0D \(hex)\r\n>"
-            
-        case "0151": // 燃料类型 (1 = 汽油)
-            return "7E8 03 41 51 01\r\n>"
-            
-        case "AT+VERSION":
-            return "Company: PTools Mock Engine\r\nVersion: V1.0.0\r\n>"
+        case "010D": // Vehicle Speed: 0
+            return "7E8 03 41 0D 00\r\n>"
             
         default:
             if command.hasPrefix("AT") { return "OK\r\n>" }

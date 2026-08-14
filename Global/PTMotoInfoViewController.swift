@@ -222,6 +222,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                                 let obdID = PTMotoUserDefaultStruct.OBDID.isEmpty ? developerOBDID : PTMotoUserDefaultStruct.OBDID
                                 UIAlertController.base_textfield_alertVC(title:PTDashboardConfig.languageFunc(text: "If you already have OBD2 moudle id,here can remember your OBD2 moudle id"),okBtn: PTDashboardConfig.languageFunc(text: "button_confirm"),cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"),placeHolders: [placeholder],textFieldTexts:[obdID],keyboardType: [.default],textFieldDelegate: self) { result in
                                     PTMotoUserDefaultStruct.OBDID = result[placeholder] ?? developerOBDID
+                                    self.obdButton.startLoading()
                                     PTMotoTelemetryManager.shared.connectToMotorcycle(via: .bluetooth, engineType: .ice)
                                 }
                             case 1:
@@ -238,10 +239,12 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                                         wifiPort = "35000"
                                     }
                                     PTMotoTelemetryManager.shared.connectToMotorcycle(via: .bluetooth, engineType: .ice)
+                                    self.obdButton.startLoading()
                                     let wifi = PTOBDConnectionType.wifi(ip: wifiAddress, port: UInt16(wifiPort) ?? 35000)
                                     PTMotoTelemetryManager.shared.connectToMotorcycle(via: wifi, engineType: .ice)
                                 }
                             case 2:
+                                self.obdButton.startLoading()
                                 PTMotoTelemetryManager.shared.connectToMotorcycle(via: .mock, engineType: .ice)
                             default:
                                 break
@@ -478,6 +481,32 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         return view
     }()
     
+    lazy var dashboardButton:PTBaseButton = {
+        let baseImage = UIImage(.gauge.withDotsNeedleBottom_0percent)
+        let view = PTBaseButton()
+        view.setImage(baseImage.withTintColor(.systemRed, renderingMode: .alwaysOriginal), for: .normal)
+        view.setImage(baseImage.withTintColor(.systemGreen, renderingMode: .alwaysOriginal), for: .selected)
+        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.isSelected = false
+        view.addActionHandlers(handler: { _ in
+            let actionsConnect = ["Noraml","Peugeot"]
+            UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "Dashboard"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: actionsConnect, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
+                switch index {
+                case 0:
+                    let vc = PTDashBoardBaseBoardViewController()
+                    self.navigationController?.pushViewController(vc, animated: true)
+                case 1:
+                    let vc = PTPeugeotDashBoardViewController()
+                    self.navigationController?.pushViewController(vc, animated: true)
+                default:
+                    break
+                }
+            })
+
+        })
+        return view
+    }()
+    
     override func handleMotorcycleConnect() {
         super.handleMotorcycleConnect()
         self.handleAuthSuccess()
@@ -485,8 +514,10 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        PTRotationManager.shared.rotationToPortrait()
+        PTRotationManager.shared.isLockOrientationWhenDeviceOrientationDidChange = true
         setLeftButtons(views: [appLogo])
-        setCustomRightButtons(buttons: [motionDeviceButton,obdButton,bleConnectStatusLabel],buttonSpacing: CGFloat.GlobalItemSpacing)
+        setCustomRightButtons(buttons: [dashboardButton,motionDeviceButton,obdButton,bleConnectStatusLabel],buttonSpacing: CGFloat.GlobalItemSpacing)
         
         self.bleConnectStatusLabel.isSelected = PTDashboardConfig.shared.blueConnected
     }

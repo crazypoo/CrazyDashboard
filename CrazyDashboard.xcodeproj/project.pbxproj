@@ -43,6 +43,8 @@
 		557D004D302EA1BD008BA492 /* PTPitchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557D0041302EA1BD008BA492 /* PTPitchView.swift */; };
 		557D004E302EA1BD008BA492 /* PTSpeedometerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557D0042302EA1BD008BA492 /* PTSpeedometerView.swift */; };
 		557D0051302EA1E3008BA492 /* PTArcGaugeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557D0050302EA1E3008BA492 /* PTArcGaugeView.swift */; };
+		557D0054302ECDAE008BA492 /* PTPeugeotDashBoardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557D0053302ECDAE008BA492 /* PTPeugeotDashBoardViewController.swift */; };
+		557D0056302ED2A9008BA492 /* PTPeugeotLEDDashBoard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557D0055302ED2A9008BA492 /* PTPeugeotLEDDashBoard.swift */; };
 		558789E4302420CB00B94E91 /* PTCarplayMainController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 558789E3302420CB00B94E91 /* PTCarplayMainController.swift */; };
 		558789E630242B9400B94E91 /* PTCarPlayContainerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 558789E530242B9400B94E91 /* PTCarPlayContainerViewController.swift */; };
 		55901837300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55901836300FE37100A77571 /* PTMotoBaseViewController.swift */; };
@@ -146,6 +148,8 @@
 		557D0041302EA1BD008BA492 /* PTPitchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPitchView.swift; sourceTree = "<group>"; };
 		557D0042302EA1BD008BA492 /* PTSpeedometerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTSpeedometerView.swift; sourceTree = "<group>"; };
 		557D0050302EA1E3008BA492 /* PTArcGaugeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTArcGaugeView.swift; sourceTree = "<group>"; };
+		557D0053302ECDAE008BA492 /* PTPeugeotDashBoardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPeugeotDashBoardViewController.swift; sourceTree = "<group>"; };
+		557D0055302ED2A9008BA492 /* PTPeugeotLEDDashBoard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPeugeotLEDDashBoard.swift; sourceTree = "<group>"; };
 		55878957302301B200B94E91 /* xp400WidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = xp400WidgetExtension.entitlements; sourceTree = "<group>"; };
 		558789E3302420CB00B94E91 /* PTCarplayMainController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCarplayMainController.swift; sourceTree = "<group>"; };
 		558789E530242B9400B94E91 /* PTCarPlayContainerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCarPlayContainerViewController.swift; sourceTree = "<group>"; };
@@ -388,18 +392,8 @@
 		557D0043302EA1BD008BA492 /* Dashboard */ = {
 			isa = PBXGroup;
 			children = (
+				557D0052302ECD03008BA492 /* ViewController */,
 				557D004F302EA1C0008BA492 /* Views */,
-				557D0038302EA1BD008BA492 /* PTBumpMeterView.swift */,
-				557D0039302EA1BD008BA492 /* PTCompassRollerView.swift */,
-				557D003A302EA1BD008BA492 /* PTCrashWarningView.swift */,
-				557D003B302EA1BD008BA492 /* PTDashBoardBaseBoardViewController.swift */,
-				557D003C302EA1BD008BA492 /* PTDashBoardView.swift */,
-				557D003D302EA1BD008BA492 /* PTGForceView.swift */,
-				557D003E302EA1BD008BA492 /* PTIndicatorPanel.swift */,
-				557D003F302EA1BD008BA492 /* PTLeanAngleView.swift */,
-				557D0040302EA1BD008BA492 /* PTNowPlayingView.swift */,
-				557D0041302EA1BD008BA492 /* PTPitchView.swift */,
-				557D0042302EA1BD008BA492 /* PTSpeedometerView.swift */,
 			);
 			path = Dashboard;
 			sourceTree = "<group>";
@@ -408,8 +402,28 @@
 			isa = PBXGroup;
 			children = (
 				557D0050302EA1E3008BA492 /* PTArcGaugeView.swift */,
+				557D0038302EA1BD008BA492 /* PTBumpMeterView.swift */,
+				557D0039302EA1BD008BA492 /* PTCompassRollerView.swift */,
+				557D003A302EA1BD008BA492 /* PTCrashWarningView.swift */,
+				557D003C302EA1BD008BA492 /* PTDashBoardView.swift */,
+				557D003D302EA1BD008BA492 /* PTGForceView.swift */,
+				557D003E302EA1BD008BA492 /* PTIndicatorPanel.swift */,
+				557D003F302EA1BD008BA492 /* PTLeanAngleView.swift */,
+				557D0040302EA1BD008BA492 /* PTNowPlayingView.swift */,
+				557D0041302EA1BD008BA492 /* PTPitchView.swift */,
+				557D0042302EA1BD008BA492 /* PTSpeedometerView.swift */,
+				557D0055302ED2A9008BA492 /* PTPeugeotLEDDashBoard.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		557D0052302ECD03008BA492 /* ViewController */ = {
+			isa = PBXGroup;
+			children = (
+				557D003B302EA1BD008BA492 /* PTDashBoardBaseBoardViewController.swift */,
+				557D0053302ECDAE008BA492 /* PTPeugeotDashBoardViewController.swift */,
+			);
+			path = ViewController;
 			sourceTree = "<group>";
 		};
 		558789E2302420B500B94E91 /* Carplay */ = {
@@ -788,6 +802,7 @@
 				554110DB301E65AB0059BFCF /* PTLiDARCollisionManager.swift in Sources */,
 				55FE295C300CA4E8000E741F /* PTBluetoothManager.swift in Sources */,
 				55499CFA3019D83800A1A2D9 /* PTDashboardBaseView.swift in Sources */,
+				557D0056302ED2A9008BA492 /* PTPeugeotLEDDashBoard.swift in Sources */,
 				5590187230107A1C00A77571 /* PTRoutePlantCell.swift in Sources */,
 				55FE2966300CA5E0000E741F /* PTDashboardConfig.swift in Sources */,
 				55FE2A0B300CE2B0000E741F /* PTMapKitNavigationHelper.swift in Sources */,
@@ -819,6 +834,7 @@
 				5541111F301F2B630059BFCF /* PTStatusItemView.swift in Sources */,
 				55986676301144060049684D /* PTMaintenanceManager.swift in Sources */,
 				55499E2C301B2C8800A1A2D9 /* PTPTTViewController.swift in Sources */,
+				557D0054302ECDAE008BA492 /* PTPeugeotDashBoardViewController.swift in Sources */,
 				5577E6AC2FD662C20004733F /* PTMapView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -62,8 +62,13 @@ class PTCarPlaySceneDelegate: UIResponder,CPTemplateApplicationSceneDelegate,CPI
             self?.navigateToScreenB()
         }
         
+        let dashboardB = CPGridButton(titleVariants: ["Peugeot dashboard", "Peugeot dashboard"],
+                                   image: UIImage(systemName: "p.circle.fill")!) { [weak self] _ in
+            self?.navigateToScreenP()
+        }
+
         // 将按钮包装成网格模板
-        let gridTemplate = CPGridTemplate(title: "Dashboard menu", gridButtons: [buttonA, buttonB])
+        let gridTemplate = CPGridTemplate(title: "Dashboard menu", gridButtons: [buttonA, buttonB,dashboardB])
         return gridTemplate
     }
     
@@ -78,7 +83,21 @@ class PTCarPlaySceneDelegate: UIResponder,CPTemplateApplicationSceneDelegate,CPI
     }
 
     // MARK: - 2. 界面跳转逻辑
-    
+    private func navigateToScreenP() {
+        
+        let templateA = CPMapTemplate()
+        let changeThemeButton = CPMapButton(handler: { _ in
+            PTNSLogConsole("🚗 [CarPlay] 原生悬浮按钮被点击了！")
+        })
+        changeThemeButton.image = UIImage(systemName: "paintbrush.fill")
+        templateA.mapButtons = [changeThemeButton]
+        
+        let aVC = PTPeugeotDashBoardViewController()
+        self.dashboardVC.switchTo(viewController: aVC)
+        self.interfaceController?.pushTemplate(templateA, animated: true) { finish, error in }
+    }
+
+
     private func navigateToScreenA() {
         PTNSLogConsole("🚗 [CarPlay] 点击了按钮 A，正在跳转...")
         
