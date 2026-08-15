@@ -17,105 +17,91 @@ import SafeSFSymbols
 class PTTripDataCell: PTBaseSwipeCell {
     static let ID = "PTTripDataCell"
     
-    static let ChartHeight:CGFloat = 150
-    static let MapHeight:CGFloat = 120
-    static let lineMaxHeight:CGFloat = 24
-    static let textLineSpacing:CGFloat = 2.5
-    static let lineCount:CGFloat = 6
-
-    var cellModel:PTTripReport! {
-        didSet {
-            
-            let startTime = cellModel.startTime.convertTo(region: .local).toFormat("yyyy-MM-dd HH:mm:ss")
-            let endTime = cellModel.endTime.convertTo(region: .local).toFormat("yyyy-MM-dd HH:mm:ss")
-            let distanceString = String(format: "%@%@", PTDashboardConfig.shared.appShowMileageValueString(cellModel.distanceKm),PTDashboardConfig.shared.appShowUniLabel)
-            let nameAtt: ASAttributedString = """
-                        \(wrap: .embedding("""
-                        \((startTime + " -> " + endTime),.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight),.minimumLineHeight(PTTripDataCell.lineMaxHeight)))
-                        \(.image(UIImage(.road.lanes).withTintColor(.white, renderingMode: .alwaysOriginal),.custom(size: CGSize(width: PTTripDataCell.lineMaxHeight, height: PTTripDataCell.lineMaxHeight))))\(distanceString,.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight)))
-                        \(.image(UIImage(.gauge.withDotsNeedle_100percent).withTintColor(.white, renderingMode: .alwaysOriginal),.custom(size: CGSize(width: PTTripDataCell.lineMaxHeight, height: PTTripDataCell.lineMaxHeight))))\(String(format: "%@%@", PTDashboardConfig.shared.appShowMileageValueString(cellModel.maxSpeedKmh),PTDashboardConfig.shared.appShowUniLabel),.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight)))\(.image(UIImage(.gauge.withDotsNeedle_50percent).withTintColor(.white, renderingMode: .alwaysOriginal),.custom(size: CGSize(width: PTTripDataCell.lineMaxHeight, height: PTTripDataCell.lineMaxHeight))))\(String(format: "%@%@", PTDashboardConfig.shared.appShowMileageValueString(cellModel.gpsAvgSpeedKmh),PTDashboardConfig.shared.appShowUniLabel),.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight)))
-                        \(.image(UIImage(.arrow.counterclockwiseCircle).withTintColor(.white, renderingMode: .alwaysOriginal),.custom(size: CGSize(width: PTTripDataCell.lineMaxHeight, height: PTTripDataCell.lineMaxHeight))))\("\(cellModel.maxRpm)" + " rpm/min",.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight)))
-                        \(.image(UIImage(.fuelpump).withTintColor(.white, renderingMode: .alwaysOriginal),.custom(size: CGSize(width: PTTripDataCell.lineMaxHeight, height: PTTripDataCell.lineMaxHeight))))\(String(format: "%.1fL/%@%@", cellModel.avgConsumption,PTDashboardConfig.shared.appShowMileageValueString(100),PTDashboardConfig.shared.appShowUniLabel),.foreground(.white),.font(.appfont(size: 14)),.paragraph(.maximumLineHeight(PTTripDataCell.lineMaxHeight)))
-                        """),.paragraph(.alignment(.left),.lineSpacing(PTTripDataCell.textLineSpacing)))
-                        """
-            timeLabel.attributed.text = nameAtt
-            
-            let speedModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "Speed"), color: .systemRed, data: cellModel.speedTrace)
-            let rpmDouble = cellModel.rpmTrace.map { value in
-                return Double(value)
-            }
-            let rpmModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "RPM"), color: .systemGreen, data: rpmDouble)
-            speedChart.bindData(lines: [speedModel])
-            rpmChart.bindData(lines: [rpmModel])
-
-            let chartModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "lean_angle_title"), color: .systemRed, data: cellModel.leanAngleTrace)
-            leanAngleChart.bindData(lines: [chartModel])
-            
-            let gXModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "G:X"), color: .systemRed, data: cellModel.gForceXTrace)
-            let gYModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "G:Y"), color: .systemGreen, data: cellModel.gForceYTrace)
-            let gZModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "G:Z"), color: .systemBlue, data: cellModel.gForceZTrace)
-
-            gChart.bindData(lines: [gXModel,gYModel,gZModel])
-            
-            let pModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "vechicle_pitch"), color: .systemRed, data: cellModel.pitchTrace)
-            pChart.bindData(lines: [pModel])
-            
-            let aModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "elevation_title"), color: .systemRed, data: cellModel.relativeAltitudeTrace)
-            altitudeChart.bindData(lines: [aModel])
-            
-            let pressureModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "hpa_title"), color: .systemRed, data: cellModel.pressureTrace)
-            pressureChart.bindData(lines: [pressureModel])
-            
-            let slipRatioModel = PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "Slip Ratio"), color: .systemRed, data: cellModel.slipRatioTrace)
-            slipRatioChart.bindData(lines: [slipRatioModel])
-            
-            guard let gpxName = cellModel.gpxFileName else { return }
-            let imageName = gpxName.replacingOccurrences(of: ".gpx", with: ".jpg")
-            
-            // 步骤 1：尝试去本地或 iCloud 找图片
-            PTiCloudFileManager.shared.fetchCloudFileIfNeeded(fileName: imageName) { [weak self] localImageURL in
-                guard let self = self else { return }
-                
-                if let imgURL = localImageURL, FileManager.default.fileExists(atPath: imgURL.path) {
-                    // 🎉 太棒了！找到了图片，直接显示
-                    self.thumbnailImageView.loadImage(contentData: UIImage(contentsOfFile: imgURL.path) as Any)
-                } else {
-                    
-                    // 🚨 步骤 2：图片彻底丢失！触发【亡羊补牢】重绘机制！
-                    PTNSLogConsole("⚠️ 未找到缩略图，启动根据原始 GPX 重绘机制...")
-                    
-                    // 请求下载并获取原始的 GPX 数据文件
-                    PTiCloudFileManager.shared.fetchCloudFileIfNeeded(fileName: gpxName) { localGpxURL in
-                        guard let gpxURL = localGpxURL else {
-                            PTNSLogConsole("❌ 原始 GPX 文件也丢失了，无法重绘。")
-                            return
-                        }
-                        
-                        // a) 解析 GPX 文件，提取坐标
-                        let parser = PTGPXParser()
-                        let coordinates = parser.parse(fileURL: gpxURL)
-                        
-                        // b) 调用快照生成器，当场重绘、上传 iCloud 并拿到新图片
-                        PTRouteSnapshotManager.shared.generateAndSaveSnapshot(coordinates: coordinates, gpxFileName: gpxName) { newImageURL in
-                            if let newURL = newImageURL {
-                                // c) 在主线程将新鲜出炉的图片更新到界面上
-                                DispatchQueue.main.async {
-                                    self.thumbnailImageView.loadImage(contentData: UIImage(contentsOfFile: newURL.path) as Any)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    static let ChartHeight: CGFloat = 160
+    static let MapHeight: CGFloat = 140
     
-    lazy var timeLabel:UILabel = {
-        let view = UILabel()
-        view.numberOfLines = 0
+    // MARK: - 🪝 事件回调 (Closures) 彻底解耦
+    /// 点击 GPX 导出按钮的回调 (传出 fileName 和触发的 View 供 iPad 气泡使用)
+    var gpxExportAction: ((String, UIView) -> Void)?
+    /// 图片彻底丢失，请求外部（ViewController）触发后台地图重绘机制
+    var requestMapSnapshotAction: ((String) -> Void)?
+    var trashAction: PTActionTask?
+
+    // MARK: - 📦 UI 组件
+    
+    // 标题时间
+    private lazy var timeTitleLabel: UILabel = {
+        let label = UILabel()
+        label.font = .appfont(size: 15,bold: true)
+        label.textColor = .white
+        label.adjustsFontSizeToFitWidth = true
+        return label
+    }()
+    
+    // 现代化数据网格容器
+    private lazy var statsGridStackView: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.spacing = 10
+        stack.distribution = .fillEqually
+        return stack
+    }()
+    
+    // 地图缩略图
+    lazy var thumbnailImageView: UIImageView = {
+        let view = UIImageView()
+        view.contentMode = .scaleAspectFill
+        view.clipsToBounds = true
+        view.layer.cornerRadius = 8
+        view.backgroundColor = UIColor(white: 0.15, alpha: 1.0) // 默认占位底色
         return view
     }()
     
+    lazy var gpxButton: PTBaseButton = {
+        let view = PTBaseButton(type: .custom)
+        view.setImage(UIImage(.square.andArrowUp).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
+        view.addActionHandlers { [weak self] sender in
+            guard let self = self, let gpx = self.cellModel?.gpxFileName else {
+                PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "alert_title"))
+                return
+            }
+            self.gpxExportAction?(gpx, sender)
+        }
+        view.layer.cornerRadius = 16
+        view.clipsToBounds = true
+        return view
+    }()
+    
+    lazy var trashButton: PTBaseButton = {
+        let view = PTBaseButton(type: .custom)
+        view.setImage(UIImage(.trash).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
+        view.addActionHandlers { [weak self] sender in
+            self?.trashAction?()
+        }
+        view.layer.cornerRadius = 16
+        view.clipsToBounds = true
+        return view
+    }()
+    
+    // 横向分页滑动的图表容器
+    private lazy var chartsScrollView: UIScrollView = {
+        let scroll = UIScrollView()
+        scroll.isPagingEnabled = true
+        scroll.showsHorizontalScrollIndicator = false
+        scroll.bounces = true
+        scroll.clipsToBounds = false
+        return scroll
+    }()
+    
+    private lazy var chartsHStack: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .horizontal
+        stack.spacing = 0 // 保证分页对齐
+        stack.distribution = .fillEqually
+        return stack
+    }()
+    
+    // 图表实例
     lazy var speedChart = PTNativeTelemetryChartView()
     lazy var rpmChart = PTNativeTelemetryChartView()
     lazy var leanAngleChart = PTNativeTelemetryChartView()
@@ -125,102 +111,227 @@ class PTTripDataCell: PTBaseSwipeCell {
     lazy var pressureChart = PTNativeTelemetryChartView()
     lazy var slipRatioChart = PTNativeTelemetryChartView()
     
-    // 🌟 核心优化：图表容器
-    lazy var chartsStackView: UIStackView = {
-        let stack = UIStackView(arrangedSubviews: [
-            speedChart, rpmChart, leanAngleChart, gChart, pChart, altitudeChart, pressureChart,slipRatioChart
-        ])
-        stack.axis = .vertical
-        stack.spacing = CGFloat.GlobalItemSpacing // 图表之间的间距
-        stack.distribution = .fillEqually // 让所有显示的图表高度一致
-        return stack
-    }()
-
-    lazy var thumbnailImageView:UIButton = {
-        let view = UIButton(type:.custom)
-        view.imageView?.contentMode = .scaleAspectFit
-        view.imageView?.clipsToBounds = false
-        return view
-    }()
-    
-    lazy var gpxButton:UIButton = {
-        let view = UIButton(type: .custom)
-        view.setImage(UIImage(.dot.scope), for: .normal)
-        view.addActionHandlers { sender in
-            if let gpx = self.cellModel.gpxFileName {
-                PTiCloudFileManager.shared.fetchCloudFileIfNeeded(fileName: gpx) { localImageURL in
-                    if let url = localImageURL {
-                        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-                        
-                        // 查找最顶层控制器以执行 Present 操作
-                        if let topVC = PTUtils.getCurrentVC() {
-                            // 兼容 iPad，防止崩溃（指定气泡弹出的源头）
-                            if let popover = activityVC.popoverPresentationController {
-                                popover.sourceView = sender
-                                popover.sourceRect = sender.bounds
-                            }
-                            
-                            topVC.present(activityVC, animated: true, completion: nil)
-                        }
-                    }
-                }
-            } else {
-                PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "alert_title"))
-            }
+    // MARK: - 🔄 数据绑定
+    var cellModel: PTTripReport! {
+        didSet {
+            bindData()
         }
-        return view
-    }()
+    }
     
+    // MARK: - 🛠 初始化与布局
     public override init(frame: CGRect) {
         super.init(frame: frame)
-        
-        contentContainer.backgroundColor = UIColor(white: 0.05, alpha: 1.0)
-        contentContainer.layer.cornerRadius = 12
-        contentContainer.clipsToBounds = true
-        
-        contentContainer.addSubviews([timeLabel, thumbnailImageView, gpxButton, chartsStackView])
-        
-        // 1. 地图缩略图 (右上角)
-        thumbnailImageView.snp.makeConstraints { make in
-            make.top.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
-            make.width.equalTo(140)
-            make.height.equalTo(PTTripDataCell.MapHeight)
-        }
-        
-        // 2. GPX 导出按钮 (悬浮在地图右下角)
-        gpxButton.snp.makeConstraints { make in
-            make.right.bottom.equalTo(thumbnailImageView).inset(8)
-            make.size.equalTo(32)
-        }
-        
-        // 3. 文本统计信息 (左侧排版，避免被右侧地图遮挡)
-        timeLabel.snp.makeConstraints { make in
-            make.top.left.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
-            make.right.equalTo(thumbnailImageView.snp.left).offset(-16)
-            // 不设置 bottom 约束，让文字自然撑开
-        }
-        
-        // 4. 强大的 StackView 图表容器
-        chartsStackView.snp.makeConstraints { make in
-            make.left.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
-            
-            // 🚨 智能顶部约束：确保图表不管在文字下方还是地图下方，都不会重叠
-            make.top.greaterThanOrEqualTo(timeLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-            make.top.greaterThanOrEqualTo(thumbnailImageView.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-            
-            // 🚨 高度计算：假设你展示所有 7 个图表，StackView 会自动撑开。
-            // 这里我们只需要限制单个图表的高度即可，StackView 会自己计算总高度。
-            speedChart.snp.makeConstraints { make in
-                make.height.equalTo(PTTripDataCell.ChartHeight)
-            }
-            
-            // 🚨 闭环约束：极其重要，必须将最底部连向 contentView，才能实现 Cell 自动计算行高
-            make.bottom.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
-        }
+        setupUI()
+        setupConstraints()
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    private func setupUI() {
+        contentContainer.backgroundColor = UIColor(white: 0.08, alpha: 1.0)
+        contentContainer.layer.cornerRadius = 16 // 现代化大圆角
+        contentContainer.clipsToBounds = true
+        
+        contentContainer.addSubviews([
+            timeTitleLabel,
+            statsGridStackView,
+            thumbnailImageView,
+            gpxButton,
+            trashButton,
+            chartsScrollView
+        ])
+                
+        // 组装横向滚动图表
+        chartsScrollView.addSubview(chartsHStack)
+        let allCharts = [speedChart, rpmChart, leanAngleChart, gChart, pChart, altitudeChart, pressureChart, slipRatioChart]
+        allCharts.forEach { chartsHStack.addArrangedSubview($0) }
+    }
+    
+    private func setupConstraints() {
+        let margin: CGFloat = 16
+        
+        // 地图缩略图 (右上角)
+        thumbnailImageView.snp.makeConstraints { make in
+            make.top.right.equalToSuperview().inset(margin)
+            make.size.equalTo(PTTripDataCell.MapHeight)
+        }
+        
+        // 悬浮毛玻璃 GPX 按钮 (地图右下角，稍微内缩)
+        gpxButton.snp.makeConstraints { make in
+            make.right.bottom.equalTo(thumbnailImageView).inset(6)
+            make.size.equalTo(32)
+        }
+        
+        trashButton.snp.makeConstraints { make in
+            make.right.top.equalTo(thumbnailImageView).inset(6)
+            make.size.equalTo(gpxButton)
+        }
+        
+        // 标题 (左上角)
+        timeTitleLabel.snp.makeConstraints { make in
+            make.top.left.equalToSuperview().inset(margin)
+            make.right.equalTo(thumbnailImageView.snp.left).offset(-margin)
+        }
+        
+        // 数据网格 (标题下方)
+        statsGridStackView.snp.makeConstraints { make in
+            make.top.equalTo(timeTitleLabel.snp.bottom).offset(12)
+            make.left.equalToSuperview().inset(margin)
+            make.right.equalTo(thumbnailImageView.snp.left).offset(-margin)
+        }
+        
+        // 滑动图表区域 (下方)
+        chartsScrollView.snp.makeConstraints { make in
+            // 智能避让：在地图或统计数据的下方
+            make.top.greaterThanOrEqualTo(statsGridStackView.snp.bottom).offset(margin)
+            make.top.greaterThanOrEqualTo(thumbnailImageView.snp.bottom).offset(margin)
+            make.left.right.bottom.equalToSuperview().inset(margin)
+            make.height.equalTo(PTTripDataCell.ChartHeight)
+        }
+        
+        // 图表内部约束 (核心：保证分页大小与 ScrollView 视口一致)
+        chartsHStack.snp.makeConstraints { make in
+            make.edges.equalTo(chartsScrollView.contentLayoutGuide)
+            make.height.equalTo(chartsScrollView.frameLayoutGuide)
+        }
+        
+        // 保证每个图表的宽度恰好等于 ScrollView 的宽度（实现完美 Paging）
+        let allCharts = [speedChart, rpmChart, leanAngleChart, gChart, pChart, altitudeChart, pressureChart, slipRatioChart]
+        allCharts.forEach { chart in
+            chart.snp.makeConstraints { make in
+                make.width.equalTo(chartsScrollView.frameLayoutGuide.snp.width)
+            }
+        }
+    }
+    
+    // MARK: - 🧠 数据绑定与更新逻辑
+    private func bindData() {
+        // 时间标题
+        let startTime = cellModel.startTime.convertTo(region: .local).toFormat("MM-dd HH:mm")
+        let endTime = cellModel.endTime.convertTo(region: .local).toFormat("HH:mm")
+        timeTitleLabel.text = "🏁 \(startTime) -> \(endTime)"
+        
+        // 更新数据网格
+        updateStatsGrid()
+        
+        // 绑定图表数据
+        bindChartData()
+        
+        // 处理地图图片 (极致的防御性加载)
+        loadThumbnailImage()
+    }
+    
+    // 🚀 构建现代化网格 UI
+    private func updateStatsGrid() {
+        // 清理旧视图
+        statsGridStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        
+        // 第一行：里程 & 极速
+        let row1 = UIStackView(arrangedSubviews: [
+            createStatItem(icon: UIImage(.road.lanes), value: PTDashboardConfig.shared.appShowMileageValueString(cellModel.distanceKm), unit: PTDashboardConfig.shared.appShowUniLabel),
+            createStatItem(icon: UIImage(.gauge.withDotsNeedle_100percent), value: PTDashboardConfig.shared.appShowMileageValueString(cellModel.maxSpeedKmh), unit: PTDashboardConfig.shared.appShowUniLabel + "/h")
+        ])
+        row1.axis = .horizontal
+        row1.distribution = .fillEqually
+        
+        // 第二行：均速 & 最大转速
+        let row2 = UIStackView(arrangedSubviews: [
+            createStatItem(icon: UIImage(.gauge.withDotsNeedle_50percent), value: PTDashboardConfig.shared.appShowMileageValueString(cellModel.gpsAvgSpeedKmh), unit: PTDashboardConfig.shared.appShowUniLabel + "/h"),
+            createStatItem(icon: UIImage(.arrow.counterclockwiseCircle), value: "\(cellModel.maxRpm)", unit: "rpm")
+        ])
+        row2.axis = .horizontal
+        row2.distribution = .fillEqually
+        
+        // 第三行：油耗
+        let row3 = UIStackView(arrangedSubviews: [
+            createStatItem(icon: UIImage(.fuelpump), value: String(format: "%.1f", cellModel.avgConsumption), unit: "L/100" + PTDashboardConfig.shared.appShowUniLabel),
+            UIView() // 占位空 View，保持网格对齐
+        ])
+        row3.axis = .horizontal
+        row3.distribution = .fillEqually
+        
+        statsGridStackView.addArrangedSubview(row1)
+        statsGridStackView.addArrangedSubview(row2)
+        statsGridStackView.addArrangedSubview(row3)
+    }
+    
+    // 构建单个数据块：[图标 值] \n [单位]
+    private func createStatItem(icon: UIImage, value: String, unit: String) -> UIView {
+        let container = UIView()
+        
+        let iconView = UIImageView(image: icon.withTintColor(.lightGray, renderingMode: .alwaysOriginal))
+        iconView.contentMode = .scaleAspectFit
+        
+        let valLabel = UILabel()
+        valLabel.text = value
+        valLabel.font = .appfont(size: 16,bold: true)
+        valLabel.textColor = .white
+        
+        let unitLabel = UILabel()
+        unitLabel.text = unit
+        unitLabel.font = .appfont(size: 11,bold: true)
+        unitLabel.textColor = .lightGray
+        
+        container.addSubviews([iconView, valLabel, unitLabel])
+        
+        iconView.snp.makeConstraints { make in
+            make.left.equalToSuperview()
+            make.centerY.equalTo(valLabel)
+            make.size.equalTo(14)
+        }
+        valLabel.snp.makeConstraints { make in
+            make.left.equalTo(iconView.snp.right).offset(4)
+            make.top.equalToSuperview()
+            make.right.lessThanOrEqualToSuperview()
+        }
+        unitLabel.snp.makeConstraints { make in
+            make.left.equalTo(valLabel)
+            make.top.equalTo(valLabel.snp.bottom).offset(2)
+            make.bottom.equalToSuperview()
+        }
+        
+        return container
+    }
+    
+    private func bindChartData() {
+        speedChart.bindData(lines: [PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "Speed"), color: .systemRed, data: cellModel.speedTrace)])
+        rpmChart.bindData(lines: [PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "RPM"), color: .systemGreen, data: cellModel.rpmTrace.map { Double($0) })])
+        leanAngleChart.bindData(lines: [PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "lean_angle_title"), color: .systemRed, data: cellModel.leanAngleTrace)])
+        gChart.bindData(lines: [
+            PTChartLineModel(name: "G:X", color: .systemRed, data: cellModel.gForceXTrace),
+            PTChartLineModel(name: "G:Y", color: .systemGreen, data: cellModel.gForceYTrace),
+            PTChartLineModel(name: "G:Z", color: .systemBlue, data: cellModel.gForceZTrace)
+        ])
+        pChart.bindData(lines: [PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "vechicle_pitch"), color: .systemRed, data: cellModel.pitchTrace)])
+        altitudeChart.bindData(lines: [PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "elevation_title"), color: .systemRed, data: cellModel.relativeAltitudeTrace)])
+        pressureChart.bindData(lines: [PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "hpa_title"), color: .systemRed, data: cellModel.pressureTrace)])
+        slipRatioChart.bindData(lines: [PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "Slip Ratio"), color: .systemRed, data: cellModel.slipRatioTrace)])
+    }
+    
+    private func loadThumbnailImage() {
+        guard let gpxName = cellModel.gpxFileName else { return }
+        let imageName = gpxName.replacingOccurrences(of: ".gpx", with: ".jpg")
+        
+        // 清楚复用时的老图，防止闪烁
+        thumbnailImageView.image = nil
+        
+        PTiCloudFileManager.shared.fetchCloudFileIfNeeded(fileName: imageName) { [weak self] localImageURL in
+            guard let self = self else { return }
+            
+            if let imgURL = localImageURL, FileManager.default.fileExists(atPath: imgURL.path) {
+                // 成功找到图片
+                DispatchQueue.main.async {
+                    self.thumbnailImageView.image = UIImage(contentsOfFile: imgURL.path)
+                }
+            } else {
+                // 图片丢失，通知外部去后台生成，坚决不能在 Cell 里面生成避免卡死主线程
+                DispatchQueue.main.async {
+                    self.requestMapSnapshotAction?(gpxName)
+                }
+            }
+        }
     }
 }
 

@@ -32,11 +32,11 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
         let view = PTCollectionView(viewConfig: collectionConfig)
         view.registerClassCells(classs: [PTTripDataCell.ID:PTTripDataCell.self])
         view.customerLayout = { sectionIndex,section in
-            let itemHeight:CGFloat = PTTripDataCell.lineMaxHeight * PTTripDataCell.lineCount + (PTTripDataCell.lineCount - 1) * PTTripDataCell.textLineSpacing + PTTripDataCell.ChartHeight * 8 + CGFloat.GlobalItemSpacing * 11
+            let itemHeight:CGFloat = 380//PTTripDataCell.lineMaxHeight * PTTripDataCell.lineCount + (PTTripDataCell.lineCount - 1) * PTTripDataCell.textLineSpacing + PTTripDataCell.ChartHeight * 8 + CGFloat.GlobalItemSpacing * 11
             return UICollectionView.girdCollectionLayout(data: section.rows, itemHeight: itemHeight,cellRowCount: 1,originalX: PTAppBaseConfig.share.defaultViewSpace,cellTrailingSpace: CGFloat.GlobalItemSpacing)
         }
         view.indexPathSwipe = { sModel,indexPath in
-            return true
+            return false
         }
         view.swipeRightHandler = { collectionView,sectionModel,indexPath in
             let deleteAction = PTSwipeAction(name: PTDashboardConfig.languageFunc(text: "Delete"),image: nil, nameColor:.white,nameFont:.appfont(size: 14), backgroundColor: .systemRed) { sender in
@@ -55,6 +55,46 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
                 let getCell = collectionView.dequeueReusableCell(withReuseIdentifier: itemRow.ID, for: indexPath)
                 if let cell = getCell as? PTTripDataCell {
                     cell.cellModel = PTTripManager.shared.tripHistory[indexPath.row]
+                    cell.trashAction = {
+                        PTGCDManager.shared.runOnMain {
+                            UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "Delete") + "?",okBtns: [PTDashboardConfig.languageFunc(text: "button_confirm")],cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
+                                let ready = PTTripManager.shared.tripHistory[indexPath.row]
+                                if let findIndex = PTTripManager.shared.tripHistory.firstIndex(where: { $0.startTime == ready.startTime }),let findRow = self.detailCollection.getRow(at: indexPath) {
+                                    self.detailCollection.deleteRows([findRow], from: 0)
+                                    PTTripManager.shared.deleteTrip(ready)
+                                }
+                            })
+                        }
+                    }
+                    // 处理 GPX 导出交互
+                    cell.gpxExportAction = { [weak self = self] (gpxFileName, senderView) in
+                        guard let self = self else { return }
+                        PTiCloudFileManager.shared.fetchCloudFileIfNeeded(fileName: gpxFileName) { localURL in
+                            if let url = localURL {
+                                let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+                                if let popover = activityVC.popoverPresentationController {
+                                    popover.sourceView = senderView
+                                    popover.sourceRect = senderView.bounds
+                                }
+                                self.present(activityVC, animated: true, completion: nil)
+                            }
+                        }
+                    }
+                    
+                    // 处理地图图片丢失时的静默重绘 (非常关键)
+                    cell.requestMapSnapshotAction = { [weak self = self] gpxFileName in
+                        // 建议在这里判断一下是否已经在生成中，避免重复触发
+                        PTiCloudFileManager.shared.fetchCloudFileIfNeeded(fileName: gpxFileName) { localGpxURL in
+                            guard let gpxURL = localGpxURL else { return }
+                            let coordinates = PTGPXParser().parse(fileURL: gpxURL)
+                            PTRouteSnapshotManager.shared.generateAndSaveSnapshot(coordinates: coordinates, gpxFileName: gpxFileName) { newURL in
+                                // 生成成功后，只刷新当前行即可
+                                DispatchQueue.main.async {
+                                    self?.detailCollection.contentCollectionView.reloadItems(at: [indexPath])
+                                }
+                            }
+                        }
+                    }
                     return cell
                 }
             }

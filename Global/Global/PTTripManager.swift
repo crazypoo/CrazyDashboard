@@ -17,7 +17,6 @@ public struct PTTripOffRoadEvent: Codable {
     public let info: String
 }
 
-// 🌟 新增：专门用于给 UI 界面实时刷新用的数据模型
 public struct PTLiveTripStats {
     public let runTime: TimeInterval       // 运行时长 (秒)
     public let idleTime: TimeInterval      // 怠速时长 (秒)
@@ -442,7 +441,7 @@ public class PTTripManager: NSObject {
             return
         }
         
-        // 3. 开始生成高德 GPX 和快照
+        // 3. 开始生成高德 GPX 和快照z
         let generatedFileName = PTGPXRecorder.shared.exportGPX(from: routeArray)
         if let fileName = generatedFileName {
             // 在后台生成缩略图并上传 iCloud
