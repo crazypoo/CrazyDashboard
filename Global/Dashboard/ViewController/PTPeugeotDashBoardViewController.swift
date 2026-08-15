@@ -155,7 +155,7 @@ class PTPeugeotDashBoardViewController: PTMotoBaseViewController {
             DispatchQueue.main.async {
                 self.ledDashboard.rangeLabel.text = "⛽️ \(String(format: "%.0f", autonomyKm)) km"
             }
-        } else if let control = data as? PTDashboardControl {
+        } else if let control = data as? PTDashboardControl,!PTMotoTelemetryManager.shared.isConnected {
             let vehicleSpeedKmh = control.vehicleSpeedKmh
             let engineRpm = control.engineRpm
 
@@ -174,6 +174,15 @@ extension PTPeugeotDashBoardViewController:PTMotoTelemetryDelegate {
     func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String : Any]) {
         if let data = measurements[OBDCommand.mode1(.coolantTemp).properties.command] as? Double {
             self.ledDashboard.rightTempGauge.progress = CGFloat(data) / 120
+        }
+        
+        if let speed = measurements[OBDCommand.mode1(.speed).properties.command] as? Double {
+            self.ledDashboard.speedLabel.text = String(format: "%.0f", speed)
+            self.speedometer.updateSpeed(speed)
+        }
+        if let rpm = measurements[OBDCommand.mode1(.rpm).properties.command] as? Double {
+            self.speedometerReversed.updateSpeed(CGFloat(rpm))
+            self.speedometerReversed.applyShiftLightLogic(currentRpm: Int(rpm))
         }
     }
 }

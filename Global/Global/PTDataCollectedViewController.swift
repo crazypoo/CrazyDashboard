@@ -90,7 +90,9 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
                             PTRouteSnapshotManager.shared.generateAndSaveSnapshot(coordinates: coordinates, gpxFileName: gpxFileName) { newURL in
                                 // 生成成功后，只刷新当前行即可
                                 DispatchQueue.main.async {
-                                    self?.detailCollection.contentCollectionView.reloadItems(at: [indexPath])
+                                    if let rows = self?.detailCollection.getRows(at: [indexPath]) {
+                                        self?.detailCollection.reloadRows(rows, in: indexPath.section)
+                                    }
                                 }
                             }
                         }

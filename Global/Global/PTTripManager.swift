@@ -282,6 +282,7 @@ public class PTTripManager: NSObject {
     private func setupObservers() {
         PTMotion.shared.addDelegate(self)
         PTBluetoothServerManager.shared.addDelegate(self)
+        PTMotoTelemetryManager.shared.addDelegate(self)
     }
     
     // MARK: - 业务逻辑处理
@@ -396,25 +397,7 @@ public class PTTripManager: NSObject {
         )
         self.routeArray.append(point)
     }
-
-    @objc private func handleControlData(_ notification: Notification) {
-        guard isRiding, let control = notification.object as? PTDashboardControl else { return }
-                
-        let rpm = control.engineRpm
-        self.currentLiveRpm = rpm
-        if rpm > maxRpm { maxRpm = rpm }
         
-        // 🌟 将最高精度的蓝牙车速喂给分析引擎
-        processSpeedMetrics(speedKmh: control.vehicleSpeedKmh, timestamp: Date())
-    }
-    
-    @objc private func handleData1(_ notification: Notification) {
-        guard isRiding, let data1 = notification.object as? PTDashboardData1 else { return }
-        if startOdo == 0 && data1.odoKm > 0 { startOdo = data1.odoKm }
-        latestOdo = data1.odoKm
-        latestConsumption = data1.avgConsumptionLt
-    }
-    
     @objc public func handleDisconnect() {
         guard isRiding, let start = startTime else { return }
         isRiding = false
@@ -689,7 +672,7 @@ extension PTTripManager:PTBLEDashboardDelegate {
             if startOdo == 0 && data1.odoKm > 0 { startOdo = data1.odoKm }
             latestOdo = data1.odoKm
             latestConsumption = data1.avgConsumptionLt
-        } else if isRiding, let control = data as? PTDashboardControl {
+        } else if isRiding, let control = data as? PTDashboardControl,!PTMotoTelemetryManager.shared.isConnected{
             let rpm = control.engineRpm
             self.currentLiveRpm = rpm
             if rpm > maxRpm { maxRpm = rpm }
@@ -699,6 +682,18 @@ extension PTTripManager:PTBLEDashboardDelegate {
         } else if isRiding, let absStatus = data as? PTAbsStatus {
             self.lastFrontSpeed = absStatus.frontWheelSpeedKmh
             calculateSlipRatio()
+        }
+    }
+}
+
+extension PTTripManager:PTMotoTelemetryDelegate {
+    public func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) {
+        if let speed = measurements[OBDCommand.mode1(.speed).properties.command] as? Double {
+            processSpeedMetrics(speedKmh: speed, timestamp: Date())
+        }
+        if let rpm = measurements[OBDCommand.mode1(.rpm).properties.command] as? Double {
+            self.currentLiveRpm = Int(rpm)
+            if Int(rpm) > maxRpm { maxRpm = Int(rpm) }
         }
     }
 }

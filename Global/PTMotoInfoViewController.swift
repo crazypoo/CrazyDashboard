@@ -125,6 +125,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                             nav.modalPresentationStyle = .fullScreen
                             self.navigationController?.present(nav, animated: true)
                         case 1:
+                            self.bleConnectStatusLabel.startLoading()
                             PTBluetoothServerManager.shared.startMockDashboardData()
                         default:
                             break
@@ -587,6 +588,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             self.bleConnectStatusLabel.isSelected = PTDashboardConfig.shared.blueConnected
             self.speedometer.playStartupSweep(duration: 1.5)
             self.speedometerReversed.playStartupSweep(duration: 1.5)
+            self.bleConnectStatusLabel.stopLoading()
         }
     }
     
@@ -660,7 +662,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                 self.speedometer.progressColor = data3.dashboardColor.getColor()
                 self.speedometerReversed.progressColor = data3.dashboardColor.getColor()
             }
-        } else if let control = data as? PTDashboardControl {
+        } else if let control = data as? PTDashboardControl,!PTMotoTelemetryManager.shared.isConnected {
             let vehicleSpeedKmh = control.vehicleSpeedKmh
             let engineRpm = control.engineRpm
 
@@ -1015,6 +1017,13 @@ extension PTMotoInfoViewController:PTMotoTelemetryDelegate {
     }
     
     func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) {
+        if let speed = measurements[OBDCommand.mode1(.speed).properties.command] as? Double {
+            self.speedometer.updateSpeed(speed)
+        }
+        if let rpm = measurements[OBDCommand.mode1(.rpm).properties.command] as? Double {
+            self.speedometerReversed.updateSpeed(CGFloat(rpm))
+            self.speedometerReversed.applyShiftLightLogic(currentRpm: Int(rpm))
+        }
     }
     
     func telemetryManager(_ manager: PTMotoTelemetryManager, didDiscoverSupportedCommands commands: [String]) { }

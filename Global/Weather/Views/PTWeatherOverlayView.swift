@@ -216,25 +216,40 @@ class PTWeatherOverlayView: PTDashboardBaseView { // 保持继承你原有的基
     /// 播放雾霾动画 (水平慢速飘动的巨大柔光云团)
     private func showFog() {
         stopWeather()
+            
+        // 🌟 修复关键点 1：彻底关闭当前 View 的用户交互，确保用户的点击能“穿透”雾气层点击到下方的按钮
+        self.isUserInteractionEnabled = false
+        
         let emitter = CAEmitterLayer()
-        // 发射源在屏幕右侧外部，向左侧缓慢飘动
         emitter.emitterPosition = CGPoint(x: bounds.width + 100, y: bounds.height / 2)
         emitter.emitterSize = CGSize(width: 1, height: bounds.height)
         emitter.emitterShape = .line
         
+        // 🌟 修复关键点 2：直接降低整个发射器图层的不透明度（最快、最有效的变浅方法）
+        emitter.opacity = 0.3 // 整体透明度压到 30%，如果不满意可以直接改这个值，无需调粒子细节
+        
         let fogCell = CAEmitterCell()
-        fogCell.contents = createFogImage(color: UIColor.white.withAlphaComponent(0.2))?.cgImage
-        fogCell.birthRate = 1.5 // 每秒产生很少的雾团
-        fogCell.lifetime = 30.0 // 存活时间极长，慢慢飘过屏幕
-        fogCell.velocity = 40 // 缓慢向左移动
+        
+        // 🌟 修复关键点 3：将雾团基础图片的透明度降到极限
+        fogCell.contents = createFogImage(color: UIColor.white.withAlphaComponent(0.05))?.cgImage
+        
+        fogCell.birthRate = 0.2 // 进一步降低生成频率（每 5 秒才飘出一个）
+        fogCell.lifetime = 20.0
+        
+        fogCell.velocity = 20 // 速度再放慢，营造轻柔感
         fogCell.velocityRange = 10
-        fogCell.emissionLongitude = .pi // 向左发射 (180度)
-        fogCell.scale = 3.0 // 将图片放大 3 倍，显得极其庞大
-        fogCell.scaleRange = 1.0
-        fogCell.alphaSpeed = -0.01 // 缓慢淡出
+        fogCell.emissionLongitude = .pi // 向左发射
+        
+        fogCell.scale = 2.0
+        fogCell.scaleRange = 0.5
+        
+        // 控制单体雾团的透明度变化
+        fogCell.alphaRange = 0.1
+        fogCell.alphaSpeed = -0.015 // 保证飞到一半就开始渐渐消失，不会在左侧边缘堆积变成白墙
         
         emitter.emitterCells = [fogCell]
-        layer.addSublayer(emitter)
+        
+        layer.insertSublayer(emitter, at: 0)
         self.emitterLayer = emitter
     }
     

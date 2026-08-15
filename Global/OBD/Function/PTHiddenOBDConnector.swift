@@ -804,11 +804,17 @@ public enum PTMockVehicleConfig {
 }
 
 // MARK: 离线 OBD 沙盒虚拟引擎 (用于无车环境下的 UI 开发与测试)
+// MARK: 离线 OBD 沙盒虚拟引擎 (用于无车环境下的 UI 开发与测试)
 public class PTMockOBDConnector: PTOBDTransportBase {
     public static let shared = PTMockOBDConnector()
     
     private let mockQueue = DispatchQueue(label: "com.ptools.mockOBDQueue")
     public var vehicleConfig: PTMockVehicleConfig = .dualECU
+    
+    // MARK: - 🚗 动态车辆状态变量
+    private var currentRPM: Int = 800           // 初始怠速 800 转
+    private var currentSpeed: Int = 0           // 初始速度 0 km/h
+    private var isAccelerating: Bool = true     // 模拟车辆加速/减速状态
     
     private override init() { super.init() }
     
@@ -839,6 +845,11 @@ public class PTMockOBDConnector: PTOBDTransportBase {
     public func startMockConnection() {
         PTOBDLogger.obd.startFileLogging()
         PTOBDLogger.obd.ptLog("🎮 [模拟器] 正在启动离线沙盒引擎...")
+        
+        // 重置车辆状态
+        currentRPM = 800
+        currentSpeed = 0
+        isAccelerating = true
         
         // 模拟 1 秒的连接耗时
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
@@ -888,25 +899,59 @@ public class PTMockOBDConnector: PTOBDTransportBase {
             
         case "0902":
             return "7E8 14 49 02 01 00 00 00 31 57 42 41 31 32 33 34 35 36 37 38 39 30 31 32 33\r\n>"
-        case "0904": // 模拟读取 Calibration ID (固件标定号，包含 XP40 等特征)
+        case "0904": // 模拟读取 Calibration ID
             let chunk1 = "7E8 10 23 49 04 02 31 31 37"
             let chunk2 = "7E8 21 39 37 31 33 39 30 30"
             let chunk3 = "7E8 22 30 30 31 39 35 33 58"
             let chunk4 = "7E8 23 50 34 30 45 35 34 30"
             let chunk5 = "7E8 24 30 30 33 37 30 30 30"
             let chunk6 = "7E8 25 30 00 00 00 00 00 00"
-            // 按照 ELM327 的真实换行格式进行无缝拼接
             return "\(chunk1)\r\(chunk2)\r\(chunk3)\r\(chunk4)\r\(chunk5)\r\(chunk6)\r\r>"
+            
         // 🚀 高频动态数据 (转速与车速)
-        case "010C": // Engine RPM: 1651
-            let ecu1Resp = "7E8 04 41 0C 19 CC"
+        case "010C": // Engine RPM
+            // 1. 模拟转速波动逻辑
+            let rpmDelta = isAccelerating ? Int.random(in: 50...250) : Int.random(in: -300 ... -50)
+            currentRPM += rpmDelta
+            
+            // 限制转速范围 (怠速 750 ~ 红线 6500)
+            if currentRPM > 6500 { currentRPM = 6500 }
+            if currentRPM < 750 { currentRPM = 750 + Int.random(in: -20...20) } // 怠速微波
+            
+            // 2. OBD 公式：值 = ((A * 256) + B) / 4  =>  发送值 = RPM * 4
+            let rawOBDValue = currentRPM * 4
+            let a = (rawOBDValue >> 8) & 0xFF
+            let b = rawOBDValue & 0xFF
+            
+            let hexA = String(format: "%02X", a)
+            let hexB = String(format: "%02X", b)
+            
+            let ecu1Resp = "7E8 04 41 0C \(hexA) \(hexB)"
+            
             if vehicleConfig == .dualECU {
-                return "\(ecu1Resp)\r7E9 04 41 0C 19 68\r\n>" // 模拟辅 ECU
+                // 辅 ECU 转速比主 ECU 稍微落后一点点，更真实
+                let subB = max(0, b - Int.random(in: 0...5))
+                let ecu2Resp = "7E9 04 41 0C \(hexA) \(String(format: "%02X", subB))"
+                return "\(ecu1Resp)\r\(ecu2Resp)\r\n>"
             }
             return "\(ecu1Resp)\r\n>"
             
-        case "010D": // Vehicle Speed: 0
-            return "7E8 03 41 0D 00\r\n>"
+        case "010D": // Vehicle Speed
+            // 1. 模拟车速逻辑 (随加速状态走走停停)
+            if isAccelerating {
+                currentSpeed += Int.random(in: 0...3)
+                if currentSpeed >= 120 { isAccelerating = false } // 到 120km/h 松油门减速
+            } else {
+                currentSpeed -= Int.random(in: 1...4)
+                if currentSpeed <= 0 {
+                    currentSpeed = 0
+                    isAccelerating = true // 停稳后重新起步
+                }
+            }
+            
+            // 2. OBD 公式：值 = A (直接对应 km/h)
+            let hexA = String(format: "%02X", currentSpeed)
+            return "7E8 03 41 0D \(hexA)\r\n>"
             
         default:
             if command.hasPrefix("AT") { return "OK\r\n>" }
