@@ -213,11 +213,9 @@ class PTWeatherOverlayView: PTDashboardBaseView { // 保持继承你原有的基
         self.emitterLayer = emitter
     }
     
-    /// 播放雾霾动画 (水平慢速飘动的巨大柔光云团)
-    private func showFog() {
-        stopWeather()
-            
-        // 🌟 修复关键点 1：彻底关闭当前 View 的用户交互，确保用户的点击能“穿透”雾气层点击到下方的按钮
+    fileprivate func fogBase(color:UIColor) {
+        
+        // 🌟 彻底关闭当前 View 的用户交互，确保用户的点击能“穿透”雾气层点击到下方的按钮
         self.isUserInteractionEnabled = false
         
         let emitter = CAEmitterLayer()
@@ -225,13 +223,13 @@ class PTWeatherOverlayView: PTDashboardBaseView { // 保持继承你原有的基
         emitter.emitterSize = CGSize(width: 1, height: bounds.height)
         emitter.emitterShape = .line
         
-        // 🌟 修复关键点 2：直接降低整个发射器图层的不透明度（最快、最有效的变浅方法）
+        // 🌟 直接降低整个发射器图层的不透明度（最快、最有效的变浅方法）
         emitter.opacity = 0.3 // 整体透明度压到 30%，如果不满意可以直接改这个值，无需调粒子细节
         
         let fogCell = CAEmitterCell()
         
-        // 🌟 修复关键点 3：将雾团基础图片的透明度降到极限
-        fogCell.contents = createFogImage(color: UIColor.white.withAlphaComponent(0.05))?.cgImage
+        // 🌟 将雾团基础图片的透明度降到极限
+        fogCell.contents = createFogImage(color: color)?.cgImage
         
         fogCell.birthRate = 0.2 // 进一步降低生成频率（每 5 秒才飘出一个）
         fogCell.lifetime = 20.0
@@ -251,31 +249,23 @@ class PTWeatherOverlayView: PTDashboardBaseView { // 保持继承你原有的基
         
         layer.insertSublayer(emitter, at: 0)
         self.emitterLayer = emitter
+
+    }
+    
+    /// 播放雾霾动画 (水平慢速飘动的巨大柔光云团)
+    private func showFog() {
+        stopWeather()
+        
+        let fogColor = UIColor.white.withAlphaComponent(0.05)
+        fogBase(color: fogColor)
     }
     
     /// 播放扬沙/沙尘暴动画
     private func showSandstorm() {
         stopWeather()
-        let emitter = CAEmitterLayer()
-        emitter.emitterPosition = CGPoint(x: bounds.width + 100, y: bounds.height / 2)
-        emitter.emitterSize = CGSize(width: 1, height: bounds.height)
-        emitter.emitterShape = .line
         
-        let sandCell = CAEmitterCell()
-        // 使用暗黄色调模拟沙尘
-        let sandColor = UIColor(red: 0.7, green: 0.6, blue: 0.4, alpha: 0.3)
-        sandCell.contents = createFogImage(color: sandColor)?.cgImage
-        sandCell.birthRate = 3.0 // 沙尘比雾气更密集
-        sandCell.lifetime = 20.0
-        sandCell.velocity = 150 // 沙尘暴风速很快
-        sandCell.velocityRange = 50
-        sandCell.emissionLongitude = .pi // 向左吹
-        sandCell.scale = 2.0
-        sandCell.scaleRange = 1.0
-        
-        emitter.emitterCells = [sandCell]
-        layer.addSublayer(emitter)
-        self.emitterLayer = emitter
+        let sandColor = UIColor(red: 0.7, green: 0.6, blue: 0.4, alpha: 0.05)
+        fogBase(color: sandColor)
     }
     
     // MARK: - 🎨 辅助方法：代码生成粒子图片，彻底免除导入图片的麻烦
