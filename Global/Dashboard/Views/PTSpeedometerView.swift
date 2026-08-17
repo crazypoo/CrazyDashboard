@@ -321,7 +321,7 @@ public class PTSpeedometerView: UIView {
         guard bounds.width > 0 else { return }
         
         let center = CGPoint(x: bounds.width / 2, y: bounds.height / 2)
-        let radius = bounds.width / 2 - 20
+        let radius = bounds.width / 2
         
         // 1. 重新绘制轨道圆弧 (🚨 使用 isClockwiseDrawing)
         let path = UIBezierPath(arcCenter: center,

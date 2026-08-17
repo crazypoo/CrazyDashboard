@@ -10,6 +10,7 @@ import PooTools
 import SwifterSwift
 import SnapKit
 import SafeSFSymbols
+import SwiftDate
 
 class PTDataCollectedViewController: PTMotoBaseViewController {
 
@@ -97,6 +98,27 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
                             }
                         }
                     }
+                    
+                    cell.mapImageTapAction = {
+//                        PTGCDManager.shared.runOnMain {
+//                            var models = [PTMediaBrowserModel]()
+//                            self.mediaPaths.enumerated().forEach { index,value in
+//                                let cellModel = PTTripManager.shared.tripHistory[index]
+//                                let startTime = cellModel.startTime.convertTo(region: .local).toFormat("MM-dd HH:mm")
+//                                let endTime = cellModel.endTime.convertTo(region: .local).toFormat("HH:mm")
+//                                let model = PTMediaBrowserModel()
+//                                model.imageURL = value
+//                                model.imageInfo = "🏁 \(startTime) -> \(endTime)"
+//                                models.append(model)
+//                            }
+//
+//                            if !models.isEmpty {
+//                                PTDashboardConfig.globalImageBrowser(mediaModels: models,showIndex: indexPath.row,currentDataIndexCallback: { currentIndex in
+//                                    self.detailCollection.contentCollectionView.scrollToItem(at: IndexPath(row: currentIndex, section: 0), at: .top, animated: true)
+//                                })
+//                            }
+//                        }
+                    }
                     return cell
                 }
             }
@@ -105,6 +127,8 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
         return view
     }()
 
+    var mediaPaths:[Any] = []
+    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
@@ -127,6 +151,33 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
             make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total)
         }
         listSet()
+        
+        let images = PTTripManager.shared.tripHistory.map { value in
+            let imageName = value.gpxFileName?.replacingOccurrences(of: ".gpx", with: ".jpg")
+            return imageName ?? ""
+        }
+        mediaPaths = images
+        images.enumerated().forEach { index,value in
+            if value.isEmpty {
+                PTGCDManager.shared.runOnMain {
+                    self.mediaPaths[index] = ""
+                }
+            } else {
+                PTiCloudFileManager.shared.fetchCloudFileIfNeeded(fileName: value) { [weak self] localImageURL in
+                    guard let self = self else { return }
+                    
+                    if let imgURL = localImageURL, FileManager.default.fileExists(atPath: imgURL.path) {
+                        PTGCDManager.shared.runOnMain {
+                            self.mediaPaths[index] = UIImage(contentsOfFile: imgURL.path) as Any
+                        }
+                    } else {
+                        PTGCDManager.shared.runOnMain {
+                            self.mediaPaths[index] = ""
+                        }
+                    }
+                }
+            }
+        }
     }
     
     func listSet(finishTask:PTCollectionCallback? = nil) {

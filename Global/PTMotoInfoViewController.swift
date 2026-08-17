@@ -700,8 +700,8 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
 
         speedometer.snp.makeConstraints { make in
             make.top.equalTo(self.actionStack.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-            make.left.equalToSuperview()
-            make.right.equalTo(self.view.snp.centerX)
+            make.left.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
+            make.right.equalTo(self.view.snp.centerX).offset(-(CGFloat.GlobalItemSpacing / 2))
             make.height.equalTo(self.speedometer.snp.width)
         }
         speedometer.layoutIfNeeded()
@@ -709,8 +709,8 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         
         speedometerReversed.snp.makeConstraints { make in
             make.top.height.equalTo(self.speedometer)
-            make.right.equalToSuperview()
-            make.left.equalTo(self.view.snp.centerX)
+            make.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
+            make.left.equalTo(self.view.snp.centerX).offset(CGFloat.GlobalItemSpacing / 2)
         }
         speedometerReversed.layoutIfNeeded()
         speedometerReversed.viewCorner(radius: speedometerReversed.bounds.size.height / 2)

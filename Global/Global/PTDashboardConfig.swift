@@ -11,6 +11,7 @@ import AttributedString
 import FlagKit
 import SwifterSwift
 import SnapKit
+import SafeSFSymbols
 
 enum PTCollectionEmptyType {
     case Normal
@@ -346,4 +347,55 @@ extension PTDashboardConfig {
         let listEmptyConfig = PTDashboardConfig.gobalListEmptySet(image:imageName,emptyString: emptyString,emptyTap:loadCallback)
         return listEmptyConfig
     }
+}
+
+extension PTDashboardConfig {
+    @MainActor class func gobalMediaBrowserConfig() -> PTMediaBrowserConfig {
+        let share = PTMediaBrowserConfig.share
+        share.closeViewerImage = UIImage(.chevron.compactLeft).withTintColor(.white, renderingMode: .alwaysOriginal)
+        share.viewerFont = .appfont(size: 13)
+        share.titleFont = PTAppBaseConfig.share.navTitleFont
+        share.imageReloadButton = PTDashboardConfig.languageFunc(text: "Image reload fail")
+        share.playButtonImage = UIImage(.play.fill)
+        share.playButtonImageSize = .init(width: 64, height: 64)
+        return share
+    }
+    
+    static func globalImageBrowser(mediaModels:[PTMediaBrowserModel],
+                                   showIndex:Int = 0,
+                                   dismissBarStatus:VCStatusBarChangeStatusType = .Auto,
+                                   customAction:[String] = [],
+                                   customActionCallback:PTViewerEXIndexBlock? = nil,
+                                   currentDataIndexCallback:((Int)->Void)? = nil,
+                                   showed:PTActionTask? = nil) {
+        PTGCDManager.shared.runOnMain {
+            let mediaBroswer = PTDashboardConfig.gobalMediaBrowserConfig()
+            if customAction.count > 0 {
+                mediaBroswer.actionType = .DIY
+                mediaBroswer.moreActionEX = customAction
+            } else {
+                mediaBroswer.actionType = .Empty
+            }
+            mediaBroswer.dynamicBackground = true
+            mediaBroswer.showMore = PTDashboardConfig.languageFunc(text: "More")
+            mediaBroswer.moreActionImage = UIImage(.ellipsis.circleFill)
+            
+            let vc = PTMediaBrowserController(mediaData: mediaModels)
+            vc.defaultIndex = showIndex
+            vc.viewDismissBlock = {
+                PTGCDManager.shared.runOnMain {
+                    if let current = PTUtils.getCurrentVC() as? PTMotoBaseViewController {
+                        current.changeStatusBar(type: dismissBarStatus)
+                    }
+                }
+            }
+            vc.viewMoreActionBlock = customActionCallback
+            vc.browserCurrentDataBlock = currentDataIndexCallback
+            let nav = PTBaseNavControl(rootViewController: vc)
+            UIViewController.currentPresentToSheet(vc: nav,sizes: [.fullscreen],completion: {
+                showed?()
+            }, dismissPanGes: false)
+        }
+    }
+
 }

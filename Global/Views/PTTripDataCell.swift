@@ -26,11 +26,12 @@ class PTTripDataCell: PTBaseSwipeCell {
     /// 图片彻底丢失，请求外部（ViewController）触发后台地图重绘机制
     var requestMapSnapshotAction: ((String) -> Void)?
     var trashAction: PTActionTask?
+    var mapImageTapAction: PTActionTask?
 
     // MARK: - 📦 UI 组件
     
     // 标题时间
-    private lazy var timeTitleLabel: UILabel = {
+    lazy var timeTitleLabel: UILabel = {
         let label = UILabel()
         label.font = .appfont(size: 15,bold: true)
         label.textColor = .white
@@ -54,6 +55,12 @@ class PTTripDataCell: PTBaseSwipeCell {
         view.clipsToBounds = true
         view.layer.cornerRadius = 8
         view.backgroundColor = UIColor(white: 0.15, alpha: 1.0) // 默认占位底色
+        view.isUserInteractionEnabled = true
+        
+        let tap = UITapGestureRecognizer { sender in
+            self.mapImageTapAction?()
+        }
+        view.addGestureRecognizer(tap)
         return view
     }()
     
@@ -383,11 +390,11 @@ public class PTRouteSnapshotManager: NSObject, MAMapViewDelegate {
                         if let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
                             let fileURL = docsDir.appendingPathComponent(imageFileName)
                             do {
-                                // 1. 存入本地沙盒
+                                // 存入本地沙盒
                                 try data.write(to: fileURL)
                                 PTNSLogConsole("📸 [地图补救机制] 缩略图重绘成功: \(imageFileName)")
                                 
-                                // 2. 🚨 立刻备份到 iCloud，补齐云端缺失的文件！
+                                // 🚨 立刻备份到 iCloud，补齐云端缺失的文件！
                                 PTiCloudFileManager.shared.backupDatabaseToICloud(dbName: imageFileName)
                                 
                                 resultURL = fileURL

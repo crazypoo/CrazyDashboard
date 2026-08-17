@@ -70,8 +70,23 @@ class PTPeugeotDashBoardViewController: PTMotoBaseViewController {
         super.viewWillDisappear(animated)
         
         // 视图即将消失（比如返回上一页）时：强制恢复为竖屏
-        PTRotationManager.shared.rotationToPortrait()
-        
+        if let coordinator = transitionCoordinator {
+            coordinator.animate(alongsideTransition: { _ in
+                // 跟随 pop 动画一起请求转回竖屏
+                PTRotationManager.shared.rotationToPortrait()
+            }, completion: { context in
+                // 如果用户侧滑返回到一半又取消了（决定留在 B 界面）
+                if context.isCancelled {
+                    // 恢复横屏状态
+                    PTRotationManager.shared.rotationToLandscapeRight()
+                    PTRotationManager.shared.isLockOrientationWhenDeviceOrientationDidChange = true
+                }
+            })
+        } else {
+            // 如果没有动画（比如无动画 pop），直接转
+            PTRotationManager.shared.rotationToPortrait()
+        }
+
         if let scene = SceneDelegate.sceneDelegate() as? SceneDelegate {
             scene.weatherOverlay.snp.remakeConstraints { make in
                 make.edges.equalToSuperview()
@@ -99,10 +114,10 @@ class PTPeugeotDashBoardViewController: PTMotoBaseViewController {
         
         view.addSubviews([speedometer,speedometerReversed,ledDashboard,lightControl])
         speedometer.snp.makeConstraints { make in
-            make.width.equalToSuperview().multipliedBy(0.28)
+            make.width.equalToSuperview().multipliedBy(0.25)
             make.height.equalTo(self.speedometer.snp.width)
             make.bottom.equalToSuperview()
-            make.left.equalToSuperview().inset(50)
+            make.left.equalToSuperview().inset(45)
         }
         speedometer.playStartupSweep(duration: 1.5)
         
@@ -114,8 +129,8 @@ class PTPeugeotDashBoardViewController: PTMotoBaseViewController {
         speedometerReversed.playStartupSweep(duration: 1.5)
         
         ledDashboard.snp.makeConstraints { make in
-            make.left.equalTo(self.speedometer.snp.right)
-            make.right.equalTo(self.speedometerReversed.snp.left)
+            make.left.equalTo(self.speedometer.snp.right).offset(CGFloat.GlobalItemSpacing)
+            make.right.equalTo(self.speedometerReversed.snp.left).offset(-CGFloat.GlobalItemSpacing)
             make.top.equalToSuperview()
             make.bottom.equalTo(self.speedometer.snp.centerY)
         }
