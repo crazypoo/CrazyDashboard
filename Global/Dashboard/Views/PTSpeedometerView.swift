@@ -476,7 +476,11 @@ public class PTSpeedometerView: UIView {
     private func _internalUpdateSpeed(_ currentSpeed: CGFloat, animated: Bool) {
         currentSpeedRaw = currentSpeed
         let safeSpeed = min(max(currentSpeed, 0), maxSpeed)
-        speedLabel.text = "\(Int(safeSpeed))"
+        if (unitLabel.text ?? "").contains(RPMUnit) {
+            speedLabel.text = String(format: "%.0f", safeSpeed / majorTickStep)
+        } else {
+            speedLabel.text = "\(Int(safeSpeed))"
+        }
         
         let speedRatio = safeSpeed / maxSpeed
         

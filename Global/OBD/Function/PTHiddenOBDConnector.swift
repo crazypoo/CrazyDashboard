@@ -321,7 +321,7 @@ public class PTOBDInfo:NSObject {
                     swVersion = suffix
                 }
             }
-        }        
+        }
         return PTCALDetails(
             rawString: raw,
             detectedModel: model,
@@ -663,6 +663,9 @@ public class PTOBDTransportBase: NSObject {
                 for i in 0..<(lines.count - 1) {
                     let frame = lines[i].trimmingCharacters(in: .whitespacesAndNewlines)
                     if !frame.isEmpty {
+                        // 仅在 ATMA 被动监听期间记录真实总线报文。
+                        // 不改变现有日志行为，也不主动发送任何车辆数据。
+                        PTCANRecorder.shared.append(rawLine: frame, direction: .bus)
                         // 💥 这里直接把抓到的原厂私有报文狠狠地砸进日志！
                         PTOBDLogger.obd.ptLog("🕵️‍♂️ [嗅探抓包] 截获报文: \(frame)")
                     }
@@ -1571,6 +1574,7 @@ extension PTMotoTelemetryManager {
         isConnected = false
         obdInfo.supportCommand = []
         delegates.forEach { $0.delegate?.telemetryManager(self, didChangeConnectionState: false) }
+        let _ = PTCANRecorder.shared.stop()
         PTOBDLogger.obd.stopFileLogging()
     }
     

@@ -35,7 +35,7 @@ class PTPeugeotDashBoardViewController: PTMotoBaseViewController {
         view.sweepDirection = .reversed
         view.altitudeLabel.isHidden = true
         view.pressureLabel.isHidden = true
-        view.unitLabel.text = "x1000 r/min"
+        view.unitLabel.text = RPMUnit
         view.maxSpeed = 10000
         view.tickStep = 500
         view.majorTickStep = 1000

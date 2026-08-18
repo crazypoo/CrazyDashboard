@@ -13,6 +13,8 @@ import SwifterSwift
 import SnapKit
 import SafeSFSymbols
 
+let RPMUnit = "x1000 r/min"
+
 enum PTCollectionEmptyType {
     case Normal
     case Loading

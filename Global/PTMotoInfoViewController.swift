@@ -84,7 +84,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         view.sweepDirection = .reversed
         view.altitudeLabel.isHidden = true
         view.pressureLabel.isHidden = true
-        view.unitLabel.text = "x1000 r/min"
+        view.unitLabel.text = RPMUnit
         view.maxSpeed = 10000
         view.tickStep = 500
         view.majorTickStep = 1000
@@ -1012,6 +1012,12 @@ extension PTMotoInfoViewController {
 
 extension PTMotoInfoViewController:PTMotoTelemetryDelegate {
     func telemetryManager(_ manager: PTMotoTelemetryManager, didChangeConnectionState isConnected: Bool) {
+        if isConnected {
+            PTCANRecorder.shared.start(name: "XP400_Menu_Test")
+        } else {
+            self.speedometer.resetToZeroWithAnimation()
+            self.speedometerReversed.resetToZeroWithAnimation()
+        }
         obdButton.isSelected = isConnected
         obdButton.stopLoading()
     }
