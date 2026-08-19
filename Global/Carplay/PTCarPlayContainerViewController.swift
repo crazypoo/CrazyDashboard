@@ -7,6 +7,7 @@
 
 import UIKit
 import PooTools
+import SnapKit
 
 class PTCarPlayPassThroughView: UIView {
     
@@ -50,11 +51,12 @@ class PTCarPlayContainerViewController: UIViewController {
         
         // 2. 把新界面请进盒子
         addChild(viewController)
-        viewController.view.frame = self.view.bounds
-        // 确保新界面的大小始终跟随容器变化 (应对 CarPlay 的分屏模式)
-        viewController.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        viewController.view.translatesAutoresizingMaskIntoConstraints = false
         
         self.view.addSubview(viewController.view)
+        viewController.view.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
         viewController.didMove(toParent: self)
         
         // 更新当前界面记录

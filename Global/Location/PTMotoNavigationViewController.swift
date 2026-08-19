@@ -216,7 +216,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     }()
 
     private lazy var amapView:MAMapView = {
-        let view = PTGlobalMapManager.shared.amapView
+        let view = PTGlobalMapManager.shared.makeMapView()
         view.delegate = self
         view.compassOrigin = .init(x: -(CGFloat.kSCREEN_WIDTH - PTAppBaseConfig.share.defaultViewSpace), y: CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing * 2 + homeSize)
         return view
@@ -414,7 +414,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     var currentCity:String = ""
     
     lazy var driveView: AMapNaviDriveView = {
-        let view = PTGlobalMapManager.shared.driveView
+        let view = PTGlobalMapManager.shared.makeNavigationView()
         view.delegate = self
         view.isHidden = true
         return view
@@ -558,13 +558,15 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     
     func navReset() {
         amapNormalView.removeFromSuperview()
-        PTGlobalMapManager.shared.attachAMapView(to: self.view,delegate: self)
+        self.view.addSubview(amapView)
+        amapView.delegate = self
         self.view.sendSubviewToBack(amapView)
         amapView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
 
-        PTGlobalMapManager.shared.attachDriveView(to: self.view,delegate: self)
+        self.view.addSubview(driveView)
+        driveView.delegate = self
         // 确保 startNavigationButton 等在最上方
         driveView.snp.remakeConstraints { make in
             make.left.right.equalToSuperview()

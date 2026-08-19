@@ -35,6 +35,7 @@ class PTCarPlaySceneDelegate: UIResponder,CPTemplateApplicationSceneDelegate,CPI
 
         let rootTemplate = createMainMenuTemplate()
         interfaceController.setRootTemplate(rootTemplate, animated: true, completion: nil)
+        NotificationCenter.default.post(name: PTCarPlayDidBecomeActiveNotification, object: nil)
         
         NotificationCenter.default.post(
             name: CarPlayDidConnectNotification,
@@ -135,6 +136,8 @@ class PTCarPlaySceneDelegate: UIResponder,CPTemplateApplicationSceneDelegate,CPI
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene, didDisconnectInterfaceController interfaceController: CPInterfaceController) {
         self.interfaceController = nil
         self.carWindow = nil
+        self.dashboardVC.clearChildVC()
+        NotificationCenter.default.post(name: PTCarPlayDidEnterBackgroundNotification, object: nil)
         // 🌟 拔下线时，也发一个断开的广播，让手机端恢复正常 UI
         NotificationCenter.default.post(
             name: CarPlayDidDisconnectNotification,
@@ -146,5 +149,13 @@ class PTCarPlaySceneDelegate: UIResponder,CPTemplateApplicationSceneDelegate,CPI
     func templateDidDisappear(_ aTemplate: CPTemplate, animated: Bool) {
                     
         PTNSLogConsole("🚗 [CarPlay] 检测到返回操作，已同步弹出 ViewController。")
+    }
+
+    func sceneDidBecomeActive(_ scene: UIScene) {
+        NotificationCenter.default.post(name: PTCarPlayDidBecomeActiveNotification, object: nil)
+    }
+
+    func sceneDidEnterBackground(_ scene: UIScene) {
+        NotificationCenter.default.post(name: PTCarPlayDidEnterBackgroundNotification, object: nil)
     }
 }

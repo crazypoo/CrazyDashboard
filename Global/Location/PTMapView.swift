@@ -36,7 +36,7 @@ class PTMapView: UIView, MAMapViewDelegate {
     }()
     
     lazy var carPlayMapView:MAMapView = {
-        let view = PTGlobalMapManager.shared.amapView
+        let view = PTGlobalMapManager.shared.makeMapView()
         view.userTrackingMode = .followWithHeading // 【灵魂属性】跟随车头方向，自动呈现 3D 导航视角
         view.showsCompass = false // 隐藏原生指南针，因为我们有 PTCompassRollerView
         view.showsScale = false
@@ -49,7 +49,7 @@ class PTMapView: UIView, MAMapViewDelegate {
     }()
     
     lazy var driveView: AMapNaviDriveView = {
-        let view = PTGlobalMapManager.shared.driveView
+        let view = PTGlobalMapManager.shared.makeNavigationView()
         view.delegate = self
         view.isHidden = true
         return view
@@ -108,8 +108,11 @@ class PTMapView: UIView, MAMapViewDelegate {
     
     func setupNavView() {
         mapView.removeFromSuperview()
-        PTGlobalMapManager.shared.attachAMapView(to: self,delegate: self)
-        PTGlobalMapManager.shared.attachDriveView(to: self,delegate: self)
+        carPlayMapView.removeFromSuperview()
+        driveView.removeFromSuperview()
+        addSubviews([carPlayMapView, driveView])
+        carPlayMapView.delegate = self
+        driveView.delegate = self
         self.carPlayMapView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }

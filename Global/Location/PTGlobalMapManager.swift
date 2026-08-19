@@ -40,6 +40,25 @@ public class PTGlobalMapManager: NSObject {
     private override init() {
         super.init()
     }
+
+    public func makeMapView() -> MAMapView {
+        let view = MAMapView()
+        view.showsUserLocation = true
+        view.userTrackingMode = .follow
+        view.mapType = .standardNight
+        view.mapLanguage = PTDashboardConfig.appIsInChinese() ? 0 : 1
+        return view
+    }
+
+    public func makeNavigationView() -> AMapNaviDriveView {
+        let view = AMapNaviDriveView()
+        view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.showGreyAfterPass = true
+        view.autoZoomMapLevel = true
+        view.trackingMode = AMapNaviViewTrackingMode.carNorth
+        view.mapViewModeType = AMapNaviViewMapModeType.night
+        return view
+    }
     
     /// 将 2D 地图贴到指定的容器视图上
     public func attachAMapView(to container: UIView, delegate: MAMapViewDelegate?) {

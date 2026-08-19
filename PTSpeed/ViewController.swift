@@ -26,48 +26,6 @@ class ViewController: UIViewController {
         
     private var carplayDisplayLink: CADisplayLink?
     
-    private var hasRebuiltForCarPlay = false
-    
-    private func rebuildDriveViewToFixScreenBinding() {
-        guard !hasRebuiltForCarPlay else { return }
-        
-        // 确保当前确实在 CarPlay 环境，并且拿到的是车机屏幕而不是手机屏幕
-        guard PTCarPlayManager.isCarPlayActive,
-              let carWindow = self.view.window,
-              carWindow.screen != UIScreen.main else { return }
-        
-        PTNSLogConsole("🔧 [CarPlay] 正在对 DriveView 进行换心手术，绑定车机专属屏幕脉冲...")
-        
-        // 1. 从高德引擎中解绑并摧毁旧的 driveView
-        AMapNaviDriveManager.sharedInstance().removeDataRepresentative(self.dashBoard.mapView.driveView)
-        self.dashBoard.mapView.driveView.removeFromSuperview()
-        
-        // 2. 创建一个全新的 driveView！
-        // 🌟 核心魔法：此时代码运行在车机 window 的生命周期里，高德底层会自动绑定 CarPlay 屏幕的渲染脉冲！
-        let newDriveView = AMapNaviDriveView(frame: self.dashBoard.mapView.bounds)
-        newDriveView.showMode = .carPositionLocked
-        newDriveView.trackingMode = AMapNaviViewTrackingMode.carNorth
-        newDriveView.mapViewModeType = AMapNaviViewMapModeType.night
-        // 由于是新建的，需要重新设置一些你的默认属性 (隐藏不需要的控件等)
-        newDriveView.showUIElements = false
-        newDriveView.showCompass = false
-        
-        // 3. 塞回你的 UI 层级中，并替换原有的指针
-        self.dashBoard.mapView.addSubview(newDriveView)
-        self.dashBoard.mapView.driveView = newDriveView // 确保你其他的逻辑还能引用到它
-        
-        // 4. 重新注册给高德引擎，打通数据流
-        AMapNaviDriveManager.sharedInstance().addDataRepresentative(newDriveView)
-        AMapNaviDriveManager.sharedInstance().delegate = self.dashBoard.mapView
-        AMapNaviDriveManager.sharedInstance().allowsBackgroundLocationUpdates = true
-        AMapNaviDriveManager.sharedInstance().pausesLocationUpdatesAutomatically = false
-        //将driveView添加为导航数据的Representative，使其可以接收到导航诱导数据
-        AMapNaviDriveManager.sharedInstance().addDataRepresentative(self.dashBoard.mapView)
-
-        hasRebuiltForCarPlay = true
-        PTNSLogConsole("✅ [CarPlay] 换心手术成功！现在你可以放心熄灭手机屏幕了。")
-    }
-
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         self.view.layoutIfNeeded()
@@ -187,9 +145,6 @@ class ViewController: UIViewController {
             }
         } else {
             self.dashBoard.mapView.setNormalMapView()
-        }
-        if PTCarPlayManager.isCarPlayActive,PTDashboardConfig.shared.blueConnected,PTDashboardConfig.shared.naving {
-            rebuildDriveViewToFixScreenBinding()
         }
     }
 }
