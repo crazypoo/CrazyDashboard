@@ -59,6 +59,8 @@ public struct PTCANFrame: Codable, Hashable, Sendable {
 // MARK: - Capture Session
 
 public struct PTCANCaptureSession: Codable, Sendable {
+
+    public static let currentSchemaVersion = 2
     
     public let id: UUID
     public let name: String
@@ -66,6 +68,19 @@ public struct PTCANCaptureSession: Codable, Sendable {
     public let endedAt: Date?
     public let filterHeader: String?
     public let frames: [PTCANFrame]
+    public let schemaVersion: Int
+    public let events: [PTCANCaptureEvent]
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case startedAt
+        case endedAt
+        case filterHeader
+        case frames
+        case schemaVersion
+        case events
+    }
     
     public init(
         id: UUID,
@@ -73,7 +88,9 @@ public struct PTCANCaptureSession: Codable, Sendable {
         startedAt: Date,
         endedAt: Date?,
         filterHeader: String?,
-        frames: [PTCANFrame]
+        frames: [PTCANFrame],
+        schemaVersion: Int = PTCANCaptureSession.currentSchemaVersion,
+        events: [PTCANCaptureEvent] = []
     ) {
         self.id = id
         self.name = name
@@ -81,6 +98,20 @@ public struct PTCANCaptureSession: Codable, Sendable {
         self.endedAt = endedAt
         self.filterHeader = filterHeader
         self.frames = frames
+        self.schemaVersion = schemaVersion
+        self.events = events
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(UUID.self, forKey: .id)
+        self.name = try container.decode(String.self, forKey: .name)
+        self.startedAt = try container.decode(Date.self, forKey: .startedAt)
+        self.endedAt = try container.decodeIfPresent(Date.self, forKey: .endedAt)
+        self.filterHeader = try container.decodeIfPresent(String.self, forKey: .filterHeader)
+        self.frames = try container.decode([PTCANFrame].self, forKey: .frames)
+        self.schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
+        self.events = try container.decodeIfPresent([PTCANCaptureEvent].self, forKey: .events) ?? []
     }
     
     public var duration: TimeInterval {
@@ -228,6 +259,21 @@ public extension PTCANCaptureStore {
         writeQueue.sync {
             fileHandle = handle
         }
+
+        do {
+            try writeQueue.sync {
+                try writeMetadata(session, for: url)
+            }
+        } catch {
+            writeQueue.sync {
+                closeFileLocked()
+            }
+            stateQueue.sync {
+                currentURL = nil
+            }
+            try? FileManager.default.removeItem(at: url)
+            throw error
+        }
         
         return url
     }
@@ -317,7 +363,25 @@ public extension PTCANCaptureStore {
             try? FileManager.default.removeItem(
                 at: url
             )
+            try? FileManager.default.removeItem(
+                at: metadataURL(for: url)
+            )
         }
+    }
+
+    /// Updates the sidecar metadata used for crash recovery.
+    func updateMetadata(_ session: PTCANCaptureSession) throws {
+        guard let url = currentFileURL else {
+            return
+        }
+
+        try writeQueue.sync {
+            try writeMetadata(session, for: url)
+        }
+    }
+
+    func updateMetadata(_ session: PTCANCaptureSession, for url: URL) throws {
+        try writeMetadata(session, for: url)
     }
     
     /// 当前 JSONL 文件。
@@ -483,10 +547,15 @@ public extension PTCANCaptureStore {
     func delete(
         fileURL: URL
     ) throws {
-        
         try FileManager.default.removeItem(
             at: fileURL
         )
+
+        if fileURL.pathExtension.lowercased() == "jsonl" {
+            try? FileManager.default.removeItem(
+                at: metadataURL(for: fileURL)
+            )
+        }
     }
     
     /// 删除所有 Capture 文件。
@@ -524,20 +593,6 @@ public extension PTCANCaptureStore {
     
     /// 从 JSONL 恢复 Capture。
     ///
-    /// 注意：
-    /// JSONL 本身只保存 Frame，因此 Session 的：
-    /// - name
-    /// - id
-    /// - filterHeader
-    ///
-    /// 无法 100% 从 Frame 本身恢复。
-    ///
-    /// 因此这里：
-    /// - id 使用 UUID
-    /// - name 使用文件名
-    /// - startedAt 使用第一帧 timestamp
-    /// - endedAt 使用最后一帧 timestamp
-    /// - filterHeader = nil
     func loadJSONL(
         from url: URL
     ) throws -> PTCANCaptureSession {
@@ -555,6 +610,30 @@ public extension PTCANCaptureStore {
         
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
+
+        if let metadata = try? Data(contentsOf: metadataURL(for: url)),
+           let session = try? PTCANCaptureStorage.decode(metadata) {
+            var frames: [PTCANFrame] = []
+
+            for substring in text.split(whereSeparator: \.isNewline) {
+                guard let lineData = String(substring).data(using: .utf8),
+                      let frame = try? decoder.decode(PTCANFrame.self, from: lineData) else {
+                    continue
+                }
+                frames.append(frame)
+            }
+
+            return PTCANCaptureSession(
+                id: session.id,
+                name: session.name,
+                startedAt: session.startedAt,
+                endedAt: session.endedAt,
+                filterHeader: session.filterHeader,
+                frames: frames,
+                schemaVersion: session.schemaVersion,
+                events: session.events
+            )
+        }
         
         var frames: [PTCANFrame] = []
         
@@ -615,6 +694,15 @@ public extension PTCANCaptureStore {
 // MARK: - File Names
 
 private extension PTCANCaptureStore {
+
+    func metadataURL(for url: URL) -> URL {
+        url.deletingPathExtension().appendingPathExtension("metadata")
+    }
+
+    func writeMetadata(_ session: PTCANCaptureSession, for url: URL) throws {
+        let data = try PTCANCaptureStorage.encode(session)
+        try data.write(to: metadataURL(for: url), options: .atomic)
+    }
     
     func makeJSONLFileName(
         session: PTCANCaptureSession
@@ -624,9 +712,7 @@ private extension PTCANCaptureStore {
             session.name
         )
         
-        let date = Self.dateFormatter.string(
-            from: session.startedAt
-        )
+        let date = fileDateString(session.startedAt)
         
         let uuid = session.id.uuidString
             .prefix(8)
@@ -642,9 +728,7 @@ private extension PTCANCaptureStore {
             session.name
         )
         
-        let date = Self.dateFormatter.string(
-            from: session.startedAt
-        )
+        let date = fileDateString(session.startedAt)
         
         let uuid = session.id.uuidString
             .prefix(8)
@@ -660,9 +744,7 @@ private extension PTCANCaptureStore {
             session.name
         )
         
-        let date = Self.dateFormatter.string(
-            from: session.startedAt
-        )
+        let date = fileDateString(session.startedAt)
         
         let uuid = session.id.uuidString
             .prefix(8)
@@ -692,7 +774,7 @@ private extension PTCANCaptureStore {
             : result
     }
     
-    static let dateFormatter: DateFormatter = {
+    func fileDateString(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(
             identifier: "en_US_POSIX"
@@ -700,8 +782,8 @@ private extension PTCANCaptureStore {
         formatter.timeZone = TimeZone.current
         formatter.dateFormat =
             "yyyyMMdd_HHmmss"
-        return formatter
-    }()
+        return formatter.string(from: date)
+    }
 }
 
 // MARK: - Recorder
@@ -732,6 +814,8 @@ public final class PTCANRecorder: @unchecked Sendable {
     private var filterHeader: String?
     private var sequence: Int = 0
     private var frames: [PTCANFrame] = []
+    private var events: [PTCANCaptureEvent] = []
+    private var _maxInMemoryFrames: Int = 100_000
     
     private init() {}
 }
@@ -760,6 +844,22 @@ public extension PTCANRecorder {
     
     var currentFileURL: URL? {
         PTCANCaptureStore.shared.currentFileURL
+    }
+
+    public var maxInMemoryFrames: Int {
+        get {
+            lock.lock()
+            defer { lock.unlock() }
+            return _maxInMemoryFrames
+        }
+        set {
+            lock.lock()
+            _maxInMemoryFrames = max(1, newValue)
+            if frames.count > _maxInMemoryFrames {
+                frames.removeFirst(frames.count - _maxInMemoryFrames)
+            }
+            lock.unlock()
+        }
     }
 }
 
@@ -812,6 +912,7 @@ public extension PTCANRecorder {
         self.filterHeader =
             normalizedFilter
         sequence = 0
+        events.removeAll(keepingCapacity: true)
         
         if clearPrevious {
             frames.removeAll(
@@ -825,7 +926,8 @@ public extension PTCANRecorder {
             startedAt: startDate,
             endedAt: nil,
             filterHeader: normalizedFilter,
-            frames: []
+            frames: [],
+            events: []
         )
         
         lock.unlock()
@@ -918,6 +1020,10 @@ public extension PTCANRecorder {
             dlc: parsed.dlc
         )
         
+        let memoryLimit = max(1, maxInMemoryFrames)
+        if frames.count >= memoryLimit, !frames.isEmpty {
+            frames.removeFirst()
+        }
         frames.append(frame)
         
         lock.unlock()
@@ -962,8 +1068,11 @@ public extension PTCANRecorder {
                 startedAt: startedAt,
                 endedAt: endedAt,
                 filterHeader: filterHeader,
-                frames: frames
+                frames: frames,
+                events: events
             )
+
+        let captureURL = PTCANCaptureStore.shared.currentFileURL
         
         /*
          先把 Recorder 状态清掉。
@@ -972,6 +1081,7 @@ public extension PTCANRecorder {
         self.sessionID = nil
         self.filterHeader = nil
         self.sequence = 0
+        self.events.removeAll(keepingCapacity: true)
         self.frames.removeAll(
             keepingCapacity: true
         )
@@ -989,6 +1099,13 @@ public extension PTCANRecorder {
          然后才关闭文件。
          */
         _ = PTCANCaptureStore.shared.finish()
+
+        if let captureURL {
+            try? PTCANCaptureStore.shared.updateMetadata(
+                result,
+                for: captureURL
+            )
+        }
         
         /*
          保存最终 JSON。
@@ -1034,6 +1151,7 @@ public extension PTCANRecorder {
         sessionID = nil
         filterHeader = nil
         sequence = 0
+        events.removeAll(keepingCapacity: true)
         
         frames.removeAll(
             keepingCapacity: true
@@ -1070,7 +1188,8 @@ public extension PTCANRecorder {
             startedAt: startedAt,
             endedAt: nil,
             filterHeader: filterHeader,
-            frames: frames
+            frames: frames,
+            events: events
         )
     }
 }
@@ -1112,12 +1231,32 @@ private extension PTCANRecorder {
             return nil
         }
         
-        let dataBytes =
-            parts
-                .dropFirst()
-                .filter {
-                    isHexByte($0)
-                }
+        let candidateBytes = Array(parts.dropFirst())
+
+        guard !candidateBytes.isEmpty,
+              candidateBytes.allSatisfy({ isHexByte($0) }) else {
+            return nil
+        }
+
+        let declaredDLC = Int(candidateBytes[0], radix: 16)
+        let hasELMDLC = declaredDLC.map {
+            // ELM327 monitor output is header + DLC + exactly DLC bytes.
+            // Requiring the exact shape prevents a raw CAN payload beginning
+            // with 00...08 from being mistaken for a DLC field.
+            (0...8).contains($0) && candidateBytes.count == $0 + 1
+        } ?? false
+
+        let dataBytes: [String]
+        let dlc: Int
+
+        if hasELMDLC, let declaredDLC {
+            let payload = Array(candidateBytes.dropFirst())
+            dataBytes = Array(payload.prefix(declaredDLC))
+            dlc = declaredDLC
+        } else {
+            dataBytes = candidateBytes
+            dlc = dataBytes.count
+        }
         
         guard !dataBytes.isEmpty else {
             return nil
@@ -1131,7 +1270,7 @@ private extension PTCANRecorder {
         return ParsedLine(
             header: header,
             dataHex: dataHex,
-            dlc: dataBytes.count
+            dlc: dlc
         )
     }
     
@@ -2483,18 +2622,31 @@ public extension PTCANRecorder {
     func markEvent(
         _ name: String
     ) -> PTCANCaptureEvent? {
-        
+
         lock.lock()
-        defer {
-            lock.unlock()
-        }
-        
+
         guard startedAt != nil else {
+            lock.unlock()
             return nil
         }
-        
-        return PTCANCaptureEvent(
+
+        let event = PTCANCaptureEvent(
             name: name
         )
+        events.append(event)
+
+        let metadataSession = PTCANCaptureSession(
+            id: sessionID ?? UUID(),
+            name: sessionName,
+            startedAt: startedAt ?? Date(),
+            endedAt: nil,
+            filterHeader: filterHeader,
+            frames: [],
+            events: events
+        )
+        lock.unlock()
+
+        try? PTCANCaptureStore.shared.updateMetadata(metadataSession)
+        return event
     }
 }

@@ -70,6 +70,7 @@
 		55CA9E193024582300A3A677 /* PTOBDDataViewControllerCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55CA9E183024582300A3A677 /* PTOBDDataViewControllerCollection.swift */; };
 		55E61692301B45B50075F883 /* QWeatherSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 55E61691301B45B50075F883 /* QWeatherSDK */; };
 		55F1E2F23026D2020032EAD5 /* PTHiddenOBDConnector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F1E2F13026D2020032EAD5 /* PTHiddenOBDConnector.swift */; };
+		55F1E2F53026D2020032EAD5 /* PTUDSDiagnosticService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F1E2F43026D2020032EAD5 /* PTUDSDiagnosticService.swift */; };
 		55F503AC300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
 		55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */; };
 		55F503BB300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */; };
@@ -177,6 +178,7 @@
 		55CA9DF4302452AA00A3A677 /* PTOBDDataView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDDataView.swift; sourceTree = "<group>"; };
 		55CA9E183024582300A3A677 /* PTOBDDataViewControllerCollection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDDataViewControllerCollection.swift; sourceTree = "<group>"; };
 		55F1E2F13026D2020032EAD5 /* PTHiddenOBDConnector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTHiddenOBDConnector.swift; sourceTree = "<group>"; };
+		55F1E2F43026D2020032EAD5 /* PTUDSDiagnosticService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTUDSDiagnosticService.swift; sourceTree = "<group>"; };
 		55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = GlobalAssets.xcassets; sourceTree = "<group>"; };
 		55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLanguageModel.swift; sourceTree = "<group>"; };
 		55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoUserDefaultStruct.swift; sourceTree = "<group>"; };
@@ -515,6 +517,7 @@
 				5512F331302B7F26001AFED4 /* PTOBDCommand.swift */,
 				5512F398302C4CAC001AFED4 /* PTDashboardHacker.swift */,
 				557D027930335603008BA492 /* PTCANRecorder.swift */,
+				55F1E2F43026D2020032EAD5 /* PTUDSDiagnosticService.swift */,
 			);
 			path = Function;
 			sourceTree = "<group>";
@@ -705,13 +708,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -748,13 +747,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -815,6 +810,7 @@
 				55FDBCAC3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift in Sources */,
 				55FE29A1300CC1F1000E741F /* PTMotoInfoViewController.swift in Sources */,
 				557D027A30335603008BA492 /* PTCANRecorder.swift in Sources */,
+				55F1E2F53026D2020032EAD5 /* PTUDSDiagnosticService.swift in Sources */,
 				557D0051302EA1E3008BA492 /* PTArcGaugeView.swift in Sources */,
 				558789E4302420CB00B94E91 /* PTCarplayMainController.swift in Sources */,
 				55499CFE3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift in Sources */,

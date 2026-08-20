@@ -201,12 +201,7 @@ class PTOBDDataView: UIView {
 extension PTOBDDataView: PTMotoTelemetryDelegate {
     
     // 监听到指令列表发现后，触发 UI 重绘
-    func telemetryManager(_ manager: PTMotoTelemetryManager, didDiscoverSupportedCommands commands: [String]) {
-        // 因为构建 UI 必须在主线程，所以确保安全派发
-//        DispatchQueue.main.async {
-//            self.buildDynamicGrid(with: commands)
-//        }
-    }
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didDiscoverSupportedCommands commands: [String]) { }
     
     // MARK: - 接收代理数据并驱动动画
     func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) {

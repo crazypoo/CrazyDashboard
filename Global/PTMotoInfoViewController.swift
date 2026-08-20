@@ -239,7 +239,6 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                                     if wifiPort.isEmpty {
                                         wifiPort = "35000"
                                     }
-                                    PTMotoTelemetryManager.shared.connectToMotorcycle(via: .bluetooth, engineType: .ice)
                                     self.obdButton.startLoading()
                                     let wifi = PTOBDConnectionType.wifi(ip: wifiAddress, port: UInt16(wifiPort) ?? 35000)
                                     PTMotoTelemetryManager.shared.connectToMotorcycle(via: wifi, engineType: .ice)
@@ -256,7 +255,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     }
                 })
             } else {
-                let actions = ["Error Code","Disconnect","Data","ECU info","MIDs"/*,"DID","VIN UDS","Animation","UDS command","Dump","Sniff"*/]
+                let actions = ["Error Code","Disconnect","Data","ECU info","MIDs","DID","VIN UDS","CAN Sniff"]
                 UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: actions, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
                     switch index {
                     case 0:
@@ -264,7 +263,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                             do {
                                 self.obdButton.startLoading(indicatorColor: .white)
                                 let result = await PTMotoTelemetryManager.shared.getConfirmedDTCs()
-                                self.obdButton.startLoading()
+                                self.obdButton.stopLoading()
                                 var msgData = ""
                                 if result.isEmpty {
                                     msgData = "Good"
@@ -347,14 +346,15 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     case 7:
                         Task {
                             self.obdButton.startLoading(indicatorColor: .white)
-                            
-                            await PTDashboardHacker.shared.testPSABootLogoCommands(
-                                dashboardTx: "700",
-                                dashboardRx: "708",
-                                logoDID: "F1A0",
-                                logoType: .peugeotSport
-                            )
+
+                            PTCANRecorder.shared.start(name: "PTSpeed_Menu_Capture")
+                            await PTMotoTelemetryManager.shared.startCANSniperMode(filterHeader: nil)
+                            PTOBDLogger.obd.ptLog("⏳ [只读抓包] 抓包中，请在 10 秒内操作原车诊断功能...")
+                            try? await Task.sleep(nanoseconds: 10_000_000_000)
+                            await PTMotoTelemetryManager.shared.stopCANSniperMode()
+                            _ = PTCANRecorder.shared.stop()
                             self.obdButton.stopLoading()
+                            PTOBDLogger.obd.ptLog("✅ [只读抓包] Capture 已保存，可从 Documents/PTCANCaptures 导出")
                         }
                     case 8:
                         Task {
