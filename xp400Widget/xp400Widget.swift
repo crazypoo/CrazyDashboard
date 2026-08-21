@@ -47,15 +47,16 @@ struct MotoWidgetProvider: TimelineProvider {
     /// 从共享沙盒读取主 App 写进来的数据
     private func readDataFromSharedDefaults() -> MotoStatusEntry {
         let defaults = UserDefaults(suiteName: appGroupID)
+        let status = PTWidgetSharedStatus.read(from: defaults)
         return MotoStatusEntry(
             date: Date(),
-            fuelLevel: defaults?.integer(forKey: "widget_fuelLevel") ?? 0,
-            tripKm: defaults?.double(forKey: "widget_tripKm") ?? 0.0,
-            isConnected: defaults?.bool(forKey: "widget_isConnected") ?? false,
-            parkedLat: defaults?.double(forKey: "widget_parkedLat") ?? 0.0,
-            parkedLon: defaults?.double(forKey: "widget_parkedLon") ?? 0.0,
-            address: defaults?.string(forKey: "widget_parkedAddress") ?? "暂无停车位置记录",
-            lastUpdateTime: Date(timeIntervalSince1970: defaults?.double(forKey: "widget_lastUpdateTime") ?? 0)
+            fuelLevel: status.fuelLevel,
+            tripKm: status.tripKm,
+            isConnected: status.isConnected,
+            parkedLat: status.parkedLat,
+            parkedLon: status.parkedLon,
+            address: status.address,
+            lastUpdateTime: status.lastUpdateTime
         )
     }
 }

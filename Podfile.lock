@@ -64,9 +64,9 @@ PODS:
   - LookinServer/Swift (1.2.8):
     - LookinServer/Core
   - lottie-ios (4.6.1)
-  - PooTools/CameraPermission (4.5.15):
+  - PooTools/CameraPermission (4.5.18):
     - PooTools/Core
-  - PooTools/Core (4.5.15):
+  - PooTools/Core (4.5.18):
     - AttributedString
     - CocoaLumberjack/Swift
     - DeviceKit
@@ -82,63 +82,63 @@ PODS:
     - SnapKit
     - SwiftDate
     - SwifterSwift
-  - PooTools/CustomerLabel (4.5.15):
+  - PooTools/CustomerLabel (4.5.18):
     - PooTools/Core
-  - PooTools/DEBUG (4.5.15):
+  - PooTools/DEBUG (4.5.18):
     - PooTools/Core
     - PooTools/NetWork
     - PooTools/PDF
     - PooTools/SearchBar
     - PooTools/Share
-  - PooTools/Flag (4.5.15):
+  - PooTools/Flag (4.5.18):
     - FlagKit
     - PooTools/Core
-  - PooTools/Hud (4.5.15):
+  - PooTools/Hud (4.5.18):
     - PooTools/Core
     - PooTools/ProgressBar
-  - PooTools/Instructions (4.5.15):
+  - PooTools/Instructions (4.5.18):
     - Instructions
     - PooTools/Core
-  - PooTools/LivePhoto (4.5.15):
+  - PooTools/LivePhoto (4.5.18):
     - PooTools/Core
-  - PooTools/Loading (4.5.15):
+  - PooTools/Loading (4.5.18):
     - PooTools/Core
-  - PooTools/LocationPermission (4.5.15):
+  - PooTools/LocationPermission (4.5.18):
     - PooTools/Core
-  - PooTools/MediaViewer (4.5.15):
+  - PooTools/MediaViewer (4.5.18):
     - PooTools/Core
     - PooTools/LivePhoto
     - PooTools/NetWork
     - PooTools/PageControl
     - PooTools/ProgressBar
-  - PooTools/MicPermission (4.5.15):
+  - PooTools/MicPermission (4.5.18):
     - PooTools/Core
-  - PooTools/Motion (4.5.15):
+  - PooTools/Motion (4.5.18):
     - PooTools/Core
     - PooTools/MotionPermission
-  - PooTools/MotionPermission (4.5.15):
+  - PooTools/MotionPermission (4.5.18):
     - PooTools/Core
-  - PooTools/NetWork (4.5.15):
+  - PooTools/NetWork (4.5.18):
     - Alamofire
     - PooTools/Core
     - PooTools/Loading
-  - PooTools/PageControl (4.5.15):
+  - PooTools/PageControl (4.5.18):
     - PooTools/Core
-  - PooTools/PDF (4.5.15):
+  - PooTools/PDF (4.5.18):
     - PooTools/Core
-  - PooTools/PhotoPicker (4.5.15):
+  - PooTools/PhotoPicker (4.5.18):
     - Kakapos
     - PooTools/CameraPermission
     - PooTools/Core
     - PooTools/Loading
     - PooTools/NetWork
-  - PooTools/ProgressBar (4.5.15):
+  - PooTools/ProgressBar (4.5.18):
     - PooTools/Core
-  - PooTools/SearchBar (4.5.15):
+  - PooTools/SearchBar (4.5.18):
     - PooTools/Core
-  - PooTools/Share (4.5.15):
+  - PooTools/Share (4.5.18):
     - PooTools/CustomerLabel
-  - PooTools/WhatsNewsKit (4.5.15):
+  - PooTools/WhatsNewsKit (4.5.18):
     - PooTools/Core
   - pop (1.0.12)
   - SafeSFSymbols (2.0.0)
@@ -252,7 +252,7 @@ EXTERNAL SOURCES:
 
 CHECKOUT OPTIONS:
   PooTools:
-    :commit: fb51d40cc123f6cf2eb682db9c593d0ff8f78ee4
+    :commit: 42b9daea041ed442e27b7e61e0067881c68784d0
     :git: https://github.com/crazypoo/PTools.git
 
 SPEC CHECKSUMS:
@@ -280,7 +280,7 @@ SPEC CHECKSUMS:
   Kingfisher: ee4ff4936d5b399164b6d01a0dfc0388583287b6
   LookinServer: 1b2b61c6402ae29fa22182d48f5cd067b4e99e80
   lottie-ios: 6467ca7035120c5b0e0acee58bb679cf15875686
-  PooTools: 98e3d0db9f797b5850979af48e3e305b56a47537
+  PooTools: 2ece4ae1683f75fcd92c1325ff7dc15a7913f9be
   pop: d582054913807fd11fd50bfe6a539d91c7e1a55a
   SafeSFSymbols: c57c8752149b2ddc0213d3d519a3a31a8bd76340
   SmartCodable: db7f9dc94eb9022ede18adf5052772432c5286c7

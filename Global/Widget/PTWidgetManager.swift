@@ -11,17 +11,6 @@ import PooTools
 
 @objcMembers
 public class PTWidgetDataManager: NSObject {
-
-    private struct WidgetDataSnapshot: Codable {
-        let fuelLevel: Int
-        let tripKm: Double
-        let isConnected: Bool
-        let parkedLat: Double
-        let parkedLon: Double
-        let address: String
-        let lastUpdateTime: Date
-    }
-    
     public static let shared = PTWidgetDataManager()
     private let appGroupID = "group.com.yd.PTSpeed.xp400" // 保持你的 App Group ID
     private let iCloudFileName = "PTWidgetDataSnapshot.json"
@@ -35,17 +24,9 @@ public class PTWidgetDataManager: NSObject {
     /// 更新并同步数据给小组件 (新增了 address 参数)
     public func updateWidgetData(fuelLevel: Int, tripKm: Double, isConnected: Bool, parkedLat: Double, parkedLon: Double, address: String) {
         guard let defaults = sharedDefaults else { return }
-        
-        defaults.set(fuelLevel, forKey: "widget_fuelLevel")
-        defaults.set(tripKm, forKey: "widget_tripKm")
-        defaults.set(isConnected, forKey: "widget_isConnected")
-        defaults.set(parkedLat, forKey: "widget_parkedLat")
-        defaults.set(parkedLon, forKey: "widget_parkedLon")
-        defaults.set(address, forKey: "widget_parkedAddress")
         let updateDate = Date()
-        defaults.set(updateDate.timeIntervalSince1970, forKey: "widget_lastUpdateTime")
 
-        let snapshot = WidgetDataSnapshot(
+        let status = PTWidgetSharedStatus(
             fuelLevel: fuelLevel,
             tripKm: tripKm,
             isConnected: isConnected,
@@ -54,15 +35,17 @@ public class PTWidgetDataManager: NSObject {
             address: address,
             lastUpdateTime: updateDate
         )
+        status.write(to: defaults)
+        PTWatchConnectivityManager.shared.update(status: status)
         let cloudFileName = iCloudFileName
 
         // App Group 继续作为 Widget 的实时数据源；同时异步备份一份
         // 独立 JSON 快照到 iCloud，不阻塞定位回调和 Widget 刷新。
-        Task { @MainActor [snapshot, cloudFileName] in
+        Task { @MainActor [status, cloudFileName] in
             do {
                 let encoder = JSONEncoder()
                 encoder.dateEncodingStrategy = .iso8601
-                let data = try encoder.encode(snapshot)
+                let data = try encoder.encode(status)
                 PTiCloudFileManager.shared.saveFileToICloud(
                     data: data,
                     fileName: cloudFileName
