@@ -152,27 +152,31 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
         }
         listSet()
         
-        let images = PTTripManager.shared.tripHistory.map { value in
-            let imageName = value.gpxFileName?.replacingOccurrences(of: ".gpx", with: ".jpg")
-            return imageName ?? ""
-        }
-        mediaPaths = images
-        images.enumerated().forEach { index,value in
-            if value.isEmpty {
-                PTGCDManager.shared.runOnMain {
-                    self.mediaPaths[index] = ""
+        PTGCDManager.shared.runOnBackground {
+            PTGCDManager.shared.runOnMain {
+                let images = PTTripManager.shared.tripHistory.map { value in
+                    let imageName = value.gpxFileName?.replacingOccurrences(of: ".gpx", with: ".jpg")
+                    return imageName ?? ""
                 }
-            } else {
-                PTiCloudFileManager.shared.fetchCloudFileIfNeeded(fileName: value) { [weak self] localImageURL in
-                    guard let self = self else { return }
-                    
-                    if let imgURL = localImageURL, FileManager.default.fileExists(atPath: imgURL.path) {
-                        PTGCDManager.shared.runOnMain {
-                            self.mediaPaths[index] = UIImage(contentsOfFile: imgURL.path) as Any
-                        }
-                    } else {
-                        PTGCDManager.shared.runOnMain {
+                self.mediaPaths = images
+                images.enumerated().forEach { index,value in
+                    PTGCDManager.shared.runOnMain {
+                        if value.isEmpty {
                             self.mediaPaths[index] = ""
+                        } else {
+                            PTiCloudFileManager.shared.fetchCloudFileIfNeeded(fileName: value) { [weak self = self] localImageURL in
+                                guard let self = self else { return }
+                                
+                                if let imgURL = localImageURL, FileManager.default.fileExists(atPath: imgURL.path) {
+                                    PTGCDManager.shared.runOnMain {
+                                        self.mediaPaths[index] = UIImage(contentsOfFile: imgURL.path) as Any
+                                    }
+                                } else {
+                                    PTGCDManager.shared.runOnMain {
+                                        self.mediaPaths[index] = ""
+                                    }
+                                }
+                            }
                         }
                     }
                 }
