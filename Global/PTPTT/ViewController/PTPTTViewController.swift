@@ -214,14 +214,12 @@ class PTPTTViewController: PTMotoBaseViewController {
     
     public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        // 界面出现时，自动开启局域网搜索
-        PTLocalIntercomManager.shared.startOfflineIntercom()
         updateUIState()
     }
     
     public override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
-        // 界面消失时关闭，省电
+        // 不因页面切换改变 PTT 状态；是否运行由用户开关和组网状态决定。
     }
     
     // MARK: - UI 布局设置 (SnapKit)
@@ -320,6 +318,7 @@ class PTPTTViewController: PTMotoBaseViewController {
     }
     
     @objc private func togglePTTMode() {
+        guard PTLocalIntercomManager.shared.connectedPeersCount > 0 else { return }
         let isCurrentlyHandsFree = PTLocalIntercomManager.shared.isHandsFreeMode
         
         // 翻转状态
@@ -387,6 +386,7 @@ class PTPTTViewController: PTMotoBaseViewController {
     private func updateUIState() {
         let isRunning = PTLocalIntercomManager.shared.isRunning
         let isHandsFree = PTLocalIntercomManager.shared.isHandsFreeMode
+        let hasConnectedPeers = PTLocalIntercomManager.shared.connectedPeersCount > 0
         
         if isRunning {
             powerButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_out"), for: .normal)
@@ -404,8 +404,9 @@ class PTPTTViewController: PTMotoBaseViewController {
             } else {
                 modeSwitchButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_change_hand_free"), for: .normal)
                 modeSwitchButton.backgroundColor = .darkGray
-                pttButton.isEnabled = true
-                pttButton.backgroundColor = .systemOrange
+                modeSwitchButton.isEnabled = hasConnectedPeers
+                pttButton.isEnabled = hasConnectedPeers
+                pttButton.backgroundColor = hasConnectedPeers ? .systemOrange : .systemGray
                 pttButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_push"), for: .normal)
             }
         } else {
@@ -432,6 +433,7 @@ extension PTPTTViewController: PTLocalIntercomDelegate {
             self.connectFriend = count
             self.peersCountLabel.text = PTDashboardConfig.language(key: "ptt_ready_connect_count", self.connectFriend)
             self.peersCountLabel.textColor = self.connectFriend > 0 ? .systemGreen : .gray
+            self.updateUIState()
         }
     }
     

@@ -121,6 +121,10 @@ public class PTLocalIntercomManager: NSObject {
         return activePeers.count
     }
 
+    private var hasConnectedPeers: Bool {
+        !activePeers.isEmpty
+    }
+
     private lazy var myUUID: String = {
         let key = "PT_Device_Unique_UUID"
         if let savedUUID = UserDefaults.standard.string(forKey: key) { return savedUUID }
@@ -318,6 +322,10 @@ public class PTLocalIntercomManager: NSObject {
     
     public func startOfflineIntercom() {
         guard !isRunning else { return }
+
+        // 新建组网会话前清掉上一次会话可能残留的成员状态。
+        activePeers.removeAll()
+        connectingPeers.removeAll()
         isRunning = true
         
         UserDefaults.standard.set(true, forKey: intercomPowerStateKey)
@@ -329,35 +337,37 @@ public class PTLocalIntercomManager: NSObject {
         
         currentStatusText = PTDashboardConfig.languageFunc(text: "ptt_find_friend")
         updateStatusAndBroadcast(currentStatusText)
-        startSpeakingDetector()
-        startPingTimer()
-        PTLiveActivityManager.shared.startIntercomActivity(channel: PTDashboardConfig.languageFunc(text: "Team channel"))
     }
     
     public func stopOfflineIntercom() {
-        guard isRunning else { return }
+        let wasRunning = isRunning
         isRunning = false
         
         UserDefaults.standard.set(false, forKey: intercomPowerStateKey)
-        advertiser.stopAdvertisingPeer()
-        browser.stopBrowsingForPeers()
-        session.disconnect()
-        audioEngine.stop()
+        advertiser?.stopAdvertisingPeer()
+        browser?.stopBrowsingForPeers()
+        session?.disconnect()
+        activePeers.removeAll()
+        connectingPeers.removeAll()
         
         // 如果开启了免提，重置它
         isHandsFreeMode = false
         isTalking = false
         isLocalUserSpeaking = false // 重置状态
         
+        stopSpeakingDetector()
+        stopPingTimer()
+        PTLiveActivityManager.shared.stopIntercomActivity()
+
+        guard wasRunning else { return }
+
+        audioEngine.stop()
         audioQueue.async {
             self.setupAudioEngine(needsMic: false)
         }
 
         currentStatusText = PTDashboardConfig.languageFunc(text: "ptt_close")
         updateStatusAndBroadcast(currentStatusText)
-        stopSpeakingDetector()
-        stopPingTimer()
-        PTLiveActivityManager.shared.stopIntercomActivity()
     }
     
     private func startSpeakingDetector() {
@@ -385,12 +395,15 @@ public class PTLocalIntercomManager: NSObject {
         // 状态发生改变时，通知 UI
         if newSpeaking != currentSpeakingPeers {
             currentSpeakingPeers = newSpeaking
+            let wasOtherMemberTalking = otherMemberTalking
             otherMemberTalking = !newSpeaking.isEmpty
             DispatchQueue.main.async {
                 self.delegate?.intercomManager(self, speakingPeersChanged: Array(self.currentSpeakingPeers))
             }
-        } else {
-            otherMemberTalking = false
+            // 如果只是讲话者切换但仍有人讲话，属性值不会变化，仍需刷新 Live Activity。
+            if wasOtherMemberTalking == otherMemberTalking {
+                globalStatusChangeSet()
+            }
         }
     }
 
@@ -463,7 +476,7 @@ public class PTLocalIntercomManager: NSObject {
     }
 
     public func startTalking() {
-        guard !isTalking else { return }
+        guard isRunning, hasConnectedPeers, !isTalking else { return }
         micRequest {
             self.internalStartTalking()
         }
@@ -606,6 +619,7 @@ public class PTLocalIntercomManager: NSObject {
     }
     
     public func toggleHandsFreeMode(isOn: Bool) {
+        guard !isOn || (isRunning && hasConnectedPeers) else { return }
         isHandsFreeMode = isOn
         
         if isOn {
@@ -732,11 +746,14 @@ public class PTLocalIntercomManager: NSObject {
             peerStates.append(state)
         }
         
-        // 通知锁屏组件更新！
-        PTLiveActivityManager.shared.updateIntercomActivity(
+        let liveActivityPeers = isRunning && hasConnectedPeers ? peerStates : []
+
+        // 只有已连接成员存在时才创建或更新锁屏组件；空群组会结束全部旧 Activity。
+        PTLiveActivityManager.shared.syncIntercomActivity(
+            channel: PTDashboardConfig.languageFunc(text: "Team channel"),
             isTalking: self.isTalking,
             status: self.currentStatusText,
-            peers: peerStates
+            peers: liveActivityPeers
         )
 
         DispatchQueue.main.async {
@@ -756,6 +773,9 @@ public class PTLocalIntercomManager: NSObject {
     }
     
     public func restoreIntercomStateAtLaunch() {
+        // 进程重启后 Activity 引用会丢失，启动阶段先清理系统中可能残留的旧活动。
+        PTLiveActivityManager.shared.stopIntercomActivity()
+
         let shouldAutoStart = UserDefaults.standard.bool(forKey: intercomPowerStateKey)
         if shouldAutoStart {
             PTNSLogConsole("🚀 [音频引擎] 检测到上次对讲机为开启状态，正在后台自动组网...")
@@ -806,6 +826,9 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
     
     public func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
         DispatchQueue.main.async {
+            // 忽略旧会话在重新组网或关闭后的迟到回调，避免复活过期成员。
+            guard session === self.session else { return }
+
             let stateName: String
             switch state {
             case .notConnected: stateName = "未连接"
@@ -817,10 +840,15 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
 
             switch state {
             case .connected:
+                guard self.isRunning else { return }
                 self.connectingPeers.remove(peerID)
                 
                 if !self.activePeers.contains(peerID) {
                     self.activePeers.append(peerID)
+                }
+                if self.activePeers.count == 1 {
+                    self.startSpeakingDetector()
+                    self.startPingTimer()
                 }
                 // 有车友加入网络
                 self.updateStatusAndBroadcast(PTDashboardConfig.language(key: "ptt_ready_connected_name", peerID.displayName))
@@ -839,6 +867,11 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
                 self.lastReceivedAudio.removeValue(forKey: peerID) // 清理掉线的人
                 self.peerAvatars.removeValue(forKey: peerID)
                 if self.activePeers.isEmpty {
+                    self.stopSpeakingDetector()
+                    self.stopPingTimer()
+                    if self.isHandsFreeMode {
+                        self.toggleHandsFreeMode(isOn: false)
+                    }
                     // 车队空了，恢复到等待状态
                     self.updateStatusAndBroadcast(PTDashboardConfig.languageFunc(text: "ptt_ready_connect"))
                 } else {

@@ -35,6 +35,7 @@ public class PTLiveActivityManager: NSObject {
     // 保持对当前活动实例的引用
     private var currentNaviActivity: Activity<MotoNaviAttributes>?
     private var currentIntercomActivity: Activity<MotoIntercomAttributes>?
+    private var intercomActivityGeneration = 0
     
     private override init() { super.init() }
     
@@ -85,45 +86,78 @@ public class PTLiveActivityManager: NSObject {
     }
     
     public func startIntercomActivity(channel: String) {
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-        if currentIntercomActivity != nil { return } // 防重复开启
-        
-        let attributes = MotoIntercomAttributes(channelName: channel)
-        let initialState = MotoIntercomAttributes.ContentState(
-            isLocalTalking: false,
-            statusText: "正在组网...",
-            activePeers: []
-        )
-        
-        do {
-            let content = ActivityContent(state: initialState, staleDate: nil)
-            currentIntercomActivity = try Activity.request(attributes: attributes, content: content, pushType: nil)
-        } catch {
-            print("❌ [LiveActivity] 对讲机开启失败: \(error.localizedDescription)")
-        }
+        // 保留旧 API，但零成员时不再创建 Activity。
+        syncIntercomActivity(channel: channel, isTalking: false, status: "正在组网...", peers: [])
     }
     
     public func updateIntercomActivity(isTalking: Bool, status: String, peers: [PeerLiveState]) {
-        guard let activity = currentIntercomActivity else { return }
-        
-        let updatedState = MotoIntercomAttributes.ContentState(
-            isLocalTalking: isTalking,
-            statusText: status,
-            activePeers: peers
-        )
-        
-        Task {
+        syncIntercomActivity(channel: "机车通讯", isTalking: isTalking, status: status, peers: peers)
+    }
+
+    /// PTT Activity 的唯一同步入口：只有存在已连接成员时才允许显示。
+    public func syncIntercomActivity(channel: String, isTalking: Bool, status: String, peers: [PeerLiveState]) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            self.intercomActivityGeneration += 1
+            let generation = self.intercomActivityGeneration
+            let existingActivities = Activity<MotoIntercomAttributes>.activities
+
+            guard !peers.isEmpty else {
+                self.currentIntercomActivity = nil
+                for activity in existingActivities {
+                    guard self.intercomActivityGeneration == generation else { return }
+                    await activity.end(activity.content, dismissalPolicy: .immediate)
+                }
+                return
+            }
+
+            guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+
+            let activity: Activity<MotoIntercomAttributes>
+            if let current = self.currentIntercomActivity,
+               existingActivities.contains(where: { $0.id == current.id }) {
+                activity = current
+            } else if let existing = existingActivities.first {
+                activity = existing
+                self.currentIntercomActivity = existing
+            } else {
+                let attributes = MotoIntercomAttributes(channelName: channel)
+                let initialState = MotoIntercomAttributes.ContentState(
+                    isLocalTalking: isTalking,
+                    statusText: status,
+                    activePeers: peers
+                )
+
+                do {
+                    let content = ActivityContent(state: initialState, staleDate: nil)
+                    activity = try Activity.request(attributes: attributes, content: content, pushType: nil)
+                    self.currentIntercomActivity = activity
+                } catch {
+                    print("❌ [LiveActivity] 对讲机开启失败: \(error.localizedDescription)")
+                    return
+                }
+            }
+
+            let duplicateActivities = existingActivities.filter { $0.id != activity.id }
+            let updatedState = MotoIntercomAttributes.ContentState(
+                isLocalTalking: isTalking,
+                statusText: status,
+                activePeers: peers
+            )
+
+            guard self.intercomActivityGeneration == generation else { return }
             let content = ActivityContent(state: updatedState, staleDate: nil)
             await activity.update(content, alertConfiguration: nil)
+            for duplicate in duplicateActivities {
+                guard self.intercomActivityGeneration == generation else { return }
+                await duplicate.end(duplicate.content, dismissalPolicy: .immediate)
+            }
         }
     }
 
     public func stopIntercomActivity() {
-        guard let activity = currentIntercomActivity else { return }
-        Task {
-            await activity.end(activity.content, dismissalPolicy: .immediate)
-            currentIntercomActivity = nil
-        }
+        syncIntercomActivity(channel: "机车通讯", isTalking: false, status: "", peers: [])
     }
 }
 
