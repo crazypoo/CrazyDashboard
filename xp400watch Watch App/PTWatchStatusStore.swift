@@ -5,8 +5,9 @@
 
 import Foundation
 import Combine
-import WatchConnectivity
+@preconcurrency import WatchConnectivity
 
+@MainActor
 final class PTWatchStatusStore: NSObject, ObservableObject, WCSessionDelegate {
     @Published private(set) var status: PTWidgetSharedStatus
 
@@ -27,31 +28,31 @@ final class PTWatchStatusStore: NSObject, ObservableObject, WCSessionDelegate {
         session.activate()
     }
 
-    func session(
+    nonisolated func session(
         _ session: WCSession,
         activationDidCompleteWith activationState: WCSessionActivationState,
         error: Error?
     ) {
         guard activationState == .activated else { return }
-        apply(applicationContext: session.receivedApplicationContext)
+        guard let nextStatus = PTWidgetSharedStatus(applicationContext: session.receivedApplicationContext) else { return }
+        Task { @MainActor [weak self] in
+            self?.status = nextStatus
+        }
     }
 
-    func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
-        apply(applicationContext: applicationContext)
+    nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
+        guard let nextStatus = PTWidgetSharedStatus(applicationContext: applicationContext) else { return }
+        Task { @MainActor [weak self] in
+            self?.status = nextStatus
+        }
     }
 
     #if os(iOS)
-    func sessionDidBecomeInactive(_ session: WCSession) {}
+    nonisolated func sessionDidBecomeInactive(_ session: WCSession) {}
 
-    func sessionDidDeactivate(_ session: WCSession) {
+    nonisolated func sessionDidDeactivate(_ session: WCSession) {
         session.activate()
     }
     #endif
 
-    private func apply(applicationContext: [String: Any]) {
-        guard let nextStatus = PTWidgetSharedStatus(applicationContext: applicationContext) else { return }
-        DispatchQueue.main.async { [weak self] in
-            self?.status = nextStatus
-        }
-    }
 }

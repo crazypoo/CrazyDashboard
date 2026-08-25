@@ -7,36 +7,6 @@
 
 import Foundation
 
-public struct PTOBDDiagnosticAddress: Codable, Hashable, Sendable {
-    public let tx: String
-    public let rx: String
-
-    public init?(tx: String, rx: String) {
-        let normalizedTX = Self.normalizeHeader(tx)
-        let normalizedRX = Self.normalizeHeader(rx)
-
-        guard let normalizedTX, let normalizedRX else {
-            return nil
-        }
-
-        self.tx = normalizedTX
-        self.rx = normalizedRX
-    }
-
-    private static func normalizeHeader(_ value: String) -> String? {
-        let normalized = value
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .uppercased()
-
-        guard normalized.count == 3 || normalized.count == 8,
-              normalized.allSatisfy({ "0123456789ABCDEF".contains($0) }) else {
-            return nil
-        }
-
-        return normalized
-    }
-}
-
 public enum PTOBDDiagnosticError: Error, Equatable, Sendable {
     case disconnected
     case invalidAddress
@@ -120,17 +90,20 @@ public struct PTOBDRawReadResult: Codable, Sendable {
     public let rawResponse: String
     public let payloadHex: String?
     public let status: PTOBDReadStatus
+    public let negativeResponseCode: String?
 
     public init(address: PTOBDDiagnosticAddress,
                 command: String,
                 rawResponse: String,
                 payloadHex: String?,
-                status: PTOBDReadStatus) {
+                status: PTOBDReadStatus,
+                negativeResponseCode: String? = nil) {
         self.address = address
         self.command = command
         self.rawResponse = rawResponse
         self.payloadHex = payloadHex
         self.status = status
+        self.negativeResponseCode = negativeResponseCode
     }
 }
 
@@ -179,27 +152,23 @@ public final class PTAdvancedOBDCoordinator {
     /// Executes one read-only operation while the existing telemetry polling
     /// task is suspended by the stable manager implementation.
     public func executeReadOnly<T>(
-        _ operation: @escaping () async throws -> T
+        _ operation: @escaping @Sendable () async throws -> T
     ) async throws -> T {
         guard PTMotoTelemetryManager.shared.isConnected else {
             throw PTOBDDiagnosticError.disconnected
         }
 
-        var outcome: Result<T, Error>?
-
-        await PTMotoTelemetryManager.shared.performExclusiveTask {
-            do {
-                outcome = .success(try await operation())
-            } catch {
-                outcome = .failure(error)
+        return try await withCheckedThrowingContinuation { continuation in
+            Task {
+                await PTMotoTelemetryManager.shared.performExclusiveTask {
+                    do {
+                        continuation.resume(returning: try await operation())
+                    } catch {
+                        continuation.resume(throwing: error)
+                    }
+                }
             }
         }
-
-        guard let outcome else {
-            throw PTOBDDiagnosticError.cancelled
-        }
-
-        return try outcome.get()
     }
 }
 
@@ -207,6 +176,17 @@ public final class PTUDSReadService {
     public static let shared = PTUDSReadService()
 
     private init() {}
+
+    /// 纯解析入口，供报告生成和单元测试复用，不会发送任何车辆指令。
+    /// Entrada de análisis puro para informes y pruebas; no envía comandos al vehículo.
+    public static func parseDIDResponse(
+        address: PTOBDDiagnosticAddress,
+        did: String,
+        response: String
+    ) throws -> PTOBDIDReadResult {
+        let normalizedDID = try normalizeDID(did)
+        return makeDIDResult(address: address, did: normalizedDID, response: response)
+    }
 
     public func readDID(
         address: PTOBDDiagnosticAddress,
@@ -232,7 +212,7 @@ public final class PTUDSReadService {
     public func readDIDs(
         address: PTOBDDiagnosticAddress,
         dids: [String],
-        progress: ((Int, Int, PTOBDIDReadResult) -> Void)? = nil
+        progress: (@MainActor @Sendable (Int, Int, PTOBDIDReadResult) -> Void)? = nil
     ) async throws -> [PTOBDIDReadResult] {
         let normalizedDIDs = try dids.map(Self.normalizeDID)
 
@@ -259,7 +239,7 @@ public final class PTUDSReadService {
                     response: response
                 )
                 results.append(result)
-                progress?(index + 1, normalizedDIDs.count, result)
+                await progress?(index + 1, normalizedDIDs.count, result)
             }
 
             return results
@@ -281,7 +261,7 @@ public final class PTUDSReadService {
     public func scanECUNodes(
         range: ClosedRange<UInt16> = 0x700...0x7DF,
         delayNanoseconds: UInt64 = 10_000_000,
-        progress: ((Int, Int) -> Void)? = nil
+        progress: (@MainActor @Sendable (Int, Int) -> Void)? = nil
     ) async throws -> [PTOBDECUNode] {
         guard !range.isEmpty else {
             return []
@@ -299,7 +279,7 @@ public final class PTUDSReadService {
                 let rx = String(format: "%03X", value + 8)
 
                 guard let address = PTOBDDiagnosticAddress(tx: tx, rx: rx) else {
-                    progress?(index + 1, addresses.count)
+                    await progress?(index + 1, addresses.count)
                     continue
                 }
 
@@ -313,7 +293,7 @@ public final class PTUDSReadService {
                     nodes.append(PTOBDECUNode(address: address, rawResponse: response))
                 }
 
-                progress?(index + 1, addresses.count)
+                await progress?(index + 1, addresses.count)
 
                 if delayNanoseconds > 0 {
                     try await Task.sleep(nanoseconds: delayNanoseconds)
@@ -325,7 +305,7 @@ public final class PTUDSReadService {
     }
 
     public func scanDashboardNodes(
-        progress: ((Int, Int) -> Void)? = nil
+        progress: (@MainActor @Sendable (Int, Int) -> Void)? = nil
     ) async throws -> [PTOBDECUNode] {
         let addresses = Array(0xA0...0xDF)
 
@@ -339,7 +319,7 @@ public final class PTUDSReadService {
                 let rx = String(format: "7%02X", offset + 8)
 
                 guard let address = PTOBDDiagnosticAddress(tx: tx, rx: rx) else {
-                    progress?(index + 1, addresses.count)
+                    await progress?(index + 1, addresses.count)
                     continue
                 }
 
@@ -353,7 +333,7 @@ public final class PTUDSReadService {
                     nodes.append(PTOBDECUNode(address: address, rawResponse: response))
                 }
 
-                progress?(index + 1, addresses.count)
+                await progress?(index + 1, addresses.count)
 
                 try await Task.sleep(nanoseconds: 20_000_000)
             }
@@ -384,12 +364,13 @@ public final class PTUDSReadService {
 
             let clean = Self.cleanHex(response)
             let upperResponse = response.uppercased()
+            let negativeResponseCode = Self.negativeResponseCode(in: clean, service: 0x23)
             let payload = Self.payload(after: "63", in: clean)
             let status: PTOBDReadStatus
 
             if payload != nil {
                 status = .success
-            } else if clean.contains("7F23") {
+            } else if negativeResponseCode != nil {
                 status = .negativeResponse
             } else if clean.isEmpty || upperResponse.contains("NODATA") || upperResponse.contains("NO DATA") {
                 status = .noData
@@ -402,7 +383,8 @@ public final class PTUDSReadService {
                 command: command,
                 rawResponse: response,
                 payloadHex: payload,
-                status: status
+                status: status,
+                negativeResponseCode: negativeResponseCode
             )
         }
     }
@@ -439,6 +421,55 @@ private extension PTUDSReadService {
         value.uppercased().filter { "0123456789ABCDEF".contains($0) }
     }
 
+    static func hexBytes(_ value: String) -> [UInt8] {
+        let clean = cleanHex(value)
+        guard clean.count.isMultiple(of: 2) else {
+            return []
+        }
+
+        var bytes: [UInt8] = []
+        bytes.reserveCapacity(clean.count / 2)
+        var index = clean.startIndex
+
+        while index < clean.endIndex {
+            let nextIndex = clean.index(index, offsetBy: 2)
+            guard let byte = UInt8(clean[index..<nextIndex], radix: 16) else {
+                return []
+            }
+            bytes.append(byte)
+            index = nextIndex
+        }
+
+        return bytes
+    }
+
+    static func containsByteSequence(_ sequence: [UInt8], in response: String) -> Bool {
+        let bytes = hexBytes(response)
+        guard !sequence.isEmpty, bytes.count >= sequence.count else {
+            return false
+        }
+
+        return (0...(bytes.count - sequence.count)).contains { index in
+            Array(bytes[index..<(index + sequence.count)]) == sequence
+        }
+    }
+
+    static func negativeResponseCode(in response: String, service: UInt8) -> String? {
+        let bytes = hexBytes(response)
+        guard bytes.count >= 3 else {
+            return nil
+        }
+
+        for index in 0..<(bytes.count - 2) {
+            guard bytes[index] == 0x7F, bytes[index + 1] == service else {
+                continue
+            }
+            return String(format: "%02X", bytes[index + 2])
+        }
+
+        return nil
+    }
+
     static func payload(after marker: String, in value: String) -> String? {
         guard let range = value.range(of: marker) else {
             return nil
@@ -449,14 +480,16 @@ private extension PTUDSReadService {
     }
 
     static func isPositive(_ response: String, service: String) -> Bool {
-        let clean = cleanHex(response)
         switch service {
         case "10":
-            return clean.contains("5001")
+            return containsByteSequence([0x50, 0x01], in: response)
         case "7E":
-            return clean.contains("7E00")
+            return containsByteSequence([0x7E, 0x00], in: response)
         default:
-            return clean.contains(service)
+            guard let serviceByte = UInt8(service, radix: 16) else {
+                return false
+            }
+            return containsByteSequence([serviceByte], in: response)
         }
     }
 
@@ -467,9 +500,11 @@ private extension PTUDSReadService {
     ) -> PTOBDIDReadResult {
         let clean = cleanHex(response)
         let positiveMarker = "62\(did)"
-        let negativeMarker = "7F22"
 
-        if let payload = payload(after: positiveMarker, in: clean) {
+        let didBytes = hexBytes(did)
+        if didBytes.count == 2,
+           containsByteSequence([0x62] + didBytes, in: response),
+           let payload = payload(after: positiveMarker, in: clean) {
             let decodedText = PTMultiFrameParser.parseLongString(response: response)
             return PTOBDIDReadResult(
                 address: address,
@@ -481,10 +516,7 @@ private extension PTUDSReadService {
             )
         }
 
-        if let range = clean.range(of: negativeMarker) {
-            let codeStart = range.upperBound
-            let codeEnd = clean.index(codeStart, offsetBy: min(2, clean.distance(from: codeStart, to: clean.endIndex)), limitedBy: clean.endIndex) ?? codeStart
-            let code = String(clean[codeStart..<codeEnd])
+        if let code = negativeResponseCode(in: clean, service: 0x22) {
             return PTOBDIDReadResult(
                 address: address,
                 did: did,
@@ -492,7 +524,7 @@ private extension PTUDSReadService {
                 payloadHex: nil,
                 decodedText: nil,
                 status: .negativeResponse,
-                negativeResponseCode: code.isEmpty ? nil : code
+                negativeResponseCode: code
             )
         }
 

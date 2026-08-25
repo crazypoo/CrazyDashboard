@@ -60,7 +60,7 @@ public struct PTCANFrame: Codable, Hashable, Sendable {
 
 public struct PTCANCaptureSession: Codable, Sendable {
 
-    public static let currentSchemaVersion = 2
+    public static let currentSchemaVersion = 3
     
     public let id: UUID
     public let name: String
@@ -70,6 +70,9 @@ public struct PTCANCaptureSession: Codable, Sendable {
     public let frames: [PTCANFrame]
     public let schemaVersion: Int
     public let events: [PTCANCaptureEvent]
+    public let totalFrameCount: Int
+    public let retainedFrameCount: Int
+    public let droppedFrameCount: Int
 
     private enum CodingKeys: String, CodingKey {
         case id
@@ -80,6 +83,9 @@ public struct PTCANCaptureSession: Codable, Sendable {
         case frames
         case schemaVersion
         case events
+        case totalFrameCount
+        case retainedFrameCount
+        case droppedFrameCount
     }
     
     public init(
@@ -90,7 +96,10 @@ public struct PTCANCaptureSession: Codable, Sendable {
         filterHeader: String?,
         frames: [PTCANFrame],
         schemaVersion: Int = PTCANCaptureSession.currentSchemaVersion,
-        events: [PTCANCaptureEvent] = []
+        events: [PTCANCaptureEvent] = [],
+        totalFrameCount: Int? = nil,
+        retainedFrameCount: Int? = nil,
+        droppedFrameCount: Int = 0
     ) {
         self.id = id
         self.name = name
@@ -100,6 +109,9 @@ public struct PTCANCaptureSession: Codable, Sendable {
         self.frames = frames
         self.schemaVersion = schemaVersion
         self.events = events
+        self.totalFrameCount = totalFrameCount ?? frames.count
+        self.retainedFrameCount = retainedFrameCount ?? frames.count
+        self.droppedFrameCount = droppedFrameCount
     }
 
     public init(from decoder: Decoder) throws {
@@ -112,6 +124,9 @@ public struct PTCANCaptureSession: Codable, Sendable {
         self.frames = try container.decode([PTCANFrame].self, forKey: .frames)
         self.schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
         self.events = try container.decodeIfPresent([PTCANCaptureEvent].self, forKey: .events) ?? []
+        self.totalFrameCount = try container.decodeIfPresent(Int.self, forKey: .totalFrameCount) ?? frames.count
+        self.retainedFrameCount = try container.decodeIfPresent(Int.self, forKey: .retainedFrameCount) ?? frames.count
+        self.droppedFrameCount = try container.decodeIfPresent(Int.self, forKey: .droppedFrameCount) ?? 0
     }
     
     public var duration: TimeInterval {
@@ -129,12 +144,27 @@ public struct PTCANCaptureSession: Codable, Sendable {
 
 // MARK: - Capture Store Error
 
-public enum PTCANCaptureStoreError: Error {
+public enum PTCANCaptureStoreError: Error, LocalizedError, Sendable {
     case directoryCreationFailed
     case fileCreationFailed
     case invalidEncoding
     case emptyCapture
     case invalidCapture
+
+    public var errorDescription: String? {
+        switch self {
+        case .directoryCreationFailed:
+            return "无法创建 CAN 抓包目录 / No se pudo crear el directorio de captura CAN."
+        case .fileCreationFailed:
+            return "无法创建 CAN 抓包文件 / No se pudo crear el archivo de captura CAN."
+        case .invalidEncoding:
+            return "CAN 抓包编码无效 / La codificación de la captura CAN no es válida."
+        case .emptyCapture:
+            return "CAN 抓包为空 / La captura CAN está vacía."
+        case .invalidCapture:
+            return "CAN 抓包格式无效 / El formato de la captura CAN no es válido."
+        }
+    }
 }
 
 // MARK: - Capture Store
@@ -284,10 +314,20 @@ public extension PTCANCaptureStore {
     /// - 不阻塞 Recorder lock
     /// - 保证 Frame 写入顺序
     /// - stop 时使用 sync 等待之前所有 append 完成
+    @MainActor
     func append(
         _ frame: PTCANFrame
     ) {
-        
+        let data: Data
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            data = try encoder.encode(frame)
+        } catch {
+            PTNSLogConsole("[PTCANCaptureStore] Frame 编码失败 / Error al codificar Frame:", error)
+            return
+        }
+
         writeQueue.async { [weak self] in
             guard let self else {
                 return
@@ -296,27 +336,10 @@ public extension PTCANCaptureStore {
             guard let fileHandle = self.fileHandle else {
                 return
             }
-            
-            do {
-                let encoder = JSONEncoder()
-                encoder.dateEncodingStrategy = .iso8601
-                
-                let data = try encoder.encode(
-                    frame
-                )
-                
-                fileHandle.seekToEndOfFile()
-                fileHandle.write(data)
-                fileHandle.write(
-                    Data([0x0A])
-                )
-                
-            } catch {
-                PTNSLogConsole(
-                    "[PTCANCaptureStore] Append failed:",
-                    error
-                )
-            }
+
+            fileHandle.seekToEndOfFile()
+            fileHandle.write(data)
+            fileHandle.write(Data([0x0A]))
         }
     }
     
@@ -562,9 +585,7 @@ public extension PTCANCaptureStore {
     func deleteAll() throws {
         
         for url in allCaptureFiles() {
-            try? FileManager.default.removeItem(
-                at: url
-            )
+            try delete(fileURL: url)
         }
     }
 }
@@ -631,7 +652,10 @@ public extension PTCANCaptureStore {
                 filterHeader: session.filterHeader,
                 frames: frames,
                 schemaVersion: session.schemaVersion,
-                events: session.events
+                events: session.events,
+                totalFrameCount: session.totalFrameCount,
+                retainedFrameCount: frames.count,
+                droppedFrameCount: session.droppedFrameCount
             )
         }
         
@@ -815,6 +839,9 @@ public final class PTCANRecorder: @unchecked Sendable {
     private var sequence: Int = 0
     private var frames: [PTCANFrame] = []
     private var events: [PTCANCaptureEvent] = []
+    private var totalFrameCount: Int = 0
+    private var droppedFrameCount: Int = 0
+    private var _lastStorageError: String?
     private var _maxInMemoryFrames: Int = 100_000
     
     private init() {}
@@ -846,7 +873,15 @@ public extension PTCANRecorder {
         PTCANCaptureStore.shared.currentFileURL
     }
 
-    public var maxInMemoryFrames: Int {
+    /// 中文：最近一次存储错误，便于 UI 显示明确失败原因。
+    /// Español: último error de almacenamiento para que la UI muestre el motivo exacto.
+    var lastStorageError: String? {
+        lock.lock()
+        defer { lock.unlock() }
+        return _lastStorageError
+    }
+
+    var maxInMemoryFrames: Int {
         get {
             lock.lock()
             defer { lock.unlock() }
@@ -856,6 +891,7 @@ public extension PTCANRecorder {
             lock.lock()
             _maxInMemoryFrames = max(1, newValue)
             if frames.count > _maxInMemoryFrames {
+                droppedFrameCount += frames.count - _maxInMemoryFrames
                 frames.removeFirst(frames.count - _maxInMemoryFrames)
             }
             lock.unlock()
@@ -867,11 +903,12 @@ public extension PTCANRecorder {
 
 public extension PTCANRecorder {
     
+    @discardableResult
     func start(
         name: String = "XP400-Capture",
         filterHeader: String? = nil,
         clearPrevious: Bool = true
-    ) {
+    ) -> Bool {
         
         /*
          如果之前还有录制：
@@ -913,6 +950,9 @@ public extension PTCANRecorder {
             normalizedFilter
         sequence = 0
         events.removeAll(keepingCapacity: true)
+        totalFrameCount = 0
+        droppedFrameCount = 0
+        _lastStorageError = nil
         
         if clearPrevious {
             frames.removeAll(
@@ -945,6 +985,9 @@ public extension PTCANRecorder {
             sessionID = nil
             self.filterHeader = nil
             sequence = 0
+            totalFrameCount = 0
+            droppedFrameCount = 0
+            _lastStorageError = error.localizedDescription
             
             lock.unlock()
             
@@ -952,7 +995,10 @@ public extension PTCANRecorder {
                 "[PTCANRecorder] Begin storage failed:",
                 error
             )
+            return false
         }
+
+        return true
     }
 }
 
@@ -1009,6 +1055,7 @@ public extension PTCANRecorder {
         }
         
         sequence += 1
+        totalFrameCount += 1
         
         let frame = PTCANFrame(
             timestamp: timestamp,
@@ -1020,9 +1067,12 @@ public extension PTCANRecorder {
             dlc: parsed.dlc
         )
         
-        let memoryLimit = max(1, maxInMemoryFrames)
+        // 中文：锁已持有，直接读取底层值，避免非递归锁再次加锁。
+        // Español: La cerradura ya está retenida; leer el valor interno evita bloquearla dos veces.
+        let memoryLimit = max(1, _maxInMemoryFrames)
         if frames.count >= memoryLimit, !frames.isEmpty {
             frames.removeFirst()
+            droppedFrameCount += 1
         }
         frames.append(frame)
         
@@ -1069,7 +1119,10 @@ public extension PTCANRecorder {
                 endedAt: endedAt,
                 filterHeader: filterHeader,
                 frames: frames,
-                events: events
+                events: events,
+                totalFrameCount: totalFrameCount,
+                retainedFrameCount: frames.count,
+                droppedFrameCount: droppedFrameCount
             )
 
         let captureURL = PTCANCaptureStore.shared.currentFileURL
@@ -1082,6 +1135,9 @@ public extension PTCANRecorder {
         self.filterHeader = nil
         self.sequence = 0
         self.events.removeAll(keepingCapacity: true)
+        self.totalFrameCount = 0
+        self.droppedFrameCount = 0
+        self._lastStorageError = nil
         self.frames.removeAll(
             keepingCapacity: true
         )
@@ -1101,10 +1157,12 @@ public extension PTCANRecorder {
         _ = PTCANCaptureStore.shared.finish()
 
         if let captureURL {
-            try? PTCANCaptureStore.shared.updateMetadata(
-                result,
-                for: captureURL
-            )
+            do {
+                try PTCANCaptureStore.shared.updateMetadata(result, for: captureURL)
+            } catch {
+                recordStorageError(error)
+                PTNSLogConsole("[PTCANRecorder] Update metadata failed:", error)
+            }
         }
         
         /*
@@ -1115,6 +1173,7 @@ public extension PTCANRecorder {
                 result
             )
         } catch {
+            recordStorageError(error)
             PTNSLogConsole(
                 "[PTCANRecorder] Save JSON failed:",
                 error
@@ -1129,6 +1188,7 @@ public extension PTCANRecorder {
                 result
             )
         } catch {
+            recordStorageError(error)
             PTNSLogConsole(
                 "[PTCANRecorder] Save CSV failed:",
                 error
@@ -1152,6 +1212,9 @@ public extension PTCANRecorder {
         filterHeader = nil
         sequence = 0
         events.removeAll(keepingCapacity: true)
+        totalFrameCount = 0
+        droppedFrameCount = 0
+        _lastStorageError = nil
         
         frames.removeAll(
             keepingCapacity: true
@@ -1189,7 +1252,10 @@ public extension PTCANRecorder {
             endedAt: nil,
             filterHeader: filterHeader,
             frames: frames,
-            events: events
+            events: events,
+            totalFrameCount: totalFrameCount,
+            retainedFrameCount: frames.count,
+            droppedFrameCount: droppedFrameCount
         )
     }
 }
@@ -1197,6 +1263,12 @@ public extension PTCANRecorder {
 // MARK: - Parser
 
 private extension PTCANRecorder {
+
+    func recordStorageError(_ error: Error) {
+        lock.lock()
+        _lastStorageError = error.localizedDescription
+        lock.unlock()
+    }
     
     struct ParsedLine {
         let header: String
@@ -1240,9 +1312,10 @@ private extension PTCANRecorder {
 
         let declaredDLC = Int(candidateBytes[0], radix: 16)
         let hasELMDLC = declaredDLC.map {
-            // ELM327 monitor output is header + DLC + exactly DLC bytes.
-            // Requiring the exact shape prevents a raw CAN payload beginning
-            // with 00...08 from being mistaken for a DLC field.
+            // 中文：ELM327 输出必须是 Header + DLC + 正好 DLC 个字节。
+            // Español: La salida ELM327 debe ser Header + DLC + exactamente DLC bytes.
+            // 中文：严格形状可避免把原始 Payload 的首字节误判为 DLC。
+            // Español: La forma estricta evita confundir el primer byte del Payload con DLC.
             (0...8).contains($0) && candidateBytes.count == $0 + 1
         } ?? false
 
@@ -1978,9 +2051,8 @@ private extension PTCANCaptureAnalyzer {
                 grouping: frames.compactMap {
                     frame -> PTCANFrame? in
                     
-                    guard
-                        let header = frame.header,
-                        let dataHex = frame.dataHex
+                    guard frame.header != nil,
+                          let dataHex = frame.dataHex
                     else {
                         return nil
                     }
@@ -2642,7 +2714,10 @@ public extension PTCANRecorder {
             endedAt: nil,
             filterHeader: filterHeader,
             frames: [],
-            events: events
+            events: events,
+            totalFrameCount: totalFrameCount,
+            retainedFrameCount: frames.count,
+            droppedFrameCount: droppedFrameCount
         )
         lock.unlock()
 

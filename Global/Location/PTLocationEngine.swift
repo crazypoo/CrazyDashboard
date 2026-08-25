@@ -158,6 +158,9 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
                     PTNSLogConsole("✅ [单次定位] 获取成功: 纬度 \(validLocation.coordinate.latitude), 经度 \(validLocation.coordinate.longitude)")
                     // 顺手更新一下全局缓存
                     self.lastLocation = validLocation
+                    completion(validLocation)
+                } else {
+                    completion(nil)
                 }
             }
         })
@@ -193,7 +196,11 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
         guard let location = location else { return }
         self.lastLocation = location
         
-        PTWeatherManager.shared.fetchCurrentWeather(for: location)
+        // 天气状态统一在主 actor 上串行处理，避免定位回调与重试任务并发修改状态。
+        // El estado meteorológico se serializa en MainActor para evitar carreras entre ubicación y reintentos.
+        Task { @MainActor in
+            PTWeatherManager.shared.fetchCurrentWeather(for: location)
+        }
         
         if currentMode == .antiTheft {
             return

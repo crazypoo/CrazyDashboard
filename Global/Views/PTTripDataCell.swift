@@ -38,6 +38,14 @@ class PTTripDataCell: PTBaseSwipeCell {
         label.adjustsFontSizeToFitWidth = true
         return label
     }()
+
+    private lazy var reviewSummaryLabel: UILabel = {
+        let label = UILabel()
+        label.font = .appfont(size: 10, bold: true)
+        label.textColor = .systemOrange
+        label.adjustsFontSizeToFitWidth = true
+        return label
+    }()
     
     // 现代化数据网格容器
     private lazy var statsGridStackView: UIStackView = {
@@ -143,6 +151,7 @@ class PTTripDataCell: PTBaseSwipeCell {
         
         contentContainer.addSubviews([
             timeTitleLabel,
+            reviewSummaryLabel,
             statsGridStackView,
             thumbnailImageView,
             gpxButton,
@@ -181,10 +190,15 @@ class PTTripDataCell: PTBaseSwipeCell {
             make.top.left.equalToSuperview().inset(margin)
             make.right.equalTo(thumbnailImageView.snp.left).offset(-margin)
         }
+
+        reviewSummaryLabel.snp.makeConstraints { make in
+            make.top.equalTo(timeTitleLabel.snp.bottom).offset(4)
+            make.left.right.equalTo(timeTitleLabel)
+        }
         
         // 数据网格 (标题下方)
         statsGridStackView.snp.makeConstraints { make in
-            make.top.equalTo(timeTitleLabel.snp.bottom).offset(12)
+            make.top.equalTo(reviewSummaryLabel.snp.bottom).offset(8)
             make.left.equalToSuperview().inset(margin)
             make.right.equalTo(thumbnailImageView.snp.left).offset(-margin)
         }
@@ -219,6 +233,10 @@ class PTTripDataCell: PTBaseSwipeCell {
         let startTime = cellModel.startTime.convertTo(region: .local).toFormat("MM-dd HH:mm")
         let endTime = cellModel.endTime.convertTo(region: .local).toFormat("HH:mm")
         timeTitleLabel.text = "🏁 \(startTime) -> \(endTime)"
+        let reviewTitles = cellModel.reviewEvents.prefix(3).map { $0.type.title }
+        reviewSummaryLabel.text = reviewTitles.isEmpty
+            ? "复盘：暂无明显事件"
+            : "复盘：" + reviewTitles.joined(separator: " · ")
         
         // 更新数据网格
         updateStatsGrid()
@@ -354,7 +372,7 @@ public class PTRouteSnapshotManager: NSObject, MAMapViewDelegate {
     /// - Parameters:
     ///   - points: 骑行坐标点数组
     ///   - gpxFileName: 关联的 GPX 文件名 (用于生成同名的 .jpg)
-    public func generateAndSaveSnapshot(coordinates: [CLLocationCoordinate2D], gpxFileName: String, completion: ((URL?) -> Void)? = nil) {
+    public func generateAndSaveSnapshot(coordinates: [CLLocationCoordinate2D], gpxFileName: String, reviewEvents: [PTRideReviewEvent] = [], completion: ((URL?) -> Void)? = nil) {
             
         guard coordinates.count > 1 else {
             completion?(nil)
@@ -377,6 +395,17 @@ public class PTRouteSnapshotManager: NSObject, MAMapViewDelegate {
                 mapView.add(polyline)
                 let padding = UIEdgeInsets(top: 30, left: 30, bottom: 30, right: 30)
                 mapView.setVisibleMapRect(polyline.boundingMapRect, edgePadding: padding, animated: false)
+            }
+
+            // 中文：把复盘事件叠加到路线快照；Español: superponer los eventos de revisión en la instantánea.
+            let annotations = reviewEvents.map { event -> MAPointAnnotation in
+                let annotation = MAPointAnnotation()
+                annotation.coordinate = CLLocationCoordinate2D(latitude: event.latitude, longitude: event.longitude)
+                annotation.title = "PTReview:\(event.type.rawValue)"
+                return annotation
+            }
+            if !annotations.isEmpty {
+                mapView.addAnnotations(annotations)
             }
             
             // 延迟等待底图加载完成
@@ -421,5 +450,19 @@ public class PTRouteSnapshotManager: NSObject, MAMapViewDelegate {
             return renderer
         }
         return nil
+    }
+
+    public func mapView(_ mapView: MAMapView!, viewFor annotation: MAAnnotation!) -> MAAnnotationView! {
+        guard let title = annotation.title, title?.hasPrefix("PTReview:") == true else { return nil }
+
+        let identifier = "PTRideReviewAnnotation"
+        guard let view = (mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MAPinAnnotationView)
+            ?? MAPinAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+        else { return nil }
+        view.annotation = annotation
+        view.pinColor = .purple
+        view.animatesDrop = false
+        view.canShowCallout = false
+        return view
     }
 }

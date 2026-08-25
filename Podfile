@@ -15,6 +15,7 @@ post_install do |installer|
                 config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
       end
   end
+
 end
 
 pre_install do |installer|
@@ -37,14 +38,11 @@ def shared_pods
   pod 'PooTools/Hud', :git => 'https://github.com/crazypoo/PTools.git'
   pod 'PooTools/ProgressBar', :git => 'https://github.com/crazypoo/PTools.git'
   pod 'PooTools/Instructions', :git => 'https://github.com/crazypoo/PTools.git'
-  pod 'PooTools/WhatsNewsKit', :git => 'https://github.com/crazypoo/PTools.git'
   pod 'PooTools/MicPermission', :git => 'https://github.com/crazypoo/PTools.git'
   pod 'PooTools/PhotoPicker', :git => 'https://github.com/crazypoo/PTools.git'
   pod 'PooTools/CustomerLabel', :git => 'https://github.com/crazypoo/PTools.git'
   pod 'PooTools/MediaViewer', :git => 'https://github.com/crazypoo/PTools.git'
 
-  pod 'SwiftyUserDefaults'
-  
   pod 'AMapSearch-NO-IDFA'
   pod 'AMapLocation-NO-IDFA'
   pod 'AMapNavi-NO-IDFA'

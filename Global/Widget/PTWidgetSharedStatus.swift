@@ -10,13 +10,13 @@
 import Foundation
 
 public enum PTWidgetDataKeys {
-    public static let fuelLevel = "widget_fuelLevel"
-    public static let tripKm = "widget_tripKm"
-    public static let isConnected = "widget_isConnected"
-    public static let parkedLat = "widget_parkedLat"
-    public static let parkedLon = "widget_parkedLon"
-    public static let address = "widget_parkedAddress"
-    public static let lastUpdateTime = "widget_lastUpdateTime"
+    nonisolated public static let fuelLevel = "widget_fuelLevel"
+    nonisolated public static let tripKm = "widget_tripKm"
+    nonisolated public static let isConnected = "widget_isConnected"
+    nonisolated public static let parkedLat = "widget_parkedLat"
+    nonisolated public static let parkedLon = "widget_parkedLon"
+    nonisolated public static let address = "widget_parkedAddress"
+    nonisolated public static let lastUpdateTime = "widget_lastUpdateTime"
 }
 
 public struct PTWidgetSharedStatus: Codable, Equatable, Sendable {
@@ -28,7 +28,7 @@ public struct PTWidgetSharedStatus: Codable, Equatable, Sendable {
     public let address: String
     public let lastUpdateTime: Date
 
-    public init(
+    nonisolated public init(
         fuelLevel: Int,
         tripKm: Double,
         isConnected: Bool,
@@ -46,7 +46,7 @@ public struct PTWidgetSharedStatus: Codable, Equatable, Sendable {
         self.lastUpdateTime = lastUpdateTime
     }
 
-    public static let placeholder = PTWidgetSharedStatus(
+    nonisolated public static let placeholder = PTWidgetSharedStatus(
         fuelLevel: 0,
         tripKm: 0,
         isConnected: false,
@@ -56,7 +56,7 @@ public struct PTWidgetSharedStatus: Codable, Equatable, Sendable {
         lastUpdateTime: .distantPast
     )
 
-    public init?(applicationContext: [String: Any]) {
+    nonisolated public init?(applicationContext: [String: Any]) {
         guard
             let fuelLevel = Self.intValue(applicationContext[PTWidgetDataKeys.fuelLevel]),
             let tripKm = Self.doubleValue(applicationContext[PTWidgetDataKeys.tripKm]),
@@ -80,7 +80,7 @@ public struct PTWidgetSharedStatus: Codable, Equatable, Sendable {
         )
     }
 
-    public init?(defaults: UserDefaults?) {
+    nonisolated public init?(defaults: UserDefaults?) {
         guard let defaults,
               defaults.object(forKey: PTWidgetDataKeys.lastUpdateTime) != nil else {
             return nil
@@ -97,11 +97,11 @@ public struct PTWidgetSharedStatus: Codable, Equatable, Sendable {
         )
     }
 
-    public static func read(from defaults: UserDefaults?) -> PTWidgetSharedStatus {
+    nonisolated public static func read(from defaults: UserDefaults?) -> PTWidgetSharedStatus {
         PTWidgetSharedStatus(defaults: defaults) ?? .placeholder
     }
 
-    public func write(to defaults: UserDefaults) {
+    nonisolated public func write(to defaults: UserDefaults) {
         defaults.set(fuelLevel, forKey: PTWidgetDataKeys.fuelLevel)
         defaults.set(tripKm, forKey: PTWidgetDataKeys.tripKm)
         defaults.set(isConnected, forKey: PTWidgetDataKeys.isConnected)
@@ -111,7 +111,7 @@ public struct PTWidgetSharedStatus: Codable, Equatable, Sendable {
         defaults.set(lastUpdateTime.timeIntervalSince1970, forKey: PTWidgetDataKeys.lastUpdateTime)
     }
 
-    public var applicationContext: [String: Any] {
+    nonisolated public var applicationContext: [String: Any] {
         [
             PTWidgetDataKeys.fuelLevel: fuelLevel,
             PTWidgetDataKeys.tripKm: tripKm,
@@ -123,19 +123,19 @@ public struct PTWidgetSharedStatus: Codable, Equatable, Sendable {
         ]
     }
 
-    private static func intValue(_ value: Any?) -> Int? {
+    nonisolated private static func intValue(_ value: Any?) -> Int? {
         if let value = value as? Int { return value }
         if let value = value as? NSNumber { return value.intValue }
         return nil
     }
 
-    private static func doubleValue(_ value: Any?) -> Double? {
+    nonisolated private static func doubleValue(_ value: Any?) -> Double? {
         if let value = value as? Double { return value }
         if let value = value as? NSNumber { return value.doubleValue }
         return nil
     }
 
-    private static func boolValue(_ value: Any?) -> Bool? {
+    nonisolated private static func boolValue(_ value: Any?) -> Bool? {
         if let value = value as? Bool { return value }
         if let value = value as? NSNumber { return value.boolValue }
         return nil

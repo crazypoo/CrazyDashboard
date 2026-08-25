@@ -41,11 +41,62 @@ public struct PTRoutePoint: Codable {
     public let leanAngle: Double // 把倾角也导进去！
     public let gForceY: Double   // 加减速 G 值
     public let gForceX: Double   // 过弯 G 值
+    public let gForceZ: Double   // 颠簸冲击 G 值
     public let slipRatio: Double
+}
+
+public enum PTTripDistanceSource: String, Codable, Sendable {
+    case odometer
+    case gps
+}
+
+public enum PTRideReviewEventType: String, Codable, Sendable, CaseIterable {
+    case hardBraking
+    case hardAcceleration
+    case heavyBump
+    case highLean
+    case suspectedSlip
+
+    public var title: String {
+        switch self {
+        case .hardBraking: return "急刹"
+        case .hardAcceleration: return "突加速"
+        case .heavyBump: return "重颠簸"
+        case .highLean: return "高倾角"
+        case .suspectedSlip: return "疑似打滑"
+        }
+    }
+}
+
+public struct PTRideReviewEvent: Codable, Hashable, Sendable {
+    public let type: PTRideReviewEventType
+    public let timestamp: Date
+    public let latitude: Double
+    public let longitude: Double
+    public let peakValue: Double
+    public let speedKmh: Double
+    public let severity: Double
+
+    public init(type: PTRideReviewEventType,
+                timestamp: Date,
+                latitude: Double,
+                longitude: Double,
+                peakValue: Double,
+                speedKmh: Double,
+                severity: Double) {
+        self.type = type
+        self.timestamp = timestamp
+        self.latitude = latitude
+        self.longitude = longitude
+        self.peakValue = peakValue
+        self.speedKmh = speedKmh
+        self.severity = severity
+    }
 }
 
 // 🚨 升级 1：让模型支持 Codable，以便于本地持久化存储
 public struct PTTripReport: Codable {
+    public let schemaVersion: Int = 2
     public let startTime: Date
     public let endTime: Date
     public let durationMinutes: Int
@@ -89,6 +140,68 @@ public struct PTTripReport: Codable {
     public let heavySlipCount: Int              // 严重打滑次数
     public let slipRatioTrace: [Double]         // 1Hz 遥测轨迹 (用于画折线图)
     public let offRoadEvents: [PTTripOffRoadEvent] // 危险/脱困坐标点集合
+    public let distanceSource: PTTripDistanceSource
+    public let reviewEvents: [PTRideReviewEvent]
+}
+
+private struct PTTripHistoryDocument: Codable {
+    let schemaVersion: Int
+    let trips: [PTTripReport]
+}
+
+extension PTTripReport {
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion, startTime, endTime, durationMinutes, maxSpeedKmh, maxRpm
+        case startOdoKm, endOdoKm, distanceKm, avgConsumption, maxLeanAngleLeft, maxLeanAngleRight
+        case leanAngleTrace, maxAccelerationG, maxBrakingG, maxCorneringG, maxBumpG, maxPitchUp, maxPitchDown
+        case gForceYTrace, gForceXTrace, gForceZTrace, pitchTrace, relativeAltitudeTrace, pressureTrace
+        case idleTimeSeconds, speedTrace, rpmTrace, best0To100Time, gpsAvgSpeedKmh, gpsMaxSpeedKmh, gpsMinSpeedKmh
+        case gpxFileName, maxSlipRatio, heavySlipCount, slipRatioTrace, offRoadEvents, distanceSource, reviewEvents
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        // schemaVersion 的默认值由当前模型统一管理；旧文件仍按兼容字段解码。
+        // La versión del esquema la gestiona el modelo actual; los archivos antiguos siguen usando decodificación compatible.
+        startTime = try container.decode(Date.self, forKey: .startTime)
+        endTime = try container.decode(Date.self, forKey: .endTime)
+        durationMinutes = try container.decodeIfPresent(Int.self, forKey: .durationMinutes) ?? 0
+        maxSpeedKmh = try container.decodeIfPresent(Double.self, forKey: .maxSpeedKmh) ?? 0
+        maxRpm = try container.decodeIfPresent(Int.self, forKey: .maxRpm) ?? 0
+        startOdoKm = try container.decodeIfPresent(Double.self, forKey: .startOdoKm) ?? 0
+        endOdoKm = try container.decodeIfPresent(Double.self, forKey: .endOdoKm) ?? 0
+        distanceKm = try container.decodeIfPresent(Double.self, forKey: .distanceKm) ?? 0
+        avgConsumption = try container.decodeIfPresent(Double.self, forKey: .avgConsumption) ?? 0
+        maxLeanAngleLeft = try container.decodeIfPresent(Double.self, forKey: .maxLeanAngleLeft) ?? 0
+        maxLeanAngleRight = try container.decodeIfPresent(Double.self, forKey: .maxLeanAngleRight) ?? 0
+        leanAngleTrace = try container.decodeIfPresent([Double].self, forKey: .leanAngleTrace) ?? []
+        maxAccelerationG = try container.decodeIfPresent(Double.self, forKey: .maxAccelerationG) ?? 0
+        maxBrakingG = try container.decodeIfPresent(Double.self, forKey: .maxBrakingG) ?? 0
+        maxCorneringG = try container.decodeIfPresent(Double.self, forKey: .maxCorneringG) ?? 0
+        maxBumpG = try container.decodeIfPresent(Double.self, forKey: .maxBumpG) ?? 0
+        maxPitchUp = try container.decodeIfPresent(Double.self, forKey: .maxPitchUp) ?? 0
+        maxPitchDown = try container.decodeIfPresent(Double.self, forKey: .maxPitchDown) ?? 0
+        gForceYTrace = try container.decodeIfPresent([Double].self, forKey: .gForceYTrace) ?? []
+        gForceXTrace = try container.decodeIfPresent([Double].self, forKey: .gForceXTrace) ?? []
+        gForceZTrace = try container.decodeIfPresent([Double].self, forKey: .gForceZTrace) ?? []
+        pitchTrace = try container.decodeIfPresent([Double].self, forKey: .pitchTrace) ?? []
+        relativeAltitudeTrace = try container.decodeIfPresent([Double].self, forKey: .relativeAltitudeTrace) ?? []
+        pressureTrace = try container.decodeIfPresent([Double].self, forKey: .pressureTrace) ?? []
+        idleTimeSeconds = try container.decodeIfPresent(TimeInterval.self, forKey: .idleTimeSeconds) ?? 0
+        speedTrace = try container.decodeIfPresent([Double].self, forKey: .speedTrace) ?? []
+        rpmTrace = try container.decodeIfPresent([Int].self, forKey: .rpmTrace) ?? []
+        best0To100Time = try container.decodeIfPresent(TimeInterval.self, forKey: .best0To100Time)
+        gpsAvgSpeedKmh = try container.decodeIfPresent(Double.self, forKey: .gpsAvgSpeedKmh) ?? 0
+        gpsMaxSpeedKmh = try container.decodeIfPresent(Double.self, forKey: .gpsMaxSpeedKmh) ?? 0
+        gpsMinSpeedKmh = try container.decodeIfPresent(Double.self, forKey: .gpsMinSpeedKmh) ?? 0
+        gpxFileName = try container.decodeIfPresent(String.self, forKey: .gpxFileName)
+        maxSlipRatio = try container.decodeIfPresent(Double.self, forKey: .maxSlipRatio) ?? 0
+        heavySlipCount = try container.decodeIfPresent(Int.self, forKey: .heavySlipCount) ?? 0
+        slipRatioTrace = try container.decodeIfPresent([Double].self, forKey: .slipRatioTrace) ?? []
+        offRoadEvents = try container.decodeIfPresent([PTTripOffRoadEvent].self, forKey: .offRoadEvents) ?? []
+        distanceSource = try container.decodeIfPresent(PTTripDistanceSource.self, forKey: .distanceSource) ?? .gps
+        reviewEvents = try container.decodeIfPresent([PTRideReviewEvent].self, forKey: .reviewEvents) ?? []
+    }
 }
 
 // 🚨 升级 2：定义一个新的通知，告诉 UI 界面 "有新报告生成了"
@@ -123,6 +236,7 @@ public class PTTripManager: NSObject {
     private var maxRpm: Int = 0
     private var startOdo: Double = 0
     private var latestOdo: Double = 0
+    private var hasOdometerData = false
     private var latestConsumption: Double = 0
     
     private var maxLeanLeft: Double = 0
@@ -190,7 +304,7 @@ public class PTTripManager: NSObject {
         guard isRiding, let start = startTime else { return }
         
         let runTime = Date().timeIntervalSince(start)
-        let distance = (latestOdo > startOdo) ? (latestOdo - startOdo) : 0
+        let distance = currentDistanceKm
         let durationHours = runTime / 3600.0
         let avgSpeed = durationHours > 0 ? (distance / durationHours) : 0.0
         
@@ -232,16 +346,21 @@ public class PTTripManager: NSObject {
         if let data = try? Data(contentsOf: fileURL) {
             do {
                 let decoder = JSONDecoder()
-                // 工业级容错：防止传感器产生异常浮点数导致解析崩溃
+                // 中文：兼容传感器异常浮点数；Español: tolerar valores flotantes no conformes del sensor.
                 decoder.nonConformingFloatDecodingStrategy = .convertFromString(positiveInfinity: "INF", negativeInfinity: "-INF", nan: "NaN")
-                
-                let savedTrips = try decoder.decode([PTTripReport].self, from: data)
+
+                let savedTrips: [PTTripReport]
+                if let document = try? decoder.decode(PTTripHistoryDocument.self, from: data) {
+                    savedTrips = document.trips
+                } else {
+                    savedTrips = try decoder.decode([PTTripReport].self, from: data)
+                }
+
                 self.tripHistory = savedTrips
                 PTNSLogConsole("✅ [行程记录] 成功加载 \(savedTrips.count) 条历史记录")
-                
             } catch {
-                PTNSLogConsole("❌ [行程记录] 历史数据解析严重失败: \(error)")
-                self.tripHistory = []
+                PTNSLogConsole("❌ [行程记录] 历史数据解析失败，保留原文件: \(error)")
+                preserveCorruptHistory(data)
             }
         } else {
             PTNSLogConsole("ℹ️ [行程记录] 本地与云端均无数据，初始化为空列表")
@@ -255,8 +374,9 @@ public class PTTripManager: NSObject {
             // 工业级容错：防止传感器异常浮点数导致编码崩溃
             encoder.nonConformingFloatEncodingStrategy = .convertToString(positiveInfinity: "INF", negativeInfinity: "-INF", nan: "NaN")
             
-            // 1. 将数组编码为 JSON 二进制数据
-            let data = try encoder.encode(tripHistory)
+            let document = PTTripHistoryDocument(schemaVersion: 2, trips: tripHistory)
+            // 中文：使用带版本的文档保存；Español: guardar un documento versionado.
+            let data = try encoder.encode(document)
             
             // 2. 写入本地文件 (options: .atomic 保证即使写入时断电，文件也不会损坏)
             try data.write(to: localHistoryURL, options: .atomic)
@@ -268,6 +388,16 @@ public class PTTripManager: NSObject {
             
         } catch {
             PTNSLogConsole("❌ [行程记录] 数据编码保存严重失败: \(error)")
+        }
+    }
+
+    private func preserveCorruptHistory(_ data: Data) {
+        let backupURL = localHistoryURL.deletingPathExtension().appendingPathExtension("corrupt-\(Int(Date().timeIntervalSince1970)).json")
+        do {
+            try data.write(to: backupURL, options: .withoutOverwriting)
+            PTNSLogConsole("⚠️ [行程记录] 已保留损坏历史备份: \(backupURL.lastPathComponent)")
+        } catch {
+            PTNSLogConsole("❌ [行程记录] 无法保留损坏历史备份: \(error.localizedDescription)")
         }
     }
     
@@ -283,16 +413,19 @@ public class PTTripManager: NSObject {
         PTMotion.shared.addDelegate(self)
         PTBluetoothServerManager.shared.addDelegate(self)
         PTMotoTelemetryManager.shared.addDelegate(self)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleLocationUpdate(_:)), name: PTLocationEngineDidUpdate, object: nil)
     }
     
     // MARK: - 业务逻辑处理
     @objc public func handleConnect() {
+        guard !isRiding else { return }
         isRiding = true
         startTime = Date()
         maxSpeed = 0
         maxRpm = 0
         startOdo = 0
         latestOdo = 0
+        hasOdometerData = false
         latestConsumption = 0
         accumulatedGpsDistance = 0.0 // 🌟 重置 GPS 里程
         lastGpsLocation = nil        // 🌟 重置 GPS 参考点
@@ -360,18 +493,23 @@ public class PTTripManager: NSObject {
             
         PTLocationEngine.shared.switchEngineMode(to: .riding)
         PTLocationEngine.shared.startTracking()
-        NotificationCenter.default.addObserver(self, selector: #selector(handleLocationUpdate(_:)), name: PTLocationEngineDidUpdate, object: nil)
     }
         
     @objc private func handleLocationUpdate(_ notification: Notification) {
         guard let tripData = notification.object as? PTTripData,
               let coordinate = tripData.currentLocation,
               self.isRiding else { return }
+
+        guard coordinate.horizontalAccuracy >= 0,
+              coordinate.horizontalAccuracy <= 50,
+              Date().timeIntervalSince(coordinate.timestamp) <= 10 else { return }
         
         if let last = lastGpsLocation {
             let distMeters = coordinate.distance(from: last)
+            let elapsed = max(coordinate.timestamp.timeIntervalSince(last.timestamp), 0.1)
+            let jumpSpeedKmh = distMeters / elapsed * 3.6
             // 过滤 GPS 漂移燥点 (位移大于 2 米才算有效移动)
-            if distMeters > 2.0 {
+            if distMeters > 2.0, jumpSpeedKmh <= 300 {
                 accumulatedGpsDistance += (distMeters / 1000.0) // 转换为 km
             }
         }
@@ -389,10 +527,11 @@ public class PTTripManager: NSObject {
             altitude: coordinate.altitude,
             timestamp: Date(),
             speed: PTMotion.shared.currentSpeedKmh,
-            rpm: self.maxRpm,
+            rpm: self.currentLiveRpm,
             leanAngle: self.currentLiveRoll,
             gForceY: self.currentLiveGForceY,
             gForceX: self.currentLiveGForceX,
+            gForceZ: self.currentLiveGForceZ,
             slipRatio: self.currentLiveSlipRatio
         )
         self.routeArray.append(point)
@@ -410,9 +549,7 @@ public class PTTripManager: NSObject {
         let durationSec = endTime.timeIntervalSince(start)
         let durationMin = Int(durationSec / 60.0)
         
-        let finalDistance = PTDashboardConfig.shared.blueConnected
-                                    ? (latestOdo > startOdo ? (latestOdo - startOdo) : 0)
-                                    : accumulatedGpsDistance
+        let finalDistance = currentDistanceKm
         
         let durationHours = durationSec / 3600.0
         let hardwareAvgSpeed = durationHours > 0 ? (finalDistance / durationHours) : 0.0
@@ -424,12 +561,14 @@ public class PTTripManager: NSObject {
             return
         }
         
-        // 3. 开始生成高德 GPX 和快照z
+        let reviewEvents = PTRideReviewAnalyzer.analyze(points: routeArray)
+
+        // 3. 开始生成高德 GPX 和快照
         let generatedFileName = PTGPXRecorder.shared.exportGPX(from: routeArray)
         if let fileName = generatedFileName {
             // 在后台生成缩略图并上传 iCloud
             let coosMap = routeArray.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon) }
-            PTRouteSnapshotManager.shared.generateAndSaveSnapshot(coordinates: coosMap, gpxFileName: fileName)
+            PTRouteSnapshotManager.shared.generateAndSaveSnapshot(coordinates: coosMap, gpxFileName: fileName, reviewEvents: reviewEvents)
         }
         
         // 切回防盗模式
@@ -479,7 +618,9 @@ public class PTTripManager: NSObject {
             maxSlipRatio: maxSlipRatio,
             heavySlipCount: offRoadEventsArray.count,
             slipRatioTrace: slipRatioTraceArray,
-            offRoadEvents: offRoadEventsArray
+            offRoadEvents: offRoadEventsArray,
+            distanceSource: hasOdometerData ? .odometer : .gps,
+            reviewEvents: reviewEvents
         )
         
         // 1. 存入内存数组的最前面 (保证最新记录在列表顶部)
@@ -496,6 +637,13 @@ public class PTTripManager: NSObject {
     
     deinit {
         NotificationCenter.default.removeObserver(self)
+    }
+
+    private var currentDistanceKm: Double {
+        if hasOdometerData, latestOdo >= startOdo {
+            return latestOdo - startOdo
+        }
+        return accumulatedGpsDistance
     }
 }
 
@@ -669,7 +817,10 @@ extension PTTripManager:PTBLEDashboardDelegate {
     
     func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
         if isRiding, let data1 = data as? PTDashboardData1 {
-            if startOdo == 0 && data1.odoKm > 0 { startOdo = data1.odoKm }
+            if !hasOdometerData && data1.odoKm > 0 {
+                startOdo = data1.odoKm
+                hasOdometerData = true
+            }
             latestOdo = data1.odoKm
             latestConsumption = data1.avgConsumptionLt
         } else if isRiding, let control = data as? PTDashboardControl,!PTMotoTelemetryManager.shared.isConnected{

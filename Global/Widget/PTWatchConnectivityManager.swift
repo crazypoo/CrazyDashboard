@@ -4,14 +4,14 @@
 //
 
 import Foundation
-import WatchConnectivity
+@preconcurrency import WatchConnectivity
 
 @objcMembers
+@MainActor
 public final class PTWatchConnectivityManager: NSObject, WCSessionDelegate {
     public static let shared = PTWatchConnectivityManager()
 
     private let session = WCSession.default
-    private let queue = DispatchQueue(label: "com.yd.PTSpeed.watchConnectivity")
     private var pendingStatus: PTWidgetSharedStatus?
 
     private override init() {
@@ -22,11 +22,8 @@ public final class PTWatchConnectivityManager: NSObject, WCSessionDelegate {
     }
 
     public func update(status: PTWidgetSharedStatus) {
-        queue.async { [weak self] in
-            guard let self else { return }
-            self.pendingStatus = status
-            self.flushPendingStatusIfPossible()
-        }
+        pendingStatus = status
+        flushPendingStatusIfPossible()
     }
 
     private func flushPendingStatusIfPossible() {
@@ -41,12 +38,12 @@ public final class PTWatchConnectivityManager: NSObject, WCSessionDelegate {
         }
     }
 
-    public func session(
+    nonisolated public func session(
         _ session: WCSession,
         activationDidCompleteWith activationState: WCSessionActivationState,
         error: Error?
     ) {
-        queue.async { [weak self] in
+        Task { @MainActor [weak self] in
             guard let self else { return }
             if let error {
                 print("[WatchConnectivity] activation failed: \(error.localizedDescription)")
@@ -58,9 +55,9 @@ public final class PTWatchConnectivityManager: NSObject, WCSessionDelegate {
     }
 
     #if os(iOS)
-    public func sessionDidBecomeInactive(_ session: WCSession) {}
+    nonisolated public func sessionDidBecomeInactive(_ session: WCSession) {}
 
-    public func sessionDidDeactivate(_ session: WCSession) {
+    nonisolated public func sessionDidDeactivate(_ session: WCSession) {
         session.activate()
     }
     #endif

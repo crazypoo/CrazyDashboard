@@ -1,0 +1,4 @@
+// 调试配置：先加载 CocoaPods，再加载本机未提交的密钥文件。
+// Configuración de depuración: carga CocoaPods y después los secretos locales no versionados.
+#include "../../Pods/Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"
+#include? "Secrets.xcconfig"

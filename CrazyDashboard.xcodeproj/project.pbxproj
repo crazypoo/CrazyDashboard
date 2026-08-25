@@ -72,9 +72,21 @@
 		55E61692301B45B50075F883 /* QWeatherSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 55E61691301B45B50075F883 /* QWeatherSDK */; };
 		55F1E2F23026D2020032EAD5 /* PTHiddenOBDConnector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F1E2F13026D2020032EAD5 /* PTHiddenOBDConnector.swift */; };
 		55F1E2F53026D2020032EAD5 /* PTUDSDiagnosticService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F1E2F43026D2020032EAD5 /* PTUDSDiagnosticService.swift */; };
+		55F52C70303D4025007527C2 /* PTOBDiagnosticAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F52C71303D4025007527C2 /* PTOBDiagnosticAddress.swift */; };
 		55F503AC300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
 		55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */; };
 		55F503BB300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */; };
+		55F52C4D303D4025007527C2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F52C3C303D4025007527C2 /* Assets.xcassets */; };
+		55F52C4F303D4025007527C2 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 55F52C42303D4025007527C2 /* LaunchScreen.storyboard */; };
+		55F52C50303D4025007527C2 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 55F52C47303D4025007527C2 /* Main.storyboard */; };
+		55F52C51303D4025007527C2 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F52C3B303D4025007527C2 /* AppDelegate.swift */; };
+		55F52C52303D4025007527C2 /* PTCarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F52C48303D4025007527C2 /* PTCarPlaySceneDelegate.swift */; };
+		55F52C53303D4025007527C2 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F52C4A303D4025007527C2 /* SceneDelegate.swift */; };
+		55F52C54303D4025007527C2 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F52C4B303D4025007527C2 /* ViewController.swift */; };
+		55F52C55303D4025007527C2 /* PTRideReviewAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F52C56303D4025007527C2 /* PTRideReviewAnalyzer.swift */; };
+		55F52C5B303D4025007527C2 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 55F52C5C303D4025007527C2 /* PrivacyInfo.xcprivacy */; };
+		55F52C5E303D4025007527C2 /* PTCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F52C5D303D4025007527C2 /* PTCoreTests.swift */; };
+		55F52C61303D4025007527C2 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55F52C60303D4025007527C2 /* XCTest.framework */; };
 		55FDBCA93010CD6E00EE7FA5 /* PTMOTOParkingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FDBCA73010CD6E00EE7FA5 /* PTMOTOParkingManager.swift */; };
 		55FDBCAC3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FDBCAA3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift */; };
 		55FE295C300CA4E8000E741F /* PTBluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE295A300CA4E8000E741F /* PTBluetoothManager.swift */; };
@@ -110,6 +122,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 555DC83E303820E3002B003B;
 			remoteInfo = "xp400watch Watch App";
+		};
+		55F52C66303D4025007527C2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5577E5B52FD5C1DB0004733F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5577E6372FD657030004733F;
+			remoteInfo = PTSpeed;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -205,10 +224,34 @@
 		55CA9E183024582300A3A677 /* PTOBDDataViewControllerCollection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDDataViewControllerCollection.swift; sourceTree = "<group>"; };
 		55F1E2F13026D2020032EAD5 /* PTHiddenOBDConnector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTHiddenOBDConnector.swift; sourceTree = "<group>"; };
 		55F1E2F43026D2020032EAD5 /* PTUDSDiagnosticService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTUDSDiagnosticService.swift; sourceTree = "<group>"; };
+		55F52C71303D4025007527C2 /* PTOBDiagnosticAddress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDiagnosticAddress.swift; sourceTree = "<group>"; };
 		55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = GlobalAssets.xcassets; sourceTree = "<group>"; };
 		55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLanguageModel.swift; sourceTree = "<group>"; };
 		55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoUserDefaultStruct.swift; sourceTree = "<group>"; };
 		55F503C1300FCB8E00C5D085 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		55F52C3B303D4025007527C2 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		55F52C3C303D4025007527C2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		55F52C3D303D4025007527C2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		55F52C3E303D4025007527C2 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		55F52C3F303D4025007527C2 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/LaunchScreen.strings"; sourceTree = "<group>"; };
+		55F52C40303D4025007527C2 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
+		55F52C41303D4025007527C2 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/LaunchScreen.strings"; sourceTree = "<group>"; };
+		55F52C43303D4025007527C2 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		55F52C44303D4025007527C2 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Main.strings"; sourceTree = "<group>"; };
+		55F52C45303D4025007527C2 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/Main.strings; sourceTree = "<group>"; };
+		55F52C46303D4025007527C2 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/Main.strings"; sourceTree = "<group>"; };
+		55F52C48303D4025007527C2 /* PTCarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCarPlaySceneDelegate.swift; sourceTree = "<group>"; };
+		55F52C49303D4025007527C2 /* PTSpeed.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PTSpeed.entitlements; sourceTree = "<group>"; };
+		55F52C4A303D4025007527C2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		55F52C4B303D4025007527C2 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		55F52C56303D4025007527C2 /* PTRideReviewAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideReviewAnalyzer.swift; sourceTree = "<group>"; };
+		55F52C57303D4025007527C2 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		55F52C58303D4025007527C2 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		55F52C59303D4025007527C2 /* Secrets.example.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.example.xcconfig; sourceTree = "<group>"; };
+		55F52C5C303D4025007527C2 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		55F52C5D303D4025007527C2 /* PTCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCoreTests.swift; sourceTree = "<group>"; };
+		55F52C60303D4025007527C2 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
+		55F52C62303D4025007527C2 /* PTSpeedTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PTSpeedTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		55FDBCA73010CD6E00EE7FA5 /* PTMOTOParkingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMOTOParkingManager.swift; sourceTree = "<group>"; };
 		55FDBCAA3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMOTOParkingAnotationView.swift; sourceTree = "<group>"; };
 		55FE295A300CA4E8000E741F /* PTBluetoothManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBluetoothManager.swift; sourceTree = "<group>"; };
@@ -240,13 +283,6 @@
 			);
 			target = 55499E07301AFCE800A1A2D9 /* xp400WidgetExtension */;
 		};
-		5577E6492FD657040004733F /* Exceptions for "PTSpeed" folder in "PTSpeed" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 5577E6372FD657030004733F /* PTSpeed */;
-		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -260,15 +296,9 @@
 		};
 		555DC840303820E3002B003B /* xp400watch Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "xp400watch Watch App";
-			sourceTree = "<group>";
-		};
-		5577E6392FD657030004733F /* PTSpeed */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				5577E6492FD657040004733F /* Exceptions for "PTSpeed" folder in "PTSpeed" target */,
 			);
-			path = PTSpeed;
+			path = "xp400watch Watch App";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -402,9 +432,10 @@
 			children = (
 				55878957302301B200B94E91 /* xp400WidgetExtension.entitlements */,
 				5577E64D2FD657110004733F /* Global */,
-				5577E6392FD657030004733F /* PTSpeed */,
+				55F52C4C303D4025007527C2 /* PTSpeed */,
 				55499E0D301AFCE800A1A2D9 /* xp400Widget */,
 				555DC840303820E3002B003B /* xp400watch Watch App */,
+				55F52C5F303D4025007527C2 /* PTSpeedTests */,
 				5577E5BE2FD5C1DB0004733F /* Products */,
 				59D3A021EFE75A7BF8504B6F /* Pods */,
 				C8AF0651275D1EA16545F01B /* Frameworks */,
@@ -418,6 +449,7 @@
 				5577E6382FD657030004733F /* XP400Ride.app */,
 				55499E08301AFCE800A1A2D9 /* xp400WidgetExtension.appex */,
 				555DC83F303820E3002B003B /* xp400watch Watch App.app */,
+				55F52C62303D4025007527C2 /* PTSpeedTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -573,6 +605,7 @@
 				5512F331302B7F26001AFED4 /* PTOBDCommand.swift */,
 				5512F398302C4CAC001AFED4 /* PTDashboardHacker.swift */,
 				557D027930335603008BA492 /* PTCANRecorder.swift */,
+				55F52C71303D4025007527C2 /* PTOBDiagnosticAddress.swift */,
 				55F1E2F43026D2020032EAD5 /* PTUDSDiagnosticService.swift */,
 			);
 			path = Function;
@@ -589,6 +622,7 @@
 		55F503B9300FCA1E00C5D085 /* Global */ = {
 			isa = PBXGroup;
 			children = (
+				55F52C56303D4025007527C2 /* PTRideReviewAnalyzer.swift */,
 				5598667A301147FD0049684D /* PTCustomRouteManager.swift */,
 				55499CF93019D83800A1A2D9 /* PTDashboardBaseView.swift */,
 				55FE2965300CA5E0000E741F /* PTDashboardConfig.swift */,
@@ -606,6 +640,34 @@
 				559866C13011A71E0049684D /* SpeechSynthesizer.swift */,
 			);
 			path = Global;
+			sourceTree = "<group>";
+		};
+		55F52C4C303D4025007527C2 /* PTSpeed */ = {
+			isa = PBXGroup;
+			children = (
+				55F52C3B303D4025007527C2 /* AppDelegate.swift */,
+				55F52C3C303D4025007527C2 /* Assets.xcassets */,
+				55F52C5A303D4025007527C2 /* Config */,
+				55F52C3D303D4025007527C2 /* Info.plist */,
+				55F52C42303D4025007527C2 /* LaunchScreen.storyboard */,
+				55F52C47303D4025007527C2 /* Main.storyboard */,
+				55F52C48303D4025007527C2 /* PTCarPlaySceneDelegate.swift */,
+				55F52C49303D4025007527C2 /* PTSpeed.entitlements */,
+				55F52C4A303D4025007527C2 /* SceneDelegate.swift */,
+				55F52C4B303D4025007527C2 /* ViewController.swift */,
+				55F52C5C303D4025007527C2 /* PrivacyInfo.xcprivacy */,
+			);
+			path = PTSpeed;
+			sourceTree = "<group>";
+		};
+		55F52C5A303D4025007527C2 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				55F52C57303D4025007527C2 /* Debug.xcconfig */,
+				55F52C58303D4025007527C2 /* Release.xcconfig */,
+				55F52C59303D4025007527C2 /* Secrets.example.xcconfig */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 		55FE2A75300DF93F000E741F /* Views */ = {
@@ -681,11 +743,17 @@
 				555DC840303820E3002B003B /* xp400watch Watch App */,
 			);
 			name = "xp400watch Watch App";
-			packageProductDependencies = (
-			);
 			productName = "xp400watch Watch App";
 			productReference = 555DC83F303820E3002B003B /* xp400watch Watch App.app */;
 			productType = "com.apple.product-type.application";
+		};
+		55F52C5F303D4025007527C2 /* PTSpeedTests */ = {
+			isa = PBXGroup;
+			children = (
+				55F52C5D303D4025007527C2 /* PTCoreTests.swift */,
+			);
+			path = PTSpeedTests;
+			sourceTree = "<group>";
 		};
 		5577E6372FD657030004733F /* PTSpeed */ = {
 			isa = PBXNativeTarget;
@@ -706,13 +774,28 @@
 				55499E16301AFCEA00A1A2D9 /* PBXTargetDependency */,
 				555DC848303820E6002B003B /* PBXTargetDependency */,
 			);
-			fileSystemSynchronizedGroups = (
-				5577E6392FD657030004733F /* PTSpeed */,
-			);
 			name = PTSpeed;
 			productName = PTSpeed;
 			productReference = 5577E6382FD657030004733F /* XP400Ride.app */;
 			productType = "com.apple.product-type.application";
+		};
+		55F52C63303D4025007527C2 /* PTSpeedTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 55F52C64303D4025007527C2 /* Build configuration list for PBXNativeTarget "PTSpeedTests" */;
+			buildPhases = (
+				55F52C67303D4025007527C2 /* Sources */,
+				55F52C68303D4025007527C2 /* Frameworks */,
+				55F52C69303D4025007527C2 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				55F52C65303D4025007527C2 /* PBXTargetDependency */,
+			);
+			name = PTSpeedTests;
+			productName = PTSpeedTests;
+			productReference = 55F52C62303D4025007527C2 /* PTSpeedTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -732,6 +815,10 @@
 					};
 					5577E6372FD657030004733F = {
 						CreatedOnToolsVersion = 26.5;
+					};
+					55F52C63303D4025007527C2 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = 5577E6372FD657030004733F;
 					};
 				};
 			};
@@ -758,6 +845,7 @@
 				5577E6372FD657030004733F /* PTSpeed */,
 				55499E07301AFCE800A1A2D9 /* xp400WidgetExtension */,
 				555DC83E303820E3002B003B /* xp400watch Watch App */,
+				55F52C63303D4025007527C2 /* PTSpeedTests */,
 			);
 		};
 /* End PBXProject section */
@@ -784,7 +872,18 @@
 			files = (
 				55F503AC300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */,
 				5598676E3011C9720049684D /* Settings.bundle in Resources */,
+				55F52C4D303D4025007527C2 /* Assets.xcassets in Resources */,
+				55F52C4F303D4025007527C2 /* LaunchScreen.storyboard in Resources */,
+				55F52C50303D4025007527C2 /* Main.storyboard in Resources */,
+				55F52C5B303D4025007527C2 /* PrivacyInfo.xcprivacy in Resources */,
 				55FE2A6F300DF836000E741F /* Localizable.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55F52C69303D4025007527C2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -799,13 +898,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -842,13 +937,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -879,6 +970,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				55F52C55303D4025007527C2 /* PTRideReviewAnalyzer.swift in Sources */,
 				600000010000000000000020 /* PTWidgetSharedStatus.swift in Sources */,
 				600000010000000000000023 /* PTWatchConnectivityManager.swift in Sources */,
 				55CA9E193024582300A3A677 /* PTOBDDataViewControllerCollection.swift in Sources */,
@@ -892,6 +984,10 @@
 				55499E03301AFC2200A1A2D9 /* PTWidgetManager.swift in Sources */,
 				555C0FF9300E06630079D94F /* PTGlobalActionHeader.swift in Sources */,
 				55986687301150900049684D /* PTECUSnifferOverlay.swift in Sources */,
+				55F52C51303D4025007527C2 /* AppDelegate.swift in Sources */,
+				55F52C52303D4025007527C2 /* PTCarPlaySceneDelegate.swift in Sources */,
+				55F52C53303D4025007527C2 /* SceneDelegate.swift in Sources */,
+				55F52C54303D4025007527C2 /* ViewController.swift in Sources */,
 				5598668230114A980049684D /* PTFuelRoutingManager.swift in Sources */,
 				5577E6D22FD680730004733F /* PTTripStatsView.swift in Sources */,
 				55986834301330E00049684D /* PTDataCollectedViewController.swift in Sources */,
@@ -921,6 +1017,7 @@
 				55FE29A1300CC1F1000E741F /* PTMotoInfoViewController.swift in Sources */,
 				557D027A30335603008BA492 /* PTCANRecorder.swift in Sources */,
 				55F1E2F53026D2020032EAD5 /* PTUDSDiagnosticService.swift in Sources */,
+				55F52C70303D4025007527C2 /* PTOBDiagnosticAddress.swift in Sources */,
 				557D0051302EA1E3008BA492 /* PTArcGaugeView.swift in Sources */,
 				558789E4302420CB00B94E91 /* PTCarplayMainController.swift in Sources */,
 				55499CFE3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift in Sources */,
@@ -953,6 +1050,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		55F52C67303D4025007527C2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				55F52C5E303D4025007527C2 /* PTCoreTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+
+		55F52C68303D4025007527C2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				55F52C61303D4025007527C2 /* XCTest.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -966,9 +1080,36 @@
 			target = 555DC83E303820E3002B003B /* xp400watch Watch App */;
 			targetProxy = 555DC847303820E6002B003B /* PBXContainerItemProxy */;
 		};
+		55F52C65303D4025007527C2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5577E6372FD657030004733F /* PTSpeed */;
+			targetProxy = 55F52C66303D4025007527C2 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
+		55F52C42303D4025007527C2 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				55F52C3E303D4025007527C2 /* Base */,
+				55F52C3F303D4025007527C2 /* zh-Hans */,
+				55F52C40303D4025007527C2 /* tr */,
+				55F52C41303D4025007527C2 /* zh-Hant */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+		55F52C47303D4025007527C2 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				55F52C43303D4025007527C2 /* Base */,
+				55F52C44303D4025007527C2 /* zh-Hans */,
+				55F52C45303D4025007527C2 /* tr */,
+				55F52C46303D4025007527C2 /* zh-Hant */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
 		55FE2A6D300DF836000E741F /* Localizable.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -1061,6 +1202,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = xp400watch;
+				INFOPLIST_KEY_WKApplication = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.yd.PTSpeed;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1095,6 +1237,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = xp400watch;
+				INFOPLIST_KEY_WKApplication = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.yd.PTSpeed;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1244,7 +1387,7 @@
 		};
 		5577E64B2FD657040004733F /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */;
+			baseConfigurationReference = 55F52C57303D4025007527C2 /* Debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1255,16 +1398,16 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = XP400RIDE;
-				INFOPLIST_KEY_NSAppleMusicUsageDescription = "我要用AM";
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "我要用蓝牙";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "我要使用本地网络权限";
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "我要用L";
-				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "我要用L";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "我要用L";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "我要用Mic";
-				INFOPLIST_KEY_NSMotionUsageDescription = "我要用Motion";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "我要添加到相冊";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "我要用相冊";
+				INFOPLIST_KEY_NSAppleMusicUsageDescription = "用于导航语音和音乐信息 / Para indicaciones de voz e información musical";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "用于连接摩托车仪表并读取车辆数据 / Para conectar el cuadro de la moto y leer sus datos";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "用于发现同组骑手并进行对讲 / Para descubrir a los pilotos del grupo y usar el intercomunicador";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "用于记录骑行路线、停车位置和防盗状态 / Para registrar la ruta, el aparcamiento y el estado antirrobo";
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "用于后台记录骑行路线和防盗状态 / Para registrar la ruta y el estado antirrobo en segundo plano";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "用于记录骑行路线和当前位置 / Para registrar la ruta y la ubicación actual";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "用于摩托车组群语音对讲 / Para el intercomunicador de voz del grupo de motos";
+				INFOPLIST_KEY_NSMotionUsageDescription = "用于识别骑行姿态和加速度变化 / Para detectar la postura y los cambios de aceleración durante la ruta";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "用于保存骑行报告和截图 / Para guardar informes y capturas de la ruta";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "用于选择骑手头像和分享图片 / Para elegir el avatar y compartir imágenes";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -1363,8 +1506,6 @@
 					"-framework",
 					"\"SwifterSwift\"",
 					"-framework",
-					"\"SwiftyUserDefaults\"",
-					"-framework",
 					"\"SystemConfiguration\"",
 					"-framework",
 					"\"UIKit\"",
@@ -1396,7 +1537,7 @@
 		};
 		5577E64C2FD657040004733F /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */;
+			baseConfigurationReference = 55F52C58303D4025007527C2 /* Release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1407,16 +1548,16 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = XP400RIDE;
-				INFOPLIST_KEY_NSAppleMusicUsageDescription = "我要用AM";
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "我要用蓝牙";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "我要使用本地网络权限";
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "我要用L";
-				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "我要用L";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "我要用L";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "我要用Mic";
-				INFOPLIST_KEY_NSMotionUsageDescription = "我要用Motion";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "我要添加到相冊";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "我要用相冊";
+				INFOPLIST_KEY_NSAppleMusicUsageDescription = "用于导航语音和音乐信息 / Para indicaciones de voz e información musical";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "用于连接摩托车仪表并读取车辆数据 / Para conectar el cuadro de la moto y leer sus datos";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "用于发现同组骑手并进行对讲 / Para descubrir a los pilotos del grupo y usar el intercomunicador";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "用于记录骑行路线、停车位置和防盗状态 / Para registrar la ruta, el aparcamiento y el estado antirrobo";
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "用于后台记录骑行路线和防盗状态 / Para registrar la ruta y el estado antirrobo en segundo plano";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "用于记录骑行路线和当前位置 / Para registrar la ruta y la ubicación actual";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "用于摩托车组群语音对讲 / Para el intercomunicador de voz del grupo de motos";
+				INFOPLIST_KEY_NSMotionUsageDescription = "用于识别骑行姿态和加速度变化 / Para detectar la postura y los cambios de aceleración durante la ruta";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "用于保存骑行报告和截图 / Para guardar informes y capturas de la ruta";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "用于选择骑手头像和分享图片 / Para elegir el avatar y compartir imágenes";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -1513,8 +1654,6 @@
 					"-framework",
 					"\"SwifterSwift\"",
 					"-framework",
-					"\"SwiftyUserDefaults\"",
-					"-framework",
 					"\"SystemConfiguration\"",
 					"-framework",
 					"\"UIKit\"",
@@ -1541,6 +1680,55 @@
 				TARGETED_DEVICE_FAMILY = 1;
 				WATCHOS_DEPLOYMENT_TARGET = 10.6;
 				XROS_DEPLOYMENT_TARGET = 2.6;
+			};
+			name = Release;
+		};
+		55F52C6A303D4025007527C2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 55F52C57303D4025007527C2 /* Debug.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 35;
+				DEVELOPMENT_TEAM = 5U99J43536;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.yd.PTSpeedTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/XP400Ride.app/XP400Ride";
+			};
+			name = Debug;
+		};
+		55F52C6B303D4025007527C2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 55F52C58303D4025007527C2 /* Release.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 35;
+				DEVELOPMENT_TEAM = 5U99J43536;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.yd.PTSpeedTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/XP400Ride.app/XP400Ride";
 			};
 			name = Release;
 		};
@@ -1579,6 +1767,15 @@
 			buildConfigurations = (
 				5577E64B2FD657040004733F /* Debug */,
 				5577E64C2FD657040004733F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		55F52C64303D4025007527C2 /* Build configuration list for PBXNativeTarget "PTSpeedTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				55F52C6A303D4025007527C2 /* Debug */,
+				55F52C6B303D4025007527C2 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

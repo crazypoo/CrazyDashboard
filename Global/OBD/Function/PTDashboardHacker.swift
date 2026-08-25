@@ -68,7 +68,7 @@ public extension PTDashboardHacker {
     
     /// 🚀 扫描总线上所有的 ECU 节点，寻找可能是仪表盘的地址
     @discardableResult
-    func scanForDashboardAddress(progress: ((Int, Int) -> Void)? = nil) async -> [PTOBDECUNode] {
+    func scanForDashboardAddress(progress: (@MainActor @Sendable (Int, Int) -> Void)? = nil) async -> [PTOBDECUNode] {
         do {
             let nodes = try await PTUDSReadService.shared.scanDashboardNodes(progress: progress)
             PTOBDLogger.obd.ptLog("🏁 [仪表盘探查] 找到 \(nodes.count) 个候选节点")
@@ -94,7 +94,7 @@ public extension PTDashboardHacker {
         dashboardTx: String,
         dashboardRx: String,
         targetDIDs: [String],
-        progress: ((Int, Int, PTOBDIDReadResult) -> Void)? = nil
+        progress: (@MainActor @Sendable (Int, Int, PTOBDIDReadResult) -> Void)? = nil
     ) async -> [PTOBDIDReadResult] {
         guard let address = PTOBDDiagnosticAddress(tx: dashboardTx, rx: dashboardRx) else {
             PTOBDLogger.obd.ptLog("❌ [防休眠探测] 地址格式无效")
@@ -167,7 +167,7 @@ public extension PTDashboardHacker {
         dashboardRx: String,
         startDID: UInt16 = 0x0100,
         endDID: UInt16 = 0x02FF,
-        progress: ((Int, Int, PTOBDIDReadResult) -> Void)? = nil
+        progress: (@MainActor @Sendable (Int, Int, PTOBDIDReadResult) -> Void)? = nil
     ) async -> [String: String] {
         guard startDID <= endDID,
               Int(endDID) - Int(startDID) <= 0x03FF,
@@ -207,7 +207,7 @@ public extension PTDashboardHacker {
     @discardableResult
     func performFullVehicleDeepDumpReport(
         addresses: [PTOBDDiagnosticAddress]? = nil,
-        progress: ((Int, Int) -> Void)? = nil
+        progress: (@MainActor @Sendable (Int, Int) -> Void)? = nil
     ) async -> PTOBDFullVehicleDumpReport {
         let startedAt = Date()
         let targetAddresses: [PTOBDDiagnosticAddress]
@@ -246,7 +246,7 @@ public extension PTDashboardHacker {
                 }
             }
 
-            progress?(index + 1, targetAddresses.count)
+            await progress?(index + 1, targetAddresses.count)
         }
 
         return PTOBDFullVehicleDumpReport(

@@ -357,7 +357,9 @@ public class PTLocalIntercomManager: NSObject {
         
         stopSpeakingDetector()
         stopPingTimer()
-        PTLiveActivityManager.shared.stopIntercomActivity()
+        Task { @MainActor in
+            PTLiveActivityManager.shared.stopIntercomActivity()
+        }
 
         guard wasRunning else { return }
 
@@ -749,12 +751,17 @@ public class PTLocalIntercomManager: NSObject {
         let liveActivityPeers = isRunning && hasConnectedPeers ? peerStates : []
 
         // 只有已连接成员存在时才创建或更新锁屏组件；空群组会结束全部旧 Activity。
-        PTLiveActivityManager.shared.syncIntercomActivity(
-            channel: PTDashboardConfig.languageFunc(text: "Team channel"),
-            isTalking: self.isTalking,
-            status: self.currentStatusText,
-            peers: liveActivityPeers
-        )
+        let channel = PTDashboardConfig.languageFunc(text: "Team channel")
+        let isTalking = self.isTalking
+        let status = self.currentStatusText
+        Task { @MainActor in
+            PTLiveActivityManager.shared.syncIntercomActivity(
+                channel: channel,
+                isTalking: isTalking,
+                status: status,
+                peers: liveActivityPeers
+            )
+        }
 
         DispatchQueue.main.async {
             NotificationCenter.default.post(
@@ -774,7 +781,9 @@ public class PTLocalIntercomManager: NSObject {
     
     public func restoreIntercomStateAtLaunch() {
         // 进程重启后 Activity 引用会丢失，启动阶段先清理系统中可能残留的旧活动。
-        PTLiveActivityManager.shared.stopIntercomActivity()
+        Task { @MainActor in
+            PTLiveActivityManager.shared.stopIntercomActivity()
+        }
 
         let shouldAutoStart = UserDefaults.standard.bool(forKey: intercomPowerStateKey)
         if shouldAutoStart {

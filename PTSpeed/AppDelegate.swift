@@ -14,10 +14,8 @@ import PooTools
 import IQKeyboardToolbar
 import DeviceKit
 import Bugly
-import BackgroundTasks
 import SafeSFSymbols
 import QWeatherSDK
-import AVFoundation
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -90,12 +88,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         PTAppBaseConfig.share.viewControllerBackItemImage = UIImage(.chevron.compactLeft).withTintColor(.white, renderingMode: .alwaysOriginal)
         PTAppBaseConfig.share.navTitleTextColor = .white
         PTAppBaseConfig.share.navTitleFont = .appfont(size: 24,bold: true)
-        registerBackgroundTasks()
-        
+        _ = PTAntiTheftManager.shared
+        _ = PTDiagnosticManager.shared
+        _ = PTMaintenanceManager.shared
         appNotifiCenter()
         _ = PTTripManager.shared
         _ = PTGPXRecorder.shared
+        _ = PTLocationEngine.shared
         
+//        configureQWeatherIfAvailable()
         Task {
             do {
                 let jwt = JWTGenerator(privateKey: "MC4CAQAwBQYDK2VwBCIEIE/J2HAiPGXdCgaKWj8V9SNWngayd/UVVqKtdZ6wA4EZ", pid: "2C88VNJQXF", kid: "KMB2ME5R85")
@@ -104,7 +105,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 PTNSLogConsole(error.localizedDescription)
             }
         }
-        
+
         PTLocalIntercomManager.shared.restoreIntercomStateAtLaunch()
         
         return true
@@ -128,41 +129,38 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return PTRotationManager.shared.orientationMask
     }
 
-    func registerBackgroundTasks() {
-        BGTaskScheduler.shared.register(forTaskWithIdentifier: "com.yd.PTSpeed.refresh", using: nil) { task in
-            // 处理后台任务的逻辑
-            self.handleAppRefresh(task: task as! BGAppRefreshTask)
-        }
-    }
-    
-    func handleAppRefresh(task: BGAppRefreshTask) {
-        // 因超时或其他问题而不得不被系统终止时，将调用该回调
-        task.expirationHandler = {
-            task.setTaskCompleted(success: false)
-        }
-
-        // Data Fetching
-
-        DispatchQueue.main.async {
-//            if let currentVC = PTUtils.getCurrentVC() as? PTMotoNavigationViewController {
-//                
-//            }
-        }
-
-        // 告知后台任务调度器任务已完成
-        task.setTaskCompleted(success: true)
-    }
-    
     func applicationWillTerminate(_ application: UIApplication) { }
-    
-    private func setupAudioSessionForBackground() {
-        do {
-            let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playback, mode: .voicePrompt, options: [.defaultToSpeaker, .allowBluetoothA2DP, .allowBluetoothHFP, .mixWithOthers,.duckOthers])
-            try audioSession.setActive(true)
-        } catch {
-            // 处理错误
-        }
+
+//    private func configureQWeatherIfAvailable() {
+//        guard
+//            let privateKey = qWeatherValue(forKey: "QWeatherPrivateKey"),
+//            let projectID = qWeatherValue(forKey: "QWeatherProjectID"),
+//            let keyID = qWeatherValue(forKey: "QWeatherKeyID"),
+//            let host = qWeatherValue(forKey: "QWeatherHost")
+//        else {
+//            PTNSLogConsole("ℹ️ [天气服务] 未配置和风天气密钥，已跳过备用服务初始化。")
+//            return
+//        }
+//
+//        Task { @MainActor in
+//            do {
+//                let jwt = JWTGenerator(privateKey: privateKey, pid: projectID, kid: keyID)
+//                let configuredService = try await QWeather.getInstance(host)
+//                    .setupTokenGenerator(jwt)
+//                    .setupLogEnable(true)
+//                PTWeatherManager.shared.configureQWeather(configuredService)
+//                PTNSLogConsole("✅ [天气服务] 和风天气备用服务初始化完成")
+//            } catch {
+//                PTNSLogConsole("❌ [天气服务] 和风天气备用服务初始化失败: \(error.localizedDescription)")
+//            }
+//        }
+//    }
+
+    private func qWeatherValue(forKey key: String) -> String? {
+        guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String else { return nil }
+        let trimmedValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedValue.isEmpty, !trimmedValue.contains("$(") else { return nil }
+        return trimmedValue
     }
 }
 
@@ -179,9 +177,7 @@ extension AppDelegate:UNUserNotificationCenterDelegate {
                 return
             }
             if granted {
-                _ = PTAntiTheftManager.shared
-                _ = PTDiagnosticManager.shared
-                _ = PTMaintenanceManager.shared
+                PTNSLogConsole("✅ [防盗系统] 通知权限已授予，报警提醒可用")
             } else {
                 PTNSLogConsole("⚠️ [防盗系统] 用户拒绝了通知权限，报警将无法弹出")
             }
@@ -199,4 +195,3 @@ extension AppDelegate:UNUserNotificationCenterDelegate {
         }
     }
 }
-

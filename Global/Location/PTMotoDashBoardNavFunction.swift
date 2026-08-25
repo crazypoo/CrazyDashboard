@@ -52,11 +52,13 @@ class PTMotoDashBoardNavFunction: NSObject {
         let remainingKm = remainDistanceMeters / 1000.0
         let progress = (Double(naviInfo.travelRealPathLength) - Double(naviInfo.travelDrivedRealLength)) / Double(naviInfo.travelRealPathLength)
         let eta = Date().addingTimeInterval(TimeInterval(naviInfo.routeRemainTime))
-        PTLiveActivityManager.shared.updateNavigationActivity(
-            progress: progress,
-            remainingKm: remainingKm,
-            expectedArrival: eta
-        )
+        Task { @MainActor in
+            PTLiveActivityManager.shared.updateNavigationActivity(
+                progress: progress,
+                remainingKm: remainingKm,
+                expectedArrival: eta
+            )
+        }
 
         // --- 核心逻辑开始 ---
         // 1. 获取距离下一个转弯动作的剩余距离 (米)

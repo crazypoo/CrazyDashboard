@@ -36,23 +36,25 @@ public class PTWidgetDataManager: NSObject {
             lastUpdateTime: updateDate
         )
         status.write(to: defaults)
-        PTWatchConnectivityManager.shared.update(status: status)
         let cloudFileName = iCloudFileName
 
-        // App Group 继续作为 Widget 的实时数据源；同时异步备份一份
-        // 独立 JSON 快照到 iCloud，不阻塞定位回调和 Widget 刷新。
-        Task { @MainActor [status, cloudFileName] in
-            do {
-                let encoder = JSONEncoder()
-                encoder.dateEncodingStrategy = .iso8601
-                let data = try encoder.encode(status)
-                PTiCloudFileManager.shared.saveFileToICloud(
-                    data: data,
-                    fileName: cloudFileName
-                )
+        // 中文：App Group 继续作为 Widget 实时源；Español: App Group sigue siendo la fuente en tiempo real del Widget.
+        let snapshotData: Data
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            snapshotData = try encoder.encode(status)
+        } catch {
+            PTNSLogConsole("❌ [Widget同步] iCloud 快照编码失败: \(error.localizedDescription)")
+            return
+        }
+
+        // 中文：Watch 立即接收最新状态，iCloud 写入只携带 Sendable 的 Data；Español: Watch recibe el estado de inmediato y la tarea de iCloud solo transporta Data Sendable.
+        PTWatchConnectivityManager.shared.update(status: status)
+        Task.detached(priority: .utility) { [snapshotData, cloudFileName] in
+            await MainActor.run {
+                PTiCloudFileManager.shared.saveFileToICloud(data: snapshotData, fileName: cloudFileName)
                 PTNSLogConsole("☁️ [Widget同步] 数据快照已发起 iCloud 保存: \(cloudFileName)")
-            } catch {
-                PTNSLogConsole("❌ [Widget同步] iCloud 快照编码失败: \(error.localizedDescription)")
             }
         }
         

@@ -35,6 +35,8 @@ public class PTCarPlayManager: NSObject {
 
 class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
 
+    private var blockObserverTokens: [NSObjectProtocol] = []
+
     lazy var dashBoard:PTDashBoardView = {
         let view = PTDashBoardView()
         return view
@@ -74,19 +76,23 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(carplayIsInBackground), name: PTCarPlayDidEnterBackgroundNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(carplayIsNotInBackground), name: PTCarPlayDidBecomeActiveNotification, object: nil)
 
-        NotificationCenter.default.addObserver(forName: UIScene.willConnectNotification, object: nil, queue: .main) { [weak self] notification in
-            if let scene = notification.object as? UIScene, scene.session.role == .carTemplateApplication {
+        blockObserverTokens.append(NotificationCenter.default.addObserver(forName: UIScene.willConnectNotification, object: nil, queue: .main) { [weak self] notification in
+            guard let scene = notification.object as? UIScene,
+                  scene.session.role == .carTemplateApplication else { return }
+            Task { @MainActor [weak self] in
                 PTNSLogConsole("🔗 CarPlay 刚刚连接！让手机界面做出反应")
                 self?.updateMapModeForCarPlayConnection(isActive: true)
             }
-        }
+        })
         
-        NotificationCenter.default.addObserver(forName: UIScene.didDisconnectNotification, object: nil, queue: .main) { [weak self] notification in
-            if let scene = notification.object as? UIScene, scene.session.role == .carTemplateApplication {
+        blockObserverTokens.append(NotificationCenter.default.addObserver(forName: UIScene.didDisconnectNotification, object: nil, queue: .main) { [weak self] notification in
+            guard let scene = notification.object as? UIScene,
+                  scene.session.role == .carTemplateApplication else { return }
+            Task { @MainActor [weak self] in
                 PTNSLogConsole("🔌 CarPlay 刚刚断开！恢复手机界面")
                 self?.updateMapModeForCarPlayConnection(isActive: false)
             }
-        }
+        })
     }
     
     func carplayIsInBackground() {
@@ -145,6 +151,7 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
     }
             
     @MainActor deinit {
+        blockObserverTokens.forEach { NotificationCenter.default.removeObserver($0) }
         NotificationCenter.default.removeObserver(self)
     }    
 }

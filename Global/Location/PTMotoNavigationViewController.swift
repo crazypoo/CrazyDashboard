@@ -199,6 +199,8 @@ class PreferenceView: UIView {
 
 class PTMotoNavigationViewController: PTMotoBaseViewController {
 
+    private var blockObserverTokens: [NSObjectProtocol] = []
+
     var routeIndicatorInfoArray = [RouteCollectionViewInfo]()
 
     var currentSpeedLimit:UInt8 = 0
@@ -392,7 +394,9 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
             AMapNaviDriveManager.sharedInstance().startGPSNavi()
         }
         if let _ = self.routeIndicatorInfoArray.first(where: { $0.isSelected }) {
-            PTLiveActivityManager.shared.startNavigationActivity(destination: "目标地点", expectedArrival: Date())
+            Task { @MainActor in
+                PTLiveActivityManager.shared.startNavigationActivity(destination: "目标地点", expectedArrival: Date())
+            }
         }
         NotificationCenter.default.post(name: PTCarPlayStarNavNotification, object: nil)
         
@@ -492,7 +496,9 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         view.addActionHandlers(handler: { sender in
             NotificationCenter.default.post(name: PTCarPlayStopNavNotification, object: nil)
             PTDashboardConfig.shared.naving = false
-            PTLiveActivityManager.shared.stopNavigationActivity()
+            Task { @MainActor in
+                PTLiveActivityManager.shared.stopNavigationActivity()
+            }
             PTGCDManager.shared.delayOnMain(time: 0.3, block: {
                 self.updateMapModeForCarPlayConnection(isActive: PTCarPlayManager.isCarPlayActive)
             })
@@ -518,6 +524,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     }()
 
     @MainActor deinit {
+        blockObserverTokens.forEach { NotificationCenter.default.removeObserver($0) }
         NotificationCenter.default.removeObserver(self)
     }
     
@@ -611,25 +618,28 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(carplayIsNotInBackground), name: PTCarPlayDidBecomeActiveNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleIntercomStatusChange(_:)), name: PTIntercomGlobalStatusChanged, object: nil)
         
-        NotificationCenter.default.addObserver(forName: UIScene.willConnectNotification, object: nil, queue: .main) { [weak self] notification in
-            if let scene = notification.object as? UIScene, scene.session.role == .carTemplateApplication {
-                PTNSLogConsole("🔗 CarPlay 刚刚连接！让手机界面做出反应")
-//                self?.updateMapModeForCarPlayConnection(isActive: true)
-            }
-        }
+        blockObserverTokens.append(NotificationCenter.default.addObserver(forName: UIScene.willConnectNotification, object: nil, queue: .main) { notification in
+            guard let scene = notification.object as? UIScene,
+                  scene.session.role == .carTemplateApplication else { return }
+            PTNSLogConsole("🔗 CarPlay 刚刚连接！让手机界面做出反应")
+        })
         
-        NotificationCenter.default.addObserver(forName: UIScene.didActivateNotification, object: nil, queue: .main) { [weak self] notification in
-            if let scene = notification.object as? UIScene, scene.session.role == .carTemplateApplication {
+        blockObserverTokens.append(NotificationCenter.default.addObserver(forName: UIScene.didActivateNotification, object: nil, queue: .main) { [weak self] notification in
+            guard let scene = notification.object as? UIScene,
+                  scene.session.role == .carTemplateApplication else { return }
+            Task { @MainActor [weak self] in
                 self?.updateMapModeForCarPlayConnection(isActive: true)
             }
-        }
+        })
         
-        NotificationCenter.default.addObserver(forName: UIScene.didDisconnectNotification, object: nil, queue: .main) { [weak self] notification in
-            if let scene = notification.object as? UIScene, scene.session.role == .carTemplateApplication {
+        blockObserverTokens.append(NotificationCenter.default.addObserver(forName: UIScene.didDisconnectNotification, object: nil, queue: .main) { [weak self] notification in
+            guard let scene = notification.object as? UIScene,
+                  scene.session.role == .carTemplateApplication else { return }
+            Task { @MainActor [weak self] in
                 PTNSLogConsole("🔌 CarPlay 刚刚断开！恢复手机界面")
                 self?.updateMapModeForCarPlayConnection(isActive: false)
             }
-        }
+        })
         
         NotificationCenter.default.addObserver(self, selector: #selector(handlePeerLocationUpdate(_:)), name: PTPeerLocationDidUpdateNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handlePeerLeave(_:)), name: PTPeerDidLeaveNetworkNotification, object: nil)
@@ -1418,7 +1428,9 @@ extension PTMotoNavigationViewController : AMapNaviDriveViewDelegate {
             SpeechSynthesizer.Shared.stopSpeak()
         }
         PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Yeah!!!!!!!!!!", title: "Navigation finished!!!!!!!!!!!!!!!!!!!!")
-        PTLiveActivityManager.shared.stopNavigationActivity()
+        Task { @MainActor in
+            PTLiveActivityManager.shared.stopNavigationActivity()
+        }
     }
     
     func driveView(_ view: AMapNaviDriveView, didChangeTo state: AMapNaviDriveViewState) { }

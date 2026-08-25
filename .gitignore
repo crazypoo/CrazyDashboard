@@ -89,3 +89,6 @@ fastlane/test_output
 
 iOSInjectionProject/
 Pods/
+
+# 本地天气服务密钥 / Claves locales del servicio meteorológico
+PTSpeed/Config/Secrets.xcconfig

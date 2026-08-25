@@ -1,0 +1,4 @@
+// 发布配置：密钥由 CI 或本机 Secrets.xcconfig 注入，不写入源代码。
+// Configuración de lanzamiento: CI o Secrets.xcconfig aporta las claves sin guardarlas en el código.
+#include "../../Pods/Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"
+#include? "Secrets.xcconfig"

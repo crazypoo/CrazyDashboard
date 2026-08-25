@@ -17,6 +17,13 @@ public class PTAntiTheftManager: NSObject {
     public static let shared = PTAntiTheftManager()
     
     private var isArmed: Bool = false
+    private var expectedShutdownUntil: Date?
+    private var pendingDisconnectWork: DispatchWorkItem?
+    private var alarmSuppressedUntil: Date?
+
+    private let shutdownGracePeriod: TimeInterval = 30
+    private let disconnectConfirmationDelay: TimeInterval = 5
+    private let nearbyRadius: CLLocationDistance = 15
     
     private override init() {
         super.init()
@@ -33,16 +40,20 @@ public class PTAntiTheftManager: NSObject {
         guard let data2 = notification.object as? PTDashboardData2 else { return }
         
         // 引擎未转动 (0) 时，代表可能已停车，进入防盗警戒模式
-        if data2.engineStatus == 0 && !isArmed {
+        updateArmingState(engineStatus: data2.engineStatus)
+    }
+
+    private func updateArmingState(engineStatus: Int) {
+        if engineStatus == 0 && !isArmed {
             isArmed = true
-            PTNSLogConsole("🛡️ [防盗系统] 引擎已熄火，防盗系统已武装。")
-            // 直接调用你写好的高德定位进行打卡！
+            expectedShutdownUntil = Date().addingTimeInterval(shutdownGracePeriod)
+            PTNSLogConsole("🛡️ [防盗系统] 引擎已熄火，进入正常关机宽限期。")
             PTMOTOParkingManager.shared.saveCurrentLocationAsParkingSpot()
-        }
-        // 引擎运转中时，解除警戒
-        else if data2.engineStatus == 2 && isArmed {
+        } else if engineStatus == 2 && isArmed {
             isArmed = false
-            PTNSLogConsole("🔓 [防盗系统] 引擎已启动，防盗系统已解除。")
+            expectedShutdownUntil = nil
+            pendingDisconnectWork?.cancel()
+            PTNSLogConsole("🔓 [防盗系统] 引擎已启动，解除警戒。")
         }
     }
     
@@ -50,6 +61,22 @@ public class PTAntiTheftManager: NSObject {
     @objc private func handleDisconnect() {
         // 确保系统处于警戒状态，并且之前确实保存过停车点
         guard isArmed, let anchorCoord = PTMOTOParkingManager.shared.getLastParkedLocation() else { return }
+
+        if let expectedShutdownUntil, Date() < expectedShutdownUntil {
+            PTNSLogConsole("ℹ️ [防盗系统] 断连发生在正常关机宽限期内，不触发报警。")
+            return
+        }
+
+        pendingDisconnectWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            self?.evaluateDisconnect(anchorCoord: anchorCoord)
+        }
+        pendingDisconnectWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + disconnectConfirmationDelay, execute: work)
+    }
+
+    private func evaluateDisconnect(anchorCoord: CLLocationCoordinate2D) {
+        guard isArmed, !PTDashboardConfig.shared.blueConnected else { return }
         
         let anchorLocation = CLLocation(latitude: anchorCoord.latitude, longitude: anchorCoord.longitude)
         
@@ -63,11 +90,15 @@ public class PTAntiTheftManager: NSObject {
             let distanceFromBike = currentPhoneLocation.distance(from: anchorLocation)
             PTNSLogConsole("📐 [防盗推演] 手机当前距离停车点 \(distanceFromBike) 米。")
             
-            if distanceFromBike < 15.0 {
-                // 🚨 人在原地没动，但车机蓝牙断开了！极大可能是车辆被物理推离了蓝牙范围！
+            if distanceFromBike < self.nearbyRadius {
+                guard self.alarmSuppressedUntil.map({ Date() >= $0 }) ?? true else { return }
+                self.alarmSuppressedUntil = Date().addingTimeInterval(60)
+                // 中文：仅报告异常断连，不把断连单独解释为车辆已移动。
+                // Español: Informar solo de una desconexión anómala; no afirmar movimiento del vehículo.
                 self.triggerTheftAlarm()
             } else {
-                // ✅ 人走远了，蓝牙自然断开，正常现象
+                // 中文：骑手已离开停车点，断连视为正常。
+                // Español: El piloto se alejó del punto de estacionamiento; la desconexión es normal.
                 PTNSLogConsole("✅ [防盗推演] 骑手已离开车辆安全距离，属于正常断连，解除武装。")
                 self.isArmed = false
             }
@@ -76,7 +107,7 @@ public class PTAntiTheftManager: NSObject {
     
     // MARK: - iOS 15+ 穿透式报警
     private func triggerTheftAlarm() {
-        PTNotificationCenter.pushCenter(title: "🚨 车辆异常移动警告", body: "检测到您的爱车在未启动状态下丢失连接，可能正被非法移动，请立即确认！")
+        PTNotificationCenter.pushCenter(title: "🚨 车辆连接异常", body: "车辆在骑手附近断开连接，请确认车辆状态。")
     }
     
     deinit { }
@@ -85,24 +116,16 @@ public class PTAntiTheftManager: NSObject {
 extension PTAntiTheftManager:PTBLEDashboardDelegate {
     func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool) {
         if isConnected {
+            pendingDisconnectWork?.cancel()
+            pendingDisconnectWork = nil
+        } else {
             handleDisconnect()
         }
     }
     
     func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
         if let data2 = data as? PTDashboardData2 {
-            // 引擎未转动 (0) 时，代表可能已停车，进入防盗警戒模式
-            if data2.engineStatus == 0 && !isArmed {
-                isArmed = true
-                PTNSLogConsole("🛡️ [防盗系统] 引擎已熄火，防盗系统已武装。")
-                // 直接调用你写好的高德定位进行打卡！
-                PTMOTOParkingManager.shared.saveCurrentLocationAsParkingSpot()
-            }
-            // 引擎运转中时，解除警戒
-            else if data2.engineStatus == 2 && isArmed {
-                isArmed = false
-                PTNSLogConsole("🔓 [防盗系统] 引擎已启动，防盗系统已解除。")
-            }
+            updateArmingState(engineStatus: data2.engineStatus)
         }
     }
 }

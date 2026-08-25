@@ -1,0 +1,15 @@
+{
+  "originHash" : "b7545fda25549059adf299dd697b3d61d576b992970c8f0cd9133c99fba15341",
+  "pins" : [
+    {
+      "identity" : "qweather-ios-sdk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/qwd/qweather-ios-sdk.git",
+      "state" : {
+        "revision" : "e0065320bb8a191ea90723283bf8af172627cba0",
+        "version" : "5.3.0"
+      }
+    }
+  ],
+  "version" : 3
+}

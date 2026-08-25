@@ -200,6 +200,7 @@ public class PTGPXRecorder: NSObject {
                         <lean>\(point.leanAngle)</lean>
                         <gforce_y>\(point.gForceY)</gforce_y>
                         <gforce_x>\(point.gForceX)</gforce_x>
+                        <gforce_z>\(point.gForceZ)</gforce_z>
                         <slip_ratio>\(point.slipRatio)</slip_ratio>
                       </extensions>
                     </trkpt>\n

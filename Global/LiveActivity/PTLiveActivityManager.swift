@@ -6,14 +6,14 @@
 //
 
 import UIKit
-import ActivityKit
+@preconcurrency import ActivityKit
 import Foundation
 
 //MRAK: NAV
 public struct MotoNaviAttributes: ActivityAttributes {
     
     // 动态数据：随着高德导航回调不断刷新的数据
-    public struct ContentState: Codable, Hashable {
+    public struct ContentState: Codable, Hashable, Sendable {
         public var progress: Double             // 导航进度 (0.0 到 1.0)
         public var remainingDistanceKm: Double  // 剩余距离 (公里)
         public var estimatedArrivalTime: Date     // 预估到达时间
@@ -28,7 +28,7 @@ public struct MotoNaviAttributes: ActivityAttributes {
 }
 
 @objcMembers
-public class PTLiveActivityManager: NSObject {
+public class PTLiveActivityManager: NSObject, @unchecked Sendable {
     
     public static let shared = PTLiveActivityManager()
     
@@ -162,7 +162,7 @@ public class PTLiveActivityManager: NSObject {
 }
 
 //MARK: PTT
-public struct PeerLiveState: Codable, Hashable {
+public struct PeerLiveState: Codable, Hashable, Sendable {
     public var peerID: String
     public var peerName: String
     public var avatarFileName: String // 存放在 App Group 中的文件名，如果为空 ""，则使用系统默认头像
@@ -179,7 +179,7 @@ public struct PeerLiveState: Codable, Hashable {
 public struct MotoIntercomAttributes: ActivityAttributes {
     
     // 动态变化的属性
-    public struct ContentState: Codable, Hashable {
+    public struct ContentState: Codable, Hashable, Sendable {
         public var isLocalTalking: Bool          // 自己是否在说话
         public var statusText: String            // 当前对讲机底部的状态文字
         public var activePeers: [PeerLiveState]  // 当前在线的所有车友
