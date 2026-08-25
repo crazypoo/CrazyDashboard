@@ -17,6 +17,7 @@ import AMapLocationKit
 class PTMapView: UIView, MAMapViewDelegate {
     
     var currentSpeedLimit:UInt8 = 0
+    var currentRoadName:String = ""
 
     // 暴露出原生地图实例，方便你未来在外部直接添加大头针 (Annotations) 或划线 (Overlays)
     lazy var mapView:MAMapView = {
@@ -302,9 +303,16 @@ extension PTMapView:AMapNaviDriveDataRepresentable {
         guard let naviInfo = naviInfo else {
             return
         }
-        PTNSLogConsole("\(naviInfo)")
+//        PTNSLogConsole("\(naviInfo)")
         self.driveView.isHidden = false
+        self.currentRoadName = naviInfo.currentRoadName
         PTMotoDashBoardNavFunction.sendNavDataToDashboard(naviInfo: naviInfo, currentSpeedLimit: self.currentSpeedLimit)
+    }
+    
+    func driveManager(_ driveManager: AMapNaviDriveManager, update naviLocation: AMapNaviLocation?) {
+        if PTMotoNavigationViewController.shared.startEmulatorNavi,let naviLocation = naviLocation {
+            PTLocationEngine.shared.amapEmulatorNavi(naviLocation: naviLocation,roadName: currentRoadName)
+        }
     }
 }
 

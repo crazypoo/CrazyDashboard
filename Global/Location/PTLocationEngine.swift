@@ -9,6 +9,7 @@ import Foundation
 import AMapLocationKit
 import PooTools
 import AMapSearchKit
+import AMapNaviKit
 
 public let PTLocationEngineDidUpdate = NSNotification.Name("PTLocationEngineDidUpdate")
 
@@ -190,12 +191,17 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
         lastLocation = nil
     }
     
-    // MARK: - 高德地图位置更新回调
-    public func amapLocationManager(_ manager: AMapLocationManager!, didUpdate location: CLLocation!, reGeocode: AMapLocationReGeocode!) {
-        // 1. 确保定位数据存在
-        guard let location = location else { return }
-        self.lastLocation = location
+    public func amapEmulatorNavi(naviLocation: AMapNaviLocation,roadName:String) {
         
+        if let location = naviLocation.coordinate {
+            let newLocation = CLLocation(coordinate: CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude), altitude: naviLocation.altitude, horizontalAccuracy: naviLocation.accuracy, verticalAccuracy: naviLocation.accuracy, course: naviLocation.accuracy, speed: CLLocationSpeed(naviLocation.speed), timestamp: naviLocation.timestamp)
+            self.lastLocation = newLocation
+            setTripData(location: newLocation, roadName: roadName.isEmpty ? "Unknown" : roadName)
+            setHeadingData(heading: naviLocation.heading, altitude: naviLocation.altitude)
+        }
+    }
+    
+    func setTripData(location: CLLocation,roadName:String) {
         // 天气状态统一在主 actor 上串行处理，避免定位回调与重试任务并发修改状态。
         // El estado meteorológico se serializa en MainActor para evitar carreras entre ubicación y reintentos.
         Task { @MainActor in
@@ -228,7 +234,7 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
                 let isConnected = PTDashboardConfig.shared.blueConnected
 
                 // 🚨 核心修复：安全解包！
-                let safeAddress = reGeocode?.formattedAddress ?? "Unknown"
+                let safeAddress = roadName
 
                 // 调用数据管理器，推送到小组件！
                 PTWidgetDataManager.shared.updateWidgetData(
@@ -264,13 +270,11 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
         DispatchQueue.main.async {
             NotificationCenter.default.post(name: PTLocationEngineDidUpdate, object: tripData)
         }
-    }  
+    }
     
-    // MARK: - 高德地图方向 (罗盘) 回调
-    public func amapLocationManager(_ manager: AMapLocationManager!, didUpdate newHeading: CLHeading!) {
-        guard let newHeading = newHeading, newHeading.headingAccuracy >= 0 else { return }
-        
-        currentHeading = newHeading.trueHeading > 0 ? newHeading.trueHeading : newHeading.magneticHeading
+    func setHeadingData(heading:Double,altitude:Double) {
+        currentHeading = heading
+        currentAltitude = altitude
         
         // 低速状态下主动刷新 UI 指南针
         if (lastLocation != nil) {
@@ -286,6 +290,20 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
                 }
             }
         }
+    }
+    
+    // MARK: - 高德地图位置更新回调
+    public func amapLocationManager(_ manager: AMapLocationManager!, didUpdate location: CLLocation!, reGeocode: AMapLocationReGeocode!) {
+        // 1. 确保定位数据存在
+        guard let location = location else { return }
+        self.lastLocation = location
+        setTripData(location: location, roadName: reGeocode?.formattedAddress ?? "Unknown")
+    }
+    
+    // MARK: - 高德地图方向 (罗盘) 回调
+    public func amapLocationManager(_ manager: AMapLocationManager!, didUpdate newHeading: CLHeading!) {
+        guard let newHeading = newHeading, newHeading.headingAccuracy >= 0 else { return }
+        setHeadingData(heading: newHeading.trueHeading > 0 ? newHeading.trueHeading : newHeading.magneticHeading, altitude: currentAltitude)
     }
     
     // MARK: - 错误处理

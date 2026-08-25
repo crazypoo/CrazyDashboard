@@ -18,6 +18,8 @@
 		<string>_pt-moto-voice._tcp</string>
 		<string>_pt-moto-voice._udp</string>
 	</array>
+	<key>NSMicrophoneInjectionUsageDescription</key>
+	<string>我要用Mic</string>
 	<key>QWeatherHost</key>
 	<string>$(QWEATHER_HOST)</string>
 	<key>QWeatherKeyID</key>
@@ -26,8 +28,6 @@
 	<string>$(QWEATHER_PRIVATE_KEY)</string>
 	<key>QWeatherProjectID</key>
 	<string>$(QWEATHER_PROJECT_ID)</string>
-	<key>NSMicrophoneInjectionUsageDescription</key>
-	<string>我要用Mic</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

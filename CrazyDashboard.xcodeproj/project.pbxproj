@@ -72,7 +72,6 @@
 		55E61692301B45B50075F883 /* QWeatherSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 55E61691301B45B50075F883 /* QWeatherSDK */; };
 		55F1E2F23026D2020032EAD5 /* PTHiddenOBDConnector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F1E2F13026D2020032EAD5 /* PTHiddenOBDConnector.swift */; };
 		55F1E2F53026D2020032EAD5 /* PTUDSDiagnosticService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F1E2F43026D2020032EAD5 /* PTUDSDiagnosticService.swift */; };
-		55F52C70303D4025007527C2 /* PTOBDiagnosticAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F52C71303D4025007527C2 /* PTOBDiagnosticAddress.swift */; };
 		55F503AC300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
 		55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */; };
 		55F503BB300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */; };
@@ -87,6 +86,7 @@
 		55F52C5B303D4025007527C2 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 55F52C5C303D4025007527C2 /* PrivacyInfo.xcprivacy */; };
 		55F52C5E303D4025007527C2 /* PTCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F52C5D303D4025007527C2 /* PTCoreTests.swift */; };
 		55F52C61303D4025007527C2 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55F52C60303D4025007527C2 /* XCTest.framework */; };
+		55F52C70303D4025007527C2 /* PTOBDiagnosticAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F52C71303D4025007527C2 /* PTOBDiagnosticAddress.swift */; };
 		55FDBCA93010CD6E00EE7FA5 /* PTMOTOParkingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FDBCA73010CD6E00EE7FA5 /* PTMOTOParkingManager.swift */; };
 		55FDBCAC3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FDBCAA3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift */; };
 		55FE295C300CA4E8000E741F /* PTBluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE295A300CA4E8000E741F /* PTBluetoothManager.swift */; };
@@ -224,7 +224,6 @@
 		55CA9E183024582300A3A677 /* PTOBDDataViewControllerCollection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDDataViewControllerCollection.swift; sourceTree = "<group>"; };
 		55F1E2F13026D2020032EAD5 /* PTHiddenOBDConnector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTHiddenOBDConnector.swift; sourceTree = "<group>"; };
 		55F1E2F43026D2020032EAD5 /* PTUDSDiagnosticService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTUDSDiagnosticService.swift; sourceTree = "<group>"; };
-		55F52C71303D4025007527C2 /* PTOBDiagnosticAddress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDiagnosticAddress.swift; sourceTree = "<group>"; };
 		55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = GlobalAssets.xcassets; sourceTree = "<group>"; };
 		55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLanguageModel.swift; sourceTree = "<group>"; };
 		55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoUserDefaultStruct.swift; sourceTree = "<group>"; };
@@ -252,6 +251,7 @@
 		55F52C5D303D4025007527C2 /* PTCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCoreTests.swift; sourceTree = "<group>"; };
 		55F52C60303D4025007527C2 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 		55F52C62303D4025007527C2 /* PTSpeedTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PTSpeedTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		55F52C71303D4025007527C2 /* PTOBDiagnosticAddress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDiagnosticAddress.swift; sourceTree = "<group>"; };
 		55FDBCA73010CD6E00EE7FA5 /* PTMOTOParkingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMOTOParkingManager.swift; sourceTree = "<group>"; };
 		55FDBCAA3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMOTOParkingAnotationView.swift; sourceTree = "<group>"; };
 		55FE295A300CA4E8000E741F /* PTBluetoothManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBluetoothManager.swift; sourceTree = "<group>"; };
@@ -296,8 +296,6 @@
 		};
 		555DC840303820E3002B003B /* xp400watch Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "xp400watch Watch App";
 			sourceTree = "<group>";
 		};
@@ -329,6 +327,14 @@
 				5A200D40EF300920887AD052 /* Pods_PTSpeed.framework in Frameworks */,
 				55E61692301B45B50075F883 /* QWeatherSDK in Frameworks */,
 				5577E6762FD657F30004733F /* libz.tbd in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55F52C68303D4025007527C2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				55F52C61303D4025007527C2 /* XCTest.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -423,6 +429,7 @@
 			isa = PBXGroup;
 			children = (
 				600000020000000000000022 /* WatchConnectivity.framework */,
+				55F52C60303D4025007527C2 /* XCTest.framework */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -670,6 +677,14 @@
 			path = Config;
 			sourceTree = "<group>";
 		};
+		55F52C5F303D4025007527C2 /* PTSpeedTests */ = {
+			isa = PBXGroup;
+			children = (
+				55F52C5D303D4025007527C2 /* PTCoreTests.swift */,
+			);
+			path = PTSpeedTests;
+			sourceTree = "<group>";
+		};
 		55FE2A75300DF93F000E741F /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -746,14 +761,6 @@
 			productName = "xp400watch Watch App";
 			productReference = 555DC83F303820E3002B003B /* xp400watch Watch App.app */;
 			productType = "com.apple.product-type.application";
-		};
-		55F52C5F303D4025007527C2 /* PTSpeedTests */ = {
-			isa = PBXGroup;
-			children = (
-				55F52C5D303D4025007527C2 /* PTCoreTests.swift */,
-			);
-			path = PTSpeedTests;
-			sourceTree = "<group>";
 		};
 		5577E6372FD657030004733F /* PTSpeed */ = {
 			isa = PBXNativeTarget;
@@ -898,9 +905,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -937,9 +948,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -1058,15 +1073,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-
-		55F52C68303D4025007527C2 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				55F52C61303D4025007527C2 /* XCTest.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -1131,7 +1137,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 35;
+				CURRENT_PROJECT_VERSION = 36;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -1164,7 +1170,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 35;
+				CURRENT_PROJECT_VERSION = 36;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -1197,13 +1203,13 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 35;
+				CURRENT_PROJECT_VERSION = 36;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = xp400watch;
-				INFOPLIST_KEY_WKApplication = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKApplication = YES;
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.yd.PTSpeed;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1232,13 +1238,13 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 35;
+				CURRENT_PROJECT_VERSION = 36;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = xp400watch;
-				INFOPLIST_KEY_WKApplication = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKApplication = YES;
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.yd.PTSpeed;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1393,7 +1399,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 35;
+				CURRENT_PROJECT_VERSION = 36;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -1543,7 +1549,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 35;
+				CURRENT_PROJECT_VERSION = 36;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;

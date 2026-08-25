@@ -199,6 +199,10 @@ class PreferenceView: UIView {
 
 class PTMotoNavigationViewController: PTMotoBaseViewController {
 
+    static let shared = PTMotoNavigationViewController()
+    var startEmulatorNavi:Bool = false
+    var currentRoadName:String = ""
+
     private var blockObserverTokens: [NSObjectProtocol] = []
 
     var routeIndicatorInfoArray = [RouteCollectionViewInfo]()
@@ -429,10 +433,11 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         let view = UIButton(type: .custom)
         view.setImage(baseImage.withTintColor(.lightGray, renderingMode: .alwaysOriginal), for: .normal)
         view.setImage(baseImage.withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal), for: .selected)
-        view.isSelected = false
+        view.isSelected = PTMotoNavigationViewController.shared.startEmulatorNavi
         view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers(handler: { sender in
             sender.isSelected.toggle()
+            PTMotoNavigationViewController.shared.startEmulatorNavi = sender.isSelected
         })
         return view
     }()
@@ -1460,8 +1465,14 @@ extension PTMotoNavigationViewController:AMapNaviDriveDataRepresentable {
         guard let naviInfo = naviInfo else {
             return
         }
-        PTNSLogConsole("\(naviInfo)")
+        currentRoadName = naviInfo.currentRoadName
         PTMotoDashBoardNavFunction.sendNavDataToDashboard(naviInfo: naviInfo, currentSpeedLimit: self.currentSpeedLimit)
+    }
+    
+    func driveManager(_ driveManager: AMapNaviDriveManager, update naviLocation: AMapNaviLocation?) {
+        if PTMotoNavigationViewController.shared.startEmulatorNavi,let naviLocation = naviLocation {
+            PTLocationEngine.shared.amapEmulatorNavi(naviLocation: naviLocation,roadName: currentRoadName)
+        }
     }
 }
 

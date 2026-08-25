@@ -16,7 +16,8 @@ import AttributedString
 class PTPeugeotDashBoardNavView: UIView {
     
     var navSuccess:PTActionTask?
-    
+    var currentRoadName:String = ""
+
     var currentSpeedLimit:UInt8 = 0
 
     lazy var navIcon:UIImageView = {
@@ -211,7 +212,8 @@ extension PTPeugeotDashBoardNavView:AMapNaviDriveDataRepresentable {
         guard let naviInfo = naviInfo else {
             return
         }
-        PTNSLogConsole("\(naviInfo)")
+        currentRoadName = naviInfo.currentRoadName
+//        PTNSLogConsole("\(naviInfo)")
         let routeDistanceLeast = CGFloat(naviInfo.routeRemainDistance) / 1000
         routeDistanceLabel.text = String(format: "%.1f km", routeDistanceLeast)
         let currentDate = Date()
@@ -223,6 +225,12 @@ extension PTPeugeotDashBoardNavView:AMapNaviDriveDataRepresentable {
         routeNameSet(naviInfo: naviInfo)
         navIcon.image = naviInfo.iconImage
         PTMotoDashBoardNavFunction.sendNavDataToDashboard(naviInfo: naviInfo, currentSpeedLimit: self.currentSpeedLimit)
+    }
+    
+    func driveManager(_ driveManager: AMapNaviDriveManager, update naviLocation: AMapNaviLocation?) {
+        if PTMotoNavigationViewController.shared.startEmulatorNavi,let naviLocation = naviLocation {
+            PTLocationEngine.shared.amapEmulatorNavi(naviLocation: naviLocation,roadName: currentRoadName)
+        }
     }
     
     func segmentRemainDistance(naviInfo: AMapNaviInfo) {
