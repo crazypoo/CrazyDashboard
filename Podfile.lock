@@ -59,14 +59,14 @@ PODS:
     - IQKeyboardToolbar/Placeholderable
   - KakaJSON (1.1.2)
   - Kakapos (1.1.0)
-  - Kingfisher (8.11.0)
+  - Kingfisher (8.12.0)
   - LookinServer/Core (1.2.8)
   - LookinServer/Swift (1.2.8):
     - LookinServer/Core
   - lottie-ios (4.6.1)
-  - PooTools/CameraPermission (4.5.27):
+  - PooTools/CameraPermission (5.6.1):
     - PooTools/Core
-  - PooTools/Core (4.5.27):
+  - PooTools/Core (5.6.1):
     - AttributedString
     - CocoaLumberjack/Swift
     - DeviceKit
@@ -75,72 +75,70 @@ PODS:
     - KakaJSON
     - Kingfisher
     - lottie-ios
-    - pop
     - SafeSFSymbols
     - SmartCodable
     - SmartCodable/Inherit
     - SnapKit
     - SwiftDate
     - SwifterSwift
-  - PooTools/CustomerLabel (4.5.27):
+  - PooTools/CustomerLabel (5.6.1):
     - PooTools/Core
-  - PooTools/DEBUG (4.5.27):
+  - PooTools/DEBUG (5.6.1):
     - PooTools/Core
     - PooTools/NetWork
     - PooTools/PDF
     - PooTools/SearchBar
     - PooTools/Share
-  - PooTools/Flag (4.5.27):
+  - PooTools/Flag (5.6.1):
     - FlagKit
     - PooTools/Core
-  - PooTools/Hud (4.5.27):
+  - PooTools/Hud (5.6.1):
     - PooTools/Core
     - PooTools/ProgressBar
-  - PooTools/Instructions (4.5.27):
+  - PooTools/Instructions (5.6.1):
     - Instructions
     - PooTools/Core
-  - PooTools/LivePhoto (4.5.27):
+  - PooTools/LivePhoto (5.6.1):
     - PooTools/Core
-  - PooTools/Loading (4.5.27):
+  - PooTools/Loading (5.6.1):
     - PooTools/Core
-  - PooTools/LocationPermission (4.5.27):
+  - PooTools/LocationPermission (5.6.1):
     - PooTools/Core
-  - PooTools/MediaViewer (4.5.27):
+  - PooTools/MediaViewer (5.6.1):
     - PooTools/Core
     - PooTools/LivePhoto
     - PooTools/NetWork
     - PooTools/PageControl
     - PooTools/ProgressBar
-  - PooTools/MicPermission (4.5.27):
+  - PooTools/MicPermission (5.6.1):
     - PooTools/Core
-  - PooTools/Motion (4.5.27):
+  - PooTools/Motion (5.6.1):
     - PooTools/Core
     - PooTools/MotionPermission
-  - PooTools/MotionPermission (4.5.27):
+  - PooTools/MotionPermission (5.6.1):
     - PooTools/Core
-  - PooTools/NetWork (4.5.27):
+  - PooTools/NetWork (5.6.1):
     - Alamofire
     - PooTools/Core
     - PooTools/Loading
-  - PooTools/PageControl (4.5.27):
+  - PooTools/PageControl (5.6.1):
     - PooTools/Core
-  - PooTools/PDF (4.5.27):
+  - PooTools/PDF (5.6.1):
     - PooTools/Core
-  - PooTools/PhotoPicker (4.5.27):
+  - PooTools/PhotoPicker (5.6.1):
     - Kakapos
     - PooTools/CameraPermission
     - PooTools/Core
     - PooTools/Loading
     - PooTools/NetWork
-  - PooTools/ProgressBar (4.5.27):
+  - PooTools/ProgressBar (5.6.1):
     - PooTools/Core
-  - PooTools/SearchBar (4.5.27):
+  - PooTools/SearchBar (5.6.1):
     - PooTools/Core
-  - PooTools/Share (4.5.27):
+  - PooTools/Share (5.6.1):
     - PooTools/CustomerLabel
-  - PooTools/WhatsNewsKit (4.5.27):
+  - PooTools/WhatsNewsKit (5.6.1):
     - PooTools/Core
-  - pop (1.0.12)
   - SafeSFSymbols (2.0.0)
   - SmartCodable (6.0.8):
     - SmartCodable/Core (= 6.0.8)
@@ -236,7 +234,6 @@ SPEC REPOS:
     - Kingfisher
     - LookinServer
     - lottie-ios
-    - pop
     - SafeSFSymbols
     - SmartCodable
     - SnapKit
@@ -249,7 +246,7 @@ EXTERNAL SOURCES:
 
 CHECKOUT OPTIONS:
   PooTools:
-    :commit: 97fb9f613ce55a1dab97aa87695d1fcdd8028881
+    :commit: c71cb8d0f25caa2d8b4b9b9bd0237325e215ac01
     :git: https://github.com/crazypoo/PTools.git
 
 SPEC CHECKSUMS:
@@ -274,17 +271,16 @@ SPEC CHECKSUMS:
   IQTextView: ae13b4922f22e6f027f62c557d9f4f236b19d5c7
   KakaJSON: cc5ff50a8c1cfbb09413db8496cb709a209e6137
   Kakapos: ed364dbb9f5cbee1360c18c9d44c22556c098c97
-  Kingfisher: ee4ff4936d5b399164b6d01a0dfc0388583287b6
+  Kingfisher: 64e06c7d1a9851ecff9d1b14f92ad01141263dae
   LookinServer: 1b2b61c6402ae29fa22182d48f5cd067b4e99e80
   lottie-ios: 6467ca7035120c5b0e0acee58bb679cf15875686
-  PooTools: 2833d7ab8e3c4db51c10c4cfb88a1c07941e8067
-  pop: d582054913807fd11fd50bfe6a539d91c7e1a55a
+  PooTools: 393797060c9573eb33b5721c5c948eefe4a94450
   SafeSFSymbols: c57c8752149b2ddc0213d3d519a3a31a8bd76340
   SmartCodable: db7f9dc94eb9022ede18adf5052772432c5286c7
   SnapKit: d612e99e678a2d3b95bf60b0705ed0a35c03484a
   SwiftDate: bbc26e26fc8c0c33fbee8c140c5e8a68293a148a
   SwifterSwift: 517fa61daf5b4c5e3ed13b9f35f4c26b310cfb97
 
-PODFILE CHECKSUM: 44bea178f4e11d98c8d4c2fe135e0710ee454c7f
+PODFILE CHECKSUM: acca73eb9b776045f7e613dfd8572bea3c10d139
 
 COCOAPODS: 1.16.2
