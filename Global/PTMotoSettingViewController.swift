@@ -114,6 +114,19 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         })
         return view
     }()
+
+    private lazy var pttRestoreTitle: UILabel = {
+        let view = baseTitle(value: PTDashboardConfig.languageFunc(text: "ptt_restore_on_launch"))
+        return view
+    }()
+
+    private lazy var pttRestoreSwitch: UISwitch = {
+        let view = UISwitch()
+        view.isOn = PTMotoUserDefaultStruct.PTTLaunchAutoRestoreEnabled
+        view.onTintColor = PTDashboardConfig.shared.appMainColor
+        view.addTarget(self, action: #selector(pttRestoreSwitchChanged(_:)), for: .valueChanged)
+        return view
+    }()
     
     lazy var disconnect:UIButton = {
         let view = UIButton(type: .custom)
@@ -198,7 +211,8 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         
         settingsContainer.addSubviews([dashBoadColorTitle, dashBoardColorButton,
                                         dashUniTitle, dashBoardUniButton,
-                                        dashLanguageTitle, dashBoardLanguageButton])
+                                        dashLanguageTitle, dashBoardLanguageButton,
+                                        pttRestoreTitle, pttRestoreSwitch])
         
         view.addSubviews([shortCut, disconnect, socialStackView, versionLabel])
         
@@ -240,6 +254,16 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             make.top.equalTo(dashBoardUniButton.snp.bottom).offset(20)
             make.height.equalTo(34)
             make.width.greaterThanOrEqualTo(dashBoardLanguageButton.sizeFor().width + CGFloat.GlobalItemSpacing * 2)
+        }
+
+        pttRestoreTitle.snp.makeConstraints { make in
+            make.left.equalToSuperview().inset(16)
+            make.right.lessThanOrEqualTo(pttRestoreSwitch.snp.left).offset(-12)
+            make.centerY.equalTo(pttRestoreSwitch)
+        }
+        pttRestoreSwitch.snp.makeConstraints { make in
+            make.right.equalToSuperview().inset(16)
+            make.top.equalTo(dashBoardLanguageButton.snp.bottom).offset(20)
             make.bottom.equalToSuperview().inset(16)
         }
         
@@ -321,6 +345,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 self.dashLanguageTitle.text = PTDashboardConfig.languageFunc(text: "casa_card_lan")
                 self.dashBoadColorTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_color_set_title")
                 self.dashUniTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_set_title")
+                self.pttRestoreTitle.text = PTDashboardConfig.languageFunc(text: "ptt_restore_on_launch")
                 self.disconnect.setTitle(PTDashboardConfig.languageFunc(text: "button_dis_connect"), for: .normal)
             }
         }
@@ -360,6 +385,13 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         }
     }
 
+    @objc private func pttRestoreSwitchChanged(_ sender: UISwitch) {
+        // EN: Persist the opt-in flag; it is evaluated on the next process launch.
+        // ES: Guardamos la opción; se evalúa en el siguiente lanzamiento del proceso.
+        // 中文：保存用户选择，并在下一次进程启动时读取该开关。
+        PTMotoUserDefaultStruct.PTTLaunchAutoRestoreEnabled = sender.isOn
+    }
+
     func baseTitle(value:String) -> UILabel {
         let view = UILabel()
         view.text = value
@@ -394,6 +426,8 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             self.dashBoadColorTitle.textColor = PTDashboardConfig.shared.appMainColor
             self.dashUniTitle.textColor = PTDashboardConfig.shared.appMainColor
             self.dashLanguageTitle.textColor = PTDashboardConfig.shared.appMainColor
+            self.pttRestoreTitle.textColor = PTDashboardConfig.shared.appMainColor
+            self.pttRestoreSwitch.onTintColor = PTDashboardConfig.shared.appMainColor
                         
             self.disconnect.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         }

@@ -13,9 +13,15 @@ import SwiftDate
 import AttributedString
 import AMapNaviKit
 import SafeSFSymbols
+import ImageIO
+import UniformTypeIdentifiers
 
 class PTTripDataCell: PTBaseSwipeCell {
     static let ID = "PTTripDataCell"
+
+    private static let thumbnailCache = NSCache<NSString, UIImage>()
+    private var thumbnailTask: Task<Void, Never>?
+    private var thumbnailRequestID = UUID()
     
     static let ChartHeight: CGFloat = 160
     static let MapHeight: CGFloat = 140
@@ -142,6 +148,13 @@ class PTTripDataCell: PTBaseSwipeCell {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    // EN: A new model binding cancels the previous thumbnail task; the base cell's reuse hook is not open to subclasses.
+    // ES: Un nuevo modelo cancela la tarea anterior; el gancho de reutilización de la celda base no está abierto a subclases.
+    // 中文：绑定新模型时取消旧缩略图任务；基础 Cell 的复用方法没有开放给外部子类重写。
+    deinit {
+        thumbnailTask?.cancel()
     }
     
     private func setupUI() {
@@ -336,27 +349,97 @@ class PTTripDataCell: PTBaseSwipeCell {
     }
     
     private func loadThumbnailImage() {
-        guard let gpxName = cellModel.gpxFileName else { return }
+        thumbnailTask?.cancel()
+        thumbnailTask = nil
+
+        guard let gpxName = cellModel?.gpxFileName else {
+            thumbnailImageView.image = nil
+            return
+        }
         let imageName = gpxName.replacingOccurrences(of: ".gpx", with: ".jpg")
-        
-        // 清楚复用时的老图，防止闪烁
+
+        let requestID = UUID()
+        thumbnailRequestID = requestID
+
+        // EN: Clear reused content before loading the image for the current trip.
+        // ES: Limpiamos el contenido reutilizado antes de cargar la imagen del viaje actual.
+        // 中文：加载当前行程图片前先清理复用单元格中的旧内容。
         thumbnailImageView.image = nil
-        
-        PTiCloudFileManager.shared.fetchCloudFileIfNeeded(fileName: imageName) { [weak self] localImageURL in
-            guard let self = self else { return }
-            
-            if let imgURL = localImageURL, FileManager.default.fileExists(atPath: imgURL.path) {
-                // 成功找到图片
-                DispatchQueue.main.async {
-                    self.thumbnailImageView.image = UIImage(contentsOfFile: imgURL.path)
-                }
-            } else {
-                // 图片丢失，通知外部去后台生成，坚决不能在 Cell 里面生成避免卡死主线程
-                DispatchQueue.main.async {
+
+        if let cachedImage = Self.thumbnailCache.object(forKey: imageName as NSString) {
+            thumbnailImageView.image = cachedImage
+            return
+        }
+
+        thumbnailTask = Task { [weak self] in
+            let localImageURL = await Self.fetchLocalURL(fileName: imageName)
+            guard !Task.isCancelled else { return }
+
+            guard let localImageURL else {
+                await MainActor.run { [weak self] in
+                    guard let self,
+                          self.thumbnailRequestID == requestID else { return }
                     self.requestMapSnapshotAction?(gpxName)
                 }
+                return
+            }
+
+            guard let imageData = await Self.downsampledImageData(at: localImageURL),
+                  !Task.isCancelled else {
+                return
+            }
+
+            await MainActor.run { [weak self] in
+                guard let self,
+                      self.thumbnailRequestID == requestID,
+                      let image = UIImage(data: imageData) else { return }
+                Self.thumbnailCache.setObject(image, forKey: imageName as NSString)
+                self.thumbnailImageView.image = image
             }
         }
+    }
+
+    @MainActor
+    private static func fetchLocalURL(fileName: String) async -> URL? {
+        await withCheckedContinuation { continuation in
+            PTiCloudFileManager.shared.fetchCloudFileIfNeeded(fileName: fileName) { localURL in
+                continuation.resume(returning: localURL)
+            }
+        }
+    }
+
+    private static func downsampledImageData(at url: URL) async -> Data? {
+        await Task.detached(priority: .userInitiated) {
+            guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil) else {
+                return nil
+            }
+
+            let options: [CFString: Any] = [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceCreateThumbnailWithTransform: true,
+                kCGImageSourceThumbnailMaxPixelSize: 512
+            ]
+            guard let image = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary) else {
+                return nil
+            }
+
+            let output = NSMutableData()
+            guard let destination = CGImageDestinationCreateWithData(
+                output,
+                UTType.jpeg.identifier as CFString,
+                1,
+                nil
+            ) else {
+                return nil
+            }
+
+            CGImageDestinationAddImage(
+                destination,
+                image,
+                [kCGImageDestinationLossyCompressionQuality: 0.8] as CFDictionary
+            )
+            return CGImageDestinationFinalize(destination) ? Data(output) : nil
+        }.value
     }
 }
 
@@ -408,36 +491,72 @@ public class PTRouteSnapshotManager: NSObject, MAMapViewDelegate {
                 mapView.addAnnotations(annotations)
             }
             
-            // 延迟等待底图加载完成
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                mapView.takeSnapshot(in: mapView.bounds) { [weak self = self] (image, state) in
-                    var resultURL: URL? = nil
-                    
-                    if let img = image, let data = img.jpegData(compressionQuality: 0.8) {
-                        let imageFileName = gpxFileName.replacingOccurrences(of: ".gpx", with: ".jpg")
-                        
-                        if let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-                            let fileURL = docsDir.appendingPathComponent(imageFileName)
-                            do {
-                                // 存入本地沙盒
-                                try data.write(to: fileURL)
-                                PTNSLogConsole("📸 [地图补救机制] 缩略图重绘成功: \(imageFileName)")
-                                
-                                // 🚨 立刻备份到 iCloud，补齐云端缺失的文件！
-                                PTiCloudFileManager.shared.backupDatabaseToICloud(dbName: imageFileName)
-                                
-                                resultURL = fileURL
-                            } catch {
-                                PTNSLogConsole("❌ [地图快照] 保存失败: \(error)")
-                            }
+            // EN: Let the map SDK decide when tiles are ready, with a bounded timeout instead of a fixed sleep.
+            // ES: Dejamos que el SDK decida cuándo están listos los mosaicos, con un tiempo límite en lugar de una espera fija.
+            // 中文：由地图 SDK 判断底图是否完成，并使用有上限的超时替代固定睡眠。
+            mapView.takeSnapshot(in: mapView.bounds, timeoutInterval: 2.0) { [weak self = self] (image, state) in
+                guard state == 1, let image else {
+                    DispatchQueue.main.async {
+                        if self?.tempMapView === mapView {
+                            self?.tempMapView = nil
+                        }
+                        completion?(nil)
+                    }
+                    return
+                }
+
+                let imageFileName = gpxFileName.replacingOccurrences(of: ".gpx", with: ".jpg")
+                DispatchQueue.global(qos: .utility).async {
+                    var resultURL: URL?
+
+                    if let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first,
+                       let data = image.jpegData(compressionQuality: 0.8) {
+                        let fileURL = documentsURL.appendingPathComponent(imageFileName)
+                        do {
+                            // EN: Encode and persist the snapshot away from the main thread.
+                            // ES: Codificamos y guardamos la instantánea fuera del hilo principal.
+                            // 中文：在后台线程完成快照编码和文件写入。
+                            try data.write(to: fileURL)
+                            PTNSLogConsole("📸 [地图补救机制] 缩略图重绘成功: \(imageFileName)")
+                            Self.backupSnapshotToICloud(localFileURL: fileURL, fileName: imageFileName)
+                            resultURL = fileURL
+                        } catch {
+                            PTNSLogConsole("❌ [地图快照] 保存失败: \(error)")
                         }
                     }
-                    
-                    self?.tempMapView = nil
-                    // 回调通知 UI 更新
-                    completion?(resultURL)
+
+                    DispatchQueue.main.async {
+                        if self?.tempMapView === mapView {
+                            self?.tempMapView = nil
+                        }
+                        completion?(resultURL)
+                    }
                 }
             }
+        }
+    }
+
+    private static func backupSnapshotToICloud(localFileURL: URL, fileName: String) {
+        // EN: Keep snapshot backup independent from the main-actor iCloud facade so the copy remains off the UI thread.
+        // ES: Mantenemos la copia independiente de la fachada iCloud del actor principal para no bloquear la UI.
+        // 中文：独立执行快照备份，不调用主 actor 的 iCloud 门面，确保复制始终在后台线程。
+        let fileManager = FileManager.default
+        guard let containerURL = fileManager.url(forUbiquityContainerIdentifier: nil) else {
+            PTNSLogConsole("⚠️ [地图快照] iCloud 不可用，跳过云端备份。")
+            return
+        }
+
+        let cloudDocumentsURL = containerURL.appendingPathComponent("Documents")
+        let cloudFileURL = cloudDocumentsURL.appendingPathComponent(fileName)
+
+        do {
+            try fileManager.createDirectory(at: cloudDocumentsURL, withIntermediateDirectories: true)
+            if fileManager.fileExists(atPath: cloudFileURL.path) {
+                try fileManager.removeItem(at: cloudFileURL)
+            }
+            try fileManager.copyItem(at: localFileURL, to: cloudFileURL)
+        } catch {
+            PTNSLogConsole("❌ [地图快照] iCloud 备份失败: \(error.localizedDescription)")
         }
     }
 

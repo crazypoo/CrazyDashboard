@@ -22,8 +22,9 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
         view.clipsToBounds = false
         return view
     }()
-        
+
     var listEmptyConfig:PTEmptyDataViewConfig!
+    private var snapshotRequestsInFlight = Set<String>()
     lazy var detailCollection:PTCollectionView = {
         let collectionConfig = PTDashboardConfig.baseCollectionConfig(emptyConfig:self.listEmptyConfig)
         collectionConfig.viewType = .Custom
@@ -84,15 +85,35 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
                     
                     // 处理地图图片丢失时的静默重绘 (非常关键)
                     cell.requestMapSnapshotAction = { [weak self = self] gpxFileName in
-                        // 建议在这里判断一下是否已经在生成中，避免重复触发
+                        guard let self,
+                              self.snapshotRequestsInFlight.insert(gpxFileName).inserted else {
+                            return
+                        }
+
                         PTiCloudFileManager.shared.fetchCloudFileIfNeeded(fileName: gpxFileName) { localGpxURL in
-                            guard let gpxURL = localGpxURL else { return }
-                            let coordinates = PTGPXParser().parse(fileURL: gpxURL)
-                            PTRouteSnapshotManager.shared.generateAndSaveSnapshot(coordinates: coordinates, gpxFileName: gpxFileName) { newURL in
-                                // 生成成功后，只刷新当前行即可
+                            guard let localGpxURL else {
+                                self.snapshotRequestsInFlight.remove(gpxFileName)
+                                return
+                            }
+
+                            // EN: Parse the route away from the main thread before creating the map snapshot.
+                            // ES: Analizamos la ruta fuera del hilo principal antes de crear la instantánea del mapa.
+                            // 中文：先在后台解析轨迹，再回主线程创建地图快照。
+                            DispatchQueue.global(qos: .utility).async {
+                                let coordinates = PTGPXParser().parse(fileURL: localGpxURL)
                                 DispatchQueue.main.async {
-                                    if let rows = self?.detailCollection.getRows(at: [indexPath]) {
-                                        self?.detailCollection.reloadRows(rows, in: indexPath.section)
+                                    PTRouteSnapshotManager.shared.generateAndSaveSnapshot(coordinates: coordinates, gpxFileName: gpxFileName) { newURL in
+                                        self.snapshotRequestsInFlight.remove(gpxFileName)
+                                        guard newURL != nil,
+                                              let currentIndex = PTTripManager.shared.tripHistory.firstIndex(where: { $0.gpxFileName == gpxFileName }) else {
+                                            return
+                                        }
+
+                                        let currentIndexPath = IndexPath(row: currentIndex, section: 0)
+                                        let rows = self.detailCollection.getRows(at: [currentIndexPath])
+                                        if !rows.isEmpty {
+                                            self.detailCollection.reloadRows(rows, in: currentIndexPath.section)
+                                        }
                                     }
                                 }
                             }
@@ -100,24 +121,6 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
                     }
                     
                     cell.mapImageTapAction = {
-//                        PTGCDManager.shared.runOnMain {
-//                            var models = [PTMediaBrowserModel]()
-//                            self.mediaPaths.enumerated().forEach { index,value in
-//                                let cellModel = PTTripManager.shared.tripHistory[index]
-//                                let startTime = cellModel.startTime.convertTo(region: .local).toFormat("MM-dd HH:mm")
-//                                let endTime = cellModel.endTime.convertTo(region: .local).toFormat("HH:mm")
-//                                let model = PTMediaBrowserModel()
-//                                model.imageURL = value
-//                                model.imageInfo = "🏁 \(startTime) -> \(endTime)"
-//                                models.append(model)
-//                            }
-//
-//                            if !models.isEmpty {
-//                                PTDashboardConfig.globalImageBrowser(mediaModels: models,showIndex: indexPath.row,currentDataIndexCallback: { currentIndex in
-//                                    self.detailCollection.contentCollectionView.scrollToItem(at: IndexPath(row: currentIndex, section: 0), at: .top, animated: true)
-//                                })
-//                            }
-//                        }
                     }
                     return cell
                 }
@@ -127,8 +130,6 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
         return view
     }()
 
-    var mediaPaths:[Any] = []
-    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
@@ -151,37 +152,6 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
             make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total)
         }
         listSet()
-        
-        PTGCDManager.shared.runOnBackground {
-            PTGCDManager.shared.runOnMain {
-                let images = PTTripManager.shared.tripHistory.map { value in
-                    let imageName = value.gpxFileName?.replacingOccurrences(of: ".gpx", with: ".jpg")
-                    return imageName ?? ""
-                }
-                self.mediaPaths = images
-                images.enumerated().forEach { index,value in
-                    PTGCDManager.shared.runOnMain {
-                        if value.isEmpty {
-                            self.mediaPaths[index] = ""
-                        } else {
-                            PTiCloudFileManager.shared.fetchCloudFileIfNeeded(fileName: value) { [weak self = self] localImageURL in
-                                guard let self = self else { return }
-                                
-                                if let imgURL = localImageURL, FileManager.default.fileExists(atPath: imgURL.path) {
-                                    PTGCDManager.shared.runOnMain {
-                                        self.mediaPaths[index] = UIImage(contentsOfFile: imgURL.path) as Any
-                                    }
-                                } else {
-                                    PTGCDManager.shared.runOnMain {
-                                        self.mediaPaths[index] = ""
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
     
     func listSet(finishTask:PTCollectionCallback? = nil) {

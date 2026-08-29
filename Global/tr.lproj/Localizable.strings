@@ -102,3 +102,4 @@
 "ptt_change_hand_free" = "Şuraya geç: ücretsiz ses kontrol modu";
 "ptt_change_ptt" = "Şuraya geçin: anahtar interkom modu";
 "casa_card_avg_oil" = "Ortalama yakıt";
+"ptt_restore_on_launch" = "Başlangıçta PTT'yi geri yükle";

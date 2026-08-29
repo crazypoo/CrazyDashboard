@@ -102,3 +102,4 @@
 "ptt_change_hand_free" = "Switch to: free voice control mode";
 "ptt_change_ptt" = "Switch to: key intercom mode";
 "casa_card_avg_oil" = "Avg fuel";
+"ptt_restore_on_launch" = "Restore PTT at launch";

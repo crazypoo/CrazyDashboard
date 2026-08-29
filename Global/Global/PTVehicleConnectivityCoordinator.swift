@@ -103,6 +103,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
     private var obdAttemptInFlight = false
     private var obdRetryRequired = false
     private var ignoreNextOBDDisconnect = false
+    private var dashboardObserversActivated = false
     private var dashboardAttemptTask: Task<Void, Never>?
     private var obdAttemptTask: Task<Void, Never>?
 
@@ -249,6 +250,22 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         let initialDashboard = PTVehicleLinkSnapshot(state: dashboardState, transport: dashboardTransport, updatedAt: now)
         let initialOBD = PTVehicleLinkSnapshot(state: obdState, updatedAt: now)
         snapshot = PTVehicleSnapshot(dashboard: initialDashboard, obd: initialOBD, updatedAt: now)
+
+        if dashboardState == .connected {
+            activateDashboardObserversIfNeeded()
+        }
+    }
+
+    private func activateDashboardObserversIfNeeded() {
+        guard !dashboardObserversActivated else { return }
+
+        dashboardObserversActivated = true
+        // EN: Install dashboard-dependent observers only when a dashboard connection exists.
+        // ES: Instala observadores dependientes del tablero solo cuando existe una conexión activa.
+        // 中文：只有仪表连接存在时才安装依赖仪表数据的观察者。
+        _ = PTAntiTheftManager.shared
+        _ = PTDiagnosticManager.shared
+        _ = PTMaintenanceManager.shared
     }
 
     private func updateDashboardState(
@@ -263,6 +280,11 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
             errorMessage: errorMessage,
             updatedAt: Date()
         )
+
+        if state == .connected {
+            activateDashboardObserversIfNeeded()
+        }
+
         guard current.state != next.state || current.transport != next.transport || current.errorMessage != next.errorMessage else {
             return
         }

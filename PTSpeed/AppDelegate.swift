@@ -88,13 +88,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         PTAppBaseConfig.share.viewControllerBackItemImage = UIImage(.chevron.compactLeft).withTintColor(.white, renderingMode: .alwaysOriginal)
         PTAppBaseConfig.share.navTitleTextColor = .white
         PTAppBaseConfig.share.navTitleFont = .appfont(size: 24,bold: true)
-        _ = PTAntiTheftManager.shared
-        _ = PTDiagnosticManager.shared
-        _ = PTMaintenanceManager.shared
         appNotifiCenter()
-        _ = PTTripManager.shared
-        _ = PTGPXRecorder.shared
-        _ = PTLocationEngine.shared
         
 //        configureQWeatherIfAvailable()
         Task {
@@ -106,7 +100,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             }
         }
 
-        PTLocalIntercomManager.shared.restoreIntercomStateAtLaunch()
+        // EN: Restore intercom services only after the user opts in; always clear stale activities without starting PTT.
+        // ES: Restauramos el intercomunicador solo con consentimiento explícito; limpiamos actividades antiguas sin iniciar PTT.
+        // 中文：只有用户显式开启时才恢复对讲服务；默认只清理残留 Activity，不启动 PTT。
+        if PTMotoUserDefaultStruct.PTTLaunchAutoRestoreEnabled {
+            PTLocalIntercomManager.shared.restoreIntercomStateAtLaunch()
+        } else {
+            PTLiveActivityManager.shared.stopIntercomActivity()
+        }
         
         return true
     }

@@ -186,7 +186,7 @@ public enum PTOBDLinkState: Sendable, Equatable
 | 🗑️ | `B208-01` | QWeather | 无 | 用户确认当前实现可用，本计划不检查、不修改。 |
 | 🗑️ | `B208-02` | 依赖与 Swift 版本 | 无 | 由项目负责人独立处理，本计划不实施、不验收。 |
 | 🟨 | `B208-03` | 车辆连接统一协调层 | B208-00 | 协调层与静态检查已完成；BLE/OBD 循环和实车验收待补。 |
-| ⬜ | `B208-04` | 冷启动与运行性能 | B208-03 | 无非必要启动任务，CarPlay 和列表卡顿明显下降。 |
+| 🟨 | `B208-04` | 冷启动与运行性能 | B208-03 | 代码与静态检查完成；性能数值、真机和实车回归待补。 |
 | ⬜ | `B208-05` | Trip、GPX、iCloud 与缩略图 | B208-00 | 无主线程云端/大文件 I/O，保存和恢复可靠。 |
 | ⬜ | `B208-06` | PTT、Live Activity、Widget、Watch | B208-00 | 零成员零 Activity，有成员最多一个，状态来源统一。 |
 | ⬜ | `B208-07` | 普通诊断、Dev 高风险开关与 CAN 实验室 | B208-03 | 普通界面只读；高风险操作只能在现有 Dev 工具开关打开后调用。 |
@@ -271,37 +271,51 @@ public enum PTOBDLinkState: Sendable, Equatable
 
 ---
 
-## 9. `B208-04` 性能优化
+## 9. `B208-04` 性能优化（🟨）
 
 ### 冷启动
 
-- [ ] 移除 `AppDelegate` 对 Trip、GPX、Location、PTT 和诊断 Manager 的无条件实例化。
-- [ ] 功能由用户进入页面、开始导航、连接车辆或明确后台设置时按需启动。
-- [ ] PTT 默认不恢复组网；新增“恢复上次对讲状态”设置，默认关闭。
-- [ ] OBD 默认不扫描；仪表 BLE 遵循已配对和用户设置。
+- [x] 移除 `AppDelegate` 对 Trip、GPX、Location、PTT 和诊断 Manager 的无条件实例化。
+- [x] 功能由用户进入页面、开始导航、连接车辆或明确后台设置时按需启动；仪表诊断/防盗/保养观察者仅在仪表连接后激活。
+- [x] PTT 默认不恢复组网；新增“恢复上次对讲状态”设置，默认关闭；开关在下一次进程启动时生效。
+- [x] OBD 默认不扫描；仪表 BLE 遵循已配对和用户设置（沿用 `B208-03` 的连接门禁）。
 
 ### CarPlay 与 Dashboard
 
-- [ ] 删除静止状态下 60 Hz 强制 `setNeedsDisplay()`。
-- [ ] 优先使用地图 SDK 原生刷新。
-- [ ] 必须使用补偿刷新时最高 15 FPS，并在静止、后台、断开和退出导航时销毁。
-- [ ] Dashboard 根据数据变化刷新，不重复构建完整界面。
-- [ ] Tab 控制器只创建一次，语言和主题变化只更新配置。
+- [x] 删除静止状态下 60 Hz 强制 `setNeedsDisplay()`。
+- [x] 优先使用地图 SDK 原生刷新。
+- [x] 未保留补偿刷新心跳，因此无需额外 15 FPS 定时器；地图交由 SDK 原生刷新。
+- [x] Dashboard 根据数据变化刷新，不重复构建完整界面（静态审计确认现有 Dashboard 更新既有子视图）。
+- [x] Tab 控制器只创建一次，语言和主题变化只更新轻量级配置。
 
 ### 长列表与图片
 
-- [ ] Trip Cell 不创建地图实例。
-- [ ] 删除固定等待一秒的缩略图生成流程。
-- [ ] 使用可取消任务和缓存，Cell 复用时校验记录 ID。
-- [ ] 图片解码、轨迹简化和文件写入离开主线程。
+- [x] Trip Cell 不创建地图实例（地图只由快照服务创建）。
+- [x] 删除固定等待一秒的缩略图生成流程，改为地图 SDK 有上限的快照回调。
+- [x] 使用可取消任务和缓存，Cell 复用时以请求 ID 校验当前记录。
+- [x] 图片解码、轨迹解析和快照文件写入离开主线程；iCloud 原子写入、下载状态和冲突恢复仍留给 `B208-05`。
 
 性能目标：
 
-- [ ] 冷启动 p95 较基线至少改善 25%。
-- [ ] 启动后无非用户授权的 OBD 扫描或 PTT 组网。
-- [ ] 行程列表超过 100 ms 的卡顿较基线减少 80%。
-- [ ] 静止 CarPlay 不再持续触发 60 Hz 重绘。
-- [ ] BLE/OBD 连接成功率和数据正确性不低于基线。
+- [ ] 冷启动 p95 较基线至少改善 25%（⛔ 尚未采集 Instruments 数值）。
+- [x] 启动后无非用户授权的 OBD 扫描或 PTT 组网（静态检查；真实后台行为待真机验证）。
+- [ ] 行程列表超过 100 ms 的卡顿较基线减少 80%（⛔ 尚未采集 Instruments/Animation Hitches 数值）。
+- [x] 静止 CarPlay 不再持续触发 60 Hz 重绘（代码静态检查；CarPlay 真机显示待验证）。
+- [ ] BLE/OBD 连接成功率和数据正确性不低于基线（⛔ 需真机和车辆循环测试）。
+
+### B208-04 实施证据
+
+- 基线 Commit：`996b9c904144e09af1f8e89dcbc711f527bcbead`（`main`，2026-08-30）；本次改动尚未提交。
+- 版本保持：App 版本 `2.0.8`；PTSpeed、Widget、Watch Build `37`；Tests Build `35`；未修改工程版本号。
+- 冷启动：`PTSpeed/AppDelegate.swift` 不再无条件实例化 Trip、GPX、Location、PTT 和诊断 Manager；PTT 新增默认关闭的 `PTTLaunchAutoRestoreEnabled`，并在设置页提供用户开关；OBD 自动连接门禁继续由 `B208-03` 控制。
+- CarPlay：`PTSpeed/ViewController.swift` 删除绑定车机屏幕的 `CADisplayLink` 与 60 Hz `setNeedsDisplay()`，保留地图 SDK 原生导航刷新。
+- Tab/列表：`PTMotoBaseTabbarController` 缓存导航控制器；`PTTripDataCell` 使用 `NSCache`、可取消任务和请求 ID；缩略图采用 ImageIO 下采样；轨迹解析、图片编码和文件写入移出主线程；`PTRouteSnapshotManager` 移除固定 1 秒等待并使用 SDK 快照回调。
+- 后台边界：`PTGPXRecorder` 的文件路径解析和 iCloud 文件检查放入 utility 队列；本次未提前实施 `B208-05` 的 actor、原子替换、下载状态等待和冲突恢复。
+- 静态检查：本次修改 Swift 文件 `swiftc -parse` 通过；四份 `Localizable.strings` `plutil -lint` 通过；`git diff --check` 通过；核心文件 SHA-256 与保护基线一致。
+- 构建检查：`xcodebuild -workspace CrazyDashboard.xcworkspace -scheme PTSpeed -destination 'generic/platform=iOS' -configuration Debug build CODE_SIGNING_ALLOWED=NO ENABLE_PREVIEWS=NO` 成功完成 Swift 编译和链接。以 iOS Simulator 目的地进行完整 workspace 动作仍受既有 Watch App `AppIcon` 内容和预览链接配置阻断，未将其表述为完整模拟器构建通过。
+- 未完成验证：尚未运行 Instruments 冷启动/主线程/Animation Hitches 数值；尚未完成 iPhone、CarPlay、BLE/OBD、PTT 和车辆实测。因此 B208-04 保持 `🟨`，不能标记 `✅`。
+- 已知行为：PTT“启动时恢复对讲”开关只影响下一次进程启动，避免在设置页切换时意外启动或停止当前对讲会话。
+- 回滚方式：回退本次 B208-04 的未提交源文件和本节计划记录即可；不回退、不覆盖 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`。
 
 ---
 

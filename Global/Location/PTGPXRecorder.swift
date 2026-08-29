@@ -16,39 +16,66 @@ extension PTiCloudFileManager {
     ///   - fileName: 需要拉取的文件名 (例如: MotoRide_xxx.gpx 或 MotoRide_xxx.jpg)
     ///   - completion: 拉取完成后的回调，返回本地可用的完整文件 URL
     func fetchCloudFileIfNeeded(fileName: String, completion: @escaping (URL?) -> Void) {
-        let localFileURL = localDocumentsURL.appendingPathComponent(fileName)
-        
-        // 1. 本地沙盒秒开
-        if fileManager.fileExists(atPath: localFileURL.path) {
-            completion(localFileURL)
-            return
-        }
-        
-        // 2. 检查 iCloud 容器
-        guard let cloudURL = iCloudDocumentsURL else {
-            completion(nil)
-            return
-        }
-        
-        let cloudFileURL = cloudURL.appendingPathComponent(fileName)
-        guard fileManager.fileExists(atPath: cloudFileURL.path) else {
-            completion(nil)
-            return
-        }
-        
-        // 3. 后台异步下载与拷贝
-        do {
-            try self.fileManager.startDownloadingUbiquitousItem(at: cloudFileURL)
-            try self.fileManager.copyItem(at: cloudFileURL, to: localFileURL)
-            
-            DispatchQueue.main.async {
-                PTNSLogConsole("☁️✅ 成功从 iCloud 拉取文件并缓存至本地: \(fileName)")
-                completion(localFileURL)
+        // EN: Resolve both local and ubiquitous paths inside the utility queue so directory checks never block the UI.
+        // ES: Resolvemos las rutas local y ubicua dentro de la cola de utilidad para que las comprobaciones no bloqueen la UI.
+        // 中文：在后台队列解析本地和 iCloud 路径，避免目录检查阻塞 UI。
+        DispatchQueue.global(qos: .utility).async {
+            let fileManager = FileManager.default
+            let localDocumentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
+                ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            let localFileURL = localDocumentsURL.appendingPathComponent(fileName)
+
+            // EN: A local copy is the fast path and does not touch iCloud.
+            // ES: La copia local es la ruta rápida y no accede a iCloud.
+            // 中文：本地缓存是最快路径，不再访问 iCloud。
+            if fileManager.fileExists(atPath: localFileURL.path) {
+                DispatchQueue.main.async {
+                    completion(localFileURL)
+                }
+                return
             }
-        } catch {
-            DispatchQueue.main.async {
+
+            guard let containerURL = fileManager.url(forUbiquityContainerIdentifier: nil) else {
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
+                return
+            }
+
+            let cloudDocumentsURL = containerURL.appendingPathComponent("Documents")
+            do {
+                if !fileManager.fileExists(atPath: cloudDocumentsURL.path) {
+                    try fileManager.createDirectory(at: cloudDocumentsURL, withIntermediateDirectories: true)
+                }
+            } catch {
+                PTNSLogConsole("❌ 创建 iCloud Documents 目录失败: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
+                return
+            }
+
+            let cloudFileURL = cloudDocumentsURL.appendingPathComponent(fileName)
+            guard fileManager.fileExists(atPath: cloudFileURL.path) else {
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
+                return
+            }
+
+            do {
+                try fileManager.startDownloadingUbiquitousItem(at: cloudFileURL)
+                try fileManager.copyItem(at: cloudFileURL, to: localFileURL)
+
+                PTNSLogConsole("☁️✅ 成功从 iCloud 拉取文件并缓存至本地: \(fileName)")
+                DispatchQueue.main.async {
+                    completion(localFileURL)
+                }
+            } catch {
                 PTNSLogConsole("❌ 从 iCloud 拉取文件失败: \(error.localizedDescription)")
-                completion(nil)
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
             }
         }
     }

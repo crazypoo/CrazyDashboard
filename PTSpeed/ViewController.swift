@@ -26,8 +26,6 @@ class ViewController: UIViewController {
         return view
     }()
         
-    private var carplayDisplayLink: CADisplayLink?
-    
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         self.view.layoutIfNeeded()
@@ -95,45 +93,18 @@ class ViewController: UIViewController {
 
     @MainActor deinit {
         blockObserverTokens.forEach { NotificationCenter.default.removeObserver($0) }
-        carplayDisplayLink?.invalidate()
         NotificationCenter.default.removeObserver(self)
     }
     
     @objc func checkCarplay() {
-        carplayDisplayLink?.invalidate()
-        carplayDisplayLink = nil
-        setupCarPlayHeartbeat()
         navStart()
     }
-    
-    private func setupCarPlayHeartbeat() {
-        // 确保当前是在 CarPlay 环境，并且成功获取到了车机的屏幕对象 (不是手机屏幕)
-        guard PTCarPlayManager.isCarPlayActive, let carScreen = self.view.window?.screen else { return }
-        
-        // 清理旧心跳
-        carplayDisplayLink?.invalidate()
-        
-        // 🌟 核心魔法：将新的心跳【强行绑定在车机屏幕上】！
-        // 这样哪怕手机黑屏，只要车机屏幕亮着，这个起搏器就会以每秒 60 次的频率永远跳动！
-        carplayDisplayLink = carScreen.displayLink(withTarget: self, selector: #selector(forceDriveViewRender))
-        carplayDisplayLink?.add(to: .main, forMode: .common)
-        
-        PTNSLogConsole("💓 [CarPlay] 车机独立渲染心跳已绑定，无惧手机息屏！")
-    }
-    
-    @objc private func forceDriveViewRender() {
-        // 每次心跳跳动，都不停地鞭策高德地图底层进行强制渲染
-        if PTDashboardConfig.shared.naving {
-            self.dashBoard.mapView.driveView.setNeedsDisplay()
-        }
-    }
-    
+
     @objc func navStart() {
         if PTDashboardConfig.shared.naving,PTDashboardConfig.shared.blueConnected {
             self.updateMapModeForCarPlayConnection(isActive: false)
         } else {
             self.updateMapModeForCarPlayConnection(isActive: PTCarPlayManager.isCarPlayActive)
-            setupCarPlayHeartbeat()
         }
     }
     
