@@ -62,12 +62,14 @@ class PTPeugeotDashBoardViewController: PTMotoBaseViewController {
         super.viewWillAppear(animated)
         PTRotationManager.shared.rotationToLandscapeRight()
         PTRotationManager.shared.isLockOrientationWhenDeviceOrientationDidChange = true
+        PTMotoTelemetryManager.shared.addDelegate(self)
         self.ledDashboard.speedLabel.isHidden = PTDashboardConfig.shared.naving
         self.ledDashboard.ledNavView.isHidden = !PTDashboardConfig.shared.naving
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        PTMotoTelemetryManager.shared.removeDelegate(self)
         
         // 视图即将消失（比如返回上一页）时：强制恢复为竖屏
         if let coordinator = transitionCoordinator {
@@ -96,6 +98,10 @@ class PTPeugeotDashBoardViewController: PTMotoBaseViewController {
         if !PTDashboardConfig.shared.blueConnected {
             PTTripManager.shared.handleDisconnect()
         }
+    }
+
+    @MainActor deinit {
+        PTMotoTelemetryManager.shared.removeDelegate(self)
     }
     
     override func viewDidLoad() {

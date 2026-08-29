@@ -126,7 +126,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                             self.navigationController?.present(nav, animated: true)
                         case 1:
                             self.bleConnectStatusLabel.startLoading()
-                            PTBluetoothServerManager.shared.startMockDashboardData()
+                            _ = PTVehicleConnectivityCoordinator.shared.connectMockDashboard()
                         default:
                             break
                         }
@@ -224,7 +224,9 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                                 UIAlertController.base_textfield_alertVC(title:PTDashboardConfig.languageFunc(text: "If you already have OBD2 moudle id,here can remember your OBD2 moudle id"),okBtn: PTDashboardConfig.languageFunc(text: "button_confirm"),cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"),placeHolders: [placeholder],textFieldTexts:[obdID],keyboardType: [.default],textFieldDelegate: self) { result in
                                     PTMotoUserDefaultStruct.OBDID = result[placeholder] ?? developerOBDID
                                     self.obdButton.startLoading()
-                                    PTMotoTelemetryManager.shared.connectToMotorcycle(via: .bluetooth, engineType: .ice)
+                                    if !PTVehicleConnectivityCoordinator.shared.connectOBD(via: .bluetooth, engineType: .ice) {
+                                        self.obdButton.stopLoading()
+                                    }
                                 }
                             case 1:
                                 let placeholderWIFIAddress = PTDashboardConfig.languageFunc(text: "WIFI Address")
@@ -241,11 +243,15 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                                     }
                                     self.obdButton.startLoading()
                                     let wifi = PTOBDConnectionType.wifi(ip: wifiAddress, port: UInt16(wifiPort) ?? 35000)
-                                    PTMotoTelemetryManager.shared.connectToMotorcycle(via: wifi, engineType: .ice)
+                                    if !PTVehicleConnectivityCoordinator.shared.connectOBD(via: wifi, engineType: .ice) {
+                                        self.obdButton.stopLoading()
+                                    }
                                 }
                             case 2:
                                 self.obdButton.startLoading()
-                                PTMotoTelemetryManager.shared.connectToMotorcycle(via: .mock, engineType: .ice)
+                                if !PTVehicleConnectivityCoordinator.shared.connectOBD(via: .mock, engineType: .ice) {
+                                    self.obdButton.stopLoading()
+                                }
                             default:
                                 break
                             }
@@ -293,7 +299,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                         }
                     case 1:
                         self.obdButton.startLoading(indicatorColor: .white)
-                        PTMotoTelemetryManager.shared.disconnect()
+                        PTVehicleConnectivityCoordinator.shared.disconnectOBD()
                         PTGCDManager.shared.delayOnMain(time: 0.5) {
                             self.obdButton.isSelected = false
                             self.obdButton.stopLoading()
@@ -517,10 +523,18 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         super.viewWillAppear(animated)
         PTRotationManager.shared.rotationToPortrait()
         PTRotationManager.shared.isLockOrientationWhenDeviceOrientationDidChange = true
+        PTMotoTelemetryManager.shared.addDelegate(self)
+        PTMotoTelemetryManager.shared.onConnectionTimeout = { [weak self] in
+            PTVehicleConnectivityCoordinator.shared.handleOBDConnectionTimeout()
+            self?.obdButton.stopLoading()
+        }
         setLeftButtons(views: [appLogo])
         setCustomRightButtons(buttons: [dashboardButton,motionDeviceButton,obdButton,bleConnectStatusLabel],buttonSpacing: CGFloat.GlobalItemSpacing)
         
         self.bleConnectStatusLabel.isSelected = PTDashboardConfig.shared.blueConnected
+        if PTVehicleConnectivityCoordinator.shared.connectOBDIfAllowed() {
+            obdButton.startLoading(indicatorColor: .white)
+        }
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -536,6 +550,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         PTMotoTelemetryManager.shared.removeDelegate(self)
+        PTMotoTelemetryManager.shared.onConnectionTimeout = nil
     }
     
     override func viewDidLoad() {
@@ -546,7 +561,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         
         if PTMotoUserDefaultStruct.MotoLinkedAPP,!PTDashboardConfig.shared.blueConnected {
             PTGCDManager.shared.delayOnMain(time: 3) {
-                PTBluetoothServerManager.shared.startBaseStationAndScan()
+                _ = PTVehicleConnectivityCoordinator.shared.restoreDashboardConnectionIfNeeded()
             }
         }
         
@@ -565,19 +580,12 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         }
         
         PTMotion.shared.addDelegate(self)
-        PTMotoTelemetryManager.shared.addDelegate(self)
-        PTMotoTelemetryManager.shared.connectToMotorcycle()
-        obdButton.startLoading(indicatorColor: .white)
-        PTMotoTelemetryManager.shared.onConnectionTimeout = {
-            self.obdButton.stopLoading()
-        }
         NotificationCenter.default.addObserver(self, selector: #selector(appDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
     }
     
     @objc private func appDidBecomeActive() {
-        // 如果 App 回到前台发现掉线了，自动再次发起连接
-        if !PTMotoTelemetryManager.shared.isConnected {
-            PTMotoTelemetryManager.shared.connectToMotorcycle()
+        if PTVehicleConnectivityCoordinator.shared.connectOBDIfAllowed() {
+            obdButton.startLoading(indicatorColor: .white)
         }
     }
         

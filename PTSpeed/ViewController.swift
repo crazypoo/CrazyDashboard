@@ -84,7 +84,7 @@ class ViewController: UIViewController {
         
         if PTMotoUserDefaultStruct.MotoLinkedAPP,!PTDashboardConfig.shared.blueConnected {
             PTGCDManager.shared.delayOnMain(time: 3) {
-                PTBluetoothServerManager.shared.startBaseStationAndScan()
+                _ = PTVehicleConnectivityCoordinator.shared.restoreDashboardConnectionIfNeeded()
             }
         }
         

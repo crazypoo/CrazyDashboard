@@ -12,6 +12,16 @@ import SwifterSwift
 
 class PTOBDDataBaseViewController:PTMotoBaseViewController {
     let gridView = PTOBDDataView()
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        PTMotoTelemetryManager.shared.addDelegate(gridView)
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        PTMotoTelemetryManager.shared.removeDelegate(gridView)
+    }
 }
 
 class PTOBDDataViewController: PTOBDDataBaseViewController {

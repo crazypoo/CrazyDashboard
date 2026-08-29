@@ -139,6 +139,35 @@ final class PTCoreTests: XCTestCase {
         XCTAssertEqual(PTDTCManager.determineSeverity(for: "P0300"), .high)
     }
 
+    func testVehicleSnapshotKeepsDashboardAndOBDStatesIndependent() {
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        let dashboard = PTVehicleLinkSnapshot(
+            state: .connected,
+            transport: .dashboardBluetooth,
+            updatedAt: date
+        )
+        let obd = PTVehicleLinkSnapshot(
+            state: .failed,
+            transport: .obdBluetooth,
+            errorMessage: "timeout",
+            updatedAt: date
+        )
+
+        let snapshot = PTVehicleSnapshot.initial.replacing(
+            dashboard: dashboard,
+            updatedAt: date
+        )
+        let independentSnapshot = snapshot.replacing(obd: obd, updatedAt: date)
+
+        // EN: Updating OBD must not rewrite the dashboard link.
+        // ES: Actualizar OBD no debe modificar el enlace del tablero.
+        // 中文：更新 OBD 状态时不能改写仪表盘连接状态。
+        XCTAssertEqual(independentSnapshot.dashboard, dashboard)
+        XCTAssertEqual(independentSnapshot.obd, obd)
+        XCTAssertTrue(independentSnapshot.isDashboardConnected)
+        XCTAssertFalse(independentSnapshot.isOBDConnected)
+    }
+
     private func makeRoutePoint(timestamp: Date, brakingG: Double) -> PTRoutePoint {
         PTRoutePoint(
             lat: 31.2304,

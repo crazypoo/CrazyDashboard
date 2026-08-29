@@ -19,11 +19,16 @@ class PTMotoBaseViewController: PTBaseViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         self.changeStatusBar(type: .Dark)
+        // EN: Subscribe while visible and avoid retaining page delegates after navigation.
+        // ES: Suscribimos mientras la página está visible y evitamos conservar delegados al navegar.
+        // 中文：仅在页面可见时订阅，离开页面后不保留页面代理。
+        PTBluetoothServerManager.shared.addDelegate(self)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         self.changeStatusBar(type: .Dark)
+        PTBluetoothServerManager.shared.removeDelegate(self)
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -50,6 +55,7 @@ class PTMotoBaseViewController: PTBaseViewController {
     open func handleMotorcycleData(data:Any?) {}
     
     @MainActor deinit {
+        PTBluetoothServerManager.shared.removeDelegate(self)
         NotificationCenter.default.removeObserver(self)
     }
 }
@@ -67,4 +73,3 @@ extension PTMotoBaseViewController:PTBLEDashboardDelegate {
         handleMotorcycleData(data: data)
     }
 }
-

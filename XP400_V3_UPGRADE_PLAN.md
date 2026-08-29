@@ -185,7 +185,7 @@ public enum PTOBDLinkState: Sendable, Equatable
 | 🟨 | `B208-00` | 基线、计划与核心保护 | 无 | 已完成静态与构建基线；Instruments、真机和实车基线待补齐后才能关闭。 |
 | 🗑️ | `B208-01` | QWeather | 无 | 用户确认当前实现可用，本计划不检查、不修改。 |
 | 🗑️ | `B208-02` | 依赖与 Swift 版本 | 无 | 由项目负责人独立处理，本计划不实施、不验收。 |
-| ⬜ | `B208-03` | 车辆连接统一协调层 | B208-00 | 双 BLE 角色并行且互不干扰，核心零修改。 |
+| 🟨 | `B208-03` | 车辆连接统一协调层 | B208-00 | 协调层与静态检查已完成；BLE/OBD 循环和实车验收待补。 |
 | ⬜ | `B208-04` | 冷启动与运行性能 | B208-03 | 无非必要启动任务，CarPlay 和列表卡顿明显下降。 |
 | ⬜ | `B208-05` | Trip、GPX、iCloud 与缩略图 | B208-00 | 无主线程云端/大文件 I/O，保存和恢复可靠。 |
 | ⬜ | `B208-06` | PTT、Live Activity、Widget、Watch | B208-00 | 零成员零 Activity，有成员最多一个，状态来源统一。 |
@@ -248,24 +248,26 @@ public enum PTOBDLinkState: Sendable, Equatable
 
 ---
 
-## 8. `B208-03` 车辆连接协调层
+## 8. `B208-03` 车辆连接协调层（🟨）
 
-- [ ] 实现 `PTVehicleConnectivityCoordinator` 和 `PTVehicleSnapshot`。
-- [ ] 建立仪表 BLE、OBD BLE/Wi-Fi/Mock 的独立状态机映射。
-- [ ] App 启动不再隐式启动 OBD 扫描。
-- [ ] 只有用户设置允许时才执行 OBD 自动连接。
-- [ ] 仪表 BLE 与 OBD BLE 同时运行时互不停止、重置或复用对方状态。
-- [ ] 一个连接失败只更新自己的错误状态。
-- [ ] 前后台切换按照实际功能需求恢复，不无条件重连全部服务。
-- [ ] 页面离开后正确释放 delegate、Timer 和观察者。
-- [ ] Dashboard、CarPlay、Widget、Watch 使用同一车辆快照。
+- [x] 实现 `PTVehicleConnectivityCoordinator` 和 `PTVehicleSnapshot`。
+- [x] 建立仪表 BLE、OBD BLE/Wi-Fi/Mock 的独立状态机映射。
+- [x] App 启动不再隐式启动 OBD 扫描。
+- [x] 只有 `PTMotoUserDefaultStruct.OBDAutoConnectEnabled` 明确开启时才执行 OBD 自动连接，默认关闭。
+- [x] 仪表 BLE 与 OBD BLE 同时运行时互不停止、重置或复用对方状态。
+- [x] 一个连接失败只更新自己的错误状态。
+- [x] 前后台切换只恢复已配对仪表和用户允许的 OBD，不无条件重连全部服务。
+- [x] 页面离开后正确释放 delegate、Timer 和观察者，并在重新出现时恢复必要 delegate。
+- [x] Dashboard、CarPlay、Widget、Watch 通过协调器状态和现有 `PTWidgetSharedStatus` 投影共享同一车辆连接结果；OBD 状态保持独立，不污染 Widget 的仪表连接字段。
 
 完成条件：
 
-- [ ] 三个核心文件哈希不变。
-- [ ] 50 次仪表 BLE 连接/断开循环无状态泄漏。
-- [ ] 50 次 OBD 连接/断开循环无重复扫描或重复轮询。
-- [ ] 30 次仪表 BLE 与 OBD BLE 并行循环通过。
+- [x] 三个核心文件哈希不变，并已在本次改动后复核。
+- [ ] 50 次仪表 BLE 连接/断开循环无状态泄漏（⛔ 当前环境没有可验收的仪表和真机）。
+- [ ] 50 次 OBD 连接/断开循环无重复扫描或重复轮询（⛔ 当前环境没有可验收的 OBD 和真机）。
+- [ ] 30 次仪表 BLE 与 OBD BLE 并行循环通过（⛔ 当前环境没有可验收的车辆设备）。
+
+实施边界：本工作包只增加协调状态和调用入口，不改动 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift` 的实现，不新增第二套 BLE、OBD 传输层、响应拼接器或轮询引擎。
 
 ---
 
@@ -675,6 +677,26 @@ Peugeot 官方资料确认 XP400 GT 使用 5 英寸连接式 TFT 和 i-Connect�
 - 性能基线：Instruments 模板可用但尚未采集数值
 - 已知限制：当前 Podfile/Pods 对 iOS Simulator 排除了 arm64；PTT 启动恢复、Live Activity、Widget/Watch/iCloud 以及 BLE/OBD 仍只有静态链路证据；workspace/project 的 QWeather 解析版本差异仅记录，不在 B208-00 处理；后续补测前不得关闭本工作包
 - 回滚方式：仅回退本次计划文件的文档变更；不回退、不覆盖用户已有修改
+
+### `B208-03` 车辆连接协调层
+
+- 状态：🟨（协调代码、调用链迁移和静态检查完成；真实连接循环、真机和车辆验收待补）
+- 开始日期：2026-08-30
+- 完成日期：待补
+- Commit：基线 `b914e23b8ab70ab3bdfd5fa8d3d18c8d2d49375d`；本次改动尚未提交
+- App 版本：2.0.8
+- Build：未修改
+- 修改文件：新增 `Global/Global/PTVehicleConnectivityCoordinator.swift`；修改 `Global/Global/PTMotoUserDefaultStruct.swift`、`Global/Global/PTMotoBaseViewController.swift`、`Global/BLE/PTBLEConnectViewController.swift`、`Global/Dashboard/ViewController/PTPeugeotDashBoardViewController.swift`、`Global/Dev/PTECUSnifferOverlay.swift`、`Global/OBD/View/PTOBDDataView.swift`、`Global/OBD/ViewController/PTOBDDataViewControllerCollection.swift`、`Global/PTMotoInfoViewController.swift`、`Global/PTMotoSettingViewController.swift`、`PTSpeed/ViewController.swift`、`PTSpeed/PTCarPlaySceneDelegate.swift`、`PTSpeedTests/PTCoreTests.swift` 和工程文件
+- 未修改核心：`PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`；本次改动后 SHA-256 仍分别为 `8a1ce464f87076041b7d1c2af0940f0a014bad7d0479ae6d108914cb81d270d7`、`23ea459f87a4003248cc2c303f25a42c23a24909aa777b21b93ae2a99c41cd99`、`7e61b4961427c087d9ce36769973e71230f9a4c99892fbe71fb911b400633b66`
+- 实施内容：新增仪表 BLE 与 OBD BLE/Wi-Fi/Mock 的独立快照和生命周期协调；保留旧 Manager 作为唯一传输/轮询实现；关闭默认 OBD 自动连接；将页面直接连接、断开和恢复入口转发到协调器；补齐页面 delegate、Timer 和观察者生命周期；CarPlay 连接时仅初始化协调器用于状态观察；通过现有 `PTWidgetSharedStatus` 投影仪表连接状态，使 Dashboard、CarPlay、Widget、Watch 不再各自推断连接状态
+- 静态检查：`swiftc -parse` 覆盖本次修改的 Swift 文件通过；`plutil -lint CrazyDashboard.xcodeproj/project.pbxproj` 通过；`git diff --check` 通过；新增状态独立性 XCTest 已写入但尚未执行
+- Debug/Release 构建：使用 `CrazyDashboard.xcworkspace` 进行 Debug generic iOS 构建时，在 SmartCodable 依赖获取 `swiftlang/swift-syntax` 时因网络超时中断，未到达 PTSpeed 主 target 的最终编译结果；未将该结果表述为完整构建通过；Release 未执行
+- Archive：未执行
+- 真机：未执行
+- Apple Watch：未执行；Watch 继续消费现有 `PTWidgetSharedStatus`，本工作包未改 Watch target
+- 实车/台架：未执行，因此 50 次仪表循环、50 次 OBD 循环和 30 次并行循环不能标记完成
+- 已知限制：需要在可用依赖缓存、arm64 模拟器或真机上执行 XCTest/完整构建；需要真实 XP400 GT、OBD 设备和配对 iPhone 完成连接/断开/并行压力验收；`OBDAutoConnectEnabled` 已默认关闭，但本次未新增设置页 UI
+- 回滚方式：回退本次 B208-03 的新增协调器、调用入口、生命周期修复、测试、工程引用和本节文档记录即可；不回退、不覆盖三个稳定核心文件
 
 ### `B208-XX` 工作包名称
 

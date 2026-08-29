@@ -124,8 +124,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         view.addActionHandlers { sender in
             if PTDashboardConfig.shared.blueConnected {
                 UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "button_dis_connect") + "?",okBtns: [PTDashboardConfig.languageFunc(text: "button_confirm")],cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
-                    PTBluetoothServerManager.shared.sendDisconnect()
-                    PTDashboardConfig.shared.blueConnected = false
+                    PTVehicleConnectivityCoordinator.shared.disconnectDashboard()
                 })
             } else {
                 let vc = PTBLEConnectViewController()

@@ -107,6 +107,10 @@ class PTOBDDataView: UIView {
     required init?(coder: NSCoder) {
         super.init(coder: coder)
     }
+
+    deinit {
+        PTMotoTelemetryManager.shared.removeDelegate(self)
+    }
     
     // MARK: - 全频段动态构建网格
     private func buildDynamicGrid(with commands: [String]) {

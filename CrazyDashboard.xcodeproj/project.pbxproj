@@ -106,6 +106,7 @@
 		600000010000000000000023 /* PTWatchConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000021 /* PTWatchConnectivityManager.swift */; };
 		600000010000000000000024 /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 600000020000000000000022 /* WatchConnectivity.framework */; };
 		600000010000000000000025 /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 600000020000000000000022 /* WatchConnectivity.framework */; };
+		600000010000000000000030 /* PTVehicleConnectivityCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000030 /* PTVehicleConnectivityCoordinator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -270,6 +271,7 @@
 		600000020000000000000020 /* PTWidgetSharedStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTWidgetSharedStatus.swift; sourceTree = "<group>"; };
 		600000020000000000000021 /* PTWatchConnectivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTWatchConnectivityManager.swift; sourceTree = "<group>"; };
 		600000020000000000000022 /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = System/Library/Frameworks/WatchConnectivity.framework; sourceTree = SDKROOT; };
+		600000020000000000000030 /* PTVehicleConnectivityCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleConnectivityCoordinator.swift; sourceTree = "<group>"; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -629,6 +631,7 @@
 		55F503B9300FCA1E00C5D085 /* Global */ = {
 			isa = PBXGroup;
 			children = (
+				600000020000000000000030 /* PTVehicleConnectivityCoordinator.swift */,
 				55F52C56303D4025007527C2 /* PTRideReviewAnalyzer.swift */,
 				5598667A301147FD0049684D /* PTCustomRouteManager.swift */,
 				55499CF93019D83800A1A2D9 /* PTDashboardBaseView.swift */,
@@ -1027,6 +1030,7 @@
 				557D0056302ED2A9008BA492 /* PTPeugeotLEDDashBoard.swift in Sources */,
 				5590187230107A1C00A77571 /* PTRoutePlantCell.swift in Sources */,
 				55FE2966300CA5E0000E741F /* PTDashboardConfig.swift in Sources */,
+				600000010000000000000030 /* PTVehicleConnectivityCoordinator.swift in Sources */,
 				55FE2A0B300CE2B0000E741F /* PTMapKitNavigationHelper.swift in Sources */,
 				55FDBCAC3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift in Sources */,
 				55FE29A1300CC1F1000E741F /* PTMotoInfoViewController.swift in Sources */,
@@ -1137,7 +1141,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 37;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -1170,7 +1174,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 37;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -1203,7 +1207,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 37;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1238,7 +1242,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 37;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1399,7 +1403,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 37;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -1547,7 +1551,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 37;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;

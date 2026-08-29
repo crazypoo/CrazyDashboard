@@ -248,6 +248,7 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
         
     @MainActor deinit {
         stopRefreshTimer()
+        PTBluetoothServerManager.shared.removeDelegate(self)
         NotificationCenter.default.removeObserver(self)
     }
     

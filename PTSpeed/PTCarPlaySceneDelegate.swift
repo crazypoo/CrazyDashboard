@@ -24,6 +24,11 @@ class PTCarPlaySceneDelegate: UIResponder,CPTemplateApplicationSceneDelegate,CPI
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
                                   didConnect interfaceController: CPInterfaceController,
                                   to window: CPWindow) {
+
+        // EN: Initialize the coordinator for CarPlay state observation only; it never starts a scan here.
+        // ES: Inicializamos el coordinador solo para observar el estado de CarPlay; aquí nunca iniciamos un escaneo.
+        // 中文：CarPlay 这里只初始化协调器用于观察状态，不会在此启动任何扫描。
+        _ = PTVehicleConnectivityCoordinator.shared.snapshot
         
         self.interfaceController = interfaceController
         self.carWindow = window

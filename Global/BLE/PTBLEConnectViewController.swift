@@ -38,7 +38,7 @@ class PTBLEConnectViewController: PTMotoBaseViewController,@unchecked Sendable {
         view.setTitle(PTDashboardConfig.languageFunc(text: "connect_step_2"), for: .normal)
         view.addActionHandlers { sender in
             PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "alert_loading")) {
-                PTBluetoothServerManager.shared.startBaseStationAndScan()
+                _ = PTVehicleConnectivityCoordinator.shared.connectDashboardIfNeeded()
             }
         }
         view.backgroundColor = .systemBlue
