@@ -182,7 +182,7 @@ public enum PTOBDLinkState: Sendable, Equatable
 
 | 状态 | ID | 工作包 | 依赖 | 完成条件摘要 |
 |---|---|---|---|---|
-| ⬜ | `B208-00`` | 基线、计划与核心保护 | 无 | 建立性能基线、测试矩阵和核心哈希门禁。 |
+| 🟨 | `B208-00` | 基线、计划与核心保护 | 无 | 已完成静态与构建基线；Instruments、真机和实车基线待补齐后才能关闭。 |
 | 🗑️ | `B208-01` | QWeather | 无 | 用户确认当前实现可用，本计划不检查、不修改。 |
 | 🗑️ | `B208-02` | 依赖与 Swift 版本 | 无 | 由项目负责人独立处理，本计划不实施、不验收。 |
 | ⬜ | `B208-03` | 车辆连接统一协调层 | B208-00 | 双 BLE 角色并行且互不干扰，核心零修改。 |
@@ -202,20 +202,30 @@ public enum PTOBDLinkState: Sendable, Equatable
 
 ## 5. `B208-00` 基线与实施门禁
 
-- [ ] 记录当前 Git commit、Xcode、Swift、iOS SDK 和依赖版本。
-- [ ] 记录 App、Widget、Watch、Tests 当前构建结果。
+- [x] 记录当前 Git commit、Xcode、Swift、iOS SDK 和依赖版本。
+- [x] 记录 App、Widget、Watch、Tests 当前构建结果。
 - [ ] 使用 Instruments 记录冷启动、主线程、内存、卡顿和能耗基线。
 - [ ] 记录仪表 BLE 与 OBD 蓝牙/Wi-Fi 的连接时间、成功率和断连恢复行为。
-- [ ] 记录 PTT、Live Activity、Widget、Watch 和 iCloud 当前行为。
-- [ ] 所有新写代码注释使用英语、西班牙语、中文三语。
-- [ ] 只补充当前修改范围中的旧注释，不做全仓库注释翻译。
+- [ ] 记录 PTT、Live Activity、Widget、Watch 和 iCloud 当前真机行为（本次已完成代码链路审计，运行时验证待补）。
+- [x] 本工作包未新增 Swift 代码；如后续补充代码，必须使用英语、西班牙语、中文三语注释。
+- [x] 本工作包未做全仓库注释翻译；后续只补充当前修改范围中的旧注释。
 
 完成证据：
 
-- Commit：
-- 测试结果：
-- 性能基线：
-- 真机/车辆状态：
+- 基线 Commit：`b9b1f5e18ad42dcd966c5aa6b61bda6e987abc5b`（`main`，2026-08-30）。本次 B208-00 只更新本计划文件，未改动业务源代码。
+- 版本基线：`MARKETING_VERSION = 2.0.8`；主 App、Widget、Watch 的 `CURRENT_PROJECT_VERSION = 36`；Tests 当前 Build 为 `35`。后续 TestFlight 只递增 Build，不改营销版本。
+- 工具链：Xcode `27.0 (27A5252f)`；Apple Swift `6.4.0.33.1`；项目 `SWIFT_VERSION = 5.0`；iOS SDK `27.0`；watchOS SDK `27.0`；CocoaPods `1.16.2`；Ruby `3.3.5`；Git `2.50.1`。
+- 依赖基线：Bugly `2.6.1`、PooTools `5.6.1`、SwiftDate `7.0.0`；当前 workspace/project 的 QWeather Package resolution 分别为 `5.2.2`/`5.3.0`，仅记录，不在本计划处理（`B208-01`、`B208-02` 已按用户要求忽略）。
+- Target 基线：`PTSpeed`（`com.yd.PTSpeed`）、`xp400WidgetExtension`（`com.yd.PTSpeed.xp400Widget`）、`xp400watch Watch App`（`com.yd.PTSpeed.watchkitapp`）和 `PTSpeedTests`。
+- 构建结果：Debug generic iOS Simulator 下 PTSpeed、Widget scheme 和 `build-for-testing` 均完成；Debug generic watchOS Simulator 下 Watch scheme 完成。没有把这些结果扩展表述为真机或 Archive 成功。
+- 测试结果：`build-for-testing` 成功生成 XCTest 产物，但默认产物为 `x86_64`；当前 iOS 27 模拟器为 `arm64`，`test-without-building` 被架构不匹配阻断，测试用例没有实际执行。额外 arm64 探测未形成可运行的 `.xctestrun`，未修改工程配置。
+- 性能基线：已确认 Xcode Instruments CLI 可见 `Time Profiler`、`Allocations`、`Animation Hitches`、`Activity Monitor`、`Leaks` 等模板；尚未采集冷启动、主线程、内存、卡顿或能耗数值，必须在可运行的 arm64 构建和真机/模拟器环境补测。
+- PTT/Live Activity 静态基线：`PTSpeed/AppDelegate.swift` 启动时调用 `PTLocalIntercomManager.shared.restoreIntercomStateAtLaunch()`；该方法依据 `PTIntercomPowerStateKey` 恢复组网。`PTLocalIntercomManager` 只有在 `isRunning && hasConnectedPeers` 时向 `PTLiveActivityManager` 提交成员列表；`PTLiveActivityManager.syncIntercomActivity` 对空成员执行已有 Activity 清理，对非空成员才允许 `Activity.request`。因此“启动后恢复 PTT 状态”和“Activity 创建”是两个不同门槛，但残留 Activity 清理、组网回调时序和真实系统行为仍未完成真机验证，留给 `B208-06`。
+- Widget/Watch/iCloud 静态基线：`PTLocationEngine` 在连接状态下按 600 秒节流并在断开/逆地理编码回调中调用 `PTWidgetDataManager`；该管理器写入 App Group、调用 WatchConnectivity、发起 iCloud 快照保存并刷新 Widget timeline。Watch 端消费最近的 application context；本阶段未验证后台、离线、重启和 iCloud 实际同步。
+- BLE/OBD 基线：未执行真实仪表 BLE、OBD 蓝牙/Wi-Fi 连接计时、成功率和断连恢复测试；三个核心文件哈希保持不变：`PTBluetoothManager.swift` = `8a1ce464f87076041b7d1c2af0940f0a014bad7d0479ae6d108914cb81d270d7`，`PTHiddenOBDConnector.swift` = `23ea459f87a4003248cc2c303f25a42c23a24909aa777b21b93ae2a99c41cd99`，`PTOBDCommand.swift` = `7e61b4961427c087d9ce36769973e71230f9a4c99892fbe71fb911b400633b66`。
+- 真机/车辆状态：当前会话没有可用于本阶段验收的物理 iPhone、配对 Apple Watch、XP400 GT 仪表或 OBD 设备；BLE、OBD、Multipeer Connectivity、Live Activity、Widget 后台和 iCloud 的运行时结果均标记为待补。
+- 当前阻塞：①测试产物与 iOS 27 模拟器架构不匹配；②B208-00 所需 Instruments 数值未采集；③真实 BLE/OBD/PTT/Live Activity/Watch/iCloud 行为需要设备或车辆。B208-00 保持 `🟨`，不提前标记完成。
+- 回滚方式：本次只产生计划文件变更；如需回退，仅回退本节和实施记录的文档改动，不触碰三个核心文件或其他工作区状态。
 
 ---
 
@@ -645,6 +655,26 @@ Peugeot 官方资料确认 XP400 GT 使用 5 英寸连接式 TFT 和 i-Connect�
 ## 19. 实施记录
 
 每完成一个工作包，在这里追加结果，不覆盖失败记录。
+
+### `B208-00` 基线与实施门禁
+
+- 状态：🟨（静态、工具链和构建基线已完成；Instruments、真机、Apple Watch、实车/台架待补）
+- 开始日期：2026-08-30
+- 完成日期：待补
+- Commit：基线 `b9b1f5e18ad42dcd966c5aa6b61bda6e987abc5b`；本次文档变更未提交
+- App 版本：2.0.8
+- Build：PTSpeed/Widget/Watch `36`；PTSpeedTests `35`
+- 修改文件：`XP400_V3_UPGRADE_PLAN.md`；未修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`
+- 静态检查：通过；核心文件 SHA-256 与基线一致；B208-00 目标矩阵、依赖、工具链和运行链路已记录
+- 单元测试：`build-for-testing` 成功；`test-without-building` 因 x86_64 测试产物与 arm64 iOS 27 模拟器不匹配而未执行
+- Debug/Release 构建：Debug App、Widget、Watch 构建基线已记录；Release 未执行
+- Archive：未执行
+- 真机：未执行
+- Apple Watch：未执行
+- 实车/台架：未执行
+- 性能基线：Instruments 模板可用但尚未采集数值
+- 已知限制：当前 Podfile/Pods 对 iOS Simulator 排除了 arm64；PTT 启动恢复、Live Activity、Widget/Watch/iCloud 以及 BLE/OBD 仍只有静态链路证据；workspace/project 的 QWeather 解析版本差异仅记录，不在 B208-00 处理；后续补测前不得关闭本工作包
+- 回滚方式：仅回退本次计划文件的文档变更；不回退、不覆盖用户已有修改
 
 ### `B208-XX` 工作包名称
 
