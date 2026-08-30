@@ -193,8 +193,8 @@ public enum PTOBDLinkState: Sendable, Equatable
 | 🟨 | `B208-08` | 骑行体验功能 | B208-03、B208-05、B208-06 | 基础只读座舱、Black Box、行程故事和组队安全视图已接入；完整路书、Watch 交互、多车库和真机验收待补。 |
 | 🟨 | `B208-09` | XP400 仪表指令证据库 | B208-07 | 已建立证据模型并把普通 UI 收口到 Confirmed 只读指令；真实抓包和重复验证待补。 |
 | 🟨 | `B208-10` | 开发者固件与开机画面实车测试 | B208-07、B208-09 | 同一 TestFlight 包内已接入现有 Dev 工具的高风险门禁和前置检查；真实协议证据与实车分级测试待补。 |
-| 🟨 | `B208-11` | 隐私、Archive 与 TestFlight 发布 | B208-00、B208-03～B208-08、B208-12 | Test Plan、UI Test Target、核心 Debug 构建和静态隐私检查已接入；Release、Archive、真机和 B208-12 待补。 |
-| ⬜ | `B208-12` | String Catalog 本地化与语言文案 | B208-00 | 使用新 Xcode 多语言方式，四种现有语言完整覆盖，`languageFunc` 不再接收中文硬编码。 |
+| 🟨 | `B208-11` | 隐私、Archive 与 TestFlight 发布 | B208-00、B208-03～B208-08、B208-12 | Test Plan、UI Test Target、核心 Debug 构建和静态隐私检查已接入；Release、Archive、真机和 B208-12 运行时回归待补。 |
+| 🟨 | `B208-12` | String Catalog 本地化与语言文案 | B208-00 | String Catalog、四语言资源和 `languageFunc` 中文硬编码清理已完成；语言切换真机回归和发布验收待补。 |
 
 普通功能发布不等待 `B208-10`；开发者刷写仍可在同一个 TestFlight 包中逐步验证，但其失败不得阻塞普通功能交付。
 
@@ -625,27 +625,27 @@ Peugeot 官方资料确认 XP400 GT 使用 5 英寸连接式 TFT 和 i-Connect�
 
 ### 实施步骤
 
-- [ ] 以现有 `Localizable.strings` 的稳定 Key 为基础创建 `Localizable.xcstrings`，不随意重命名已有 Key。
-- [ ] 按当前工程的 `developmentRegion = zh-Hans` 保留简体中文开发基准，并将英文、繁体中文和土耳其语完整迁移到同一个 String Catalog。
-- [ ] 保留 `%@`、`%d`、`%.1f` 等格式占位符及换行、标点和特殊字符；迁移后执行占位符一致性检查。
-- [ ] 从 `CrazyDashboard.xcodeproj/project.pbxproj` 移除 `Localizable.strings` 的旧 `PBXVariantGroup` 资源引用，避免旧资源与 `Localizable.xcstrings` 重复加载。
-- [ ] 保持 `PTDashboardConfig.languageFunc(text:)` 的公开签名和现有调用方不变；内部改为通过 Foundation 的 String Catalog API（如 `String(localized:table:bundle:locale:)`）和当前选中语言解析文本。
-- [ ] 保留 `zh` → `zh-Hans`、`tw` → `zh-Hant`、`en` → `en`、`tr` → `tr` 的映射，不新增第二套语言状态或资源查找逻辑。
-- [ ] `PTDashboardConfig.language(key:_:)` 继续复用 `languageFunc`，确保带参数文案仍按当前语言格式化。
-- [ ] 全仓库审查 `PTDashboardConfig.languageFunc(text:)` 的中文字面量，只将真正显示给用户的中文替换为稳定本地化 Key。
-- [ ] 将 `Global/Location/PTLocationEngine.swift` 中的 `停车定位已更新` 替换为本地化 Key，例如 `parking_location_updated`。
-- [ ] 将 `Global/Dashboard/Views/PTPeugeotDashBoardNavView.swift` 中的 `导航中`、`下段路名称:`、`当前路段:` 替换为本地化 Key，例如 `navigation_in_progress`、`next_road_name_prefix`、`current_road_name_prefix`。
-- [ ] 为以上新增 Key 补齐简体中文、繁体中文、English 和 Turkish 四种翻译。
-- [ ] 仅保留 `PTDashboardConfig.languageFunc` 的兼容门面；业务界面不直接读取 `.lproj`、不自行解析 `.strings` 或 `.xcstrings` 文件。
+- [x] 以现有 `Localizable.strings` 的稳定 Key 为基础创建 `Localizable.xcstrings`，不随意重命名已有 Key。
+- [x] 按当前工程的 `developmentRegion = zh-Hans` 保留简体中文开发基准，并将英文、繁体中文和土耳其语完整迁移到同一个 String Catalog。
+- [x] 保留 `%@`、`%d`、`%.1f` 等格式占位符及换行、标点和特殊字符；迁移后执行占位符一致性检查。
+- [x] 从 `CrazyDashboard.xcodeproj/project.pbxproj` 移除 `Localizable.strings` 的旧 `PBXVariantGroup` 资源引用，避免旧资源与 `Localizable.xcstrings` 重复加载。
+- [x] 保持 `PTDashboardConfig.languageFunc(text:)` 的公开签名和现有调用方不变；内部改为通过 Foundation 的 String Catalog API（如 `String(localized:table:bundle:locale:)`）和当前选中语言解析文本。
+- [x] 保留 `zh` → `zh-Hans`、`tw` → `zh-Hant`、`en` → `en`、`tr` → `tr` 的映射，不新增第二套语言状态或资源查找逻辑。
+- [x] `PTDashboardConfig.language(key:_:)` 继续复用 `languageFunc`，确保带参数文案仍按当前语言格式化。
+- [x] 全仓库审查 `PTDashboardConfig.languageFunc(text:)` 的中文字面量，只将真正显示给用户的中文替换为稳定本地化 Key。
+- [x] 将 `Global/Location/PTLocationEngine.swift` 中的 `停车定位已更新` 替换为本地化 Key，例如 `parking_location_updated`。
+- [x] 将 `Global/Dashboard/Views/PTPeugeotDashBoardNavView.swift` 中的 `导航中`、`下段路名称:`、`当前路段:` 替换为本地化 Key，例如 `navigation_in_progress`、`next_road_name_prefix`、`current_road_name_prefix`。
+- [x] 为以上新增 Key 补齐简体中文、繁体中文、English 和 Turkish 四种翻译。
+- [x] 仅保留 `PTDashboardConfig.languageFunc` 的兼容门面；业务界面不直接读取 `.lproj`、不自行解析 `.strings` 或 `.xcstrings` 文件。
 
 ### 完成条件
 
-- [ ] `Localizable.xcstrings` 包含旧 `Localizable.strings` 的全部有效 Key，且工程运行时不存在重复的 `Localizable` 资源。
-- [ ] 四种现有 App 语言均能加载完整翻译；切换语言后 Dashboard、导航、位置、PTT、OBD 提示和系统弹窗不会回退成错误语言。
-- [ ] `PTDashboardConfig.languageFunc(text:)` 的现有调用无需修改即可正常工作，未找到 Key 时保留可诊断的安全回退，不发生崩溃。
-- [ ] Swift 源码中传给 `PTDashboardConfig.languageFunc(text:)` 的中文用户文案字面量为零；注释、协议原始数据和本地化资源中的翻译文本不计入此项。
-- [ ] 所有带参数文案的占位符数量和类型一致，中文、英文、繁体中文和土耳其语均通过格式化测试。
-- [ ] App、Widget、Watch 和 Tests 的构建资源没有误引用旧 `Localizable.strings`；Storyboard 本地化仍保持现状。
+- [x] `Localizable.xcstrings` 包含旧 `Localizable.strings` 的全部 140 个有效 Key，并新增 4 个导航/停车文案 Key；工程运行时不存在重复的 `Localizable` 资源。
+- [ ] 四种现有 App 语言均能加载完整翻译；String Catalog 结构和编译产物已静态验证，切换语言、冷启动、后台恢复、PTT 状态播报、导航提示和错误提示的真机回归待补。
+- [x] `PTDashboardConfig.languageFunc(text:)` 的现有调用无需修改即可正常工作，未找到 Key 时保留以 Key 为结果的安全回退，不发生崩溃。
+- [x] Swift 源码中传给 `PTDashboardConfig.languageFunc(text:)` 的中文用户文案字面量为零；注释、协议原始数据和本地化资源中的翻译文本不计入此项。
+- [x] 所有带参数文案的占位符数量和类型一致，中文、英文、繁体中文和土耳其语均通过静态格式化检查。
+- [x] App、Widget、Watch 和 Tests 的构建资源没有误引用旧 `Localizable.strings`；Storyboard 本地化仍保持现状。
 - [ ] 语言切换、冷启动、后台恢复、PTT 状态播报、导航提示和错误提示完成四语言真机回归。
 
 ---
@@ -890,6 +890,27 @@ Peugeot 官方资料确认 XP400 GT 使用 5 英寸连接式 TFT 和 i-Connect�
 - 实车/台架：未执行
 - 已知限制：现有 Pods 含预编译导航依赖和模拟器架构限制；未修改 Pods/依赖配置绕过；B208-12 String Catalog 仍是发布前依赖
 - 回滚方式：回退 UI Test Target、Test Plan、scheme Testable、Build 38 测试配置、本包测试扩展和本节记录即可；不回退、不覆盖三个稳定核心文件
+
+### `B208-12` String Catalog 本地化与语言文案
+
+- 状态：🟨（String Catalog 迁移、四语言静态资源和中文硬编码清理已完成；语言切换真机回归和发布验收待补）
+- 开始日期：2026-08-30
+- 完成日期：2026-08-30（代码与资源迁移完成）
+- Commit：基线 `20d823ccc4b476cac5c3a90c7a9f5f56d24112c6`；本次改动尚未提交
+- App 版本：2.0.8
+- Build：PTSpeed/Widget/Watch/PTSpeedTests/PTSpeedUITests `38`
+- 修改文件：新增 `Global/Localizable.xcstrings`；删除四份旧 `Global/*/Localizable.strings`；修改 `CrazyDashboard.xcodeproj/project.pbxproj`、`Global/Global/PTDashboardConfig.swift`、`Global/Location/PTLocationEngine.swift`、`Global/Dashboard/Views/PTPeugeotDashBoardNavView.swift` 和本计划文件
+- 未修改核心：`PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`；本次改动后保护 SHA-256 与 B208-00 基线一致
+- 实施内容：将旧 140 个本地化 Key 迁移至单一 String Catalog，补充 4 个导航/停车 Key，保留 zh-Hans、zh-Hant、en、tr 四种语言；保留 `languageFunc(text:)` 和 `language(key:_:)` 的调用契约，改由 Foundation String Catalog API 按 `PTLanguage.share.locale` 解析；清理四处传入 `languageFunc` 的中文用户文案；同时修正土耳其语语音值误写入英文模型的问题
+- 静态检查：String Catalog 结构 144 Key/四语言、旧资源值迁移、占位符一致性、中文硬编码审查、`swiftc -parse`、工程 `plutil -lint` 和 `git diff --check` 通过
+- Debug 构建：`PTSpeed`、`xp400WidgetExtension`、`xp400watch Watch App` generic Debug 构建通过；`PTSpeed` `build-for-testing` 通过；已有依赖和 actor-isolation 警告未在本包扩大处理
+- 单元测试：已执行本地化资源、旧值迁移、占位符和语言 Key 静态契约检查；XCTest 运行受当前 Simulator 与 App supported platforms 不匹配影响，未把编译通过表述为运行通过
+- Archive：未执行
+- 真机：未执行；四语言切换、冷启动、后台恢复、PTT 状态、导航和错误提示仍需真机回归
+- Apple Watch：Watch target 仅完成 String Catalog 资源回归构建，本包未改变 Watch 数据协议或界面，未执行配对设备验证
+- 实车/台架：不适用于本工作包
+- 已知限制：运行时语言切换与发布包验收尚未完成；Storyboard 的 `LaunchScreen.strings`、`Main.strings` 等资源保持原状；源码中其它未进入 String Catalog 的历史英文回退文案不在本包扩展范围内
+- 回滚方式：恢复四份旧 `Localizable.strings`、`Localizable` PBXVariantGroup、旧语言解析实现和三处调用点即可；不回退、不覆盖三个稳定核心文件
 
 ### `B208-XX` 工作包名称
 

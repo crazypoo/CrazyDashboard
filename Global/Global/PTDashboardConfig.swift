@@ -227,7 +227,7 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
         tr.localozableName = "tr"
         tr.isSelected = PTMotoUserDefaultStruct.userSetLanguage == tr.keyName
         tr.flag = Flag(countryCode: "TR")!.originalImage
-        en.voiceValue = "tr-TR"
+        tr.voiceValue = "tr-TR"
 
         return [cn,cn_tw,tr,en]
     }
@@ -255,12 +255,24 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
 
 //MARK: Language
 extension PTDashboardConfig {
+    /// EN: Resolve a key from the compiled String Catalog using the app-selected locale.
+    /// ES: Resuelve una clave del String Catalog compilado usando el locale elegido por la app.
+    /// 中文：使用 App 当前选择的语言，从编译后的 String Catalog 解析文案。
     class func languageFunc(text:String) ->String {
-        return text.localized(using: nil,in: Bundle.main)
+        String(
+            localized: String.LocalizationValue(text),
+            table: "Localizable",
+            bundle: .main,
+            locale: PTLanguage.share.locale
+        )
     }
     
     static func language(key:String, _ args: CVarArg...) ->String {
-        String(format: PTDashboardConfig.languageFunc(text: key), args)
+        String(
+            format: PTDashboardConfig.languageFunc(text: key),
+            locale: PTLanguage.share.locale,
+            arguments: args
+        )
     }
 }
 

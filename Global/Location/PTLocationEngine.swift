@@ -330,7 +330,7 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
             isConnected: false,
             parkedLat: lat,
             parkedLon: lon,
-            address: PTDashboardConfig.languageFunc(text: "停车定位已更新")
+            address: PTDashboardConfig.languageFunc(text: "parking_location_updated")
         )
         
         PTNSLogConsole("✅ [小组件同步] 蓝牙已断开，成功强制推送最终骑行数据到小组件！")

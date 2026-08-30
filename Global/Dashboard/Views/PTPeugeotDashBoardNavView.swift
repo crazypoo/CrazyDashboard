@@ -252,21 +252,21 @@ extension PTPeugeotDashBoardNavView:AMapNaviDriveDataRepresentable {
         if naviInfo.segmentRemainDistance > 100 {
             let top: ASAttributedString = """
                         \(wrap: .embedding("""
-                        \(PTDashboardConfig.languageFunc(text: "导航中"),.foreground(.white),.font(.appfont(size: 12)))
+                        \(PTDashboardConfig.languageFunc(text: "navigation_in_progress"),.foreground(.white),.font(.appfont(size: 12)))
                         """),.paragraph(.alignment(.center)))
                         """
             att += top
         } else {
             let top: ASAttributedString = """
                         \(wrap: .embedding("""
-                        \(PTDashboardConfig.languageFunc(text: "下段路名称:") + naviInfo.nextRoadName,.foreground(.white),.font(.appfont(size: 12)))
+                        \(PTDashboardConfig.languageFunc(text: "next_road_name_prefix") + naviInfo.nextRoadName,.foreground(.white),.font(.appfont(size: 12)))
                         """),.paragraph(.alignment(.center)))
                         """
             att += top
         }
         let current: ASAttributedString = """
                     \(wrap: .embedding("""
-                    \("\n" + PTDashboardConfig.languageFunc(text: "当前路段:") + naviInfo.currentRoadName,.foreground(.white),.font(.appfont(size: 12)))
+                    \("\n" + PTDashboardConfig.languageFunc(text: "current_road_name_prefix") + naviInfo.currentRoadName,.foreground(.white),.font(.appfont(size: 12)))
                     """),.paragraph(.alignment(.center)))
                     """
         att += current
@@ -282,4 +282,3 @@ extension PTPeugeotDashBoardNavView:AMapNaviDriveDataRepresentable {
         routeNameLabel.attributed.text = att
     }
 }
-

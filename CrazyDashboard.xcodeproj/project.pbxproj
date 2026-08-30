@@ -97,7 +97,6 @@
 		55FE29A6300CC2E2000E741F /* PTMotoSettingViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE29A5300CC2E2000E741F /* PTMotoSettingViewController.swift */; };
 		55FE2A0B300CE2B0000E741F /* PTMapKitNavigationHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2A09300CE2B0000E741F /* PTMapKitNavigationHelper.swift */; };
 		55FE2A5E300DF42A000E741F /* PTBLEConnectViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2A5C300DF42A000E741F /* PTBLEConnectViewController.swift */; };
-		55FE2A6F300DF836000E741F /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 55FE2A6D300DF836000E741F /* Localizable.strings */; };
 		55FE2A77300DF95C000E741F /* PTMainProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE2A76300DF95C000E741F /* PTMainProgressView.swift */; };
 		5A200D40EF300920887AD052 /* Pods_PTSpeed.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 33464FDDE31899C7F87FB6EC /* Pods_PTSpeed.framework */; };
 		600000010000000000000020 /* PTWidgetSharedStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000020 /* PTWidgetSharedStatus.swift */; };
@@ -118,6 +117,7 @@
 		600000010000000000000090 /* PTRideBlackBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000090 /* PTRideBlackBox.swift */; };
 		600000010000000000000091 /* PTRideStory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000091 /* PTRideStory.swift */; };
 		600000010000000000000092 /* PTRideGroupSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000092 /* PTRideGroupSafety.swift */; };
+		600000010000000000000093 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000093 /* Localizable.xcstrings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -246,7 +246,6 @@
 		55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = GlobalAssets.xcassets; sourceTree = "<group>"; };
 		55F503B6300FC9AA00C5D085 /* PTLanguageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLanguageModel.swift; sourceTree = "<group>"; };
 		55F503BA300FCA3100C5D085 /* PTMotoUserDefaultStruct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoUserDefaultStruct.swift; sourceTree = "<group>"; };
-		55F503C1300FCB8E00C5D085 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		55F52C3B303D4025007527C2 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		55F52C3C303D4025007527C2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		55F52C3D303D4025007527C2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -271,12 +270,6 @@
 		55F52C60303D4025007527C2 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 		55F52C62303D4025007527C2 /* PTSpeedTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PTSpeedTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		55F52C71303D4025007527C2 /* PTOBDiagnosticAddress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDiagnosticAddress.swift; sourceTree = "<group>"; };
-		600000020000000000000080 /* PTSpeedUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTSpeedUITests.swift; sourceTree = "<group>"; };
-		600000020000000000000081 /* PTSpeedUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PTSpeedUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		600000020000000000000082 /* PTSpeed.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; name = PTSpeed.xctestplan; path = ../PTSpeed.xctestplan; sourceTree = "<group>"; };
-		600000020000000000000090 /* PTRideBlackBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideBlackBox.swift; sourceTree = "<group>"; };
-		600000020000000000000091 /* PTRideStory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideStory.swift; sourceTree = "<group>"; };
-		600000020000000000000092 /* PTRideGroupSafety.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideGroupSafety.swift; sourceTree = "<group>"; };
 		55FDBCA73010CD6E00EE7FA5 /* PTMOTOParkingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMOTOParkingManager.swift; sourceTree = "<group>"; };
 		55FDBCAA3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMOTOParkingAnotationView.swift; sourceTree = "<group>"; };
 		55FE295A300CA4E8000E741F /* PTBluetoothManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBluetoothManager.swift; sourceTree = "<group>"; };
@@ -287,9 +280,6 @@
 		55FE29A5300CC2E2000E741F /* PTMotoSettingViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoSettingViewController.swift; sourceTree = "<group>"; };
 		55FE2A09300CE2B0000E741F /* PTMapKitNavigationHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMapKitNavigationHelper.swift; sourceTree = "<group>"; };
 		55FE2A5C300DF42A000E741F /* PTBLEConnectViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBLEConnectViewController.swift; sourceTree = "<group>"; };
-		55FE2A6E300DF836000E741F /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
-		55FE2A73300DF870000E741F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
-		55FE2A74300DF876000E741F /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/Localizable.strings; sourceTree = "<group>"; };
 		55FE2A76300DF95C000E741F /* PTMainProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMainProgressView.swift; sourceTree = "<group>"; };
 		561E4C337C3165E9409BE2DF /* Pods_CrazyDashboard.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CrazyDashboard.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		600000020000000000000020 /* PTWidgetSharedStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTWidgetSharedStatus.swift; sourceTree = "<group>"; };
@@ -302,6 +292,13 @@
 		600000020000000000000061 /* PTRideExperienceViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideExperienceViewController.swift; sourceTree = "<group>"; };
 		600000020000000000000070 /* PTXP400InstructionCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400InstructionCatalog.swift; sourceTree = "<group>"; };
 		600000020000000000000071 /* PTDeveloperTestPreflight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDeveloperTestPreflight.swift; sourceTree = "<group>"; };
+		600000020000000000000080 /* PTSpeedUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTSpeedUITests.swift; sourceTree = "<group>"; };
+		600000020000000000000081 /* PTSpeedUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PTSpeedUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		600000020000000000000082 /* PTSpeed.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; name = PTSpeed.xctestplan; path = ../PTSpeed.xctestplan; sourceTree = "<group>"; };
+		600000020000000000000090 /* PTRideBlackBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideBlackBox.swift; sourceTree = "<group>"; };
+		600000020000000000000091 /* PTRideStory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideStory.swift; sourceTree = "<group>"; };
+		600000020000000000000092 /* PTRideGroupSafety.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideGroupSafety.swift; sourceTree = "<group>"; };
+		600000020000000000000093 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -523,7 +520,7 @@
 				5598676C3011C9720049684D /* Settings.bundle */,
 				55F503B9300FCA1E00C5D085 /* Global */,
 				55F503B5300FC99000C5D085 /* Model */,
-				55FE2A6D300DF836000E741F /* Localizable.strings */,
+				600000020000000000000093 /* Localizable.xcstrings */,
 				55FE299F300CC1F1000E741F /* PTMotoInfoViewController.swift */,
 				55FE29A5300CC2E2000E741F /* PTMotoSettingViewController.swift */,
 				5577E6D02FD680730004733F /* PTTripStatsView.swift */,
@@ -738,14 +735,6 @@
 			path = PTSpeedTests;
 			sourceTree = "<group>";
 		};
-		6000000B0000000000000080 /* PTSpeedUITests */ = {
-			isa = PBXGroup;
-			children = (
-				600000020000000000000080 /* PTSpeedUITests.swift */,
-			);
-			path = PTSpeedUITests;
-			sourceTree = "<group>";
-		};
 		55FE2A75300DF93F000E741F /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -766,6 +755,14 @@
 				FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */,
 			);
 			path = Pods;
+			sourceTree = "<group>";
+		};
+		6000000B0000000000000080 /* PTSpeedUITests */ = {
+			isa = PBXGroup;
+			children = (
+				600000020000000000000080 /* PTSpeedUITests.swift */,
+			);
+			path = PTSpeedUITests;
 			sourceTree = "<group>";
 		};
 		C8AF0651275D1EA16545F01B /* Frameworks */ = {
@@ -902,14 +899,14 @@
 					5577E6372FD657030004733F = {
 						CreatedOnToolsVersion = 26.5;
 					};
-				55F52C63303D4025007527C2 = {
-					CreatedOnToolsVersion = 27.0;
-					TestTargetID = 5577E6372FD657030004733F;
-				};
-				6000000A0000000000000080 = {
-					CreatedOnToolsVersion = 27.0;
-					TestTargetID = 5577E6372FD657030004733F;
-				};
+					55F52C63303D4025007527C2 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = 5577E6372FD657030004733F;
+					};
+					6000000A0000000000000080 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = 5577E6372FD657030004733F;
+					};
 				};
 			};
 			buildConfigurationList = 5577E5B82FD5C1DB0004733F /* Build configuration list for PBXProject "CrazyDashboard" */;
@@ -967,7 +964,7 @@
 				55F52C4F303D4025007527C2 /* LaunchScreen.storyboard in Resources */,
 				55F52C50303D4025007527C2 /* Main.storyboard in Resources */,
 				55F52C5B303D4025007527C2 /* PrivacyInfo.xcprivacy in Resources */,
-				55FE2A6F300DF836000E741F /* Localizable.strings in Resources */,
+				600000010000000000000093 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1228,17 +1225,6 @@
 				55F52C46303D4025007527C2 /* zh-Hant */,
 			);
 			name = Main.storyboard;
-			sourceTree = "<group>";
-		};
-		55FE2A6D300DF836000E741F /* Localizable.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				55FE2A6E300DF836000E741F /* zh-Hans */,
-				55FE2A73300DF870000E741F /* en */,
-				55FE2A74300DF876000E741F /* tr */,
-				55F503C1300FCB8E00C5D085 /* zh-Hant */,
-			);
-			name = Localizable.strings;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
