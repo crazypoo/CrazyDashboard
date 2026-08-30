@@ -13,6 +13,9 @@ public enum PTOBDDiagnosticError: Error, Equatable, Sendable {
     case invalidDID
     case invalidMemoryAddress
     case invalidReadSize
+    case batchLimitExceeded
+    case invalidBatchPolicy
+    case timeout
     case negativeResponse(service: String, code: String)
     case noData
     case cancelled
@@ -31,6 +34,12 @@ extension PTOBDDiagnosticError: LocalizedError {
             return "The memory address must be eight hexadecimal characters."
         case .invalidReadSize:
             return "The read size must be between 1 and 256 bytes."
+        case .batchLimitExceeded:
+            return "The diagnostic batch exceeds the permitted read limit."
+        case .invalidBatchPolicy:
+            return "The diagnostic batch policy is invalid."
+        case .timeout:
+            return "The ECU response exceeded the diagnostic timeout."
         case let .negativeResponse(service, code):
             return "ECU rejected service \(service) with code \(code)."
         case .noData:
@@ -38,6 +47,60 @@ extension PTOBDDiagnosticError: LocalizedError {
         case .cancelled:
             return "The diagnostic operation was cancelled."
         }
+    }
+}
+
+/// EN: Bounds for one read-only DID batch; they prevent accidental long bus occupation.
+/// ES: Límites de un lote DID de solo lectura; evitan ocupar el bus durante demasiado tiempo.
+/// 中文：单次只读 DID 批量读取的边界，防止意外长时间占用总线。
+nonisolated public struct PTOBDReadBatchPolicy: Sendable {
+    public let maximumDIDs: Int
+    public let requestTimeout: TimeInterval
+    public let maximumDuration: TimeInterval
+    public let interRequestDelayNanoseconds: UInt64
+
+    public init(
+        maximumDIDs: Int,
+        requestTimeout: TimeInterval,
+        maximumDuration: TimeInterval,
+        interRequestDelayNanoseconds: UInt64
+    ) {
+        self.maximumDIDs = maximumDIDs
+        self.requestTimeout = requestTimeout
+        self.maximumDuration = maximumDuration
+        self.interRequestDelayNanoseconds = interRequestDelayNanoseconds
+    }
+
+    public static let standard = PTOBDReadBatchPolicy(
+        maximumDIDs: 16,
+        requestTimeout: 8,
+        maximumDuration: 60,
+        interRequestDelayNanoseconds: 100_000_000
+    )
+
+    public static let developer = PTOBDReadBatchPolicy(
+        maximumDIDs: 128,
+        requestTimeout: 8,
+        maximumDuration: 120,
+        interRequestDelayNanoseconds: 150_000_000
+    )
+
+    fileprivate var isValid: Bool {
+        maximumDIDs > 0 &&
+        requestTimeout > 0 &&
+        maximumDuration >= requestTimeout
+    }
+}
+
+/// EN: Only entries with evidence may be exposed to the ordinary UI.
+/// ES: Solo las entradas con evidencia pueden exponerse a la UI normal.
+/// 中文：只有已有证据的项目才能暴露给普通 UI。
+nonisolated public enum PTOBDReadOnlyCatalog {
+    // EN: Keep the read-only DID allowlist in the evidence catalog so callers have one source of truth.
+    // ES: Mantiene la lista de DIDs de solo lectura en el catálogo de evidencia para tener una única fuente.
+    // 中文：只读 DID 白名单统一由证据目录维护，避免出现第二份真相源。
+    public static var confirmedDIDs: [String] {
+        PTXP400InstructionCatalog.confirmedDIDs
     }
 }
 
@@ -212,6 +275,7 @@ public final class PTUDSReadService {
     public func readDIDs(
         address: PTOBDDiagnosticAddress,
         dids: [String],
+        policy: PTOBDReadBatchPolicy = .standard,
         progress: (@MainActor @Sendable (Int, Int, PTOBDIDReadResult) -> Void)? = nil
     ) async throws -> [PTOBDIDReadResult] {
         let normalizedDIDs = try dids.map(Self.normalizeDID)
@@ -220,18 +284,36 @@ public final class PTUDSReadService {
             return []
         }
 
+        guard policy.isValid else {
+            throw PTOBDDiagnosticError.invalidBatchPolicy
+        }
+
+        guard normalizedDIDs.count <= policy.maximumDIDs else {
+            throw PTOBDDiagnosticError.batchLimitExceeded
+        }
+
         return try await PTAdvancedOBDCoordinator.shared.executeReadOnly {
+            let batchStartedAt = Date()
             var results: [PTOBDIDReadResult] = []
             results.reserveCapacity(normalizedDIDs.count)
 
             for (index, did) in normalizedDIDs.enumerated() {
                 try Task.checkCancellation()
 
+                guard Date().timeIntervalSince(batchStartedAt) <= policy.maximumDuration else {
+                    throw PTOBDDiagnosticError.timeout
+                }
+
+                let requestStartedAt = Date()
                 let response = await PTMotoTelemetryManager.shared.fetchProprietaryData(
                     header: address.tx,
                     receiveAddress: address.rx,
                     udsCommand: "22\(did)"
                 )
+
+                guard Date().timeIntervalSince(requestStartedAt) <= policy.requestTimeout else {
+                    throw PTOBDDiagnosticError.timeout
+                }
 
                 let result = Self.makeDIDResult(
                     address: address,
@@ -240,6 +322,11 @@ public final class PTUDSReadService {
                 )
                 results.append(result)
                 await progress?(index + 1, normalizedDIDs.count, result)
+
+                if policy.interRequestDelayNanoseconds > 0,
+                   index + 1 < normalizedDIDs.count {
+                    try await Task.sleep(nanoseconds: policy.interRequestDelayNanoseconds)
+                }
             }
 
             return results
@@ -265,6 +352,14 @@ public final class PTUDSReadService {
     ) async throws -> [PTOBDECUNode] {
         guard !range.isEmpty else {
             return []
+        }
+
+        // EN: Keep the generated response IDs inside the physical 11-bit CAN range.
+        // ES: Mantiene los IDs de respuesta generados dentro del rango físico CAN de 11 bits.
+        // 中文：确保生成的响应 ID 始终处于物理 11-bit CAN 范围内。
+        guard range.upperBound <= 0x7F7,
+              range.count <= 256 else {
+            throw PTOBDDiagnosticError.invalidAddress
         }
 
         let addresses = Array(range)

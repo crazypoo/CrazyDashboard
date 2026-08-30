@@ -18,7 +18,8 @@ public struct PTOBDiagnosticAddress: Codable, Hashable, Sendable {
         let normalizedTX = Self.normalizeHeader(tx)
         let normalizedRX = Self.normalizeHeader(rx)
 
-        guard let normalizedTX, let normalizedRX else {
+        guard let normalizedTX, let normalizedRX,
+              normalizedTX.count == normalizedRX.count else {
             return nil
         }
 
@@ -33,6 +34,18 @@ public struct PTOBDiagnosticAddress: Codable, Hashable, Sendable {
 
         guard normalized.count == 3 || normalized.count == 8,
               normalized.allSatisfy({ "0123456789ABCDEF".contains($0) }) else {
+            return nil
+        }
+
+        // EN: Reject IDs outside the physical 11-bit or 29-bit CAN range.
+        // ES: Rechaza identificadores fuera del rango CAN físico de 11 o 29 bits.
+        // 中文：拒绝超出 11-bit 或 29-bit CAN 物理范围的 ID。
+        guard let numericValue = UInt32(normalized, radix: 16) else {
+            return nil
+        }
+
+        let maximum = normalized.count == 3 ? 0x7FF : 0x1FFF_FFFF
+        guard numericValue <= maximum else {
             return nil
         }
 

@@ -49,12 +49,26 @@ public class PTWidgetDataManager: NSObject {
             return
         }
 
-        // 中文：Watch 立即接收最新状态，iCloud 写入只携带 Sendable 的 Data；Español: Watch recibe el estado de inmediato y la tarea de iCloud solo transporta Data Sendable.
+        // EN: Watch receives the newest state immediately; persistence only transports Sendable Data.
+        // ES: Watch recibe el estado más reciente de inmediato; la persistencia solo transporta Data Sendable.
+        // 中文：Watch 立即接收最新状态；持久化任务只传递可安全跨并发域的 Data。
         PTWatchConnectivityManager.shared.update(status: status)
-        Task.detached(priority: .utility) { [snapshotData, cloudFileName] in
-            await MainActor.run {
-                PTiCloudFileManager.shared.saveFileToICloud(data: snapshotData, fileName: cloudFileName)
-                PTNSLogConsole("☁️ [Widget同步] 数据快照已发起 iCloud 保存: \(cloudFileName)")
+        let revision = Int64(updateDate.timeIntervalSince1970 * 1_000)
+        Task.detached(priority: .utility) { [snapshotData, cloudFileName, revision] in
+            do {
+                let result = try await PTDataPersistenceActor.shared.writeData(
+                    snapshotData,
+                    fileName: cloudFileName,
+                    revision: revision,
+                    syncToICloud: true
+                )
+                if let cloudErrorDescription = result.cloudErrorDescription {
+                    PTNSLogConsole("⚠️ [Widget同步] 本地快照已保存，但 iCloud 同步失败: \(cloudErrorDescription)")
+                } else if !result.didSkipStaleWrite {
+                    PTNSLogConsole("☁️ [Widget同步] 数据快照已原子保存并同步 iCloud: \(cloudFileName)")
+                }
+            } catch {
+                PTNSLogConsole("❌ [Widget同步] 数据快照保存失败: \(error.localizedDescription)")
             }
         }
         

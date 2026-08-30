@@ -74,6 +74,21 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
         return view
     }()
 
+    private lazy var highRiskLabel: UILabel = {
+        let view = UILabel()
+        view.text = "开发者高风险操作 / Operaciones de riesgo"
+        view.textColor = .systemOrange
+        view.font = .appfont(size: 11, bold: true)
+        return view
+    }()
+
+    private lazy var highRiskSwitch: UISwitch = {
+        let view = UISwitch()
+        view.onTintColor = .systemOrange
+        view.addTarget(self, action: #selector(toggleHighRisk(_:)), for: .valueChanged)
+        return view
+    }()
+
     private lazy var findFunctionButton: UIButton = {
         let view = UIButton(type: .system)
         view.setTitle("Find commond", for: .normal)
@@ -81,10 +96,15 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
         view.layer.cornerRadius = 8
         view.setBackgroundColor(color: .systemPurple.withAlphaComponent(0.8), forState: .normal)
         view.setBackgroundColor(color: .systemRed.withAlphaComponent(0.8), forState: .selected)
-        view.addActionHandlers(handler: { sender in
+        view.addActionHandlers(handler: { [weak self] sender in
+            guard let self else { return }
             if sender.isSelected {
                 PTBluetoothServerManager.shared.stopAutomatedFuzzing()
             } else {
+                guard PTDeveloperSafetyGate.shared.authorize(.didFuzz) else {
+                    self.appendDeveloperLog("⛔️ 高风险开关未开启，未启动 Fuzz。")
+                    return
+                }
                 PTBluetoothServerManager.shared.startAutomatedFuzzing()
             }
             sender.isSelected.toggle()
@@ -131,10 +151,20 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
         }
         
         // 标题
-        backgroundView.addSubviews([titleLabel,closeButton,filterButton,exportButton,findFunctionButton,logTextView])
+        backgroundView.addSubviews([titleLabel, highRiskLabel, highRiskSwitch, closeButton, filterButton, exportButton, findFunctionButton, logTextView])
         titleLabel.snp.makeConstraints { make in
             make.left.right.equalToSuperview()
             make.top.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
+        }
+
+        highRiskLabel.snp.makeConstraints { make in
+            make.left.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.top.equalTo(titleLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+        }
+
+        highRiskSwitch.snp.makeConstraints { make in
+            make.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.centerY.equalTo(highRiskLabel)
         }
         
         closeButton.snp.makeConstraints { make in
@@ -160,7 +190,7 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
         
         logTextView.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
-            make.top.equalTo(self.titleLabel.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.top.equalTo(self.highRiskSwitch.snp.bottom).offset(CGFloat.GlobalItemSpacing)
             make.bottom.equalTo(self.findFunctionButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
         }
     }
@@ -211,6 +241,7 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
     /// 动画展示嗅探器
     public func showSniffer() {
         guard self.isHidden else { return }
+        highRiskSwitch.isOn = PTDeveloperSafetyGate.shared.isEnabled
         self.isHidden = false
         startRefreshTimer()
         UIView.animate(withDuration: 0.3) {
@@ -220,6 +251,12 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
     
     /// 动画隐藏嗅探器
     @objc public func hideSniffer() {
+        if findFunctionButton.isSelected {
+            PTBluetoothServerManager.shared.stopAutomatedFuzzing()
+            findFunctionButton.isSelected = false
+        }
+        PTDeveloperSafetyGate.shared.disable()
+        highRiskSwitch.setOn(false, animated: false)
         stopRefreshTimer()
         UIView.animate(withDuration: 0.3, animations: {
             self.alpha = 0.0
@@ -230,6 +267,31 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
             self.rawLogs.removeAll()
             self.logTextView.text = ""
         }
+    }
+
+    /// EN: Turning the switch off stops active fuzzing immediately.
+    /// ES: Apagar el interruptor detiene el fuzzing activo de inmediato.
+    /// 中文：关闭开关后立即停止正在运行的 Fuzz。
+    @objc private func toggleHighRisk(_ sender: UISwitch) {
+        PTDeveloperSafetyGate.shared.setEnabled(sender.isOn)
+        guard !sender.isOn else {
+            appendDeveloperLog("✅ 高风险开发者操作已开启，仅当前前台会话有效。")
+            return
+        }
+
+        if findFunctionButton.isSelected {
+            PTBluetoothServerManager.shared.stopAutomatedFuzzing()
+            findFunctionButton.isSelected = false
+        }
+        PTDeveloperSafetyGate.shared.disable()
+        appendDeveloperLog("🛑 高风险开发者操作已关闭，后续调用将被拒绝。")
+    }
+
+    /// EN: Keeps safety decisions visible without depending on console output.
+    /// ES: Mantiene visibles las decisiones de seguridad sin depender de la consola.
+    /// 中文：把安全决策显示在面板中，不只依赖控制台输出。
+    private func appendDeveloperLog(_ message: String) {
+        pendingLogs.append("[Safety] \(message)")
     }
     
     @objc private func toggleFilter() {

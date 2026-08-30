@@ -40,6 +40,16 @@
                ReferencedContainer = "container:CrazyDashboard.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skippedForTesting = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "6000000A0000000000000080"
+               BuildableName = "PTSpeedUITests.xctest"
+               BlueprintName = "PTSpeedUITests"
+               ReferencedContainer = "container:CrazyDashboard.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

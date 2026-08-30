@@ -16,66 +16,20 @@ extension PTiCloudFileManager {
     ///   - fileName: 需要拉取的文件名 (例如: MotoRide_xxx.gpx 或 MotoRide_xxx.jpg)
     ///   - completion: 拉取完成后的回调，返回本地可用的完整文件 URL
     func fetchCloudFileIfNeeded(fileName: String, completion: @escaping (URL?) -> Void) {
-        // EN: Resolve both local and ubiquitous paths inside the utility queue so directory checks never block the UI.
-        // ES: Resolvemos las rutas local y ubicua dentro de la cola de utilidad para que las comprobaciones no bloqueen la UI.
-        // 中文：在后台队列解析本地和 iCloud 路径，避免目录检查阻塞 UI。
-        DispatchQueue.global(qos: .utility).async {
-            let fileManager = FileManager.default
-            let localDocumentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
-                ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-            let localFileURL = localDocumentsURL.appendingPathComponent(fileName)
-
-            // EN: A local copy is the fast path and does not touch iCloud.
-            // ES: La copia local es la ruta rápida y no accede a iCloud.
-            // 中文：本地缓存是最快路径，不再访问 iCloud。
-            if fileManager.fileExists(atPath: localFileURL.path) {
-                DispatchQueue.main.async {
-                    completion(localFileURL)
-                }
-                return
-            }
-
-            guard let containerURL = fileManager.url(forUbiquityContainerIdentifier: nil) else {
-                DispatchQueue.main.async {
-                    completion(nil)
-                }
-                return
-            }
-
-            let cloudDocumentsURL = containerURL.appendingPathComponent("Documents")
+        // EN: The compatibility callback remains, while the actor waits for a real cloud download.
+        // ES: Se conserva el callback compatible y el actor espera a que termine la descarga real.
+        // 中文：保留兼容回调，同时由 actor 等待云端文件真正下载完成。
+        Task {
             do {
-                if !fileManager.fileExists(atPath: cloudDocumentsURL.path) {
-                    try fileManager.createDirectory(at: cloudDocumentsURL, withIntermediateDirectories: true)
-                }
+                let localURL = try await PTDataPersistenceActor.shared.ensureLocalFileURL(
+                    fileName: fileName,
+                    downloadTimeout: 8
+                )
+                PTNSLogConsole("☁️✅ 文件已准备好并缓存至本地: \(fileName)")
+                completion(localURL)
             } catch {
-                PTNSLogConsole("❌ 创建 iCloud Documents 目录失败: \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    completion(nil)
-                }
-                return
-            }
-
-            let cloudFileURL = cloudDocumentsURL.appendingPathComponent(fileName)
-            guard fileManager.fileExists(atPath: cloudFileURL.path) else {
-                DispatchQueue.main.async {
-                    completion(nil)
-                }
-                return
-            }
-
-            do {
-                try fileManager.startDownloadingUbiquitousItem(at: cloudFileURL)
-                try fileManager.copyItem(at: cloudFileURL, to: localFileURL)
-
-                PTNSLogConsole("☁️✅ 成功从 iCloud 拉取文件并缓存至本地: \(fileName)")
-                DispatchQueue.main.async {
-                    completion(localFileURL)
-                }
-            } catch {
-                PTNSLogConsole("❌ 从 iCloud 拉取文件失败: \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    completion(nil)
-                }
+                PTNSLogConsole("❌ 文件恢复失败 [\(fileName)]: \(error.localizedDescription)")
+                completion(nil)
             }
         }
     }
@@ -86,25 +40,22 @@ extension PTiCloudFileManager {
     /// 从 iCloud 中彻底删除指定文件
     /// - Parameter fileName: 需要删除的文件名 (例如: MotoRide_xxx.gpx 或 MotoRide_xxx.jpg)
     public func deleteCloudFile(fileName: String) {
-        guard let cloudURL = iCloudDocumentsURL else {
-            PTNSLogConsole("⚠️ 无法删除：iCloud 未准备好。")
-            return
-        }
-        
-        let fileURL = cloudURL.appendingPathComponent(fileName)
-        
-        // 检查云端文件是否存在
-        guard fileManager.fileExists(atPath: fileURL.path) else {
-            PTNSLogConsole("ℹ️ 云端不存在此文件，无需删除: \(fileName)")
-            return
-        }
-        
-        // 执行物理销毁
-        do {
-            try fileManager.removeItem(at: fileURL)
-            PTNSLogConsole("☁️🗑️ 成功：已从 iCloud 彻底删除文件 \(fileName)")
-        } catch {
-            PTNSLogConsole("❌ 从 iCloud 删除文件失败: \(error.localizedDescription)")
+        // EN: Keep this legacy facade, but move the destructive file operation into the persistence actor.
+        // ES: Se conserva esta fachada heredada, pero la operación destructiva pasa al actor de persistencia.
+        // 中文：保留旧门面，但把删除操作交给持久化 actor，避免阻塞主线程。
+        Task {
+            do {
+                let result = try await PTDataPersistenceActor.shared.deleteCloudFileOnly(fileName: fileName)
+                if let error = result.cloudErrorDescription {
+                    PTNSLogConsole("❌ 从 iCloud 删除文件失败 [\(fileName)]: \(error)")
+                } else if result.didDeleteCloud {
+                    PTNSLogConsole("☁️🗑️ 已从 iCloud 删除文件: \(fileName)")
+                } else {
+                    PTNSLogConsole("ℹ️ 云端不存在此文件，无需删除: \(fileName)")
+                }
+            } catch {
+                PTNSLogConsole("❌ 从 iCloud 删除文件失败 [\(fileName)]: \(error.localizedDescription)")
+            }
         }
     }
 }
@@ -175,35 +126,60 @@ public class PTGPXRecorder: NSObject {
         super.init()
     }
             
-    // 🌟 修改返回值：直接返回生成的文件名（例如：MotoRide_20260726_105100.gpx）
+    /// EN: Legacy facade. The write is asynchronous; new flows should await `exportGPXAsync`.
+    /// ES: Fachada heredada. La escritura es asíncrona; los flujos nuevos deben esperar `exportGPXAsync`.
+    /// 中文：兼容旧门面。写入是异步的；新流程应等待 `exportGPXAsync`。
     public func exportGPX(from points: [PTRoutePoint]) -> String? {
         guard !points.isEmpty else { return nil }
-        let xmlString = generateGPXString(from: points) // (保留原有的拼装逻辑)
-        
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyyMMdd_HHmmss"
-        let fileName = "MotoRide_\(formatter.string(from: Date())).gpx"
-        
-        if let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-            let fileURL = docsDir.appendingPathComponent(fileName)
+        let fileName = makeGPXFileName()
+        Task { [weak self] in
             do {
-                try xmlString.write(to: fileURL, atomically: true, encoding: .utf8)
-                PTNSLogConsole("✅ [GPX 导出] 轨迹本地保存成功！: \(fileName)")
-                
-                // 🚨 新增：顺手把这趟骑行的轨迹也备份到 iCloud！
-                PTiCloudFileManager.shared.backupDatabaseToICloud(dbName: fileName)
-                
-                return fileName
+                _ = try await self?.exportGPXAsync(from: points, fileName: fileName)
             } catch {
-                PTNSLogConsole("❌ [GPX 导出] 轨迹保存失败: \(error)")
-                return nil
+                PTNSLogConsole("❌ [GPX 导出] 轨迹保存失败 [\(fileName)]: \(error.localizedDescription)")
             }
         }
-        return nil
+        return fileName
+    }
+
+    /// EN: Generate and persist a GPX file without blocking the caller's thread.
+    /// ES: Genera y guarda un archivo GPX sin bloquear el hilo del llamador.
+    /// 中文：异步生成并保存 GPX，避免阻塞调用方线程。
+    @nonobjc
+    public func exportGPXAsync(from points: [PTRoutePoint], fileName: String? = nil) async throws -> String? {
+        guard !points.isEmpty else { return nil }
+        let resolvedFileName = fileName ?? makeGPXFileName()
+        let xmlData = try await Task.detached(priority: .utility) {
+            guard let data = Self.generateGPXString(from: points).data(using: .utf8) else {
+                throw PTDataPersistenceError.localWriteFailed("GPX 编码失败")
+            }
+            return data
+        }.value
+
+        let result = try await PTDataPersistenceActor.shared.writeData(
+            xmlData,
+            fileName: resolvedFileName,
+            revision: Int64(Date().timeIntervalSince1970 * 1_000),
+            syncToICloud: true
+        )
+        if let cloudErrorDescription = result.cloudErrorDescription {
+            PTNSLogConsole("⚠️ [GPX 导出] 本地已保存，但 iCloud 同步失败: \(cloudErrorDescription)")
+        } else {
+            PTNSLogConsole("✅ [GPX 导出] 轨迹已原子保存: \(resolvedFileName)")
+        }
+        return resolvedFileName
+    }
+
+    public func makeGPXFileName(date: Date = Date()) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyyMMdd_HHmmss"
+        return "MotoRide_\(formatter.string(from: date)).gpx"
     }
 
     // MARK: - XML 拼装引擎
-    private func generateGPXString(from points: [PTRoutePoint]) -> String {
+    nonisolated private static func generateGPXString(from points: [PTRoutePoint]) -> String {
         let isoFormatter = ISO8601DateFormatter()
         
         var gpx = """

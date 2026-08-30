@@ -107,6 +107,14 @@
 		600000010000000000000024 /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 600000020000000000000022 /* WatchConnectivity.framework */; };
 		600000010000000000000025 /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 600000020000000000000022 /* WatchConnectivity.framework */; };
 		600000010000000000000030 /* PTVehicleConnectivityCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000030 /* PTVehicleConnectivityCoordinator.swift */; };
+		600000010000000000000040 /* PTDataPersistenceActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000040 /* PTDataPersistenceActor.swift */; };
+		600000010000000000000050 /* PTDeveloperSafetyGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000050 /* PTDeveloperSafetyGate.swift */; };
+		600000010000000000000060 /* PTRideExperience.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000060 /* PTRideExperience.swift */; };
+		600000010000000000000061 /* PTRideExperienceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000061 /* PTRideExperienceViewController.swift */; };
+		600000010000000000000070 /* PTXP400InstructionCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000070 /* PTXP400InstructionCatalog.swift */; };
+		600000010000000000000071 /* PTDeveloperTestPreflight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000071 /* PTDeveloperTestPreflight.swift */; };
+		600000010000000000000080 /* PTSpeedUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000080 /* PTSpeedUITests.swift */; };
+		600000010000000000000081 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55F52C60303D4025007527C2 /* XCTest.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -125,6 +133,13 @@
 			remoteInfo = "xp400watch Watch App";
 		};
 		55F52C66303D4025007527C2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5577E5B52FD5C1DB0004733F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5577E6372FD657030004733F;
+			remoteInfo = PTSpeed;
+		};
+		600000030000000000000080 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 5577E5B52FD5C1DB0004733F /* Project object */;
 			proxyType = 1;
@@ -253,6 +268,9 @@
 		55F52C60303D4025007527C2 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 		55F52C62303D4025007527C2 /* PTSpeedTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PTSpeedTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		55F52C71303D4025007527C2 /* PTOBDiagnosticAddress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDiagnosticAddress.swift; sourceTree = "<group>"; };
+		600000020000000000000080 /* PTSpeedUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTSpeedUITests.swift; sourceTree = "<group>"; };
+		600000020000000000000081 /* PTSpeedUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PTSpeedUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		600000020000000000000082 /* PTSpeed.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; name = PTSpeed.xctestplan; path = ../PTSpeed.xctestplan; sourceTree = "<group>"; };
 		55FDBCA73010CD6E00EE7FA5 /* PTMOTOParkingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMOTOParkingManager.swift; sourceTree = "<group>"; };
 		55FDBCAA3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMOTOParkingAnotationView.swift; sourceTree = "<group>"; };
 		55FE295A300CA4E8000E741F /* PTBluetoothManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBluetoothManager.swift; sourceTree = "<group>"; };
@@ -272,6 +290,12 @@
 		600000020000000000000021 /* PTWatchConnectivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTWatchConnectivityManager.swift; sourceTree = "<group>"; };
 		600000020000000000000022 /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = System/Library/Frameworks/WatchConnectivity.framework; sourceTree = SDKROOT; };
 		600000020000000000000030 /* PTVehicleConnectivityCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleConnectivityCoordinator.swift; sourceTree = "<group>"; };
+		600000020000000000000040 /* PTDataPersistenceActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDataPersistenceActor.swift; sourceTree = "<group>"; };
+		600000020000000000000050 /* PTDeveloperSafetyGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDeveloperSafetyGate.swift; sourceTree = "<group>"; };
+		600000020000000000000060 /* PTRideExperience.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideExperience.swift; sourceTree = "<group>"; };
+		600000020000000000000061 /* PTRideExperienceViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideExperienceViewController.swift; sourceTree = "<group>"; };
+		600000020000000000000070 /* PTXP400InstructionCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400InstructionCatalog.swift; sourceTree = "<group>"; };
+		600000020000000000000071 /* PTDeveloperTestPreflight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDeveloperTestPreflight.swift; sourceTree = "<group>"; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -337,6 +361,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				55F52C61303D4025007527C2 /* XCTest.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		600000060000000000000080 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				600000010000000000000081 /* XCTest.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -445,6 +477,8 @@
 				55499E0D301AFCE800A1A2D9 /* xp400Widget */,
 				555DC840303820E3002B003B /* xp400watch Watch App */,
 				55F52C5F303D4025007527C2 /* PTSpeedTests */,
+				6000000B0000000000000080 /* PTSpeedUITests */,
+				600000020000000000000082 /* PTSpeed.xctestplan */,
 				5577E5BE2FD5C1DB0004733F /* Products */,
 				59D3A021EFE75A7BF8504B6F /* Pods */,
 				C8AF0651275D1EA16545F01B /* Frameworks */,
@@ -459,6 +493,7 @@
 				55499E08301AFCE800A1A2D9 /* xp400WidgetExtension.appex */,
 				555DC83F303820E3002B003B /* xp400watch Watch App.app */,
 				55F52C62303D4025007527C2 /* PTSpeedTests.xctest */,
+				600000020000000000000081 /* PTSpeedUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -594,6 +629,8 @@
 		55E616B7301B89960075F883 /* Dev */ = {
 			isa = PBXGroup;
 			children = (
+				600000020000000000000050 /* PTDeveloperSafetyGate.swift */,
+				600000020000000000000071 /* PTDeveloperTestPreflight.swift */,
 				55986686301150900049684D /* PTECUSnifferOverlay.swift */,
 			);
 			path = Dev;
@@ -612,6 +649,7 @@
 			children = (
 				55F1E2F13026D2020032EAD5 /* PTHiddenOBDConnector.swift */,
 				5512F331302B7F26001AFED4 /* PTOBDCommand.swift */,
+				600000020000000000000070 /* PTXP400InstructionCatalog.swift */,
 				5512F398302C4CAC001AFED4 /* PTDashboardHacker.swift */,
 				557D027930335603008BA492 /* PTCANRecorder.swift */,
 				55F52C71303D4025007527C2 /* PTOBDiagnosticAddress.swift */,
@@ -631,7 +669,10 @@
 		55F503B9300FCA1E00C5D085 /* Global */ = {
 			isa = PBXGroup;
 			children = (
+				600000020000000000000040 /* PTDataPersistenceActor.swift */,
 				600000020000000000000030 /* PTVehicleConnectivityCoordinator.swift */,
+				600000020000000000000060 /* PTRideExperience.swift */,
+				600000020000000000000061 /* PTRideExperienceViewController.swift */,
 				55F52C56303D4025007527C2 /* PTRideReviewAnalyzer.swift */,
 				5598667A301147FD0049684D /* PTCustomRouteManager.swift */,
 				55499CF93019D83800A1A2D9 /* PTDashboardBaseView.swift */,
@@ -686,6 +727,14 @@
 				55F52C5D303D4025007527C2 /* PTCoreTests.swift */,
 			);
 			path = PTSpeedTests;
+			sourceTree = "<group>";
+		};
+		6000000B0000000000000080 /* PTSpeedUITests */ = {
+			isa = PBXGroup;
+			children = (
+				600000020000000000000080 /* PTSpeedUITests.swift */,
+			);
+			path = PTSpeedUITests;
 			sourceTree = "<group>";
 		};
 		55FE2A75300DF93F000E741F /* Views */ = {
@@ -807,6 +856,24 @@
 			productReference = 55F52C62303D4025007527C2 /* PTSpeedTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		6000000A0000000000000080 /* PTSpeedUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 600000080000000000000080 /* Build configuration list for PBXNativeTarget "PTSpeedUITests" */;
+			buildPhases = (
+				600000050000000000000080 /* Sources */,
+				600000060000000000000080 /* Frameworks */,
+				600000070000000000000080 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				600000040000000000000080 /* PBXTargetDependency */,
+			);
+			name = PTSpeedUITests;
+			productName = PTSpeedUITests;
+			productReference = 600000020000000000000081 /* PTSpeedUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -826,10 +893,14 @@
 					5577E6372FD657030004733F = {
 						CreatedOnToolsVersion = 26.5;
 					};
-					55F52C63303D4025007527C2 = {
-						CreatedOnToolsVersion = 27.0;
-						TestTargetID = 5577E6372FD657030004733F;
-					};
+				55F52C63303D4025007527C2 = {
+					CreatedOnToolsVersion = 27.0;
+					TestTargetID = 5577E6372FD657030004733F;
+				};
+				6000000A0000000000000080 = {
+					CreatedOnToolsVersion = 27.0;
+					TestTargetID = 5577E6372FD657030004733F;
+				};
 				};
 			};
 			buildConfigurationList = 5577E5B82FD5C1DB0004733F /* Build configuration list for PBXProject "CrazyDashboard" */;
@@ -856,6 +927,7 @@
 				55499E07301AFCE800A1A2D9 /* xp400WidgetExtension */,
 				555DC83E303820E3002B003B /* xp400watch Watch App */,
 				55F52C63303D4025007527C2 /* PTSpeedTests */,
+				6000000A0000000000000080 /* PTSpeedUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -891,6 +963,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		55F52C69303D4025007527C2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		600000070000000000000080 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1002,6 +1081,8 @@
 				55499E03301AFC2200A1A2D9 /* PTWidgetManager.swift in Sources */,
 				555C0FF9300E06630079D94F /* PTGlobalActionHeader.swift in Sources */,
 				55986687301150900049684D /* PTECUSnifferOverlay.swift in Sources */,
+				600000010000000000000050 /* PTDeveloperSafetyGate.swift in Sources */,
+				600000010000000000000071 /* PTDeveloperTestPreflight.swift in Sources */,
 				55F52C51303D4025007527C2 /* AppDelegate.swift in Sources */,
 				55F52C52303D4025007527C2 /* PTCarPlaySceneDelegate.swift in Sources */,
 				55F52C53303D4025007527C2 /* SceneDelegate.swift in Sources */,
@@ -1024,6 +1105,9 @@
 				55FE2A5E300DF42A000E741F /* PTBLEConnectViewController.swift in Sources */,
 				5598683A301348FC0049684D /* PTNotificationCenter.swift in Sources */,
 				55986640301138A30049684D /* PTTripManager.swift in Sources */,
+				600000010000000000000040 /* PTDataPersistenceActor.swift in Sources */,
+				600000010000000000000060 /* PTRideExperience.swift in Sources */,
+				600000010000000000000061 /* PTRideExperienceViewController.swift in Sources */,
 				554110DB301E65AB0059BFCF /* PTLiDARCollisionManager.swift in Sources */,
 				55FE295C300CA4E8000E741F /* PTBluetoothManager.swift in Sources */,
 				55499CFA3019D83800A1A2D9 /* PTDashboardBaseView.swift in Sources */,
@@ -1037,6 +1121,7 @@
 				557D027A30335603008BA492 /* PTCANRecorder.swift in Sources */,
 				55F1E2F53026D2020032EAD5 /* PTUDSDiagnosticService.swift in Sources */,
 				55F52C70303D4025007527C2 /* PTOBDiagnosticAddress.swift in Sources */,
+				600000010000000000000070 /* PTXP400InstructionCatalog.swift in Sources */,
 				557D0051302EA1E3008BA492 /* PTArcGaugeView.swift in Sources */,
 				558789E4302420CB00B94E91 /* PTCarplayMainController.swift in Sources */,
 				55499CFE3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift in Sources */,
@@ -1077,6 +1162,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		600000050000000000000080 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				600000010000000000000080 /* PTSpeedUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -1094,6 +1187,11 @@
 			isa = PBXTargetDependency;
 			target = 5577E6372FD657030004733F /* PTSpeed */;
 			targetProxy = 55F52C66303D4025007527C2 /* PBXContainerItemProxy */;
+		};
+		600000040000000000000080 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5577E6372FD657030004733F /* PTSpeed */;
+			targetProxy = 600000030000000000000080 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1696,7 +1794,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 35;
+				CURRENT_PROJECT_VERSION = 38;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -1720,7 +1818,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 35;
+				CURRENT_PROJECT_VERSION = 38;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -1735,6 +1833,41 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/XP400Ride.app/XP400Ride";
+			};
+			name = Release;
+		};
+		600000090000000000000080 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 38;
+				DEVELOPMENT_TEAM = 5U99J43536;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yd.PTSpeedUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = PTSpeed;
+			};
+			name = Debug;
+		};
+		600000090000000000000081 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 38;
+				DEVELOPMENT_TEAM = 5U99J43536;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yd.PTSpeedUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = PTSpeed;
 			};
 			name = Release;
 		};
@@ -1782,6 +1915,15 @@
 			buildConfigurations = (
 				55F52C6A303D4025007527C2 /* Debug */,
 				55F52C6B303D4025007527C2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		600000080000000000000080 /* Build configuration list for PBXNativeTarget "PTSpeedUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				600000090000000000000080 /* Debug */,
+				600000090000000000000081 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

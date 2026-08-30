@@ -507,56 +507,48 @@ public class PTRouteSnapshotManager: NSObject, MAMapViewDelegate {
 
                 let imageFileName = gpxFileName.replacingOccurrences(of: ".gpx", with: ".jpg")
                 DispatchQueue.global(qos: .utility).async {
-                    var resultURL: URL?
-
-                    if let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first,
-                       let data = image.jpegData(compressionQuality: 0.8) {
-                        let fileURL = documentsURL.appendingPathComponent(imageFileName)
-                        do {
-                            // EN: Encode and persist the snapshot away from the main thread.
-                            // ES: Codificamos y guardamos la instantánea fuera del hilo principal.
-                            // 中文：在后台线程完成快照编码和文件写入。
-                            try data.write(to: fileURL)
-                            PTNSLogConsole("📸 [地图补救机制] 缩略图重绘成功: \(imageFileName)")
-                            Self.backupSnapshotToICloud(localFileURL: fileURL, fileName: imageFileName)
-                            resultURL = fileURL
-                        } catch {
-                            PTNSLogConsole("❌ [地图快照] 保存失败: \(error)")
+                    // EN: Encode the image here, then let the persistence actor perform both atomic writes.
+                    // ES: Codificamos la imagen aquí y dejamos que el actor haga ambas escrituras atómicas.
+                    // 中文：在后台完成图片编码，再由持久化 actor 负责本地和 iCloud 原子写入。
+                    guard let data = image.jpegData(compressionQuality: 0.8) else {
+                        DispatchQueue.main.async {
+                            if self?.tempMapView === mapView {
+                                self?.tempMapView = nil
+                            }
+                            completion?(nil)
                         }
+                        return
                     }
 
-                    DispatchQueue.main.async {
-                        if self?.tempMapView === mapView {
-                            self?.tempMapView = nil
+                    Task {
+                        let resultURL: URL?
+                        do {
+                            let result = try await PTDataPersistenceActor.shared.writeData(
+                                data,
+                                fileName: imageFileName,
+                                revision: Int64(Date().timeIntervalSince1970 * 1_000),
+                                syncToICloud: true
+                            )
+                            resultURL = result.localURL
+                            if let cloudErrorDescription = result.cloudErrorDescription {
+                                PTNSLogConsole("⚠️ [地图快照] 本地已保存，但 iCloud 同步失败: \(cloudErrorDescription)")
+                            } else {
+                                PTNSLogConsole("📸 [地图快照] 缩略图已原子保存: \(imageFileName)")
+                            }
+                        } catch {
+                            resultURL = nil
+                            PTNSLogConsole("❌ [地图快照] 保存失败: \(error.localizedDescription)")
                         }
-                        completion?(resultURL)
+
+                        await MainActor.run {
+                            if self?.tempMapView === mapView {
+                                self?.tempMapView = nil
+                            }
+                            completion?(resultURL)
+                        }
                     }
                 }
             }
-        }
-    }
-
-    private static func backupSnapshotToICloud(localFileURL: URL, fileName: String) {
-        // EN: Keep snapshot backup independent from the main-actor iCloud facade so the copy remains off the UI thread.
-        // ES: Mantenemos la copia independiente de la fachada iCloud del actor principal para no bloquear la UI.
-        // 中文：独立执行快照备份，不调用主 actor 的 iCloud 门面，确保复制始终在后台线程。
-        let fileManager = FileManager.default
-        guard let containerURL = fileManager.url(forUbiquityContainerIdentifier: nil) else {
-            PTNSLogConsole("⚠️ [地图快照] iCloud 不可用，跳过云端备份。")
-            return
-        }
-
-        let cloudDocumentsURL = containerURL.appendingPathComponent("Documents")
-        let cloudFileURL = cloudDocumentsURL.appendingPathComponent(fileName)
-
-        do {
-            try fileManager.createDirectory(at: cloudDocumentsURL, withIntermediateDirectories: true)
-            if fileManager.fileExists(atPath: cloudFileURL.path) {
-                try fileManager.removeItem(at: cloudFileURL)
-            }
-            try fileManager.copyItem(at: localFileURL, to: cloudFileURL)
-        } catch {
-            PTNSLogConsole("❌ [地图快照] iCloud 备份失败: \(error.localizedDescription)")
         }
     }
 

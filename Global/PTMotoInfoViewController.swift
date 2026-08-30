@@ -335,12 +335,24 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     case 5:
                         Task {
                             self.obdButton.startLoading(indicatorColor: .white)
-                            await PTDashboardHacker.shared.probeDeepDataSafely(
+                            let results = await PTDashboardHacker.shared.probeDeepDataSafely(
                                 dashboardTx: "700",
                                 dashboardRx: "708",
-                                targetDIDs: ["F186", "F187", "F190", "F1A0"]
+                                targetDIDs: PTOBDReadOnlyCatalog.confirmedDIDs
                             )
                             self.obdButton.stopLoading()
+                            let message = results.map { result in
+                                "DID \(result.did): \(result.status.rawValue)\n\(result.decodedText ?? result.payloadHex ?? result.rawResponse)"
+                            }.joined(separator: "\n\n")
+                            UIAlertController.base_alertVC(
+                                title: PTDashboardConfig.languageFunc(text: "DID"),
+                                titleColor: PTDashboardConfig.shared.appMainColor,
+                                titleFont: .appfont(size: 16),
+                                msg: message.isEmpty ? "NO DATA" : message,
+                                cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"),
+                                showIn: PTUtils.getCurrentVC(),
+                                cancelBtnColor: .systemBlue
+                            )
                         }
                     case 6:
                         Task {
@@ -353,14 +365,21 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                         Task {
                             self.obdButton.startLoading(indicatorColor: .white)
 
-                            PTCANRecorder.shared.start(name: "PTSpeed_Menu_Capture")
+                            guard PTCANRecorder.shared.start(name: "PTSpeed_Menu_Capture") else {
+                                self.obdButton.stopLoading()
+                                return
+                            }
                             await PTMotoTelemetryManager.shared.startCANSniperMode(filterHeader: nil)
                             PTOBDLogger.obd.ptLog("⏳ [只读抓包] 抓包中，请在 10 秒内操作原车诊断功能...")
                             try? await Task.sleep(nanoseconds: 10_000_000_000)
                             await PTMotoTelemetryManager.shared.stopCANSniperMode()
                             _ = PTCANRecorder.shared.stop()
                             self.obdButton.stopLoading()
-                            PTOBDLogger.obd.ptLog("✅ [只读抓包] Capture 已保存，可从 Documents/PTCANCaptures 导出")
+                            if let error = PTCANRecorder.shared.lastStorageError {
+                                PTOBDLogger.obd.ptLog("❌ [只读抓包] Capture 保存失败: \(error)")
+                            } else {
+                                PTOBDLogger.obd.ptLog("✅ [只读抓包] Capture 已保存，可从 Documents/PTCANCaptures 导出")
+                            }
                         }
                     case 8:
                         Task {
@@ -452,6 +471,11 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                         Task {
                             self.obdButton.startLoading(indicatorColor: .white)
 
+                            guard PTCANRecorder.shared.start(name: "PTSpeed_Dashboard_Capture") else {
+                                self.obdButton.stopLoading()
+                                return
+                            }
+
                             // 1. 开启抓包，指定只看 700 节点的流量（防止数据太多把日志撑爆）
                             await PTMotoTelemetryManager.shared.startCANSniperMode(filterHeader: nil)
                             
@@ -462,9 +486,15 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                             
                             // 3. 自动停止抓包并恢复日常监控
                             await PTMotoTelemetryManager.shared.stopCANSniperMode()
+
+                            _ = PTCANRecorder.shared.stop()
                             
                             self.obdButton.stopLoading()
-                            PTOBDLogger.shared.ptLog("✅ [实战演练] 抓包已完成，请导出 MotoHexLog 日志文件查看捕获到的十六进制报文！")
+                            if let error = PTCANRecorder.shared.lastStorageError {
+                                PTOBDLogger.shared.ptLog("❌ [实战演练] Capture 保存失败: \(error)")
+                            } else {
+                                PTOBDLogger.shared.ptLog("✅ [实战演练] Capture 已完成，请从 Documents/PTCANCaptures 导出！")
+                            }
                         }
                     default:
                         break
@@ -496,7 +526,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
         view.isSelected = false
         view.addActionHandlers(handler: { _ in
-            let actionsConnect = ["Noraml","Peugeot"]
+            let actionsConnect = ["Noraml", "Peugeot", PTDashboardConfig.languageFunc(text: "ride_center")]
             UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "Dashboard"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: actionsConnect, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
                 switch index {
                 case 0:
@@ -504,6 +534,9 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     self.navigationController?.pushViewController(vc, animated: true)
                 case 1:
                     let vc = PTPeugeotDashBoardViewController()
+                    self.navigationController?.pushViewController(vc, animated: true)
+                case 2:
+                    let vc = PTRideExperienceViewController()
                     self.navigationController?.pushViewController(vc, animated: true)
                 default:
                     break

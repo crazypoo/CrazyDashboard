@@ -95,6 +95,12 @@ public class PTLocalIntercomManager: NSObject {
     private var currentSpeakingPeers: Set<MCPeerID> = []
     private var speakingTimer: Timer?
 
+    // EN: Live Activity eligibility requires a working audio path and a usable microphone permission state.
+    // ES: La elegibilidad de Live Activity requiere una ruta de audio funcional y un permiso de micrófono utilizable.
+    // 中文：Live Activity 资格还必须满足音频通路正常且麦克风权限状态可用。
+    private var isAudioOperational = false
+    private var isMicrophoneUnavailable = false
+
     private var pingTimer: Timer?
     
     public private(set) var otherMemberTalking: Bool = false {
@@ -113,7 +119,11 @@ public class PTLocalIntercomManager: NSObject {
     }
 
     public private(set) var activePeers: [MCPeerID] = [] {
-        didSet { if oldValue.count != activePeers.count { globalStatusChangeSet() } }
+        didSet {
+            let oldPeerIDs = oldValue.map(\.displayName)
+            let newPeerIDs = activePeers.map(\.displayName)
+            if oldPeerIDs != newPeerIDs { globalStatusChangeSet() }
+        }
     }
     private var connectingPeers: Set<MCPeerID> = []
     
@@ -458,8 +468,16 @@ public class PTLocalIntercomManager: NSObject {
             audioEngine.prepare()
             try audioEngine.start()
             PTNSLogConsole("🔄 [音频引擎] 成功从休克状态中硬重启！")
+            DispatchQueue.main.async { [weak self] in
+                self?.isAudioOperational = true
+                self?.globalStatusChangeSet()
+            }
         } catch {
             PTNSLogConsole("❌ [音频引擎] 硬重启失败: \(error)")
+            DispatchQueue.main.async { [weak self] in
+                self?.isAudioOperational = false
+                self?.globalStatusChangeSet()
+            }
         }
     }
 
@@ -489,10 +507,12 @@ public class PTLocalIntercomManager: NSObject {
             PTGCDManager.shared.runOnMain {
                 switch PTPermission.microphone.status {
                 case .authorized:
+                    self.isMicrophoneUnavailable = false
                     authorized?()
                 case .notDetermined:
                     self.micRequest(authorized: authorized)
                 default:
+                    self.isMicrophoneUnavailable = true
                     PTNSLogConsole("❌ [音频引擎] 麦克风权限被拒绝，无法开启对讲！")
                     self.updateStatusAndBroadcast(PTDashboardConfig.languageFunc(text: "ptt_mic_denied")) // 你可以在语言包里加个提示
                 }
@@ -732,6 +752,13 @@ public class PTLocalIntercomManager: NSObject {
     }
     
     func globalStatusChangeSet() {
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in
+                self?.globalStatusChangeSet()
+            }
+            return
+        }
+
         var peerStates: [PeerLiveState] = []
         for peer in self.activePeers {
             // 如果你在内存字典里有这个人的自定义头像，就去 App Group 拿到它的文件名；如果没有，传 ""
@@ -748,7 +775,12 @@ public class PTLocalIntercomManager: NSObject {
             peerStates.append(state)
         }
         
-        let liveActivityPeers = isRunning && hasConnectedPeers ? peerStates : []
+        let liveActivityPeers = PTLiveActivityEligibility.shouldDisplayPTT(
+            isRunning: isRunning,
+            connectedPeerCount: activePeers.count,
+            audioOperational: isAudioOperational,
+            microphoneAvailable: !isMicrophoneUnavailable
+        ) ? peerStates : []
 
         // 只有已连接成员存在时才创建或更新锁屏组件；空群组会结束全部旧 Activity。
         let channel = PTDashboardConfig.languageFunc(text: "Team channel")
@@ -782,7 +814,7 @@ public class PTLocalIntercomManager: NSObject {
     public func restoreIntercomStateAtLaunch() {
         // 进程重启后 Activity 引用会丢失，启动阶段先清理系统中可能残留的旧活动。
         Task { @MainActor in
-            PTLiveActivityManager.shared.stopIntercomActivity()
+            PTLiveActivityManager.shared.reconcileIntercomActivitiesAtLaunch()
         }
 
         let shouldAutoStart = UserDefaults.standard.bool(forKey: intercomPowerStateKey)

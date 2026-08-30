@@ -138,6 +138,16 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        // EN: Reload once asynchronous history restoration finishes.
+        // ES: Recarga la lista cuando termina la restauración asíncrona del historial.
+        // 中文：异步历史恢复完成后刷新列表。
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleTripHistoryLoaded),
+            name: MotorcycleTripHistoryLoaded,
+            object: nil
+        )
+
         view.backgroundColor = .black
         
         setEmptyConfig(empty: .Normal)
@@ -153,7 +163,12 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
         }
         listSet()
     }
-    
+
+    @objc private func handleTripHistoryLoaded() {
+        guard isViewLoaded else { return }
+        listSet()
+    }
+
     func listSet(finishTask:PTCollectionCallback? = nil) {
         var sections = [PTSection]()
         let rowsTrip = PTTripManager.shared.tripHistory.map { value in

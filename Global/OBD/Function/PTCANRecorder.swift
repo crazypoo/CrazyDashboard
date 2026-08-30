@@ -21,7 +21,7 @@ import PooTools
 
 // MARK: - CAN Capture Model
 
-public enum PTCANCaptureDirection: String, Codable, Sendable {
+nonisolated public enum PTCANCaptureDirection: String, Codable, Sendable {
     /// ATMA / Monitor-All 场景下无法仅凭 ELM327 输出可靠判断方向。
     case bus
     case tx
@@ -29,7 +29,7 @@ public enum PTCANCaptureDirection: String, Codable, Sendable {
     case unknown
 }
 
-public struct PTCANFrame: Codable, Hashable, Sendable {
+nonisolated public struct PTCANFrame: Codable, Hashable, Sendable {
     
     public let timestamp: TimeInterval
     public let sequence: Int
@@ -58,7 +58,7 @@ public struct PTCANFrame: Codable, Hashable, Sendable {
 
 // MARK: - Capture Session
 
-public struct PTCANCaptureSession: Codable, Sendable {
+nonisolated public struct PTCANCaptureSession: Codable, Sendable {
 
     public static let currentSchemaVersion = 3
     
@@ -194,7 +194,7 @@ public enum PTCANCaptureStoreError: Error, LocalizedError, Sendable {
 /// - 不负责 CAN 通信
 /// - 不负责发送任何车辆数据
 /// - 不负责启动/停止 Sniffer
-public final class PTCANCaptureStore: @unchecked Sendable {
+nonisolated public final class PTCANCaptureStore: @unchecked Sendable {
     
     public static let shared = PTCANCaptureStore()
     
@@ -210,6 +210,7 @@ public final class PTCANCaptureStore: @unchecked Sendable {
     
     private var fileHandle: FileHandle?
     private var currentURL: URL?
+    private var _lastError: String?
     
     private init() {}
 }
@@ -245,7 +246,11 @@ public extension PTCANCaptureStore {
         writeQueue.sync {
             closeFileLocked()
         }
-        
+
+        stateQueue.sync {
+            _lastError = nil
+        }
+
         let directory = directoryURL
         
         do {
@@ -314,7 +319,6 @@ public extension PTCANCaptureStore {
     /// - 不阻塞 Recorder lock
     /// - 保证 Frame 写入顺序
     /// - stop 时使用 sync 等待之前所有 append 完成
-    @MainActor
     func append(
         _ frame: PTCANFrame
     ) {
@@ -324,6 +328,7 @@ public extension PTCANCaptureStore {
             encoder.dateEncodingStrategy = .iso8601
             data = try encoder.encode(frame)
         } catch {
+            recordError(error)
             PTNSLogConsole("[PTCANCaptureStore] Frame 编码失败 / Error al codificar Frame:", error)
             return
         }
@@ -413,6 +418,13 @@ public extension PTCANCaptureStore {
             currentURL
         }
     }
+
+    /// EN: Exposes the latest asynchronous write failure to the recorder/UI.
+    /// ES: Expone el último fallo de escritura asíncrona al grabador y a la UI.
+    /// 中文：把最近一次异步写入错误传递给录制器和 UI。
+    var lastError: String? {
+        stateQueue.sync { _lastError }
+    }
 }
 
 private extension PTCANCaptureStore {
@@ -420,6 +432,12 @@ private extension PTCANCaptureStore {
     func closeFileLocked() {
         try? fileHandle?.close()
         fileHandle = nil
+    }
+
+    func recordError(_ error: Error) {
+        stateQueue.sync {
+            _lastError = error.localizedDescription
+        }
     }
 }
 
@@ -594,7 +612,7 @@ public extension PTCANCaptureStore {
 
 public extension PTCANCaptureStore {
     
-    func loadJSON(
+    nonisolated func loadJSON(
         from url: URL
     ) throws -> PTCANCaptureSession {
         
@@ -614,7 +632,7 @@ public extension PTCANCaptureStore {
     
     /// 从 JSONL 恢复 Capture。
     ///
-    func loadJSONL(
+    nonisolated func loadJSONL(
         from url: URL
     ) throws -> PTCANCaptureSession {
         
@@ -719,7 +737,7 @@ public extension PTCANCaptureStore {
 
 private extension PTCANCaptureStore {
 
-    func metadataURL(for url: URL) -> URL {
+    nonisolated func metadataURL(for url: URL) -> URL {
         url.deletingPathExtension().appendingPathExtension("metadata")
     }
 
@@ -1156,6 +1174,16 @@ public extension PTCANRecorder {
          */
         _ = PTCANCaptureStore.shared.finish()
 
+        if let storeError = PTCANCaptureStore.shared.lastError {
+            recordStorageError(
+                NSError(
+                    domain: "PTCANCaptureStore",
+                    code: 1,
+                    userInfo: [NSLocalizedDescriptionKey: storeError]
+                )
+            )
+        }
+
         if let captureURL {
             do {
                 try PTCANCaptureStore.shared.updateMetadata(result, for: captureURL)
@@ -1311,12 +1339,20 @@ private extension PTCANRecorder {
         }
 
         let declaredDLC = Int(candidateBytes[0], radix: 16)
+        let likelyOBDServiceBytes = ["41", "49", "50", "62", "63", "7E", "7F"]
+        let startsWithKnownOBDService = candidateBytes.dropFirst().first.map {
+            likelyOBDServiceBytes.contains($0.uppercased())
+        } ?? false
         let hasELMDLC = declaredDLC.map {
-            // 中文：ELM327 输出必须是 Header + DLC + 正好 DLC 个字节。
-            // Español: La salida ELM327 debe ser Header + DLC + exactamente DLC bytes.
-            // 中文：严格形状可避免把原始 Payload 的首字节误判为 DLC。
-            // Español: La forma estricta evita confundir el primer byte del Payload con DLC.
-            (0...8).contains($0) && candidateBytes.count == $0 + 1
+            // EN: Accept exact ELM327 length and the common padded OBD response form.
+            // ES: Acepta la longitud ELM327 exacta y la forma OBD habitual con relleno.
+            // 中文：同时支持 ELM327 精确长度和常见 OBD 补零长度格式。
+            guard (0...8).contains($0),
+                  candidateBytes.count >= $0 + 1,
+                  candidateBytes.count <= 9 else {
+                return false
+            }
+            return candidateBytes.count == $0 + 1 || startsWithKnownOBDService
         } ?? false
 
         let dataBytes: [String]
@@ -1365,8 +1401,16 @@ private extension PTCANRecorder {
          3 位 = 11-bit CAN
          8 位 = 29-bit CAN
          */
-        return hex.count == 3 ||
-               hex.count == 8
+        guard hex.count == 3 || hex.count == 8,
+              let numericValue = UInt32(hex, radix: 16) else {
+            return false
+        }
+
+        // EN: Three hex digits represent 11-bit IDs; eight represent 29-bit IDs.
+        // ES: Tres dígitos hexadecimales representan IDs de 11 bits; ocho, IDs de 29 bits.
+        // 中文：三位十六进制表示 11-bit ID，八位表示 29-bit ID。
+        let maximum = hex.count == 3 ? 0x7FF : 0x1FFF_FFFF
+        return numericValue <= maximum
     }
     
     static func isHexByte(
@@ -1398,24 +1442,13 @@ private extension PTCANRecorder {
                 )
                 .uppercased()
         
-        guard value.count == 3 ||
-              value.count == 8 else {
-            return nil
-        }
-        
-        guard value.allSatisfy({
-            "0123456789ABCDEF".contains($0)
-        }) else {
-            return nil
-        }
-        
-        return value
+        return isValidCANHeader(value) ? value : nil
     }
 }
 
 // MARK: - Capture Storage
 
-public enum PTCANCaptureStorage {
+nonisolated public enum PTCANCaptureStorage {
     
     public static func encode(
         _ session: PTCANCaptureSession
@@ -1864,6 +1897,84 @@ public enum PTCANCaptureShare {
     }
 }
 
+// MARK: - Offline Replay
+
+public enum PTCANCaptureReplayError: Error, LocalizedError, Sendable {
+    case unsupportedFile
+    case invalidTimeScale
+
+    public var errorDescription: String? {
+        switch self {
+        case .unsupportedFile:
+            return "不支持的 Capture 文件 / Archivo Capture no compatible."
+        case .invalidTimeScale:
+            return "回放速度无效 / La velocidad de reproducción no es válida."
+        }
+    }
+}
+
+/// EN: Replays captured frames to a pure observer; it never sends to a vehicle.
+/// ES: Reproduce las tramas a un observador puro; nunca las envía al vehículo.
+/// 中文：将抓包帧回放给纯观察者，绝不向车辆发送数据。
+public enum PTCANCaptureReplay {
+    @discardableResult
+    public static func replay(
+        session: PTCANCaptureSession,
+        timeScale: Double = 0,
+        onFrame: @escaping @Sendable (PTCANFrame) -> Void
+    ) async throws -> Int {
+        guard timeScale.isFinite, timeScale >= 0 else {
+            throw PTCANCaptureReplayError.invalidTimeScale
+        }
+
+        var previousTimestamp: TimeInterval?
+        var replayedCount = 0
+
+        for frame in session.frames {
+            try Task.checkCancellation()
+
+            if let previousTimestamp,
+               timeScale > 0 {
+                let delay = max(0, frame.timestamp - previousTimestamp) / timeScale
+                if delay > 0 {
+                    let nanoseconds = UInt64(min(delay * 1_000_000_000, Double(UInt64.max)))
+                    try await Task.sleep(nanoseconds: nanoseconds)
+                }
+            }
+
+            onFrame(frame)
+            previousTimestamp = frame.timestamp
+            replayedCount += 1
+        }
+
+        return replayedCount
+    }
+
+    @discardableResult
+    public static func replay(
+        fileURL: URL,
+        timeScale: Double = 0,
+        onFrame: @escaping @Sendable (PTCANFrame) -> Void
+    ) async throws -> Int {
+        let session = try await Task.detached(priority: .utility) {
+            switch fileURL.pathExtension.lowercased() {
+            case "json":
+                return try PTCANCaptureStore.shared.loadJSON(from: fileURL)
+            case "jsonl":
+                return try PTCANCaptureStore.shared.loadJSONL(from: fileURL)
+            default:
+                throw PTCANCaptureReplayError.unsupportedFile
+            }
+        }.value
+
+        return try await replay(
+            session: session,
+            timeScale: timeScale,
+            onFrame: onFrame
+        )
+    }
+}
+
 // MARK: - Existing PTMotoTelemetryManager Integration
 
 public extension PTMotoTelemetryManager {
@@ -1880,10 +1991,12 @@ public extension PTMotoTelemetryManager {
         filterHeader: String? = nil
     ) async {
         
-        PTCANRecorder.shared.start(
+        guard PTCANRecorder.shared.start(
             name: name,
             filterHeader: filterHeader
-        )
+        ) else {
+            return
+        }
         
         await startCANSniperMode(
             filterHeader: filterHeader
@@ -2663,7 +2776,7 @@ private extension PTCANEventAnalyzer {
 
 // MARK: - Capture Event Marker
 
-public struct PTCANCaptureEvent:
+nonisolated public struct PTCANCaptureEvent:
     Codable,
     Sendable {
     
@@ -2721,7 +2834,12 @@ public extension PTCANRecorder {
         )
         lock.unlock()
 
-        try? PTCANCaptureStore.shared.updateMetadata(metadataSession)
+        do {
+            try PTCANCaptureStore.shared.updateMetadata(metadataSession)
+        } catch {
+            recordStorageError(error)
+            PTNSLogConsole("[PTCANRecorder] Event metadata update failed:", error)
+        }
         return event
     }
 }

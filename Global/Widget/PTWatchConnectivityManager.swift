@@ -5,6 +5,7 @@
 
 import Foundation
 @preconcurrency import WatchConnectivity
+import os
 
 @objcMembers
 @MainActor
@@ -13,6 +14,7 @@ public final class PTWatchConnectivityManager: NSObject, WCSessionDelegate {
 
     private let session = WCSession.default
     private var pendingStatus: PTWidgetSharedStatus?
+    private let logger = Logger(subsystem: "com.yd.PTSpeed", category: "WatchConnectivity")
 
     private override init() {
         super.init()
@@ -34,7 +36,7 @@ public final class PTWatchConnectivityManager: NSObject, WCSessionDelegate {
             try session.updateApplicationContext(status.applicationContext)
             pendingStatus = nil
         } catch {
-            print("[WatchConnectivity] updateApplicationContext failed: \(error.localizedDescription)")
+            logger.error("updateApplicationContext failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -46,7 +48,7 @@ public final class PTWatchConnectivityManager: NSObject, WCSessionDelegate {
         Task { @MainActor [weak self] in
             guard let self else { return }
             if let error {
-                print("[WatchConnectivity] activation failed: \(error.localizedDescription)")
+                self.logger.error("activation failed: \(error.localizedDescription, privacy: .public)")
             }
             if activationState == .activated {
                 self.flushPendingStatusIfPossible()

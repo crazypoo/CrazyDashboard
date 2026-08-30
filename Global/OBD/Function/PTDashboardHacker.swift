@@ -7,6 +7,21 @@
 
 import Foundation
 
+private extension PTDashboardHacker {
+    /// EN: Keep every developer-only decision in one main-actor gate.
+    /// ES: Mantiene cada decisión exclusiva del desarrollador en una sola puerta del actor principal.
+    /// 中文：所有开发者专属决策统一经过一个主线程门禁。
+    func authorizeDeveloperOperation(
+        _ operation: PTDeveloperSafetyOperation,
+        protocolEvidenceAvailable: Bool = true
+    ) -> Bool {
+        PTDeveloperSafetyGate.shared.authorize(
+            operation,
+            protocolEvidenceAvailable: protocolEvidenceAvailable
+        )
+    }
+}
+
 public class PTDashboardHacker {
     public static let shared = PTDashboardHacker()
     private init() {}
@@ -26,7 +41,7 @@ public class PTDashboardHacker {
         do {
             let results = try await PTUDSReadService.shared.readDIDs(
                 address: address,
-                dids: ["F190", "F187", "F180", "F1A0"]
+                dids: PTOBDReadOnlyCatalog.confirmedDIDs
             )
 
             results.forEach { result in
@@ -49,6 +64,10 @@ public extension PTDashboardHacker {
     /// 扫描 CAN 总线上的所有诊断节点，寻找存活的 ECU
     /// - Returns: 存活 ECU 的发送报头数组 (如 ["7E0", "7A0"])
     func scanAllActiveECUNodes() async -> [String] {
+        guard authorizeDeveloperOperation(.didFuzz) else {
+            return []
+        }
+
         PTOBDLogger.obd.ptLog("🌍 [全域雷达] 启动 11-bit CAN 总线地毯式扫描 (0x700 - 0x7DF)...")
 
         do {
@@ -69,6 +88,10 @@ public extension PTDashboardHacker {
     /// 🚀 扫描总线上所有的 ECU 节点，寻找可能是仪表盘的地址
     @discardableResult
     func scanForDashboardAddress(progress: (@MainActor @Sendable (Int, Int) -> Void)? = nil) async -> [PTOBDECUNode] {
+        guard authorizeDeveloperOperation(.didFuzz) else {
+            return []
+        }
+
         do {
             let nodes = try await PTUDSReadService.shared.scanDashboardNodes(progress: progress)
             PTOBDLogger.obd.ptLog("🏁 [仪表盘探查] 找到 \(nodes.count) 个候选节点")
@@ -101,10 +124,28 @@ public extension PTDashboardHacker {
             return []
         }
 
+        let normalizedDIDs = targetDIDs.map {
+            $0.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        }
+        let isConfirmedReadOnly = normalizedDIDs.allSatisfy {
+            PTOBDReadOnlyCatalog.confirmedDIDs.contains($0)
+        }
+        let policy: PTOBDReadBatchPolicy
+
+        if isConfirmedReadOnly {
+            policy = .standard
+        } else {
+            guard authorizeDeveloperOperation(.didFuzz) else {
+                return []
+            }
+            policy = .developer
+        }
+
         do {
             let results = try await PTUDSReadService.shared.readDIDs(
                 address: address,
                 dids: targetDIDs,
+                policy: policy,
                 progress: { index, total, result in
                     progress?(index, total, result)
                     PTOBDLogger.obd.ptLog(
@@ -143,6 +184,10 @@ public extension PTDashboardHacker {
 public extension PTDashboardHacker {
     
     // MARK: - 🛠 仪表盘高级配置修改引擎 (UDS Write Data By Identifier)
+
+    // EN: Preflight data is checked before every developer write or flash entry point.
+    // ES: Los datos de preflight se comprueban antes de cada punto de escritura o flasheo del desarrollador.
+    // 中文：每个开发者写入或刷写入口都会先检查前置条件数据。
     
     /// 强制覆写仪表盘的特定配置项 (如: 更改启动动画、解锁隐藏语言)
     /// - Parameters:
@@ -150,8 +195,24 @@ public extension PTDashboardHacker {
     ///   - dashboardRx: 仪表盘的接收响应地址 (例如: "7A8")
     ///   - targetDID: 需要修改的配置项数据标识符 (例如: "F1A0" 代表动画区域)
     ///   - newHexData: 需要写入的新数据十六进制 (例如: "01" 代表开启海外版)
-    func writeDashboardConfig(dashboardTx: String, dashboardRx: String, targetDID: String, newHexData: String) async -> Bool {
-        PTOBDLogger.obd.ptLog("⛔️ [仪表盘写入] 当前版本为只读诊断模式，拒绝发送写入指令")
+    func writeDashboardConfig(
+        dashboardTx: String,
+        dashboardRx: String,
+        targetDID: String,
+        newHexData: String,
+        checklist: PTDeveloperTestChecklist = .empty
+    ) async -> Bool {
+        let preflight = PTDeveloperTestPreflight.evaluate(
+            level: .configurationWrite,
+            checklist: checklist
+        )
+        _ = authorizeDeveloperOperation(
+            .dashboardWrite,
+            protocolEvidenceAvailable: checklist.protocolEvidenceAvailable
+        )
+        PTOBDLogger.obd.ptLog(
+            "⛔️ [仪表盘写入] 配置写入仍未开放，前置检查: \(preflight.blockers.joined(separator: ","))"
+        )
         return false
     }
     
@@ -167,21 +228,37 @@ public extension PTDashboardHacker {
         dashboardRx: String,
         startDID: UInt16 = 0x0100,
         endDID: UInt16 = 0x02FF,
+        maximumCount: Int = 1,
+        interRequestDelayNanoseconds: UInt64 = 150_000_000,
         progress: (@MainActor @Sendable (Int, Int, PTOBDIDReadResult) -> Void)? = nil
     ) async -> [String: String] {
         guard startDID <= endDID,
-              Int(endDID) - Int(startDID) <= 0x03FF,
+              maximumCount > 0,
+              maximumCount <= 128,
+              Int(endDID) - Int(startDID) + 1 <= maximumCount,
               let address = PTOBDDiagnosticAddress(tx: dashboardTx, rx: dashboardRx) else {
             PTOBDLogger.obd.ptLog("❌ [DID 扫描] 参数无效或扫描范围过大")
             return [:]
         }
 
+        guard authorizeDeveloperOperation(.didFuzz) else {
+            return [:]
+        }
+
         let dids = (startDID...endDID).map { String(format: "%04X", $0) }
+
+        let policy = PTOBDReadBatchPolicy(
+            maximumDIDs: maximumCount,
+            requestTimeout: 8,
+            maximumDuration: 120,
+            interRequestDelayNanoseconds: interRequestDelayNanoseconds
+        )
 
         do {
             let results = try await PTUDSReadService.shared.readDIDs(
                 address: address,
                 dids: dids,
+                policy: policy,
                 progress: progress
             )
 
@@ -211,6 +288,15 @@ public extension PTDashboardHacker {
     ) async -> PTOBDFullVehicleDumpReport {
         let startedAt = Date()
         let targetAddresses: [PTOBDDiagnosticAddress]
+        guard authorizeDeveloperOperation(.didFuzz) else {
+            return PTOBDFullVehicleDumpReport(
+                startedAt: startedAt,
+                endedAt: Date(),
+                nodes: [],
+                cancelled: true
+            )
+        }
+
         var cancelled = false
 
         if let addresses {
@@ -224,19 +310,27 @@ public extension PTDashboardHacker {
             }
         }
 
+        // EN: Bound developer scans so a forgotten button cannot occupy the bus indefinitely.
+        // ES: Limita los escaneos de desarrollador para que un botón olvidado no ocupe el bus indefinidamente.
+        // 中文：限制开发者扫描范围，避免误触后无限占用总线。
+        let boundedTargetAddresses = Array(targetAddresses.prefix(8))
         var nodeReports: [PTOBDNodeDumpReport] = []
 
-        for (index, address) in targetAddresses.enumerated() {
+        for (index, address) in boundedTargetAddresses.enumerated() {
             if Task.isCancelled {
                 cancelled = true
                 break
             }
 
-            let dids = (0x0100...0x02FF).map { String(format: "%04X", $0) }
-                + (0xF100...0xF1FF).map { String(format: "%04X", $0) }
+            let dids = (0x0100...0x013F).map { String(format: "%04X", $0) }
+                + (0xF100...0xF13F).map { String(format: "%04X", $0) }
 
             do {
-                let results = try await PTUDSReadService.shared.readDIDs(address: address, dids: dids)
+                let results = try await PTUDSReadService.shared.readDIDs(
+                    address: address,
+                    dids: dids,
+                    policy: .developer
+                )
                 nodeReports.append(PTOBDNodeDumpReport(address: address, results: results))
             } catch {
                 nodeReports.append(PTOBDNodeDumpReport(address: address, failureReason: error.localizedDescription))
@@ -246,7 +340,7 @@ public extension PTDashboardHacker {
                 }
             }
 
-            await progress?(index + 1, targetAddresses.count)
+            progress?(index + 1, boundedTargetAddresses.count)
         }
 
         return PTOBDFullVehicleDumpReport(
@@ -303,6 +397,10 @@ public extension PTDashboardHacker {
         memoryAddress: String,
         readSize: UInt16
     ) async -> PTOBDRawReadResult? {
+        guard authorizeDeveloperOperation(.memoryRead) else {
+            return nil
+        }
+
         guard let address = PTOBDDiagnosticAddress(tx: dashboardTx, rx: dashboardRx) else {
             PTOBDLogger.obd.ptLog("❌ [内存读取] 地址格式无效")
             return nil
@@ -343,8 +441,24 @@ public extension PTDashboardHacker {
     ///   - dashboardRx: 仪表盘的接收物理地址 (例如 "7A8" 或 "708")
     ///   - logoDID: 控制动画的配置内存地址 (需通过之前写的 Fuzzer 扫描并比对得出，例如 "2121")
     ///   - logoType: 期望修改的动画类型 (GT Line, Peugeot Sport 等)
-    func testPSABootLogoCommands(dashboardTx: String, dashboardRx: String, logoDID: String, logoType: PSABootLogoType) async {
-        PTOBDLogger.obd.ptLog("⛔️ [开机动画] 当前版本为只读诊断模式，拒绝发送写入指令")
+    func testPSABootLogoCommands(
+        dashboardTx: String,
+        dashboardRx: String,
+        logoDID: String,
+        logoType: PSABootLogoType,
+        checklist: PTDeveloperTestChecklist = .empty
+    ) async {
+        let preflight = PTDeveloperTestPreflight.evaluate(
+            level: .configurationWrite,
+            checklist: checklist
+        )
+        _ = authorizeDeveloperOperation(
+            .bootLogoExperiment,
+            protocolEvidenceAvailable: checklist.protocolEvidenceAvailable
+        )
+        PTOBDLogger.obd.ptLog(
+            "⛔️ [开机动画] 实验仍未开放，前置检查: \(preflight.blockers.joined(separator: ","))"
+        )
         return
 
     }
@@ -365,8 +479,21 @@ public class PTOBDOTAUpdater {
     
     /// 启动固件刷写流程
     /// - Parameter firmwareData: 从 .bin 文件读取到的纯净二进制数据
-    public func startFlashingFirmware(firmwareData: Data) async {
-        notifyFailure(error: "只读诊断模式未启用 OTA 刷写")
+    public func startFlashingFirmware(
+        firmwareData: Data,
+        checklist: PTDeveloperTestChecklist = .empty
+    ) async {
+        let preflight = PTDeveloperTestPreflight.evaluate(
+            level: .firmware,
+            checklist: checklist
+        )
+        _ = PTDeveloperSafetyGate.shared.authorize(
+            .firmwareFlash,
+            protocolEvidenceAvailable: checklist.protocolEvidenceAvailable
+        )
+        notifyFailure(
+            error: "OTA 刷写未开放: \(preflight.blockers.joined(separator: ","))"
+        )
     }
     
     private func notifyFailure(error: String) {
@@ -388,8 +515,23 @@ public class PTECUFlasher {
     ///   - engineTx: 发动机 ECU 发送地址 (标准为 "7E0")
     ///   - engineRx: 发动机 ECU 接收地址 (标准为 "7E8")
     ///   - tunedFirmware: 已经修改好马力并修正 Checksum 的特调二进制文件
-    public func flashTunedFirmware(engineTx: String, engineRx: String, tunedFirmware: Data) async {
-        PTOBDLogger.obd.ptLog("⛔️ [ECU 刷写] 当前版本为只读诊断模式，拒绝发送刷写指令")
+    public func flashTunedFirmware(
+        engineTx: String,
+        engineRx: String,
+        tunedFirmware: Data,
+        checklist: PTDeveloperTestChecklist = .empty
+    ) async {
+        let preflight = PTDeveloperTestPreflight.evaluate(
+            level: .firmware,
+            checklist: checklist
+        )
+        _ = PTDeveloperSafetyGate.shared.authorize(
+            .firmwareFlash,
+            protocolEvidenceAvailable: checklist.protocolEvidenceAvailable
+        )
+        PTOBDLogger.obd.ptLog(
+            "⛔️ [ECU 刷写] 刷写仍未开放，前置检查: \(preflight.blockers.joined(separator: ","))"
+        )
     }
 }
 
@@ -403,8 +545,23 @@ public extension PTECUFlasher {
     ///   - engineRx: ECU 接收地址
     ///   - tunedFirmware: 准备写入的新固件数据
     /// - Returns: 刷写是否安全完成
-    func safeFlashTunedFirmware(engineTx: String, engineRx: String, tunedFirmware: Data) async -> Bool {
-        PTOBDLogger.obd.ptLog("⛔️ [ECU 刷写] 当前版本为只读诊断模式，拒绝执行安全保镖流程")
+    func safeFlashTunedFirmware(
+        engineTx: String,
+        engineRx: String,
+        tunedFirmware: Data,
+        checklist: PTDeveloperTestChecklist = .empty
+    ) async -> Bool {
+        let preflight = PTDeveloperTestPreflight.evaluate(
+            level: .firmware,
+            checklist: checklist
+        )
+        _ = PTDeveloperSafetyGate.shared.authorize(
+            .firmwareFlash,
+            protocolEvidenceAvailable: checklist.protocolEvidenceAvailable
+        )
+        PTOBDLogger.obd.ptLog(
+            "⛔️ [ECU 刷写] 安全流程仍未开放，前置检查: \(preflight.blockers.joined(separator: ","))"
+        )
         return false
     }
 }

@@ -9,7 +9,7 @@ import Foundation
 import PooTools
 import CoreLocation
 
-public struct PTTripOffRoadEvent: Codable {
+public struct PTTripOffRoadEvent: Codable, Sendable {
     public let timestamp: Date
     public let latitude: Double
     public let longitude: Double
@@ -29,7 +29,7 @@ public struct PTLiveTripStats {
     public let tractionLevelName: String
 }
 
-public struct PTRoutePoint: Codable {
+public struct PTRoutePoint: Codable, Sendable {
     public let lat: Double
     public let lon: Double
     
@@ -95,7 +95,7 @@ public struct PTRideReviewEvent: Codable, Hashable, Sendable {
 }
 
 // 🚨 升级 1：让模型支持 Codable，以便于本地持久化存储
-public struct PTTripReport: Codable {
+public struct PTTripReport: Codable, Sendable {
     public let schemaVersion: Int = 2
     public let startTime: Date
     public let endTime: Date
@@ -144,7 +144,7 @@ public struct PTTripReport: Codable {
     public let reviewEvents: [PTRideReviewEvent]
 }
 
-private struct PTTripHistoryDocument: Codable {
+private nonisolated struct PTTripHistoryDocument: Codable, Sendable {
     let schemaVersion: Int
     let trips: [PTTripReport]
 }
@@ -207,6 +207,7 @@ extension PTTripReport {
 // 🚨 升级 2：定义一个新的通知，告诉 UI 界面 "有新报告生成了"
 public let MotorcycleTripReportGenerated = NSNotification.Name("MotorcycleTripReportGenerated")
 public let MotorcycleMotionUpdate = NSNotification.Name("MotorcycleMotionUpdate")
+public let MotorcycleTripHistoryLoaded = NSNotification.Name("MotorcycleTripHistoryLoaded")
 
 /// 骑行行程统计与存储管理器
 @objcMembers
@@ -225,6 +226,7 @@ public class PTTripManager: NSObject {
 
     // 🚨 升级 3：对外暴露的历史记录数组，你的 UI 将直接读取这个属性！
     public private(set) var tripHistory: [PTTripReport] = []
+    public private(set) var lastPersistenceError: String?
     
     // 用于本地存储的 Key
     private let tripStorageKey = "PTTripHistoryStorageKey"
@@ -294,9 +296,16 @@ public class PTTripManager: NSObject {
     private var offRoadEventsArray: [PTTripOffRoadEvent] = []
     private var lastOffRoadEventTime: Date? // 防抖控制
 
+    private var historyWriteRevision: Int64 = 0
+    private var historyLoadTask: Task<Void, Never>?
+    private var historyHasLoaded = false
+    private var historyMutationPendingBeforeLoad = false
+    private var historyWasClearedBeforeLoad = false
+    private var historyDeletedStartTimesBeforeLoad = Set<Date>()
+
     private override init() {
         super.init()
-        loadHistory() // 初始化时，自动把本地保存的历史数据读进内存
+        loadHistory()
         setupObservers()
     }
     
@@ -327,82 +336,183 @@ public class PTTripManager: NSObject {
     }
 
     // MARK: - 持久化存储逻辑
-    /// 从本地加载历史记录
+    private enum HistoryLoadResult: Sendable {
+        case loaded([PTTripReport])
+        case empty
+        case corrupt(String)
+        case failed(String)
+    }
+
+    /// EN: Decode history off the main thread and keep legacy array files readable.
+    /// ES: Decodifica el historial fuera del hilo principal y conserva la lectura de archivos heredados en forma de array.
+    /// 中文：在后台解码历史记录，并继续兼容旧版数组格式文件。
+    nonisolated private static func decodeHistory(_ data: Data) throws -> [PTTripReport] {
+        let decoder = JSONDecoder()
+        decoder.nonConformingFloatDecodingStrategy = .convertFromString(
+            positiveInfinity: "INF",
+            negativeInfinity: "-INF",
+            nan: "NaN"
+        )
+
+        if let document = try? decoder.decode(PTTripHistoryDocument.self, from: data) {
+            return document.trips
+        }
+        return try decoder.decode([PTTripReport].self, from: data)
+    }
+
+    /// EN: Loading is asynchronous so first launch never performs large disk or cloud I/O on the UI thread.
+    /// ES: La carga es asíncrona para que el primer lanzamiento nunca haga I/O grande de disco o nube en la UI.
+    /// 中文：异步加载，确保首次启动不会在 UI 线程执行大文件或云端 I/O。
     private func loadHistory() {
-        let fileURL = localHistoryURL
-        let fileManager = FileManager.default
-        
-        // 🚨 云端恢复逻辑：如果本地发现没有历史文件（比如刚装 App 或换了新手机）
-        if !fileManager.fileExists(atPath: fileURL.path) {
-            PTNSLogConsole("ℹ️ 本地未找到行程记录，尝试从 iCloud 恢复...")
-            // 巧妙借用你写好的数据库恢复方法，其实它对 json 文件也完全适用
-            let restored = PTiCloudFileManager.shared.restoreDatabaseFromICloud(dbName: historyFileName)
-            if restored {
-                PTNSLogConsole("☁️ 成功从 iCloud 拉取历史行程数据！")
-            }
-        }
-        
-        // 尝试读取文件数据
-        if let data = try? Data(contentsOf: fileURL) {
+        let fileName = historyFileName
+        let loadTask = Task.detached(priority: .utility) {
             do {
-                let decoder = JSONDecoder()
-                // 中文：兼容传感器异常浮点数；Español: tolerar valores flotantes no conformes del sensor.
-                decoder.nonConformingFloatDecodingStrategy = .convertFromString(positiveInfinity: "INF", negativeInfinity: "-INF", nan: "NaN")
-
-                let savedTrips: [PTTripReport]
-                if let document = try? decoder.decode(PTTripHistoryDocument.self, from: data) {
-                    savedTrips = document.trips
-                } else {
-                    savedTrips = try decoder.decode([PTTripReport].self, from: data)
+                let data = try await PTDataPersistenceActor.shared.readData(
+                    fileName: fileName,
+                    restoreFromICloud: true,
+                    downloadTimeout: 8
+                )
+                do {
+                    return HistoryLoadResult.loaded(try Self.decodeHistory(data))
+                } catch {
+                    _ = try? await PTDataPersistenceActor.shared.preserveCorruptData(
+                        data,
+                        fileName: fileName
+                    )
+                    return HistoryLoadResult.corrupt(error.localizedDescription)
                 }
-
-                self.tripHistory = savedTrips
-                PTNSLogConsole("✅ [行程记录] 成功加载 \(savedTrips.count) 条历史记录")
+            } catch let error as PTDataPersistenceError {
+                switch error {
+                case .fileNotFound, .iCloudUnavailable:
+                    return HistoryLoadResult.empty
+                default:
+                    return HistoryLoadResult.failed(error.localizedDescription)
+                }
             } catch {
-                PTNSLogConsole("❌ [行程记录] 历史数据解析失败，保留原文件: \(error)")
-                preserveCorruptHistory(data)
+                return HistoryLoadResult.failed(error.localizedDescription)
             }
-        } else {
+        }
+
+        historyLoadTask = Task { [weak self] in
+            let result = await loadTask.value
+            await MainActor.run { [weak self] in
+                self?.applyHistoryLoadResult(result)
+            }
+        }
+    }
+
+    private func applyHistoryLoadResult(_ result: HistoryLoadResult) {
+        switch result {
+        case .loaded(let savedTrips):
+            if historyMutationPendingBeforeLoad {
+                var mergedTrips = historyWasClearedBeforeLoad ? [] : tripHistory
+                let existingStartTimes = Set(mergedTrips.map(\.startTime))
+                if !historyWasClearedBeforeLoad {
+                    let pendingDeletes = historyDeletedStartTimesBeforeLoad
+                    for savedTrip in savedTrips where
+                        !pendingDeletes.contains(savedTrip.startTime) &&
+                        !existingStartTimes.contains(savedTrip.startTime) {
+                        mergedTrips.append(savedTrip)
+                    }
+                }
+                tripHistory = mergedTrips.sorted { $0.startTime > $1.startTime }
+                lastPersistenceError = nil
+                historyHasLoaded = true
+                resetPendingHistoryMutations()
+                saveHistory()
+                PTNSLogConsole("✅ [行程记录] 已合并加载结果，当前历史总数: \(tripHistory.count)")
+            } else {
+                tripHistory = savedTrips
+                historyHasLoaded = true
+                lastPersistenceError = nil
+                PTNSLogConsole("✅ [行程记录] 成功加载 \(savedTrips.count) 条历史记录")
+            }
+        case .empty:
+            historyHasLoaded = true
+            lastPersistenceError = nil
             PTNSLogConsole("ℹ️ [行程记录] 本地与云端均无数据，初始化为空列表")
+        case .corrupt(let message):
+            historyHasLoaded = true
+            lastPersistenceError = "历史数据损坏：\(message)"
+            PTNSLogConsole("❌ [行程记录] 历史数据解析失败，已保留原文件: \(message)")
+        case .failed(let message):
+            historyHasLoaded = true
+            lastPersistenceError = message
+            PTNSLogConsole("❌ [行程记录] 历史数据加载失败: \(message)")
         }
+        NotificationCenter.default.post(name: MotorcycleTripHistoryLoaded, object: self)
     }
 
-    /// 保存记录到本地沙盒
+    /// EN: Keep user mutations made before the asynchronous load finishes.
+    /// ES: Conserva las mutaciones del usuario realizadas antes de terminar la carga asíncrona.
+    /// 中文：保留异步加载完成前用户已经做出的修改。
+    private func markHistoryMutation() {
+        guard !historyHasLoaded else { return }
+        historyMutationPendingBeforeLoad = true
+    }
+
+    /// EN: Clear the temporary merge markers after applying a loaded snapshot.
+    /// ES: Limpia los marcadores temporales después de aplicar una instantánea cargada.
+    /// 中文：应用加载快照后清理临时合并标记。
+    private func resetPendingHistoryMutations() {
+        historyMutationPendingBeforeLoad = false
+        historyWasClearedBeforeLoad = false
+        historyDeletedStartTimesBeforeLoad.removeAll()
+    }
+
+    /// EN: Encode and persist a snapshot in a utility task; the actor serializes writes and rejects stale snapshots.
+    /// ES: Codifica y guarda una instantánea en una tarea de utilidad; el actor serializa las escrituras y rechaza instantáneas obsoletas.
+    /// 中文：在后台任务编码并保存快照，由 actor 串行写入并拒绝过期快照。
     private func saveHistory() {
-        do {
-            let encoder = JSONEncoder()
-            // 工业级容错：防止传感器异常浮点数导致编码崩溃
-            encoder.nonConformingFloatEncodingStrategy = .convertToString(positiveInfinity: "INF", negativeInfinity: "-INF", nan: "NaN")
-            
-            let document = PTTripHistoryDocument(schemaVersion: 2, trips: tripHistory)
-            // 中文：使用带版本的文档保存；Español: guardar un documento versionado.
-            let data = try encoder.encode(document)
-            
-            // 2. 写入本地文件 (options: .atomic 保证即使写入时断电，文件也不会损坏)
-            try data.write(to: localHistoryURL, options: .atomic)
-            
-            // 3. 🚨 核心联动：推送到 iCloud 进行云备份！
-            PTiCloudFileManager.shared.backupDatabaseToICloud(dbName: historyFileName)
-            
-            PTNSLogConsole("💾 [行程记录] 完美保存至本地并已发起 iCloud 同步！当前历史总数: \(tripHistory.count)")
-            
-        } catch {
-            PTNSLogConsole("❌ [行程记录] 数据编码保存严重失败: \(error)")
-        }
-    }
+        markHistoryMutation()
+        historyWriteRevision &+= 1
+        let revision = historyWriteRevision
+        let trips = tripHistory
+        let count = trips.count
+        let fileName = historyFileName
 
-    private func preserveCorruptHistory(_ data: Data) {
-        let backupURL = localHistoryURL.deletingPathExtension().appendingPathExtension("corrupt-\(Int(Date().timeIntervalSince1970)).json")
-        do {
-            try data.write(to: backupURL, options: .withoutOverwriting)
-            PTNSLogConsole("⚠️ [行程记录] 已保留损坏历史备份: \(backupURL.lastPathComponent)")
-        } catch {
-            PTNSLogConsole("❌ [行程记录] 无法保留损坏历史备份: \(error.localizedDescription)")
+        Task.detached(priority: .utility) {
+            do {
+                let encoder = JSONEncoder()
+                encoder.nonConformingFloatEncodingStrategy = .convertToString(
+                    positiveInfinity: "INF",
+                    negativeInfinity: "-INF",
+                    nan: "NaN"
+                )
+                let data = try encoder.encode(PTTripHistoryDocument(schemaVersion: 2, trips: trips))
+                let result = try await PTDataPersistenceActor.shared.writeData(
+                    data,
+                    fileName: fileName,
+                    revision: revision,
+                    syncToICloud: true
+                )
+
+                await MainActor.run { [weak self] in
+                    guard let self else { return }
+                    if let cloudErrorDescription = result.cloudErrorDescription {
+                        self.lastPersistenceError = cloudErrorDescription
+                        PTNSLogConsole("⚠️ [行程记录] 本地已保存，但 iCloud 同步失败: \(cloudErrorDescription)")
+                    } else if !result.didSkipStaleWrite {
+                        self.lastPersistenceError = nil
+                        PTNSLogConsole("💾 [行程记录] 已原子保存，当前历史总数: \(count)")
+                    }
+                }
+            } catch {
+                await MainActor.run { [weak self] in
+                    self?.lastPersistenceError = error.localizedDescription
+                    PTNSLogConsole("❌ [行程记录] 数据编码或本地保存失败: \(error.localizedDescription)")
+                }
+            }
         }
     }
     
     /// 提供给外部：清空所有历史记录 (可绑定到 UI 上的"清空记录"按钮)
     public func clearAllTrips() {
+        markHistoryMutation()
+        if !historyHasLoaded {
+            historyWasClearedBeforeLoad = true
+            historyDeletedStartTimesBeforeLoad.removeAll()
+        }
         tripHistory.removeAll()
         saveHistory()
         PTNSLogConsole("🗑️ [行程记录] 已清空所有历史数据")
@@ -562,13 +672,10 @@ public class PTTripManager: NSObject {
         }
         
         let reviewEvents = PTRideReviewAnalyzer.analyze(points: routeArray)
-
-        // 3. 开始生成高德 GPX 和快照
-        let generatedFileName = PTGPXRecorder.shared.exportGPX(from: routeArray)
-        if let fileName = generatedFileName {
-            // 在后台生成缩略图并上传 iCloud
-            let coosMap = routeArray.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon) }
-            PTRouteSnapshotManager.shared.generateAndSaveSnapshot(coordinates: coosMap, gpxFileName: fileName, reviewEvents: reviewEvents)
+        let generatedFileName = routeArray.isEmpty ? nil : PTGPXRecorder.shared.makeGPXFileName()
+        let routePointsForExport = routeArray
+        let coordinatesForSnapshot = routeArray.map {
+            CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon)
         }
         
         // 切回防盗模式
@@ -632,7 +739,30 @@ public class PTTripManager: NSObject {
         // 3. 🚨 核心：向 UI 界面发出带数据的全局广播！
         NotificationCenter.default.post(name: MotorcycleTripReportGenerated, object: report)
         
-        PTNSLogConsole("🏁 [行程报告生成] 已成功持久化，当前共保存 \(tripHistory.count) 条记录。")
+        if let fileName = generatedFileName {
+            // EN: Persist GPX off the main thread before asking the map SDK to render its snapshot.
+            // ES: Guarda el GPX fuera del hilo principal antes de pedir al SDK del mapa la instantánea.
+            // 中文：先在后台完成 GPX 持久化，再请求地图 SDK 生成缩略图。
+            Task { [routePointsForExport, coordinatesForSnapshot, reviewEvents] in
+                do {
+                    _ = try await PTGPXRecorder.shared.exportGPXAsync(
+                        from: routePointsForExport,
+                        fileName: fileName
+                    )
+                    await MainActor.run {
+                        PTRouteSnapshotManager.shared.generateAndSaveSnapshot(
+                            coordinates: coordinatesForSnapshot,
+                            gpxFileName: fileName,
+                            reviewEvents: reviewEvents
+                        )
+                    }
+                } catch {
+                    PTNSLogConsole("❌ [行程报告] GPX 保存失败 [\(fileName)]: \(error.localizedDescription)")
+                }
+            }
+        }
+
+        PTNSLogConsole("🏁 [行程报告生成] 已提交持久化，当前共保存 \(tripHistory.count) 条记录。")
     }
     
     deinit {
@@ -747,6 +877,10 @@ extension PTTripManager {
         
         // 1. 从内存数组中安全移除 (利用 startTime 作为唯一标识符)
         // 使用 removeAll(where:) 是 Swift 中最高效的做法
+        markHistoryMutation()
+        if !historyHasLoaded {
+            historyDeletedStartTimesBeforeLoad.insert(trip.startTime)
+        }
         tripHistory.removeAll { $0.startTime == trip.startTime }
         
         // 2. 重新写入历史记录的 JSON 文件，并触发 iCloud 同步
@@ -764,24 +898,27 @@ extension PTTripManager {
     
     /// 辅助方法：物理删除 iOS 沙盒中的指定文件
     private func deleteFileFromDisk(fileName: String) {
-        let fileManager = FileManager.default
-        
-        // 获取 Documents 目录
-        guard let docsDir = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
-        let fileURL = docsDir.appendingPathComponent(fileName)
-        
-        // 如果文件存在，则物理销毁
-        if fileManager.fileExists(atPath: fileURL.path) {
+        // EN: Delete local and cloud copies through the same serialized persistence boundary.
+        // ES: Elimina las copias local y de nube mediante el mismo límite de persistencia serializado.
+        // 中文：通过同一个串行持久化边界删除本地和云端副本。
+        Task {
             do {
-                try fileManager.removeItem(at: fileURL)
-                PTNSLogConsole("🗑️ [文件清理] 已彻底删除本地缓存文件: \(fileName)")
+                let result = try await PTDataPersistenceActor.shared.delete(
+                    fileName: fileName,
+                    deleteFromICloud: true
+                )
+                if result.didDeleteLocal {
+                    PTNSLogConsole("🗑️ [文件清理] 已删除本地缓存文件: \(fileName)")
+                }
+                if let cloudErrorDescription = result.cloudErrorDescription {
+                    PTNSLogConsole("⚠️ [文件清理] 本地已处理，但 iCloud 删除失败 [\(fileName)]: \(cloudErrorDescription)")
+                } else if result.didDeleteCloud {
+                    PTNSLogConsole("☁️🗑️ [文件清理] 已删除 iCloud 文件: \(fileName)")
+                }
             } catch {
-                PTNSLogConsole("❌ [文件清理] 无法删除本地文件: \(fileName), 错误: \(error.localizedDescription)")
+                PTNSLogConsole("❌ [文件清理] 删除失败 [\(fileName)]: \(error.localizedDescription)")
             }
         }
-        
-        // 🚨 联动清理 iCloud：如果你在 PTiCloudFileManager 中写过 delete 方法，可以在这里顺手调用
-        PTiCloudFileManager.shared.deleteCloudFile(fileName: fileName)
     }
 }
 

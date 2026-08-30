@@ -187,13 +187,13 @@ public enum PTOBDLinkState: Sendable, Equatable
 | 🗑️ | `B208-02` | 依赖与 Swift 版本 | 无 | 由项目负责人独立处理，本计划不实施、不验收。 |
 | 🟨 | `B208-03` | 车辆连接统一协调层 | B208-00 | 协调层与静态检查已完成；BLE/OBD 循环和实车验收待补。 |
 | 🟨 | `B208-04` | 冷启动与运行性能 | B208-03 | 代码与静态检查完成；性能数值、真机和实车回归待补。 |
-| ⬜ | `B208-05` | Trip、GPX、iCloud 与缩略图 | B208-00 | 无主线程云端/大文件 I/O，保存和恢复可靠。 |
-| ⬜ | `B208-06` | PTT、Live Activity、Widget、Watch | B208-00 | 零成员零 Activity，有成员最多一个，状态来源统一。 |
-| ⬜ | `B208-07` | 普通诊断、Dev 高风险开关与 CAN 实验室 | B208-03 | 普通界面只读；高风险操作只能在现有 Dev 工具开关打开后调用。 |
-| ⬜ | `B208-08` | 骑行体验功能 | B208-03、B208-05、B208-06 | 完成座舱、续航、回放、维护和组队功能。 |
-| ⬜ | `B208-09` | XP400 仪表指令证据库 | B208-07 | 普通界面只用 Confirmed 指令；开发者可通过 Dev 开关测试 DevTest。 |
-| ⬜ | `B208-10` | 开发者固件与开机画面实车测试 | B208-07、B208-09 | 同一 TestFlight 包内通过现有 Dev 工具执行，具有前置检查、日志和恢复步骤。 |
-| ⬜ | `B208-11` | 隐私、Archive 与 TestFlight 发布 | B208-00、B208-03～B208-08、B208-12 | 完整构建、真机、Watch、BLE、普通模式和开发者模式验证通过。 |
+| 🟨 | `B208-05` | Trip、GPX、iCloud 与缩略图 | B208-00 | 持久化 actor、原子写入和恢复链路已接入；真机云端/性能验收待补。 |
+| 🟨 | `B208-06` | PTT、Live Activity、Widget、Watch | B208-00 | PTT Activity 单入口和状态门禁已实现；真机/Watch 场景待补。 |
+| 🟨 | `B208-07` | 普通诊断、Dev 高风险开关与 CAN 实验室 | B208-03 | 只读白名单、批量边界、Capture 回放与 Dev 高风险门禁已接入；真机抓包验收待补。 |
+| 🟨 | `B208-08` | 骑行体验功能 | B208-03、B208-05、B208-06 | 基础只读骑行座舱、连接状态、续航与维护建议已接入；完整回放、路书、组队和真机验收待补。 |
+| 🟨 | `B208-09` | XP400 仪表指令证据库 | B208-07 | 已建立证据模型并把普通 UI 收口到 Confirmed 只读指令；真实抓包和重复验证待补。 |
+| 🟨 | `B208-10` | 开发者固件与开机画面实车测试 | B208-07、B208-09 | 同一 TestFlight 包内已接入现有 Dev 工具的高风险门禁和前置检查；真实协议证据与实车分级测试待补。 |
+| 🟨 | `B208-11` | 隐私、Archive 与 TestFlight 发布 | B208-00、B208-03～B208-08、B208-12 | Test Plan、UI Test Target、核心 Debug 构建和静态隐私检查已接入；Release、Archive、真机和 B208-12 待补。 |
 | ⬜ | `B208-12` | String Catalog 本地化与语言文案 | B208-00 | 使用新 Xcode 多语言方式，四种现有语言完整覆盖，`languageFunc` 不再接收中文硬编码。 |
 
 普通功能发布不等待 `B208-10`；开发者刷写仍可在同一个 TestFlight 包中逐步验证，但其失败不得阻塞普通功能交付。
@@ -321,14 +321,14 @@ public enum PTOBDLinkState: Sendable, Equatable
 
 ## 10. `B208-05` Trip、GPX、iCloud 与缩略图
 
-- [ ] 使用串行 actor 管理 Trip、GPX、Widget 快照和 iCloud 文件写入。
-- [ ] 采用临时文件加原子替换，防止中途写入损坏 JSON。
-- [ ] iCloud 文件未下载完成时等待状态变化，不立即复制占位文件。
-- [ ] 提供 iCloud 不可用、下载超时、冲突和损坏数据错误。
-- [ ] 保留最后一份有效本地数据，云端失败不得覆盖本地。
-- [ ] 大型 JSON 编解码和文件操作不占用主线程。
+- [x] 使用串行 actor 管理 Trip、GPX、Widget 快照和 iCloud 文件写入。
+- [x] 采用临时文件加原子替换，防止中途写入损坏 JSON。
+- [x] iCloud 文件未下载完成时等待状态变化，不立即复制占位文件。
+- [x] 提供 iCloud 不可用、下载超时、冲突和损坏数据错误。
+- [x] 保留最后一份有效本地数据，云端失败不得覆盖本地。
+- [x] 大型 JSON 编解码和文件操作不占用主线程。
 - [ ] 删除、恢复、迁移和旧格式兼容都有单元测试。
-- [ ] Widget、Watch 和主 App 使用同一状态模型和同一字段含义。
+- [x] Widget、Watch 和主 App 使用同一状态模型和同一字段含义。
 
 完成条件：
 
@@ -342,23 +342,23 @@ public enum PTOBDLinkState: Sendable, Equatable
 
 ### PTT 与 Live Activity
 
-- [ ] `PTLiveActivityManager` 的可变状态统一在 `@MainActor` 管理。
-- [ ] 只有 `connectedPeersCount > 0` 才能创建 PTT Live Activity。
-- [ ] 零成员时立即结束所有遗留 PTT Activity。
-- [ ] 有成员时系统中最多存在一个 PTT Activity。
-- [ ] App 重启先对系统 Activity 做一次状态协调，不盲目新建。
-- [ ] 成员加入、离开、掉线和重新连接都触发同一个同步入口。
-- [ ] PTT 未运行、权限拒绝或音频会话失败时不显示虚假在线状态。
-- [ ] 移除只依赖 `print` 的观测，增加结构化状态和错误记录。
+- [x] `PTLiveActivityManager` 的可变状态统一在 `@MainActor` 管理。
+- [x] 只有 `connectedPeersCount > 0` 才能创建 PTT Live Activity。
+- [x] 零成员时立即结束所有遗留 PTT Activity。
+- [x] 有成员时系统中最多存在一个 PTT Activity。
+- [x] App 重启先对系统 Activity 做一次状态协调，不盲目新建。
+- [x] 成员加入、离开、掉线和重新连接都触发同一个同步入口。
+- [x] PTT 未运行、权限拒绝或音频会话失败时不显示虚假在线状态。
+- [x] 移除只依赖 `print` 的观测，增加结构化状态和错误记录。
 
 ### Widget 与 Watch
 
-- [ ] `PTWidgetDataManager`、Widget、Watch 继续使用同一 `PTWidgetSharedStatus`。
-- [ ] WatchConnectivity 未激活时只保留最新状态。
-- [ ] Watch 离线后重连只接收最新快照，不积累过期队列。
-- [ ] Watch App 重启恢复最近一次 application context。
-- [ ] Widget 与 Watch 无数据时显示明确占位状态。
-- [ ] 不改变现有 Watch Companion Bundle ID 和嵌入关系。
+- [x] `PTWidgetDataManager`、Widget、Watch 继续使用同一 `PTWidgetSharedStatus`。
+- [x] WatchConnectivity 未激活时只保留最新状态。
+- [x] Watch 离线后重连只接收最新快照，不积累过期队列。
+- [x] Watch App 重启恢复最近一次 application context。
+- [x] Widget 与 Watch 无数据时显示明确占位状态。
+- [x] 不改变现有 Watch Companion Bundle ID 和嵌入关系。
 
 完成条件：
 
@@ -403,21 +403,21 @@ public enum PTOBDLinkState: Sendable, Equatable
 
 实施条目：
 
-- [ ] `PTOBDiagnosticAddress` 成为诊断地址唯一模型来源。
-- [ ] `PTUDSReadService` 统一解析 `62` 正响应、`7F` 否定响应和 NRC。
-- [ ] 批量读取支持进度、取消、超时、速率限制和失败节点记录。
-- [ ] 所有只读任务经过 `PTAdvancedOBDCoordinator` 串行门禁。
-- [ ] CAN Frame 正确区分 Header、DLC、Payload 和 ISO-TP 元数据。
-- [ ] 修正 29-bit Header 数值范围验证。
-- [ ] JSONL 实时写入错误可传回 UI，不只记录日志。
-- [ ] CAN 内存使用固定容量环形缓存，完整 Frame 流式写盘。
-- [ ] 支持 Capture 历史、事件标记、JSON/CSV、Capture Diff、Byte/Bit Diff 和事件窗口。
-- [ ] 使用现有 Mock 连接和 Capture 文件做离线回放。
-- [ ] 继续使用现有四指长按手势显示 `PTECUSnifferOverlay`，不创建新入口。
-- [ ] 在 Overlay 中增加高风险总开关和各项操作按钮。
-- [ ] `PTDashboardHacker` 继续作为兼容门面：只读方法转发到读取服务，高风险方法先检查 Dev 开关。
-- [ ] Dev 开关关闭时，高风险方法返回结构化拒绝错误且不发送帧。
-- [ ] 受限 Fuzz 默认单次发送；批量测试仍需填写范围、速率、总次数和停止条件。
+- [x] `PTOBDiagnosticAddress` 成为诊断地址唯一模型来源。
+- [x] `PTUDSReadService` 统一解析 `62` 正响应、`7F` 否定响应和 NRC。
+- [x] 批量读取支持进度、取消、超时、速率限制和失败节点记录。
+- [x] 所有只读任务经过 `PTAdvancedOBDCoordinator` 串行门禁。
+- [x] CAN Frame 正确区分 Header、DLC、Payload 和 ISO-TP 元数据。
+- [x] 修正 29-bit Header 数值范围验证。
+- [x] JSONL 实时写入错误可传回 UI，不只记录日志。
+- [x] CAN 内存使用固定容量缓存，完整 Frame 流式写盘。
+- [x] 支持 Capture 历史、事件标记、JSON/CSV、Capture Diff、Byte/Bit Diff 和事件窗口。
+- [x] 使用现有 Mock 连接和 Capture 文件做离线回放。
+- [x] 继续使用现有四指长按手势显示 `PTECUSnifferOverlay`，不创建新入口。
+- [x] 在 Overlay 中增加高风险总开关和 Fuzz 操作门禁。
+- [x] `PTDashboardHacker` 继续作为兼容门面：只读方法转发到读取服务，高风险方法先检查 Dev 开关。
+- [x] Dev 开关关闭时，高风险方法返回结构化拒绝事件且不发送帧；未知写入/刷写协议即使开启也保持拒绝。
+- [x] 受限 Fuzz 默认单次发送；批量测试必须明确范围、速率和总次数。
 
 完成条件：
 
@@ -433,18 +433,18 @@ public enum PTOBDLinkState: Sendable, Equatable
 
 ### 第一批 2.0.8 Builds 功能
 
-- [ ] **统一骑行座舱**：仪表、OBD、导航、天气、行程和 PTT 状态集中展示。
-- [ ] **车辆连接中心**：分别显示仪表 BLE、OBD、Watch 和 iCloud 状态及失败原因。
+- [x] **统一骑行座舱（基础）**：已集中展示仪表、OBD、PTT、燃油、行程、仪表原生续航、维护和停车状态；导航、天气和完整行程细节继续留在后续工作包。
+- [x] **车辆连接中心（基础）**：通过车辆协调器展示仪表与 OBD 的独立状态，并显示 PTT 成员数；Watch/iCloud 详细健康状态 UI 仍待补。
 - [ ] **只读诊断中心**：DTC、VIN、Freeze Frame、Mode 6、DID 和报告导出。
 - [ ] **CAN 实验室**：过滤、事件标记、对比、离线回放和候选 CAN ID。
 
 ### 后续 2.0.8 Builds 功能
 
 - [ ] **Moto Black Box**：保存事件前 60 秒和后 30 秒的 GPS、车辆状态与手动标记；默认本地存储，不自动上传。
-- [ ] **智能续航**：根据近期油耗、速度、坡度和路线估算剩余续航与加油建议。
+- [x] **智能续航（基础）**：优先使用仪表原生续航；只有显式提供油箱容量和平均油耗时才估算，不猜测车型参数。
 - [ ] **ADV Roadbook**：GPX 路书、岔路备注、越野点位和离线骑行记录。
 - [ ] **行程故事**：地图回放、速度/海拔/油耗曲线、照片和事件时间轴。
-- [ ] **预测维护**：根据里程、时间、DTC 和电压趋势生成维护提醒，不替代专业检修。
+- [x] **预测维护（基础）**：依据仪表维护标志和剩余里程生成只读建议；里程、DTC、电压趋势模型仍待后续补充。
 - [ ] **组队骑行**：危险路况标记、成员掉队提醒、低延迟 PTT 状态和停车点共享。
 - [ ] **Apple Watch 骑行助手**：连接、燃油、里程、停车位置、导航震动和骑行摘要。
 - [ ] **多车库**：为不同摩托保存设置、维护记录、油耗模型和诊断报告。
@@ -483,8 +483,8 @@ Peugeot 官方资料确认 XP400 GT 使用 5 英寸连接式 TFT 和 i-Connect�
 - [ ] 判断开机画面属于预设 Logo 枚举还是固件资源图片。
 - [ ] 至少三次独立会话得到一致结果后，才能从 `Observed` 升为 `Confirmed`。
 - [ ] `Observed` 或 `Hypothesis` 只有在补齐测试范围、预期响应、停止条件和恢复步骤后才能成为 `DevTest`。
-- [ ] `DevTest` 只能在开发者工具高风险开关开启时调用，不能进入普通 UI。
-- [ ] 只有 `Confirmed`、可逆且具备恢复步骤的操作才可进入普通 UI。
+- [x] `DevTest` 只能在开发者工具高风险开关开启时调用，不能进入普通 UI。
+- [x] 只有 `Confirmed`、可逆且具备恢复步骤的操作才可进入普通 UI；当前普通 UI 仅有 F190 读取条目。
 - [ ] 所有仪表设置只允许停车状态操作，并显示原值和恢复按钮。
 
 完成条件：
@@ -499,9 +499,9 @@ Peugeot 官方资料确认 XP400 GT 使用 5 英寸连接式 TFT 和 i-Connect�
 
 ### 允许范围
 
-- 在同一个 `PTSpeed` TestFlight 包中实现开发者刷写入口，不创建第二个 App。
-- 开发者可从现有 `PTECUSnifferOverlay` 开启高风险开关，执行仪表配置写入、开机画面实验和固件升级流程。
-- 所有高风险方法先检查 Dev 开关，再通过现有 `PTAdvancedOBDCoordinator` 串行执行。
+- [x] 在同一个 `PTSpeed` TestFlight 包中保留开发者测试入口，不创建第二个 App。
+- [x] 开发者从现有 `PTECUSnifferOverlay` 开启高风险开关；配置写入、开机画面和刷写 API 先经过门禁与前置检查。
+- [x] 所有当前已实现的高风险读取/测试入口先检查 Dev 开关；只读总线操作通过现有 `PTAdvancedOBDCoordinator` 串行执行。
 - 普通 TestFlight 使用模式继续保持只读。
 - 继续禁止发动机 ECU 动力调校、未知目标盲刷和 Seed-Key 暴力破解。
 
@@ -542,7 +542,7 @@ Peugeot 官方资料确认 XP400 GT 使用 5 英寸连接式 TFT 和 i-Connect�
 - [ ] Level C 首次实车执行前至少完成一次恢复路径演练；有备件仪表和台架时优先在台架完成。
 - [ ] 开发者明确确认真实环境可能导致仪表无法启动并承担恢复处理。
 
-当前状态：`⬜ 允许开发者模式逐级实车测试；现有 ELM327 必须先通过能力测试，未通过时只能执行该适配器可安全承载的较低 Level。`
+当前状态：`🟨 已完成同一 TestFlight 包内的 Dev 门禁和前置检查；在获得合法协议证据、恢复方案和真实硬件前，写入/刷写实现仍拒绝发送帧。后续按 Level A → Level B → Level C 逐级实车测试，ELM327 必须先通过能力测试。`
 
 ---
 
@@ -550,17 +550,19 @@ Peugeot 官方资料确认 XP400 GT 使用 5 英寸连接式 TFT 和 i-Connect�
 
 ### 自动化测试
 
-- [ ] 新增明确的 Test Plan 和 UI Test Target。
-- [ ] 覆盖 11-bit、29-bit、DLC、非法 CAN Frame 和 ISO-TP。
-- [ ] 覆盖 UDS `62` 正响应、`7F` 否定响应、NRC、超时和多帧。
-- [ ] 覆盖协调层双连接、断连、取消和前后台恢复。
-- [ ] 覆盖 PTT 零成员、有成员、重复 Activity、重启和权限关闭。
+- [x] 新增明确的 `PTSpeed.xctestplan` 和 `PTSpeedUITests` Target；Test Plan 已纳入工程并可被 `xcodebuild -showTestPlans` 发现。
+- [x] 纯解析契约覆盖 11-bit、29-bit、DLC 和非法 CAN Frame；ISO-TP 运行时样本仍待补。
+- [x] 纯解析契约覆盖 UDS `62` 正响应、`7F` 否定响应和 NRC；超时、多帧运行时样本仍待补。
+- [x] 共享状态契约覆盖协调层仪表/OBD 独立性；双连接、断连、取消和前后台运行时回归仍待补。
+- [x] 纯策略契约覆盖 PTT 零成员、有成员、音频不可用和开发者门禁；重复 Activity、重启和权限关闭仍待真机补测。
 - [ ] 覆盖 iCloud 离线、延迟下载、冲突、损坏 JSON 和旧格式迁移。
 - [ ] 覆盖 Watch 未配对、断连、重连、重启和过期数据覆盖。
 - [ ] 覆盖 Dev 高风险开关默认关闭、开启、关闭 Overlay、退后台和 OBD 断开，确保自动关闭后零帧发送。
 - [ ] 覆盖 dry-run、单次写入、读取回验、恢复、阶段化取消、断连和未知结果处理。
 - [ ] 覆盖未通过四指长按进入 Dev 工具时无法调用高风险操作。
 - [ ] 使用 Thread Sanitizer 验证可确定复现的并发流程。
+
+本次自动化基础不替代运行时验收：已编译单元测试和 UI 测试产物，但当前工程的 iOS Simulator 目的地不可被 `PTSpeed` scheme 选中，因此测试用例尚未实际执行。
 
 ### 硬件验证
 
@@ -577,19 +579,19 @@ Peugeot 官方资料确认 XP400 GT 使用 5 英寸连接式 TFT 和 i-Connect�
 ### 隐私和后台能力
 
 - [ ] 对照实际代码审核 Bluetooth、Location、Audio、CarPlay、iCloud 和 Wi-Fi Info 权限。
-- [ ] 更新 Privacy Manifest 和 Required Reason API 声明。
+- [x] 保留并静态检查 App、Widget、Watch 三份 `PrivacyInfo.xcprivacy`；Required Reason API 的完整审核仍待发布前完成。
 - [ ] 未使用的后台模式和 entitlement 删除前先确认所有调用方。
 - [ ] CAN、VIN、位置、行程和语音数据明确本地、iCloud 和导出边界。
 - [ ] 日志默认脱敏 VIN、坐标、密钥和用户身份。
 
 ### 发布门禁
 
-- [ ] 三个核心文件哈希保持不变。
+- [x] 三个核心文件哈希保持不变。
 - [ ] Archive 中 App、Widget、Watch 的 `CFBundleShortVersionString` 全部为 `2.0.8`。
 - [ ] Archive 中 App、Widget、Watch 的 `CFBundleVersion` 完全一致，并高于上一个 TestFlight Build。
-- [ ] 本次上传只修改 Build 号，没有修改 `MARKETING_VERSION`、Bundle ID、Watch Companion ID 或 App Group。
+- [x] 本次代码变更保持 `MARKETING_VERSION = 2.0.8`、Bundle ID、Watch Companion ID 和 App Group 不变；Build 统一推进到 `38`。
 - [ ] 新 Build 与 Build 36 的 XP400 仪表 BLE 握手、认证、连接和配置结果一致。
-- [ ] App、Widget、Watch、Tests 完成 Debug 和 Release 构建。
+- [x] App、Widget、Watch 和 Tests 完成 Debug/build-for-testing 构建；Release 构建仍待补。
 - [ ] 单元测试、UI Test、Archive 和导出校验通过。
 - [ ] 真机、Watch、仪表 BLE、OBD、普通模式和 Dev 高风险模式回归通过。
 - [ ] 无启动崩溃、数据损坏、重复 Live Activity 或连接成功率明显退化。
@@ -711,6 +713,156 @@ Peugeot 官方资料确认 XP400 GT 使用 5 英寸连接式 TFT 和 i-Connect�
 - 实车/台架：未执行，因此 50 次仪表循环、50 次 OBD 循环和 30 次并行循环不能标记完成
 - 已知限制：需要在可用依赖缓存、arm64 模拟器或真机上执行 XCTest/完整构建；需要真实 XP400 GT、OBD 设备和配对 iPhone 完成连接/断开/并行压力验收；`OBDAutoConnectEnabled` 已默认关闭，但本次未新增设置页 UI
 - 回滚方式：回退本次 B208-03 的新增协调器、调用入口、生命周期修复、测试、工程引用和本节文档记录即可；不回退、不覆盖三个稳定核心文件
+
+### `B208-05` Trip、GPX、iCloud 与缩略图
+
+- 状态：🟨（持久化代码和主 App Debug 编译完成；完整持久化测试、真机 iCloud、千条行程性能和快速滚动验收待补）
+- 开始日期：2026-08-30
+- 完成日期：待补
+- Commit：基线 `82b57ab2c3badc8e22ca2c30c05a3d65cc6d5ca5`；本次改动尚未提交
+- App 版本：2.0.8
+- Build：PTSpeed/Widget/Watch `38`；PTSpeedTests `35`
+- 修改文件：新增 `Global/Global/PTDataPersistenceActor.swift`；修改 `Global/Global/PTTripManager.swift`、`Global/Location/PTGPXRecorder.swift`、`Global/Views/PTTripDataCell.swift`、`Global/Global/PTDataCollectedViewController.swift`、`Global/Widget/PTWidgetManager.swift`、`PTSpeedTests/PTCoreTests.swift` 和工程文件
+- 未修改核心：`PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`；本次改动后保护 SHA-256 仍保持不变
+- 实施内容：新增串行持久化 actor；本地和 iCloud 均采用同目录临时文件加替换；按 revision 拒绝过期写入；云端不可用时保留本地结果并返回结构化错误；恢复时等待 iCloud 下载状态；损坏历史保留独立备份；Trip 历史异步加载/编码；GPX、地图 JPG 和 Widget 快照统一经 actor 写入；保留旧 GPX 回调、旧数组 JSON 和 iCloud 文件回调兼容入口
+- 静态检查：`swiftc -parse Global/Global/PTDataPersistenceActor.swift` 通过；`git diff --check` 通过；主 App 修改范围编译通过；测试新增“云端不可用仍保留本地”和“旧 revision 不覆盖新 revision”契约
+- Debug/Release 构建：`xcodebuild -workspace CrazyDashboard.xcworkspace -scheme PTSpeed -destination 'generic/platform=iOS' -configuration Debug build CODE_SIGNING_ALLOWED=NO ENABLE_PREVIEWS=NO` 成功；Release 未执行
+- 单元测试：测试 target 没有 workspace scheme，且当前只能先完成编译契约接入；本次未声称 XCTest 已运行
+- Archive：未执行
+- 真机：未执行；iCloud 登录、延迟下载、冲突和断网恢复待在配对 iPhone 验证
+- Apple Watch：未执行；Watch 继续复用 `PTWidgetSharedStatus`，本包未改变 Watch 接收协议
+- 实车/台架：不适用于本工作包，未执行
+- 未完成验证：删除/恢复/旧 JSON 迁移的 XCTest 仍需补齐；一千条行程加载、快速滚动、iCloud 冲突和真实云端状态仍需 Instruments/真机验证
+- 回滚方式：回退本次持久化 actor、异步 Trip/GPX/快照接线、测试和工程引用即可；不回退、不覆盖三个稳定核心文件
+
+### `B208-06` PTT、Live Activity、Widget 与 Watch
+
+- 状态：🟨（代码、静态检查和主 App Debug 编译完成；Live Activity 系统行为、PTT 抖动、权限/音频失败和 iPhone/Watch 真机验收待补）
+- 开始日期：2026-08-30
+- 完成日期：待补
+- Commit：基线 `82b57ab2c3badc8e22ca2c30c05a3d65cc6d5ca5`；本次改动尚未提交
+- App 版本：2.0.8
+- Build：PTSpeed/Widget/Watch `38`；PTSpeedTests `35`
+- 修改文件：`Global/LiveActivity/PTLiveActivityManager.swift`、`Global/PTPTT/Function/PTLocalIntercomManager.swift`、`Global/Widget/PTWatchConnectivityManager.swift`、`PTSpeed/AppDelegate.swift`、`PTSpeedTests/PTCoreTests.swift` 和计划文件
+- 未修改核心：`PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`；本次改动后保护 SHA-256 仍保持不变
+- 实施内容：Live Activity 管理器显式收口到 `@MainActor`；同步入口使用最新期望状态和 generation，避免启动/成员抖动时旧任务复活 Activity；启动阶段只协调并清理遗留 PTT Activity；零成员立即结束全部 PTT Activity；重复 Activity 收敛为一个；权限关闭时清理并记录结构化状态；导航 Activity 使用真实预计到达时间；WatchConnectivity 改用结构化 Logger；PTT 成员列表按成员身份变化触发同步；音频引擎和麦克风权限作为在线显示门禁；移除初始化时重复创建 Multipeer 会话
+- 静态检查：`swiftc -parse` 覆盖修改范围通过；新增 `PTLiveActivityEligibility` 纯逻辑测试；`git diff --check` 通过；核心文件 SHA-256 与保护基线一致
+- Debug/Release 构建：`xcodebuild -workspace CrazyDashboard.xcworkspace -scheme PTSpeed -destination 'generic/platform=iOS' -configuration Debug build CODE_SIGNING_ALLOWED=NO ENABLE_PREVIEWS=NO` 成功；Release 未执行
+- 单元测试：测试 target 没有 workspace scheme；本次新增策略测试已编入测试源，但未声称 XCTest 实际运行
+- Archive：未执行
+- 真机：未执行；无法在当前会话确认系统 Activity 数量、权限拒绝、AudioSession 失败或成员抖动时序
+- Apple Watch：未执行；未验证 iPhone 前台/后台、Watch 离线/重连/重启
+- 实车/台架：不适用于本工作包，未执行
+- 未完成验证：需用真实配对 iPhone + Apple Watch 验证 0/1/N 成员、App 重启、系统禁止 Live Activity、麦克风拒绝、音频失败和离线重连；需确认 audio gate 不影响合法的接收场景
+- 回滚方式：回退本包 Live Activity/PTT 状态协调、WatchConnectivity 日志、AppDelegate 启动协调、策略测试和计划记录即可；不回退、不覆盖三个稳定核心文件
+
+### `B208-07` 普通诊断、Dev 高风险开关与 CAN 实验室
+
+- 状态：🟨（只读边界、诊断解析、Capture 错误回传、离线回放和 Dev 门禁已实现；真实车辆抓包、取消恢复和高风险审计待补）
+- 开始日期：2026-08-30
+- 完成日期：待补
+- Commit：基线 `82b57ab2c3badc8e22ca2c30c05a3d65cc6d5ca5`；本次改动尚未提交
+- App 版本：2.0.8
+- Build：PTSpeed/Widget/Watch `38`；PTSpeedTests `35`
+- 修改文件：新增 `Global/Dev/PTDeveloperSafetyGate.swift`；修改 `Global/OBD/Function/PTOBDiagnosticAddress.swift`、`Global/OBD/Function/PTUDSDiagnosticService.swift`、`Global/OBD/Function/PTDashboardHacker.swift`、`Global/OBD/Function/PTCANRecorder.swift`、`Global/Dev/PTECUSnifferOverlay.swift`、`Global/PTMotoInfoViewController.swift`、`PTSpeedTests/PTCoreTests.swift` 和工程文件
+- 未修改核心：`PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`；本次改动后保护 SHA-256 仍保持不变
+- 实施内容：诊断地址校验 11-bit/29-bit 数值范围及收发宽度；批量 DID 增加数量、单请求耗时、总耗时、取消和请求间隔边界；普通菜单只展示白名单 `F190`，结果直接结构化显示；Fuzz、节点扫描、内存读取和全车深度探测经过现有 Dev 面板高风险开关；关闭开关、退后台或 OBD 断开会撤销高风险状态；未知写入、开机画面、OTA 和 ECU 刷写即使开启开关仍因缺少真实协议证据而拒绝发帧；CAN Capture 增加合法 Header 数值校验、异步写入错误回传、固定内存上限和 JSON/JSONL 离线回放
+- 静态检查：本次修改范围编译通过；新增诊断地址边界、Capture 回放和 Dev 默认只读策略测试契约；`git diff --check` 通过
+- Debug/Release 构建：`xcodebuild -workspace CrazyDashboard.xcworkspace -scheme PTSpeed -destination 'generic/platform=iOS' -configuration Debug build CODE_SIGNING_ALLOWED=NO ENABLE_PREVIEWS=NO` 成功；Release 未执行
+- 单元测试：测试 target 没有 workspace scheme；测试契约已编入测试源，但本次未声称 XCTest 实际运行
+- Archive：未执行
+- 真机：未执行；普通只读抓包、取消/断连恢复、Dev 开关自动关闭和真实高风险零帧审计待在配对 iPhone/OBD/仪表上完成
+- Apple Watch：不适用于本工作包，未改变 Watch target
+- 实车/台架：未执行；未具备 XP400 GT 仪表和 OBD 设备，不能把 Dev 门禁标记为真实车辆验证完成
+- 已知限制：`PTDashboardHacker` 保留旧兼容返回类型，因此拒绝结果同时通过 `PTDeveloperSafetyEvent` 和日志呈现；真正写入/刷写协议尚无合法车型证据，本阶段不会实现猜测型写入或刷写；项目仍有既有 PooTools 脚本和其他文件的并发警告
+- 回滚方式：回退本包诊断地址、批量策略、Capture 回放、开发者门禁、UI 接线、测试、工程引用和本节记录即可；不回退、不覆盖三个稳定核心文件
+
+### `B208-08` 骑行体验功能
+
+- 状态：🟨（基础只读骑行座舱、连接状态、续航和维护建议已接入；完整导航/天气/黑匣子/路书/组队功能及真机验收待补）
+- 开始日期：2026-08-30
+- 完成日期：待补
+- Commit：基线 `82b57ab2c3badc8e22ca2c30c05a3d65cc6d5ca5`；本次改动尚未提交
+- App 版本：2.0.8
+- Build：PTSpeed/Widget/Watch `38`；PTSpeedTests/PTSpeedUITests `38`
+- 修改文件：新增 `Global/Global/PTRideExperience.swift`、`Global/Global/PTRideExperienceViewController.swift`；修改 `Global/PTMotoInfoViewController.swift`、四份 `Global/*/Localizable.strings`、`PTSpeedTests/PTCoreTests.swift` 和工程文件
+- 未修改核心：`PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`；本次改动后保护 SHA-256 保持不变
+- 实施内容：新增只读骑行座舱，集中显示仪表/OBD/PTT 状态、燃油、行程、停车信息和同步时间；续航优先使用仪表原生值，只有显式提供油箱容量时才估算；维护建议仅依据仪表标志和剩余里程，不猜测车型数据；所有入口复用现有连接协调器和 Widget 状态，不新增传输层
+- 静态检查：修改范围 `swiftc -parse` 通过；四份本地化资源、工程文件和 Test Plan 通过静态检查；`git diff --check` 通过
+- Debug/Release 构建：PTSpeed、xp400WidgetExtension 和 `xp400watch Watch App` Debug generic 构建通过；Release 未执行
+- 单元测试：续航、维护、连接状态独立性契约已编入测试源并成功编译；尚未在运行时执行
+- Archive：未执行
+- 真机：未执行；导航、天气、iCloud、仪表/OBD/PTT 和 Watch 真实联动待补
+- Apple Watch：未改变 Watch 接收协议，未执行真机验证
+- 实车/台架：不适用于本基础座舱代码，未执行
+- 未完成验证：完整导航/天气聚合、Moto Black Box、ADV Roadbook、行程故事、趋势维护、组队骑行和多车库不在本次基础实现内
+- 回滚方式：回退座舱模型、座舱控制器、Dashboard 菜单入口、本地化新增 Key、测试、工程引用和本节记录即可；不回退、不覆盖三个稳定核心文件
+
+### `B208-09` XP400 GT 仪表指令研究
+
+- 状态：🟨（证据模型和普通 UI 只读白名单已接入；真实抓包、三次独立会话和效果/恢复验证待补）
+- 开始日期：2026-08-30
+- 完成日期：待补
+- Commit：基线 `82b57ab2c3badc8e22ca2c30c05a3d65cc6d5ca5`；本次改动尚未提交
+- App 版本：2.0.8
+- Build：PTSpeed/Widget/Watch `38`；PTSpeedTests/PTSpeedUITests `38`
+- 修改文件：新增 `Global/OBD/Function/PTXP400InstructionCatalog.swift`；修改 `Global/OBD/Function/PTUDSDiagnosticService.swift`、`PTSpeedTests/PTCoreTests.swift` 和工程文件
+- 未修改核心：`PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`；本次改动后保护 SHA-256 保持不变
+- 实施内容：建立 `Confirmed/Observed/DevTest/Hypothesis/Rejected` 证据等级；普通只读目录唯一确认条目为仪表 VIN DID `F190`（请求 `22F190`、正响应 `62F190`、否定响应 `7F22xx`）；普通 UI 白名单从证据目录派生；未把未知 CAN ID、DID、Seed-Key、Checksum 或 Payload 写入代码
+- Dev 边界：`DevTest` 只能经过现有 `PTECUSnifferOverlay` 的高风险开关；写入、开机画面和刷写仍不能因猜测条目进入普通 UI
+- 静态检查：指令目录校验、DID 白名单契约、修改范围 `swiftc -parse` 和 `git diff --check` 通过
+- Debug/Release 构建：主 App Debug generic iOS 构建通过；Release 未执行
+- 单元测试：普通目录只读契约已编入测试源并成功编译；尚未在真实车辆上执行
+- Archive：未执行
+- 真机：未执行；缺少 XP400 GT 合法原始抓包和三次重复会话证据
+- Apple Watch：不适用于本工作包，未改变 Watch target
+- 实车/台架：未执行
+- 已知限制：公开资料没有提供 XP400 GT 刷写协议、Seed-Key、固件签名或开机画面 DID；因此本包不开放猜测型仪表操作
+- 回滚方式：回退证据目录、只读白名单接线、测试、工程引用和本节记录即可；不回退、不覆盖三个稳定核心文件
+
+### `B208-10` 开发者固件与开机画面真实环境测试
+
+- 状态：🟨（同一 TestFlight 包的 Dev 门禁和前置检查已接入；真实协议/恢复证据不足，实际写入和刷写继续拒绝发送帧）
+- 开始日期：2026-08-30
+- 完成日期：待补
+- Commit：基线 `82b57ab2c3badc8e22ca2c30c05a3d65cc6d5ca5`；本次改动尚未提交
+- App 版本：2.0.8
+- Build：PTSpeed/Widget/Watch `38`；PTSpeedTests/PTSpeedUITests `38`
+- 修改文件：新增 `Global/Dev/PTDeveloperTestPreflight.swift`；修改 `Global/OBD/Function/PTDashboardHacker.swift`、`PTSpeedTests/PTCoreTests.swift` 和工程文件
+- 未修改核心：`PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`；本次改动后保护 SHA-256 保持不变
+- 实施内容：为配置写入、安全例程和固件三个等级建立车辆静止、目标身份、原始备份、协议证据、适配器能力、稳定供电、恢复路径、固件兼容性和 Seed-Key 来源检查；旧 API 保持兼容并接收可选检查表；Dev 开关关闭、协议证据缺失或前置条件不完整时返回拒绝并记录结构化原因
+- 安全边界：当前 `writeDashboardConfig`、开机画面实验、OTA 和 ECU 刷写不发送任何实际帧；未实现猜测式 Seed-Key、刷写状态机或固件写入伪成功
+- 静态检查：前置检查纯逻辑测试、修改范围 `swiftc -parse` 和 `git diff --check` 通过
+- Debug/Release 构建：主 App Debug generic iOS 构建通过；Release 未执行
+- 单元测试：固件前置检查拒绝契约已编入测试源并成功编译；尚未执行真实 Dev 工具或车辆测试
+- Archive：未执行
+- 真机：未执行；需要指定 XP400 GT、合法服务资料/抓包、稳定供电、恢复仪表和可审计授权
+- Apple Watch：不适用于本工作包，未改变 Watch target
+- 实车/台架：未执行；Level A/B/C 均保持未开放状态
+- 已知限制：即使打开现有高风险开关，缺少完整协议证据时也不会进入实际写入/刷写；这不是实车成功验证
+- 回滚方式：回退前置检查、Hacker 门禁参数、测试、工程引用和本节记录即可；不回退、不覆盖三个稳定核心文件
+
+### `B208-11` 测试、隐私与发布
+
+- 状态：🟨（Test Plan、UI Test Target、核心测试编译和三目标 Debug 构建完成；测试运行、Release/Archive、真机和 B208-12 待补）
+- 开始日期：2026-08-30
+- 完成日期：待补
+- Commit：基线 `82b57ab2c3badc8e22ca2c30c05a3d65cc6d5ca5`；本次改动尚未提交
+- App 版本：2.0.8
+- Build：PTSpeed/Widget/Watch/PTSpeedTests/PTSpeedUITests `38`
+- 修改文件：新增 `PTSpeed.xctestplan`、`PTSpeedUITests/PTSpeedUITests.swift`；修改 `CrazyDashboard.xcodeproj/project.pbxproj`、`CrazyDashboard.xcodeproj/xcshareddata/xcschemes/PTSpeed.xcscheme`、`PTSpeedTests/PTCoreTests.swift` 和计划文件
+- 未修改核心：`PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`；本次改动后保护 SHA-256 保持不变
+- 实施内容：新增单渠道 `PTSpeed` UI Test Target 和启动冒烟测试；现有纯数据测试扩展到 Widget application context、续航/维护、诊断地址、UDS 正/负响应、CAN 11/29-bit Header、DLC、ISO-TP 多帧、CSV 转义、旧 Capture JSON、事件快照、Capture diff/回放、连接状态独立性、持久化版本保护、PTT 门禁、XP400 证据目录和开发者前置检查；不创建第二个 App 或 Lab 发布链路
+- Test Plan：`jq empty PTSpeed.xctestplan` 通过，workspace `xcodebuild -showTestPlans` 可发现 `PTSpeed`；scheme 保留 `PTSpeedTests` 和 `PTSpeedUITests` 两个 Testable
+- 静态检查：23 个修改/新增 Swift 文件 `swiftc -parse` 通过；`plutil -lint` 通过工程文件和 App/Widget/Watch 三份 `PrivacyInfo.xcprivacy`；`git diff --check` 通过
+- Debug/Release 构建：`PTSpeed`、`xp400WidgetExtension`、`xp400watch Watch App` Debug generic 构建通过；`PTSpeed` `build-for-testing` 成功生成 `PTSpeed_PTSpeed_iphoneos27.0-arm64.xctestrun`；Release 未执行
+- 单元/UI 测试：当前 `PTSpeed` scheme 的 iOS Simulator 目的地无法选中（可用模拟器与该 scheme 的 supported platforms 不匹配），因此本次没有把测试编译结果表述为测试用例已运行；UI 启动测试也未在真机执行
+- Archive：未执行
+- 真机：未执行；尚未覆盖 iOS 17/最新系统、配对 Watch、BLE/OBD 并行、普通模式和 Dev 模式
+- Apple Watch：Watch Debug 构建通过，未完成真实配对设备验证
+- 实车/台架：未执行
+- 已知限制：现有 Pods 含预编译导航依赖和模拟器架构限制；未修改 Pods/依赖配置绕过；B208-12 String Catalog 仍是发布前依赖
+- 回滚方式：回退 UI Test Target、Test Plan、scheme Testable、Build 38 测试配置、本包测试扩展和本节记录即可；不回退、不覆盖三个稳定核心文件
 
 ### `B208-XX` 工作包名称
 

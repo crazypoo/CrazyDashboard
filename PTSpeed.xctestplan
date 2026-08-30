@@ -1,0 +1,31 @@
+{
+  "configurations" : [
+    {
+      "id" : "E0A48CD9-67E3-4A0E-BAAA-200522F7A728",
+      "name" : "Debug",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:CrazyDashboard.xcodeproj",
+        "identifier" : "55F52C63303D4025007527C2",
+        "name" : "PTSpeedTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:CrazyDashboard.xcodeproj",
+        "identifier" : "6000000A0000000000000080",
+        "name" : "PTSpeedUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

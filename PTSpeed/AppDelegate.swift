@@ -106,7 +106,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         if PTMotoUserDefaultStruct.PTTLaunchAutoRestoreEnabled {
             PTLocalIntercomManager.shared.restoreIntercomStateAtLaunch()
         } else {
-            PTLiveActivityManager.shared.stopIntercomActivity()
+            PTLiveActivityManager.shared.reconcileIntercomActivitiesAtLaunch()
         }
         
         return true
