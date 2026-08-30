@@ -115,6 +115,9 @@
 		600000010000000000000071 /* PTDeveloperTestPreflight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000071 /* PTDeveloperTestPreflight.swift */; };
 		600000010000000000000080 /* PTSpeedUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000080 /* PTSpeedUITests.swift */; };
 		600000010000000000000081 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55F52C60303D4025007527C2 /* XCTest.framework */; };
+		600000010000000000000090 /* PTRideBlackBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000090 /* PTRideBlackBox.swift */; };
+		600000010000000000000091 /* PTRideStory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000091 /* PTRideStory.swift */; };
+		600000010000000000000092 /* PTRideGroupSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000092 /* PTRideGroupSafety.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -271,6 +274,9 @@
 		600000020000000000000080 /* PTSpeedUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTSpeedUITests.swift; sourceTree = "<group>"; };
 		600000020000000000000081 /* PTSpeedUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PTSpeedUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		600000020000000000000082 /* PTSpeed.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; name = PTSpeed.xctestplan; path = ../PTSpeed.xctestplan; sourceTree = "<group>"; };
+		600000020000000000000090 /* PTRideBlackBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideBlackBox.swift; sourceTree = "<group>"; };
+		600000020000000000000091 /* PTRideStory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideStory.swift; sourceTree = "<group>"; };
+		600000020000000000000092 /* PTRideGroupSafety.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideGroupSafety.swift; sourceTree = "<group>"; };
 		55FDBCA73010CD6E00EE7FA5 /* PTMOTOParkingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMOTOParkingManager.swift; sourceTree = "<group>"; };
 		55FDBCAA3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMOTOParkingAnotationView.swift; sourceTree = "<group>"; };
 		55FE295A300CA4E8000E741F /* PTBluetoothManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBluetoothManager.swift; sourceTree = "<group>"; };
@@ -671,6 +677,9 @@
 			children = (
 				600000020000000000000040 /* PTDataPersistenceActor.swift */,
 				600000020000000000000030 /* PTVehicleConnectivityCoordinator.swift */,
+				600000020000000000000090 /* PTRideBlackBox.swift */,
+				600000020000000000000091 /* PTRideStory.swift */,
+				600000020000000000000092 /* PTRideGroupSafety.swift */,
 				600000020000000000000060 /* PTRideExperience.swift */,
 				600000020000000000000061 /* PTRideExperienceViewController.swift */,
 				55F52C56303D4025007527C2 /* PTRideReviewAnalyzer.swift */,
@@ -1106,6 +1115,9 @@
 				5598683A301348FC0049684D /* PTNotificationCenter.swift in Sources */,
 				55986640301138A30049684D /* PTTripManager.swift in Sources */,
 				600000010000000000000040 /* PTDataPersistenceActor.swift in Sources */,
+				600000010000000000000090 /* PTRideBlackBox.swift in Sources */,
+				600000010000000000000091 /* PTRideStory.swift in Sources */,
+				600000010000000000000092 /* PTRideGroupSafety.swift in Sources */,
 				600000010000000000000060 /* PTRideExperience.swift in Sources */,
 				600000010000000000000061 /* PTRideExperienceViewController.swift in Sources */,
 				554110DB301E65AB0059BFCF /* PTLiDARCollisionManager.swift in Sources */,

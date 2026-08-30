@@ -190,7 +190,7 @@ public enum PTOBDLinkState: Sendable, Equatable
 | 🟨 | `B208-05` | Trip、GPX、iCloud 与缩略图 | B208-00 | 持久化 actor、原子写入和恢复链路已接入；真机云端/性能验收待补。 |
 | 🟨 | `B208-06` | PTT、Live Activity、Widget、Watch | B208-00 | PTT Activity 单入口和状态门禁已实现；真机/Watch 场景待补。 |
 | 🟨 | `B208-07` | 普通诊断、Dev 高风险开关与 CAN 实验室 | B208-03 | 只读白名单、批量边界、Capture 回放与 Dev 高风险门禁已接入；真机抓包验收待补。 |
-| 🟨 | `B208-08` | 骑行体验功能 | B208-03、B208-05、B208-06 | 基础只读骑行座舱、连接状态、续航与维护建议已接入；完整回放、路书、组队和真机验收待补。 |
+| 🟨 | `B208-08` | 骑行体验功能 | B208-03、B208-05、B208-06 | 基础只读座舱、Black Box、行程故事和组队安全视图已接入；完整路书、Watch 交互、多车库和真机验收待补。 |
 | 🟨 | `B208-09` | XP400 仪表指令证据库 | B208-07 | 已建立证据模型并把普通 UI 收口到 Confirmed 只读指令；真实抓包和重复验证待补。 |
 | 🟨 | `B208-10` | 开发者固件与开机画面实车测试 | B208-07、B208-09 | 同一 TestFlight 包内已接入现有 Dev 工具的高风险门禁和前置检查；真实协议证据与实车分级测试待补。 |
 | 🟨 | `B208-11` | 隐私、Archive 与 TestFlight 发布 | B208-00、B208-03～B208-08、B208-12 | Test Plan、UI Test Target、核心 Debug 构建和静态隐私检查已接入；Release、Archive、真机和 B208-12 待补。 |
@@ -440,18 +440,18 @@ public enum PTOBDLinkState: Sendable, Equatable
 
 ### 后续 2.0.8 Builds 功能
 
-- [ ] **Moto Black Box**：保存事件前 60 秒和后 30 秒的 GPS、车辆状态与手动标记；默认本地存储，不自动上传。
+- [x] **Moto Black Box（基础）**：已按事件生成前 60 秒和后 30 秒的 GPS/车辆遥测窗口，支持行程事件和手动标记；本地限量存储且不自动上传；实时窗口预览和真实设备验证待补。
 - [x] **智能续航（基础）**：优先使用仪表原生续航；只有显式提供油箱容量和平均油耗时才估算，不猜测车型参数。
 - [ ] **ADV Roadbook**：GPX 路书、岔路备注、越野点位和离线骑行记录。
-- [ ] **行程故事**：地图回放、速度/海拔/油耗曲线、照片和事件时间轴。
+- [x] **行程故事（基础）**：已基于既有行程报告展示距离、平均/最高速度、事件、最大倾角和爬升/下降；地图回放、油耗曲线、照片和完整事件时间轴待补。
 - [x] **预测维护（基础）**：依据仪表维护标志和剩余里程生成只读建议；里程、DTC、电压趋势模型仍待后续补充。
-- [ ] **组队骑行**：危险路况标记、成员掉队提醒、低延迟 PTT 状态和停车点共享。
+- [x] **组队骑行（基础安全视图）**：已复用现有 PTT 位置包展示成员连接、位置过期、距离过远和无位置状态；危险标记广播、掉队策略、低延迟音频状态和停车点共享待补。
 - [ ] **Apple Watch 骑行助手**：连接、燃油、里程、停车位置、导航震动和骑行摘要。
 - [ ] **多车库**：为不同摩托保存设置、维护记录、油耗模型和诊断报告。
 
 候选想法，可在实施前删除：
 
-- [ ] 弯道与坡度骑行统计，仅作骑行复盘，不鼓励竞速。
+- [x] 弯道与坡度骑行统计（基础）：已纳入行程故事的最大倾角和爬升/下降复盘，仅作骑行复盘，不鼓励竞速；分段曲线和路线关联待补。
 - [ ] 轮胎、胎压和悬挂的手动配置档案。
 - [ ] 雨天、低温、大风和低能见度路线提醒。
 - [ ] Siri/App Intents 快速开始导航、行程和 PTT。
@@ -797,6 +797,33 @@ Peugeot 官方资料确认 XP400 GT 使用 5 英寸连接式 TFT 和 i-Connect�
 - 实车/台架：不适用于本基础座舱代码，未执行
 - 未完成验证：完整导航/天气聚合、Moto Black Box、ADV Roadbook、行程故事、趋势维护、组队骑行和多车库不在本次基础实现内
 - 回滚方式：回退座舱模型、座舱控制器、Dashboard 菜单入口、本地化新增 Key、测试、工程引用和本节记录即可；不回退、不覆盖三个稳定核心文件
+
+### `B208-08` 骑行体验功能（追加 Slice 1：Black Box、行程故事与组队安全）
+
+- 状态：🟨（本 Slice 的基础能力已实现；完整路书、Watch 骑行交互、多车库和真实设备验收仍待补）
+- 开始日期：2026-08-30
+- 完成日期：2026-08-30（本 Slice 代码实现完成）
+- Commit：基线 `e750544a892f54fd6c2231f307b7dceaa47311d9`；本次改动尚未提交
+- App 版本：2.0.8
+- Build：PTSpeed/Widget/Watch/PTSpeedTests/PTSpeedUITests `38`
+- 修改文件：新增 `Global/Global/PTRideBlackBox.swift`、`Global/Global/PTRideStory.swift`、`Global/Global/PTRideGroupSafety.swift`；修改 `Global/Global/PTTripManager.swift`、`Global/Global/PTRideExperienceViewController.swift`、四份 `Global/*/Localizable.strings`、`PTSpeedTests/PTCoreTests.swift` 和工程文件
+- 未修改核心：`PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`；本次改动后保护 SHA-256 仍需在交付前再次核对
+- 实施内容：
+  - Moto Black Box 复用既有 `PTRoutePoint`、行程复盘事件和越野事件，生成事件前 60 秒/后 30 秒窗口；支持手动标记，明确记录窗口是否因行程边界而不完整。
+  - Black Box 使用 `PTDataPersistenceActor` 本地持久化，默认最多保留 60 个片段，不同步 iCloud；清空或删除行程时清理关联片段。
+  - 行程故事复用 `PTTripReport`，展示距离、平均/最高速度、事件数量、最大倾角和爬升/下降；弯道与坡度候选功能先收敛为只读复盘指标，不新增车型猜测。
+  - 组队安全视图复用现有 PTT 位置通知和 `PTLocationEngine`，展示成员正常、位置过期、距离过远和无位置状态；没有新增传输协议、音频链路或危险控制。
+  - 骑行体验入口新增故事、组队安全、Black Box 摘要和手动事件按钮，所有文案覆盖现有四种语言。
+- 静态检查：修改范围 `swiftc -parse` 通过；工程文件与四份本地化资源 `plutil -lint` 通过；`git diff --check` 通过。
+- Debug 构建：`PTSpeed` generic iOS、`xp400WidgetExtension` generic iOS、`xp400watch Watch App` generic watchOS 构建通过；测试 target `build-for-testing` 通过。构建输出仍包含既有 Pods 脚本、预编译导航依赖和 Metal 工具链路径警告。
+- 单元测试：新增 Black Box 窗口边界/本地数量上限、行程故事摘要、组队安全状态分类测试，并成功编译进 `PTSpeedTests`；未将编译结果表述为运行时通过。
+- 测试运行：尝试运行 `PTSpeedTests`，当前可用 iOS 27 Simulator 与 `XP400Ride.app` 的 supported platforms 不匹配，`xcodebuild test` 以 destination 不可用退出；需在匹配的 iOS 设备或真机重新执行。
+- Archive：未执行。
+- 真机：未执行；尚未验证长途轨迹、后台定位、行程结束后 Black Box 异步保存、存储上限、PTT 成员掉线/转发位置和低电量场景。
+- Apple Watch：未修改 Watch 数据协议或界面，Watch target 仅完成回归构建，未执行配对设备验证。
+- 实车/台架：不需要新增车辆命令，未执行；稳定 BLE/OBD 核心仍只通过既有公开状态和轨迹数据复用。
+- 后续未完成：ADV Roadbook、地图/照片/油耗曲线/完整事件时间轴、危险标记广播和停车点共享、Watch 导航震动与骑行摘要、多车库以及其它候选功能仍保持待办。
+- 回滚方式：回退本 Slice 的三个骑行体验新文件、`PTTripManager`/座舱控制器接线、本地化 Key、测试、工程引用和本节记录即可；不回退、不覆盖三个稳定核心文件。
 
 ### `B208-09` XP400 GT 仪表指令研究
 

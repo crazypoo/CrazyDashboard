@@ -61,6 +61,144 @@ final class PTCoreTests: XCTestCase {
         XCTAssertEqual(required.state, .required)
     }
 
+    // EN: Black-box windows must stay bounded and preserve the available ride context.
+    // ES: Las ventanas de la caja negra deben estar acotadas y conservar el contexto disponible.
+    // 中文：黑匣子窗口必须有边界，并保留事件周围实际存在的行程上下文。
+    func testRideBlackBoxBuildsBoundedEventWindow() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let event = PTRideBlackBoxEvent(
+            rideStartTime: start,
+            timestamp: start.addingTimeInterval(60),
+            source: .manual,
+            title: "manual",
+            latitude: 31.2304,
+            longitude: 121.4737
+        )
+        let points = [-60.0, 0.0, 30.0].map { offset in
+            makeRoutePoint(timestamp: event.timestamp.addingTimeInterval(offset), brakingG: 0)
+        }
+
+        let clip = PTRideBlackBoxBuilder.makeClip(
+            event: event,
+            points: points,
+            beforeSeconds: 60,
+            afterSeconds: 30,
+            createdAt: start
+        )
+
+        XCTAssertEqual(clip.points.count, 3)
+        XCTAssertEqual(clip.availableBeforeSeconds, 60, accuracy: 0.001)
+        XCTAssertEqual(clip.availableAfterSeconds, 30, accuracy: 0.001)
+        XCTAssertTrue(clip.hasCompleteRequestedWindow)
+    }
+
+    // EN: The local black-box repository must cap retained clips and keep cloud sync disabled.
+    // ES: El repositorio local debe limitar los clips retenidos y mantener desactivada la nube.
+    // 中文：本地黑匣子仓库必须限制保留数量，并保持关闭云端同步。
+    func testRideBlackBoxStoreCapsLocalClips() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PTRideBlackBox-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let persistence = PTDataPersistenceActor(localDirectoryURL: directory)
+        let store = PTRideBlackBoxStore(
+            fileName: "blackbox.json",
+            maximumClipCount: 1,
+            persistence: persistence
+        )
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let firstEvent = PTRideBlackBoxEvent(
+            id: UUID(),
+            rideStartTime: start,
+            timestamp: start,
+            source: .manual,
+            title: "first",
+            latitude: 31.2304,
+            longitude: 121.4737
+        )
+        let secondEvent = PTRideBlackBoxEvent(
+            id: UUID(),
+            rideStartTime: start,
+            timestamp: start.addingTimeInterval(1),
+            source: .manual,
+            title: "second",
+            latitude: 31.2304,
+            longitude: 121.4737
+        )
+
+        _ = try await store.append([
+            PTRideBlackBoxBuilder.makeClip(event: firstEvent, points: []),
+            PTRideBlackBoxBuilder.makeClip(event: secondEvent, points: [])
+        ])
+        let restored = try await store.load()
+
+        XCTAssertEqual(restored.count, 1)
+        XCTAssertEqual(restored.first?.event.title, "second")
+        let localData = try await persistence.readData(
+            fileName: "blackbox.json",
+            restoreFromICloud: false
+        )
+        XCTAssertFalse(localData.isEmpty)
+        let deletedCount = try await store.deleteClips(forRideStartTime: start)
+        let clipsAfterDelete = try await store.load()
+        XCTAssertEqual(deletedCount, 1)
+        XCTAssertTrue(clipsAfterDelete.isEmpty)
+    }
+
+    // EN: A ride story must expose existing cornering, elevation and event data without guessing new vehicle metrics.
+    // ES: La historia debe exponer los datos existentes de curvas, elevación y eventos sin inventar métricas.
+    // 中文：行程故事必须展示已有的弯道、爬升和事件数据，不能猜测新车型指标。
+    func testRideStorySummarizesExistingTelemetry() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let report = makeTripReport(start: start)
+        let story = PTRideStoryBuilder.make(from: report)
+
+        XCTAssertEqual(story.distanceKm, 12.5, accuracy: 0.001)
+        XCTAssertEqual(story.averageSpeedKmh, 30, accuracy: 0.001)
+        XCTAssertEqual(story.maximumLeanAngle, 25, accuracy: 0.001)
+        XCTAssertEqual(story.elevationGainMeters, 10, accuracy: 0.001)
+        XCTAssertEqual(story.elevationLossMeters, 5, accuracy: 0.001)
+        XCTAssertEqual(story.eventCount, 1)
+        XCTAssertEqual(story.eventBreakdown[PTRideReviewEventType.highLean.rawValue], 1)
+    }
+
+    // EN: Group safety must distinguish a stale position, a distant rider and a connected rider.
+    // ES: La seguridad de grupo debe distinguir una posición obsoleta, un piloto lejano y uno conectado.
+    // 中文：组队安全分析必须区分位置过期、成员过远和正常连接三种状态。
+    func testRideGroupSafetyClassifiesPeerStates() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let local = PTRideCoordinate(latitude: 31.2304, longitude: 121.4737)
+        let connected = PTRidePeerLocationSample(
+            peerID: "connected",
+            displayName: "Connected",
+            coordinate: PTRideCoordinate(latitude: 31.2305, longitude: 121.4738),
+            speedKmh: 30,
+            course: 0,
+            updatedAt: now
+        )
+        let stale = PTRidePeerLocationSample(
+            peerID: "stale",
+            displayName: "Stale",
+            coordinate: local,
+            speedKmh: 0,
+            course: 0,
+            updatedAt: now.addingTimeInterval(-20)
+        )
+        let snapshot = PTRideGroupSafetyAnalyzer.analyze(
+            activePeerIDs: ["connected", "stale", "missing"],
+            samples: ["connected": connected, "stale": stale],
+            localCoordinate: local,
+            now: now,
+            policy: PTRideGroupSafetyPolicy(staleAfterSeconds: 15, tooFarDistanceMeters: 20)
+        )
+
+        XCTAssertEqual(snapshot.peers.first(where: { $0.peerID == "connected" })?.state, .tooFar)
+        XCTAssertEqual(snapshot.peers.first(where: { $0.peerID == "stale" })?.state, .stale)
+        XCTAssertEqual(snapshot.peers.first(where: { $0.peerID == "missing" })?.state, .noLocation)
+        XCTAssertEqual(snapshot.stalePeerCount, 1)
+        XCTAssertEqual(snapshot.noLocationPeerCount, 1)
+    }
+
     func testDiagnosticAddressNormalizesHeaders() {
         let address = PTOBDDiagnosticAddress(tx: " 7a0 ", rx: "7a8")
 
@@ -470,6 +608,58 @@ final class PTCoreTests: XCTestCase {
             gForceX: 0,
             gForceZ: 0,
             slipRatio: 0
+        )
+    }
+
+    private func makeTripReport(start: Date) -> PTTripReport {
+        let event = PTRideReviewEvent(
+            type: .highLean,
+            timestamp: start.addingTimeInterval(30),
+            latitude: 31.2304,
+            longitude: 121.4737,
+            peakValue: 45,
+            speedKmh: 50,
+            severity: 1.2
+        )
+        return PTTripReport(
+            startTime: start,
+            endTime: start.addingTimeInterval(1_800),
+            durationMinutes: 30,
+            maxSpeedKmh: 80,
+            maxRpm: 6_000,
+            startOdoKm: 100,
+            endOdoKm: 112.5,
+            distanceKm: 12.5,
+            avgConsumption: 4.5,
+            maxLeanAngleLeft: -25,
+            maxLeanAngleRight: 20,
+            leanAngleTrace: [-5, 25, 10],
+            maxAccelerationG: 0.4,
+            maxBrakingG: -0.5,
+            maxCorneringG: 0.3,
+            maxBumpG: 0.4,
+            maxPitchUp: 8,
+            maxPitchDown: -6,
+            gForceYTrace: [0, 0, 0],
+            gForceXTrace: [0, 0, 0],
+            gForceZTrace: [0, 0, 0],
+            pitchTrace: [0, 2, 0],
+            relativeAltitudeTrace: [100, 110, 105],
+            pressureTrace: [1_000, 1_001, 1_000],
+            idleTimeSeconds: 30,
+            speedTrace: [20, 40, 30],
+            rpmTrace: [2_000, 4_000, 3_000],
+            best0To100Time: nil,
+            gpsAvgSpeedKmh: 30,
+            gpsMaxSpeedKmh: 80,
+            gpsMinSpeedKmh: 5,
+            gpxFileName: "MotoRide_test.gpx",
+            maxSlipRatio: 0,
+            heavySlipCount: 0,
+            slipRatioTrace: [0, 0, 0],
+            offRoadEvents: [],
+            distanceSource: .odometer,
+            reviewEvents: [event]
         )
     }
 }

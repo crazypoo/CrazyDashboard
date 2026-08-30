@@ -208,6 +208,7 @@ extension PTTripReport {
 public let MotorcycleTripReportGenerated = NSNotification.Name("MotorcycleTripReportGenerated")
 public let MotorcycleMotionUpdate = NSNotification.Name("MotorcycleMotionUpdate")
 public let MotorcycleTripHistoryLoaded = NSNotification.Name("MotorcycleTripHistoryLoaded")
+public let PTRideBlackBoxUpdated = NSNotification.Name("PTRideBlackBoxUpdated")
 
 /// 骑行行程统计与存储管理器
 @objcMembers
@@ -295,6 +296,7 @@ public class PTTripManager: NSObject {
     private var slipRatioTraceArray: [Double] = []
     private var offRoadEventsArray: [PTTripOffRoadEvent] = []
     private var lastOffRoadEventTime: Date? // 防抖控制
+    private var manualBlackBoxEvents: [PTRideBlackBoxEvent] = []
 
     private var historyWriteRevision: Int64 = 0
     private var historyLoadTask: Task<Void, Never>?
@@ -515,6 +517,12 @@ public class PTTripManager: NSObject {
         }
         tripHistory.removeAll()
         saveHistory()
+        Task {
+            try? await PTRideBlackBoxStore.shared.deleteAll()
+            await MainActor.run {
+                NotificationCenter.default.post(name: PTRideBlackBoxUpdated, object: nil)
+            }
+        }
         PTNSLogConsole("🗑️ [行程记录] 已清空所有历史数据")
     }
     
@@ -578,6 +586,7 @@ public class PTTripManager: NSObject {
         slipRatioTraceArray.removeAll()
         offRoadEventsArray.removeAll()
         lastOffRoadEventTime = nil
+        manualBlackBoxEvents.removeAll()
 
         PTMotion.shared.resetLeanAngles()
         PTMotion.shared.startMotion()
@@ -672,6 +681,8 @@ public class PTTripManager: NSObject {
         }
         
         let reviewEvents = PTRideReviewAnalyzer.analyze(points: routeArray)
+        let offRoadEventsForBlackBox = offRoadEventsArray
+        let manualEventsForBlackBox = manualBlackBoxEvents
         let generatedFileName = routeArray.isEmpty ? nil : PTGPXRecorder.shared.makeGPXFileName()
         let routePointsForExport = routeArray
         let coordinatesForSnapshot = routeArray.map {
@@ -762,7 +773,73 @@ public class PTTripManager: NSObject {
             }
         }
 
+        // EN: Persist local event clips after the ride report is built; no telemetry transport is added.
+        // ES: Guarda clips locales después de crear el informe; no se añade ningún transporte de telemetría.
+        // 中文：行程报告生成后保存本地事件片段，不新增任何遥测传输层。
+        let blackBoxPoints = routePointsForExport
+        let blackBoxBuildTask = Task.detached(priority: .utility) {
+            PTRideBlackBoxBuilder.makeClips(
+                rideStartTime: start,
+                reviewEvents: reviewEvents,
+                offRoadEvents: offRoadEventsForBlackBox,
+                manualEvents: manualEventsForBlackBox,
+                points: blackBoxPoints
+            )
+        }
+        Task {
+            let clips = await blackBoxBuildTask.value
+            guard !clips.isEmpty else { return }
+            do {
+                _ = try await PTRideBlackBoxStore.shared.append(clips)
+                await MainActor.run {
+                    NotificationCenter.default.post(name: PTRideBlackBoxUpdated, object: clips)
+                }
+            } catch {
+                PTNSLogConsole("❌ [Moto Black Box] 本地事件片段保存失败: \(error.localizedDescription)")
+            }
+        }
+
         PTNSLogConsole("🏁 [行程报告生成] 已提交持久化，当前共保存 \(tripHistory.count) 条记录。")
+    }
+
+    public var isRecordingRide: Bool {
+        isRiding
+    }
+
+    /// EN: Add a manual marker to the current ride without changing the vehicle command path.
+    /// ES: Añade una marca manual a la ruta actual sin cambiar el canal de comandos del vehículo.
+    /// 中文：为当前行程添加手动标记，不改变车辆指令链路。
+    @discardableResult
+    public func markCurrentRideEvent(title: String = "手动事件") -> Bool {
+        guard isRiding,
+              let timestamp = routeArray.last?.timestamp ?? lastGpsLocation?.timestamp else {
+            return false
+        }
+
+        let coordinate = routeArray.last.map {
+            PTRideCoordinate(latitude: $0.lat, longitude: $0.lon)
+        } ?? lastGpsLocation.map {
+            PTRideCoordinate(
+                latitude: $0.coordinate.latitude,
+                longitude: $0.coordinate.longitude
+            )
+        }
+        guard let coordinate, coordinate.isValid else { return false }
+
+        let event = PTRideBlackBoxEvent(
+            rideStartTime: startTime ?? timestamp,
+            timestamp: timestamp,
+            source: .manual,
+            title: title.isEmpty ? "手动事件" : title,
+            latitude: coordinate.latitude,
+            longitude: coordinate.longitude,
+            peakValue: 0,
+            speedKmh: currentLiveSpeed,
+            severity: 1
+        )
+        manualBlackBoxEvents.append(event)
+        PTNSLogConsole("📍 [Moto Black Box] 已加入手动事件标记")
+        return true
     }
     
     deinit {
@@ -892,7 +969,22 @@ extension PTTripManager {
             deleteFileFromDisk(fileName: gpxName)
             deleteFileFromDisk(fileName: jpgName)
         }
-        
+
+        Task {
+            do {
+                let deletedCount = try await PTRideBlackBoxStore.shared.deleteClips(
+                    forRideStartTime: trip.startTime
+                )
+                if deletedCount > 0 {
+                    await MainActor.run {
+                        NotificationCenter.default.post(name: PTRideBlackBoxUpdated, object: nil)
+                    }
+                }
+            } catch {
+                PTNSLogConsole("⚠️ [Moto Black Box] 关联事件片段清理失败: \(error.localizedDescription)")
+            }
+        }
+
         PTNSLogConsole("🗑️ [行程管理] 完美删除行程: \(trip.startTime)，并已释放关联的磁盘空间。")
     }
     

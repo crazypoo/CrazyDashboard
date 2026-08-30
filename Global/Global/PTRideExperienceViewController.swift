@@ -24,6 +24,21 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
     private let maintenanceValueLabel = UILabel()
     private let parkingValueLabel = UILabel()
     private let updatedValueLabel = UILabel()
+    private let storyValueLabel = UILabel()
+    private let groupSafetyValueLabel = UILabel()
+    private let blackBoxValueLabel = UILabel()
+    private var blackBoxClipCount = 0
+
+    private lazy var markBlackBoxButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle(PTDashboardConfig.languageFunc(text: "ride_mark_event"), for: .normal)
+        button.setTitleColor(.white, for: .normal)
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        button.backgroundColor = PTDashboardConfig.shared.appMainColor
+        button.layer.cornerRadius = 12
+        button.addTarget(self, action: #selector(markBlackBoxEvent), for: .touchUpInside)
+        return button
+    }()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -43,12 +58,38 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
             name: PTIntercomGlobalStatusChanged,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleRideStateChange),
+            name: MotorcycleTripHistoryLoaded,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleRideStateChange),
+            name: PTRideGroupSafetyCoordinator.snapshotDidChange,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleBlackBoxUpdate),
+            name: PTRideBlackBoxUpdated,
+            object: nil
+        )
+        PTRideGroupSafetyCoordinator.shared.start()
+        loadBlackBoxClips()
         refreshSummary()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        PTRideGroupSafetyCoordinator.shared.start()
         refreshSummary()
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        PTRideGroupSafetyCoordinator.shared.stop()
     }
 
     override func handleMotorcycleConnect() {
@@ -69,11 +110,16 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
         refreshSummary()
     }
 
+    @objc private func handleBlackBoxUpdate() {
+        loadBlackBoxClips()
+    }
+
     private func configureLabels() {
         let labels = [
             dashboardValueLabel, obdValueLabel, pttValueLabel, fuelValueLabel,
             tripValueLabel, rangeValueLabel, maintenanceValueLabel,
-            parkingValueLabel, updatedValueLabel
+            parkingValueLabel, updatedValueLabel, storyValueLabel,
+            groupSafetyValueLabel, blackBoxValueLabel
         ]
         labels.forEach {
             $0.textColor = .white
@@ -122,6 +168,19 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
             title: PTDashboardConfig.languageFunc(text: "ride_parking"),
             rows: [("", parkingValueLabel)]
         ))
+        contentStack.addArrangedSubview(makeSection(
+            title: PTDashboardConfig.languageFunc(text: "ride_story"),
+            rows: [("", storyValueLabel)]
+        ))
+        contentStack.addArrangedSubview(makeSection(
+            title: PTDashboardConfig.languageFunc(text: "ride_group_safety"),
+            rows: [("", groupSafetyValueLabel)]
+        ))
+        contentStack.addArrangedSubview(makeSection(
+            title: PTDashboardConfig.languageFunc(text: "ride_black_box"),
+            rows: [("", blackBoxValueLabel)]
+        ))
+        contentStack.addArrangedSubview(markBlackBoxButton)
         contentStack.addArrangedSubview(makeSection(
             title: PTDashboardConfig.languageFunc(text: "ride_last_sync"),
             rows: [("", updatedValueLabel)]
@@ -211,6 +270,13 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
             rangeValueLabel.text = PTDashboardConfig.languageFunc(text: "ride_not_available")
         }
         maintenanceValueLabel.text = maintenanceDescription(summary.maintenanceAdvice)
+        storyValueLabel.text = storyDescription(for: PTTripManager.shared.tripHistory.first)
+        groupSafetyValueLabel.text = groupSafetyDescription(PTRideGroupSafetyCoordinator.shared.snapshot)
+        blackBoxValueLabel.text = blackBoxClipCount > 0
+            ? PTDashboardConfig.language(key: "ride_black_box_count", blackBoxClipCount)
+            : PTDashboardConfig.languageFunc(text: "ride_black_box_empty")
+        markBlackBoxButton.isEnabled = PTTripManager.shared.isRecordingRide
+        markBlackBoxButton.alpha = markBlackBoxButton.isEnabled ? 1 : 0.45
 
         if summary.parkedLatitude != 0 || summary.parkedLongitude != 0 {
             let coordinate = String(format: "%.5f, %.5f", summary.parkedLatitude, summary.parkedLongitude)
@@ -221,6 +287,69 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
             parkingValueLabel.text = PTDashboardConfig.languageFunc(text: "ride_no_parking")
         }
         updatedValueLabel.text = formattedDate(summary.updatedAt)
+    }
+
+    private func storyDescription(for trip: PTTripReport?) -> String {
+        guard let trip else {
+            return PTDashboardConfig.languageFunc(text: "ride_story_empty")
+        }
+        let story = PTRideStoryBuilder.make(from: trip)
+        let unit = PTDashboardConfig.shared.appShowUniLabel
+        let distance = PTDashboardConfig.shared.appShowMileageValueString(story.distanceKm) + unit
+        let speed = PTDashboardConfig.shared.appShowMileageValueString(story.averageSpeedKmh) + unit + "/h"
+        let elevation = PTDashboardConfig.language(
+            key: "ride_story_elevation",
+            Int(story.elevationGainMeters.rounded()),
+            Int(story.elevationLossMeters.rounded())
+        )
+        return [
+            PTDashboardConfig.language(key: "ride_story_distance", distance),
+            PTDashboardConfig.language(key: "ride_story_speed", speed),
+            PTDashboardConfig.language(key: "ride_story_events", story.eventCount),
+            PTDashboardConfig.language(
+                key: "ride_story_lean",
+                String(format: "%.1f", story.maximumLeanAngle)
+            ),
+            elevation
+        ].joined(separator: "\n")
+    }
+
+    private func groupSafetyDescription(_ safety: PTRideGroupSafetySnapshot) -> String {
+        guard safety.isGroupActive else {
+            return PTDashboardConfig.languageFunc(text: "ride_group_none")
+        }
+        if !safety.hasAlert {
+            return PTDashboardConfig.language(key: "ride_group_ok", safety.peers.count)
+        }
+
+        var descriptions: [String] = []
+        if safety.stalePeerCount > 0 {
+            descriptions.append(PTDashboardConfig.language(key: "ride_group_stale", safety.stalePeerCount))
+        }
+        if safety.tooFarPeerCount > 0 {
+            descriptions.append(PTDashboardConfig.language(key: "ride_group_far", safety.tooFarPeerCount))
+        }
+        if safety.noLocationPeerCount > 0 {
+            descriptions.append(PTDashboardConfig.language(key: "ride_group_unknown", safety.noLocationPeerCount))
+        }
+        return descriptions.joined(separator: "\n")
+    }
+
+    private func loadBlackBoxClips() {
+        Task { [weak self] in
+            guard let clips = try? await PTRideBlackBoxStore.shared.load() else { return }
+            self?.blackBoxClipCount = clips.count
+            self?.refreshSummary()
+        }
+    }
+
+    @objc private func markBlackBoxEvent() {
+        let title = PTDashboardConfig.languageFunc(text: "ride_manual_event")
+        guard PTTripManager.shared.markCurrentRideEvent(title: title) else {
+            PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "ride_mark_event_unavailable"))
+            return
+        }
+        PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "ride_mark_event_saved"))
     }
 
     private func linkDescription(_ link: PTVehicleLinkSnapshot) -> String {
@@ -262,4 +391,5 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
+
 }
