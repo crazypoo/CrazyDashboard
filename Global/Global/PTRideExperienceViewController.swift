@@ -230,7 +230,7 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
     private func refreshSummary() {
         let dashboardManager = PTBluetoothServerManager.shared
         let widgetStatus = PTWidgetSharedStatus.read(
-            from: UserDefaults(suiteName: "group.com.yd.PTSpeed.xp400")
+            from: UserDefaults(suiteName: PTWidgetDataKeys.appGroupID)
         )
         let vehicle = PTVehicleConnectivityCoordinator.shared.snapshot
         let summary = PTRideExperienceSummary(

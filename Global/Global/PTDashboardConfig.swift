@@ -259,20 +259,11 @@ extension PTDashboardConfig {
     /// ES: Resuelve una clave del String Catalog compilado usando el locale elegido por la app.
     /// 中文：使用 App 当前选择的语言，从编译后的 String Catalog 解析文案。
     class func languageFunc(text:String) ->String {
-        String(
-            localized: String.LocalizationValue(text),
-            table: "Localizable",
-            bundle: .main,
-            locale: PTLanguage.share.locale
-        )
+        text.localizedFormat(arguments: [], using: "Localizable", in: .main)
     }
     
     static func language(key:String, _ args: CVarArg...) ->String {
-        String(
-            format: PTDashboardConfig.languageFunc(text: key),
-            locale: PTLanguage.share.locale,
-            arguments: args
-        )
+        key.localizedFormat(arguments: args, using: "Localizable", in: .main)
     }
 }
 

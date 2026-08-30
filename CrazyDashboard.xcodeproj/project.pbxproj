@@ -118,6 +118,8 @@
 		600000010000000000000091 /* PTRideStory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000091 /* PTRideStory.swift */; };
 		600000010000000000000092 /* PTRideGroupSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000092 /* PTRideGroupSafety.swift */; };
 		600000010000000000000093 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000093 /* Localizable.xcstrings */; };
+		600000010000000000000100 /* PTMotoAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000100 /* PTMotoAppIntents.swift */; };
+		600000010000000000000101 /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 600000020000000000000101 /* AppIntents.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -299,6 +301,8 @@
 		600000020000000000000091 /* PTRideStory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideStory.swift; sourceTree = "<group>"; };
 		600000020000000000000092 /* PTRideGroupSafety.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideGroupSafety.swift; sourceTree = "<group>"; };
 		600000020000000000000093 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		600000020000000000000100 /* PTMotoAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoAppIntents.swift; sourceTree = "<group>"; };
+		600000020000000000000101 /* AppIntents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = System/Library/Frameworks/AppIntents.framework; sourceTree = SDKROOT; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -353,6 +357,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				600000010000000000000024 /* WatchConnectivity.framework in Frameworks */,
+				600000010000000000000101 /* AppIntents.framework in Frameworks */,
 				5A200D40EF300920887AD052 /* Pods_PTSpeed.framework in Frameworks */,
 				55E61692301B45B50075F883 /* QWeatherSDK in Frameworks */,
 				5577E6762FD657F30004733F /* libz.tbd in Frameworks */,
@@ -517,6 +522,7 @@
 				55499E20301B201400A1A2D9 /* Weather */,
 				55499E00301AFBF700A1A2D9 /* Widget */,
 				55499DFC301AF9EE00A1A2D9 /* LiveActivity */,
+				600000020000000000000100 /* PTMotoAppIntents.swift */,
 				5598676C3011C9720049684D /* Settings.bundle */,
 				55F503B9300FCA1E00C5D085 /* Global */,
 				55F503B5300FC99000C5D085 /* Model */,
@@ -773,6 +779,7 @@
 				33464FDDE31899C7F87FB6EC /* Pods_PTSpeed.framework */,
 				55499E09301AFCE800A1A2D9 /* WidgetKit.framework */,
 				55499E0B301AFCE800A1A2D9 /* SwiftUI.framework */,
+				600000020000000000000101 /* AppIntents.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -1160,6 +1167,7 @@
 				55499E2C301B2C8800A1A2D9 /* PTPTTViewController.swift in Sources */,
 				557D0054302ECDAE008BA492 /* PTPeugeotDashBoardViewController.swift in Sources */,
 				5577E6AC2FD662C20004733F /* PTMapView.swift in Sources */,
+				600000010000000000000100 /* PTMotoAppIntents.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

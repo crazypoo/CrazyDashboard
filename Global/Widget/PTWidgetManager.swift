@@ -12,7 +12,7 @@ import PooTools
 @objcMembers
 public class PTWidgetDataManager: NSObject {
     public static let shared = PTWidgetDataManager()
-    private let appGroupID = "group.com.yd.PTSpeed.xp400" // 保持你的 App Group ID
+    private let appGroupID = PTWidgetDataKeys.appGroupID
     private let iCloudFileName = "PTWidgetDataSnapshot.json"
     
     private var sharedDefaults: UserDefaults? {

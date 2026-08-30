@@ -10,6 +10,10 @@
 import Foundation
 
 public enum PTWidgetDataKeys {
+    // EN: Keep the App Group identifier beside the shared keys used by every status consumer.
+    // ES: Conserva el identificador del App Group junto a las claves compartidas de todos los consumidores.
+    // 中文：将所有状态消费者共用的 App Group 标识与共享键集中维护。
+    nonisolated public static let appGroupID = "group.com.yd.PTSpeed.xp400"
     nonisolated public static let fuelLevel = "widget_fuelLevel"
     nonisolated public static let tripKm = "widget_tripKm"
     nonisolated public static let isConnected = "widget_isConnected"

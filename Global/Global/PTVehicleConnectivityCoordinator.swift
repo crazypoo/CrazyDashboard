@@ -98,7 +98,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
 
     public private(set) var snapshot: PTVehicleSnapshot = .initial
 
-    private let widgetAppGroupID = "group.com.yd.PTSpeed.xp400"
+    private let widgetAppGroupID = PTWidgetDataKeys.appGroupID
     private var dashboardAttemptInFlight = false
     private var obdAttemptInFlight = false
     private var obdRetryRequired = false

@@ -26,6 +26,50 @@ final class PTCoreTests: XCTestCase {
         XCTAssertEqual(restored, source)
     }
 
+    // EN: External routes must preserve legacy URLs while rejecting ambiguous parameters.
+    // ES: Las rutas externas deben conservar las URL antiguas y rechazar parámetros ambiguos.
+    // 中文：外部路由必须兼容旧 URL，同时拒绝含义不明确的参数。
+    func testExternalRouteParsing() {
+        XCTAssertEqual(
+            PTRoutingManager.parse(url: URL(string: "xp400://checkFuel")!),
+            .checkFuel
+        )
+        XCTAssertEqual(
+            PTRoutingManager.parse(url: URL(string: "xp400://action/openHUD")!),
+            .openHUD
+        )
+        XCTAssertEqual(
+            PTRoutingManager.parse(url: URL(string: "xp400://antiTheft?enable=true")!),
+            .toggleAntiTheft(enable: true)
+        )
+        XCTAssertEqual(
+            PTRoutingManager.parse(url: URL(string: "xp400://antiTheft?enable=false")!),
+            .toggleAntiTheft(enable: false)
+        )
+        XCTAssertEqual(
+            PTRoutingManager.parse(url: URL(string: "xp400://navigate?destination=%E7%8F%A0%E6%B1%9F%E6%96%B0%E5%9F%8E")!),
+            .navigateTo(destination: "珠江新城")
+        )
+
+        XCTAssertEqual(
+            PTRoutingManager.parse(url: URL(string: "xp400://antiTheft")!),
+            .unknown
+        )
+        XCTAssertEqual(
+            PTRoutingManager.parse(url: URL(string: "xp400://antiTheft?enable=maybe")!),
+            .unknown
+        )
+        XCTAssertEqual(
+            PTRoutingManager.parse(url: URL(string: "xp400://navigate?destination=%0A")!),
+            .unknown
+        )
+        XCTAssertEqual(
+            PTRoutingManager.parse(url: URL(string: "xp400://navigate?destination=%20%20")!),
+            .unknown
+        )
+        XCTAssertNil(PTRoutingManager.parse(url: URL(string: "other://checkFuel")!))
+    }
+
     // EN: The ride cockpit must prefer the dashboard range and never invent a tank profile.
     // ES: El cockpit debe preferir la autonomía del tablero y nunca inventar un perfil del depósito.
     // 中文：骑行座舱必须优先使用仪表续航，不能擅自猜测油箱参数。

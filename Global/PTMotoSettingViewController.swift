@@ -10,7 +10,6 @@ import PooTools
 import SwifterSwift
 import SnapKit
 import SafeSFSymbols
-import AttributedString
 
 class PTMotoSettingViewController: PTMotoBaseViewController {
 
@@ -162,6 +161,20 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
     lazy var shortCut:UILabel = {
         let view = UILabel()
         view.numberOfLines = 0
+        view.font = .appfont(size: 13)
+        view.textColor = .lightGray
+        return view
+    }()
+
+    private lazy var shortcutsButton: UIButton = {
+        let view = UIButton(type: .system)
+        view.titleLabel?.font = .appfont(size: 14)
+        view.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .normal)
+        view.contentHorizontalAlignment = .left
+        view.addActionHandlers { _ in
+            guard let url = URL(string: "shortcuts://") else { return }
+            UIApplication.shared.open(url, options: [:])
+        }
         return view
     }()
         
@@ -186,8 +199,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         return stack
     }()
     
-    var antiTheftTest:Bool = false
-
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
@@ -214,7 +225,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                                         dashLanguageTitle, dashBoardLanguageButton,
                                         pttRestoreTitle, pttRestoreSwitch])
         
-        view.addSubviews([shortCut, disconnect, socialStackView, versionLabel])
+        view.addSubviews([shortCut, shortcutsButton, disconnect, socialStackView, versionLabel])
         
         setupSocialButtons()
                 
@@ -272,6 +283,12 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
         }
 
+        shortcutsButton.snp.makeConstraints { make in
+            make.top.equalTo(shortCut.snp.bottom).offset(8)
+            make.left.equalTo(shortCut)
+            make.height.equalTo(32)
+        }
+
         versionLabel.snp.makeConstraints { make in
             make.bottom.equalToSuperview().inset(CGFloat.kTabbarHeight_Total + CGFloat.GlobalItemSpacing)
             make.centerX.equalToSuperview()
@@ -289,44 +306,8 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             make.bottom.equalTo(socialStackView.snp.top).offset(-30)
         }
         
-        let checkFuelString = "xp400://checkFuel"
-        let checkAntiTheftString = "xp400://antiTheft?enable="
-        let hudString = "xp400://openHUD"
-        let fuelStationString = "xp400://confirmGasStationRoute"
-        let navString = "xp400://navigate?destination="
-
-        let shortAtt: ASAttributedString = """
-        \(wrap: .embedding("""
-        \(PTDashboardConfig.languageFunc(text: "Support shortcut"),.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)))
-        \(checkFuelString,.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)),.underline(.single, color: PTDashboardConfig.shared.appMainColor),.action {
-            if let url = URL(string: checkFuelString),UIApplication.shared.canOpenURL(url) {
-                PTAppStoreFunction.jumpLink(url: url)
-            }
-        })
-        \("\(checkAntiTheftString)true OR \(checkAntiTheftString)false",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)),.underline(.single, color: PTDashboardConfig.shared.appMainColor),.action {
-            if let url = URL(string: "\(checkAntiTheftString)\(self.antiTheftTest.string)"),UIApplication.shared.canOpenURL(url) {
-                self.antiTheftTest.toggle()
-                PTAppStoreFunction.jumpLink(url: url)
-            }
-        },.paragraph(.alignment(.left),.lineSpacing(2.5)))
-        \(hudString,.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)),.underline(.single, color: PTDashboardConfig.shared.appMainColor),.action {
-            if let url = URL(string: hudString),UIApplication.shared.canOpenURL(url) {
-                PTAppStoreFunction.jumpLink(url: url)
-            }
-        })
-        \(fuelStationString,.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)),.underline(.single, color: PTDashboardConfig.shared.appMainColor),.action {
-            if let url = URL(string: fuelStationString),UIApplication.shared.canOpenURL(url) {
-                PTAppStoreFunction.jumpLink(url: url)
-            }
-        })
-        \(navString + "????????",.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 13)),.underline(.single, color: PTDashboardConfig.shared.appMainColor),.action {
-            if let url = URL(string: "\(navString)珠江新城"),UIApplication.shared.canOpenURL(url) {
-                PTAppStoreFunction.jumpLink(url: url)
-            }
-        })
-        """),.paragraph(.alignment(.left),.lineSpacing(CGFloat.GlobalItemSpacing)))
-        """
-        shortCut.attributed.text = shortAtt
+        updateShortcutGuide()
+        shortcutsButton.setTitle(PTDashboardConfig.languageFunc(text: "shortcuts_open"), for: .normal)
                 
         dashBoardColorButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashBoardUniButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
@@ -347,6 +328,8 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 self.dashUniTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_set_title")
                 self.pttRestoreTitle.text = PTDashboardConfig.languageFunc(text: "ptt_restore_on_launch")
                 self.disconnect.setTitle(PTDashboardConfig.languageFunc(text: "button_dis_connect"), for: .normal)
+                self.updateShortcutGuide()
+                self.shortcutsButton.setTitle(PTDashboardConfig.languageFunc(text: "shortcuts_open"), for: .normal)
             }
         }
         vcDidLoad = true
@@ -399,6 +382,15 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         view.textAlignment = .left
         view.textColor = PTDashboardConfig.shared.appMainColor
         return view
+    }
+
+    // EN: Present the supported Siri and Shortcuts actions without exposing raw test URLs in the production settings page.
+    // ES: Presenta las acciones compatibles de Siri y Atajos sin exponer URL de prueba en los ajustes de producción.
+    // 中文：在正式设置页展示支持的 Siri 与快捷指令操作，不再暴露原始测试 URL。
+    private func updateShortcutGuide() {
+        let title = PTDashboardConfig.languageFunc(text: "shortcuts_title")
+        let help = PTDashboardConfig.languageFunc(text: "shortcuts_help")
+        shortCut.text = "\(title)\n\(help)"
     }
     
     func dashBoardSetResult(finish:Bool) {

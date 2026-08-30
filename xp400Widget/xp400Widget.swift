@@ -24,8 +24,10 @@ struct MotoStatusEntry: TimelineEntry {
 // MARK: - 数据提供者
 struct MotoWidgetProvider: TimelineProvider {
     
-    // 🚨 保持与主 App 一致的 App Group ID
-    let appGroupID = "group.com.yd.PTSpeed.xp400"
+    // EN: Read the same shared container used by the main app.
+    // ES: Lee el mismo contenedor compartido que utiliza la app principal.
+    // 中文：读取主 App 使用的同一个共享容器。
+    let appGroupID = PTWidgetDataKeys.appGroupID
     
     func placeholder(in context: Context) -> MotoStatusEntry {
         MotoStatusEntry(date: Date(), fuelLevel: 0, tripKm: 0, isConnected: false, parkedLat: 0, parkedLon: 0, address: "XXXX", lastUpdateTime: Date())
@@ -291,7 +293,7 @@ struct MotoNaviLiveActivity: Widget {
 
 struct AvatarImageView: View {
     let filename: String
-    let appGroupID = "group.com.yd.PTSpeed.xp400"
+    let appGroupID = PTWidgetDataKeys.appGroupID
     
     var body: some View {
         // 尝试从 App Group 中读取队友发来的自定义头像
