@@ -118,21 +118,79 @@ public class PTLocalIntercomManager: NSObject {
         }
     }
 
-    public private(set) var activePeers: [MCPeerID] = [] {
-        didSet {
-            let oldPeerIDs = oldValue.map(\.displayName)
-            let newPeerIDs = activePeers.map(\.displayName)
-            if oldPeerIDs != newPeerIDs { globalStatusChangeSet() }
-        }
-    }
+    public private(set) var activePeers: [MCPeerID] = []
     private var connectingPeers: Set<MCPeerID> = []
     
     public var connectedPeersCount: Int {
+        guard isRunning else { return 0 }
         return activePeers.count
     }
 
     private var hasConnectedPeers: Bool {
-        !activePeers.isEmpty
+        connectedPeersCount > 0
+    }
+
+    // EN: Track session generations so stale callbacks can be diagnosed safely.
+    // ES: Registrar generaciones de sesión para diagnosticar callbacks obsoletos de forma segura.
+    // 中文：记录 Session 代次，便于安全诊断过期回调。
+    private var multipeerSessionGeneration: UInt = 0
+
+    // EN: Keep one deterministic, duplicate-free peer snapshot for every consumer.
+    // ES: Mantener una instantánea determinista y sin duplicados para todos los consumidores.
+    // 中文：为所有消费者保留一份确定且无重复的成员快照。
+    internal static func normalizedPeerSnapshot(_ peers: [MCPeerID]) -> [MCPeerID] {
+        var seen = Set<MCPeerID>()
+        return peers.filter { seen.insert($0).inserted }
+    }
+
+    // EN: Publish membership changes only from the serialized state context.
+    // ES: Publicar cambios de miembros solo desde el contexto de estado serializado.
+    // 中文：只在串行化的状态上下文中发布成员变化。
+    private func publishPeerSnapshot(_ peers: [MCPeerID], force: Bool = false) {
+        let snapshot = Self.normalizedPeerSnapshot(peers)
+        let previousPeers = Set(activePeers)
+        let nextPeers = Set(snapshot)
+        let changed = previousPeers != nextPeers || activePeers.count != snapshot.count
+        guard force || changed else { return }
+
+        activePeers = snapshot
+        delegate?.intercomManager(self, didUpdatePeers: snapshot.count)
+        delegate?.intercomManager(self, didUpdatePeerList: snapshot)
+        globalStatusChangeSet()
+    }
+
+    // EN: Reconcile against MCSession instead of maintaining a historical peer list.
+    // ES: Reconciliar con MCSession en lugar de mantener una lista histórica de pares.
+    // 中文：以 MCSession 对账，不再维护历史成员列表。
+    private func reconcilePeerSnapshot(from session: MCSession) -> (peers: [MCPeerID], changed: Bool)? {
+        guard isRunning, session === self.session else { return nil }
+
+        let snapshot = Self.normalizedPeerSnapshot(session.connectedPeers)
+        let previousPeers = Set(activePeers)
+        let nextPeers = Set(snapshot)
+        let changed = previousPeers != nextPeers || activePeers.count != snapshot.count
+
+        for peer in previousPeers.subtracting(nextPeers) {
+            lastReceivedAudio.removeValue(forKey: peer)
+            peerAvatars.removeValue(forKey: peer)
+            currentSpeakingPeers.remove(peer)
+        }
+        connectingPeers.subtract(nextPeers)
+
+        if snapshot.isEmpty {
+            stopSpeakingDetector()
+            stopPingTimer()
+            if isHandsFreeMode {
+                toggleHandsFreeMode(isOn: false)
+            }
+        } else if previousPeers.isEmpty {
+            startSpeakingDetector()
+            startPingTimer()
+        }
+
+        publishPeerSnapshot(snapshot)
+        PTNSLogConsole("📡 [PTT] 成员快照 generation=\(multipeerSessionGeneration) system=\(session.connectedPeers.count) sanitized=\(snapshot.count) published=\(activePeers.count) running=\(isRunning)")
+        return (snapshot, changed)
     }
 
     private lazy var myUUID: String = {
@@ -317,8 +375,8 @@ public class PTLocalIntercomManager: NSObject {
         session?.disconnect()
         advertiser?.stopAdvertisingPeer()
         browser?.stopBrowsingForPeers()
-        
-        // 🌟 2. 每次都生成一个极其纯净、全新的 Session！
+
+        multipeerSessionGeneration &+= 1
         session = MCSession(peer: myPeerId, securityIdentity: nil, encryptionPreference: .required)
         session.delegate = self
         
@@ -334,8 +392,8 @@ public class PTLocalIntercomManager: NSObject {
         guard !isRunning else { return }
 
         // 新建组网会话前清掉上一次会话可能残留的成员状态。
-        activePeers.removeAll()
         connectingPeers.removeAll()
+        publishPeerSnapshot([], force: true)
         isRunning = true
         
         UserDefaults.standard.set(true, forKey: intercomPowerStateKey)
@@ -357,8 +415,8 @@ public class PTLocalIntercomManager: NSObject {
         advertiser?.stopAdvertisingPeer()
         browser?.stopBrowsingForPeers()
         session?.disconnect()
-        activePeers.removeAll()
         connectingPeers.removeAll()
+        publishPeerSnapshot([], force: true)
         
         // 如果开启了免提，重置它
         isHandsFreeMode = false
@@ -843,32 +901,50 @@ public class PTLocalIntercomManager: NSObject {
 extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDelegate, MCNearbyServiceBrowserDelegate {
     
     public func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String : String]?) {
-        if session.connectedPeers.contains(peerID) || self.activePeers.contains(peerID) || self.connectingPeers.contains(peerID) {
-            self.delegate?.intercomManager(self, didUpdatePeers: self.activePeers.count)
-            return
-        }
-        guard let peerUUID = info?["uuid"], peerUUID != self.myUUID else {
-            PTNSLogConsole("⚠️ [组网] 发现非法或幽灵节点，已抛弃")
-            return
-        }
+        DispatchQueue.main.async { [weak self] in
+            guard let self,
+                  self.isRunning,
+                  browser === self.browser,
+                  let session = self.session else { return }
 
-        if self.myUUID > peerUUID {
-            self.connectingPeers.insert(peerID)
-            PTNSLogConsole("➡️ [组网决断] 我方准备发起邀请给: \(peerID.displayName)")
-            browser.invitePeer(peerID, to: self.session, withContext: nil, timeout: 15)
-        } else {
-            PTNSLogConsole("⬅️ [组网决断] 我方(UUID小) 保持安静，等待 \(peerID.displayName) 拉我...")
+            let connectedPeers = Set(session.connectedPeers)
+            guard !connectedPeers.contains(peerID),
+                  !self.activePeers.contains(peerID),
+                  !self.connectingPeers.contains(peerID) else { return }
+
+            guard let peerUUID = info?["uuid"], peerUUID != self.myUUID else {
+                PTNSLogConsole("⚠️ [组网] 发现非法或幽灵节点，已抛弃")
+                return
+            }
+
+            if self.myUUID > peerUUID {
+                self.connectingPeers.insert(peerID)
+                PTNSLogConsole("➡️ [组网决断] 我方准备发起邀请给: \(peerID.displayName)")
+                browser.invitePeer(peerID, to: session, withContext: nil, timeout: 15)
+            } else {
+                PTNSLogConsole("⬅️ [组网决断] 我方(UUID小) 保持安静，等待 \(peerID.displayName) 拉我...")
+            }
         }
     }
     
     public func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didReceiveInvitationFromPeer peerID: MCPeerID, withContext context: Data?, invitationHandler: @escaping (Bool, MCSession?) -> Void) {
-        invitationHandler(true, session)
+        DispatchQueue.main.async { [weak self] in
+            guard let self,
+                  self.isRunning,
+                  advertiser === self.advertiser,
+                  let session = self.session else {
+                invitationHandler(false, nil)
+                return
+            }
+            invitationHandler(true, session)
+        }
     }
     
     public func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
             // 忽略旧会话在重新组网或关闭后的迟到回调，避免复活过期成员。
-            guard session === self.session else { return }
+            guard self.isRunning, session === self.session else { return }
 
             let stateName: String
             switch state {
@@ -883,46 +959,30 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
             case .connected:
                 guard self.isRunning else { return }
                 self.connectingPeers.remove(peerID)
-                
-                if !self.activePeers.contains(peerID) {
-                    self.activePeers.append(peerID)
-                }
-                if self.activePeers.count == 1 {
-                    self.startSpeakingDetector()
-                    self.startPingTimer()
-                }
-                // 有车友加入网络
-                self.updateStatusAndBroadcast(PTDashboardConfig.language(key: "ptt_ready_connected_name", peerID.displayName))
-                self.delegate?.intercomManager(self, didUpdatePeers: self.activePeers.count)
-                self.delegate?.intercomManager(self, didUpdatePeerList: self.activePeers)
 
-                let currentAvatar = self.currentMyAvatar()
-                self.sendMyAvatar(to: peerID, avatarImage: currentAvatar)
+                guard let result = self.reconcilePeerSnapshot(from: session) else { return }
+                if result.changed {
+                    // 有车友加入网络
+                    self.updateStatusAndBroadcast(PTDashboardConfig.language(key: "ptt_ready_connected_name", peerID.displayName))
+
+                    let currentAvatar = self.currentMyAvatar()
+                    self.sendMyAvatar(to: peerID, avatarImage: currentAvatar)
+                }
                 
             case .notConnected:
                 // 有车友掉线或主动离开网络
                 self.connectingPeers.remove(peerID)
                 PTNSLogConsole("❌ [组网] \(peerID.displayName) 已断开连接")
-                // 检查车队里是否还有其他人
-                self.activePeers.removeAll { $0 == peerID }
-                self.lastReceivedAudio.removeValue(forKey: peerID) // 清理掉线的人
-                self.peerAvatars.removeValue(forKey: peerID)
-                if self.activePeers.isEmpty {
-                    self.stopSpeakingDetector()
-                    self.stopPingTimer()
-                    if self.isHandsFreeMode {
-                        self.toggleHandsFreeMode(isOn: false)
-                    }
+                guard let result = self.reconcilePeerSnapshot(from: session) else { return }
+                if result.changed, result.peers.isEmpty {
                     // 车队空了，恢复到等待状态
                     self.updateStatusAndBroadcast(PTDashboardConfig.languageFunc(text: "ptt_ready_connect"))
-                } else {
+                } else if result.changed {
                     // 车队里还有人，拿当前列表里的第一个车友名字来显示
-                    if let remainingPeer = self.activePeers.first {
+                    if let remainingPeer = result.peers.first {
                         self.updateStatusAndBroadcast(PTDashboardConfig.language(key: "ptt_ready_connected_name", remainingPeer.displayName))
                     }
                 }
-                self.delegate?.intercomManager(self, didUpdatePeers: self.activePeers.count)
-                self.delegate?.intercomManager(self, didUpdatePeerList: self.activePeers)
 
             case .connecting:
                 // 正在尝试建立连接时（可选：通常底层瞬间完成，这里仅打印日志方便调试）
@@ -1017,7 +1077,12 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
         self.receiveAndPlay(data: data)
     }
 
-    public func browser(_ browser: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {}
+    public func browser(_ browser: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, browser === self.browser else { return }
+            self.connectingPeers.remove(peerID)
+        }
+    }
     public func session(_ session: MCSession, didReceive stream: InputStream, withName streamName: String, fromPeer peerID: MCPeerID) {}
     public func session(_ session: MCSession, didStartReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, with progress: Progress) { }
     public func session(_ session: MCSession, didFinishReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, at localURL: URL?, withError error: Error?) {

@@ -7,6 +7,7 @@
 //
 
 import XCTest
+import MultipeerConnectivity
 @testable import XP400Ride
 
 final class PTCoreTests: XCTestCase {
@@ -24,6 +25,15 @@ final class PTCoreTests: XCTestCase {
         let restored = PTWidgetSharedStatus(applicationContext: source.applicationContext)
 
         XCTAssertEqual(restored, source)
+    }
+
+    // EN: Parameterized dashboard localization must use the integer argument, not the variadic argument array itself.
+    // ES: La localización parametrizada debe usar el entero, no el propio array de argumentos variádicos.
+    // 中文：带参数的仪表盘本地化必须使用实际整数，不能把可变参数数组本身当成参数。
+    func testParameterizedDashboardLocalizationUsesActualArgument() {
+        let text = PTDashboardConfig.language(key: "ptt_ready_connect_count", 0)
+
+        XCTAssertTrue(text.contains("0"), "Unexpected localized count text: \(text)")
     }
 
     // EN: External routes must preserve legacy URLs while rejecting ambiguous parameters.
@@ -623,6 +633,24 @@ final class PTCoreTests: XCTestCase {
             audioOperational: true,
             microphoneAvailable: true
         ))
+    }
+
+    // EN: Membership normalization must remove repeated peer identities without using display names.
+    // ES: La normalización debe eliminar identidades repetidas sin usar los nombres visibles.
+    // 中文：成员规范化必须移除重复身份，不能使用显示昵称去重。
+    @MainActor
+    func testPTTPeerSnapshotNormalizesRepeatedIdentities() {
+        let firstPeer = MCPeerID(displayName: "Rider A")
+        let secondPeer = MCPeerID(displayName: "Rider B")
+
+        let snapshot = PTLocalIntercomManager.normalizedPeerSnapshot([
+            firstPeer,
+            firstPeer,
+            secondPeer,
+            secondPeer
+        ])
+
+        XCTAssertEqual(snapshot.map(\.displayName), ["Rider A", "Rider B"])
     }
 
     // EN: Developer-only operations must be denied by default and without protocol evidence.

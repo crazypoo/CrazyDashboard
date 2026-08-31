@@ -196,12 +196,8 @@ class PTPTTViewController: PTMotoBaseViewController {
         setLeftButtons(views: [appLogo])
         setCustomRightButtons(buttons: [pencilButton,avatarButton],buttonSpacing: CGFloat.GlobalItemSpacing)
 
-        self.connectFriend = PTLocalIntercomManager.shared.connectedPeersCount
-        self.peersCountLabel.text = PTDashboardConfig.language(key: "ptt_ready_connect_count", self.connectFriend)
-        self.peersCountLabel.textColor = self.connectFriend > 0 ? .systemGreen : .gray
+        refreshPeerUI()
         self.statusLabel.text = PTLocalIntercomManager.shared.currentStatusText
-        
-        updateUIState()
     }
 
     public override func viewDidLoad() {
@@ -240,8 +236,7 @@ class PTPTTViewController: PTMotoBaseViewController {
         }
         
         // 2. 附近车友数量
-        peersCountLabel.text = PTDashboardConfig.language(key: "ptt_ready_connect_count", self.connectFriend)
-        peersCountLabel.textColor = .systemGreen
+        updatePeerCount(connectFriend)
         peersCountLabel.textAlignment = .center
         peersCountLabel.font = .appfont(size: 14,bold: true)
         view.addSubview(peersCountLabel)
@@ -310,11 +305,44 @@ class PTPTTViewController: PTMotoBaseViewController {
         pt_observerLanguage {
             if self.vcDidLoad {
                 self.statusLabel.text = PTDashboardConfig.languageFunc(text: "ptt_ready_connect")
-                self.peersCountLabel.text = PTDashboardConfig.language(key: "ptt_ready_connect_count", self.connectFriend)
+                self.updatePeerCount(self.connectFriend)
                 self.pttButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_push"), for: .normal)
             }
         }
         vcDidLoad = true
+    }
+
+    // EN: Render the count and peer cards from one current membership snapshot.
+    // ES: Renderizar el contador y las tarjetas desde una sola instantánea actual.
+    // 中文：使用同一份当前成员快照渲染人数和成员头像。
+    private func refreshPeerUI() {
+        refreshPeerUI(with: PTLocalIntercomManager.shared.activePeers)
+    }
+
+    private func refreshPeerUI(with peers: [MCPeerID]) {
+        updatePeerCount(peers.count)
+        renderPeerList(peers)
+        updateUIState()
+    }
+
+    private func updatePeerCount(_ count: Int) {
+        connectFriend = count
+        peersCountLabel.text = PTDashboardConfig.language(key: "ptt_ready_connect_count", count)
+        peersCountLabel.textColor = count > 0 ? .systemGreen : .gray
+    }
+
+    private func renderPeerList(_ peers: [MCPeerID]) {
+        peersStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        peerViews.removeAll()
+
+        for peer in peers {
+            let avatar = PTPeerAvatarView(peerID: peer)
+            avatar.snp.makeConstraints { make in
+                make.width.height.equalTo(64)
+            }
+            peersStackView.addArrangedSubview(avatar)
+            peerViews[peer] = avatar
+        }
     }
     
     @objc private func togglePTTMode() {
@@ -353,7 +381,7 @@ class PTPTTViewController: PTMotoBaseViewController {
             // 主动开机
             PTLocalIntercomManager.shared.startOfflineIntercom()
         }
-        updateUIState()
+        refreshPeerUI()
     }
 
     // MARK: - 按键交互逻辑
@@ -429,29 +457,17 @@ extension PTPTTViewController: PTLocalIntercomDelegate {
     }
     
     public func intercomManager(_ manager: PTLocalIntercomManager, didUpdatePeers count: Int) {
-        DispatchQueue.main.async {
-            self.connectFriend = count
-            self.peersCountLabel.text = PTDashboardConfig.language(key: "ptt_ready_connect_count", self.connectFriend)
-            self.peersCountLabel.textColor = self.connectFriend > 0 ? .systemGreen : .gray
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.updatePeerCount(count)
             self.updateUIState()
         }
     }
     
     public func intercomManager(_ manager: PTLocalIntercomManager, didUpdatePeerList peers: [MCPeerID]) {
-        DispatchQueue.main.async {
-            // 清理旧的头像
-            self.peersStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-            self.peerViews.removeAll()
-            
-            // 为每一个车友生成一个新的圆形头像
-            for peer in peers {
-                let avatar = PTPeerAvatarView(peerID: peer)
-                avatar.snp.makeConstraints { make in
-                    make.width.height.equalTo(64) // 头像基础大小
-                }
-                self.peersStackView.addArrangedSubview(avatar)
-                self.peerViews[peer] = avatar
-            }
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.refreshPeerUI(with: peers)
         }
     }
     

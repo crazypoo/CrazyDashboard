@@ -259,11 +259,18 @@ extension PTDashboardConfig {
     /// ES: Resuelve una clave del String Catalog compilado usando el locale elegido por la app.
     /// 中文：使用 App 当前选择的语言，从编译后的 String Catalog 解析文案。
     class func languageFunc(text:String) ->String {
-        text.localizedFormat(arguments: [], using: "Localizable", in: .main)
+        text.localized(using: "Localizable", in: .main)
     }
     
-    static func language(key:String, _ args: CVarArg...) ->String {
-        key.localizedFormat(arguments: args, using: "Localizable", in: .main)
+    static func language(key: String, _ args: CVarArg...) -> String {
+        // EN: Format the collected arguments directly; optional parameters after a variadic parameter can box the array as one value.
+        // ES: Formatear directamente los argumentos reunidos; los parámetros opcionales después de un variádico pueden empaquetar el array como un solo valor.
+        // 中文：直接格式化收集到的参数；可变参数后面的可选参数可能会把整个数组错误地装箱成一个值。
+        let localizedText = key.localized(using: "Localizable", in: .main)
+        guard !args.isEmpty else { return localizedText }
+        return String(format: localizedText,
+                      locale: PTLanguage.share.locale,
+                      arguments: args)
     }
 }
 
