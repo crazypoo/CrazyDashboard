@@ -1,5 +1,9 @@
 # XP400 Ride 2.0.8 Build 持续升级计划
 
+> 当前 App 功能、入口、平台和完成状态以 [APP 功能总纲](APP_FEATURE_BLUEPRINT.md) 为唯一事实源；本文件只保留工作包、实施证据、验证缺口和回滚记录。
+>
+> 本文件中出现的 Build 数字可能是对应工作包开始时的历史基线，项目当前 Build 以功能总纲和工程配置为准。
+>
 > 适用项目：`/Users/jax/ST/CrazyDashboard`
 >
 > 发布方式：只维护现有 `PTSpeed` TestFlight 版本，不新增 Lab Scheme、App Target、Bundle ID 或第二发布渠道；当前没有 App Store 上架计划。
