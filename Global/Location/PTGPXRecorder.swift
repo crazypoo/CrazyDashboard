@@ -68,15 +68,36 @@ nonisolated public struct PTGPXTrackPoint: Codable, Hashable, Sendable {
     public let longitude: Double
     public let altitude: Double?
     public let timestamp: Date?
+    public let speedKmh: Double?
+    public let rpm: Int?
+    public let leanAngle: Double?
+    public let gForceX: Double?
+    public let gForceY: Double?
+    public let gForceZ: Double?
+    public let slipRatio: Double?
 
     public init(latitude: Double,
                 longitude: Double,
                 altitude: Double? = nil,
-                timestamp: Date? = nil) {
+                timestamp: Date? = nil,
+                speedKmh: Double? = nil,
+                rpm: Int? = nil,
+                leanAngle: Double? = nil,
+                gForceX: Double? = nil,
+                gForceY: Double? = nil,
+                gForceZ: Double? = nil,
+                slipRatio: Double? = nil) {
         self.latitude = latitude
         self.longitude = longitude
         self.altitude = altitude
         self.timestamp = timestamp
+        self.speedKmh = speedKmh
+        self.rpm = rpm
+        self.leanAngle = leanAngle
+        self.gForceX = gForceX
+        self.gForceY = gForceY
+        self.gForceZ = gForceZ
+        self.slipRatio = slipRatio
     }
 
     public var coordinate: CLLocationCoordinate2D {
@@ -113,6 +134,13 @@ nonisolated public class PTGPXParser: NSObject, XMLParserDelegate {
         var longitude: Double
         var altitude: Double?
         var timestamp: Date?
+        var speedKmh: Double?
+        var rpm: Int?
+        var leanAngle: Double?
+        var gForceX: Double?
+        var gForceY: Double?
+        var gForceZ: Double?
+        var slipRatio: Double?
     }
 
     private var trackPoints: [PTGPXTrackPoint] = []
@@ -233,7 +261,14 @@ nonisolated public class PTGPXParser: NSObject, XMLParserDelegate {
         currentPoint = MutableTrackPoint(latitude: latitude,
                                          longitude: longitude,
                                          altitude: nil,
-                                         timestamp: nil)
+                                         timestamp: nil,
+                                         speedKmh: nil,
+                                         rpm: nil,
+                                         leanAngle: nil,
+                                         gForceX: nil,
+                                         gForceY: nil,
+                                         gForceZ: nil,
+                                         slipRatio: nil)
     }
 
     public func parser(_ parser: XMLParser, foundCharacters string: String) {
@@ -252,6 +287,20 @@ nonisolated public class PTGPXParser: NSObject, XMLParserDelegate {
                 currentPoint?.altitude = altitude
             } else if name == "time" {
                 currentPoint?.timestamp = isoFormatter.date(from: value) ?? Self.fallbackISODate(from: value)
+            } else if name == "speed" {
+                currentPoint?.speedKmh = Self.finiteDouble(value)
+            } else if name == "rpm" {
+                currentPoint?.rpm = Self.safeInteger(value)
+            } else if name == "lean" {
+                currentPoint?.leanAngle = Self.finiteDouble(value)
+            } else if name == "gforce_x" {
+                currentPoint?.gForceX = Self.finiteDouble(value)
+            } else if name == "gforce_y" {
+                currentPoint?.gForceY = Self.finiteDouble(value)
+            } else if name == "gforce_z" {
+                currentPoint?.gForceZ = Self.finiteDouble(value)
+            } else if name == "slip_ratio" {
+                currentPoint?.slipRatio = Self.finiteDouble(value)
             }
             activeTextElement = nil
             textBuffer = ""
@@ -262,15 +311,33 @@ nonisolated public class PTGPXParser: NSObject, XMLParserDelegate {
         trackPoints.append(PTGPXTrackPoint(latitude: point.latitude,
                                            longitude: point.longitude,
                                            altitude: point.altitude,
-                                           timestamp: point.timestamp))
+                                           timestamp: point.timestamp,
+                                           speedKmh: point.speedKmh,
+                                           rpm: point.rpm,
+                                           leanAngle: point.leanAngle,
+                                           gForceX: point.gForceX,
+                                           gForceY: point.gForceY,
+                                           gForceZ: point.gForceZ,
+                                           slipRatio: point.slipRatio))
         currentPoint = nil
     }
 
     nonisolated private static let pointElementNames: Set<String> = ["trkpt", "rtept", "wpt"]
-    nonisolated private static let metadataElementNames: Set<String> = ["ele", "time"]
+    nonisolated private static let metadataElementNames: Set<String> = [
+        "ele", "time", "speed", "rpm", "lean", "gforce_x", "gforce_y", "gforce_z", "slip_ratio"
+    ]
 
     nonisolated private static func localName(_ name: String) -> String {
-        String(name.split(separator: ":").last ?? Substring(name))
+        String(name.split(separator: ":").last ?? Substring(name)).lowercased()
+    }
+
+    nonisolated private static func finiteDouble(_ value: String) -> Double? {
+        guard let number = Double(value), number.isFinite else { return nil }
+        return number
+    }
+
+    nonisolated private static func safeInteger(_ value: String) -> Int? {
+        Int(value.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     nonisolated private static func fallbackISODate(from value: String) -> Date? {

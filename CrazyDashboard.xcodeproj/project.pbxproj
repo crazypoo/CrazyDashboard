@@ -58,6 +58,8 @@
 		55986679301144840049684D /* PTGPXRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986677301144840049684D /* PTGPXRecorder.swift */; };
 		5598667C301147FD0049684D /* PTCustomRouteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598667A301147FD0049684D /* PTCustomRouteManager.swift */; };
 		600000010000000000000111 /* PTRoadbookViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000110 /* PTRoadbookViewController.swift */; };
+		600000010000000000000120 /* PTRideReplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000120 /* PTRideReplay.swift */; };
+		600000010000000000000121 /* PTRideReplayViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000121 /* PTRideReplayViewController.swift */; };
 		5598667E301148290049684D /* PTDiagnosticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598667D301148290049684D /* PTDiagnosticManager.swift */; };
 		5598668230114A980049684D /* PTFuelRoutingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598668030114A980049684D /* PTFuelRoutingManager.swift */; };
 		5598668430114DF00049684D /* PTRoutingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598668330114DF00049684D /* PTRoutingManager.swift */; };
@@ -233,6 +235,8 @@
 		55986677301144840049684D /* PTGPXRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTGPXRecorder.swift; sourceTree = "<group>"; };
 		5598667A301147FD0049684D /* PTCustomRouteManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCustomRouteManager.swift; sourceTree = "<group>"; };
 		600000020000000000000110 /* PTRoadbookViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRoadbookViewController.swift; sourceTree = "<group>"; };
+		600000020000000000000120 /* PTRideReplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideReplay.swift; sourceTree = "<group>"; };
+		600000020000000000000121 /* PTRideReplayViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideReplayViewController.swift; sourceTree = "<group>"; };
 		5598667D301148290049684D /* PTDiagnosticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDiagnosticManager.swift; sourceTree = "<group>"; };
 		5598668030114A980049684D /* PTFuelRoutingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFuelRoutingManager.swift; sourceTree = "<group>"; };
 		5598668330114DF00049684D /* PTRoutingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRoutingManager.swift; sourceTree = "<group>"; };
@@ -692,6 +696,7 @@
 				600000020000000000000061 /* PTRideExperienceViewController.swift */,
 				55F52C56303D4025007527C2 /* PTRideReviewAnalyzer.swift */,
 				5598667A301147FD0049684D /* PTCustomRouteManager.swift */,
+				600000020000000000000120 /* PTRideReplay.swift */,
 				55499CF93019D83800A1A2D9 /* PTDashboardBaseView.swift */,
 				55FE2965300CA5E0000E741F /* PTDashboardConfig.swift */,
 				55986832301330E00049684D /* PTDataCollectedViewController.swift */,
@@ -752,6 +757,7 @@
 				55FE2A76300DF95C000E741F /* PTMainProgressView.swift */,
 				555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */,
 				55986835301337DC0049684D /* PTTripDataCell.swift */,
+				600000020000000000000121 /* PTRideReplayViewController.swift */,
 				5541111E301F2B630059BFCF /* PTStatusItemView.swift */,
 			);
 			path = Views;
@@ -1087,6 +1093,7 @@
 				55CA9DF5302452AA00A3A677 /* PTOBDDataView.swift in Sources */,
 				558789E630242B9400B94E91 /* PTCarPlayContainerViewController.swift in Sources */,
 				5598667C301147FD0049684D /* PTCustomRouteManager.swift in Sources */,
+				600000010000000000000120 /* PTRideReplay.swift in Sources */,
 				55F1E2F23026D2020032EAD5 /* PTHiddenOBDConnector.swift in Sources */,
 				55499E03301AFC2200A1A2D9 /* PTWidgetManager.swift in Sources */,
 				555C0FF9300E06630079D94F /* PTGlobalActionHeader.swift in Sources */,
@@ -1142,6 +1149,7 @@
 				55FE2A77300DF95C000E741F /* PTMainProgressView.swift in Sources */,
 				55FE29A3300CC258000E741F /* PTMotoNavigationViewController.swift in Sources */,
 				55986836301337DC0049684D /* PTTripDataCell.swift in Sources */,
+				600000010000000000000121 /* PTRideReplayViewController.swift in Sources */,
 				55499DFF301AFA2300A1A2D9 /* PTLiveActivityManager.swift in Sources */,
 				55986642301141090049684D /* PTAntiTheftManager.swift in Sources */,
 				55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */,

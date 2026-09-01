@@ -56,7 +56,8 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
             if let itemRow = sectionModel.rows?[indexPath.row] {
                 let getCell = collectionView.dequeueReusableCell(withReuseIdentifier: itemRow.ID, for: indexPath)
                 if let cell = getCell as? PTTripDataCell {
-                    cell.cellModel = PTTripManager.shared.tripHistory[indexPath.row]
+                    let report = PTTripManager.shared.tripHistory[indexPath.row]
+                    cell.cellModel = report
                     cell.trashAction = {
                         PTGCDManager.shared.runOnMain {
                             UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "Delete") + "?",okBtns: [PTDashboardConfig.languageFunc(text: "button_confirm")],cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
@@ -120,7 +121,15 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
                         }
                     }
                     
-                    cell.mapImageTapAction = {
+                    // EN: Open the synchronized offline replay when the route thumbnail is tapped.
+                    // ES: Abre la reproducción offline sincronizada al tocar la miniatura de la ruta.
+                    // 中文：点击路线缩略图时打开同步的离线回放页面。
+                    let owner = self
+                    cell.mapImageTapAction = { [weak owner, report] in
+                        guard let owner else { return }
+                        Task { @MainActor in
+                            owner.presentReplay(for: report)
+                        }
                     }
                     return cell
                 }
@@ -195,5 +204,15 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
         }
         detailCollection.viewConfig.emptyViewConfig = self.listEmptyConfig
         detailCollection.reloadEmptyConfig()
+    }
+
+    // EN: Present replay as a separate read-only screen so history deletion stays unchanged.
+    // ES: Presenta la reproducción en una pantalla de solo lectura para no alterar el borrado del historial.
+    // 中文：以独立只读页面展示回放，不改变现有历史删除流程。
+    private func presentReplay(for report: PTTripReport) {
+        let replayViewController = PTRideReplayViewController(report: report)
+        let navigationController = UINavigationController(rootViewController: replayViewController)
+        navigationController.modalPresentationStyle = .pageSheet
+        present(navigationController, animated: true)
     }
 }

@@ -4970,6 +4970,168 @@
         }
       }
     },
+    "ride_replay_event_count" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d events" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "%d olay" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%d 个事件" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "%d 個事件" } }
+      }
+    },
+    "ride_replay_event_hard_acceleration" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hard acceleration" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sert hızlanma" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "急加速" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "急加速" } }
+      }
+    },
+    "ride_replay_event_hard_braking" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hard braking" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sert frenleme" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "急刹" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "急煞" } }
+      }
+    },
+    "ride_replay_event_heavy_bump" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Heavy bump" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sert tümsek" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重颠簸" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "重顛簸" } }
+      }
+    },
+    "ride_replay_event_high_lean" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "High lean angle" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yüksek yatış açısı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "高倾角" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "高傾角" } }
+      }
+    },
+    "ride_replay_event_offroad" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Off-road event" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Arazi olayı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "越野事件" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "越野事件" } }
+      }
+    },
+    "ride_replay_event_suspected_slip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Suspected slip" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Şüpheli kayma" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "疑似打滑" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "疑似打滑" } }
+      }
+    },
+    "ride_replay_g_force" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "G-Force" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "G kuvveti" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "G 值" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "G 值" } }
+      }
+    },
+    "ride_replay_invalid_track" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The GPX track is invalid" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "GPX rotası geçersiz" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "GPX 轨迹无效" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "GPX 軌跡無效" } }
+      }
+    },
+    "ride_replay_lean" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lean" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yatış" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "倾角" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "傾角" } }
+      }
+    },
+    "ride_replay_loading" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Loading replay…" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Tekrar oynatma yükleniyor…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在加载回放…" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正在載入回放…" } }
+      }
+    },
+    "ride_replay_missing_track" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This ride has no replayable GPX track" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bu sürüşte oynatılabilir GPX rotası yok" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "该行程没有可回放的 GPX 轨迹" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "此行程沒有可回放的 GPX 軌跡" } }
+      }
+    },
+    "ride_replay_no_events" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No events recorded" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kayıtlı olay yok" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "没有记录的事件" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "沒有記錄的事件" } }
+      }
+    },
+    "ride_replay_paused" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Paused" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Duraklatıldı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已暂停" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已暫停" } }
+      }
+    },
+    "ride_replay_playing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Playing" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Oynatılıyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "播放中" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "播放中" } }
+      }
+    },
+    "ride_replay_rpm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "RPM" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "RPM" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "转速" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "轉速" } }
+      }
+    },
+    "ride_replay_speed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Speed" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hız" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "速度" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "速度" } }
+      }
+    },
+    "ride_replay_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ride Replay" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürüş tekrarı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "行程回放" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "行程回放" } }
+      }
+    },
     "roadbook_delete" : {
       "extractionState" : "manual",
       "localizations" : {

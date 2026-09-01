@@ -42,6 +42,63 @@ final class PTCoreTests: XCTestCase {
         XCTAssertEqual(waypoints.last?.latitude ?? 0, 31.2314, accuracy: 0.000001)
     }
 
+    // EN: Replay must preserve GPX telemetry and interpolate it between recorded points.
+    // ES: La reproducción debe conservar la telemetría GPX e interpolarla entre puntos grabados.
+    // 中文：回放必须保留 GPX 遥测数据，并在录制点之间进行插值。
+    func testReplayBuilderUsesGPXTelemetryAndEvents() throws {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let data = Data("""
+        <gpx version="1.1">
+          <trk><trkseg>
+            <trkpt lat="31.2304" lon="121.4737">
+              <time>2023-11-14T22:13:20Z</time>
+              <extensions>
+                <speed>10</speed><rpm>1000</rpm><lean>2</lean>
+                <gforce_x>0.1</gforce_x><gforce_y>-0.2</gforce_y><gforce_z>0.3</gforce_z>
+                <slip_ratio>1</slip_ratio>
+              </extensions>
+            </trkpt>
+            <trkpt lat="31.2305" lon="121.4738">
+              <time>2023-11-14T22:13:22Z</time>
+              <extensions>
+                <speed>30</speed><rpm>3000</rpm><lean>8</lean>
+                <gforce_x>0.3</gforce_x><gforce_y>-0.4</gforce_y><gforce_z>0.5</gforce_z>
+                <slip_ratio>3</slip_ratio>
+              </extensions>
+            </trkpt>
+          </trkseg></trk>
+        </gpx>
+        """.utf8)
+
+        let points = try PTGPXParser.parseTrack(data: data)
+        let session = try PTRideReplayBuilder.makeSession(
+            report: makeTripReport(start: start),
+            trackPoints: points
+        )
+
+        XCTAssertEqual(session.samples.count, 2)
+        XCTAssertEqual(session.samples[0].speedKmh, 10, accuracy: 0.001)
+        XCTAssertEqual(session.samples[1].rpm, 3_000)
+        XCTAssertEqual(session.samples[1].gForceZ, 0.5, accuracy: 0.001)
+        XCTAssertEqual(session.events.count, 1)
+
+        let middle = try XCTUnwrap(session.sample(at: 1))
+        XCTAssertEqual(middle.speedKmh, 20, accuracy: 0.001)
+        XCTAssertEqual(middle.rpm, 2_000)
+        XCTAssertEqual(middle.leanAngle, 5, accuracy: 0.001)
+
+        let legacyPoints = [
+            PTGPXTrackPoint(latitude: 31.2304, longitude: 121.4737),
+            PTGPXTrackPoint(latitude: 31.2305, longitude: 121.4738)
+        ]
+        let legacySession = try PTRideReplayBuilder.makeSession(
+            report: makeTripReport(start: start),
+            trackPoints: legacyPoints
+        )
+        XCTAssertEqual(legacySession.samples[0].speedKmh, 20, accuracy: 0.001)
+        XCTAssertEqual(legacySession.samples[1].rpm, 4_000)
+    }
+
     // EN: Waypoint persistence must retain the raw coordinate and maneuver code.
     // ES: La persistencia debe conservar la coordenada original y el código de maniobra.
     // 中文：路点持久化必须保留原始坐标和转向代码。
