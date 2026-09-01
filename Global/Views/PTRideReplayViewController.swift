@@ -67,11 +67,6 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
         super.viewDidLoad()
         title = PTDashboardConfig.languageFunc(text: "ride_replay_title")
         view.backgroundColor = .black
-        navigationItem.leftBarButtonItem = UIBarButtonItem(
-            barButtonSystemItem: .close,
-            target: self,
-            action: #selector(close)
-        )
         configureLabels()
         configureControls()
         configureLayout()
@@ -81,10 +76,6 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         player?.pause()
-    }
-
-    @objc private func close() {
-        dismiss(animated: true)
     }
 
     private func configureLabels() {
