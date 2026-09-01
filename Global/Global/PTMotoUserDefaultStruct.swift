@@ -25,4 +25,6 @@ struct PTMotoUserDefaultStruct {
     // ES: La restauración del intercomunicador requiere activación explícita para que el arranque no inicie descubrimiento ni audio.
     // 中文：对讲状态恢复必须显式开启，确保冷启动不会自动组网或启动音频服务。
     @PTUserDefault(withKey: "PTTLaunchAutoRestoreEnabled", defaultValue: false) public static var PTTLaunchAutoRestoreEnabled:Bool
+    
+    @PTUserDefault(withKey: "PTMotoSafteyMileValue", defaultValue: 2500) public static var PTMotoSafteyMileValue:Double
 }

@@ -626,10 +626,12 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         PTDashboardConfig.shared.blueConnected = true
         PTMOTOParkingManager.shared.clearParkingSpot()
         PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "connect_success")) {
-            self.bleConnectStatusLabel.isSelected = PTDashboardConfig.shared.blueConnected
-            self.speedometer.playStartupSweep(duration: 1.5)
-            self.speedometerReversed.playStartupSweep(duration: 1.5)
-            self.bleConnectStatusLabel.stopLoading()
+            PTGCDManager.shared.runOnMain {
+                self.bleConnectStatusLabel.isSelected = PTDashboardConfig.shared.blueConnected
+                self.speedometer.playStartupSweep(duration: 1.5)
+                self.speedometerReversed.playStartupSweep(duration: 1.5)
+                self.bleConnectStatusLabel.stopLoading()
+            }
         }
     }
     
@@ -689,7 +691,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             DispatchQueue.main.async {
                 
                 self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(
-                    max: PTDashboardConfig.shared.appShowMileage(2500),
+                    max: PTDashboardConfig.shared.appShowMileage(PTMotoUserDefaultStruct.PTMotoSafteyMileValue),
                     current: PTDashboardConfig.shared.appShowMileage(Double(distToMaintenance))
                 )
                 
@@ -737,7 +739,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         }
         
         self.voltageLabel.modelSet = modelvoltageSet(currentValue: 0)
-        self.distToMaintenanceLabel.modelSet = distToMaintenancemodelSet(max: 2500, current: 0)
+        self.distToMaintenanceLabel.modelSet = distToMaintenancemodelSet(max: PTMotoUserDefaultStruct.PTMotoSafteyMileValue, current: 0)
 
         speedometer.snp.makeConstraints { make in
             make.top.equalTo(self.actionStack.snp.bottom).offset(CGFloat.GlobalItemSpacing)
@@ -811,7 +813,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         pt_observerLanguage {
             if self.vcDidLoad {
                 self.voltageLabel.modelSet = self.modelvoltageSet(currentValue: 0)
-                self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(max: 2500, current: 0)
+                self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(max: PTMotoUserDefaultStruct.PTMotoSafteyMileValue, current: 0)
                 
                 self.tripItem.configure(systemIcon: UIImage(.point.topleftDownToPointBottomrightCurvepath),
                                            iconColor: PTDashboardConfig.shared.appMainColor,
@@ -873,7 +875,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
     // MARK: - 状态回调
     @objc func dashBoardReload() {
         PTGCDManager.shared.runOnMain {
-            self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(max: PTDashboardConfig.shared.appShowMileage(2500), current: PTDashboardConfig.shared.appShowMileage(Double(PTBluetoothServerManager.shared.latestData3?.distToMaintenance ?? 0)))
+            self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(max: PTDashboardConfig.shared.appShowMileage(PTMotoUserDefaultStruct.PTMotoSafteyMileValue), current: PTDashboardConfig.shared.appShowMileage(Double(PTBluetoothServerManager.shared.latestData3?.distToMaintenance ?? 0)))
             self.speedometer.unitLabel.text = PTDashboardConfig.shared.appShowUniLabel
             self.speedometer.maxSpeed = PTDashboardConfig.shared.appUniIsMetric ? 180 : 110
             self.speedometer.progressColor = PTDashboardConfig.shared.appMainColor

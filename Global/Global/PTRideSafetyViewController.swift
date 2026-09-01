@@ -16,31 +16,28 @@ final class PTRideSafetyViewController: PTMotoBaseViewController {
     private let scrollView = UIScrollView()
     private let stackView = UIStackView()
 
+    lazy var export : PTBaseButton = {
+        let view = PTBaseButton(type: .custom)
+        view.titleLabel?.font = .appfont(size: 14)
+        view.setTitle(PTDashboardConfig.languageFunc(text: "safety_export"), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: view.sizeFor().width + 5, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { _ in
+            self.exportAction()
+        })
+        return view
+    }()
+        
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = PTDashboardConfig.languageFunc(text: "ride_safety_center")
+        pt_Title = PTDashboardConfig.languageFunc(text: "ride_safety_center")
         view.backgroundColor = .black
-        navigationItem.leftBarButtonItem = UIBarButtonItem(
-            barButtonSystemItem: .close,
-            target: self,
-            action: #selector(close)
-        )
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            title: PTDashboardConfig.languageFunc(text: "safety_export"),
-            style: .plain,
-            target: self,
-            action: #selector(exportAction)
-        )
         configureLayout()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        setCustomRightButtons(buttons: [export])
         reloadContent()
-    }
-
-    @objc private func close() {
-        dismiss(animated: true)
     }
 
     private func configureLayout() {

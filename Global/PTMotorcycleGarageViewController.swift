@@ -55,7 +55,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.title = localized("garage_title")
+        pt_Title = localized("garage_title")
         view.backgroundColor = .black
         configureLabels()
         configureStacks()
