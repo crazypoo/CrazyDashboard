@@ -63,6 +63,8 @@
 		600000010000000000000130 /* PTWatchRideAssistant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000130 /* PTWatchRideAssistant.swift */; };
 		600000010000000000000131 /* PTWatchRideAssistant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000130 /* PTWatchRideAssistant.swift */; };
 		600000010000000000000132 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000093 /* Localizable.xcstrings */; };
+		600000010000000000000140 /* PTMotorcycleGarage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000140 /* PTMotorcycleGarage.swift */; };
+		600000010000000000000141 /* PTMotorcycleGarageViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000141 /* PTMotorcycleGarageViewController.swift */; };
 		5598667E301148290049684D /* PTDiagnosticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598667D301148290049684D /* PTDiagnosticManager.swift */; };
 		5598668230114A980049684D /* PTFuelRoutingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598668030114A980049684D /* PTFuelRoutingManager.swift */; };
 		5598668430114DF00049684D /* PTRoutingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598668330114DF00049684D /* PTRoutingManager.swift */; };
@@ -296,6 +298,8 @@
 		600000020000000000000020 /* PTWidgetSharedStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTWidgetSharedStatus.swift; sourceTree = "<group>"; };
 		600000020000000000000021 /* PTWatchConnectivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTWatchConnectivityManager.swift; sourceTree = "<group>"; };
 		600000020000000000000130 /* PTWatchRideAssistant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTWatchRideAssistant.swift; sourceTree = "<group>"; };
+		600000020000000000000140 /* PTMotorcycleGarage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotorcycleGarage.swift; sourceTree = "<group>"; };
+		600000020000000000000141 /* PTMotorcycleGarageViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotorcycleGarageViewController.swift; sourceTree = "<group>"; };
 		600000020000000000000022 /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = System/Library/Frameworks/WatchConnectivity.framework; sourceTree = SDKROOT; };
 		600000020000000000000030 /* PTVehicleConnectivityCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleConnectivityCoordinator.swift; sourceTree = "<group>"; };
 		600000020000000000000040 /* PTDataPersistenceActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDataPersistenceActor.swift; sourceTree = "<group>"; };
@@ -522,6 +526,7 @@
 		5577E64D2FD657110004733F /* Global */ = {
 			isa = PBXGroup;
 			children = (
+				600000020000000000000141 /* PTMotorcycleGarageViewController.swift */,
 				5512F3DC302C8C8E001AFED4 /* Log */,
 				55CA9DF23024528A00A3A677 /* OBD */,
 				558789E2302420B500B94E91 /* Carplay */,
@@ -692,6 +697,7 @@
 		55F503B9300FCA1E00C5D085 /* Global */ = {
 			isa = PBXGroup;
 			children = (
+				600000020000000000000140 /* PTMotorcycleGarage.swift */,
 				600000020000000000000040 /* PTDataPersistenceActor.swift */,
 				600000020000000000000030 /* PTVehicleConnectivityCoordinator.swift */,
 				600000020000000000000090 /* PTRideBlackBox.swift */,
@@ -1131,6 +1137,8 @@
 				5598683A301348FC0049684D /* PTNotificationCenter.swift in Sources */,
 				55986640301138A30049684D /* PTTripManager.swift in Sources */,
 				600000010000000000000040 /* PTDataPersistenceActor.swift in Sources */,
+				600000010000000000000140 /* PTMotorcycleGarage.swift in Sources */,
+				600000010000000000000141 /* PTMotorcycleGarageViewController.swift in Sources */,
 				600000010000000000000090 /* PTRideBlackBox.swift in Sources */,
 				600000010000000000000091 /* PTRideStory.swift in Sources */,
 				600000010000000000000092 /* PTRideGroupSafety.swift in Sources */,

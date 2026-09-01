@@ -182,6 +182,55 @@ final class PTCoreTests: XCTestCase {
         XCTAssertEqual(restored, source)
     }
 
+    // EN: Garage records must stay attached to the selected motorcycle and survive a document reload.
+    // ES: Los registros del garaje deben permanecer vinculados a la motocicleta seleccionada y sobrevivir a una recarga.
+    // 中文：车库记录必须始终归属于当前摩托车，并且重新加载文档后仍然存在。
+    @MainActor
+    func testMotorcycleGaragePersistsVehicleOwnedRecords() throws {
+        let suiteName = "PTMotorcycleGarageTests.\(UUID().uuidString)"
+        let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { userDefaults.removePersistentDomain(forName: suiteName) }
+
+        let store = PTMotorcycleGarageStore(userDefaults: userDefaults)
+        let firstVehicleID = try XCTUnwrap(store.currentVehicle?.id)
+        let secondVehicle = try XCTUnwrap(
+            store.createVehicle(
+                name: "Track Bike",
+                brand: "Peugeot",
+                model: "XP400 GT",
+                odometerKm: 120
+            )
+        )
+
+        XCTAssertEqual(store.currentVehicle?.id, secondVehicle.id)
+        XCTAssertNotNil(store.addMaintenance(title: "Oil change", mileageKm: 120))
+        XCTAssertNotNil(store.addPart(name: "Front tire", mileageKm: 120))
+        XCTAssertTrue(
+            store.addDiagnosticReport(
+                PTGarageDiagnosticReport(
+                    vin: "VF3TEST",
+                    didResults: [
+                        PTGarageDIDRecord(
+                            did: "F190",
+                            rawResponse: "62F190",
+                            payloadHex: "56463354455354",
+                            decodedText: "VF3TEST",
+                            status: PTOBDReadStatus.success.rawValue
+                        )
+                    ]
+                )
+            )
+        )
+        XCTAssertTrue(store.deleteVehicle(id: firstVehicleID))
+
+        let restoredStore = PTMotorcycleGarageStore(userDefaults: userDefaults)
+        let restoredVehicle = try XCTUnwrap(restoredStore.currentVehicle)
+        XCTAssertEqual(restoredVehicle.name, "Track Bike")
+        XCTAssertEqual(restoredVehicle.maintenanceRecords.count, 1)
+        XCTAssertEqual(restoredVehicle.parts.count, 1)
+        XCTAssertEqual(restoredVehicle.diagnosticReports.first?.successfulDIDCount, 1)
+    }
+
     // EN: Watch navigation context must round-trip without losing the maneuver identity used for haptics.
     // ES: El contexto de navegación del Watch debe conservar la identidad de maniobra usada por los hápticos.
     // 中文：Watch 导航上下文往返编码后，必须保留用于触觉去重的转向标识。

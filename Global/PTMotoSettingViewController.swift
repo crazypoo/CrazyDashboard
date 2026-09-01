@@ -147,6 +147,19 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         }
         return view
     }()
+
+    private lazy var garageButton: UIButton = {
+        let view = UIButton(type: .system)
+        view.titleLabel?.font = .appfont(size: 16)
+        view.setTitleColor(.white, for: .normal)
+        view.setTitle(PTDashboardConfig.languageFunc(text: "garage_open"), for: .normal)
+        view.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
+        view.addActionHandlers { [weak self] _ in
+            let garageViewController = PTMotorcycleGarageViewController()
+            self?.navigationController?.pushViewController(garageViewController, animated: true)
+        }
+        return view
+    }()
     
     lazy var globalButton:PTBaseButton = {
         let view = PTBaseButton(type: .custom)
@@ -225,7 +238,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                                         dashLanguageTitle, dashBoardLanguageButton,
                                         pttRestoreTitle, pttRestoreSwitch])
         
-        view.addSubviews([shortCut, shortcutsButton, disconnect, socialStackView, versionLabel])
+        view.addSubviews([garageButton, shortCut, shortcutsButton, disconnect, socialStackView, versionLabel])
         
         setupSocialButtons()
                 
@@ -278,8 +291,14 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             make.bottom.equalToSuperview().inset(16)
         }
         
-        shortCut.snp.makeConstraints { make in
+        garageButton.snp.makeConstraints { make in
             make.top.equalTo(settingsContainer.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.height.equalTo(44)
+        }
+
+        shortCut.snp.makeConstraints { make in
+            make.top.equalTo(garageButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
         }
 
@@ -312,12 +331,14 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         dashBoardColorButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashBoardUniButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashBoardLanguageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
+        garageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         disconnect.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         
         DispatchQueue.main.async {
             self.dashBoardColorButton.viewCorner(radius: 4)
             self.dashBoardUniButton.viewCorner(radius: 4)
             self.dashBoardLanguageButton.viewCorner(radius: 4)
+            self.garageButton.viewCorner(radius: 4)
             self.disconnect.viewCorner(radius: 4)
         }
 
@@ -328,6 +349,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 self.dashUniTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_set_title")
                 self.pttRestoreTitle.text = PTDashboardConfig.languageFunc(text: "ptt_restore_on_launch")
                 self.disconnect.setTitle(PTDashboardConfig.languageFunc(text: "button_dis_connect"), for: .normal)
+                self.garageButton.setTitle(PTDashboardConfig.languageFunc(text: "garage_open"), for: .normal)
                 self.updateShortcutGuide()
                 self.shortcutsButton.setTitle(PTDashboardConfig.languageFunc(text: "shortcuts_open"), for: .normal)
             }
@@ -420,7 +442,9 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             self.dashLanguageTitle.textColor = PTDashboardConfig.shared.appMainColor
             self.pttRestoreTitle.textColor = PTDashboardConfig.shared.appMainColor
             self.pttRestoreSwitch.onTintColor = PTDashboardConfig.shared.appMainColor
+            self.garageButton.setTitle(PTDashboardConfig.languageFunc(text: "garage_open"), for: .normal)
                         
+            self.garageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
             self.disconnect.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         }
     }
