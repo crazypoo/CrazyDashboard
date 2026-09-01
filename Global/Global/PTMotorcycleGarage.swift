@@ -172,6 +172,7 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
     public var year: Int?
     public var vin: String
     public var odometerKm: Double
+    public var maintenanceWarningDistanceKm: Double?
     public var maintenanceRecords: [PTGarageMaintenanceRecord]
     public var diagnosticReports: [PTGarageDiagnosticReport]
     public var parts: [PTGaragePartRecord]
@@ -186,6 +187,7 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
         year: Int? = nil,
         vin: String = "",
         odometerKm: Double = 0,
+        maintenanceWarningDistanceKm: Double? = nil,
         maintenanceRecords: [PTGarageMaintenanceRecord] = [],
         diagnosticReports: [PTGarageDiagnosticReport] = [],
         parts: [PTGaragePartRecord] = [],
@@ -199,6 +201,7 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
         self.year = year
         self.vin = vin
         self.odometerKm = odometerKm
+        self.maintenanceWarningDistanceKm = maintenanceWarningDistanceKm
         self.maintenanceRecords = maintenanceRecords
         self.diagnosticReports = diagnosticReports
         self.parts = parts
@@ -217,7 +220,7 @@ public struct PTMotorcycleGarageDocument: Codable, Equatable, Sendable {
     public let vehicles: [PTMotorcycleProfile]
 
     nonisolated public init(
-        schemaVersion: Int = 1,
+        schemaVersion: Int = 2,
         selectedVehicleID: UUID? = nil,
         vehicles: [PTMotorcycleProfile] = []
     ) {
@@ -236,6 +239,9 @@ public final class PTMotorcycleGarageStore {
     public static let didChangeNotification = Notification.Name("PTMotorcycleGarageStoreDidChange")
 
     public static let storageKey = "PTMotorcycleGarageDocument.v1"
+    public static let currentSchemaVersion = 2
+    public static let defaultMaintenanceWarningDistanceKm = 2_500.0
+    public static let maximumMaintenanceWarningDistanceKm = 65_535.0
     public static let maximumVehicleCount = 32
     public static let maximumMaintenanceCount = 100
     public static let maximumPartCount = 100
@@ -248,9 +254,11 @@ public final class PTMotorcycleGarageStore {
     public init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
 
+        var storedSchemaVersion = 0
         if let data = userDefaults.data(forKey: Self.storageKey),
            let document = try? JSONDecoder().decode(PTMotorcycleGarageDocument.self, from: data),
            !document.vehicles.isEmpty {
+            storedSchemaVersion = document.schemaVersion
             self.vehicles = document.vehicles
             self.selectedVehicleID = document.selectedVehicleID
                 ?? document.vehicles.first?.id
@@ -258,13 +266,31 @@ public final class PTMotorcycleGarageStore {
             let defaultVehicle = PTMotorcycleProfile.defaultXP400GT
             self.vehicles = [defaultVehicle]
             self.selectedVehicleID = defaultVehicle.id
-            persist(notify: false)
+        }
+
+        var shouldPersist = storedSchemaVersion < Self.currentSchemaVersion
+        let legacyWarningDistance = Self.normalizedMaintenanceWarningDistance(
+            PTMotoUserDefaultStruct.PTMotoSafteyMileValue
+        ) ?? Self.defaultMaintenanceWarningDistanceKm
+        for index in vehicles.indices {
+            let currentValue = vehicles[index].maintenanceWarningDistanceKm
+            let normalizedValue = Self.normalizedMaintenanceWarningDistance(currentValue)
+                ?? legacyWarningDistance
+            if currentValue != normalizedValue {
+                vehicles[index].maintenanceWarningDistanceKm = normalizedValue
+                shouldPersist = true
+            }
         }
 
         if selectedVehicleID == nil || !vehicles.contains(where: { $0.id == selectedVehicleID }) {
             selectedVehicleID = vehicles.first?.id
+            shouldPersist = true
+        }
+
+        if shouldPersist {
             persist(notify: false)
         }
+        syncLegacyWarningDistance()
     }
 
     public var currentVehicle: PTMotorcycleProfile? {
@@ -272,11 +298,23 @@ public final class PTMotorcycleGarageStore {
         return vehicles.first { $0.id == selectedVehicleID }
     }
 
+    /// EN: The selected vehicle's threshold is the canonical runtime value for legacy dashboard consumers.
+    /// ES: El umbral del vehículo seleccionado es el valor de ejecución canónico para los consumidores antiguos del tablero.
+    /// 中文：当前车辆的预警值是旧仪表页面运行时使用的统一值。
+    public var currentMaintenanceWarningDistanceKm: Double {
+        Self.normalizedMaintenanceWarningDistance(currentVehicle?.maintenanceWarningDistanceKm)
+            ?? Self.defaultMaintenanceWarningDistanceKm
+    }
+
     @discardableResult
     public func selectVehicle(id: UUID) -> Bool {
         guard vehicles.contains(where: { $0.id == id }) else { return false }
-        guard selectedVehicleID != id else { return true }
+        guard selectedVehicleID != id else {
+            syncLegacyWarningDistance()
+            return true
+        }
         selectedVehicleID = id
+        syncLegacyWarningDistance()
         persist()
         return true
     }
@@ -305,11 +343,13 @@ public final class PTMotorcycleGarageStore {
             year: validYear(year),
             vin: normalizeVIN(vin),
             odometerKm: normalizedOdometer,
+            maintenanceWarningDistanceKm: Self.defaultMaintenanceWarningDistanceKm,
             createdAt: now,
             updatedAt: now
         )
         vehicles.append(profile)
         selectedVehicleID = profile.id
+        syncLegacyWarningDistance()
         persist()
         return profile
     }
@@ -325,6 +365,7 @@ public final class PTMotorcycleGarageStore {
         if selectedVehicleID == id {
             selectedVehicleID = vehicles.first?.id
         }
+        syncLegacyWarningDistance()
         persist()
         return true
     }
@@ -338,6 +379,35 @@ public final class PTMotorcycleGarageStore {
 
         vehicles[index].odometerKm = normalizedOdometer
         touchVehicle(at: index)
+        persist()
+        return true
+    }
+
+    /// EN: Store the early-warning threshold in kilometers and mirror it to the legacy selected-vehicle setting.
+    /// ES: Guarda el umbral de aviso anticipado en kilómetros y lo refleja en la configuración antigua del vehículo seleccionado.
+    /// 中文：以公里保存提前预警值，并同步到旧的当前车辆设置。
+    @discardableResult
+    public func updateMaintenanceWarningDistance(
+        _ distanceKm: Double,
+        vehicleID: UUID? = nil
+    ) -> Bool {
+        guard let index = indexOfVehicle(vehicleID),
+              let normalizedDistance = Self.normalizedMaintenanceWarningDistance(distanceKm) else {
+            return false
+        }
+
+        guard vehicles[index].maintenanceWarningDistanceKm != normalizedDistance else {
+            if vehicles[index].id == selectedVehicleID {
+                syncLegacyWarningDistance()
+            }
+            return true
+        }
+
+        vehicles[index].maintenanceWarningDistanceKm = normalizedDistance
+        touchVehicle(at: index)
+        if vehicles[index].id == selectedVehicleID {
+            syncLegacyWarningDistance()
+        }
         persist()
         return true
     }
@@ -534,6 +604,7 @@ public final class PTMotorcycleGarageStore {
 
     private func persist(notify: Bool = true) {
         let document = PTMotorcycleGarageDocument(
+            schemaVersion: Self.currentSchemaVersion,
             selectedVehicleID: selectedVehicleID,
             vehicles: vehicles
         )
@@ -579,5 +650,19 @@ public final class PTMotorcycleGarageStore {
 
     private func safeLiveOdometer(_ value: Double) -> Double? {
         validOdometer(value)
+    }
+
+    private static func normalizedMaintenanceWarningDistance(_ value: Double?) -> Double? {
+        guard let value,
+              value.isFinite,
+              value >= 1,
+              value <= maximumMaintenanceWarningDistanceKm else {
+            return nil
+        }
+        return value.rounded()
+    }
+
+    private func syncLegacyWarningDistance() {
+        PTMotoUserDefaultStruct.PTMotoSafteyMileValue = currentMaintenanceWarningDistanceKm
     }
 }

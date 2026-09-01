@@ -78,6 +78,12 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
         )
         NotificationCenter.default.addObserver(
             self,
+            selector: #selector(handleRideStateChange),
+            name: PTMotorcycleGarageStore.didChangeNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
             selector: #selector(handleBlackBoxUpdate),
             name: PTRideBlackBoxUpdated,
             object: nil
@@ -247,6 +253,8 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
             from: UserDefaults(suiteName: PTWidgetDataKeys.appGroupID)
         )
         let vehicle = PTVehicleConnectivityCoordinator.shared.snapshot
+        let isDashboardConnected = vehicle.isDashboardConnected
+        let warningDistanceKm = Int(PTMotorcycleGarageStore.shared.currentMaintenanceWarningDistanceKm.rounded())
         let summary = PTRideExperienceSummary(
             vehicle: vehicle,
             fuelLevelPercent: dashboardManager.latestData1?.fuelLevelPct ?? widgetStatus.fuelLevel,
@@ -256,8 +264,9 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
             dashboardAutonomyKm: dashboardManager.latestData3?.autonomyKm,
             batteryVoltage: dashboardManager.latestData2?.batteryVolt,
             outsideTemperatureCelsius: dashboardManager.latestData2?.outsideTempC,
-            maintenanceDistanceKm: dashboardManager.latestData3?.distToMaintenance,
-            maintenanceFlag: dashboardManager.latestData2?.maintenance,
+            maintenanceDistanceKm: isDashboardConnected ? dashboardManager.latestData3?.distToMaintenance : nil,
+            maintenanceFlag: isDashboardConnected ? dashboardManager.latestData2?.maintenance : nil,
+            maintenanceWarningDistanceKm: warningDistanceKm,
             parkedLatitude: widgetStatus.parkedLat,
             parkedLongitude: widgetStatus.parkedLon,
             parkedAddress: widgetStatus.address,
@@ -386,13 +395,21 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
             guard let distance = advice.distanceToMaintenanceKm else {
                 return PTDashboardConfig.languageFunc(text: "maintenance_warning_title")
             }
-            return PTDashboardConfig.language(key: "maintenance_warning_msg", distance)
+            return PTDashboardConfig.language(
+                key: "maintenance_warning_msg",
+                formattedMaintenanceDistance(distance)
+            )
         case .normal:
             guard let distance = advice.distanceToMaintenanceKm else { return "-" }
-            return "\(distance)\(PTDashboardConfig.shared.appShowUniLabel)"
+            return formattedMaintenanceDistance(distance)
         case .unknown:
             return PTDashboardConfig.languageFunc(text: "ride_not_available")
         }
+    }
+
+    private func formattedMaintenanceDistance(_ distanceKm: Int) -> String {
+        PTDashboardConfig.shared.appShowMileageValueString(Double(distanceKm))
+            + PTDashboardConfig.shared.appShowUniLabel
     }
 
     private func formattedDate(_ date: Date) -> String {

@@ -23,6 +23,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
     private let vehicleVINLabel = UILabel()
     private let vehicleMileageLabel = UILabel()
 
+    private let maintenanceStatusLabel = UILabel()
     private let maintenanceRowsStack = UIStackView()
     private let diagnosticRowsStack = UIStackView()
     private let partsRowsStack = UIStackView()
@@ -32,6 +33,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
     private let deleteVehicleButton: UIButton
     private let editMileageButton: UIButton
     private let syncLiveDataButton: UIButton
+    private let maintenanceWarningButton: UIButton
     private let addMaintenanceButton: UIButton
     private let saveOBDButton: UIButton
     private let addPartButton: UIButton
@@ -43,6 +45,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         self.deleteVehicleButton = Self.makeActionButton(titleKey: "garage_delete_vehicle", color: .systemRed)
         self.editMileageButton = Self.makeActionButton(titleKey: "garage_edit_mileage")
         self.syncLiveDataButton = Self.makeActionButton(titleKey: "garage_sync_live_data")
+        self.maintenanceWarningButton = Self.makeActionButton(titleKey: "garage_set_maintenance_warning")
         self.addMaintenanceButton = Self.makeActionButton(titleKey: "garage_add_maintenance")
         self.saveOBDButton = Self.makeActionButton(titleKey: "garage_save_obd_snapshot")
         self.addPartButton = Self.makeActionButton(titleKey: "garage_add_part")
@@ -82,6 +85,9 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         vehicleVINLabel.textColor = .systemGray2
         vehicleMileageLabel.font = .systemFont(ofSize: 16, weight: .semibold)
         vehicleMileageLabel.textColor = PTDashboardConfig.shared.appMainColor
+        maintenanceStatusLabel.numberOfLines = 0
+        maintenanceStatusLabel.font = .monospacedSystemFont(ofSize: 13, weight: .medium)
+        maintenanceStatusLabel.textColor = .systemGray2
     }
 
     private func configureStacks() {
@@ -101,6 +107,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         deleteVehicleButton.addTarget(self, action: #selector(confirmDeleteVehicle), for: .touchUpInside)
         editMileageButton.addTarget(self, action: #selector(showMileageForm), for: .touchUpInside)
         syncLiveDataButton.addTarget(self, action: #selector(syncLiveData), for: .touchUpInside)
+        maintenanceWarningButton.addTarget(self, action: #selector(showMaintenanceWarningForm), for: .touchUpInside)
         addMaintenanceButton.addTarget(self, action: #selector(showMaintenanceForm), for: .touchUpInside)
         saveOBDButton.addTarget(self, action: #selector(saveCurrentOBDSnapshot), for: .touchUpInside)
         addPartButton.addTarget(self, action: #selector(showPartForm), for: .touchUpInside)
@@ -123,7 +130,10 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         vehicleBody.axis = .vertical
         vehicleBody.spacing = 8
 
-        let maintenanceBody = makeSectionBody(rows: maintenanceRowsStack, action: addMaintenanceButton)
+        let maintenanceActions = makeButtonRow([maintenanceWarningButton, addMaintenanceButton])
+        let maintenanceBody = UIStackView(arrangedSubviews: [maintenanceStatusLabel, maintenanceRowsStack, maintenanceActions])
+        maintenanceBody.axis = .vertical
+        maintenanceBody.spacing = 10
         let diagnosticBody = makeSectionBody(rows: diagnosticRowsStack, action: saveOBDButton)
         let partsBody = makeSectionBody(rows: partsRowsStack, action: addPartButton)
 
@@ -186,6 +196,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
             vehicleDetailsLabel.text = nil
             vehicleVINLabel.text = nil
             vehicleMileageLabel.text = nil
+            maintenanceStatusLabel.text = nil
             refreshRows()
             return
         }
@@ -199,7 +210,59 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
             : detailParts.joined(separator: " · ")
         vehicleVINLabel.text = "\(localized("garage_vin")): \(vehicle.vin.isEmpty ? localized("garage_no_vin") : vehicle.vin)"
         vehicleMileageLabel.text = "\(localized("garage_mileage")): \(formattedMileage(vehicle.odometerKm))"
+        refreshMaintenanceStatus()
         refreshRows()
+    }
+
+    override func handleMotorcycleData(data: Any?) {
+        super.handleMotorcycleData(data: data)
+        refreshUI()
+    }
+
+    override func handleMotorcycleConnect() {
+        super.handleMotorcycleConnect()
+        refreshUI()
+    }
+
+    override func handleMotorcycleDisconnect() {
+        super.handleMotorcycleDisconnect()
+        refreshUI()
+    }
+
+    private func refreshMaintenanceStatus() {
+        let thresholdKm = Int(store.currentMaintenanceWarningDistanceKm.rounded())
+        let dashboard = PTBluetoothServerManager.shared
+        let isDashboardConnected = PTVehicleConnectivityCoordinator.shared.snapshot.isDashboardConnected
+        let distanceKm = isDashboardConnected ? dashboard.latestData3?.distToMaintenance : nil
+        let maintenanceFlag = isDashboardConnected ? dashboard.latestData2?.maintenance : nil
+        let advice = PTRideMaintenanceAdvisor.advise(
+            distanceToMaintenanceKm: distanceKm,
+            rawMaintenanceFlag: maintenanceFlag,
+            warningThresholdKm: thresholdKm
+        )
+        let remaining = distanceKm.map { distance in
+            distance > 0 ? formattedMileage(Double(distance)) : localized("ride_not_available")
+        } ?? localized("ride_not_available")
+        let status: String
+        switch advice.state {
+        case .normal:
+            status = localized("maintenance_state_normal")
+            maintenanceStatusLabel.textColor = .systemGreen
+        case .dueSoon:
+            status = localized("maintenance_state_due_soon")
+            maintenanceStatusLabel.textColor = .systemOrange
+        case .required:
+            status = localized("maintenance_state_required")
+            maintenanceStatusLabel.textColor = .systemRed
+        case .unknown:
+            status = localized("maintenance_state_unknown")
+            maintenanceStatusLabel.textColor = .systemGray2
+        }
+        maintenanceStatusLabel.text = [
+            "\(localized("garage_maintenance_warning_distance")): \(formattedMileage(Double(thresholdKm)))",
+            "\(localized("garage_maintenance_remaining")): \(remaining)",
+            "\(localized("garage_maintenance_status")): \(status)"
+        ].joined(separator: "\n")
     }
 
     private func refreshRows() {
@@ -451,6 +514,40 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         } else {
             showMessage(localized("garage_no_live_data"))
         }
+    }
+
+    @objc private func showMaintenanceWarningForm() {
+        let alert = UIAlertController(
+            title: localized("garage_set_maintenance_warning"),
+            message: localized("garage_maintenance_warning_form_hint"),
+            preferredStyle: .alert
+        )
+        alert.addTextField { field in
+            field.keyboardType = .decimalPad
+            field.text = PTDashboardConfig.shared.appShowMileageValueString(
+                self.store.currentMaintenanceWarningDistanceKm
+            )
+        }
+        alert.addAction(UIAlertAction(title: localized("button_cancel"), style: .cancel))
+        alert.addAction(UIAlertAction(title: localized("button_confirm"), style: .default) { [weak self, weak alert] _ in
+            guard let self,
+                  let text = alert?.textFields?.first?.text,
+                  let displayedDistance = Self.optionalDouble(text),
+                  displayedDistance.isFinite else {
+                self?.showMessage(self?.localized("garage_invalid_input") ?? "")
+                return
+            }
+
+            let distanceKm = PTDashboardConfig.shared.appUniIsMetric
+                ? displayedDistance
+                : displayedDistance / kmToMilOffset
+            guard self.store.updateMaintenanceWarningDistance(distanceKm) else {
+                self.showMessage(self.localized("garage_invalid_input"))
+                return
+            }
+            self.refreshUI()
+        })
+        present(alert, animated: true)
     }
 
     @objc private func showMaintenanceForm() {

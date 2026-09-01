@@ -231,6 +231,51 @@ final class PTCoreTests: XCTestCase {
         XCTAssertEqual(restoredVehicle.diagnosticReports.first?.successfulDIDCount, 1)
     }
 
+    // EN: Maintenance warning distances must belong to each vehicle and keep the legacy active-vehicle value in sync.
+    // ES: Las distancias de aviso deben pertenecer a cada vehículo y mantener sincronizado el valor antiguo del vehículo activo.
+    // 中文：保养预警里程必须归属于每辆车，并同步旧的当前车辆设置。
+    @MainActor
+    func testMaintenanceWarningDistanceIsVehicleOwned() throws {
+        let originalLegacyValue = PTMotoUserDefaultStruct.PTMotoSafteyMileValue
+        defer { PTMotoUserDefaultStruct.PTMotoSafteyMileValue = originalLegacyValue }
+
+        PTMotoUserDefaultStruct.PTMotoSafteyMileValue = 1_250
+        let suiteName = "PTMaintenanceWarningTests.\(UUID().uuidString)"
+        let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { userDefaults.removePersistentDomain(forName: suiteName) }
+
+        let legacyVehicle = PTMotorcycleProfile(name: "Legacy Bike")
+        let legacyDocument = PTMotorcycleGarageDocument(
+            schemaVersion: 1,
+            selectedVehicleID: legacyVehicle.id,
+            vehicles: [legacyVehicle]
+        )
+        userDefaults.set(try JSONEncoder().encode(legacyDocument), forKey: PTMotorcycleGarageStore.storageKey)
+
+        let store = PTMotorcycleGarageStore(userDefaults: userDefaults)
+        let firstVehicleID = legacyVehicle.id
+        XCTAssertEqual(store.currentMaintenanceWarningDistanceKm, 1_250)
+
+        let secondVehicle = try XCTUnwrap(
+            store.createVehicle(name: "Touring Bike", brand: "Peugeot", model: "XP400 GT")
+        )
+        XCTAssertEqual(store.currentMaintenanceWarningDistanceKm, PTMotorcycleGarageStore.defaultMaintenanceWarningDistanceKm)
+
+        XCTAssertTrue(store.updateMaintenanceWarningDistance(600, vehicleID: firstVehicleID))
+        XCTAssertEqual(store.currentMaintenanceWarningDistanceKm, PTMotorcycleGarageStore.defaultMaintenanceWarningDistanceKm)
+
+        XCTAssertTrue(store.selectVehicle(id: firstVehicleID))
+        XCTAssertEqual(store.currentMaintenanceWarningDistanceKm, 600)
+        XCTAssertEqual(PTMotoUserDefaultStruct.PTMotoSafteyMileValue, 600)
+        XCTAssertFalse(store.updateMaintenanceWarningDistance(0))
+
+        let restoredStore = PTMotorcycleGarageStore(userDefaults: userDefaults)
+        XCTAssertEqual(restoredStore.currentVehicle?.id, firstVehicleID)
+        XCTAssertEqual(restoredStore.currentMaintenanceWarningDistanceKm, 600)
+        XCTAssertEqual(restoredStore.vehicles.first(where: { $0.id == secondVehicle.id })?.maintenanceWarningDistanceKm,
+                       PTMotorcycleGarageStore.defaultMaintenanceWarningDistanceKm)
+    }
+
     // EN: Watch navigation context must round-trip without losing the maneuver identity used for haptics.
     // ES: El contexto de navegación del Watch debe conservar la identidad de maniobra usada por los hápticos.
     // 中文：Watch 导航上下文往返编码后，必须保留用于触觉去重的转向标识。
@@ -342,6 +387,34 @@ final class PTCoreTests: XCTestCase {
             rawMaintenanceFlag: 0x20
         )
         XCTAssertEqual(required.state, .required)
+
+        let exactThreshold = PTRideMaintenanceAdvisor.advise(
+            distanceToMaintenanceKm: 2_500,
+            rawMaintenanceFlag: 0,
+            warningThresholdKm: 2_500
+        )
+        XCTAssertEqual(exactThreshold.state, .dueSoon)
+
+        let outsideThreshold = PTRideMaintenanceAdvisor.advise(
+            distanceToMaintenanceKm: 2_501,
+            rawMaintenanceFlag: 0,
+            warningThresholdKm: 2_500
+        )
+        XCTAssertEqual(outsideThreshold.state, .normal)
+
+        let unrelatedFlag = PTRideMaintenanceAdvisor.advise(
+            distanceToMaintenanceKm: 2_000,
+            rawMaintenanceFlag: 0x01,
+            warningThresholdKm: 2_500
+        )
+        XCTAssertEqual(unrelatedFlag.state, .dueSoon)
+
+        let unavailableDistance = PTRideMaintenanceAdvisor.advise(
+            distanceToMaintenanceKm: 0,
+            rawMaintenanceFlag: 0,
+            warningThresholdKm: 2_500
+        )
+        XCTAssertEqual(unavailableDistance.state, .unknown)
     }
 
     // EN: Black-box windows must stay bounded and preserve the available ride context.

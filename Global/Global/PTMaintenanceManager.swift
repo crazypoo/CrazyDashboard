@@ -2,62 +2,142 @@
 //  PTMaintenanceManager.swift
 //  CrazyDashboard
 //
-//  Created by 邓杰豪 on 23/7/2026.
+//  EN: Evaluates dashboard maintenance data and sends bounded read-only reminders.
+//  ES: Evalúa los datos de mantenimiento del tablero y envía recordatorios limitados de solo lectura.
+//  中文：评估仪表保养数据，并发送有界的只读保养提醒。
 //
 
 import Foundation
 import UserNotifications
 import PooTools
 
-@objcMembers
-public class PTMaintenanceManager: NSObject {
-    
-    public static let shared = PTMaintenanceManager()
-    
-    // 提醒阈值：距离下次保养剩余多少公里时开始提醒
-    private let warningThresholdKm: Int = 500
-    
-    // 防止频繁打扰：通过 UserDefaults 记录上次提醒的日期
-    private let lastWarningDateKey = "PTLastMaintenanceWarningDate"
-    
-    private override init() {
-        super.init()
-        setupObservers()
-    }
-    
-    private func setupObservers() {
-        PTBluetoothServerManager.shared.addDelegate(self)
-    }
-            
-    private func triggerWarningIfNeeded(title: String, body: String) {
-        let now = Date()
-        let lastDate = UserDefaults.standard.object(forKey: lastWarningDateKey) as? Date ?? Date(timeIntervalSince1970: 0)
-        
-        // 限制：同一种警告，至少间隔 7 天才弹一次，避免骑手每天被烦死
-        if now.timeIntervalSince(lastDate) > 7 * 24 * 3600 {
-            PTMessagePusher.pushToDashboard(title: title, body: body)
-            UserDefaults.standard.set(now, forKey: lastWarningDateKey)
-            PTNSLogConsole("🚨 [保养管家] 触发保养通知：\(title)")
-        }
-    }
-    
-    deinit { }
+private enum PTMaintenanceDashboardSample: Sendable {
+    case maintenanceFlag(Int)
+    case distanceToMaintenance(Int)
 }
 
-extension PTMaintenanceManager:PTBLEDashboardDelegate {
-    func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
+@MainActor
+@objcMembers
+public final class PTMaintenanceManager: NSObject {
+    public static let shared = PTMaintenanceManager()
+
+    private static let legacyLastWarningDateKey = "PTLastMaintenanceWarningDate"
+    private static let warningInterval: TimeInterval = 7 * 24 * 60 * 60
+
+    private var latestMaintenanceFlag: Int?
+    private var latestDistanceToMaintenanceKm: Int?
+
+    private override init() {
+        super.init()
+        PTBluetoothServerManager.shared.addDelegate(self)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleGarageChange),
+            name: PTMotorcycleGarageStore.didChangeNotification,
+            object: nil
+        )
+    }
+
+    /// EN: Discard cached dashboard values after the active motorcycle changes.
+    /// ES: Descarta los datos guardados cuando cambia la motocicleta activa.
+    /// 中文：当前摩托车切换后，丢弃已经缓存的仪表数据。
+    @objc private func handleGarageChange() {
+        latestMaintenanceFlag = nil
+        latestDistanceToMaintenanceKm = nil
+    }
+
+    private func receive(_ sample: PTMaintenanceDashboardSample) {
+        switch sample {
+        case .maintenanceFlag(let value):
+            latestMaintenanceFlag = value
+        case .distanceToMaintenance(let value):
+            latestDistanceToMaintenanceKm = value
+        }
+        evaluateAndNotify()
+    }
+
+    private func evaluateAndNotify() {
+        let thresholdKm = Int(PTMotorcycleGarageStore.shared.currentMaintenanceWarningDistanceKm.rounded())
+        let advice = PTRideMaintenanceAdvisor.advise(
+            distanceToMaintenanceKm: latestDistanceToMaintenanceKm,
+            rawMaintenanceFlag: latestMaintenanceFlag,
+            warningThresholdKm: thresholdKm
+        )
+
+        switch advice.state {
+        case .required:
+            triggerWarningIfNeeded(
+                state: .required,
+                title: "🛠️" + PTDashboardConfig.languageFunc(text: "maintenance_need_title"),
+                body: PTDashboardConfig.languageFunc(text: "maintenance_need_msg")
+            )
+        case .dueSoon:
+            guard let distance = advice.distanceToMaintenanceKm else { return }
+            let displayedDistance = PTDashboardConfig.shared.appShowMileageValueString(Double(distance))
+                + PTDashboardConfig.shared.appShowUniLabel
+            triggerWarningIfNeeded(
+                state: .dueSoon,
+                title: "⚙️" + PTDashboardConfig.languageFunc(text: "maintenance_warning_title"),
+                body: PTDashboardConfig.language(key: "maintenance_warning_msg", displayedDistance)
+            )
+        case .normal, .unknown:
+            break
+        }
+    }
+
+    private func triggerWarningIfNeeded(
+        state: PTRideMaintenanceState,
+        title: String,
+        body: String
+    ) {
+        let now = Date()
+        let key = scopedWarningDateKey(for: state)
+        let lastDate = (UserDefaults.standard.object(forKey: key) as? Date)
+            ?? (UserDefaults.standard.object(forKey: Self.legacyLastWarningDateKey) as? Date)
+            ?? .distantPast
+
+        guard now.timeIntervalSince(lastDate) >= Self.warningInterval else { return }
+
+        PTMessagePusher.pushToDashboard(title: title, body: body)
+        UserDefaults.standard.set(now, forKey: key)
+        PTNSLogConsole("🚨 [保养管家] 触发 \(state.rawValue) 通知：\(title)")
+    }
+
+    private func scopedWarningDateKey(for state: PTRideMaintenanceState) -> String {
+        let vehicleID = PTMotorcycleGarageStore.shared.selectedVehicleID?.uuidString ?? "default"
+        return "\(Self.legacyLastWarningDateKey).\(vehicleID).\(state.rawValue)"
+    }
+
+    /// EN: Clear stale values after the dashboard disconnects so an old reading cannot trigger a new reminder.
+    /// ES: Limpia los valores obsoletos al desconectar el tablero para que una lectura antigua no genere otro aviso.
+    /// 中文：仪表断开后清除旧数据，避免旧读数再次触发提醒。
+    private func receiveConnectionState(_ isConnected: Bool) {
+        guard !isConnected else { return }
+        latestMaintenanceFlag = nil
+        latestDistanceToMaintenanceKm = nil
+    }
+}
+
+extension PTMaintenanceManager: PTBLEDashboardDelegate {
+    nonisolated func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
+        let sample: PTMaintenanceDashboardSample?
         if let data2 = data as? PTDashboardData2 {
-            // 协议规定 maintenance 的 0x20 位表示“需要保养”
-            // 这里假设你在解析层已经处理好了 (raw & 0xE0) != 0 的判断
-            if data2.maintenance != 0 {
-                triggerWarningIfNeeded(title: "🛠️" + PTDashboardConfig.languageFunc(text: "maintenance_need_title"), body: PTDashboardConfig.languageFunc(text: "maintenance_need_msg"))
-            }
+            sample = .maintenanceFlag(data2.maintenance)
         } else if let data3 = data as? PTDashboardData3 {
-            // 当剩余保养里程小于阈值且大于 0 时，触发预警
-            if data3.distToMaintenance <= warningThresholdKm && data3.distToMaintenance > 0 {
-                
-                triggerWarningIfNeeded(title: "⚙️" + PTDashboardConfig.languageFunc(text: "maintenance_warning_title"), body: PTDashboardConfig.language(key: "maintenance_warning_msg", data3.distToMaintenance))
-            }
+            sample = .distanceToMaintenance(data3.distToMaintenance)
+        } else {
+            sample = nil
+        }
+
+        guard let sample else { return }
+        Task { @MainActor [weak self] in
+            self?.receive(sample)
+        }
+    }
+
+    nonisolated func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool) {
+        Task { @MainActor [weak self] in
+            self?.receiveConnectionState(isConnected)
         }
     }
 }

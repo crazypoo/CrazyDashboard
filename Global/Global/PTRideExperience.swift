@@ -101,7 +101,10 @@ public enum PTRideMaintenanceAdvisor {
         rawMaintenanceFlag: Int?,
         warningThresholdKm: Int = 500
     ) -> PTRideMaintenanceAdvice {
-        if rawMaintenanceFlag.map({ $0 != 0 }) == true {
+        // EN: Only the dashboard's maintenance bits count; unrelated low bits must not create a false alarm.
+        // ES: Solo cuentan los bits de mantenimiento del tablero; los bits bajos ajenos no deben crear una falsa alarma.
+        // 中文：只有仪表保养位才算需要保养，其他低位不能制造误报。
+        if rawMaintenanceFlag.map({ ($0 & 0xE0) != 0 }) == true {
             return PTRideMaintenanceAdvice(
                 state: .required,
                 distanceToMaintenanceKm: distanceToMaintenanceKm
@@ -142,6 +145,7 @@ public struct PTRideExperienceSummary: Codable, Equatable, Sendable {
     public let outsideTemperatureCelsius: Int?
     public let maintenanceDistanceKm: Int?
     public let maintenanceFlag: Int?
+    public let maintenanceWarningDistanceKm: Int
     public let parkedLatitude: Double
     public let parkedLongitude: Double
     public let parkedAddress: String
@@ -159,6 +163,7 @@ public struct PTRideExperienceSummary: Codable, Equatable, Sendable {
         outsideTemperatureCelsius: Int?,
         maintenanceDistanceKm: Int?,
         maintenanceFlag: Int?,
+        maintenanceWarningDistanceKm: Int = 2_500,
         parkedLatitude: Double,
         parkedLongitude: Double,
         parkedAddress: String,
@@ -175,6 +180,7 @@ public struct PTRideExperienceSummary: Codable, Equatable, Sendable {
         self.outsideTemperatureCelsius = outsideTemperatureCelsius
         self.maintenanceDistanceKm = maintenanceDistanceKm
         self.maintenanceFlag = maintenanceFlag
+        self.maintenanceWarningDistanceKm = max(maintenanceWarningDistanceKm, 0)
         self.parkedLatitude = parkedLatitude
         self.parkedLongitude = parkedLongitude
         self.parkedAddress = parkedAddress
@@ -193,7 +199,8 @@ public struct PTRideExperienceSummary: Codable, Equatable, Sendable {
     public var maintenanceAdvice: PTRideMaintenanceAdvice {
         PTRideMaintenanceAdvisor.advise(
             distanceToMaintenanceKm: maintenanceDistanceKm,
-            rawMaintenanceFlag: maintenanceFlag
+            rawMaintenanceFlag: maintenanceFlag,
+            warningThresholdKm: maintenanceWarningDistanceKm
         )
     }
 }

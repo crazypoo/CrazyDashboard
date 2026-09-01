@@ -263,6 +263,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         // EN: Install dashboard-dependent observers only when a dashboard connection exists.
         // ES: Instala observadores dependientes del tablero solo cuando existe una conexión activa.
         // 中文：只有仪表连接存在时才安装依赖仪表数据的观察者。
+        _ = PTMotorcycleGarageStore.shared
         _ = PTAntiTheftManager.shared
         _ = PTDiagnosticManager.shared
         _ = PTMaintenanceManager.shared
