@@ -2,7 +2,9 @@
 //  ContentView.swift
 //  xp400watch Watch App
 //
-//  Created by 邓杰豪 on 21/8/2026.
+//  EN: Read-only motorcycle status, navigation prompts and parking finder.
+//  ES: Estado de la motocicleta, avisos de navegación y buscador de estacionamiento de solo lectura.
+//  中文：只读展示摩托车状态、导航提示和停车寻车入口。
 //
 
 import SwiftUI
@@ -11,105 +13,303 @@ struct ContentView: View {
     @StateObject private var statusStore = PTWatchStatusStore()
 
     var body: some View {
-        PTWatchStatusView(status: statusStore.status)
-    }
-}
-
-private struct PTWatchStatusView: View {
-    let status: PTWidgetSharedStatus
-    private let mainColor = Color(red: 0.2, green: 0.6, blue: 1.0)
-
-    var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    HStack(spacing: 5) {
-                        Image(systemName: status.isConnected ? "wave.3.right.circle.fill" : "wave.3.right.circle")
-                            .foregroundStyle(status.isConnected ? .green : .gray)
-                        Text(status.isConnected ? "机车已连接" : "机车已断开")
-                            .font(.headline)
-                            .foregroundStyle(status.isConnected ? .green : .gray)
-                    }
-
-                    Spacer(minLength: 4)
-
-                    Group {
-                        if status.lastUpdateTime == .distantPast {
-                            Text("暂无同步")
-                        } else {
-                            Text(status.lastUpdateTime, style: .time)
-                        }
-                    }
-                    .font(.caption2)
-                    .foregroundStyle(.gray)
-                    .multilineTextAlignment(.trailing)
-                }
-
-                Divider().overlay(Color.gray.opacity(0.3))
-
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 5) {
-                        Image(systemName: "fuelpump.fill")
-                            .foregroundStyle(mainColor)
-                        Text("当前油量")
-                            .foregroundStyle(.gray)
-                    }
-                    .font(.caption)
-                    Text("\(status.fuelLevel)%")
-                        .font(.system(size: 30, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 5) {
-                        Image(systemName: "flag.checkered")
-                            .foregroundStyle(mainColor)
-                        Text("小计里程")
-                            .foregroundStyle(.gray)
-                    }
-                    .font(.caption)
-                    HStack(alignment: .lastTextBaseline, spacing: 3) {
-                        Text(String(format: "%.1f", status.tripKm))
-                            .font(.system(size: 30, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white)
-                        Text("km")
-                            .font(.caption)
-                            .foregroundStyle(.gray)
-                    }
-                }
-
-                Divider().overlay(Color.gray.opacity(0.3))
-
-                VStack(alignment: .leading, spacing: 5) {
-                    HStack(spacing: 5) {
-                        Image(systemName: "parkingsign.circle.fill")
-                            .foregroundStyle(.orange)
-                        Text("最后停车位置")
-                            .foregroundStyle(.gray)
-                    }
-                    .font(.caption)
-
-                    Text(status.address)
-                        .font(.footnote)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.white)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    if status.parkedLat != 0 || status.parkedLon != 0 {
-                        HStack(spacing: 4) {
-                            Image(systemName: "location.fill")
-                            Text(String(format: "%.5f, %.5f", status.parkedLat, status.parkedLon))
-                        }
-                        .font(.caption2)
-                        .foregroundStyle(mainColor)
-                    }
-                }
+                PTWatchVehicleStatusView(status: statusStore.status)
+                PTWatchNavigationView(navigation: statusStore.navigation)
+                PTWatchParkingView(status: statusStore.status)
             }
             .padding(.horizontal, 4)
             .padding(.vertical, 8)
         }
         .background(Color(white: 0.1).ignoresSafeArea())
+    }
+}
+
+private struct PTWatchVehicleStatusView: View {
+    let status: PTWidgetSharedStatus
+    private let mainColor = Color(red: 0.2, green: 0.6, blue: 1.0)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                HStack(spacing: 5) {
+                    Image(systemName: status.isConnected ? "wave.3.right.circle.fill" : "wave.3.right.circle")
+                        .foregroundStyle(status.isConnected ? .green : .gray)
+                    Text(connectionTitle)
+                        .font(.headline)
+                        .foregroundStyle(status.isConnected ? .green : .gray)
+                }
+
+                Spacer(minLength: 4)
+
+                Group {
+                    if status.lastUpdateTime == .distantPast {
+                        Text("ride_not_available")
+                    } else {
+                        Text(status.lastUpdateTime, style: .time)
+                    }
+                }
+                .font(.caption2)
+                .foregroundStyle(.gray)
+                .multilineTextAlignment(.trailing)
+            }
+
+            Divider().overlay(Color.gray.opacity(0.3))
+
+            HStack(spacing: 14) {
+                PTWatchMetricView(
+                    title: "watch_assistant_fuel_level",
+                    value: "\(status.fuelLevel)%",
+                    systemImage: "fuelpump.fill",
+                    color: mainColor
+                )
+                PTWatchMetricView(
+                    title: "casa_card_little_trip",
+                    value: String(format: "%.1f km", status.tripKm),
+                    systemImage: "flag.checkered",
+                    color: mainColor
+                )
+            }
+        }
+    }
+
+    private var connectionTitle: LocalizedStringKey {
+        status.isConnected ? "ride_connected" : "ride_disconnected"
+    }
+}
+
+private struct PTWatchMetricView: View {
+    let title: LocalizedStringKey
+    let value: String
+    let systemImage: String
+    let color: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Label(title, systemImage: systemImage)
+                .font(.caption2)
+                .foregroundStyle(.gray)
+                .symbolRenderingMode(.hierarchical)
+                .tint(color)
+            Text(value)
+                .font(.system(size: 23, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct PTWatchNavigationView: View {
+    let navigation: PTWatchRideAssistantState
+    private let mainColor = Color(red: 0.2, green: 0.6, blue: 1.0)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 5) {
+                Image(systemName: navigation.maneuver.symbolName)
+                    .foregroundStyle(mainColor)
+                Text("watch_assistant_title")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                Spacer(minLength: 4)
+                Text(sourceTitle)
+                    .font(.caption2)
+                    .foregroundStyle(.gray)
+            }
+
+            if !navigation.status.isVisible {
+                Text("watch_assistant_no_navigation")
+                    .font(.footnote)
+                    .foregroundStyle(.gray)
+            } else if !navigation.isFresh {
+                Label("watch_assistant_stale", systemImage: "clock.badge.exclamationmark")
+                    .font(.footnote)
+                    .foregroundStyle(.orange)
+            } else {
+                HStack(spacing: 6) {
+                    Text(statusTitle)
+                        .font(.caption)
+                        .foregroundStyle(statusColor)
+                    if navigation.totalSteps > 0 {
+                        Text("\(navigation.currentStep)/\(navigation.totalSteps)")
+                            .font(.caption2)
+                            .foregroundStyle(.gray)
+                    }
+                }
+
+                if !navigation.routeName.isEmpty {
+                    Text(navigation.routeName)
+                        .font(.caption2)
+                        .foregroundStyle(.gray)
+                        .lineLimit(1)
+                }
+
+                if navigation.instruction.isEmpty {
+                    Text("watch_assistant_no_instruction")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                } else {
+                    Text(navigation.instruction)
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
+                }
+
+                HStack(spacing: 10) {
+                    PTWatchDistanceView(
+                        title: "watch_assistant_distance_to_turn",
+                        meters: navigation.distanceToManeuverMeters,
+                        color: mainColor
+                    )
+                    PTWatchDistanceView(
+                        title: "watch_assistant_remaining",
+                        meters: navigation.distanceToDestinationMeters,
+                        color: .white
+                    )
+                }
+            }
+        }
+        .padding(10)
+        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+        .accessibilityElement(children: .combine)
+    }
+
+    private var sourceTitle: LocalizedStringKey {
+        switch navigation.source {
+        case .roadbook:
+            return "roadbook_title"
+        case .turnByTurn:
+            return "watch_assistant_turn_by_turn"
+        case .none:
+            return "watch_assistant_title"
+        }
+    }
+
+    private var statusTitle: LocalizedStringKey {
+        switch navigation.status {
+        case .active:
+            return "roadbook_status_active"
+        case .paused:
+            return "roadbook_status_paused"
+        case .offRoute:
+            return "roadbook_status_off_route"
+        case .completed:
+            return "roadbook_status_completed"
+        case .rerouting:
+            return "watch_assistant_rerouting"
+        case .searchingGPS:
+            return "watch_assistant_searching_gps"
+        case .idle:
+            return "watch_assistant_no_navigation"
+        }
+    }
+
+    private var statusColor: Color {
+        switch navigation.status {
+        case .offRoute, .rerouting, .searchingGPS:
+            return .orange
+        case .completed, .active:
+            return .green
+        case .paused:
+            return .yellow
+        case .idle:
+            return .gray
+        }
+    }
+}
+
+private struct PTWatchDistanceView: View {
+    let title: LocalizedStringKey
+    let meters: Double
+    let color: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.gray)
+            Text(Self.formattedDistance(meters))
+                .font(.system(size: 17, weight: .semibold, design: .rounded))
+                .foregroundStyle(color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private static func formattedDistance(_ meters: Double) -> String {
+        let safeMeters = meters.isFinite ? max(0, meters) : 0
+        if safeMeters >= 1_000 {
+            return String(format: "%.1f km", safeMeters / 1_000)
+        }
+        return String(format: "%.0f m", safeMeters)
+    }
+}
+
+private struct PTWatchParkingView: View {
+    let status: PTWidgetSharedStatus
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Divider().overlay(Color.gray.opacity(0.3))
+
+            Label("ride_parking", systemImage: "parkingsign.circle.fill")
+                .font(.caption)
+                .foregroundStyle(.gray)
+                .symbolRenderingMode(.hierarchical)
+                .tint(.orange)
+
+            if hasParkingLocation {
+                Text(status.address)
+                    .font(.footnote)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let mapURL = parkingMapURL {
+                Link(destination: mapURL) {
+                    Label("watch_assistant_find_motorcycle", systemImage: "map.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
+            } else {
+                Label("ride_no_parking", systemImage: "location.slash")
+                    .font(.caption)
+                    .foregroundStyle(.gray)
+            }
+        }
+    }
+
+    private var hasParkingLocation: Bool {
+        guard status.lastUpdateTime != .distantPast else { return false }
+        return status.parkedLat.isFinite && status.parkedLon.isFinite &&
+            (abs(status.parkedLat) > 0.000001 || abs(status.parkedLon) > 0.000001)
+    }
+
+    private var parkingMapURL: URL? {
+        guard hasParkingLocation else { return nil }
+
+        var components = URLComponents()
+        components.scheme = "http"
+        components.host = "maps.apple.com"
+        components.path = "/"
+        components.queryItems = [
+            URLQueryItem(name: "ll", value: "\(status.parkedLat),\(status.parkedLon)"),
+            URLQueryItem(
+                name: "q",
+                value: status.address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    ? "Motorcycle"
+                    : status.address
+            )
+        ]
+        return components.url
     }
 }
 

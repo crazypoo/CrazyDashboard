@@ -237,8 +237,8 @@ OBD BLE / Wi-Fi / Mock
 | SYS-001 | ✅ | iOS Widget | 展示连接、油量、里程和停车信息 |
 | SYS-002 | ✅ | Widget 共享状态 | `PTWidgetDataManager` 写入 App Group，Widget 读取统一字段 |
 | SYS-003 | 🟨 | Widget iCloud 快照 | 同步最近状态；需多设备冲突、容器不可用和恢复验证 |
-| SYS-004 | 🟨 | Apple Watch 状态页 | 按 Widget 风格展示车辆状态，需不同表径和真实配对设备验证 |
-| SYS-005 | 🟨 | Watch 最新状态同步 | 通过 `updateApplicationContext` 同步最近一份状态，不维护历史队列 |
+| SYS-004 | 🟨 | Apple Watch 骑行助手 | 按 Widget 风格展示车辆状态、只读导航和停车寻车；需不同表径和真实配对设备验证 |
+| SYS-005 | 🟨 | Watch 最新状态同步 | 通过 `updateApplicationContext` 同步最近一份车辆与导航状态，不维护历史队列 |
 | SYS-006 | 🟨 | 导航 Live Activity | 展示进行中的导航状态，需系统中断和结束清理验证 |
 | SYS-007 | 🟨 | PTT Live Activity | 与有效组群会话绑定，不允许 App 启动即自动激活 |
 | SYS-008 | 🟨 | CarPlay | 展示地图和导航；需真实车机覆盖连接、重连和退出 |
@@ -289,7 +289,7 @@ OBD BLE / Wi-Fi / Mock
 | --- | --- | --- | --- |
 | IDEA-001 | 🟨 | ADV Roadbook | 已支持 GPX 导入、路点列表、逐点仪表导航、连续偏航检测/返回和 GPX 分享；待真实 GPX、定位与仪表验收 |
 | IDEA-002 | 🟨 | 完整行程回放 | 已支持 GPX 地图轨迹、速度/转速/倾角/三轴 G 值同步播放、事件时间轴和地图标记；待大文件、异常 GPX 与真机验证 |
-| IDEA-003 | ⬜ | Watch 骑行助手 | 只读导航提示、转向触觉、停车寻车；不在 Watch 直连车辆 |
+| IDEA-003 | 🟨 | Watch 骑行助手 | 已支持 Roadbook / 普通导航只读提示、转向触觉和停车寻车；待真实配对、后台/锁屏及不同表径验证 |
 | IDEA-004 | ⬜ | 多车库 | 管理多辆摩托的里程、保养、OBD 报告和配件档案 |
 | IDEA-005 | ⬜ | 轮胎与悬挂档案 | 胎压建议记录、冷热胎观察、预载与阻尼设置日志 |
 | IDEA-006 | ⬜ | 路线天气风险 | 在路线时间轴标出降雨、横风、低温和能见度风险 |
@@ -312,7 +312,7 @@ OBD BLE / Wi-Fi / Mock
 
 - XP400 原车 BLE 与 OBD BLE 同时运行时的扫描、重连、后台和资源竞争。
 - PTT 两台及以上真机的加入、退出、异常断线、VOX、人数、位置和 Live Activity 生命周期。
-- Apple Watch 离线后恢复、后台更新和不同表径布局。
+- Apple Watch 离线后恢复、后台/锁屏导航更新、触觉去重、停车链接和不同表径布局。
 - CarPlay 真实车机连接、重连、导航结束与 iPhone/车机双屏状态一致性。
 - iCloud 无网络、冲突、容量不足、换机恢复与容器不可用场景。
 - CAN Capture 的不同 ELM327 适配器、11-bit / 29-bit Header、多帧、异常断电和大文件。
@@ -340,3 +340,4 @@ OBD BLE / Wi-Fi / Mock
 | 日期 | 仓库基线 | 内容 |
 | --- | --- | --- |
 | 2026-09-01 | `b6d39a0` | 建立首版功能总纲，覆盖 iPhone、Widget、Watch、CarPlay、Siri、PTT、OBD、Dev 和候选功能 |
+| 2026-09-01 | 当前工作区 | IDEA-003 已接入 Watch 只读导航、Roadbook 提示、转向触觉和停车寻车；保留真实设备与道路验证缺口 |

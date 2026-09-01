@@ -182,6 +182,31 @@ final class PTCoreTests: XCTestCase {
         XCTAssertEqual(restored, source)
     }
 
+    // EN: Watch navigation context must round-trip without losing the maneuver identity used for haptics.
+    // ES: El contexto de navegación del Watch debe conservar la identidad de maniobra usada por los hápticos.
+    // 中文：Watch 导航上下文往返编码后，必须保留用于触觉去重的转向标识。
+    func testWatchRideAssistantContextRoundTrip() throws {
+        let source = PTWatchRideAssistantState(
+            source: .roadbook,
+            status: .active,
+            routeName: "ADV Roadbook",
+            instruction: "Turn right",
+            maneuver: .right,
+            maneuverIdentifier: "roadbook:demo:2",
+            distanceToManeuverMeters: 80,
+            distanceToDestinationMeters: 1_280,
+            currentStep: 3,
+            totalSteps: 12,
+            updatedAt: Date()
+        )
+
+        let restored = try XCTUnwrap(PTWatchRideAssistantState(applicationContext: source.applicationContext))
+        XCTAssertEqual(restored, source)
+        XCTAssertEqual(PTWatchNavigationManeuver(dashboardCode: 12), .sharpLeft)
+        XCTAssertEqual(PTWatchNavigationManeuver(dashboardCode: 44), .arrive)
+        XCTAssertNotNil(restored.hapticIdentifier)
+    }
+
     // EN: Parameterized dashboard localization must use the integer argument, not the variadic argument array itself.
     // ES: La localización parametrizada debe usar el entero, no el propio array de argumentos variádicos.
     // 中文：带参数的仪表盘本地化必须使用实际整数，不能把可变参数数组本身当成参数。

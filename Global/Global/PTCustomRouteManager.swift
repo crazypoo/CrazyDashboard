@@ -194,6 +194,7 @@ nonisolated public struct PTRoadbookNavigationSnapshot: Equatable, Sendable {
     public let currentWaypointIndex: Int
     public let waypointCount: Int
     public let targetInstruction: String?
+    public let targetManeuverCode: UInt8?
     public let distanceToTargetMeters: CLLocationDistance
     public let distanceToDestinationMeters: CLLocationDistance
     public let deviationMeters: CLLocationDistance
@@ -208,6 +209,7 @@ nonisolated public struct PTRoadbookNavigationSnapshot: Equatable, Sendable {
                 currentWaypointIndex: Int = 0,
                 waypointCount: Int = 0,
                 targetInstruction: String? = nil,
+                targetManeuverCode: UInt8? = nil,
                 distanceToTargetMeters: CLLocationDistance = 0,
                 distanceToDestinationMeters: CLLocationDistance = 0,
                 deviationMeters: CLLocationDistance = 0,
@@ -221,6 +223,7 @@ nonisolated public struct PTRoadbookNavigationSnapshot: Equatable, Sendable {
         self.currentWaypointIndex = currentWaypointIndex
         self.waypointCount = waypointCount
         self.targetInstruction = targetInstruction
+        self.targetManeuverCode = targetManeuverCode
         self.distanceToTargetMeters = distanceToTargetMeters
         self.distanceToDestinationMeters = distanceToDestinationMeters
         self.deviationMeters = deviationMeters
@@ -672,6 +675,7 @@ public class PTCustomRouteManager: NSObject {
         guard let roadbook = activeRoadbook else {
             navigationSnapshot = PTRoadbookNavigationSnapshot(state: .idle)
             NotificationCenter.default.post(name: PTRoadbookStateDidChange, object: self, userInfo: ["snapshot": navigationSnapshot])
+            PTWatchConnectivityManager.shared.update(roadbookSnapshot: navigationSnapshot)
             return
         }
 
@@ -698,6 +702,7 @@ public class PTCustomRouteManager: NSObject {
             currentWaypointIndex: currentTargetIndex,
             waypointCount: roadbook.waypoints.count,
             targetInstruction: target?.instruction,
+            targetManeuverCode: target?.maneuverCode,
             distanceToTargetMeters: distanceToTarget,
             distanceToDestinationMeters: distanceToDestination,
             deviationMeters: deviationMeters,
@@ -707,6 +712,7 @@ public class PTCustomRouteManager: NSObject {
             updatedAt: Date()
         )
         NotificationCenter.default.post(name: PTRoadbookStateDidChange, object: self, userInfo: ["snapshot": navigationSnapshot])
+        PTWatchConnectivityManager.shared.update(roadbookSnapshot: navigationSnapshot)
     }
 
     private func validate(_ roadbook: PTRoadbook) throws {

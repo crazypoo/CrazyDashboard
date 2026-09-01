@@ -1388,11 +1388,17 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
     func driveManager(_ driveManager: AMapNaviDriveManager, error: Error) {
         let error = error as NSError
         PTNSLogConsole("error:{%d - %@}", error.code, error.localizedDescription)
+        Task { @MainActor in
+            PTWatchConnectivityManager.shared.clearNavigation()
+        }
     }
     
     func driveManager(_ driveManager: AMapNaviDriveManager, onCalculateRouteFailure error: Error) {
         let error = error as NSError
         PTNSLogConsole("CalculateRouteFailure:{%d - %@}", error.code, error.localizedDescription)
+        Task { @MainActor in
+            PTWatchConnectivityManager.shared.clearNavigation()
+        }
     }
 
 //    func driveManager(onCalculateRouteSuccess driveManager: AMapNaviDriveManager) {
@@ -1437,6 +1443,12 @@ extension PTMotoNavigationViewController : AMapNaviDriveViewDelegate {
         
     func driveViewCloseButtonClicked(_ driveView: AMapNaviDriveView) {
         PTDashboardConfig.shared.naving = false
+        // EN: Clear the Watch prompt when normal navigation ends, while keeping vehicle and parking data.
+        // ES: Limpia el aviso del Watch cuando termina la navegación normal y conserva el vehículo y el estacionamiento.
+        // 中文：普通导航结束时清除 Watch 提示，同时保留车辆和停车数据。
+        Task { @MainActor in
+            PTWatchConnectivityManager.shared.clearNavigation()
+        }
         //停止导航
         AMapNaviDriveManager.sharedInstance().stopNavi()
         AMapNaviDriveManager.sharedInstance().removeDataRepresentative(driveView)
@@ -1495,6 +1507,21 @@ extension PTMotoNavigationViewController:AMapNaviDriveDataRepresentable {
         }
         currentRoadName = naviInfo.currentRoadName
         PTMotoDashBoardNavFunction.sendNavDataToDashboard(naviInfo: naviInfo, currentSpeedLimit: self.currentSpeedLimit)
+
+        let maneuverCode = PTMotoDashBoardNavFunction.convertAMapIconToPTManeuver(iconType: naviInfo.iconType)
+        let nextRoadName = naviInfo.nextRoadName ?? ""
+        let currentRoadName = naviInfo.currentRoadName ?? ""
+        let distanceToManeuverMeters = Double(max(0, naviInfo.segmentRemainDistance))
+        let distanceToDestinationMeters = Double(max(0, naviInfo.routeRemainDistance))
+        Task { @MainActor in
+            PTWatchConnectivityManager.shared.updateTurnByTurnNavigation(
+                routeName: currentRoadName,
+                instruction: nextRoadName,
+                maneuverCode: maneuverCode,
+                distanceToManeuverMeters: distanceToManeuverMeters,
+                distanceToDestinationMeters: distanceToDestinationMeters
+            )
+        }
     }
     
     func driveManager(_ driveManager: AMapNaviDriveManager, update naviLocation: AMapNaviLocation?) {

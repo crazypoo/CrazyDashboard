@@ -1,818 +1,16 @@
 {
   "sourceLanguage" : "zh-Hans",
   "strings" : {
-  "app_intent_destination_parameter" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Destination"
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Hedef"
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "目的地"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "目的地"
+    "%lld/%lld" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld"
+          }
         }
       }
-    }
-  },
-  "app_intent_destination_required" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Please provide a destination."
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Lütfen bir hedef belirtin."
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "请提供目的地。"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "請提供目的地。"
-        }
-      }
-    }
-  },
-  "app_intent_find_fuel_description" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Search for a nearby gas station and prepare motorcycle navigation."
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Yakındaki benzin istasyonunu ara ve motosiklet navigasyonunu hazırla."
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "搜索附近加油站并准备摩托车导航。"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "搜尋附近加油站並準備摩托車導航。"
-        }
-      }
-    }
-  },
-  "app_intent_find_fuel_title" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Find a gas station"
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Benzin istasyonu bul"
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "查找加油站"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "尋找加油站"
-        }
-      }
-    }
-  },
-  "app_intent_fuel_search_started" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Searching for a nearby gas station."
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Yakındaki benzin istasyonu aranıyor."
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "正在搜索附近加油站。"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "正在搜尋附近加油站。"
-        }
-      }
-    }
-  },
-  "app_intent_hud_opened" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "The riding HUD is open."
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Sürüş HUD'si açıldı."
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "骑行 HUD 已打开。"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "騎行 HUD 已開啟。"
-        }
-      }
-    }
-  },
-  "app_intent_mark_ride_event_description" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Save a manual event in the current ride black box."
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Mevcut sürüş kara kutusuna manuel olay kaydet."
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "在当前行程黑匣子中保存一个手动事件。"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "在目前行程黑盒子中保存一個手動事件。"
-        }
-      }
-    }
-  },
-  "app_intent_mark_ride_event_title" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Mark current ride"
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Mevcut sürüşü işaretle"
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "标记当前行程"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "標記目前行程"
-        }
-      }
-    }
-  },
-  "app_intent_navigate_description" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Switch to navigation and search for a destination."
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Navigasyona geç ve bir hedef ara."
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "切换到导航并搜索指定目的地。"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "切換到導航並搜尋指定目的地。"
-        }
-      }
-    }
-  },
-  "app_intent_navigate_title" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Navigate to destination"
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Hedefe git"
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "导航到目的地"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "導航到目的地"
-        }
-      }
-    }
-  },
-  "app_intent_navigation_started" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Started searching for: %@"
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Şu hedef aranıyor: %@"
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "已开始搜索目的地：%@"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "已開始搜尋目的地：%@"
-        }
-      }
-    }
-  },
-  "app_intent_navigation_unavailable" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Navigation is currently unavailable."
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Navigasyon şu anda kullanılamıyor."
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "当前无法打开导航。"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "目前無法開啟導航。"
-        }
-      }
-    }
-  },
-  "app_intent_open_hud_description" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Open the motorcycle riding dashboard."
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Motosiklet sürüş panelini aç."
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "打开摩托车骑行仪表盘。"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "開啟摩托車騎行儀表板。"
-        }
-      }
-    }
-  },
-  "app_intent_open_hud_title" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Open riding HUD"
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Sürüş HUD'sini aç"
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "打开骑行 HUD"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "開啟騎行 HUD"
-        }
-      }
-    }
-  },
-  "app_intent_parked_location_description" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Read the latest saved parking position."
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Kaydedilen son park konumunu oku."
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "读取最近一次保存的停车位置。"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "讀取最近一次保存的停車位置。"
-        }
-      }
-    }
-  },
-  "app_intent_parked_location_summary" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Last parked position: %@"
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Son park konumu: %@"
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "最后停车位置：%@"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "最後停車位置：%@"
-        }
-      }
-    }
-  },
-  "app_intent_parked_location_title" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Find parked motorcycle"
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Park konumunu bul"
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "查看停车位置"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "查看停車位置"
-        }
-      }
-    }
-  },
-  "app_intent_parked_location_unavailable" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "No saved parking position is available."
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Kayıtlı park konumu yok."
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "暂无已保存的停车位置。"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "暫無已保存的停車位置。"
-        }
-      }
-    }
-  },
-  "app_intent_vehicle_status_coordinates" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Coordinates: %.5f, %.5f"
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Koordinatlar: %.5f, %.5f"
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "坐标：%.5f, %.5f"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "座標：%.5f, %.5f"
-        }
-      }
-    }
-  },
-  "app_intent_vehicle_status_description" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Read the latest saved motorcycle status."
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Kaydedilen en son motosiklet durumunu oku."
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "读取最近一次保存的摩托车状态。"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "讀取最近一次保存的摩托車狀態。"
-        }
-      }
-    }
-  },
-  "app_intent_vehicle_status_last_sync" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Last sync: %@"
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Son senkronizasyon: %@"
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "最后同步：%@"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "最後同步：%@"
-        }
-      }
-    }
-  },
-  "app_intent_vehicle_status_parking" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Last parking: %@"
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Son park: %@"
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "最后停车：%@"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "最後停車：%@"
-        }
-      }
-    }
-  },
-  "app_intent_vehicle_status_summary" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Status: %@ · Fuel: %d%% · Trip: %.1f km"
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Durum: %@ · Yakıt: %d%% · Gezi: %.1f km"
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "状态：%@ · 油量：%d%% · 小计里程：%.1f km"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "狀態：%@ · 油量：%d%% · 小計里程：%.1f km"
-        }
-      }
-    }
-  },
-  "app_intent_vehicle_status_title" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Get vehicle status"
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Araç durumunu al"
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "查询车辆状态"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "查詢車輛狀態"
-        }
-      }
-    }
-  },
-  "app_intent_vehicle_status_unavailable" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "No saved vehicle status is available."
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Kayıtlı araç durumu yok."
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "暂无已保存的车辆状态。"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "暫無已保存的車輛狀態。"
-        }
-      }
-    }
-  },
-  "shortcuts_help" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Available: vehicle status, parking position, ride marker, HUD, navigation and gas station search. The xp400:// Scheme remains supported."
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Kullanılabilir: araç durumu, park konumu, sürüş işareti, HUD, navigasyon ve benzin istasyonu arama. xp400:// Scheme desteği sürer."
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "可用：查询车辆状态、查看停车位置、标记行程、打开 HUD、导航和查找加油站。旧 xp400:// Scheme 仍兼容。"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "可用：查詢車輛狀態、查看停車位置、標記行程、開啟 HUD、導航和尋找加油站。舊 xp400:// Scheme 仍相容。"
-        }
-      }
-    }
-  },
-  "shortcuts_open" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Open Shortcuts"
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Kestirmeleri aç"
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "打开快捷指令"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "開啟快捷指令"
-        }
-      }
-    }
-  },
-  "shortcuts_title" : {
-    "extractionState" : "manual",
-    "localizations" : {
-      "en" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Siri and Shortcuts"
-        }
-      },
-      "tr" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Siri ve Kestirmeler"
-        }
-      },
-      "zh-Hans" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Siri 与快捷指令"
-        }
-      },
-      "zh-Hant" : {
-        "stringUnit" : {
-          "state" : "translated",
-          "value" : "Siri 與快捷指令"
-        }
-      }
-    }
-  },
+    },
     "abs_error" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1075,43 +273,729 @@
       }
     },
     "app_intent_destination_parameter" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Destination"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hedef"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目的地"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目的地"
+          }
+        }
+      }
+    },
+    "app_intent_destination_required" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Please provide a destination."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lütfen bir hedef belirtin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请提供目的地。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請提供目的地。"
+          }
+        }
+      }
     },
     "app_intent_find_fuel_description" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search for a nearby gas station and prepare motorcycle navigation."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yakındaki benzin istasyonunu ara ve motosiklet navigasyonunu hazırla."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索附近加油站并准备摩托车导航。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜尋附近加油站並準備摩托車導航。"
+          }
+        }
+      }
     },
     "app_intent_find_fuel_title" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find a gas station"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benzin istasyonu bul"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查找加油站"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尋找加油站"
+          }
+        }
+      }
+    },
+    "app_intent_fuel_search_started" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Searching for a nearby gas station."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yakındaki benzin istasyonu aranıyor."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在搜索附近加油站。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在搜尋附近加油站。"
+          }
+        }
+      }
+    },
+    "app_intent_hud_opened" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The riding HUD is open."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sürüş HUD'si açıldı."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "骑行 HUD 已打开。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "騎行 HUD 已開啟。"
+          }
+        }
+      }
     },
     "app_intent_mark_ride_event_description" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save a manual event in the current ride black box."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mevcut sürüş kara kutusuna manuel olay kaydet."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在当前行程黑匣子中保存一个手动事件。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在目前行程黑盒子中保存一個手動事件。"
+          }
+        }
+      }
     },
     "app_intent_mark_ride_event_title" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark current ride"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mevcut sürüşü işaretle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "标记当前行程"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "標記目前行程"
+          }
+        }
+      }
     },
     "app_intent_navigate_description" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch to navigation and search for a destination."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navigasyona geç ve bir hedef ara."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "切换到导航并搜索指定目的地。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "切換到導航並搜尋指定目的地。"
+          }
+        }
+      }
     },
     "app_intent_navigate_title" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navigate to destination"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hedefe git"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导航到目的地"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "導航到目的地"
+          }
+        }
+      }
+    },
+    "app_intent_navigation_started" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Started searching for: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Şu hedef aranıyor: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已开始搜索目的地：%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已開始搜尋目的地：%@"
+          }
+        }
+      }
+    },
+    "app_intent_navigation_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navigation is currently unavailable."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navigasyon şu anda kullanılamıyor."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前无法打开导航。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目前無法開啟導航。"
+          }
+        }
+      }
     },
     "app_intent_open_hud_description" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the motorcycle riding dashboard."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Motosiklet sürüş panelini aç."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开摩托车骑行仪表盘。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟摩托車騎行儀表板。"
+          }
+        }
+      }
     },
     "app_intent_open_hud_title" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open riding HUD"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sürüş HUD'sini aç"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开骑行 HUD"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟騎行 HUD"
+          }
+        }
+      }
     },
     "app_intent_parked_location_description" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read the latest saved parking position."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kaydedilen son park konumunu oku."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "读取最近一次保存的停车位置。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "讀取最近一次保存的停車位置。"
+          }
+        }
+      }
+    },
+    "app_intent_parked_location_summary" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last parked position: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Son park konumu: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最后停车位置：%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最後停車位置：%@"
+          }
+        }
+      }
     },
     "app_intent_parked_location_title" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find parked motorcycle"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Park konumunu bul"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看停车位置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看停車位置"
+          }
+        }
+      }
+    },
+    "app_intent_parked_location_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No saved parking position is available."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kayıtlı park konumu yok."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无已保存的停车位置。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暫無已保存的停車位置。"
+          }
+        }
+      }
+    },
+    "app_intent_vehicle_status_coordinates" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coordinates: %.5f, %.5f"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koordinatlar: %.5f, %.5f"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "坐标：%.5f, %.5f"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "座標：%.5f, %.5f"
+          }
+        }
+      }
     },
     "app_intent_vehicle_status_description" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read the latest saved motorcycle status."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kaydedilen en son motosiklet durumunu oku."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "读取最近一次保存的摩托车状态。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "讀取最近一次保存的摩托車狀態。"
+          }
+        }
+      }
+    },
+    "app_intent_vehicle_status_last_sync" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last sync: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Son senkronizasyon: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最后同步：%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最後同步：%@"
+          }
+        }
+      }
+    },
+    "app_intent_vehicle_status_parking" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last parking: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Son park: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最后停车：%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最後停車：%@"
+          }
+        }
+      }
+    },
+    "app_intent_vehicle_status_summary" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status: %@ · Fuel: %d%% · Trip: %.1f km"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Durum: %@ · Yakıt: %d%% · Gezi: %.1f km"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "状态：%@ · 油量：%d%% · 小计里程：%.1f km"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "狀態：%@ · 油量：%d%% · 小計里程：%.1f km"
+          }
+        }
+      }
     },
     "app_intent_vehicle_status_title" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get vehicle status"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Araç durumunu al"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查询车辆状态"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查詢車輛狀態"
+          }
+        }
+      }
+    },
+    "app_intent_vehicle_status_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No saved vehicle status is available."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kayıtlı araç durumu yok."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无已保存的车辆状态。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暫無已保存的車輛狀態。"
+          }
+        }
+      }
     },
     "batt_warning_msg" : {
       "extractionState" : "manual",
@@ -4390,6 +4274,528 @@
         }
       }
     },
+    "ride_replay_event_count" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d events"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d olay"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d 个事件"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d 個事件"
+          }
+        }
+      }
+    },
+    "ride_replay_event_hard_acceleration" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hard acceleration"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sert hızlanma"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "急加速"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "急加速"
+          }
+        }
+      }
+    },
+    "ride_replay_event_hard_braking" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hard braking"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sert frenleme"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "急刹"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "急煞"
+          }
+        }
+      }
+    },
+    "ride_replay_event_heavy_bump" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heavy bump"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sert tümsek"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重颠簸"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重顛簸"
+          }
+        }
+      }
+    },
+    "ride_replay_event_high_lean" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "High lean angle"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yüksek yatış açısı"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "高倾角"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "高傾角"
+          }
+        }
+      }
+    },
+    "ride_replay_event_offroad" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off-road event"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arazi olayı"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "越野事件"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "越野事件"
+          }
+        }
+      }
+    },
+    "ride_replay_event_suspected_slip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suspected slip"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Şüpheli kayma"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "疑似打滑"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "疑似打滑"
+          }
+        }
+      }
+    },
+    "ride_replay_g_force" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "G-Force"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "G kuvveti"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "G 值"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "G 值"
+          }
+        }
+      }
+    },
+    "ride_replay_invalid_track" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The GPX track is invalid"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GPX rotası geçersiz"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GPX 轨迹无效"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GPX 軌跡無效"
+          }
+        }
+      }
+    },
+    "ride_replay_lean" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lean"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yatış"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "倾角"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "傾角"
+          }
+        }
+      }
+    },
+    "ride_replay_loading" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading replay…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tekrar oynatma yükleniyor…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在加载回放…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在載入回放…"
+          }
+        }
+      }
+    },
+    "ride_replay_missing_track" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This ride has no replayable GPX track"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu sürüşte oynatılabilir GPX rotası yok"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "该行程没有可回放的 GPX 轨迹"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此行程沒有可回放的 GPX 軌跡"
+          }
+        }
+      }
+    },
+    "ride_replay_no_events" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No events recorded"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kayıtlı olay yok"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有记录的事件"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "沒有記錄的事件"
+          }
+        }
+      }
+    },
+    "ride_replay_paused" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paused"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duraklatıldı"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已暂停"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已暫停"
+          }
+        }
+      }
+    },
+    "ride_replay_playing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playing"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oynatılıyor"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "播放中"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "播放中"
+          }
+        }
+      }
+    },
+    "ride_replay_rpm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RPM"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RPM"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "转速"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轉速"
+          }
+        }
+      }
+    },
+    "ride_replay_speed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speed"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hız"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "速度"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "速度"
+          }
+        }
+      }
+    },
+    "ride_replay_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ride Replay"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sürüş tekrarı"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "行程回放"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "行程回放"
+          }
+        }
+      }
+    },
     "ride_status" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4618,6 +5024,528 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "平均速度: %@"
+          }
+        }
+      }
+    },
+    "roadbook_delete" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Roadbook"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Roadbook'u sil"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除路线"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除路線"
+          }
+        }
+      }
+    },
+    "roadbook_delete_confirm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The saved GPX file will also be removed."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kaydedilen GPX dosyası da silinecek."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存的 GPX 文件也会被删除。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存的 GPX 檔案也會被刪除。"
+          }
+        }
+      }
+    },
+    "roadbook_next" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next waypoint"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sonraki nokta"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下一个路点"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下一個路點"
+          }
+        }
+      }
+    },
+    "roadbook_normal_navigation_conflict" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "End the active Roadbook before starting normal navigation."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normal navigasyonu başlatmadan önce etkin Roadbook'u sonlandırın."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始普通导航前，请先结束当前路线。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開始普通導航前，請先結束目前路線。"
+          }
+        }
+      }
+    },
+    "roadbook_pause" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duraklat"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂停"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暫停"
+          }
+        }
+      }
+    },
+    "roadbook_previous" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous waypoint"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Önceki nokta"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上一个路点"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上一個路點"
+          }
+        }
+      }
+    },
+    "roadbook_resume" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resume"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sürdür"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "繼續"
+          }
+        }
+      }
+    },
+    "roadbook_share" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share GPX"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GPX'i paylaş"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分享 GPX"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分享 GPX"
+          }
+        }
+      }
+    },
+    "roadbook_start" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Roadbook"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Roadbook'u başlat"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始路线"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開始路線"
+          }
+        }
+      }
+    },
+    "roadbook_status_active" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etkin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "进行中"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "進行中"
+          }
+        }
+      }
+    },
+    "roadbook_status_completed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completed"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tamamlandı"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已完成"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已完成"
+          }
+        }
+      }
+    },
+    "roadbook_status_off_route" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off route"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rota dışı"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已偏离路线"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已偏離路線"
+          }
+        }
+      }
+    },
+    "roadbook_status_paused" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paused"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duraklatıldı"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已暂停"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已暫停"
+          }
+        }
+      }
+    },
+    "roadbook_status_ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hazır"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "待开始"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "待開始"
+          }
+        }
+      }
+    },
+    "roadbook_stop" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop Roadbook"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Roadbook'u durdur"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "结束路线"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "結束路線"
+          }
+        }
+      }
+    },
+    "roadbook_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ADV Roadbook"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ADV Yol Defteri"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ADV 路书"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ADV 路書"
+          }
+        }
+      }
+    },
+    "roadbook_view_waypoints" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View waypoints"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noktaları görüntüle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看路点"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看路點"
+          }
+        }
+      }
+    },
+    "roadbook_waypoint_count" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d waypoints"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d yol noktası"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d 个路点"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d 個路點"
           }
         }
       }
@@ -4941,6 +5869,93 @@
         }
       }
     },
+    "shortcuts_help" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Available: vehicle status, parking position, ride marker, HUD, navigation and gas station search. The xp400:// Scheme remains supported."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kullanılabilir: araç durumu, park konumu, sürüş işareti, HUD, navigasyon ve benzin istasyonu arama. xp400:// Scheme desteği sürer."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "可用：查询车辆状态、查看停车位置、标记行程、打开 HUD、导航和查找加油站。旧 xp400:// Scheme 仍兼容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "可用：查詢車輛狀態、查看停車位置、標記行程、開啟 HUD、導航和尋找加油站。舊 xp400:// Scheme 仍相容。"
+          }
+        }
+      }
+    },
+    "shortcuts_open" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Shortcuts"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kestirmeleri aç"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开快捷指令"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟快捷指令"
+          }
+        }
+      }
+    },
+    "shortcuts_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siri and Shortcuts"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siri ve Kestirmeler"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siri 与快捷指令"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siri 與快捷指令"
+          }
+        }
+      }
+    },
     "tab_navigation" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4968,330 +5983,6 @@
             "value" : "導航"
           }
         }
-      }
-    },
-    "ride_replay_event_count" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d events" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "%d olay" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%d 个事件" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "%d 個事件" } }
-      }
-    },
-    "ride_replay_event_hard_acceleration" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hard acceleration" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sert hızlanma" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "急加速" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "急加速" } }
-      }
-    },
-    "ride_replay_event_hard_braking" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hard braking" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sert frenleme" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "急刹" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "急煞" } }
-      }
-    },
-    "ride_replay_event_heavy_bump" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Heavy bump" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sert tümsek" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重颠簸" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "重顛簸" } }
-      }
-    },
-    "ride_replay_event_high_lean" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "High lean angle" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yüksek yatış açısı" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "高倾角" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "高傾角" } }
-      }
-    },
-    "ride_replay_event_offroad" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Off-road event" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Arazi olayı" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "越野事件" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "越野事件" } }
-      }
-    },
-    "ride_replay_event_suspected_slip" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Suspected slip" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Şüpheli kayma" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "疑似打滑" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "疑似打滑" } }
-      }
-    },
-    "ride_replay_g_force" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "G-Force" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "G kuvveti" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "G 值" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "G 值" } }
-      }
-    },
-    "ride_replay_invalid_track" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "The GPX track is invalid" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "GPX rotası geçersiz" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "GPX 轨迹无效" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "GPX 軌跡無效" } }
-      }
-    },
-    "ride_replay_lean" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lean" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yatış" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "倾角" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "傾角" } }
-      }
-    },
-    "ride_replay_loading" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Loading replay…" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Tekrar oynatma yükleniyor…" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在加载回放…" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正在載入回放…" } }
-      }
-    },
-    "ride_replay_missing_track" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "This ride has no replayable GPX track" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bu sürüşte oynatılabilir GPX rotası yok" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "该行程没有可回放的 GPX 轨迹" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "此行程沒有可回放的 GPX 軌跡" } }
-      }
-    },
-    "ride_replay_no_events" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No events recorded" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kayıtlı olay yok" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "没有记录的事件" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "沒有記錄的事件" } }
-      }
-    },
-    "ride_replay_paused" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Paused" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Duraklatıldı" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已暂停" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已暫停" } }
-      }
-    },
-    "ride_replay_playing" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Playing" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Oynatılıyor" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "播放中" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "播放中" } }
-      }
-    },
-    "ride_replay_rpm" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "RPM" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "RPM" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "转速" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "轉速" } }
-      }
-    },
-    "ride_replay_speed" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Speed" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hız" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "速度" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "速度" } }
-      }
-    },
-    "ride_replay_title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ride Replay" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürüş tekrarı" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "行程回放" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "行程回放" } }
-      }
-    },
-    "roadbook_delete" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete Roadbook" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Roadbook'u sil" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "删除路线" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "刪除路線" } }
-      }
-    },
-    "roadbook_delete_confirm" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "The saved GPX file will also be removed." } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kaydedilen GPX dosyası da silinecek." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保存的 GPX 文件也会被删除。" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "保存的 GPX 檔案也會被刪除。" } }
-      }
-    },
-    "roadbook_next" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Next waypoint" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sonraki nokta" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "下一个路点" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "下一個路點" } }
-      }
-    },
-    "roadbook_normal_navigation_conflict" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "End the active Roadbook before starting normal navigation." } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Normal navigasyonu başlatmadan önce etkin Roadbook'u sonlandırın." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开始普通导航前，请先结束当前路线。" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開始普通導航前，請先結束目前路線。" } }
-      }
-    },
-    "roadbook_pause" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pause" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Duraklat" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂停" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "暫停" } }
-      }
-    },
-    "roadbook_previous" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Previous waypoint" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Önceki nokta" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "上一个路点" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "上一個路點" } }
-      }
-    },
-    "roadbook_resume" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Resume" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürdür" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "继续" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "繼續" } }
-      }
-    },
-    "roadbook_share" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share GPX" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "GPX'i paylaş" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "分享 GPX" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "分享 GPX" } }
-      }
-    },
-    "roadbook_start" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start Roadbook" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Roadbook'u başlat" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开始路线" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開始路線" } }
-      }
-    },
-    "roadbook_status_active" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Active" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Etkin" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "进行中" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "進行中" } }
-      }
-    },
-    "roadbook_status_completed" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Completed" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Tamamlandı" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已完成" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已完成" } }
-      }
-    },
-    "roadbook_status_off_route" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Off route" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Rota dışı" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已偏离路线" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已偏離路線" } }
-      }
-    },
-    "roadbook_status_paused" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Paused" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Duraklatıldı" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已暂停" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已暫停" } }
-      }
-    },
-    "roadbook_status_ready" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ready" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hazır" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "待开始" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "待開始" } }
-      }
-    },
-    "roadbook_stop" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Stop Roadbook" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Roadbook'u durdur" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "结束路线" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "結束路線" } }
-      }
-    },
-    "roadbook_title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "ADV Roadbook" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "ADV Yol Defteri" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "ADV 路书" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "ADV 路書" } }
-      }
-    },
-    "roadbook_view_waypoints" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "View waypoints" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Noktaları görüntüle" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "查看路点" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "查看路點" } }
-      }
-    },
-    "roadbook_waypoint_count" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d waypoints" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "%d yol noktası" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%d 个路点" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "%d 個路點" } }
       }
     },
     "tab_setting" : {
@@ -5348,6 +6039,325 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "車身姿態(Pitch)"
+          }
+        }
+      }
+    },
+    "watch_assistant_distance_to_turn" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To turn"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dönüşe kadar"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "距转向"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "距轉向"
+          }
+        }
+      }
+    },
+    "watch_assistant_find_motorcycle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find motorcycle"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Motosikleti bul"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "寻找摩托车"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尋找摩托車"
+          }
+        }
+      }
+    },
+    "watch_assistant_fuel_level" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fuel level"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yakıt seviyesi"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前油量"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目前油量"
+          }
+        }
+      }
+    },
+    "watch_assistant_no_instruction" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No turn instruction"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dönüş talimatı yok"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无转向提示"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暫無轉向提示"
+          }
+        }
+      }
+    },
+    "watch_assistant_no_navigation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No active navigation"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etkin navigasyon yok"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前没有进行中的导航"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目前沒有進行中的導航"
+          }
+        }
+      }
+    },
+    "watch_assistant_remaining" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remaining"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kalan"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "剩余距离"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "剩餘距離"
+          }
+        }
+      }
+    },
+    "watch_assistant_rerouting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rerouting"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeniden rota oluşturuluyor"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在重新规划路线"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在重新規劃路線"
+          }
+        }
+      }
+    },
+    "watch_assistant_searching_gps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Searching for GPS"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GPS aranıyor"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在搜索 GPS"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在搜尋 GPS"
+          }
+        }
+      }
+    },
+    "watch_assistant_stale" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navigation data is stale"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navigasyon verileri güncel değil"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导航数据已过期"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "導航資料已過期"
+          }
+        }
+      }
+    },
+    "watch_assistant_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ride assistant"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sürüş yardımcısı"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "骑行助手"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "騎行助手"
+          }
+        }
+      }
+    },
+    "watch_assistant_turn_by_turn" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn-by-turn"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adım adım navigasyon"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "逐向导航"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "逐向導航"
           }
         }
       }
