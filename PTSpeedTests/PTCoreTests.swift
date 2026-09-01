@@ -8,9 +8,107 @@
 
 import XCTest
 import MultipeerConnectivity
+import CoreLocation
 @testable import XP400Ride
 
 final class PTCoreTests: XCTestCase {
+    // EN: GPX imports must support both recorded tracks and standard route points.
+    // ES: Las importaciones GPX deben admitir tanto trazas grabadas como puntos de ruta estándar.
+    // 中文：GPX 导入必须同时支持录制轨迹点和标准路线点。
+    func testGPXParserSupportsTrackAndRoutePoints() throws {
+        let data = Data("""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <gpx version="1.1">
+          <trk><trkseg>
+            <trkpt lat="31.230400" lon="121.473700"><ele>4</ele><time>2026-08-01T10:00:00Z</time></trkpt>
+          </trkseg></trk>
+          <rte>
+            <rtept lat="31.231400" lon="121.474700"><name>Finish</name></rtept>
+          </rte>
+        </gpx>
+        """.utf8)
+
+        let points = try PTGPXParser.parseTrack(data: data)
+        XCTAssertEqual(points.count, 2)
+        XCTAssertEqual(points[0].altitude ?? -1, 4, accuracy: 0.001)
+        XCTAssertNotNil(points[0].timestamp)
+
+        let waypoints = PTGPXParser.makeRoadbookWaypoints(
+            from: points,
+            minimumSpacingMeters: 1,
+            maximumWaypointCount: 10
+        )
+        XCTAssertEqual(waypoints.count, 2)
+        XCTAssertEqual(waypoints.last?.latitude ?? 0, 31.2314, accuracy: 0.000001)
+    }
+
+    // EN: Waypoint persistence must retain the raw coordinate and maneuver code.
+    // ES: La persistencia debe conservar la coordenada original y el código de maniobra.
+    // 中文：路点持久化必须保留原始坐标和转向代码。
+    func testRoadbookWaypointCodableRoundTrip() throws {
+        let source = PTCruiseWaypoint(
+            latitude: 31.2304,
+            longitude: 121.4737,
+            instruction: "Checkpoint",
+            maneuverCode: PTManeuverMap.quiteRight
+        )
+        let data = try JSONEncoder().encode(source)
+        let restored = try JSONDecoder().decode(PTCruiseWaypoint.self, from: data)
+
+        XCTAssertEqual(restored, source)
+        XCTAssertEqual(restored.coordinate.latitude, source.coordinate.latitude, accuracy: 0.000001)
+    }
+
+    // EN: Off-route status is only entered after three consecutive invalid samples.
+    // ES: El estado fuera de ruta solo aparece después de tres muestras inválidas consecutivas.
+    // 中文：连续三次无效定位样本后才进入偏航状态。
+    @MainActor
+    func testRoadbookRequiresThreeOffRouteSamples() throws {
+        let manager = PTCustomRouteManager.shared
+        manager.stopCruise()
+        let previousNavigationState = PTDashboardConfig.shared.naving
+        PTDashboardConfig.shared.naving = false
+        defer {
+            manager.stopCruise()
+            PTDashboardConfig.shared.naving = previousNavigationState
+        }
+
+        let route = PTRoadbook(
+            name: "Test Roadbook",
+            coordinateSystem: .amapGCJ02,
+            waypoints: [
+                PTCruiseWaypoint(latitude: 31.2304, longitude: 121.4737, instruction: "Start", maneuverCode: PTManeuverMap.straight),
+                PTCruiseWaypoint(latitude: 31.2304, longitude: 121.4837, instruction: "Finish", maneuverCode: PTManeuverMap.arrive)
+            ]
+        )
+        try manager.startRoadbook(route)
+
+        for _ in 0..<2 {
+            manager.processCurrentLocation(makeAccurateLocation(latitude: 31.2404, longitude: 121.4787))
+        }
+        XCTAssertEqual(manager.state, .active)
+
+        manager.processCurrentLocation(makeAccurateLocation(latitude: 31.2404, longitude: 121.4787))
+        XCTAssertEqual(manager.state, .offRoute)
+        XCTAssertEqual(manager.navigationSnapshot.offRouteSampleCount, 3)
+
+        manager.processCurrentLocation(makeAccurateLocation(latitude: 31.2304, longitude: 121.4740))
+        XCTAssertEqual(manager.state, .active)
+    }
+
+    @MainActor
+    private func makeAccurateLocation(latitude: Double, longitude: Double) -> CLLocation {
+        CLLocation(
+            coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
+            altitude: 0,
+            horizontalAccuracy: 5,
+            verticalAccuracy: 5,
+            course: 0,
+            speed: 10,
+            timestamp: Date()
+        )
+    }
+
     func testWidgetApplicationContextRoundTrip() {
         let source = PTWidgetSharedStatus(
             fuelLevel: 72,

@@ -310,6 +310,22 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         view.bounds = .init(origin: .zero, size: .init(width: self.homeSize, height: self.homeSize))
         return view
     }()
+
+    // EN: Open the imported ADV Roadbook manager from the existing navigation toolbar.
+    // ES: Abre el gestor de Roadbooks ADV importados desde la barra de navegación existente.
+    // 中文：从现有导航工具栏打开导入的 ADV Roadbook 管理页。
+    private lazy var roadbookButton: PTBaseButton = {
+        let view = PTBaseButton(type: .system)
+        view.setImage(
+            UIImage(systemName: "map.fill")?.withTintColor(.white, renderingMode: .alwaysOriginal),
+            for: .normal
+        )
+        view.bounds = .init(origin: .zero, size: .init(width: self.homeSize, height: self.homeSize))
+        view.addActionHandlers { [weak self] _ in
+            self?.presentRoadbook()
+        }
+        return view
+    }()
     private lazy var locationButton: PTBaseButton = {
         let view = PTBaseButton(type: .system)
         // 使用 SF Symbols 的定位图标
@@ -351,6 +367,13 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         impact.impactOccurred()
     }
 
+    private func presentRoadbook() {
+        let roadbookViewController = PTRoadbookViewController()
+        let navigationController = UINavigationController(rootViewController: roadbookViewController)
+        navigationController.modalPresentationStyle = .pageSheet
+        present(navigationController, animated: true)
+    }
+
     private lazy var startNavigationButton:UIButton = {
         let view = UIButton(type: .system)
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -369,6 +392,10 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     }()
     
     func navAction() {
+        guard !PTCustomRouteManager.shared.isSessionActive else {
+            PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "roadbook_normal_navigation_conflict"))
+            return
+        }
         PTDashboardConfig.shared.naving = true
         if PTCarPlayManager.isCarPlayActive,PTDashboardConfig.shared.naving {
             self.stopCarplyButton.isEnabled = true
@@ -852,6 +879,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         floatingToolbarBackground.contentView.addSubview(toolbarStack)
         toolbarStack.addArrangedSubview(homeButton)
         toolbarStack.addArrangedSubview(officeButton)
+        toolbarStack.addArrangedSubview(roadbookButton)
         toolbarStack.addArrangedSubview(muteButton)
         toolbarStack.addArrangedSubview(stopCarplyButton)
         toolbarStack.addArrangedSubview(locationButton)

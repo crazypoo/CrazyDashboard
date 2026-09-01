@@ -60,32 +60,223 @@ extension PTiCloudFileManager {
     }
 }
 
-/// 极简的 GPX 坐标提取工具
-public class PTGPXParser: NSObject, XMLParserDelegate {
-    
-    private var coordinates: [CLLocationCoordinate2D] = []
-    
-    /// 传入本地的 GPX 文件 URL，返回所有的坐标点
-    public func parse(fileURL: URL) -> [CLLocationCoordinate2D] {
-        coordinates.removeAll()
-        
-        // 使用苹果原生的 XML 解析器，性能极高
-        guard let parser = XMLParser(contentsOf: fileURL) else { return [] }
-        parser.delegate = self
-        parser.parse()
-        
-        return coordinates
+// EN: GPX track points preserve the raw WGS84 coordinate and optional route metadata.
+// ES: Los puntos GPX conservan la coordenada WGS84 original y metadatos opcionales de la ruta.
+// 中文：GPX 轨迹点保存原始 WGS84 坐标和可选路线元数据。
+nonisolated public struct PTGPXTrackPoint: Codable, Hashable, Sendable {
+    public let latitude: Double
+    public let longitude: Double
+    public let altitude: Double?
+    public let timestamp: Date?
+
+    public init(latitude: Double,
+                longitude: Double,
+                altitude: Double? = nil,
+                timestamp: Date? = nil) {
+        self.latitude = latitude
+        self.longitude = longitude
+        self.altitude = altitude
+        self.timestamp = timestamp
     }
-    
-    // MARK: - XMLParserDelegate
-    public func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
-        // 只要遇到 <trkpt lat="..." lon="..."> 标签，就把坐标提出来
-        if elementName == "trkpt" {
-            if let latStr = attributeDict["lat"], let lonStr = attributeDict["lon"],
-               let lat = Double(latStr), let lon = Double(lonStr) {
-                coordinates.append(CLLocationCoordinate2D(latitude: lat, longitude: lon))
+
+    public var coordinate: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    }
+}
+
+// EN: GPX parsing errors are explicit so import UI can explain a bad file.
+// ES: Los errores de análisis GPX son explícitos para que la interfaz explique un archivo inválido.
+// 中文：GPX 解析错误显式返回，让导入界面能解释无效文件。
+nonisolated public enum PTGPXParseError: Error, Equatable, LocalizedError, Sendable {
+    case emptyData
+    case invalidXML(String)
+    case noTrackPoints
+
+    public var errorDescription: String? {
+        switch self {
+        case .emptyData:
+            return "GPX 文件为空"
+        case .invalidXML(let message):
+            return "GPX 文件格式无效：\(message)"
+        case .noTrackPoints:
+            return "GPX 文件没有可用路线点"
+        }
+    }
+}
+
+// EN: Native XMLParser keeps the existing parser dependency-free while adding route metadata support.
+// ES: XMLParser nativo conserva el parser sin dependencias y añade soporte para metadatos de ruta.
+// 中文：使用原生 XMLParser，不增加依赖，同时支持路线元数据。
+nonisolated public class PTGPXParser: NSObject, XMLParserDelegate {
+    private struct MutableTrackPoint {
+        var latitude: Double
+        var longitude: Double
+        var altitude: Double?
+        var timestamp: Date?
+    }
+
+    private var trackPoints: [PTGPXTrackPoint] = []
+    private var currentPoint: MutableTrackPoint?
+    private var activeTextElement: String?
+    private var textBuffer = ""
+    private let isoFormatter: ISO8601DateFormatter
+
+    public override init() {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        self.isoFormatter = formatter
+        super.init()
+    }
+
+    // EN: This compatibility method still returns only coordinates, as existing callers expect.
+    // ES: Este método compatible sigue devolviendo solo coordenadas, como esperan los llamadores existentes.
+    // 中文：保留兼容方法，仍只返回坐标，确保现有调用方不变。
+    public func parse(fileURL: URL) -> [CLLocationCoordinate2D] {
+        guard let data = try? Data(contentsOf: fileURL) else { return [] }
+        return (try? Self.parseTrack(data: data).map(\.coordinate)) ?? []
+    }
+
+    public func parseTrack(fileURL: URL) throws -> [PTGPXTrackPoint] {
+        let data: Data
+        do {
+            data = try Data(contentsOf: fileURL, options: .mappedIfSafe)
+        } catch {
+            throw PTGPXParseError.invalidXML(error.localizedDescription)
+        }
+        return try Self.parseTrack(data: data)
+    }
+
+    nonisolated public static func parseTrack(data: Data) throws -> [PTGPXTrackPoint] {
+        guard !data.isEmpty else { throw PTGPXParseError.emptyData }
+        let delegate = PTGPXParser()
+        let parser = XMLParser(data: data)
+        parser.delegate = delegate
+        guard parser.parse() else {
+            throw PTGPXParseError.invalidXML(parser.parserError?.localizedDescription ?? "无法解析 XML")
+        }
+        guard !delegate.trackPoints.isEmpty else {
+            throw PTGPXParseError.noTrackPoints
+        }
+        return delegate.trackPoints
+    }
+
+    // EN: Convert a dense GPX track into bounded ordered navigation points.
+    // ES: Convierte una traza GPX densa en puntos de navegación ordenados y acotados.
+    // 中文：将密集 GPX 轨迹转换为有界的有序导航点。
+    nonisolated public static func makeRoadbookWaypoints(from points: [PTGPXTrackPoint],
+                                                         minimumSpacingMeters: CLLocationDistance = 35,
+                                                         maximumWaypointCount: Int = 500) -> [PTCruiseWaypoint] {
+        guard points.count >= 2, maximumWaypointCount >= 2 else { return [] }
+
+        var selected: [PTGPXTrackPoint] = [points[0]]
+        for point in points.dropFirst() {
+            guard let last = selected.last else { continue }
+            let distance = CLLocation(latitude: last.latitude, longitude: last.longitude)
+                .distance(from: CLLocation(latitude: point.latitude, longitude: point.longitude))
+            if distance >= max(1, minimumSpacingMeters) {
+                selected.append(point)
             }
         }
+
+        if let last = points.last,
+           selected.last?.coordinate.latitude != last.coordinate.latitude ||
+           selected.last?.coordinate.longitude != last.coordinate.longitude {
+            selected.append(last)
+        }
+
+        if selected.count > maximumWaypointCount {
+            let lastIndex = selected.count - 1
+            selected = (0..<maximumWaypointCount).map { index in
+                let position = Double(index) / Double(maximumWaypointCount - 1)
+                return selected[Int((position * Double(lastIndex)).rounded())]
+            }
+        }
+
+        return selected.enumerated().map { index, point in
+            PTCruiseWaypoint(
+                latitude: point.latitude,
+                longitude: point.longitude,
+                instruction: "Waypoint \(index + 1)",
+                // EN: Keep the literal outside the main-actor dashboard map for detached parsing.
+                // ES: Mantener el literal fuera del mapa del dashboard aislado al actor principal.
+                // 中文：在脱离主线程解析时使用字面量，避免依赖主 actor 的仪表映射。
+                maneuverCode: 1
+            )
+        }
+    }
+
+    // MARK: - XMLParserDelegate
+
+    public func parser(_ parser: XMLParser,
+                       didStartElement elementName: String,
+                       namespaceURI: String?,
+                       qualifiedName qName: String?,
+                       attributes attributeDict: [String: String] = [:]) {
+        let name = Self.localName(elementName)
+        guard Self.pointElementNames.contains(name) else {
+            if currentPoint != nil, Self.metadataElementNames.contains(name) {
+                activeTextElement = name
+                textBuffer = ""
+            }
+            return
+        }
+
+        guard let latitude = Double(attributeDict["lat"] ?? ""),
+              let longitude = Double(attributeDict["lon"] ?? ""),
+              latitude.isFinite,
+              longitude.isFinite,
+              (-90...90).contains(latitude),
+              (-180...180).contains(longitude) else {
+            currentPoint = nil
+            return
+        }
+        currentPoint = MutableTrackPoint(latitude: latitude,
+                                         longitude: longitude,
+                                         altitude: nil,
+                                         timestamp: nil)
+    }
+
+    public func parser(_ parser: XMLParser, foundCharacters string: String) {
+        guard activeTextElement != nil else { return }
+        textBuffer.append(string)
+    }
+
+    public func parser(_ parser: XMLParser,
+                       didEndElement elementName: String,
+                       namespaceURI: String?,
+                       qualifiedName qName: String?) {
+        let name = Self.localName(elementName)
+        if name == activeTextElement {
+            let value = textBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+            if name == "ele", let altitude = Double(value) {
+                currentPoint?.altitude = altitude
+            } else if name == "time" {
+                currentPoint?.timestamp = isoFormatter.date(from: value) ?? Self.fallbackISODate(from: value)
+            }
+            activeTextElement = nil
+            textBuffer = ""
+        }
+
+        guard Self.pointElementNames.contains(name),
+              let point = currentPoint else { return }
+        trackPoints.append(PTGPXTrackPoint(latitude: point.latitude,
+                                           longitude: point.longitude,
+                                           altitude: point.altitude,
+                                           timestamp: point.timestamp))
+        currentPoint = nil
+    }
+
+    nonisolated private static let pointElementNames: Set<String> = ["trkpt", "rtept", "wpt"]
+    nonisolated private static let metadataElementNames: Set<String> = ["ele", "time"]
+
+    nonisolated private static func localName(_ name: String) -> String {
+        String(name.split(separator: ":").last ?? Substring(name))
+    }
+
+    nonisolated private static func fallbackISODate(from value: String) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: value)
     }
 }
 
@@ -170,6 +361,58 @@ public class PTGPXRecorder: NSObject {
         return resolvedFileName
     }
 
+    // EN: Export a Roadbook as a standard GPX route while preserving its stored coordinate values.
+    // ES: Exporta un Roadbook como una ruta GPX estándar y conserva sus coordenadas almacenadas.
+    // 中文：将 Roadbook 导出为标准 GPX 路线，并保留存储的原始坐标值。
+    @nonobjc
+    public func exportRoadbookAsync(from roadbook: PTRoadbook,
+                                    fileName: String? = nil) async throws -> String? {
+        guard roadbook.waypoints.count >= 2 else { return nil }
+        let resolvedFileName = fileName ?? "Roadbook_\(makeGPXFileName().replacingOccurrences(of: "MotoRide_", with: ""))"
+        let xmlData = try await Task.detached(priority: .utility) {
+            guard let data = Self.generateRoadbookGPXString(from: roadbook).data(using: .utf8) else {
+                throw PTDataPersistenceError.localWriteFailed("Roadbook GPX 编码失败")
+            }
+            return data
+        }.value
+
+        let result = try await PTDataPersistenceActor.shared.writeData(
+            xmlData,
+            fileName: resolvedFileName,
+            revision: Int64(Date().timeIntervalSince1970 * 1_000),
+            syncToICloud: true
+        )
+        if let cloudErrorDescription = result.cloudErrorDescription {
+            PTNSLogConsole("⚠️ [Roadbook GPX] 本地已保存，但 iCloud 同步失败: \(cloudErrorDescription)")
+        }
+        return resolvedFileName
+    }
+
+    // EN: Persist an imported GPX in the shared file store so it remains shareable after import.
+    // ES: Guarda el GPX importado en el almacén compartido para que siga siendo compartible.
+    // 中文：将导入的 GPX 保存到共享文件存储，确保导入后仍可分享。
+    @nonobjc
+    public func persistImportedGPXAsync(_ data: Data,
+                                        suggestedName: String) async throws -> String {
+        guard !data.isEmpty else {
+            throw PTGPXParseError.emptyData
+        }
+        let baseName = Self.sanitizedBaseName(suggestedName)
+        let timestamp = makeGPXFileName().replacingOccurrences(of: "MotoRide_", with: "")
+        let uniqueSuffix = String(UUID().uuidString.prefix(8))
+        let fileName = "Roadbook_\(baseName)_\(timestamp)_\(uniqueSuffix).gpx"
+        let result = try await PTDataPersistenceActor.shared.writeData(
+            data,
+            fileName: fileName,
+            revision: Int64(Date().timeIntervalSince1970 * 1_000),
+            syncToICloud: true
+        )
+        if let cloudErrorDescription = result.cloudErrorDescription {
+            PTNSLogConsole("⚠️ [Roadbook 导入] 本地已保存，但 iCloud 同步失败: \(cloudErrorDescription)")
+        }
+        return fileName
+    }
+
     public func makeGPXFileName(date: Date = Date()) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
@@ -217,6 +460,51 @@ public class PTGPXRecorder: NSObject {
             </gpx>
             """
         return gpx
+    }
+
+    nonisolated private static func generateRoadbookGPXString(from roadbook: PTRoadbook) -> String {
+        let escapedName = xmlEscaped(roadbook.name)
+        let coordinateSystem = roadbook.coordinateSystem.rawValue
+        var gpx = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <gpx version="1.1" creator="PTMotoTracker" xmlns="http://www.topografix.com/GPX/1/1">
+              <metadata><name>\(escapedName)</name></metadata>
+              <rte>
+                <name>\(escapedName)</name>
+                <extensions><coordinate_system>\(coordinateSystem)</coordinate_system></extensions>
+            """
+
+        for waypoint in roadbook.waypoints {
+            gpx += """
+                <rtept lat="\(waypoint.latitude)" lon="\(waypoint.longitude)">
+                  <name>\(xmlEscaped(waypoint.instruction))</name>
+                </rtept>
+            """
+        }
+
+        gpx += """
+              </rte>
+            </gpx>
+            """
+        return gpx
+    }
+
+    nonisolated private static func xmlEscaped(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "'", with: "&apos;")
+    }
+
+    nonisolated private static func sanitizedBaseName(_ value: String) -> String {
+        let source = URL(fileURLWithPath: value).deletingPathExtension().lastPathComponent
+        let allowed = source.unicodeScalars.filter { scalar in
+            CharacterSet.alphanumerics.contains(scalar) || scalar == "-" || scalar == "_"
+        }
+        let result = String(String.UnicodeScalarView(allowed)).trimmingCharacters(in: .whitespacesAndNewlines)
+        return result.isEmpty ? "route" : String(result.prefix(40))
     }
 }
 
