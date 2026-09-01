@@ -49,11 +49,32 @@ public class PTAntiTheftManager: NSObject {
             expectedShutdownUntil = Date().addingTimeInterval(shutdownGracePeriod)
             PTNSLogConsole("🛡️ [防盗系统] 引擎已熄火，进入正常关机宽限期。")
             PTMOTOParkingManager.shared.saveCurrentLocationAsParkingSpot()
+            recordTimeline(
+                kind: .monitoringArmed,
+                severity: .info,
+                messageKey: "security_event_monitoring_armed",
+                coordinate: PTMOTOParkingManager.shared.getLastParkedLocation().map {
+                    PTRideCoordinate(latitude: $0.latitude, longitude: $0.longitude)
+                }
+            )
+            recordTimeline(
+                kind: .parkingSaved,
+                severity: .info,
+                messageKey: "security_event_parking_saved",
+                coordinate: PTMOTOParkingManager.shared.getLastParkedLocation().map {
+                    PTRideCoordinate(latitude: $0.latitude, longitude: $0.longitude)
+                }
+            )
         } else if engineStatus == 2 && isArmed {
             isArmed = false
             expectedShutdownUntil = nil
             pendingDisconnectWork?.cancel()
             PTNSLogConsole("🔓 [防盗系统] 引擎已启动，解除警戒。")
+            recordTimeline(
+                kind: .monitoringDisarmed,
+                severity: .info,
+                messageKey: "security_event_monitoring_disarmed"
+            )
         }
     }
     
@@ -64,6 +85,11 @@ public class PTAntiTheftManager: NSObject {
 
         if let expectedShutdownUntil, Date() < expectedShutdownUntil {
             PTNSLogConsole("ℹ️ [防盗系统] 断连发生在正常关机宽限期内，不触发报警。")
+            recordTimeline(
+                kind: .disconnectCleared,
+                severity: .info,
+                messageKey: "security_event_disconnect_cleared"
+            )
             return
         }
 
@@ -77,6 +103,13 @@ public class PTAntiTheftManager: NSObject {
 
     private func evaluateDisconnect(anchorCoord: CLLocationCoordinate2D) {
         guard isArmed, !PTDashboardConfig.shared.blueConnected else { return }
+
+        recordTimeline(
+            kind: .connectionLost,
+            severity: .warning,
+            messageKey: "security_event_connection_lost",
+            coordinate: PTRideCoordinate(latitude: anchorCoord.latitude, longitude: anchorCoord.longitude)
+        )
         
         let anchorLocation = CLLocation(latitude: anchorCoord.latitude, longitude: anchorCoord.longitude)
         
@@ -101,6 +134,11 @@ public class PTAntiTheftManager: NSObject {
                 // Español: El piloto se alejó del punto de estacionamiento; la desconexión es normal.
                 PTNSLogConsole("✅ [防盗推演] 骑手已离开车辆安全距离，属于正常断连，解除武装。")
                 self.isArmed = false
+                self.recordTimeline(
+                    kind: .monitoringDisarmed,
+                    severity: .info,
+                    messageKey: "security_event_monitoring_disarmed"
+                )
             }
         }
     }
@@ -108,6 +146,30 @@ public class PTAntiTheftManager: NSObject {
     // MARK: - iOS 15+ 穿透式报警
     private func triggerTheftAlarm() {
         PTNotificationCenter.pushCenter(title: "🚨 车辆连接异常", body: "车辆在骑手附近断开连接，请确认车辆状态。")
+        recordTimeline(
+            kind: .alarmTriggered,
+            severity: .critical,
+            messageKey: "security_event_alarm_triggered"
+        )
+    }
+
+    // EN: Persist security transitions asynchronously without changing the existing anti-theft state machine.
+    // ES: Persiste las transiciones de seguridad de forma asíncrona sin cambiar la máquina antirrobo existente.
+    // 中文：异步保存安全状态变化，不改变现有防盗状态机。
+    private func recordTimeline(
+        kind: PTRideSecurityEventKind,
+        severity: PTRideSecuritySeverity,
+        messageKey: String,
+        coordinate: PTRideCoordinate? = nil
+    ) {
+        Task { @MainActor in
+            _ = PTSecurityEventTimelineStore.shared.record(
+                kind: kind,
+                severity: severity,
+                message: PTDashboardConfig.languageFunc(text: messageKey),
+                coordinate: coordinate
+            )
+        }
     }
     
     deinit { }
@@ -116,8 +178,16 @@ public class PTAntiTheftManager: NSObject {
 extension PTAntiTheftManager:PTBLEDashboardDelegate {
     func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool) {
         if isConnected {
+            let hadPendingDisconnect = pendingDisconnectWork != nil
             pendingDisconnectWork?.cancel()
             pendingDisconnectWork = nil
+            if hadPendingDisconnect || isArmed {
+                recordTimeline(
+                    kind: .connectionRestored,
+                    severity: .info,
+                    messageKey: "security_event_connection_restored"
+                )
+            }
         } else {
             handleDisconnect()
         }

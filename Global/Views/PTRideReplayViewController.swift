@@ -10,9 +10,10 @@
 import UIKit
 import SnapKit
 import AMapNaviKit
+import PooTools
 
 @MainActor
-final class PTRideReplayViewController: UIViewController,
+final class PTRideReplayViewController: PTMotoBaseViewController,
                                          MAMapViewDelegate,
                                          UITableViewDataSource,
                                          UITableViewDelegate {

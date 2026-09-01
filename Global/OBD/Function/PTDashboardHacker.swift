@@ -20,6 +20,16 @@ private extension PTDashboardHacker {
             protocolEvidenceAvailable: protocolEvidenceAvailable
         )
     }
+
+    /// EN: Save read-only observations asynchronously without changing the transport path.
+    /// ES: Guarda observaciones de solo lectura de forma asíncrona sin cambiar el transporte.
+    /// 中文：异步保存只读观察结果，不改变底层传输路径。
+    func recordEvidence(_ results: [PTOBDIDReadResult], source: String) {
+        guard !results.isEmpty else { return }
+        Task { @MainActor in
+            _ = PTXP400InstructionEvidenceStore.shared.record(results: results, source: source)
+        }
+    }
 }
 
 public class PTDashboardHacker {
@@ -49,6 +59,7 @@ public class PTDashboardHacker {
                     "[仪表盘探查] DID \(result.did) \(result.status.rawValue): \(result.rawResponse)"
                 )
             }
+            recordEvidence(results, source: "dashboard-config-read")
             return results
         } catch {
             PTOBDLogger.obd.ptLog("❌ [仪表盘探查] 读取失败: \(error.localizedDescription)")
@@ -154,6 +165,7 @@ public extension PTDashboardHacker {
                 }
             )
             PTOBDLogger.obd.ptLog("🏁 [防休眠探测] 测试结束。")
+            recordEvidence(results, source: "deep-read")
             return results
         } catch {
             PTOBDLogger.obd.ptLog("❌ [防休眠探测] 读取失败: \(error.localizedDescription)")
@@ -261,6 +273,8 @@ public extension PTDashboardHacker {
                 policy: policy,
                 progress: progress
             )
+
+            recordEvidence(results, source: "did-fuzz")
 
             return results.reduce(into: [String: String]()) { output, result in
                 guard result.status == .success,

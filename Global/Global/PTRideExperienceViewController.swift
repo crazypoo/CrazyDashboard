@@ -43,6 +43,12 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         navigationItem.title = PTDashboardConfig.languageFunc(text: "ride_center")
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: PTDashboardConfig.languageFunc(text: "ride_safety_center"),
+            style: .plain,
+            target: self,
+            action: #selector(openSafetyCenter)
+        )
         view.backgroundColor = .black
         configureLabels()
         configureLayout()
@@ -112,6 +118,14 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
 
     @objc private func handleBlackBoxUpdate() {
         loadBlackBoxClips()
+    }
+
+    // EN: Keep the safety tools adjacent to the ride summary without coupling them to vehicle transport.
+    // ES: Mantiene las herramientas de seguridad junto al resumen sin acoplarlas al transporte del vehículo.
+    // 中文：把安全工具放在骑行摘要旁边，但不与车辆传输层耦合。
+    @objc private func openSafetyCenter() {
+        let controller = PTRideSafetyViewController()
+        present(UINavigationController(rootViewController: controller), animated: true)
     }
 
     private func configureLabels() {

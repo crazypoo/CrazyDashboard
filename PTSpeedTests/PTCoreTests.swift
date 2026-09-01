@@ -896,6 +896,137 @@ final class PTCoreTests: XCTestCase {
         gate.disable()
     }
 
+    // EN: Route weather scoring must classify rain, crosswind and poor visibility deterministically.
+    // ES: La puntuación meteorológica debe clasificar lluvia, viento lateral y poca visibilidad de forma determinista.
+    // 中文：路线天气评分必须稳定识别降雨、横风和低能见度风险。
+    func testRouteWeatherRiskAnalyzerClassifiesMotorcycleHazards() {
+        let sample = PTRouteWeatherSample(
+            coordinate: PTRideCoordinate(latitude: 31.2304, longitude: 121.4737),
+            forecastDate: Date(timeIntervalSince1970: 1_700_000_000),
+            condition: "thunderstorm",
+            temperatureCelsius: 18,
+            precipitationProbability: 0.85,
+            windKmh: 65,
+            visibilityKm: 1.5
+        )
+
+        let result = PTRouteWeatherRiskAnalyzer.analyze(sample: sample)
+
+        XCTAssertEqual(result.level, .hazardous)
+        XCTAssertTrue(result.factors.contains(.precipitation))
+        XCTAssertTrue(result.factors.contains(.wind))
+        XCTAssertTrue(result.factors.contains(.lowVisibility))
+        XCTAssertTrue(result.factors.contains(.storm))
+    }
+
+    // EN: The security timeline must deduplicate repeated callbacks and remove expired evidence.
+    // ES: La línea temporal debe deduplicar callbacks repetidos y eliminar evidencias caducadas.
+    // 中文：防盗时间轴必须去重重复回调，并清理过期证据。
+    @MainActor
+    func testSecurityTimelineDeduplicatesAndExpiresEvents() throws {
+        let suiteName = "PTSecurityTimelineTests.\(UUID().uuidString)"
+        let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { userDefaults.removePersistentDomain(forName: suiteName) }
+
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let store = PTSecurityEventTimelineStore(userDefaults: userDefaults, referenceDate: now)
+        _ = store.record(
+            kind: .connectionLost,
+            severity: .warning,
+            message: "connection lost",
+            timestamp: now
+        )
+        _ = store.record(
+            kind: .connectionLost,
+            severity: .warning,
+            message: "connection lost",
+            timestamp: now.addingTimeInterval(2)
+        )
+
+        XCTAssertEqual(store.events.count, 1)
+
+        _ = store.record(
+            kind: .alarmTriggered,
+            severity: .critical,
+            message: "old alarm",
+            timestamp: now.addingTimeInterval(-PTSecurityEventTimelineStore.retention - 1)
+        )
+        store.purgeExpired(referenceDate: now)
+        XCTAssertEqual(store.events.count, 1)
+    }
+
+    // EN: Fleet points must clamp relay hops and reject points after their expiration time.
+    // ES: Los puntos de grupo deben limitar los saltos de retransmisión y rechazar puntos caducados.
+    // 中文：车队点位必须限制中继跳数，并拒绝超过有效期的点位。
+    func testSharedPointLimitsTTLAndExpiration() throws {
+        let createdAt = Date(timeIntervalSince1970: 1_800_000_000)
+        let point = PTRideSharedPoint(
+            senderID: "rider-1",
+            senderName: "Rider",
+            kind: .slippery,
+            title: "Wet corner",
+            coordinate: PTRideCoordinate(latitude: 31.2304, longitude: 121.4737),
+            createdAt: createdAt,
+            expiresAt: createdAt.addingTimeInterval(300),
+            ttl: 99
+        )
+
+        XCTAssertEqual(point.ttl, 6)
+        XCTAssertFalse(point.isExpired(at: createdAt.addingTimeInterval(299)))
+        XCTAssertTrue(point.isExpired(at: createdAt.addingTimeInterval(300)))
+        XCTAssertEqual(point.decrementedTTL?.ttl, 5)
+    }
+
+    // EN: Evidence exports must redact VIN content while retaining the read-only response contract.
+    // ES: Las exportaciones deben ocultar el VIN y conservar el contrato de respuesta de solo lectura.
+    // 中文：证据导出必须脱敏 VIN，同时保留只读响应契约。
+    @MainActor
+    func testXP400EvidenceExportRedactsVIN() throws {
+        let suiteName = "PTXP400EvidenceTests.\(UUID().uuidString)"
+        let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { userDefaults.removePersistentDomain(forName: suiteName) }
+
+        let address = try XCTUnwrap(PTOBDiagnosticAddress(tx: "7E0", rx: "7E8"))
+        let result = PTOBDIDReadResult(
+            address: address,
+            did: "F190",
+            rawResponse: "62F1905646335445535431323334",
+            payloadHex: "5646335445535431323334",
+            decodedText: "VF3TEST1234",
+            status: .success
+        )
+        let store = PTXP400InstructionEvidenceStore(userDefaults: userDefaults)
+
+        XCTAssertTrue(store.record(result: result, source: "unit-test"))
+        let data = try store.exportJSONData()
+        let json = String(decoding: data, as: UTF8.self)
+        XCTAssertTrue(json.contains("VF3***234"))
+        XCTAssertFalse(json.contains("VF3TEST1234"))
+    }
+
+    // EN: Firmware preparation may report blockers, but it must never send an unverified payload.
+    // ES: La preparación puede informar bloqueos, pero nunca debe enviar una carga no verificada.
+    // 中文：固件准备可以返回阻断原因，但绝不能发送未经验证的载荷。
+    @MainActor
+    func testFirmwareStateMachineBlocksUnverifiedProtocol() throws {
+        let gate = PTDeveloperSafetyGate.shared
+        gate.setEnabled(false)
+        defer { gate.disable() }
+
+        let address = try XCTUnwrap(PTOBDiagnosticAddress(tx: "7E0", rx: "7E8"))
+        let request = PTFirmwareUpgradeRequest(
+            targetAddress: address,
+            firmwareIdentifier: "test-firmware",
+            firmwareData: Data("firmware".utf8)
+        )
+        let machine = PTFirmwareUpgradeStateMachine.shared
+
+        XCTAssertEqual(machine.prepare(request: request, checklist: .empty), .blocked)
+        XCTAssertEqual(machine.attemptExecution(explicitlyConfirmed: true), .blocked)
+        XCTAssertTrue(machine.blockers.contains("protocolEvidenceMissing"))
+        machine.reset()
+    }
+
     private func makeRoutePoint(timestamp: Date, brakingG: Double) -> PTRoutePoint {
         PTRoutePoint(
             lat: 31.2304,

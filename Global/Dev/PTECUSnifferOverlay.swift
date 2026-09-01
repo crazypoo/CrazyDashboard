@@ -112,6 +112,16 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
         return view
     }()
 
+    private lazy var developerToolsButton: UIButton = {
+        let view = UIButton(type: .system)
+        view.setTitle(PTDashboardConfig.languageFunc(text: "dev_advanced_tools"), for: .normal)
+        view.setTitleColor(.white, for: .normal)
+        view.backgroundColor = .systemTeal.withAlphaComponent(0.8)
+        view.layer.cornerRadius = 8
+        view.addTarget(self, action: #selector(showDeveloperTools), for: .touchUpInside)
+        return view
+    }()
+
     private var isFilterEnabled: Bool = false
     // 缓存池，避免高频刷新导致内存溢出
     private var rawLogs: [String] = []
@@ -151,7 +161,10 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
         }
         
         // 标题
-        backgroundView.addSubviews([titleLabel, highRiskLabel, highRiskSwitch, closeButton, filterButton, exportButton, findFunctionButton, logTextView])
+        backgroundView.addSubviews([
+            titleLabel, highRiskLabel, highRiskSwitch, closeButton, developerToolsButton,
+            filterButton, exportButton, findFunctionButton, logTextView
+        ])
         titleLabel.snp.makeConstraints { make in
             make.left.right.equalToSuperview()
             make.top.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
@@ -174,6 +187,11 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
         }
         
         filterButton.snp.makeConstraints { make in
+            make.left.right.height.equalTo(self.closeButton)
+            make.bottom.equalTo(self.developerToolsButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
+        }
+
+        developerToolsButton.snp.makeConstraints { make in
             make.left.right.height.equalTo(self.closeButton)
             make.bottom.equalTo(self.closeButton.snp.top).offset(-CGFloat.GlobalItemSpacing)
         }
@@ -292,6 +310,57 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
     /// 中文：把安全决策显示在面板中，不只依赖控制台输出。
     private func appendDeveloperLog(_ message: String) {
         pendingLogs.append("[Safety] \(message)")
+    }
+
+    // EN: Keep evidence browsing and firmware readiness in the existing developer surface.
+    // ES: Mantiene la consulta de evidencia y la preparación de firmware en la superficie de desarrollador existente.
+    // 中文：把证据浏览和固件准备检查集中到现有开发者面板。
+    @objc private func showDeveloperTools() {
+        let alert = UIAlertController(
+            title: PTDashboardConfig.languageFunc(text: "dev_advanced_tools"),
+            message: PTDashboardConfig.languageFunc(text: "dev_advanced_tools_hint"),
+            preferredStyle: .actionSheet
+        )
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "obd_evidence_title"),
+            style: .default
+        ) { _ in
+            guard let currentViewController = PTUtils.getCurrentVC() else { return }
+            let controller = PTXP400EvidenceViewController()
+            currentViewController.present(UINavigationController(rootViewController: controller), animated: true)
+        })
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "dev_firmware_preflight"),
+            style: .default
+        ) { [weak self] _ in
+            self?.runFirmwarePreflight()
+        })
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "button_cancel"),
+            style: .cancel
+        ))
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = developerToolsButton
+            popover.sourceRect = developerToolsButton.bounds
+        }
+        PTUtils.getCurrentVC()?.present(alert, animated: true)
+    }
+
+    private func runFirmwarePreflight() {
+        guard let address = PTOBDDiagnosticAddress(tx: "7E0", rx: "7E8") else { return }
+        let request = PTFirmwareUpgradeRequest(
+            targetAddress: address,
+            firmwareIdentifier: "dev-placeholder",
+            byteCount: 0,
+            sha256Hex: ""
+        )
+        let state = PTFirmwareUpgradeStateMachine.shared.prepare(
+            request: request,
+            checklist: .empty
+        )
+        appendDeveloperLog(
+            "🧪 Firmware preflight: \(state.rawValue); blockers=\(PTFirmwareUpgradeStateMachine.shared.blockers.joined(separator: ","))"
+        )
     }
     
     @objc private func toggleFilter() {

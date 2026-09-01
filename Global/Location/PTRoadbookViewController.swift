@@ -15,6 +15,7 @@ final class PTRoadbookViewController: UITableViewController, UIDocumentPickerDel
     private let manager = PTCustomRouteManager.shared
     private var roadbooks: [PTRoadbook] = []
     private var loadTask: Task<Void, Never>?
+    private var weatherTask: Task<Void, Never>?
 
     private let cellIdentifier = "PTRoadbookCell"
 
@@ -54,6 +55,7 @@ final class PTRoadbookViewController: UITableViewController, UIDocumentPickerDel
     @MainActor
     deinit {
         loadTask?.cancel()
+        weatherTask?.cancel()
         NotificationCenter.default.removeObserver(self)
     }
 
@@ -205,6 +207,12 @@ final class PTRoadbookViewController: UITableViewController, UIDocumentPickerDel
             self?.showWaypoints(roadbook)
         })
         alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "route_weather_risk"),
+            style: .default
+        ) { [weak self] _ in
+            self?.showWeatherRisk(for: roadbook)
+        })
+        alert.addAction(UIAlertAction(
             title: PTDashboardConfig.languageFunc(text: "roadbook_share"),
             style: .default
         ) { [weak self] _ in
@@ -275,6 +283,95 @@ final class PTRoadbookViewController: UITableViewController, UIDocumentPickerDel
             } catch {
                 self.showError(error)
             }
+        }
+    }
+
+    // EN: Weather analysis is cancellable so leaving the Roadbook screen never keeps requests alive.
+    // ES: El análisis meteorológico se puede cancelar para que salir de Roadbook no mantenga solicitudes activas.
+    // 中文：天气分析支持取消，离开 Roadbook 页面后不会继续占用请求。
+    private func showWeatherRisk(for roadbook: PTRoadbook) {
+        weatherTask?.cancel()
+
+        let loadingAlert = UIAlertController(
+            title: PTDashboardConfig.languageFunc(text: "route_weather_risk"),
+            message: PTDashboardConfig.languageFunc(text: "route_weather_loading"),
+            preferredStyle: .alert
+        )
+        loadingAlert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "button_cancel"),
+            style: .cancel
+        ) { [weak self, weak loadingAlert] _ in
+            self?.weatherTask?.cancel()
+            loadingAlert?.dismiss(animated: true)
+        })
+        present(loadingAlert, animated: true)
+
+        weatherTask = Task { @MainActor [weak self, weak loadingAlert] in
+            guard let self else { return }
+            do {
+                let report = try await PTRouteWeatherRiskService.shared.analyze(roadbook: roadbook)
+                guard !Task.isCancelled else { return }
+                loadingAlert?.dismiss(animated: true) {
+                    self.showWeatherReport(report)
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+                loadingAlert?.dismiss(animated: true) {
+                    self.showError(error)
+                }
+            }
+        }
+    }
+
+    private func showWeatherReport(_ report: PTRouteWeatherRiskReport) {
+        let riskyPoints = report.points.filter { $0.level != .clear }.prefix(5)
+        var lines = [
+            PTDashboardConfig.language(key: "route_weather_worst", riskLevelTitle(report.worstLevel)),
+            PTDashboardConfig.language(key: "route_weather_risky_points", report.riskyPointCount)
+        ]
+
+        if riskyPoints.isEmpty {
+            lines.append(PTDashboardConfig.languageFunc(text: "route_weather_no_risk"))
+        } else {
+            lines.append(contentsOf: riskyPoints.map { point in
+                let coordinate = String(
+                    format: "%.4f, %.4f",
+                    point.sample.coordinate.latitude,
+                    point.sample.coordinate.longitude
+                )
+                let factors = point.factors.map(factorTitle).joined(separator: ", ")
+                return "\(riskLevelTitle(point.level)) · \(coordinate) · \(factors)"
+            })
+        }
+
+        let alert = UIAlertController(
+            title: PTDashboardConfig.languageFunc(text: "route_weather_report"),
+            message: lines.joined(separator: "\n"),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "button_confirm"),
+            style: .default
+        ))
+        present(alert, animated: true)
+    }
+
+    private func riskLevelTitle(_ level: PTRouteWeatherRiskLevel) -> String {
+        switch level {
+        case .clear: return PTDashboardConfig.languageFunc(text: "route_weather_clear")
+        case .caution: return PTDashboardConfig.languageFunc(text: "route_weather_caution")
+        case .hazardous: return PTDashboardConfig.languageFunc(text: "route_weather_hazardous")
+        }
+    }
+
+    private func factorTitle(_ factor: PTRouteWeatherRiskFactor) -> String {
+        switch factor {
+        case .precipitation: return PTDashboardConfig.languageFunc(text: "route_weather_factor_precipitation")
+        case .wind: return PTDashboardConfig.languageFunc(text: "route_weather_factor_wind")
+        case .cold: return PTDashboardConfig.languageFunc(text: "route_weather_factor_cold")
+        case .heat: return PTDashboardConfig.languageFunc(text: "route_weather_factor_heat")
+        case .lowVisibility: return PTDashboardConfig.languageFunc(text: "route_weather_factor_visibility")
+        case .storm: return PTDashboardConfig.languageFunc(text: "route_weather_factor_storm")
         }
     }
 

@@ -9,9 +9,10 @@
 
 import UIKit
 import SnapKit
+import PooTools
 
 @MainActor
-final class PTMotorcycleGarageViewController: UIViewController {
+final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
     private let store: PTMotorcycleGarageStore
 
     private let scrollView = UIScrollView()
@@ -67,10 +68,6 @@ final class PTMotorcycleGarageViewController: UIViewController {
             object: store
         )
         refreshUI()
-    }
-
-    deinit {
-        NotificationCenter.default.removeObserver(self)
     }
 
     private func configureLabels() {

@@ -206,6 +206,13 @@ public class PTLocalIntercomManager: NSObject {
         set { UserDefaults.standard.set(newValue, forKey: "PT_CustomUserName") }
     }
 
+    // EN: Expose the stable local identity for validated, non-audio PTT payloads.
+    // ES: Expone la identidad local estable para los paquetes PTT validados que no son audio.
+    // 中文：为经过校验的非音频 PTT 数据包提供稳定本机标识。
+    public var localIdentifier: String {
+        myUUID
+    }
+
     private let myAvatarFileName = "PT_MyCustomAvatar.jpg"
     
     private let appGroupID = "group.com.yd.PTSpeed.xp400"
@@ -231,6 +238,12 @@ public class PTLocalIntercomManager: NSObject {
     }
 
     private var processedMessageIDs: [String: Date] = [:]
+
+    // EN: Keep safety-point deduplication independent from the legacy location packet map.
+    // ES: Mantiene la deduplicación de puntos de seguridad independiente del mapa heredado de ubicación.
+    // 中文：让安全点位去重独立于旧版位置数据包字典，避免并发访问互相影响。
+    private let sharedPointLock = NSLock()
+    private var processedSharedPointIDs: [String: Date] = [:]
     
     private override init() {
         super.init()
@@ -368,6 +381,37 @@ public class PTLocalIntercomManager: NSObject {
             
             // 使用 .unreliable 发送，确保即使瞬间断网也不阻塞音频流
             try? session.send(payloadData, toPeers: peers, with: .unreliable)
+        }
+    }
+
+    // EN: Shared safety points use reliable delivery because they are rare user actions, not a telemetry stream.
+    // ES: Los puntos de seguridad usan entrega fiable porque son acciones ocasionales, no telemetría continua.
+    // 中文：安全点位使用可靠传输，因为它们是低频用户操作，不是连续遥测流。
+    @discardableResult
+    public func broadcastSharedPoint(_ point: PTRideSharedPoint) -> Bool {
+        guard point.senderID == myUUID,
+              point.isValid,
+              !point.isExpired,
+              let session,
+              isRunning else {
+            return false
+        }
+
+        let peers = session.connectedPeers
+        guard !peers.isEmpty,
+              let jsonData = try? JSONEncoder().encode(point),
+              jsonData.count <= 8_192,
+              let jsonString = String(data: jsonData, encoding: .utf8),
+              let payloadData = "POINT:\(jsonString)".data(using: .utf8) else {
+            return false
+        }
+
+        do {
+            try session.send(payloadData, toPeers: peers, with: .reliable)
+            return true
+        } catch {
+            PTNSLogConsole("❌ [车队点位] 发送失败: \(error.localizedDescription)")
+            return false
         }
     }
 
@@ -1068,6 +1112,46 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
                     }
                 }
                 return // 🚨 拦截完毕，不能让定位数据流入音频播放器！
+            } else if text.hasPrefix("POINT:") {
+                // EN: Validate, persist and relay only bounded, expiring safety points.
+                // ES: Validar, guardar y retransmitir solo puntos de seguridad limitados y con caducidad.
+                // 中文：只校验、保存和中继有边界且会过期的安全点位。
+                let jsonString = String(text.dropFirst("POINT:".count))
+                guard let jsonData = jsonString.data(using: .utf8),
+                      let point = try? JSONDecoder().decode(PTRideSharedPoint.self, from: jsonData),
+                      point.senderID != self.myUUID,
+                      point.isValid,
+                      !point.isExpired else {
+                    return
+                }
+
+                let now = Date()
+                let pointID = point.id.uuidString
+                self.sharedPointLock.lock()
+                self.processedSharedPointIDs = self.processedSharedPointIDs.filter {
+                    now.timeIntervalSince($0.value) < 30
+                }
+                let alreadyProcessed = self.processedSharedPointIDs[pointID] != nil
+                if !alreadyProcessed {
+                    self.processedSharedPointIDs[pointID] = now
+                }
+                self.sharedPointLock.unlock()
+                guard !alreadyProcessed else { return }
+
+                Task { @MainActor in
+                    _ = PTRideSharedPointStore.shared.receive(point)
+                }
+
+                if let relayedPoint = point.decrementedTTL,
+                   let relayData = try? JSONEncoder().encode(relayedPoint),
+                   let relayString = String(data: relayData, encoding: .utf8) {
+                    let otherPeers = session.connectedPeers.filter { $0 != peerID }
+                    if !otherPeers.isEmpty,
+                       let relayPayload = "POINT:\(relayString)".data(using: .utf8) {
+                        try? session.send(relayPayload, toPeers: otherPeers, with: .reliable)
+                    }
+                }
+                return // EN/ES/中文: Never route structured safety data into the audio player.
             }
         }
         
