@@ -31,7 +31,7 @@ final class PTCANLabViewController: PTMotoBaseViewController {
 
     lazy var reloadButton:PTBaseButton = {
         let view = PTBaseButton(type:.custom)
-        view.setImage(UIImage(.arrow.clockwise), for: .normal)
+        view.setImage(UIImage(.arrow.clockwise).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
         view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers(handler: { _ in
             self.reloadFiles()
@@ -51,7 +51,6 @@ final class PTCANLabViewController: PTMotoBaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         pt_Title = localized(mode == .developerCapture ? "can_lab_developer_title" : "can_lab_title")
-        view.backgroundColor = .systemGroupedBackground
         configureTable()
         if mode == .developerCapture {
             configureCaptureControls()
@@ -77,6 +76,7 @@ final class PTCANLabViewController: PTMotoBaseViewController {
         tableView.dataSource = self
         tableView.delegate = self
         tableView.tableFooterView = UIView(frame: .zero)
+        tableView.backgroundColor = .clear
         view.addSubview(tableView)
 
         if mode == .developerCapture {
