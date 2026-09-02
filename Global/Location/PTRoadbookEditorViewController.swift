@@ -28,6 +28,42 @@ final class PTRoadbookEditorViewController: PTMotoBaseViewController {
     private let addCoordinateButton = UIButton(type: .system)
     private var saveTask: Task<Void, Never>?
 
+    lazy var titleButton:PTBaseButton = {
+        let view = PTBaseButton(type: .custom)
+        view.titleLabel?.font = PTAppBaseConfig.share.navTitleFont
+        view.setTitleColor(.black, for: .normal)
+        view.setTitle(roadbookName, for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: view.sizeFor().width + 15, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { _ in
+            self.renameRoadbook()
+        })
+        return view
+    }()
+    
+    lazy var saveButton:PTBaseButton = {
+        let view = PTBaseButton(type: .custom)
+        view.titleLabel?.font = .appfont(size: 16)
+        view.setTitleColor(.black, for: .normal)
+        view.setTitle(localized("roadbook_save"), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: view.sizeFor().width + 20, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { _ in
+            self.saveRoadbook()
+        })
+        return view
+    }()
+    
+    lazy var editButton:PTBaseButton = {
+        let view = PTBaseButton(type: .custom)
+        view.titleLabel?.font = .appfont(size: 16)
+        view.setTitleColor(.black, for: .normal)
+        view.setTitle(localized("Edit"), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: view.sizeFor().width + 20, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { _ in
+            self.toggleEditing()
+        })
+        return view
+    }()
+    
     init(roadbook: PTRoadbook? = nil) {
         self.originalRoadbook = roadbook
         self.roadbookName = roadbook?.name ?? "ADV Roadbook"
@@ -44,26 +80,19 @@ final class PTRoadbookEditorViewController: PTMotoBaseViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        pt_Title = originalRoadbook == nil
-            ? localized("roadbook_create")
-            : localized("roadbook_edit")
         view.backgroundColor = .systemGroupedBackground
-        let nameButton = UIButton(type: .system)
-        nameButton.setTitle(roadbookName, for: .normal)
-        nameButton.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .normal)
-        nameButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
-        nameButton.addTarget(self, action: #selector(renameRoadbook), for: .touchUpInside)
-        navigationItem.titleView = nameButton
-        navigationItem.rightBarButtonItems = [
-            UIBarButtonItem(title: localized("roadbook_save"), style: .done, target: self, action: #selector(saveRoadbook)),
-            UIBarButtonItem(barButtonSystemItem: .edit, target: self, action: #selector(toggleEditing))
-        ]
         configureMap()
         configureTable()
         configureButtons()
         updateMap()
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        setCustomTitleView(titleButton)
+        setCustomRightButtons(buttons: [editButton,saveButton], buttonSpacing: CGFloat.GlobalItemSpacing)
+    }
+    
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         saveTask?.cancel()
@@ -139,7 +168,7 @@ final class PTRoadbookEditorViewController: PTMotoBaseViewController {
             let value = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             guard !value.isEmpty else { return }
             roadbookName = String(value.prefix(80))
-            (navigationItem.titleView as? UIButton)?.setTitle(roadbookName, for: .normal)
+            titleButton.setTitle(roadbookName, for: .normal)
         })
         present(alert, animated: true)
     }

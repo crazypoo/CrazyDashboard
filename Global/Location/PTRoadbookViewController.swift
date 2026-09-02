@@ -9,44 +9,78 @@
 
 import UIKit
 import UniformTypeIdentifiers
+import PooTools
+import SnapKit
+import SafeSFSymbols
 
 @MainActor
-final class PTRoadbookViewController: UITableViewController, UIDocumentPickerDelegate {
+final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDelegate {
     private let manager = PTCustomRouteManager.shared
     private var roadbooks: [PTRoadbook] = []
     private var loadTask: Task<Void, Never>?
     private var weatherTask: Task<Void, Never>?
 
-    private let cellIdentifier = "PTRoadbookCell"
+    public override func installListViewConstraints(_ listView: PTCollectionView) {
+        listView.snp.makeConstraints { make in
+            make.left.right.bottom.equalToSuperview()
+            make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total)
+        }
+    }
+    
+    public override func makeListViewConfiguration() -> PTCollectionViewConfig {
+        let cConfig = PTCollectionViewConfig()
+        cConfig.viewType = .Normal
+        cConfig.itemOriginalX = PTAppBaseConfig.share.defaultViewSpace
+        cConfig.itemHeight = 68
+        cConfig.topRefresh = true
+        return cConfig
+    }
+    
+    public override func configureListView(_ listView: PTCollectionView) {
+        listView.headerRefreshTask = {
+            PTGCDManager.shared.runOnMain {
+                self.refresh()
+            }
+        }
+        listView.cellInCollection = { collectionView ,dataModel,indexPath in
+            if let itemRow = dataModel.rows?[indexPath.row],let cell = collectionView.dequeueReusableCell(withReuseIdentifier: itemRow.reuseID, for: indexPath) as? PTFusionCell,let cellModel = itemRow.dataModel as? PTFusionCellModel {
+                cell.cellModel  = cellModel
+                return cell
+            }
+            return nil
+        }
+        listView.collectionDidSelect = { [weak self] collectionView, sectionModel, indexPath in
+            guard let self else { return }
+            let cell = collectionView.cellForItem(at: indexPath)
+            self.presentActions(for: self.roadbooks[indexPath.row], sourceView: cell)
+        }
+    }
+    
+    lazy var importGPXButton:PTBaseButton = {
+        let view = PTBaseButton(type:.custom)
+        view.setImage(UIImage(.plus), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { _ in
+            self.importGPX()
+        })
+        return view
+    }()
 
+    lazy var createButton:PTBaseButton = {
+        let view = PTBaseButton(type:.custom)
+        view.titleLabel?.font = .appfont(size: 16)
+        view.setTitleColor(.black, for: .normal)
+        view.setTitle(PTDashboardConfig.languageFunc(text: "roadbook_create"), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: view.sizeFor().width + 20, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { _ in
+            self.createRoadbook()
+        })
+        return view
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = PTDashboardConfig.languageFunc(text: "roadbook_title")
-        navigationItem.leftBarButtonItem = UIBarButtonItem(
-            barButtonSystemItem: .close,
-            target: self,
-            action: #selector(close)
-        )
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            barButtonSystemItem: .add,
-            target: self,
-            action: #selector(importGPX)
-        )
-        navigationItem.leftBarButtonItems = [
-            UIBarButtonItem(
-                title: PTDashboardConfig.languageFunc(text: "roadbook_create"),
-                style: .plain,
-                target: self,
-                action: #selector(createRoadbook)
-            ),
-            navigationItem.leftBarButtonItem
-        ].compactMap { $0 }
-
-        tableView.rowHeight = 68
-        tableView.tableFooterView = UIView(frame: .zero)
-        tableView.backgroundColor = .systemGroupedBackground
-        tableView.refreshControl = UIRefreshControl()
-        tableView.refreshControl?.addTarget(self, action: #selector(refresh), for: .valueChanged)
+        pt_Title = PTDashboardConfig.languageFunc(text: "roadbook_title")
 
         NotificationCenter.default.addObserver(
             self,
@@ -58,6 +92,7 @@ final class PTRoadbookViewController: UITableViewController, UIDocumentPickerDel
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        setCustomRightButtons(buttons: [createButton,importGPXButton], buttonSpacing: CGFloat.GlobalItemSpacing)
         reloadRoadbooks()
     }
 
@@ -68,20 +103,36 @@ final class PTRoadbookViewController: UITableViewController, UIDocumentPickerDel
         NotificationCenter.default.removeObserver(self)
     }
 
-    @objc private func close() {
-        if let navigationController, navigationController.presentingViewController != nil {
-            dismiss(animated: true)
-        } else {
-            navigationController?.popViewController(animated: true)
+    func showDetail() {
+        var mSections = [PTSection]()
+        let permissionRows = roadbooks.map {
+            let cellModel = PTFusionCellModel()
+            cellModel.name = $0.name
+            let active = manager.activeRoadbook?.id == $0.id && manager.isSessionActive
+            let stateText = active ? " · \(stateTitle(manager.state))" : ""
+            let waypointText = PTDashboardConfig.language(
+                key: "roadbook_waypoint_count",
+                $0.waypoints.count
+            )
+            cellModel.content = waypointText + stateText
+            
+            let row = PTRows(ID: PTFusionCell.ID,dataModel: cellModel)
+            row.cellClass = PTFusionCell.self
+            return row
         }
+        let section = PTSection(rows: permissionRows)
+        mSections.append(section)
+        
+        listView.layoutIfNeeded()
+        listView.showCollectionDetail(collectionData: mSections)
     }
-
+    
     @objc private func refresh() {
         reloadRoadbooks()
     }
 
     @objc private func refreshVisibleState() {
-        tableView.reloadData()
+        self.showDetail()
     }
 
     private func reloadRoadbooks() {
@@ -90,11 +141,11 @@ final class PTRoadbookViewController: UITableViewController, UIDocumentPickerDel
             guard let self else { return }
             do {
                 self.roadbooks = try await self.manager.loadRoadbooks()
-                self.tableView.reloadData()
+                self.showDetail()
             } catch {
                 self.showError(error)
             }
-            self.tableView.refreshControl?.endRefreshing()
+            self.listView.endRefresh()
         }
     }
 
@@ -123,40 +174,11 @@ final class PTRoadbookViewController: UITableViewController, UIDocumentPickerDel
                     suggestedName: url.deletingPathExtension().lastPathComponent
                 )
                 self.roadbooks = try await self.manager.loadRoadbooks()
-                self.tableView.reloadData()
+                self.showDetail()
             } catch {
                 self.showError(error)
             }
         }
-    }
-
-    override func tableView(_ tableView: UITableView,
-                            numberOfRowsInSection section: Int) -> Int {
-        roadbooks.count
-    }
-
-    override func tableView(_ tableView: UITableView,
-                            cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: cellIdentifier)
-            ?? UITableViewCell(style: .subtitle, reuseIdentifier: cellIdentifier)
-        let roadbook = roadbooks[indexPath.row]
-        let active = manager.activeRoadbook?.id == roadbook.id && manager.isSessionActive
-        let waypointText = PTDashboardConfig.language(
-            key: "roadbook_waypoint_count",
-            roadbook.waypoints.count
-        )
-        let stateText = active ? " · \(stateTitle(manager.state))" : ""
-        cell.textLabel?.text = roadbook.name
-        cell.textLabel?.font = .preferredFont(forTextStyle: .headline)
-        cell.detailTextLabel?.text = waypointText + stateText
-        cell.accessoryType = .disclosureIndicator
-        return cell
-    }
-
-    override func tableView(_ tableView: UITableView,
-                            didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
-        presentActions(for: roadbooks[indexPath.row], sourceView: tableView.cellForRow(at: indexPath))
     }
 
     private func presentActions(for roadbook: PTRoadbook, sourceView: UIView?) {
@@ -413,7 +435,7 @@ final class PTRoadbookViewController: UITableViewController, UIDocumentPickerDel
                 do {
                     try await self.manager.deleteRoadbook(id: roadbook.id)
                     self.roadbooks = try await self.manager.loadRoadbooks()
-                    self.tableView.reloadData()
+                    self.showDetail()
                 } catch {
                     self.showError(error)
                 }

@@ -369,9 +369,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
 
     private func presentRoadbook() {
         let roadbookViewController = PTRoadbookViewController()
-        let navigationController = UINavigationController(rootViewController: roadbookViewController)
-        navigationController.modalPresentationStyle = .pageSheet
-        present(navigationController, animated: true)
+        self.navigationController?.pushViewController(roadbookViewController)
     }
 
     private lazy var startNavigationButton:UIButton = {

@@ -10,6 +10,7 @@
 import UIKit
 import SnapKit
 import PooTools
+import SafeSFSymbols
 
 final class PTRideExperienceViewController: PTMotoBaseViewController {
     private let scrollView = UIScrollView()
@@ -39,23 +40,33 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
         button.addTarget(self, action: #selector(markBlackBoxEvent), for: .touchUpInside)
         return button
     }()
-
+    
+    lazy var centerButton:PTBaseButton = {
+        let view = PTBaseButton(type:.custom)
+        view.titleLabel?.font = .appfont(size: 16,bold: true)
+        view.setTitleColor(.white, for: .normal)
+        view.setTitle(PTDashboardConfig.languageFunc(text: "ride_safety_center"), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: view.sizeFor().width + 20, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { _ in
+            self.openSafetyCenter()
+        })
+        return view
+    }()
+    
+    lazy var exportButton:PTBaseButton = {
+        let view = PTBaseButton(type:.custom)
+        view.setImage(UIImage(.shared.withYouCircleFill).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.accessibilityLabel = PTDashboardConfig.languageFunc(text: "ride_black_box_export")
+        view.addActionHandlers(handler: { sender in
+            self.exportBlackBox()
+        })
+        return view
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.title = PTDashboardConfig.languageFunc(text: "ride_center")
-        let safetyItem = UIBarButtonItem(
-            title: PTDashboardConfig.languageFunc(text: "ride_safety_center"),
-            style: .plain,
-            target: self,
-            action: #selector(openSafetyCenter)
-        )
-        let exportItem = UIBarButtonItem(
-            barButtonSystemItem: .action,
-            target: self,
-            action: #selector(exportBlackBox)
-        )
-        exportItem.accessibilityLabel = PTDashboardConfig.languageFunc(text: "ride_black_box_export")
-        navigationItem.rightBarButtonItems = [safetyItem, exportItem]
+        pt_Title = PTDashboardConfig.languageFunc(text: "ride_center")
         view.backgroundColor = .black
         configureLabels()
         configureLayout()
@@ -103,6 +114,7 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         PTRideGroupSafetyCoordinator.shared.start()
+        setCustomRightButtons(buttons: [exportButton,centerButton], buttonSpacing: CGFloat.GlobalItemSpacing)
         refreshSummary()
     }
 
@@ -138,7 +150,7 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
     // 中文：把安全工具放在骑行摘要旁边，但不与车辆传输层耦合。
     @objc private func openSafetyCenter() {
         let controller = PTRideSafetyViewController()
-        present(UINavigationController(rootViewController: controller), animated: true)
+        present(PTBaseNavControl(rootViewController: controller), animated: true)
     }
 
     private func configureLabels() {

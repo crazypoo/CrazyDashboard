@@ -65,7 +65,7 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = PTDashboardConfig.languageFunc(text: "ride_replay_title")
+        pt_Title = PTDashboardConfig.languageFunc(text: "ride_replay_title")
         view.backgroundColor = .black
         configureLabels()
         configureControls()

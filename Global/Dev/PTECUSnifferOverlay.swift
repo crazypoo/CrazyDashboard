@@ -327,7 +327,7 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
         ) { _ in
             guard let currentViewController = PTUtils.getCurrentVC() else { return }
             let controller = PTXP400EvidenceViewController()
-            currentViewController.present(UINavigationController(rootViewController: controller), animated: true)
+            currentViewController.present(PTBaseNavControl(rootViewController: controller), animated: true)
         })
         alert.addAction(UIAlertAction(
             title: PTDashboardConfig.languageFunc(text: "can_lab_developer_title"),

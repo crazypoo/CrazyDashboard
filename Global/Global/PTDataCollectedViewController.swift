@@ -211,8 +211,7 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
     // 中文：以独立只读页面展示回放，不改变现有历史删除流程。
     private func presentReplay(for report: PTTripReport) {
         let replayViewController = PTRideReplayViewController(report: report)
-        let navigationController = UINavigationController(rootViewController: replayViewController)
-        navigationController.modalPresentationStyle = .pageSheet
+        let navigationController = PTBaseNavControl(rootViewController: replayViewController)
         present(navigationController, animated: true)
     }
 }

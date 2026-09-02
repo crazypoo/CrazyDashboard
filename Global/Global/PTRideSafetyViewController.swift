@@ -19,8 +19,9 @@ final class PTRideSafetyViewController: PTMotoBaseViewController {
     lazy var export : PTBaseButton = {
         let view = PTBaseButton(type: .custom)
         view.titleLabel?.font = .appfont(size: 14)
+        view.setTitleColor(.white, for: .normal)
         view.setTitle(PTDashboardConfig.languageFunc(text: "safety_export"), for: .normal)
-        view.bounds = .init(origin: .zero, size: .init(width: view.sizeFor().width + 5, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.bounds = .init(origin: .zero, size: .init(width: view.sizeFor().width + 20, height: PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers(handler: { _ in
             self.exportAction()
         })
