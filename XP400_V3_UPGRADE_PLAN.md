@@ -8,7 +8,7 @@
 >
 > 发布方式：只维护现有 `PTSpeed` TestFlight 版本，不新增 Lab Scheme、App Target、Bundle ID 或第二发布渠道；当前没有 App Store 上架计划。
 >
-> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 为 Build 43，下一次 TestFlight 从 Build 44 开始。
+> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 为 Build 44，下一次 TestFlight 从 Build 45 开始。
 >
 > 文件名中的 `V3` 仅为保留现有路径和链接，不代表需要修改 App 大版本号。
 >
@@ -45,11 +45,11 @@
 
 ### 版本与 Build 规则
 
-- [ ] `PTSpeed`、Widget 和 Watch 的 `MARKETING_VERSION` 永久保持 `2.0.8`。
-- [x] 当前主 App、Widget、Watch 和 Tests Build 已统一为 `43`；下一次 TestFlight 使用 Build `44`。
-- [x] 每次上传 TestFlight 只将 `CURRENT_PROJECT_VERSION` 加一：43、44、45……
-- [x] App、Widget 和 Watch 每次使用完全相同的 Build 号，避免嵌入扩展版本不一致；Build 42 Release 产物均核验为 `2.0.8 (42)`。
-- [x] Tests Target 已同步到主 App Build `42`，此后与主 App、Widget 和 Watch 一起递增。
+- [x] `PTSpeed`、Widget 和 Watch 的 `MARKETING_VERSION` 保持 `2.0.8`。
+- [x] 当前主 App、Widget、Watch 和 Tests Build 已统一为 `44`；下一次 TestFlight 使用 Build `45`。
+- [x] 每次上传 TestFlight 只将 `CURRENT_PROJECT_VERSION` 加一：44、45、46……
+- [x] App、Widget、Watch 和 Tests 每次使用完全相同的 Build 号；Build 44 Debug 目标构建已核验，Release/Archive 仍按对应验收记录。
+- [x] Tests Target 已同步到主 App Build `44`，此后与主 App、Widget 和 Watch 一起递增。
 - [ ] 不允许脚本、Archive 或 CI 自动修改 `MARKETING_VERSION`。
 - [ ] 设置页和诊断报告显示格式统一为 `2.0.8 (Build N)`。
 - [ ] 不把 Build 号加入仪表 BLE 认证、握手、广播或配置数据。
@@ -991,7 +991,7 @@ OBD BLE / Wi-Fi / Mock
 | SYS-007 | 🟨 | PTT Live Activity | 与有效组群会话绑定，不允许 App 启动即自动激活 |
 | SYS-008 | 🟨 | CarPlay | 展示地图和导航；需真实车机覆盖连接、重连和退出 |
 | SYS-009 | ✅ | Siri / App Intents | 支持车辆状态、停车位置、行程事件、打开 HUD、目的地导航和查找加油站 |
-| SYS-010 | ✅ | URL Scheme | 支持 `checkFuel`、`antiTheft`、`openHUD`、`confirmGasStationRoute`、`navigate` 路由 |
+| SYS-010 | ✅ | URL Scheme | 支持 `checkFuel`、`antiTheft`、`openHUD`、`openSafety`、`confirmGasStationRoute`、`navigate` 路由 |
 | SYS-011 | 🟨 | 本地通知 | 支持部分维护、诊断、防盗和骑行事件，需权限降级与去重 |
 | SYS-012 | ✅ | Bugly 崩溃上报 | 收集生产测试崩溃；日志不得包含密钥和敏感车辆数据 |
 
@@ -1001,7 +1001,7 @@ OBD BLE / Wi-Fi / Mock
 | --- | --- | --- | --- |
 | CORE-009 | ✅ | 连接设置 | 管理支持的车辆和 OBD 连接入口 |
 | CORE-010 | ✅ | App 语言设置 | 支持简中、繁中、英语和西班牙语切换 |
-| CORE-011 | ✅ | Siri / Scheme 使用说明 | 设置页提供当前快捷操作的文字说明 |
+| CORE-011 | ✅ | Siri / Scheme 使用说明 | 设置页进入独立说明页，展示 6 个 App Intent、6 条 URL Scheme、系统快捷指令入口和可复制示例 |
 | CORE-012 | ✅ | 版本与 Build 展示 | 对外版本固定 2.0.8，后续只递增 Build |
 | CORE-013 | 🟨 | 首次使用与更新说明 | 已有部分引导和版本内容，需随功能总纲持续同步 |
 
@@ -1237,3 +1237,36 @@ OBD BLE / Wi-Fi / Mock
 - 不持久化、不记录和不导出电话、短信或第三方通知正文；第一版不支持通知动作、UID 缓存或回复。
 - 若真实 XP400 不支持系统 ANCS，只保留设置引导和本地测试，不伪造“已连接/已激活”状态。
 - 如需回滚，只回退本节设置入口、通知日志、本地化和 Build 43 工程配置；不得回退或覆盖三个稳定核心文件，也不改变既有 OBD、BLE、Widget、Watch 和 iCloud 数据链路。
+
+---
+
+## 24. Build 44 Siri、App Shortcuts 与 URL Scheme 说明页实施记录（2026-09-02）
+
+本轮继续使用营销版本 `2.0.8`，将 PTSpeed、Widget、Watch 和 Tests 的 Build 统一推进到 `44`。目标是把设置页中的快捷操作说明升级为独立的只读引导页面，集中展示当前 6 个 App Intent 和 6 条 URL Scheme，并避免在说明页误触发车辆或导航操作。
+
+### 24.1 已实施内容
+
+- [x] 设置页快捷操作入口改为导航到独立的 Siri、App Shortcuts 与 URL Scheme 说明页。
+- [x] 使用 Apple 官方 `ShortcutsUIButton` 打开 XP400RIDE 在快捷指令中的专属页面。
+- [x] 使用 `SiriTipUIView` 展示 6 个已注册 App Shortcut 的系统 Siri 说法。
+- [x] 展示 `checkFuel`、`antiTheft`、`openHUD`、`openSafety`、`confirmGasStationRoute` 和 `navigate` 的参数、条件、风险与复制示例。
+- [x] Scheme 示例仅复制到剪贴板，不在说明页直接执行；保留规范 `xp400://route` 和旧格式兼容说明。
+- [x] 新增 App Shortcuts 四语言短语资源和说明页四语言文案。
+- [x] 未修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`、路由执行语义或 App Intent 执行逻辑。
+
+### 24.2 验证记录
+
+- [x] `Localizable.xcstrings` 和 `AppShortcuts.xcstrings` JSON 结构检查。
+- [x] 已添加说明页目录与 `PTRoutingManager.parse` 的 XCTest 覆盖，包含合法 Scheme、布尔参数和编码目的地；实际执行仍单独记录。
+- [x] PTSpeed Debug 构建、PTSpeed `build-for-testing`、Widget Debug 构建和 Watch Debug 构建均已完成；Release 验证因 Xcode beta 构建服务无输出卡住而停止，未伪报成功。
+- [ ] XCTest 实际执行；当前 Xcode beta 将现有 PTSpeed Scheme 拒绝为可运行的 iOS Simulator destination，只能确认测试已编译。
+- [ ] 真机验证 Shortcuts 按钮、Siri Tip、四种语言短语、复制 Scheme 和从 Shortcuts/外部 App 调用路由。
+- [ ] 验证说明页打开、返回、大字体、VoiceOver、小屏布局以及复制操作不产生任何车辆动作。
+
+验证备注：`jq empty` 已通过两个 String Catalog；`git diff --check` 已通过；主 App 和测试构建使用 `CrazyDashboard.xcworkspace`、`CODE_SIGNING_ALLOWED=NO`、`ENABLE_PREVIEWS=NO`。Widget 与 Watch target 的构建返回成功，输出中的弃用和 Swift 6 并发提示来自现有依赖/既有代码，不是本工作包新增编译错误。
+
+### 24.3 边界与回滚
+
+- App Shortcuts 继续由 `PTMotoAppShortcuts` 注册；说明页不维护第二套执行系统。
+- 说明页不提供任意 URL 编辑器、不直接执行防盗切换、加油站搜索或导航。
+- 如需回滚，只回退本节新增说明页、设置入口、App Shortcuts 资源、文案、测试和 Build 44 工程配置；不得回退或覆盖三个稳定核心文件，也不改变既有 OBD、BLE、Widget、Watch 和 iCloud 数据链路。

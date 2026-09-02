@@ -1,0 +1,114 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Check my vehicle status in ${applicationName}" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Check my vehicle status in ${applicationName}" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName} ile araç durumumu kontrol et" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中查询我的车辆状态" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中查詢我的車輛狀態" } }
+      }
+    },
+    "Check my motorcycle in ${applicationName}" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Check my motorcycle in ${applicationName}" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName} ile motosikletimi kontrol et" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中查看我的摩托车" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中查看我的摩托車" } }
+      }
+    },
+    "Find my parked motorcycle in ${applicationName}" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Find my parked motorcycle in ${applicationName}" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Park edilmiş motosikletimi ${applicationName} ile bul" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中查找我的停车位置" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中尋找我的停車位置" } }
+      }
+    },
+    "Where is my motorcycle in ${applicationName}" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Where is my motorcycle in ${applicationName}" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Motosikletim ${applicationName} ile nerede" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "我的摩托车在 ${applicationName} 中哪里" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "我的摩托車在 ${applicationName} 中哪裡" } }
+      }
+    },
+    "Mark this ride in ${applicationName}" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mark this ride in ${applicationName}" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bu sürüşü ${applicationName} ile işaretle" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中标记这次行程" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中標記這次行程" } }
+      }
+    },
+    "Mark a ride event in ${applicationName}" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mark a ride event in ${applicationName}" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName} ile sürüş olayı işaretle" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中标记行程事件" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中標記行程事件" } }
+      }
+    },
+    "Open the riding HUD in ${applicationName}" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open the riding HUD in ${applicationName}" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürüş HUD'sini ${applicationName} ile aç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中打开骑行 HUD" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中開啟騎行 HUD" } }
+      }
+    },
+    "Show my riding dashboard in ${applicationName}" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show my riding dashboard in ${applicationName}" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürüş panelimi ${applicationName} ile göster" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中显示骑行仪表盘" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中顯示騎行儀表板" } }
+      }
+    },
+    "Navigate with ${applicationName}" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Navigate with ${applicationName}" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName} ile navigasyon yap" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "使用 ${applicationName} 导航" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "使用 ${applicationName} 導航" } }
+      }
+    },
+    "Start a motorcycle route in ${applicationName}" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start a motorcycle route in ${applicationName}" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName} ile motosiklet rotası başlat" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中开始摩托车路线" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中開始摩托車路線" } }
+      }
+    },
+    "Find a gas station in ${applicationName}" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Find a gas station in ${applicationName}" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName} ile benzin istasyonu bul" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中查找加油站" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中尋找加油站" } }
+      }
+    },
+    "Find fuel for my motorcycle in ${applicationName}" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Find fuel for my motorcycle in ${applicationName}" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName} ile motosikletim için yakıt bul" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中为我的摩托车查找燃油" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "在 ${applicationName} 中為我的摩托車尋找燃油" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}

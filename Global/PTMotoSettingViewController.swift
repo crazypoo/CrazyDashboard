@@ -208,9 +208,9 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         view.titleLabel?.font = .appfont(size: 14)
         view.setTitleColor(PTDashboardConfig.shared.appMainColor, for: .normal)
         view.contentHorizontalAlignment = .left
-        view.addActionHandlers { _ in
-            guard let url = URL(string: "shortcuts://") else { return }
-            UIApplication.shared.open(url, options: [:])
+        view.addActionHandlers { [weak self] _ in
+            let guideViewController = PTAutomationGuideViewController()
+            self?.navigationController?.pushViewController(guideViewController, animated: true)
         }
         return view
     }()
@@ -363,7 +363,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         }
         
         updateShortcutGuide()
-        shortcutsButton.setTitle(PTDashboardConfig.languageFunc(text: "shortcuts_open"), for: .normal)
+        shortcutsButton.setTitle(PTDashboardConfig.languageFunc(text: "automation_guide_open"), for: .normal)
                 
         dashBoardColorButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashBoardUniButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
@@ -392,7 +392,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 self.disconnect.setTitle(PTDashboardConfig.languageFunc(text: "button_dis_connect"), for: .normal)
                 self.garageButton.setTitle(PTDashboardConfig.languageFunc(text: "garage_open"), for: .normal)
                 self.updateShortcutGuide()
-                self.shortcutsButton.setTitle(PTDashboardConfig.languageFunc(text: "shortcuts_open"), for: .normal)
+                self.shortcutsButton.setTitle(PTDashboardConfig.languageFunc(text: "automation_guide_open"), for: .normal)
             }
         }
         vcDidLoad = true

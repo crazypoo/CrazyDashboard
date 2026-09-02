@@ -4,9 +4,9 @@
 >
 > 快照日期：2026-09-02
 >
-> 仓库基线：`d2483867f6ad3feecd2d2f0cfb0aed442d5b11cd` + 当前工作区 Build 43 改动（代码已实现，待 XP400 系统 ANCS 真机验证）
+> 仓库基线：`d2483867f6ad3feecd2d2f0cfb0aed442d5b11cd` + 当前工作区 Build 44 改动（代码已实现，待 XP400 系统 ANCS、Siri 和 Scheme 真机验证）
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests `CURRENT_PROJECT_VERSION = 43`
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests `CURRENT_PROJECT_VERSION = 44`
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -243,7 +243,7 @@ OBD BLE / Wi-Fi / Mock
 | SYS-007 | 🟨 | PTT Live Activity | 与有效组群会话绑定，不允许 App 启动即自动激活 |
 | SYS-008 | 🟨 | CarPlay | 展示地图和导航；需真实车机覆盖连接、重连和退出 |
 | SYS-009 | ✅ | Siri / App Intents | 支持车辆状态、停车位置、行程事件、打开 HUD、目的地导航和查找加油站 |
-| SYS-010 | ✅ | URL Scheme | 支持 `checkFuel`、`antiTheft`、`openHUD`、`confirmGasStationRoute`、`navigate` 路由 |
+| SYS-010 | ✅ | URL Scheme | 支持 `checkFuel`、`antiTheft`、`openHUD`、`openSafety`、`confirmGasStationRoute`、`navigate` 路由 |
 | SYS-011 | 🟨 | 本地通知 | 支持部分维护、诊断、防盗和骑行事件，需权限降级与去重 |
 | SYS-012 | ✅ | Bugly 崩溃上报 | 收集生产测试崩溃；日志不得包含密钥和敏感车辆数据 |
 | SYS-013 | 🟨 | XP400 系统通知镜像 | 复用 iOS 通知中心和系统 ANCS 条件，设置页提供权限状态、测试通知与配置指引；不读取其他 App 通知、不自建第二套 BLE 通道，待 XP400 真机确认 |
@@ -254,7 +254,7 @@ OBD BLE / Wi-Fi / Mock
 | --- | --- | --- | --- |
 | CORE-009 | ✅ | 连接设置 | 管理支持的车辆和 OBD 连接入口 |
 | CORE-010 | ✅ | App 语言设置 | 支持简中、繁中、英语和西班牙语切换 |
-| CORE-011 | ✅ | Siri / Scheme 使用说明 | 设置页提供当前快捷操作的文字说明 |
+| CORE-011 | ✅ | Siri / Scheme 使用说明 | 设置页进入独立说明页，展示 6 个 App Intent、6 条 URL Scheme、系统快捷指令入口和可复制示例 |
 | CORE-012 | ✅ | 版本与 Build 展示 | 对外版本固定 2.0.8，后续只递增 Build |
 | CORE-013 | 🟨 | 首次使用与更新说明 | 已有部分引导和版本内容，需随功能总纲持续同步 |
 
@@ -355,3 +355,4 @@ OBD BLE / Wi-Fi / Mock
 | 2026-09-02 | 当前工作区 Build 41 | IDEA-006 路线天气改为 WeatherKit 首选、单点失败后整路线 QWeather 回退；报告记录唯一提供方，QWeather 复用 App 启动时已初始化的实例；新增取消、无备用服务、双服务失败和 168 小时边界处理；主 App Debug 编译通过，真实天气权限/网络与设备验证仍待补 |
 | 2026-09-02 | 当前工作区 Build 42 | DEV-012 已完成开发者浮层三态、显式退出/生命周期撤销、全局紧凑按钮、触摸穿透、可拖动边界、门禁通知同步和 CAN Lab 自动停止接入；Debug/Release 目标构建和测试构建已通过，XCTest 实际运行、真实设备与适配器验证待补 |
 | 2026-09-02 | 当前工作区 Build 43 | SYS-013 已接入设置页的 iOS 通知权限状态、公开通知设置跳转、5 秒本地测试通知和 XP400 系统 ANCS 配置指引；系统通知是否显示由 iOS 配对和 XP400 固件决定，待真实电话、短信、第三方通知与断连重连验证 |
+| 2026-09-02 | 当前工作区 Build 44 | CORE-011 已接入独立 Siri、App Shortcuts 与 URL Scheme 说明页；设置入口改为页内导航，Scheme 示例仅复制不执行，保留真实 Siri、Shortcuts 和外部 Scheme 真机验证 |

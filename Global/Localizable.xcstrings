@@ -11076,6 +11076,330 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "1. 打开“设置”>“蓝牙”>“XP400”，开启“共享系统通知”。\n2. 检查“通知”>“显示预览”。\n3. 检查专注模式和各 App 的通知设置。\n4. 返回本 App，发送测试通知。" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "1. 開啟「設定」>「藍牙」>「XP400」，啟用「分享系統通知」。\n2. 檢查「通知」>「顯示預覽」。\n3. 檢查專注模式和各 App 的通知設定。\n4. 返回本 App，傳送測試通知。" } }
       }
+    },
+    "automation_guide_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Siri, Shortcuts and URL Scheme" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Siri, Kestirmeler ve URL Scheme" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "Siri、快捷指令与 URL Scheme" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "Siri、快捷指令與 URL Scheme" } }
+      }
+    },
+    "automation_guide_open" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "View Siri and automation guide" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Siri ve otomasyon kılavuzunu görüntüle" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "查看 Siri 与自动化说明" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "查看 Siri 與自動化說明" } }
+      }
+    },
+    "automation_guide_summary" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Use Siri, the Shortcuts app, or an xp400:// link to view motorcycle data and open supported riding flows. This page explains every available action without executing it." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Motosiklet verilerini görüntülemek ve desteklenen sürüş akışlarını açmak için Siri, Kestirmeler veya bir xp400:// bağlantısı kullanın. Bu sayfa tüm işlemleri açıklar ancak hiçbirini çalıştırmaz." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "可以使用 Siri、快捷指令或 xp400:// 链接查看摩托车数据并打开支持的骑行流程。本页面只介绍能力，不会直接执行操作。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "可以使用 Siri、快捷指令或 xp400:// 連結查看摩托車資料並開啟支援的騎行流程。本頁面只介紹功能，不會直接執行操作。" } }
+      }
+    },
+    "automation_guide_shortcuts_section" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "App Shortcuts" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "App Kestirmeleri" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "App 快捷指令" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "App 快捷指令" } }
+      }
+    },
+    "automation_guide_shortcuts_explanation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "App Shortcuts are registered automatically. Open XP400RIDE in Shortcuts to view, combine, or customize the six supported intents." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "App Kestirmeleri otomatik olarak kaydedilir. Desteklenen altı intent'i görüntülemek, birleştirmek veya özelleştirmek için Kestirmeler'de XP400RIDE'ı açın." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "App 快捷指令会自动注册。打开快捷指令中的 XP400RIDE，即可查看、组合或自定义这 6 个 Intent。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "App 快捷指令會自動註冊。開啟快捷指令中的 XP400RIDE，即可查看、組合或自訂這 6 個 Intent。" } }
+      }
+    },
+    "automation_guide_shortcuts_button_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open the XP400RIDE App Shortcuts page." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "XP400RIDE App Kestirmeleri sayfasını açar." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开 XP400RIDE 的 App 快捷指令页面。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟 XP400RIDE 的 App 快捷指令頁面。" } }
+      }
+    },
+    "automation_guide_system_settings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open app settings" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Uygulama ayarlarını aç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开 App 系统设置" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟 App 系統設定" } }
+      }
+    },
+    "automation_guide_intents_section" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Supported Siri actions" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Desteklenen Siri işlemleri" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "支持的 Siri 操作" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "支援的 Siri 操作" } }
+      }
+    },
+    "automation_guide_intents_explanation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The phrase shown by each Siri tip is provided by the registered App Shortcut." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Her Siri ipucunda gösterilen ifade, kayıtlı App Kestirmesi tarafından sağlanır." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每个 Siri 提示中的说法都来自已经注册的 App 快捷指令。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "每個 Siri 提示中的說法都來自已註冊的 App 快捷指令。" } }
+      }
+    },
+    "automation_guide_intent_background" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Can run in the background · reads the latest saved Widget data" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Arka planda çalışabilir · en son kaydedilen Widget verisini okur" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "可在后台执行 · 读取最近保存的 Widget 数据" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "可在背景執行 · 讀取最近保存的 Widget 資料" } }
+      }
+    },
+    "automation_guide_intent_foreground" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Opens XP400RIDE in the foreground" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "XP400RIDE'ı ön planda açar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在前台打开 XP400RIDE" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "在前景開啟 XP400RIDE" } }
+      }
+    },
+    "automation_guide_intent_local_only" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Local-only action · does not send a vehicle command" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yalnızca yerel işlem · araca komut göndermez" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仅修改本地数据 · 不向车辆发送指令" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "只修改本機資料 · 不向車輛傳送指令" } }
+      }
+    },
+    "automation_guide_scheme_section" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "URL Scheme" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "URL Scheme" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "URL Scheme" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "URL Scheme" } }
+      }
+    },
+    "automation_guide_scheme_explanation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Copy a supported xp400:// link into Shortcuts, Safari, or another app. Copying never executes the route here." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Desteklenen bir xp400:// bağlantısını Kestirmeler'e, Safari'ye veya başka bir uygulamaya kopyalayın. Kopyalama burada rotayı çalıştırmaz." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "将支持的 xp400:// 链接复制到快捷指令、Safari 或其他 App 中。本页面复制示例时不会执行路由。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "將支援的 xp400:// 連結複製到快捷指令、Safari 或其他 App。本頁面複製範例時不會執行路由。" } }
+      }
+    },
+    "automation_guide_scheme_copy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Copy" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kopyala" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "复制" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "複製" } }
+      }
+    },
+    "automation_guide_scheme_copied" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "URL Scheme copied" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "URL Scheme kopyalandı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "URL Scheme 已复制" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "URL Scheme 已複製" } }
+      }
+    },
+    "automation_guide_faq_section" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Notes" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Notlar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "使用说明" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "使用說明" } }
+      }
+    },
+    "automation_guide_faq" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Vehicle status and parking actions use the latest saved data and may be stale. HUD, navigation, and fuel actions need the app scene and their normal location or connection conditions. antiTheft changes monitoring state, so keep its copied link in a trusted shortcut only. The canonical route form is xp400://route; the legacy xp400://action/route form remains compatible." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Araç durumu ve park işlemleri en son kaydedilen verileri kullanır ve güncel olmayabilir. HUD, navigasyon ve yakıt işlemleri uygulama sahnesini ve normal konum veya bağlantı koşullarını gerektirir. antiTheft izleme durumunu değiştirir; bu nedenle kopyalanan bağlantıyı yalnızca güvenilir bir kestirmede kullanın. Önerilen biçim xp400://route şeklindedir; eski xp400://action/route biçimi uyumludur." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "车辆状态和停车操作使用最近保存的数据，可能不是实时值。HUD、导航和加油站操作需要 App 场景以及正常的定位或连接条件。antiTheft 会改变防盗监控状态，复制后的链接应只放在可信的快捷指令中。推荐格式为 xp400://route，旧的 xp400://action/route 格式仍然兼容。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "車輛狀態和停車操作使用最近保存的資料，可能不是即時值。HUD、導航和加油站操作需要 App 場景以及正常的定位或連線條件。antiTheft 會改變防盜監控狀態，複製後的連結應只放在可信的快捷指令中。建議格式為 xp400://route，舊的 xp400://action/route 格式仍然相容。" } }
+      }
+    },
+    "automation_scheme_check_fuel_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Check fuel" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yakıtı kontrol et" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "查询油量" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "查詢油量" } }
+      }
+    },
+    "automation_scheme_check_fuel_description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Read the current dashboard fuel value and notify the rider; low fuel can start the gas station flow." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Güncel gösterge yakıt değerini okur ve sürücüyü bilgilendirir; düşük yakıt benzin istasyonu akışını başlatabilir." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "读取当前仪表油量并提示骑手；油量过低时可能启动加油站流程。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "讀取目前儀表油量並提示騎手；油量過低時可能啟動加油站流程。" } }
+      }
+    },
+    "automation_scheme_check_fuel_note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "May start a nearby fuel route when fuel is low" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yakıt düşükse yakındaki yakıt rotasını başlatabilir" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "油量较低时可能启动附近加油路线" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "油量較低時可能啟動附近加油路線" } }
+      }
+    },
+    "automation_scheme_anti_theft_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Set anti-theft monitoring" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hırsızlık önleme izlemeyi ayarla" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "设置防盗监控" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "設定防盜監控" } }
+      }
+    },
+    "automation_scheme_anti_theft_description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enable or disable the app's anti-theft monitoring." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Uygulamanın hırsızlık önleme izlemesini etkinleştirir veya devre dışı bırakır." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开启或关闭 App 的防盗监控。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟或關閉 App 的防盜監控。" } }
+      }
+    },
+    "automation_scheme_anti_theft_note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "State-changing action · true enables, false disables and clears the parking spot" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Durum değiştirir · true etkinleştirir, false devre dışı bırakır ve park noktasını siler" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "会改变状态 · true 开启，false 关闭并清除停车点" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "會改變狀態 · true 開啟，false 關閉並清除停車點" } }
+      }
+    },
+    "automation_scheme_open_hud_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open riding HUD" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürüş HUD'sini aç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开骑行 HUD" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟騎行 HUD" } }
+      }
+    },
+    "automation_scheme_open_hud_description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Bring the main riding dashboard to the foreground." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ana sürüş panelini ön plana getirir." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "将主骑行仪表盘带到前台。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "將主要騎行儀表板帶到前景。" } }
+      }
+    },
+    "automation_scheme_open_hud_note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Navigation-only action" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yalnızca gezinme işlemi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仅打开界面" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "僅開啟介面" } }
+      }
+    },
+    "automation_scheme_open_safety_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open safety center" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Güvenlik merkezini aç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开安全中心" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟安全中心" } }
+      }
+    },
+    "automation_scheme_open_safety_description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open the read-only riding safety center." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Salt okunur sürüş güvenliği merkezini açar." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开只读骑行安全中心。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟唯讀騎行安全中心。" } }
+      }
+    },
+    "automation_scheme_open_safety_note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Navigation-only action" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yalnızca gezinme işlemi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仅打开界面" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "僅開啟介面" } }
+      }
+    },
+    "automation_scheme_confirm_fuel_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Find a gas station" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Benzin istasyonu bul" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "查找加油站" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "尋找加油站" } }
+      }
+    },
+    "automation_scheme_confirm_fuel_description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start the app's nearby gas station search and navigation flow." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Uygulamanın yakındaki benzin istasyonu arama ve navigasyon akışını başlatır." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "启动 App 的附近加油站搜索和导航流程。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "啟動 App 的附近加油站搜尋和導航流程。" } }
+      }
+    },
+    "automation_scheme_confirm_fuel_note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Starts a navigation flow" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bir navigasyon akışı başlatır" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "会启动导航流程" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "會啟動導航流程" } }
+      }
+    },
+    "automation_scheme_navigate_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Navigate to a destination" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hedefe git" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导航到目的地" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "導航到目的地" } }
+      }
+    },
+    "automation_scheme_navigate_description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Switch to navigation and search for the encoded destination parameter." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Navigasyona geçer ve kodlanmış hedef parametresini arar." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "切换到导航，并搜索经过 URL 编码的目的地参数。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "切換到導航，並搜尋經過 URL 編碼的目的地參數。" } }
+      }
+    },
+    "automation_scheme_navigate_note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Requires a non-empty destination" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Boş olmayan bir hedef gerektirir" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "必须提供非空目的地" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "必須提供非空目的地" } }
+      }
     }
   },
   "version" : "1.0"

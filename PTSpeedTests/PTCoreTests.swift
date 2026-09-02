@@ -354,6 +354,38 @@ final class PTCoreTests: XCTestCase {
         XCTAssertNil(PTRoutingManager.parse(url: URL(string: "other://checkFuel")!))
     }
 
+    // EN: Every documented URL example must remain accepted by the production parser.
+    // ES: Cada ejemplo de URL documentado debe seguir siendo aceptado por el analizador de producción.
+    // 中文：说明页中的每个 URL 示例都必须继续被正式解析器接受。
+    func testAutomationGuideCatalogMatchesExternalRoutes() throws {
+        XCTAssertEqual(PTAutomationGuideCatalog.intentItems.count, 6)
+        XCTAssertEqual(PTAutomationGuideCatalog.schemeItems.count, 6)
+
+        for item in PTAutomationGuideCatalog.schemeItems {
+            for example in item.examples {
+                let url = try XCTUnwrap(URL(string: example), "Invalid documented URL: \(example)")
+                let action = try XCTUnwrap(
+                    PTRoutingManager.parse(url: url),
+                    "Documented URL was not recognized: \(example)"
+                )
+                XCTAssertNotEqual(action, .unknown, "Documented URL was rejected: \(example)")
+            }
+        }
+
+        XCTAssertEqual(
+            PTRoutingManager.parse(url: URL(string: "xp400://antiTheft?enable=true")!),
+            .toggleAntiTheft(enable: true)
+        )
+        XCTAssertEqual(
+            PTRoutingManager.parse(url: URL(string: "xp400://antiTheft?enable=false")!),
+            .toggleAntiTheft(enable: false)
+        )
+        XCTAssertEqual(
+            PTRoutingManager.parse(url: URL(string: "xp400://navigate?destination=%E7%8F%A0%E6%B1%9F%E6%96%B0%E5%9F%8E")!),
+            .navigateTo(destination: "珠江新城")
+        )
+    }
+
     // EN: The ride cockpit must prefer the dashboard range and never invent a tank profile.
     // ES: El cockpit debe preferir la autonomía del tablero y nunca inventar un perfil del depósito.
     // 中文：骑行座舱必须优先使用仪表续航，不能擅自猜测油箱参数。
