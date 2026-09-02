@@ -9,6 +9,9 @@
 
 import Foundation
 import UIKit
+import PooTools
+import SnapKit
+import SafeSFSymbols
 
 public struct PTXP400EvidenceRecord: Codable, Equatable, Identifiable, Sendable {
     public let id: UUID
@@ -265,59 +268,82 @@ private extension PTXP400InstructionEvidenceStore {
 }
 
 @MainActor
-final class PTXP400EvidenceViewController: UITableViewController {
+final class PTXP400EvidenceViewController: PTListViewController {
     private let cellIdentifier = "PTXP400EvidenceCell"
 
+    public override func installListViewConstraints(_ listView: PTCollectionView) {
+        listView.snp.makeConstraints { make in
+            make.left.right.bottom.equalToSuperview()
+            make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total)
+        }
+    }
+    
+    public override func makeListViewConfiguration() -> PTCollectionViewConfig {
+        let cConfig = PTCollectionViewConfig()
+        cConfig.viewType = .Normal
+        cConfig.itemOriginalX = PTAppBaseConfig.share.defaultViewSpace
+        cConfig.itemHeight = 72
+        return cConfig
+    }
+    
+    public override func configureListView(_ listView: PTCollectionView) {
+        listView.cellInCollection = { collectionView ,dataModel,indexPath in
+            if let itemRow = dataModel.rows?[indexPath.row],let cell = collectionView.dequeueReusableCell(withReuseIdentifier: itemRow.reuseID, for: indexPath) as? PTFusionCell,let cellModel = itemRow.dataModel as? PTFusionCellModel {
+                cell.cellModel  = cellModel
+                return cell
+            }
+            return nil
+        }
+    }
+    
+    lazy var exportButton:PTBaseButton = {
+        let view = PTBaseButton(type:.custom)
+        view.setImage(UIImage(.shared.withYou), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { _ in
+            self.exportAction()
+        })
+        return view
+    }()
+
+    lazy var clearButton:PTBaseButton = {
+        let view = PTBaseButton(type:.custom)
+        view.setImage(UIImage(.xmark.circleFill), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { _ in
+            self.clearAction()
+        })
+        return view
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = PTDashboardConfig.languageFunc(text: "obd_evidence_title")
-        navigationItem.leftBarButtonItem = UIBarButtonItem(
-            barButtonSystemItem: .close,
-            target: self,
-            action: #selector(close)
-        )
-        navigationItem.rightBarButtonItems = [
-            UIBarButtonItem(
-                barButtonSystemItem: .action,
-                target: self,
-                action: #selector(exportAction)
-            ),
-            UIBarButtonItem(
-                barButtonSystemItem: .trash,
-                target: self,
-                action: #selector(clearAction)
-            )
-        ]
-        tableView.tableFooterView = UIView(frame: .zero)
-        tableView.rowHeight = 72
+        pt_Title = PTDashboardConfig.languageFunc(text: "obd_evidence_title")
+        self.showDetail()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        tableView.reloadData()
+        setCustomRightButtons(buttons: [clearButton,exportButton], buttonSpacing: CGFloat.GlobalItemSpacing)
+        self.showDetail()
     }
 
-    @objc private func close() {
-        dismiss(animated: true)
-    }
-
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        PTXP400InstructionEvidenceStore.shared.records.count
-    }
-
-    override func tableView(
-        _ tableView: UITableView,
-        cellForRowAt indexPath: IndexPath
-    ) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: cellIdentifier)
-            ?? UITableViewCell(style: .subtitle, reuseIdentifier: cellIdentifier)
-        let record = PTXP400InstructionEvidenceStore.shared.records[indexPath.row]
-        cell.textLabel?.text = "\(record.address.tx) → \(record.address.rx) · \(record.did) · \(record.evidenceLevel.rawValue)"
-        cell.detailTextLabel?.text = "\(record.status.rawValue) · \(record.rawResponse)"
-        cell.textLabel?.font = .monospacedSystemFont(ofSize: 14, weight: .semibold)
-        cell.detailTextLabel?.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
-        cell.detailTextLabel?.numberOfLines = 2
-        return cell
+    func showDetail() {
+        var mSections = [PTSection]()
+        let permissionRows = PTXP400InstructionEvidenceStore.shared.records.map {
+            let cellModel = PTFusionCellModel()
+            cellModel.name = "\($0.address.tx) → \($0.address.rx) · \($0.did) · \($0.evidenceLevel.rawValue)"
+            cellModel.content = "\($0.status.rawValue) · \($0.rawResponse)"
+            
+            let row = PTRows(ID: PTFusionCell.ID,dataModel: cellModel)
+            row.cellClass = PTFusionCell.self
+            return row
+        }
+        let section = PTSection(rows: permissionRows)
+        mSections.append(section)
+        
+        listView.layoutIfNeeded()
+        listView.showCollectionDetail(collectionData: mSections)
     }
 
     @objc private func exportAction() {
@@ -360,7 +386,7 @@ final class PTXP400EvidenceViewController: UITableViewController {
             style: .destructive
         ) { [weak self] _ in
             PTXP400InstructionEvidenceStore.shared.clear()
-            self?.tableView.reloadData()
+            self?.showDetail()
         })
         alert.addAction(UIAlertAction(title: PTDashboardConfig.languageFunc(text: "button_cancel"), style: .cancel))
         present(alert, animated: true)

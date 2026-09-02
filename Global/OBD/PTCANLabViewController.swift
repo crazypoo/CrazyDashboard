@@ -9,6 +9,7 @@
 
 import UIKit
 import PooTools
+import SafeSFSymbols
 
 @MainActor
 enum PTCANLabMode {
@@ -28,6 +29,16 @@ final class PTCANLabViewController: PTMotoBaseViewController {
     private var comparisonFiles: [URL] = []
     private var captureTask: Task<Void, Never>?
 
+    lazy var reloadButton:PTBaseButton = {
+        let view = PTBaseButton(type:.custom)
+        view.setImage(UIImage(.arrow.clockwise), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { _ in
+            self.reloadFiles()
+        })
+        return view
+    }()
+    
     init(mode: PTCANLabMode = .publicHistory) {
         self.mode = mode
         super.init(nibName: nil, bundle: nil)
@@ -45,16 +56,12 @@ final class PTCANLabViewController: PTMotoBaseViewController {
         if mode == .developerCapture {
             configureCaptureControls()
         }
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            barButtonSystemItem: .refresh,
-            target: self,
-            action: #selector(reloadFiles)
-        )
         reloadFiles()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        setCustomRightButtons(buttons: [reloadButton])
         reloadFiles()
     }
 
