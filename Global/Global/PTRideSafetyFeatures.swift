@@ -18,6 +18,12 @@ public enum PTRideSecurityEventKind: String, Codable, CaseIterable, Sendable {
     case alarmTriggered
     case disconnectCleared
     case parkingSaved
+    // EN: Verification failures are recorded instead of being promoted to a theft alarm.
+    // ES: Los fallos de verificación se registran sin convertirlos en una alarma de robo.
+    // 中文：验证失败只记录事件，不升级为盗车报警。
+    case verificationUnavailable
+    case alarmAcknowledged
+    case monitoringSnoozed
 }
 
 public enum PTRideSecuritySeverity: String, Codable, Sendable {

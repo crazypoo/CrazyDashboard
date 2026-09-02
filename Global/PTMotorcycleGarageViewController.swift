@@ -22,6 +22,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
     private let vehicleDetailsLabel = UILabel()
     private let vehicleVINLabel = UILabel()
     private let vehicleMileageLabel = UILabel()
+    private let vehicleFuelProfileLabel = UILabel()
 
     private let maintenanceStatusLabel = UILabel()
     private let maintenanceRowsStack = UIStackView()
@@ -33,6 +34,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
     private let deleteVehicleButton: UIButton
     private let editMileageButton: UIButton
     private let syncLiveDataButton: UIButton
+    private let fuelProfileButton: UIButton
     private let maintenanceWarningButton: UIButton
     private let addMaintenanceButton: UIButton
     private let saveOBDButton: UIButton
@@ -45,6 +47,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         self.deleteVehicleButton = Self.makeActionButton(titleKey: "garage_delete_vehicle", color: .systemRed)
         self.editMileageButton = Self.makeActionButton(titleKey: "garage_edit_mileage")
         self.syncLiveDataButton = Self.makeActionButton(titleKey: "garage_sync_live_data")
+        self.fuelProfileButton = Self.makeActionButton(titleKey: "garage_set_fuel_profile")
         self.maintenanceWarningButton = Self.makeActionButton(titleKey: "garage_set_maintenance_warning")
         self.addMaintenanceButton = Self.makeActionButton(titleKey: "garage_add_maintenance")
         self.saveOBDButton = Self.makeActionButton(titleKey: "garage_save_obd_snapshot")
@@ -74,7 +77,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
     }
 
     private func configureLabels() {
-        [vehicleNameLabel, vehicleDetailsLabel, vehicleVINLabel, vehicleMileageLabel].forEach {
+        [vehicleNameLabel, vehicleDetailsLabel, vehicleVINLabel, vehicleMileageLabel, vehicleFuelProfileLabel].forEach {
             $0.numberOfLines = 0
             $0.textColor = .white
         }
@@ -85,6 +88,8 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         vehicleVINLabel.textColor = .systemGray2
         vehicleMileageLabel.font = .systemFont(ofSize: 16, weight: .semibold)
         vehicleMileageLabel.textColor = PTDashboardConfig.shared.appMainColor
+        vehicleFuelProfileLabel.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
+        vehicleFuelProfileLabel.textColor = .systemGray2
         maintenanceStatusLabel.numberOfLines = 0
         maintenanceStatusLabel.font = .monospacedSystemFont(ofSize: 13, weight: .medium)
         maintenanceStatusLabel.textColor = .systemGray2
@@ -107,6 +112,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         deleteVehicleButton.addTarget(self, action: #selector(confirmDeleteVehicle), for: .touchUpInside)
         editMileageButton.addTarget(self, action: #selector(showMileageForm), for: .touchUpInside)
         syncLiveDataButton.addTarget(self, action: #selector(syncLiveData), for: .touchUpInside)
+        fuelProfileButton.addTarget(self, action: #selector(showFuelProfileForm), for: .touchUpInside)
         maintenanceWarningButton.addTarget(self, action: #selector(showMaintenanceWarningForm), for: .touchUpInside)
         addMaintenanceButton.addTarget(self, action: #selector(showMaintenanceForm), for: .touchUpInside)
         saveOBDButton.addTarget(self, action: #selector(saveCurrentOBDSnapshot), for: .touchUpInside)
@@ -124,8 +130,10 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
             vehicleDetailsLabel,
             vehicleVINLabel,
             vehicleMileageLabel,
+            vehicleFuelProfileLabel,
             makeButtonRow([switchVehicleButton, addVehicleButton, deleteVehicleButton]),
-            makeButtonRow([editMileageButton, syncLiveDataButton])
+            makeButtonRow([editMileageButton, syncLiveDataButton]),
+            fuelProfileButton
         ])
         vehicleBody.axis = .vertical
         vehicleBody.spacing = 8
@@ -210,6 +218,12 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
             : detailParts.joined(separator: " · ")
         vehicleVINLabel.text = "\(localized("garage_vin")): \(vehicle.vin.isEmpty ? localized("garage_no_vin") : vehicle.vin)"
         vehicleMileageLabel.text = "\(localized("garage_mileage")): \(formattedMileage(vehicle.odometerKm))"
+        if let capacity = vehicle.tankCapacityLiters {
+            let reserve = vehicle.reserveFuelPercent ?? 10
+            vehicleFuelProfileLabel.text = "\(localized("garage_fuel_profile")): \(String(format: "%.1f L", capacity)) · \(localized("garage_fuel_reserve")): \(reserve)%"
+        } else {
+            vehicleFuelProfileLabel.text = "\(localized("garage_fuel_profile")): \(localized("garage_not_set"))"
+        }
         refreshMaintenanceStatus()
         refreshRows()
     }
@@ -332,10 +346,23 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         if !report.didResults.isEmpty {
             details.append("DID \(report.successfulDIDCount)/\(report.didResults.count)")
         }
+        if let confirmedDTCs = report.confirmedDTCs, !confirmedDTCs.isEmpty {
+            details.append("DTC \(confirmedDTCs.count)")
+        }
+        if let mode6Results = report.mode6Results, !mode6Results.isEmpty {
+            details.append("Mode 6 \(mode6Results.count)")
+        }
+        if let freezeFrame = report.freezeFrame, !freezeFrame.isEmpty {
+            details.append("Freeze Frame \(freezeFrame.count)")
+        }
+        let notes = [
+            report.adapterName.isEmpty ? nil : report.adapterName,
+            report.failureReasons?.isEmpty == false ? "⚠️ \(report.failureReasons!.joined(separator: "; "))" : nil
+        ].compactMap { $0 }.joined(separator: "\n")
         return makeRecordRow(
             title: localized("garage_obd_report"),
             detail: details.joined(separator: " · "),
-            notes: report.adapterName.isEmpty ? nil : report.adapterName,
+            notes: notes.isEmpty ? nil : notes,
             deleteHandler: { [weak self] in
                 self?.store.removeDiagnosticReport(id: report.id)
             }
@@ -582,6 +609,48 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
                 self.showMessage(localized("garage_invalid_input"))
                 return
             }
+        })
+        present(alert, animated: true)
+    }
+
+    // EN: Let each motorcycle own its tank capacity and reserve threshold for a bounded range estimate.
+    // ES: Permite que cada motocicleta conserve su capacidad y reserva para una estimación limitada.
+    // 中文：让每辆摩托车独立保存油箱容量和预留油量，用于有边界的续航估算。
+    @objc private func showFuelProfileForm() {
+        let alert = UIAlertController(
+            title: localized("garage_set_fuel_profile"),
+            message: localized("garage_fuel_profile_hint"),
+            preferredStyle: .alert
+        )
+        alert.addTextField { field in
+            field.placeholder = self.localized("garage_tank_capacity")
+            field.keyboardType = .decimalPad
+            if let value = self.store.currentVehicle?.tankCapacityLiters {
+                field.text = String(format: "%.1f", value)
+            }
+        }
+        alert.addTextField { field in
+            field.placeholder = self.localized("garage_fuel_reserve")
+            field.keyboardType = .numberPad
+            if let value = self.store.currentVehicle?.reserveFuelPercent {
+                field.text = String(value)
+            }
+        }
+        alert.addAction(UIAlertAction(title: localized("button_cancel"), style: .cancel))
+        alert.addAction(UIAlertAction(title: localized("button_confirm"), style: .default) { [weak self, weak alert] _ in
+            guard let self, let fields = alert?.textFields, fields.count == 2 else { return }
+            let capacityText = fields[0].text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let reserveText = fields[1].text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let capacity = capacityText.isEmpty ? nil : Self.optionalDouble(capacityText.replacingOccurrences(of: ",", with: "."))
+            let reserve = reserveText.isEmpty ? nil : Int(reserveText)
+            guard self.store.updateFuelProfile(
+                tankCapacityLiters: capacity,
+                reserveFuelPercent: reserve
+            ) else {
+                self.showMessage(self.localized("garage_invalid_input"))
+                return
+            }
+            self.refreshUI()
         })
         present(alert, animated: true)
     }

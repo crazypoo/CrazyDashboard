@@ -108,6 +108,13 @@ public struct PTGarageDiagnosticReport: Codable, Equatable, Identifiable, Sendab
     public let adapterName: String
     public let supportedCommandCount: Int
     public let didResults: [PTGarageDIDRecord]
+    // EN: Optional diagnostic sections keep older garage JSON readable while allowing richer reports.
+    // ES: Las secciones diagnósticas opcionales mantienen legible el JSON antiguo y permiten informes más completos.
+    // 中文：诊断分区使用可选字段，保证旧车库 JSON 仍可读取，同时支持更完整的报告。
+    public let confirmedDTCs: [String]?
+    public let mode6Results: [String]?
+    public let freezeFrame: [String]?
+    public let failureReasons: [String]?
 
     nonisolated public init(
         id: UUID = UUID(),
@@ -118,7 +125,11 @@ public struct PTGarageDiagnosticReport: Codable, Equatable, Identifiable, Sendab
         protocolName: String = "",
         adapterName: String = "",
         supportedCommandCount: Int = 0,
-        didResults: [PTGarageDIDRecord] = []
+        didResults: [PTGarageDIDRecord] = [],
+        confirmedDTCs: [String]? = nil,
+        mode6Results: [String]? = nil,
+        freezeFrame: [String]? = nil,
+        failureReasons: [String]? = nil
     ) {
         self.id = id
         self.capturedAt = capturedAt
@@ -129,6 +140,10 @@ public struct PTGarageDiagnosticReport: Codable, Equatable, Identifiable, Sendab
         self.adapterName = adapterName
         self.supportedCommandCount = max(0, supportedCommandCount)
         self.didResults = didResults
+        self.confirmedDTCs = confirmedDTCs
+        self.mode6Results = mode6Results
+        self.freezeFrame = freezeFrame
+        self.failureReasons = failureReasons
     }
 
     nonisolated public init(
@@ -173,6 +188,9 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
     public var vin: String
     public var odometerKm: Double
     public var maintenanceWarningDistanceKm: Double?
+    public var tankCapacityLiters: Double?
+    public var reserveFuelPercent: Int?
+    public var preferredDiagnosticAddress: PTOBDiagnosticAddress?
     public var maintenanceRecords: [PTGarageMaintenanceRecord]
     public var diagnosticReports: [PTGarageDiagnosticReport]
     public var parts: [PTGaragePartRecord]
@@ -188,6 +206,9 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
         vin: String = "",
         odometerKm: Double = 0,
         maintenanceWarningDistanceKm: Double? = nil,
+        tankCapacityLiters: Double? = nil,
+        reserveFuelPercent: Int? = nil,
+        preferredDiagnosticAddress: PTOBDiagnosticAddress? = nil,
         maintenanceRecords: [PTGarageMaintenanceRecord] = [],
         diagnosticReports: [PTGarageDiagnosticReport] = [],
         parts: [PTGaragePartRecord] = [],
@@ -202,6 +223,9 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
         self.vin = vin
         self.odometerKm = odometerKm
         self.maintenanceWarningDistanceKm = maintenanceWarningDistanceKm
+        self.tankCapacityLiters = tankCapacityLiters
+        self.reserveFuelPercent = reserveFuelPercent
+        self.preferredDiagnosticAddress = preferredDiagnosticAddress
         self.maintenanceRecords = maintenanceRecords
         self.diagnosticReports = diagnosticReports
         self.parts = parts
@@ -210,7 +234,13 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
     }
 
     public static var defaultXP400GT: PTMotorcycleProfile {
-        PTMotorcycleProfile(name: "XP400 GT", brand: "Peugeot", model: "XP400 GT")
+        PTMotorcycleProfile(
+            name: "XP400 GT",
+            brand: "Peugeot",
+            model: "XP400 GT",
+            tankCapacityLiters: 13.5,
+            reserveFuelPercent: 10
+        )
     }
 }
 
@@ -220,7 +250,7 @@ public struct PTMotorcycleGarageDocument: Codable, Equatable, Sendable {
     public let vehicles: [PTMotorcycleProfile]
 
     nonisolated public init(
-        schemaVersion: Int = 2,
+        schemaVersion: Int = 3,
         selectedVehicleID: UUID? = nil,
         vehicles: [PTMotorcycleProfile] = []
     ) {
@@ -239,7 +269,7 @@ public final class PTMotorcycleGarageStore {
     public static let didChangeNotification = Notification.Name("PTMotorcycleGarageStoreDidChange")
 
     public static let storageKey = "PTMotorcycleGarageDocument.v1"
-    public static let currentSchemaVersion = 2
+    public static let currentSchemaVersion = 3
     public static let defaultMaintenanceWarningDistanceKm = 2_500.0
     public static let maximumMaintenanceWarningDistanceKm = 65_535.0
     public static let maximumVehicleCount = 32
@@ -278,6 +308,23 @@ public final class PTMotorcycleGarageStore {
                 ?? legacyWarningDistance
             if currentValue != normalizedValue {
                 vehicles[index].maintenanceWarningDistanceKm = normalizedValue
+                shouldPersist = true
+            }
+
+            if vehicles[index].tankCapacityLiters == nil,
+               Self.isXP400GT(vehicles[index]) {
+                vehicles[index].tankCapacityLiters = 13.5
+                vehicles[index].reserveFuelPercent = 10
+                shouldPersist = true
+            }
+            let normalizedTankCapacity = Self.normalizedTankCapacity(vehicles[index].tankCapacityLiters)
+            if vehicles[index].tankCapacityLiters != normalizedTankCapacity {
+                vehicles[index].tankCapacityLiters = normalizedTankCapacity
+                shouldPersist = true
+            }
+            let normalizedReserve = Self.normalizedReserve(vehicles[index].reserveFuelPercent)
+            if vehicles[index].reserveFuelPercent != normalizedReserve {
+                vehicles[index].reserveFuelPercent = normalizedReserve
                 shouldPersist = true
             }
         }
@@ -326,7 +373,10 @@ public final class PTMotorcycleGarageStore {
         model: String = "",
         year: Int? = nil,
         vin: String = "",
-        odometerKm: Double = 0
+        odometerKm: Double = 0,
+        tankCapacityLiters: Double? = nil,
+        reserveFuelPercent: Int? = nil,
+        preferredDiagnosticAddress: PTOBDiagnosticAddress? = nil
     ) -> PTMotorcycleProfile? {
         guard vehicles.count < Self.maximumVehicleCount else { return nil }
         let normalizedName = normalizeText(name)
@@ -344,6 +394,11 @@ public final class PTMotorcycleGarageStore {
             vin: normalizeVIN(vin),
             odometerKm: normalizedOdometer,
             maintenanceWarningDistanceKm: Self.defaultMaintenanceWarningDistanceKm,
+            tankCapacityLiters: Self.normalizedTankCapacity(tankCapacityLiters)
+                ?? (Self.isXP400GT(brand: brand, model: model) ? 13.5 : nil),
+            reserveFuelPercent: Self.normalizedReserve(reserveFuelPercent)
+                ?? (Self.isXP400GT(brand: brand, model: model) ? 10 : nil),
+            preferredDiagnosticAddress: preferredDiagnosticAddress,
             createdAt: now,
             updatedAt: now
         )
@@ -408,6 +463,46 @@ public final class PTMotorcycleGarageStore {
         if vehicles[index].id == selectedVehicleID {
             syncLegacyWarningDistance()
         }
+        persist()
+        return true
+    }
+
+    // EN: Fuel profile values are vehicle-owned and bounded so range estimates cannot explode from bad input.
+    // ES: El perfil de combustible pertenece al vehículo y está limitado para evitar estimaciones descontroladas.
+    // 中文：油耗配置归属于车辆并限制范围，避免错误输入导致续航估算失控。
+    @discardableResult
+    public func updateFuelProfile(
+        tankCapacityLiters: Double?,
+        reserveFuelPercent: Int?,
+        vehicleID: UUID? = nil
+    ) -> Bool {
+        guard let index = indexOfVehicle(vehicleID) else { return false }
+        let normalizedCapacity = Self.normalizedTankCapacity(tankCapacityLiters)
+        let normalizedReserve = Self.normalizedReserve(reserveFuelPercent)
+        guard tankCapacityLiters == nil || normalizedCapacity != nil,
+              reserveFuelPercent == nil || normalizedReserve != nil else {
+            return false
+        }
+        guard vehicles[index].tankCapacityLiters != normalizedCapacity
+                || vehicles[index].reserveFuelPercent != normalizedReserve else {
+            return true
+        }
+        vehicles[index].tankCapacityLiters = normalizedCapacity
+        vehicles[index].reserveFuelPercent = normalizedReserve
+        touchVehicle(at: index)
+        persist()
+        return true
+    }
+
+    @discardableResult
+    public func updatePreferredDiagnosticAddress(
+        _ address: PTOBDiagnosticAddress?,
+        vehicleID: UUID? = nil
+    ) -> Bool {
+        guard let index = indexOfVehicle(vehicleID) else { return false }
+        guard vehicles[index].preferredDiagnosticAddress != address else { return true }
+        vehicles[index].preferredDiagnosticAddress = address
+        touchVehicle(at: index)
         persist()
         return true
     }
@@ -660,6 +755,25 @@ public final class PTMotorcycleGarageStore {
             return nil
         }
         return value.rounded()
+    }
+
+    private static func normalizedTankCapacity(_ value: Double?) -> Double? {
+        guard let value, value.isFinite, (1...50).contains(value) else { return nil }
+        return value
+    }
+
+    private static func normalizedReserve(_ value: Int?) -> Int? {
+        guard let value, (0...50).contains(value) else { return nil }
+        return value
+    }
+
+    private static func isXP400GT(_ profile: PTMotorcycleProfile) -> Bool {
+        isXP400GT(brand: profile.brand, model: profile.model)
+    }
+
+    private static func isXP400GT(brand: String, model: String) -> Bool {
+        let value = "\(brand) \(model)".lowercased()
+        return value.contains("peugeot") && value.contains("xp400")
     }
 
     private func syncLegacyWarningDistance() {

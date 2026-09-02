@@ -330,6 +330,14 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
             currentViewController.present(UINavigationController(rootViewController: controller), animated: true)
         })
         alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "can_lab_developer_title"),
+            style: .default
+        ) { _ in
+            guard let currentViewController = PTUtils.getCurrentVC() else { return }
+            let controller = PTCANLabViewController(mode: .developerCapture)
+            currentViewController.navigationController?.pushViewController(controller, animated: true)
+        })
+        alert.addAction(UIAlertAction(
             title: PTDashboardConfig.languageFunc(text: "dev_firmware_preflight"),
             style: .default
         ) { [weak self] _ in

@@ -261,240 +261,29 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     }
                 })
             } else {
-                let actions = ["Error Code","Disconnect","Data","ECU info","MIDs","DID","VIN UDS","CAN Sniff"]
+                let actions = [
+                    PTDashboardConfig.languageFunc(text: "obd_diagnostic_center"),
+                    PTDashboardConfig.languageFunc(text: "can_lab_title"),
+                    PTDashboardConfig.languageFunc(text: "obd_disconnect")
+                ]
                 UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: actions, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
                     switch index {
                     case 0:
-                        Task {
-                            do {
-                                self.obdButton.startLoading(indicatorColor: .white)
-                                let result = await PTMotoTelemetryManager.shared.getConfirmedDTCs()
-                                self.obdButton.stopLoading()
-                                var msgData = ""
-                                if result.isEmpty {
-                                    msgData = "Good"
-                                } else {
-                                    let ecuStrings = result.map { (ecuKey, dtcs) -> String in
-                                        
-                                        // 将该 ECU 下的所有故障码数组，映射为字符串数组
-                                        let dtcStrings = dtcs.map { value in
-                                            // 前面加了缩进，视觉上更清晰
-                                            "  - \(value.code):\(value.description), level:\(value.severity.rawValue)"
-                                        }
-                                        
-                                        // 将这组故障码用单换行拼接
-                                        let dtcJoined = dtcStrings.joined(separator: "\n")
-                                        
-                                        // 加上 ECU 的大标题 (为了人类可读性，我们可以把 7E8 翻译成发动机)
-                                        let ecuName = (ecuKey == "7E8" || ecuKey.contains("18DAF110")) ? "发动机模块" :
-                                        (ecuKey == "7E9" ? "变速箱模块" : "模块")
-                                        
-                                        return "🛠 \(ecuName) [\(ecuKey)]:\n\(dtcJoined)"
-                                    }
-                                    
-                                    msgData = ecuStrings.joined(separator: "\n\n")
-                                }
-                                UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "OBD error code"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: msgData, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
-                            }
-                        }
+                        self.navigationController?.pushViewController(
+                            PTDiagnosticCenterViewController(),
+                            animated: true
+                        )
                     case 1:
+                        self.navigationController?.pushViewController(
+                            PTCANLabViewController(mode: .publicHistory),
+                            animated: true
+                        )
+                    case 2:
                         self.obdButton.startLoading(indicatorColor: .white)
                         PTVehicleConnectivityCoordinator.shared.disconnectOBD()
                         PTGCDManager.shared.delayOnMain(time: 0.5) {
                             self.obdButton.isSelected = false
                             self.obdButton.stopLoading()
-                        }
-                    case 2:
-                        let vc = PTOBDDataViewController()
-                        self.navigationController?.pushViewController(vc, animated: true)
-                    case 3:
-                        
-                        let supprotCommandsString = PTMotoTelemetryManager.shared.obdInfo.supportCommand.map { value in
-                            value.properties.description
-                        }
-                        
-                        let msgData = "Moudle info:\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.company)\nVersion:\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.version)\nDeviceType:\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceType)\nDeviceName:\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceName)\nDeviceMac:\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceMac)\nInterface:\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.interfase)\nCust:\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.cust)\nCrypt:\n\(PTMotoTelemetryManager.shared.obdInfo.moudleInfo.crypt)\nATZ:\n\(PTMotoTelemetryManager.shared.obdInfo.atzName)\nATI:\n\(PTMotoTelemetryManager.shared.obdInfo.aitName)\nProtocol:\n\(PTMotoTelemetryManager.shared.obdInfo.atdpName.description)\nVIN:\n\(PTMotoTelemetryManager.shared.obdInfo.vin)\nECU info:\n\(PTMotoTelemetryManager.shared.obdInfo.ecuVersion)\nCVN:\n\(PTMotoTelemetryManager.shared.obdInfo.cvn)\nSupprot commands:\n\(supprotCommandsString.joined(separator: "\n"))"
-                        UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "ECU info"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: msgData, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
-                    case 4:
-                        Task {
-                            self.obdButton.startLoading(indicatorColor: .white)
-                            let ids = await PTMotoTelemetryManager.shared.scanSupportedMode6Commands()
-                            let rerort =  await PTMotoTelemetryManager.shared.fetchMode6TestReports(for: ids)
-                            self.obdButton.stopLoading()
-                            var msgData = ""
-                            let map = rerort.map { value in
-                                "\(value.componentName):\(value.isPassed ? "✅" : "⁉️")"
-                            }
-                            if map.isEmpty {
-                                msgData = "Thats good"
-                            } else {
-                                msgData = map.joined(separator: "\n")
-                            }
-                            UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "MIDs info"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: msgData, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
-                        }
-                    case 5:
-                        Task {
-                            self.obdButton.startLoading(indicatorColor: .white)
-                            let results = await PTDashboardHacker.shared.probeDeepDataSafely(
-                                dashboardTx: "700",
-                                dashboardRx: "708",
-                                targetDIDs: PTOBDReadOnlyCatalog.confirmedDIDs
-                            )
-                            self.obdButton.stopLoading()
-                            let message = results.map { result in
-                                "DID \(result.did): \(result.status.rawValue)\n\(result.decodedText ?? result.payloadHex ?? result.rawResponse)"
-                            }.joined(separator: "\n\n")
-                            UIAlertController.base_alertVC(
-                                title: PTDashboardConfig.languageFunc(text: "DID"),
-                                titleColor: PTDashboardConfig.shared.appMainColor,
-                                titleFont: .appfont(size: 16),
-                                msg: message.isEmpty ? "NO DATA" : message,
-                                cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"),
-                                showIn: PTUtils.getCurrentVC(),
-                                cancelBtnColor: .systemBlue
-                            )
-                        }
-                    case 6:
-                        Task {
-                            self.obdButton.startLoading(indicatorColor: .white)
-                            let vin = await PTDashboardHacker.shared.extractHiddenVINFromBSI()
-                            self.obdButton.stopLoading()
-                            UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "VIN"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16),msg: vin ?? "NO DATA", cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue)
-                        }
-                    case 7:
-                        Task {
-                            self.obdButton.startLoading(indicatorColor: .white)
-
-                            guard PTCANRecorder.shared.start(name: "PTSpeed_Menu_Capture") else {
-                                self.obdButton.stopLoading()
-                                return
-                            }
-                            await PTMotoTelemetryManager.shared.startCANSniperMode(filterHeader: nil)
-                            PTOBDLogger.obd.ptLog("⏳ [只读抓包] 抓包中，请在 10 秒内操作原车诊断功能...")
-                            try? await Task.sleep(nanoseconds: 10_000_000_000)
-                            await PTMotoTelemetryManager.shared.stopCANSniperMode()
-                            _ = PTCANRecorder.shared.stop()
-                            self.obdButton.stopLoading()
-                            if let error = PTCANRecorder.shared.lastStorageError {
-                                PTOBDLogger.obd.ptLog("❌ [只读抓包] Capture 保存失败: \(error)")
-                            } else {
-                                PTOBDLogger.obd.ptLog("✅ [只读抓包] Capture 已保存，可从 Documents/PTCANCaptures 导出")
-                            }
-                        }
-                    case 8:
-                        Task {
-                            self.obdButton.startLoading(indicatorColor: .white)
-                            // 🌟 1. 定义从开源社区提取的法系车高价值 DID 字典
-                            let psaExtendedDIDs = [
-                                // === 区域 1：身份、安全与版本 (Identity & Security) ===
-                                "F186", "F187", "F18A", "F18B", "F18C",
-                                "F190", // VIN 车架号
-                                "F193", "F194", "F195", // 软硬件版本号
-                                "F198", "F199", "F1A0", "F1A5", // 标定日期与变种代码
-                                
-                                // === 区域 2：仪表盘与基础参数 (Cluster & Basic Config) ===
-                                "2100", "2101", "2102", "2103", // 基础开关、国家区域限制
-                                "2104", "2105", "2106",         // 语言设定、度量单位 (公里/英里, 摄氏/华氏)
-                                "210A", "210B", "210C",         // 防盗器状态、钥匙匹配状态
-                                "210E", "210F",                 // 外部/内部灯光逻辑控制
-                                "2111", "2112", "2118", "2119", // 声音警告、保养里程阈值配置
-                                
-                                // === 区域 3：显示、动画与高级主题 (Display, Boot Logo & Theme) ===
-                                "2120", "2121", "2122", // 🚨 核心动画区：GT Line, Peugeot Sport 等开机画面开关
-                                "2124", "2125",         // 多媒体/蓝牙配置通道
-                                "2130", "2131"          // 导航显示参数、地图渲染偏好
-                            ]
-
-                            let batchSize = 10
-                            for i in stride(from: 0, to: psaExtendedDIDs.count, by: batchSize) {
-                                let end = min(i + batchSize, psaExtendedDIDs.count)
-                                let batchDIDs = Array(psaExtendedDIDs[i..<end])
-                                
-                                await MainActor.run {
-                                    PTOBDLogger.shared.ptLog("➡️ 发送批次 \(i/batchSize + 1): 正在探测 \(batchDIDs.first!) 到 \(batchDIDs.last!)...\n")
-                                }
-                                
-                                // 调用防休眠探针引擎 (每次读取前都会发送 10 03 提权)
-                                await PTDashboardHacker.shared.probeDeepDataSafely(
-                                    dashboardTx: "700",
-                                    dashboardRx: "708",
-                                    targetDIDs: batchDIDs
-                                )
-                                
-                                // 批次间休息 2 秒，给机车网关散热
-                                try? await Task.sleep(nanoseconds: 2_000_000_000)
-                            }
-
-                            // 3. 扫尾与 UI 更新
-                            await MainActor.run {
-                                self.obdButton.stopLoading()
-                            }
-                        }
-                    case 9:
-                        // 1. 更新 UI 状态，提示用户操作已开始
-                        self.obdButton.startLoading(indicatorColor: .white)
-                        PTOBDLogger.shared.ptLog("=========================================")
-                        PTOBDLogger.shared.ptLog("☢️ 准备启动物理内存绝对寻址测试...")
-                        
-                        Task {
-                            // 2. 准备我们要试探的常见物理内存基地址
-                            // 00000000 通常是启动扇区，08000000 是很多主控芯片的程序存储区
-                            let suspectedAddresses = ["00000000", "08000000", "20000000"]
-                            
-                            for address in suspectedAddresses {
-                                await MainActor.run {
-                                    PTOBDLogger.shared.ptLog("➡️ 正在尝试 Dump 内存段，起始地址: 0x\(address)")
-                                }
-                                
-                                // 3. 执行核心调用！
-                                // 目标节点: 700 -> 708
-                                // 读取长度: 0x0040 (64个字节，非常安全的测试长度)
-                                await PTDashboardHacker.shared.dumpMemoryByAddress(
-                                    dashboardTx: "700",
-                                    dashboardRx: "708",
-                                    memoryAddress: address,
-                                    readSize: 0x0040
-                                )
-                                
-                                // 给硬件留出 2 秒的散热和缓冲区清理时间
-                                try? await Task.sleep(nanoseconds: 2_000_000_000)
-                            }
-                            
-                            // 4. 扫尾工作，恢复 UI
-                            await MainActor.run {
-                                self.obdButton.stopLoading()
-                                PTOBDLogger.shared.ptLog("✅ 内存段探路执行完毕，请导出日志核对反馈！")
-                                PTOBDLogger.shared.ptLog("=========================================")
-                            }
-                        }
-                    case 10:
-                        Task {
-                            self.obdButton.startLoading(indicatorColor: .white)
-
-                            guard PTCANRecorder.shared.start(name: "PTSpeed_Dashboard_Capture") else {
-                                self.obdButton.stopLoading()
-                                return
-                            }
-
-                            // 1. 开启抓包，指定只看 700 节点的流量（防止数据太多把日志撑爆）
-                            await PTMotoTelemetryManager.shared.startCANSniperMode(filterHeader: nil)
-                            
-                            PTOBDLogger.shared.ptLog("⏳ [实战演练] 抓包中... 请立刻在手机上操作原车蓝牙切换一次语言或颜色！")
-                            
-                            // 2. 留出 10 秒钟的操作时间窗口
-                            try? await Task.sleep(nanoseconds: 10_000_000_000)
-                            
-                            // 3. 自动停止抓包并恢复日常监控
-                            await PTMotoTelemetryManager.shared.stopCANSniperMode()
-
-                            _ = PTCANRecorder.shared.stop()
-                            
-                            self.obdButton.stopLoading()
-                            if let error = PTCANRecorder.shared.lastStorageError {
-                                PTOBDLogger.shared.ptLog("❌ [实战演练] Capture 保存失败: \(error)")
-                            } else {
-                                PTOBDLogger.shared.ptLog("✅ [实战演练] Capture 已完成，请从 Documents/PTCANCaptures 导出！")
-                            }
                         }
                     default:
                         break

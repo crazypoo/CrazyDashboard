@@ -12,17 +12,44 @@ import Foundation
 public enum PTRideRangeSource: String, Codable, Sendable {
     case dashboard
     case estimated
+    case liveConsumption
+    case rideHistory
 }
 
 public struct PTRideRangeEstimate: Codable, Equatable, Sendable {
     public let remainingKm: Double
     public let source: PTRideRangeSource
     public let isLowFuel: Bool
+    public let confidence: Double?
+    public let sampleCount: Int
 
-    public init(remainingKm: Double, source: PTRideRangeSource, isLowFuel: Bool) {
+    public init(
+        remainingKm: Double,
+        source: PTRideRangeSource,
+        isLowFuel: Bool,
+        confidence: Double? = nil,
+        sampleCount: Int = 0
+    ) {
         self.remainingKm = max(remainingKm, 0)
         self.source = source
         self.isLowFuel = isLowFuel
+        self.confidence = confidence.map { min(max($0, 0), 1) }
+        self.sampleCount = max(sampleCount, 0)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case remainingKm, source, isLowFuel, confidence, sampleCount
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            remainingKm: try container.decode(Double.self, forKey: .remainingKm),
+            source: try container.decode(PTRideRangeSource.self, forKey: .source),
+            isLowFuel: try container.decode(Bool.self, forKey: .isLowFuel),
+            confidence: try container.decodeIfPresent(Double.self, forKey: .confidence),
+            sampleCount: try container.decodeIfPresent(Int.self, forKey: .sampleCount) ?? 0
+        )
     }
 }
 
@@ -36,7 +63,10 @@ public enum PTRideRangeEstimator {
         averageConsumptionLitersPer100Km: Double?,
         tankCapacityLiters: Double? = nil,
         reservePercent: Int = 10,
-        lowFuelPercent: Int = 15
+        lowFuelPercent: Int = 15,
+        estimatedSource: PTRideRangeSource = .estimated,
+        sampleCount: Int = 0,
+        confidence: Double? = nil
     ) -> PTRideRangeEstimate? {
         let safeFuelPercent = fuelLevelPercent.map { min(max($0, 0), 100) }
         let isLowFuel = (safeFuelPercent ?? 100) <= min(max(lowFuelPercent, 0), 100)
@@ -47,7 +77,9 @@ public enum PTRideRangeEstimator {
             return PTRideRangeEstimate(
                 remainingKm: dashboardAutonomyKm,
                 source: .dashboard,
-                isLowFuel: isLowFuel
+                isLowFuel: isLowFuel,
+                confidence: 1,
+                sampleCount: 1
             )
         }
 
@@ -56,8 +88,8 @@ public enum PTRideRangeEstimator {
               let tankCapacityLiters,
               averageConsumptionLitersPer100Km.isFinite,
               tankCapacityLiters.isFinite,
-              averageConsumptionLitersPer100Km > 0,
-              tankCapacityLiters > 0 else {
+              (1...15).contains(averageConsumptionLitersPer100Km),
+              (1...50).contains(tankCapacityLiters) else {
             return nil
         }
 
@@ -69,9 +101,35 @@ public enum PTRideRangeEstimator {
 
         return PTRideRangeEstimate(
             remainingKm: remainingKm,
-            source: .estimated,
-            isLowFuel: isLowFuel
+            source: estimatedSource == .dashboard ? .estimated : estimatedSource,
+            isLowFuel: isLowFuel,
+            confidence: confidence,
+            sampleCount: sampleCount
         )
+    }
+
+    // EN: History uses only plausible, completed trips and weights consumption by distance.
+    // ES: El historial solo usa viajes completados plausibles y pondera el consumo por distancia.
+    // 中文：历史估算只使用合理的已完成行程，并按距离对油耗加权。
+    public static func weightedConsumption(
+        from trips: [PTTripReport],
+        maximumTripCount: Int = 10
+    ) -> (litersPer100Km: Double, sampleCount: Int, confidence: Double)? {
+        guard maximumTripCount > 0 else { return nil }
+        let candidates = trips
+            .filter {
+                $0.distanceKm >= 5 &&
+                    $0.distanceKm.isFinite &&
+                    $0.avgConsumption.isFinite &&
+                    (1...15).contains($0.avgConsumption)
+            }
+            .prefix(maximumTripCount)
+        guard !candidates.isEmpty else { return nil }
+        let totalDistance = candidates.reduce(0) { $0 + $1.distanceKm }
+        guard totalDistance > 0 else { return nil }
+        let weighted = candidates.reduce(0) { $0 + $1.avgConsumption * $1.distanceKm } / totalDistance
+        let confidence = min(1, Double(candidates.count) / 10)
+        return (weighted, candidates.count, confidence)
     }
 }
 
@@ -150,6 +208,9 @@ public struct PTRideExperienceSummary: Codable, Equatable, Sendable {
     public let parkedLongitude: Double
     public let parkedAddress: String
     public let pttPeerCount: Int
+    public let tankCapacityLiters: Double?
+    public let reserveFuelPercent: Int?
+    public let rangeConsumptionSource: PTRideRangeSource?
     public let updatedAt: Date
 
     public init(
@@ -168,6 +229,9 @@ public struct PTRideExperienceSummary: Codable, Equatable, Sendable {
         parkedLongitude: Double,
         parkedAddress: String,
         pttPeerCount: Int,
+        tankCapacityLiters: Double? = nil,
+        reserveFuelPercent: Int? = nil,
+        rangeConsumptionSource: PTRideRangeSource? = nil,
         updatedAt: Date = Date()
     ) {
         self.vehicle = vehicle
@@ -185,6 +249,9 @@ public struct PTRideExperienceSummary: Codable, Equatable, Sendable {
         self.parkedLongitude = parkedLongitude
         self.parkedAddress = parkedAddress
         self.pttPeerCount = max(pttPeerCount, 0)
+        self.tankCapacityLiters = tankCapacityLiters
+        self.reserveFuelPercent = reserveFuelPercent
+        self.rangeConsumptionSource = rangeConsumptionSource
         self.updatedAt = updatedAt
     }
 
@@ -192,7 +259,12 @@ public struct PTRideExperienceSummary: Codable, Equatable, Sendable {
         PTRideRangeEstimator.estimate(
             dashboardAutonomyKm: dashboardAutonomyKm,
             fuelLevelPercent: fuelLevelPercent,
-            averageConsumptionLitersPer100Km: averageConsumptionLitersPer100Km
+            averageConsumptionLitersPer100Km: averageConsumptionLitersPer100Km,
+            tankCapacityLiters: tankCapacityLiters,
+            reservePercent: reserveFuelPercent ?? 10,
+            estimatedSource: rangeConsumptionSource ?? .liveConsumption,
+            sampleCount: rangeConsumptionSource == .rideHistory ? 10 : 1,
+            confidence: rangeConsumptionSource == .rideHistory ? 0.6 : 0.8
         )
     }
 

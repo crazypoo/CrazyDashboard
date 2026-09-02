@@ -4,13 +4,14 @@
 //
 //  只读 UDS 诊断地址模型。
 //  Modelo de dirección para diagnóstico UDS de solo lectura.
+//  EN: Read-only UDS diagnostic address model.
 //
 
 import Foundation
 
 /// ECU 的发送与接收 CAN Header；统一在边界处规范化。
 /// Header CAN de transmisión y recepción del ECU; se normaliza en el límite.
-public struct PTOBDiagnosticAddress: Codable, Hashable, Sendable {
+nonisolated public struct PTOBDiagnosticAddress: Codable, Hashable, Sendable {
     public let tx: String
     public let rx: String
 

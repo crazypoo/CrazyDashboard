@@ -31,6 +31,29 @@ public class PTDiagnosticManager: NSObject {
         hasWarnedBattery = false
         hasWarnedIcyRoad = false
     }
+
+    // EN: Health alerts use the shared typed center so repeated dashboard frames cannot create duplicate system notifications.
+    // ES: Las alertas de salud usan el centro tipado compartido para que las tramas repetidas no creen notificaciones duplicadas.
+    // 中文：健康提醒统一使用类型化通知中心，避免重复仪表帧产生重复系统通知。
+    private func notify(
+        identifier: String,
+        deduplicationKey: String,
+        title: String,
+        body: String
+    ) {
+        PTNotificationCenter.schedule(
+            PTNotificationRequest(
+                kind: .diagnostic,
+                title: title,
+                body: body,
+                identifier: identifier,
+                deduplicationKey: deduplicationKey,
+                cooldown: 6 * 60 * 60,
+                categoryIdentifier: PTNotificationCenter.diagnosticCategoryIdentifier,
+                userInfo: ["pt_notification_kind": PTAppNotificationKind.diagnostic.rawValue]
+            )
+        )
+    }
         
     deinit { }
 }
@@ -53,7 +76,9 @@ extension PTDiagnosticManager:PTBLEDashboardDelegate {
                     
                     hasWarnedBattery = true
                     
-                    PTMessagePusher.pushToDashboard(
+                    notify(
+                        identifier: "pt.notification.diagnostic.battery",
+                        deduplicationKey: "diagnostic-battery",
                         title: "⚠️" + PTDashboardConfig.languageFunc(text: "batt_warning_title"),
                         body: PTDashboardConfig.language(key: "batt_warning_msg", data2.batteryVolt)
                     )
@@ -68,7 +93,9 @@ extension PTDiagnosticManager:PTBLEDashboardDelegate {
                 
                 hasWarnedIcyRoad = true
                 
-                PTMessagePusher.pushToDashboard(
+                notify(
+                    identifier: "pt.notification.diagnostic.ice",
+                    deduplicationKey: "diagnostic-ice",
                     title: "❄️" + PTDashboardConfig.languageFunc(text: "freeze_warning_title"),
                     body: PTDashboardConfig.language(key: "freeze_warning_msg", data2.outsideTempC)
                 )

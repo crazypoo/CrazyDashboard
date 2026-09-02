@@ -116,6 +116,26 @@ final class PTRideSafetyViewController: PTMotoBaseViewController {
             buttons: timelineButtons
         ))
 
+        let antiTheftSnapshot = PTAntiTheftManager.shared.snapshot
+        let antiTheftButton = makeButton(
+            title: PTDashboardConfig.languageFunc(
+                text: antiTheftSnapshot.isEnabled ? "security_disable_monitoring" : "security_enable_monitoring"
+            ),
+            color: antiTheftSnapshot.isEnabled ? .systemOrange : .systemGreen
+        ) { [weak self] in
+            let enable = !PTAntiTheftManager.shared.isMonitoringEnabled
+            if enable {
+                PTNotificationCenter.requestAuthorization()
+            }
+            PTAntiTheftManager.shared.setMonitoringEnabled(enable)
+            self?.reloadContent()
+        }
+        stackView.addArrangedSubview(makeCard(
+            title: PTDashboardConfig.languageFunc(text: "security_anti_theft"),
+            body: "\(PTDashboardConfig.languageFunc(text: "security_monitoring_state")): \(securityStateTitle(antiTheftSnapshot.state))\n\(PTDashboardConfig.languageFunc(text: "security_monitoring_hint"))",
+            buttons: [antiTheftButton]
+        ))
+
         let points = PTRideSharedPointStore.shared.points
         let pointLines = points.prefix(20).map { point in
             let coordinate = String(format: "%.4f, %.4f", point.coordinate.latitude, point.coordinate.longitude)
@@ -208,6 +228,13 @@ final class PTRideSafetyViewController: PTMotoBaseViewController {
         button.heightAnchor.constraint(equalToConstant: 36).isActive = true
         button.addAction(UIAction { _ in action() }, for: .touchUpInside)
         return button
+    }
+
+    // EN: State text is localized at the UI boundary so the manager remains a state machine.
+    // ES: El texto del estado se localiza en el límite de la UI para que el gestor siga siendo una máquina de estados.
+    // 中文：状态文本在 UI 边界本地化，管理器只负责状态机逻辑。
+    private func securityStateTitle(_ state: PTAntiTheftMonitoringState) -> String {
+        PTDashboardConfig.languageFunc(text: "security_state_\(state.rawValue)")
     }
 
     private func presentHazardChoices() {

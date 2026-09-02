@@ -22,6 +22,7 @@ public enum PTExternalAction: Equatable, Sendable {
     case openHUD
     case confirmGasStationRoute
     case navigateTo(destination: String)
+    case openSafety
     case unknown
 }
 
@@ -84,6 +85,9 @@ public final class PTRoutingManager: NSObject {
 
         case "openhud":
             return .openHUD
+
+        case "opensafety":
+            return .openSafety
 
         case "confirmgasstationroute":
             return .confirmGasStationRoute
@@ -196,8 +200,8 @@ public final class PTRoutingManager: NSObject {
 
         case .toggleAntiTheft(let enable):
             PTNSLogConsole("🗣️ [路由引擎] 收到外部指令：防盗系统设置 -> \(enable ? "开启" : "关闭")")
+            PTAntiTheftManager.shared.setMonitoringEnabled(enable)
             if enable {
-                PTMOTOParkingManager.shared.saveCurrentLocationAsParkingSpot()
                 PTMessagePusher.pushToDashboard(
                     title: PTDashboardConfig.languageFunc(text: "parking_lock_title"),
                     body: PTDashboardConfig.languageFunc(text: "parking_lock_msg")
@@ -236,6 +240,16 @@ public final class PTRoutingManager: NSObject {
             tabbar.ptCustomBar.select(1)
             NotificationCenter.default.post(name: MotorcycleSearchAndNavigate, object: destination)
             return .started
+
+        case .openSafety:
+            guard let navigationController = navigationController(in: scene) else {
+                return .unavailable
+            }
+            if navigationController.topViewController is PTRideSafetyViewController {
+                return .completed
+            }
+            navigationController.pushViewController(PTRideSafetyViewController(), animated: true)
+            return .completed
 
         case .unknown:
             return .rejected

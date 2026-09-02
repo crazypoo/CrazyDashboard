@@ -662,18 +662,30 @@ public extension PTCANCaptureStore {
                 frames.append(frame)
             }
 
+            // EN: A crash can leave sidecar counts behind the JSONL file; recover from the durable frame lines first.
+            // ES: Un cierre inesperado puede dejar los contadores del archivo auxiliar atrasados; primero se recuperan las líneas JSONL persistidas.
+            // 中文：异常退出可能导致旁车元数据落后于 JSONL 文件，恢复时优先以已经写入的帧为准。
+            let recoveredTotalFrameCount = max(session.totalFrameCount, frames.count)
+            let recoveredDroppedFrameCount = max(
+                session.droppedFrameCount,
+                recoveredTotalFrameCount - frames.count
+            )
+            let recoveredEndedAt = session.endedAt ?? frames.last.map {
+                Date(timeIntervalSince1970: $0.timestamp)
+            }
+
             return PTCANCaptureSession(
                 id: session.id,
                 name: session.name,
                 startedAt: session.startedAt,
-                endedAt: session.endedAt,
+                endedAt: recoveredEndedAt,
                 filterHeader: session.filterHeader,
                 frames: frames,
                 schemaVersion: session.schemaVersion,
                 events: session.events,
-                totalFrameCount: session.totalFrameCount,
+                totalFrameCount: recoveredTotalFrameCount,
                 retainedFrameCount: frames.count,
-                droppedFrameCount: session.droppedFrameCount
+                droppedFrameCount: recoveredDroppedFrameCount
             )
         }
         
@@ -891,6 +903,7 @@ public extension PTCANRecorder {
         PTCANCaptureStore.shared.currentFileURL
     }
 
+    /// English: The latest storage error lets the UI show a precise failure reason.
     /// 中文：最近一次存储错误，便于 UI 显示明确失败原因。
     /// Español: último error de almacenamiento para que la UI muestre el motivo exacto.
     var lastStorageError: String? {
@@ -1683,6 +1696,52 @@ public enum PTCANCaptureAnalyzer {
         public let dominantPayload: String
         public let averagePeriod: TimeInterval?
         public let payloadVariants: Int
+
+        // EN: This score ranks observable periodic changes without assigning a semantic meaning to any byte.
+        // ES: Esta puntuación ordena cambios periódicos observables sin asignar significado semántico a ningún byte.
+        // 中文：该评分只排序可观察的周期性变化，不给任何字节赋予实际语义。
+        public var candidateScore: Int {
+            let periodScore: Int
+            if let averagePeriod, averagePeriod.isFinite, averagePeriod > 0 {
+                periodScore = max(0, 100 - Int(min(averagePeriod, 10) * 10))
+            } else {
+                periodScore = 0
+            }
+            return frameCount * 2 + payloadVariants * 10 + periodScore
+        }
+    }
+
+    // EN: Recommend only repeated IDs with changing payloads and a plausible cycle period for offline research.
+    // ES: Solo recomienda IDs repetidos con payloads cambiantes y un periodo plausible para investigación sin conexión.
+    // 中文：离线研究只推荐重复出现、Payload 有变化且周期合理的 CAN ID。
+    public static func candidateSignals(
+        _ session: PTCANCaptureSession,
+        minimumFrameCount: Int = 3,
+        maximumAveragePeriod: TimeInterval = 10,
+        maximumResults: Int = 10
+    ) -> [SignalSummary] {
+        guard minimumFrameCount > 0,
+              maximumAveragePeriod > 0,
+              maximumResults > 0 else {
+            return []
+        }
+
+        return summarize(session)
+            .filter { summary in
+                summary.frameCount >= minimumFrameCount &&
+                    summary.payloadVariants > 1 &&
+                    summary.averagePeriod.map {
+                        $0.isFinite && $0 > 0 && $0 <= maximumAveragePeriod
+                    } == true
+            }
+            .sorted {
+                if $0.candidateScore == $1.candidateScore {
+                    return $0.header < $1.header
+                }
+                return $0.candidateScore > $1.candidateScore
+            }
+            .prefix(maximumResults)
+            .map { $0 }
     }
     
     public static func summarize(

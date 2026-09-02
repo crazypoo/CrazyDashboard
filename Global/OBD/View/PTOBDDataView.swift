@@ -204,8 +204,27 @@ class PTOBDDataView: UIView {
 
 extension PTOBDDataView: PTMotoTelemetryDelegate {
     
-    // 监听到指令列表发现后，触发 UI 重绘
-    func telemetryManager(_ manager: PTMotoTelemetryManager, didDiscoverSupportedCommands commands: [String]) { }
+    // EN: Rebuild the grid after dynamic command discovery, while keeping UIKit work on the main thread.
+    // ES: Reconstruye la cuadrícula después de descubrir comandos dinámicos y mantiene UIKit en el hilo principal.
+    // 中文：动态发现支持指令后重建网格，并确保所有 UIKit 操作在主线程执行。
+    func telemetryManager(_ manager: PTMotoTelemetryManager, didDiscoverSupportedCommands commands: [String]) {
+        var seen = Set<String>()
+        let normalizedCommands = commands
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() }
+            .filter { !$0.isEmpty && seen.insert($0).inserted }
+
+        guard !normalizedCommands.isEmpty else { return }
+
+        let rebuild: () -> Void = { [weak self] in
+            guard let self else { return }
+            self.buildDynamicGrid(with: normalizedCommands)
+        }
+        if Thread.isMainThread {
+            rebuild()
+        } else {
+            DispatchQueue.main.async(execute: rebuild)
+        }
+    }
     
     // MARK: - 接收代理数据并驱动动画
     func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) {

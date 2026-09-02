@@ -43,12 +43,19 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         navigationItem.title = PTDashboardConfig.languageFunc(text: "ride_center")
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
+        let safetyItem = UIBarButtonItem(
             title: PTDashboardConfig.languageFunc(text: "ride_safety_center"),
             style: .plain,
             target: self,
             action: #selector(openSafetyCenter)
         )
+        let exportItem = UIBarButtonItem(
+            barButtonSystemItem: .action,
+            target: self,
+            action: #selector(exportBlackBox)
+        )
+        exportItem.accessibilityLabel = PTDashboardConfig.languageFunc(text: "ride_black_box_export")
+        navigationItem.rightBarButtonItems = [safetyItem, exportItem]
         view.backgroundColor = .black
         configureLabels()
         configureLayout()
@@ -255,12 +262,22 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
         let vehicle = PTVehicleConnectivityCoordinator.shared.snapshot
         let isDashboardConnected = vehicle.isDashboardConnected
         let warningDistanceKm = Int(PTMotorcycleGarageStore.shared.currentMaintenanceWarningDistanceKm.rounded())
+        let liveConsumption = dashboardManager.latestData1?.avgConsumptionLt
+        let historyConsumption = PTRideRangeEstimator.weightedConsumption(
+            from: PTTripManager.shared.tripHistory
+        )
+        let usableLiveConsumption = liveConsumption.flatMap { (1...15).contains($0) ? $0 : nil }
+        let rangeConsumption = usableLiveConsumption ?? historyConsumption?.litersPer100Km
+        let rangeSource: PTRideRangeSource? = usableLiveConsumption != nil
+            ? .liveConsumption
+            : (historyConsumption == nil ? nil : .rideHistory)
+        let profile = PTMotorcycleGarageStore.shared.currentVehicle
         let summary = PTRideExperienceSummary(
             vehicle: vehicle,
             fuelLevelPercent: dashboardManager.latestData1?.fuelLevelPct ?? widgetStatus.fuelLevel,
             tripKm: dashboardManager.latestData1?.tripKm ?? widgetStatus.tripKm,
             odometerKm: dashboardManager.latestData1?.odoKm,
-            averageConsumptionLitersPer100Km: dashboardManager.latestData1?.avgConsumptionLt,
+            averageConsumptionLitersPer100Km: rangeConsumption,
             dashboardAutonomyKm: dashboardManager.latestData3?.autonomyKm,
             batteryVoltage: dashboardManager.latestData2?.batteryVolt,
             outsideTemperatureCelsius: dashboardManager.latestData2?.outsideTempC,
@@ -271,6 +288,9 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
             parkedLongitude: widgetStatus.parkedLon,
             parkedAddress: widgetStatus.address,
             pttPeerCount: PTLocalIntercomManager.shared.connectedPeersCount,
+            tankCapacityLiters: profile?.tankCapacityLiters,
+            reserveFuelPercent: profile?.reserveFuelPercent,
+            rangeConsumptionSource: rangeSource,
             updatedAt: max(vehicle.updatedAt, widgetStatus.lastUpdateTime)
         )
 
@@ -286,9 +306,8 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
         } ?? "-"
         if let range = summary.rangeEstimate {
             let value = PTDashboardConfig.shared.appShowMileageValueString(range.remainingKm)
-            rangeValueLabel.text = range.source == .dashboard ?
-                "\(value)\(PTDashboardConfig.shared.appShowUniLabel)" :
-                "\(value)\(PTDashboardConfig.shared.appShowUniLabel) *"
+            let suffix = range.source == .dashboard ? "" : " *"
+            rangeValueLabel.text = "\(value)\(PTDashboardConfig.shared.appShowUniLabel)\(suffix)"
         } else {
             rangeValueLabel.text = PTDashboardConfig.languageFunc(text: "ride_not_available")
         }
@@ -373,6 +392,98 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
             return
         }
         PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "ride_mark_event_saved"))
+    }
+
+    // EN: Export only stored black-box clips; this action never reads from or writes to the vehicle.
+    // ES: Exporta solo clips de la caja negra ya guardados; nunca lee ni escribe en el vehículo.
+    // 中文：只导出已经保存的黑匣子片段，不读取也不写入车辆。
+    @objc private func exportBlackBox() {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                let clips = try await PTRideBlackBoxStore.shared.load()
+                guard !clips.isEmpty else {
+                    showMessage(PTDashboardConfig.languageFunc(text: "ride_black_box_no_data"))
+                    return
+                }
+
+                let alert = UIAlertController(
+                    title: PTDashboardConfig.languageFunc(text: "ride_black_box_export"),
+                    message: PTDashboardConfig.languageFunc(text: "ride_black_box_export_hint"),
+                    preferredStyle: .actionSheet
+                )
+                let formats: [(PTRideBlackBoxExportFormat, String)] = [
+                    (.json, "ride_black_box_export_json"),
+                    (.csv, "ride_black_box_export_csv"),
+                    (.gpx, "ride_black_box_export_gpx")
+                ]
+                formats.forEach { format, key in
+                    alert.addAction(UIAlertAction(
+                        title: PTDashboardConfig.languageFunc(text: key),
+                        style: .default
+                    ) { [weak self] _ in
+                        self?.shareBlackBox(clips: clips, format: format)
+                    })
+                }
+                alert.addAction(UIAlertAction(
+                    title: PTDashboardConfig.languageFunc(text: "button_cancel"),
+                    style: .cancel
+                ))
+                if let popover = alert.popoverPresentationController {
+                    popover.sourceView = view
+                    popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
+                }
+                present(alert, animated: true)
+            } catch {
+                showMessage(error.localizedDescription)
+            }
+        }
+    }
+
+    // EN: Generate the share file off the main thread so a large capture cannot block the ride screen.
+    // ES: Genera el archivo para compartir fuera del hilo principal para no bloquear la pantalla de conducción.
+    // 中文：在后台生成分享文件，避免大抓包阻塞骑行页面。
+    private func shareBlackBox(
+        clips: [PTRideBlackBoxClip],
+        format: PTRideBlackBoxExportFormat
+    ) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                let fileURL = try await Task.detached(priority: .utility) {
+                    let data = try PTRideBlackBoxExporter.data(for: clips, format: format)
+                    let fileURL = FileManager.default.temporaryDirectory
+                        .appendingPathComponent("PTSpeed-BlackBox-\(UUID().uuidString).\(format.fileExtension)")
+                    try data.write(to: fileURL, options: .atomic)
+                    return fileURL
+                }.value
+
+                let activity = UIActivityViewController(
+                    activityItems: [fileURL],
+                    applicationActivities: nil
+                )
+                if let popover = activity.popoverPresentationController {
+                    popover.sourceView = view
+                    popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
+                }
+                present(activity, animated: true)
+            } catch {
+                showMessage(error.localizedDescription)
+            }
+        }
+    }
+
+    private func showMessage(_ message: String) {
+        let alert = UIAlertController(
+            title: PTDashboardConfig.languageFunc(text: "alert_title"),
+            message: message,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "button_confirm"),
+            style: .default
+        ))
+        present(alert, animated: true)
     }
 
     private func linkDescription(_ link: PTVehicleLinkSnapshot) -> String {

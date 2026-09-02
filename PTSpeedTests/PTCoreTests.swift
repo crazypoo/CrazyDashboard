@@ -417,6 +417,34 @@ final class PTCoreTests: XCTestCase {
         XCTAssertEqual(unavailableDistance.state, .unknown)
     }
 
+    // EN: Range history must weight consumption by distance and reject an empty sample window.
+    // ES: El historial de autonomía debe ponderar el consumo por distancia y rechazar una ventana vacía.
+    // 中文：续航历史必须按距离加权油耗，并拒绝空的样本窗口。
+    func testRangeHistoryWeightsDistanceAndBoundsSamples() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let shortTrip = makeTripReport(start: start, distanceKm: 5, avgConsumption: 3)
+        let longTrip = makeTripReport(start: start.addingTimeInterval(3_600), distanceKm: 15, avgConsumption: 5)
+
+        let estimate = PTRideRangeEstimator.weightedConsumption(
+            from: [shortTrip, longTrip]
+        )
+        XCTAssertEqual(estimate?.litersPer100Km ?? -1, 4.5, accuracy: 0.001)
+        XCTAssertEqual(estimate?.sampleCount, 2)
+        XCTAssertEqual(estimate?.confidence ?? -1, 0.2, accuracy: 0.001)
+
+        let limited = PTRideRangeEstimator.weightedConsumption(
+            from: [shortTrip, longTrip],
+            maximumTripCount: 1
+        )
+        XCTAssertEqual(limited?.litersPer100Km ?? -1, 3, accuracy: 0.001)
+        XCTAssertNil(
+            PTRideRangeEstimator.weightedConsumption(
+                from: [shortTrip],
+                maximumTripCount: 0
+            )
+        )
+    }
+
     // EN: Black-box windows must stay bounded and preserve the available ride context.
     // ES: Las ventanas de la caja negra deben estar acotadas y conservar el contexto disponible.
     // 中文：黑匣子窗口必须有边界，并保留事件周围实际存在的行程上下文。
@@ -677,6 +705,46 @@ final class PTCoreTests: XCTestCase {
         XCTAssertEqual(captureDiff.deltas.first?.kind, .changed)
         XCTAssertEqual(payloadDiff.first?.changedByteCount, 1)
         XCTAssertEqual(payloadDiff.first?.changedBitCount, 1)
+    }
+
+    // EN: Offline CAN recommendations must expose changing periodic IDs, and event analysis must find their windowed changes.
+    // ES: Las recomendaciones CAN sin conexión deben mostrar IDs periódicos cambiantes y el análisis de eventos debe hallar sus cambios.
+    // 中文：离线 CAN 推荐必须找出周期性变化的 ID，事件分析必须找出窗口内的变化。
+    func testCANCandidateSignalsAndEventWindow() {
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        let payloads = ["0100", "0101", "0100", "0101"].enumerated().map { index, payload in
+            PTCANFrame(
+                timestamp: date.timeIntervalSince1970 + Double(index),
+                sequence: index + 1,
+                direction: .rx,
+                rawLine: "123 02 \(payload)",
+                header: "123",
+                dataHex: payload,
+                dlc: 2
+            )
+        }
+        let session = PTCANCaptureSession(
+            id: UUID(),
+            name: "candidate",
+            startedAt: date,
+            endedAt: date.addingTimeInterval(3),
+            filterHeader: nil,
+            frames: payloads,
+            events: [PTCANCaptureEvent(name: "switch", timestamp: date.timeIntervalSince1970 + 2)]
+        )
+
+        let candidates = PTCANCaptureAnalyzer.candidateSignals(session)
+        XCTAssertEqual(candidates.first?.header, "123")
+        XCTAssertEqual(candidates.first?.payloadVariants, 2)
+
+        let eventAnalysis = PTCANEventAnalyzer.analyze(
+            session: session,
+            eventTimestamp: date.timeIntervalSince1970 + 2,
+            before: 2,
+            after: 1
+        )
+        XCTAssertEqual(eventAnalysis.interestingIDs.first?.header, "123")
+        XCTAssertTrue(eventAnalysis.interestingIDs.first?.changedByteIndexes.contains(0) == true)
     }
 
     // EN: Legacy capture JSON must decode with safe defaults for new metadata fields.
@@ -1116,7 +1184,11 @@ final class PTCoreTests: XCTestCase {
         )
     }
 
-    private func makeTripReport(start: Date) -> PTTripReport {
+    private func makeTripReport(
+        start: Date,
+        distanceKm: Double = 12.5,
+        avgConsumption: Double = 4.5
+    ) -> PTTripReport {
         let event = PTRideReviewEvent(
             type: .highLean,
             timestamp: start.addingTimeInterval(30),
@@ -1133,9 +1205,9 @@ final class PTCoreTests: XCTestCase {
             maxSpeedKmh: 80,
             maxRpm: 6_000,
             startOdoKm: 100,
-            endOdoKm: 112.5,
-            distanceKm: 12.5,
-            avgConsumption: 4.5,
+            endOdoKm: 100 + distanceKm,
+            distanceKm: distanceKm,
+            avgConsumption: avgConsumption,
             maxLeanAngleLeft: -25,
             maxLeanAngleRight: 20,
             leanAngleTrace: [-5, 25, 10],

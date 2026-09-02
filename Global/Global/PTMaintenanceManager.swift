@@ -21,7 +21,6 @@ private enum PTMaintenanceDashboardSample: Sendable {
 public final class PTMaintenanceManager: NSObject {
     public static let shared = PTMaintenanceManager()
 
-    private static let legacyLastWarningDateKey = "PTLastMaintenanceWarningDate"
     private static let warningInterval: TimeInterval = 7 * 24 * 60 * 60
 
     private var latestMaintenanceFlag: Int?
@@ -90,22 +89,24 @@ public final class PTMaintenanceManager: NSObject {
         title: String,
         body: String
     ) {
-        let now = Date()
-        let key = scopedWarningDateKey(for: state)
-        let lastDate = (UserDefaults.standard.object(forKey: key) as? Date)
-            ?? (UserDefaults.standard.object(forKey: Self.legacyLastWarningDateKey) as? Date)
-            ?? .distantPast
-
-        guard now.timeIntervalSince(lastDate) >= Self.warningInterval else { return }
-
-        PTMessagePusher.pushToDashboard(title: title, body: body)
-        UserDefaults.standard.set(now, forKey: key)
-        PTNSLogConsole("🚨 [保养管家] 触发 \(state.rawValue) 通知：\(title)")
-    }
-
-    private func scopedWarningDateKey(for state: PTRideMaintenanceState) -> String {
         let vehicleID = PTMotorcycleGarageStore.shared.selectedVehicleID?.uuidString ?? "default"
-        return "\(Self.legacyLastWarningDateKey).\(vehicleID).\(state.rawValue)"
+
+        // EN: Route maintenance reminders through the typed notification center so permission and cooldown rules are shared.
+        // ES: Envía los recordatorios de mantenimiento al centro tipado para compartir permisos y reglas de enfriamiento.
+        // 中文：保养提醒统一经过类型化通知中心，复用权限和冷却规则。
+        PTNotificationCenter.schedule(
+            PTNotificationRequest(
+                kind: .maintenance,
+                title: title,
+                body: body,
+                identifier: "pt.notification.maintenance.\(state.rawValue)",
+                deduplicationKey: "maintenance-\(vehicleID)-\(state.rawValue)",
+                cooldown: Self.warningInterval,
+                categoryIdentifier: PTNotificationCenter.maintenanceCategoryIdentifier,
+                userInfo: ["pt_notification_kind": PTAppNotificationKind.maintenance.rawValue]
+            )
+        )
+        PTNSLogConsole("🚨 [保养管家] 触发 \(state.rawValue) 通知：\(title)")
     }
 
     /// EN: Clear stale values after the dashboard disconnects so an old reading cannot trigger a new reminder.

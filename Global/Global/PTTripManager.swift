@@ -297,6 +297,9 @@ public class PTTripManager: NSObject {
     private var offRoadEventsArray: [PTTripOffRoadEvent] = []
     private var lastOffRoadEventTime: Date? // 防抖控制
     private var manualBlackBoxEvents: [PTRideBlackBoxEvent] = []
+    private var lastBlackBoxCheckpointAt: Date?
+    private var blackBoxCheckpointTask: Task<Void, Never>?
+    private var blackBoxRecoveryTask: Task<Void, Never>?
 
     private var historyWriteRevision: Int64 = 0
     private var historyLoadTask: Task<Void, Never>?
@@ -309,6 +312,7 @@ public class PTTripManager: NSObject {
         super.init()
         loadHistory()
         setupObservers()
+        recoverBlackBoxJournal()
     }
     
     private func broadcastLiveStats() {
@@ -587,6 +591,8 @@ public class PTTripManager: NSObject {
         offRoadEventsArray.removeAll()
         lastOffRoadEventTime = nil
         manualBlackBoxEvents.removeAll()
+        lastBlackBoxCheckpointAt = nil
+        blackBoxCheckpointTask = nil
 
         PTMotion.shared.resetLeanAngles()
         PTMotion.shared.startMotion()
@@ -654,10 +660,12 @@ public class PTTripManager: NSObject {
             slipRatio: self.currentLiveSlipRatio
         )
         self.routeArray.append(point)
+        checkpointBlackBoxIfNeeded()
     }
         
     @objc public func handleDisconnect() {
         guard isRiding, let start = startTime else { return }
+        checkpointBlackBoxIfNeeded(force: true)
         isRiding = false
                 
         // 🚨 停止采样定时器
@@ -675,6 +683,11 @@ public class PTTripManager: NSObject {
         
         guard durationMin > 0 || finalDistance > 0.1 else {
             PTNSLogConsole("⚠️ [行程记录] 本次连接时间过短或未产生位移，已忽略。")
+            let checkpointTask = blackBoxCheckpointTask
+            Task {
+                _ = await checkpointTask?.value
+                try? await PTRideBlackBoxStore.shared.clearJournal()
+            }
             // 记得把定位切回防盗模式
             PTLocationEngine.shared.switchEngineMode(to: .antiTheft)
             return
@@ -786,14 +799,18 @@ public class PTTripManager: NSObject {
                 points: blackBoxPoints
             )
         }
+        let checkpointTask = blackBoxCheckpointTask
         Task {
             let clips = await blackBoxBuildTask.value
-            guard !clips.isEmpty else { return }
             do {
-                _ = try await PTRideBlackBoxStore.shared.append(clips)
-                await MainActor.run {
-                    NotificationCenter.default.post(name: PTRideBlackBoxUpdated, object: clips)
+                _ = await checkpointTask?.value
+                if !clips.isEmpty {
+                    _ = try await PTRideBlackBoxStore.shared.append(clips)
+                    await MainActor.run {
+                        NotificationCenter.default.post(name: PTRideBlackBoxUpdated, object: clips)
+                    }
                 }
+                try await PTRideBlackBoxStore.shared.clearJournal()
             } catch {
                 PTNSLogConsole("❌ [Moto Black Box] 本地事件片段保存失败: \(error.localizedDescription)")
             }
@@ -838,11 +855,74 @@ public class PTTripManager: NSObject {
             severity: 1
         )
         manualBlackBoxEvents.append(event)
+        checkpointBlackBoxIfNeeded(force: true)
         PTNSLogConsole("📍 [Moto Black Box] 已加入手动事件标记")
         return true
     }
+
+    // EN: Checkpoint only the bounded active-ride window; this is best-effort and never blocks telemetry.
+    // ES: Solo guarda un punto de control de la ventana limitada; es un esfuerzo opcional y nunca bloquea la telemetría.
+    // 中文：只检查点保存活动行程的有界窗口，失败可接受且不会阻塞遥测。
+    private func checkpointBlackBoxIfNeeded(force: Bool = false) {
+        guard let rideStartTime = startTime else { return }
+        let now = Date()
+        if !force,
+           let lastBlackBoxCheckpointAt,
+           now.timeIntervalSince(lastBlackBoxCheckpointAt) < 10 {
+            return
+        }
+        lastBlackBoxCheckpointAt = now
+        let points = Array(routeArray.suffix(PTRideBlackBoxStore.maximumJournalPointCount))
+        let events = Array(manualBlackBoxEvents.suffix(PTRideBlackBoxStore.maximumJournalEventCount))
+        let checkpointTask = Task.detached(priority: .utility) {
+            do {
+                try await PTRideBlackBoxStore.shared.checkpoint(
+                    rideStartTime: rideStartTime,
+                    points: points,
+                    manualEvents: events,
+                    checkpointAt: now
+                )
+            } catch {
+                PTNSLogConsole("⚠️ [Moto Black Box] 活动行程检查点保存失败: \(error.localizedDescription)")
+            }
+        }
+        blackBoxCheckpointTask = checkpointTask
+    }
+
+    // EN: Recover an interrupted ride journal before the next ride can overwrite its bounded checkpoint.
+    // ES: Recupera el diario de un viaje interrumpido antes de que el siguiente viaje sobrescriba su punto de control limitado.
+    // 中文：在下一次行程覆盖有界检查点前，先恢复被中断行程的日志。
+    private func recoverBlackBoxJournal() {
+        blackBoxRecoveryTask = Task { [weak self] in
+            do {
+                guard let journal = try await PTRideBlackBoxStore.shared.recoverJournal() else { return }
+                let reviewEvents = PTRideReviewAnalyzer.analyze(points: journal.points)
+                let clips = PTRideBlackBoxBuilder.makeClips(
+                    rideStartTime: journal.rideStartTime,
+                    reviewEvents: reviewEvents,
+                    offRoadEvents: [],
+                    manualEvents: journal.manualEvents,
+                    points: journal.points,
+                    createdAt: journal.checkpointAt,
+                    origin: .recovered
+                )
+                if !clips.isEmpty {
+                    _ = try await PTRideBlackBoxStore.shared.append(clips)
+                    await MainActor.run {
+                        NotificationCenter.default.post(name: PTRideBlackBoxUpdated, object: clips)
+                    }
+                }
+                try await PTRideBlackBoxStore.shared.clearJournal()
+                PTNSLogConsole("✅ [Moto Black Box] 已恢复中断行程检查点，片段数: \(clips.count)")
+            } catch {
+                PTNSLogConsole("⚠️ [Moto Black Box] 中断行程检查点恢复失败: \(error.localizedDescription)")
+            }
+            self?.blackBoxRecoveryTask = nil
+        }
+    }
     
     deinit {
+        blackBoxRecoveryTask?.cancel()
         NotificationCenter.default.removeObserver(self)
     }
 

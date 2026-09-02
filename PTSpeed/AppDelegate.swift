@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import UserNotifications
 import AMapFoundationKit
 import AMapNaviKit
 import IQKeyboardToolbarManager
@@ -168,31 +169,39 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 extension AppDelegate:UNUserNotificationCenterDelegate {
     func appNotifiCenter() {
         let center = UNUserNotificationCenter.current()
-        // 设置代理，以便在前台也能收到通知
+        // EN: Register the delegate and categories only; permission is requested from an explicit user action.
+        // ES: Registra el delegado y las categorías; el permiso solo se solicita mediante una acción explícita del usuario.
+        // 中文：这里只注册代理和通知分类，权限必须由用户的明确操作触发。
         center.delegate = self
-        
-        // 请求弹窗、声音和角标权限
-        center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            if let error = error {
-                PTNSLogConsole("❌ [防盗系统] 请求通知权限出错: \(error.localizedDescription)")
-                return
-            }
-            if granted {
-                PTNSLogConsole("✅ [防盗系统] 通知权限已授予，报警提醒可用")
-            } else {
-                PTNSLogConsole("⚠️ [防盗系统] 用户拒绝了通知权限，报警将无法弹出")
-            }
-        }
+        PTNotificationCenter.registerCategories()
     }
     
     public func userNotificationCenter(_ center: UNUserNotificationCenter,
-                                           willPresent notification: UNNotification,
-                                           withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        let content = notification.request.content
+                                       willPresent notification: UNNotification,
+                                       withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.banner, .sound, .list])
-        
-        DispatchQueue.main.async {
-            UIAlertController.base_alertVC(title:content.title,msg: content.body,cancelBtn: PTDashboardConfig.languageFunc(text: "button_confirm"))
+    }
+
+    // EN: Notification actions operate on the existing local state machine and never send a vehicle command.
+    // ES: Las acciones de notificación usan la máquina de estados local y nunca envían comandos al vehículo.
+    // 中文：通知操作只作用于现有本地状态机，不会向车辆发送指令。
+    public func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        Task { @MainActor in
+            switch response.actionIdentifier {
+            case PTNotificationCenter.acknowledgeActionIdentifier:
+                PTAntiTheftManager.shared.acknowledgeLatestAlarm()
+            case PTNotificationCenter.snoozeActionIdentifier:
+                PTAntiTheftManager.shared.snooze(for: 30 * 60)
+            case PTNotificationCenter.openActionIdentifier:
+                _ = PTRoutingManager.shared.execute(action: .openSafety)
+            default:
+                break
+            }
+            completionHandler()
         }
     }
 }

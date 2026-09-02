@@ -5231,6 +5231,180 @@
         }
       }
     },
+    "ride_black_box_export" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export black box"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kara kutuyu dışa aktar"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出黑匣子"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "匯出黑盒"
+          }
+        }
+      }
+    },
+    "ride_black_box_export_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a format for the saved event clips."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kaydedilen olay klipleri için bir biçim seçin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择已保存事件片段的导出格式。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選擇已儲存事件片段的匯出格式。"
+          }
+        }
+      }
+    },
+    "ride_black_box_no_data" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There are no saved black-box clips to export."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dışa aktarılacak kaydedilmiş kara kutu klibi yok."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有可导出的黑匣子片段。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "沒有可匯出的黑盒片段。"
+          }
+        }
+      }
+    },
+    "ride_black_box_export_json" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JSON"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JSON"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JSON"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JSON"
+          }
+        }
+      }
+    },
+    "ride_black_box_export_csv" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CSV"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CSV"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CSV"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CSV"
+          }
+        }
+      }
+    },
+    "ride_black_box_export_gpx" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GPX"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GPX"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GPX"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GPX"
+          }
+        }
+      }
+    },
     "ride_center" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -9405,6 +9579,852 @@
             "value" : "逐向導航"
           }
         }
+      }
+    },
+    "notification_action_acknowledge" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Acknowledge" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Onayla" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "确认" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "確認" } }
+      }
+    },
+    "notification_action_open" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Aç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "打開" } }
+      }
+    },
+    "notification_action_snooze" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Snooze 30 min" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "30 dk ertele" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂停 30 分钟" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "暫停 30 分鐘" } }
+      }
+    },
+    "notification_anti_theft_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The motorcycle connection was lost while you were near its parking location. Check the motorcycle." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Motosiklet bağlantısı park konumunun yakınındayken kesildi. Motosikleti kontrol edin." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "你仍在停车点附近时车辆连接断开，请检查车辆状态。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "你仍在停車點附近時車輛連線中斷，請檢查車輛狀態。" } }
+      }
+    },
+    "notification_anti_theft_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Motorcycle connection alert" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Motosiklet bağlantı uyarısı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "车辆连接异常" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "車輛連線異常" } }
+      }
+    },
+    "security_event_alarm_acknowledged" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Anti-theft alert acknowledged" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hırsızlık önleme uyarısı onaylandı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "防盗报警已确认" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "防盜警報已確認" } }
+      }
+    },
+    "security_event_monitoring_snoozed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Anti-theft monitoring paused for 30 minutes" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hırsızlık önleme izleme 30 dakika duraklatıldı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "防盗监控已暂停 30 分钟" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "防盜監控已暫停 30 分鐘" } }
+      }
+    },
+    "security_event_verification_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The phone location could not be verified; no theft alarm was raised." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Telefon konumu doğrulanamadı; hırsızlık alarmı oluşturulmadı." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "手机位置无法验证，本次不会触发盗车报警。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "手機位置無法驗證，本次不會觸發盜車警報。" } }
+      }
+    },
+    "garage_fuel_profile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Fuel profile" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yakıt profili" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "燃油配置" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "燃油配置" } }
+      }
+    },
+    "garage_fuel_profile_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Set tank capacity and reserve percentage. Leave both blank to clear the profile." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Depo kapasitesini ve rezerv yüzdesini ayarlayın. Profili temizlemek için ikisini de boş bırakın." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "设置油箱容量和预留油量百分比。两项都留空可清除配置。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "設定油箱容量和預留油量百分比。兩項都留空可清除配置。" } }
+      }
+    },
+    "garage_fuel_reserve" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reserve %" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Rezerv %" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "预留 %" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "預留 %" } }
+      }
+    },
+    "garage_set_fuel_profile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Set fuel profile" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yakıt profilini ayarla" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "设置燃油配置" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "設定燃油配置" } }
+      }
+    },
+    "garage_tank_capacity" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tank capacity (L)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Depo kapasitesi (L)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "油箱容量（L）" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "油箱容量（L）" } }
+      }
+    },
+    "garage_not_set" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Not set" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ayarlanmadı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未设置" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "未設定" } }
+      }
+    },
+    "obd_diagnostic_center" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Read-only diagnostic center" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Salt okunur teşhis merkezi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "只读诊断中心" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "唯讀診斷中心" } }
+      }
+    },
+    "obd_diagnostic_ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ready. No vehicle command has been sent." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hazır. Henüz hiçbir araç komutu gönderilmedi." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "准备就绪，尚未向车辆发送指令。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "準備就緒，尚未向車輛發送指令。" } }
+      }
+    },
+    "obd_diagnostic_run" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Run health report" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sağlık raporunu çalıştır" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开始健康报告" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開始健康報告" } }
+      }
+    },
+    "obd_diagnostic_disconnected" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Connect the motorcycle before running a diagnostic." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Teşhis çalıştırmadan önce motosikleti bağlayın." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请先连接摩托车，再运行诊断。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請先連接摩托車，再執行診斷。" } }
+      }
+    },
+    "obd_diagnostic_started" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Diagnostic started" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Teşhis başladı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "诊断已开始" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "診斷已開始" } }
+      }
+    },
+    "obd_diagnostic_dtcs" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirmed trouble codes" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Onaylanmış arıza kodları" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已确认故障码" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已確認故障碼" } }
+      }
+    },
+    "obd_diagnostic_mode6" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mode 6 monitor tests" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Mode 6 izleme testleri" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "Mode 6 检测报告" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "Mode 6 檢測報告" } }
+      }
+    },
+    "obd_diagnostic_dids" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirmed DID reads" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Onaylanmış DID okumaları" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已确认 DID 读取" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已確認 DID 讀取" } }
+      }
+    },
+    "obd_diagnostic_no_data" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No data" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Veri yok" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无数据" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "無資料" } }
+      }
+    },
+    "obd_diagnostic_freeze_frame" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Freeze frame" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Dondurulmuş kare" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "冻结帧" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "凍結幀" } }
+      }
+    },
+    "obd_diagnostic_freeze_frame_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Freeze frame data unavailable" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Dondurulmuş kare verisi kullanılamıyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "冻结帧数据不可用" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "凍結幀資料不可用" } }
+      }
+    },
+    "obd_diagnostic_no_dtc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No confirmed trouble codes" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Onaylanmış arıza kodu yok" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "没有已确认故障码" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "沒有已確認故障碼" } }
+      }
+    },
+    "obd_diagnostic_no_dtc_freeze_frame" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No confirmed trouble code; freeze frame was not requested" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Onaylanmış arıza kodu yok; dondurulmuş kare istenmedi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "没有已确认故障码，因此未请求冻结帧" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "沒有已確認故障碼，因此未請求凍結幀" } }
+      }
+    },
+    "obd_diagnostic_saved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Report saved to the selected motorcycle" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Rapor seçili motosiklete kaydedildi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "报告已保存到当前摩托车档案" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "報告已保存到目前摩托車檔案" } }
+      }
+    },
+    "obd_diagnostic_save_failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Report could not be saved" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Rapor kaydedilemedi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "报告保存失败" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "報告保存失敗" } }
+      }
+    },
+    "obd_diagnostic_failures" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Warnings and failures" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Uyarılar ve hatalar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "警告与失败原因" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "警告與失敗原因" } }
+      }
+    },
+    "obd_diagnostic_none" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "None" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yok" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "無" } }
+      }
+    },
+    "obd_diagnostic_finished" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Diagnostic finished" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Teşhis tamamlandı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "诊断完成" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "診斷完成" } }
+      }
+    },
+    "obd_diagnostic_cancelled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Diagnostic cancelled" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Teşhis iptal edildi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "诊断已取消" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "診斷已取消" } }
+      }
+    },
+    "obd_diagnostic_notification_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Vehicle diagnostic warning" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Araç teşhis uyarısı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "车辆诊断提醒" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "車輛診斷提醒" } }
+      }
+    },
+    "obd_diagnostic_notification_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirmed trouble codes were found. Open the diagnostic center for details." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Onaylanmış arıza kodları bulundu. Ayrıntılar için teşhis merkezini açın." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "发现已确认故障码，请打开诊断中心查看详情。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "發現已確認故障碼，請開啟診斷中心查看詳情。" } }
+      }
+    },
+    "obd_disconnect" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Disconnect" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bağlantıyı kes" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "断开连接" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "中斷連線" } }
+      }
+    },
+    "can_lab_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "CAN capture lab" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "CAN yakalama laboratuvarı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "CAN 抓包实验室" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "CAN 抓包實驗室" } }
+      }
+    },
+    "can_lab_developer_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Live CAN capture (Developer)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Canlı CAN yakalama (Geliştirici)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "实时 CAN 抓包（开发者）" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "即時 CAN 抓包（開發者）" } }
+      }
+    },
+    "can_lab_capture_idle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Capture is idle" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yakalama beklemede" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "当前未抓包" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "目前未抓包" } }
+      }
+    },
+    "can_lab_capture_start" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start live capture" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Canlı yakalamayı başlat" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开始实时抓包" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開始即時抓包" } }
+      }
+    },
+    "can_lab_capture_stop" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Stop and save" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Durdur ve kaydet" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "停止并保存" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "停止並保存" } }
+      }
+    },
+    "can_lab_capture_mark" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mark event" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Olayı işaretle" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "标记事件" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "標記事件" } }
+      }
+    },
+    "can_lab_capture_denied" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enable the developer safety switch first." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Önce geliştirici güvenlik anahtarını açın." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请先打开开发者安全开关。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請先開啟開發者安全開關。" } }
+      }
+    },
+    "can_lab_capture_starting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Starting capture…" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yakalama başlatılıyor…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在开始抓包……" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正在開始抓包……" } }
+      }
+    },
+    "can_lab_capture_running" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Live capture is running" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Canlı yakalama çalışıyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "实时抓包进行中" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "即時抓包進行中" } }
+      }
+    },
+    "can_lab_capture_empty" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No frames were captured" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hiçbir çerçeve yakalanmadı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "没有抓到报文" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "沒有抓到報文" } }
+      }
+    },
+    "can_lab_capture_saved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Capture saved" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yakalama kaydedildi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "抓包已保存" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "抓包已保存" } }
+      }
+    },
+    "can_lab_capture_marked" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Event marked" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Olay işaretlendi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "事件已标记" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "事件已標記" } }
+      }
+    },
+    "can_lab_file_actions_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Choose an offline action" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Çevrimdışı bir işlem seçin" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "选择一个离线操作" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇一個離線操作" } }
+      }
+    },
+    "can_lab_analyze" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Analyze" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Analiz et" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "分析" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "分析" } }
+      }
+    },
+    "can_lab_select_compare" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Select for comparison" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Karşılaştırma için seç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "选择进行对比" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇進行比較" } }
+      }
+    },
+    "can_lab_share" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Paylaş" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "分享" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "分享" } }
+      }
+    },
+    "can_lab_delete" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sil" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "删除" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "刪除" } }
+      }
+    },
+    "can_lab_delete_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This capture file will be removed from local storage." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bu yakalama dosyası yerel depolamadan kaldırılacak." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "此抓包文件将从本地存储删除。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "此抓包檔案將從本機儲存刪除。" } }
+      }
+    },
+    "can_lab_frames" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Frames" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Çerçeveler" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "报文数" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "報文數" } }
+      }
+    },
+    "can_lab_duration" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Duration" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Süre" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "时长" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "時長" } }
+      }
+    },
+    "can_lab_events" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Events" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Olaylar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "事件数" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "事件數" } }
+      }
+    },
+    "can_lab_analysis" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Capture analysis" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yakalama analizi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "抓包分析" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "抓包分析" } }
+      }
+    },
+    "can_lab_compare" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Capture comparison" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yakalama karşılaştırması" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "抓包对比" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "抓包比較" } }
+      }
+    },
+    "can_lab_no_changes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No byte changes were found" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bayt değişikliği bulunamadı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "没有发现字节变化" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "沒有發現位元組變化" } }
+      }
+    },
+    "can_lab_candidates" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Candidate changing IDs" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Değişen aday kimlikleri" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "候选变化 ID" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "候選變化 ID" } }
+      }
+    },
+    "can_lab_no_candidates" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No periodic changing ID met the offline criteria." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hiçbir periyodik değişen kimlik çevrimdışı ölçütleri karşılamadı." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "没有符合离线条件的周期性变化 ID。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "沒有符合離線條件的週期性變化 ID。" } }
+      }
+    },
+    "can_lab_event_analysis" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Event window candidates" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Olay penceresi adayları" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "事件窗口候选" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "事件視窗候選" } }
+      }
+    },
+    "can_lab_event_no_changes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No changed ID" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Değişen kimlik yok" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "没有变化的 ID" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "沒有變化的 ID" } }
+      }
+    },
+    "roadbook_create" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "New Roadbook" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yeni Roadbook" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "新建 Roadbook" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "新建 Roadbook" } }
+      }
+    },
+    "roadbook_edit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit Roadbook" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Roadbook'u düzenle" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "编辑 Roadbook" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "編輯 Roadbook" } }
+      }
+    },
+    "roadbook_save" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kaydet" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保存" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "保存" } }
+      }
+    },
+    "roadbook_rename" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rename Roadbook" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Roadbook'u yeniden adlandır" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重命名 Roadbook" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "重新命名 Roadbook" } }
+      }
+    },
+    "roadbook_add_current_location" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add current location" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Mevcut konumu ekle" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "添加当前位置" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "新增目前位置" } }
+      }
+    },
+    "roadbook_add_coordinate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add coordinate" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Koordinat ekle" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "添加坐标" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "新增座標" } }
+      }
+    },
+    "roadbook_latitude" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Latitude" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Enlem" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "纬度" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "緯度" } }
+      }
+    },
+    "roadbook_longitude" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Longitude" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Boylam" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "经度" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "經度" } }
+      }
+    },
+    "roadbook_location_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Current location is unavailable" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Mevcut konum kullanılamıyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "当前位置不可用" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "目前位置不可用" } }
+      }
+    },
+    "roadbook_current_location" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Current location" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Mevcut konum" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "当前位置" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "目前位置" } }
+      }
+    },
+    "roadbook_coordinate_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter latitude, longitude and an optional instruction." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Enlem, boylam ve isteğe bağlı bir talimat girin." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "输入纬度、经度和可选的提示语。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "輸入緯度、經度和可選的提示語。" } }
+      }
+    },
+    "roadbook_instruction" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Instruction" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Talimat" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "提示语" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "提示語" } }
+      }
+    },
+    "roadbook_add" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ekle" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "添加" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "新增" } }
+      }
+    },
+    "roadbook_invalid_coordinate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter a valid latitude and longitude." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Geçerli bir enlem ve boylam girin." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请输入有效的纬度和经度。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請輸入有效的緯度和經度。" } }
+      }
+    },
+    "roadbook_waypoint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Waypoint" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Rota noktası" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "路点" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "路點" } }
+      }
+    },
+    "roadbook_name_required" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Give the Roadbook a name first." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Önce Roadbook için bir ad verin." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请先为 Roadbook 设置名称。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請先為 Roadbook 設定名稱。" } }
+      }
+    },
+    "roadbook_minimum_waypoints" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "A Roadbook needs at least two waypoints." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bir Roadbook en az iki rota noktası gerektirir." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "Roadbook 至少需要两个路点。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "Roadbook 至少需要兩個路點。" } }
+      }
+    },
+    "security_anti_theft" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Anti-theft monitoring" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hırsızlık önleme izleme" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "防盗监控" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "防盜監控" } }
+      }
+    },
+    "security_enable_monitoring" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enable monitoring" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "İzlemeyi etkinleştir" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开启监控" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟監控" } }
+      }
+    },
+    "security_disable_monitoring" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Disable monitoring" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "İzlemeyi devre dışı bırak" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关闭监控" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "關閉監控" } }
+      }
+    },
+    "security_monitoring_state" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "State" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Durum" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "状态" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "狀態" } }
+      }
+    },
+    "security_monitoring_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Monitoring arms only after a fresh engine-off frame. Location verification may suppress an alarm when accuracy is insufficient." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "İzleme yalnızca güncel bir motor kapalı çerçevesinden sonra kurulur. Doğruluk yetersizse konum doğrulaması alarmı bastırabilir." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "只有收到新鲜的熄火数据后才会布防。定位精度不足时会抑制报警。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "只有收到新鮮的熄火資料後才會佈防。定位精度不足時會抑制警報。" } }
+      }
+    },
+    "security_state_disabled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Disabled" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Devre dışı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已关闭" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已關閉" } }
+      }
+    },
+    "security_state_waitingForVehicleState" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Waiting for fresh vehicle data" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Güncel araç verisi bekleniyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "等待新鲜车辆数据" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "等待新鮮車輛資料" } }
+      }
+    },
+    "security_state_gracePeriod" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shutdown grace period" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kapanma bekleme süresi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关机宽限期" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "關機寬限期" } }
+      }
+    },
+    "security_state_armed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Armed" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kuruldu" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已布防" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已佈防" } }
+      }
+    },
+    "security_state_verifyingDisconnect" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Verifying disconnect" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bağlantı kesilmesi doğrulanıyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在确认断连" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正在確認斷線" } }
+      }
+    },
+    "security_state_snoozed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Snoozed" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ertelendi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已暂停" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已暫停" } }
+      }
+    },
+    "security_state_alerting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Alarm active" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Alarm etkin" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "报警中" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "警報中" } }
+      }
+    },
+    "security_state_unableToVerify" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Location unavailable" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Konum kullanılamıyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无法验证位置" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "無法驗證位置" } }
       }
     }
   },

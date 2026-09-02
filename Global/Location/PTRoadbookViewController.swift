@@ -32,6 +32,15 @@ final class PTRoadbookViewController: UITableViewController, UIDocumentPickerDel
             target: self,
             action: #selector(importGPX)
         )
+        navigationItem.leftBarButtonItems = [
+            UIBarButtonItem(
+                title: PTDashboardConfig.languageFunc(text: "roadbook_create"),
+                style: .plain,
+                target: self,
+                action: #selector(createRoadbook)
+            ),
+            navigationItem.leftBarButtonItem
+        ].compactMap { $0 }
 
         tableView.rowHeight = 68
         tableView.tableFooterView = UIView(frame: .zero)
@@ -94,6 +103,10 @@ final class PTRoadbookViewController: UITableViewController, UIDocumentPickerDel
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [contentType], asCopy: true)
         picker.delegate = self
         present(picker, animated: true)
+    }
+
+    @objc private func createRoadbook() {
+        navigationController?.pushViewController(PTRoadbookEditorViewController(), animated: true)
     }
 
     func documentPicker(_ controller: UIDocumentPickerViewController,
@@ -199,6 +212,16 @@ final class PTRoadbookViewController: UITableViewController, UIDocumentPickerDel
                 }
             })
         }
+
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "roadbook_edit"),
+            style: .default
+        ) { [weak self] _ in
+            self?.navigationController?.pushViewController(
+                PTRoadbookEditorViewController(roadbook: roadbook),
+                animated: true
+            )
+        })
 
         alert.addAction(UIAlertAction(
             title: PTDashboardConfig.languageFunc(text: "roadbook_view_waypoints"),
