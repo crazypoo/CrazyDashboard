@@ -8,7 +8,7 @@
 >
 > 发布方式：只维护现有 `PTSpeed` TestFlight 版本，不新增 Lab Scheme、App Target、Bundle ID 或第二发布渠道；当前没有 App Store 上架计划。
 >
-> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 为 Build 36，下一次 TestFlight 从 Build 37 开始。
+> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 为 Build 41，下一次 TestFlight 从 Build 42 开始。
 >
 > 文件名中的 `V3` 仅为保留现有路径和链接，不代表需要修改 App 大版本号。
 >
@@ -46,10 +46,10 @@
 ### 版本与 Build 规则
 
 - [ ] `PTSpeed`、Widget 和 Watch 的 `MARKETING_VERSION` 永久保持 `2.0.8`。
-- [ ] 当前主 App、Widget、Watch Build 基线为 `36`；下一次 TestFlight 使用 Build `37`。
-- [ ] 每次上传 TestFlight 只将 `CURRENT_PROJECT_VERSION` 加一：37、38、39……
+- [x] 当前主 App、Widget、Watch 和 Tests Build 已统一为 `41`；下一次 TestFlight 使用 Build `42`。
+- [ ] 每次上传 TestFlight 只将 `CURRENT_PROJECT_VERSION` 加一：42、43、44……
 - [ ] App、Widget 和 Watch 每次使用完全相同的 Build 号，避免嵌入扩展版本不一致。
-- [ ] Tests Target 当前 Build 35，在首次实施时同步到主 App Build，此后一起递增。
+- [x] Tests Target 已同步到主 App Build `41`，此后与主 App、Widget 和 Watch 一起递增。
 - [ ] 不允许脚本、Archive 或 CI 自动修改 `MARKETING_VERSION`。
 - [ ] 设置页和诊断报告显示格式统一为 `2.0.8 (Build N)`。
 - [ ] 不把 Build 号加入仪表 BLE 认证、握手、广播或配置数据。
@@ -237,9 +237,11 @@ public enum PTOBDLinkState: Sendable, Equatable
 
 用户已确认当前 QWeather 使用方式可以正常工作。
 
-- 本计划不修改 `AppDelegate`、`PTWeatherManager`、Secrets 配置或 QWeather SDK 初始化。
+- B208-01 本身不修改 `AppDelegate`、`PTWeatherManager`、Secrets 配置或 QWeather SDK 初始化。
 - 其他工作包不得顺手重构天气代码。
 - 除非用户重新开启该项，否则不做检查、修复或验收。
+
+Build 41 的路线天气回退属于独立的天气业务工作：只复用 App 已完成初始化的 QWeather 实例，并将实例安全注入当前天气和路线风险服务；不迁移凭据来源、不改动 SDK 初始化参数、不更新 Package resolution，因此不改变本项“凭据与依赖范围忽略”的结论。
 
 ---
 
@@ -1135,3 +1137,35 @@ OBD BLE / Wi-Fi / Mock
 ### 20.4 回滚与发布门禁
 
 如需回滚，只回退本轮新增/修改的外围文件和工程登记，保留用户已有的计划文档修改；禁止对三个稳定核心文件执行回退或重写。Build 40 在完成依赖恢复、Target 编译、测试和真实设备验证前，相关功能继续保持 `🟨`/`🧪` 状态，不升级为“已验证可用”。
+
+---
+
+## 21. Build 41 路线天气双提供方回退实施记录（2026-09-02）
+
+本轮继续使用营销版本 `2.0.8`，仅将工程的 App、Widget、Watch 和 Tests Build 统一推进到 `41`。目标是修复路线天气风险中 WeatherKit 经常失败时没有可靠备用数据的问题，同时不改变 QWeather 的凭据来源、SDK 版本和三个稳定核心文件。
+
+### 21.1 已实施内容
+
+- [x] `PTRouteWeatherRiskService` 保留 WeatherKit 首选路径；任意采样点失败后丢弃 Apple 半成品，并从第一个采样点完整重试 QWeather。
+- [x] `PTRouteWeatherRiskReport` 新增唯一 `provider` 字段，兼容没有该字段的历史 JSON 报告；单个报告不会混用两个提供方的数据。
+- [x] 复用 `QWeather.weather168h`，将温度、降水概率、风速、天气文本和时间转换为既有路线天气模型；缺失能见度时保留为空，并对雾/霾类文本作谨慎风险提示。
+- [x] 统一执行 90 分钟最近预报容差和 QWeather 168 小时边界检查。
+- [x] 新增无备用服务、双提供方失败、超出 QWeather 预报范围和取消等结构化错误；取消不会触发备用请求。
+- [x] QWeather 启动初始化后，将同一个已配置实例注入 `PTWeatherManager` 和 `PTRouteWeatherRiskService`；没有新增网络层、响应拼接器或依赖。
+- [x] Roadbook 天气报告显示实际提供方和是否发生回退；加载提示改为不绑定具体提供方的中性文案。
+- [x] 保留 B208-01 的凭据与 SDK 范围：不迁移 Secrets、硬编码凭据或 Package resolution；本轮只增加已初始化服务的安全注入。
+- [x] 增加路线提供方回退、取消、历史报告兼容和 QWeather 条件映射测试。
+- [x] 未修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift` 和 `PTOBDCommand.swift`。
+
+### 21.2 验证记录
+
+- [x] 当前 Xcode 下 `PTSpeed` Debug generic iOS 工程编译通过：`CODE_SIGNING_ALLOWED=NO`、`ENABLE_PREVIEWS=NO`。
+- [ ] `PTSpeedTests` 的新增测试完成实际执行；如运行环境仍存在 Simulator 架构或设备不可用问题，只记录编译结果，不把它表述为测试通过。
+- [x] Widget、Watch、Tests 的 Build 41 Debug 目标构建/测试构建已通过。
+- [x] `PTSpeed` Build 41 Release generic iOS 构建通过；完整 Archive、签名和导出校验仍待补。
+- [ ] WeatherKit 成功、单点失败回退、双服务失败、权限拒绝和长路线边界需要真实 iPhone 网络环境验证。
+- [ ] 四语言 Roadbook 提示、WeatherKit 权限、QWeather 真实返回和后台行为需要真机回归。
+
+### 21.3 回滚与发布门禁
+
+如需回滚，仅回退路线天气服务、PTWeatherManager 的 QWeather 注入、Roadbook 本地化、测试、工程 Build 号和本节记录；不回退三个稳定核心文件，不修改 B208-01/B208-02 的既定范围。只有真实天气回退和相关 Target/Archive 验证完成后，才能把 IDEA-006 或本记录从 `🟨` 提升为 `✅`。

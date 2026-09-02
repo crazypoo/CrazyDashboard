@@ -11,11 +11,17 @@ import CoreLocation
 import PooTools
 import QWeatherSDK
 
-class PTWeatherManager {
+@MainActor
+final class PTWeatherManager {
     public static let shared = PTWeatherManager()
         
     // 实例化官方的天气服务对象
     private let weatherService = WeatherService.shared
+
+    // EN: Keep the configured QWeather actor optional so an unavailable fallback never crashes the app.
+    // ES: Mantiene opcional el actor de QWeather para que una reserva no disponible nunca bloquee la app.
+    // 中文：将已配置的 QWeather actor 保持为可选，备用服务不可用时不会让 App 崩溃。
+    private var qWeatherService: QWeather?
     
     // MARK: - 🌟 节流(Throttling) 核心属性
     private let kLastFetchTime = "PTWeather_LastFetchTime"
@@ -34,6 +40,13 @@ class PTWeatherManager {
     private let maxRetryLimit: Int = 5
 
     private init() {}
+
+    // EN: Both current-weather animation and route-risk analysis receive the same initialized service.
+    // ES: La animación meteorológica actual y el análisis de ruta reciben el mismo servicio inicializado.
+    // 中文：当前天气动画和路线风险分析共用同一个已经初始化完成的服务。
+    func configureQWeather(_ service: QWeather) {
+        qWeatherService = service
+    }
     
     private var lastFetchTime: Date? {
         return UserDefaults.standard.object(forKey: kLastFetchTime) as? Date
@@ -130,13 +143,19 @@ class PTWeatherManager {
     // MARK: - 和风天气 (QWeather) 降级方案
     /// 使用和风天气 API 获取备用天气数据
     private func fetchQWeatherFallback(for location: CLLocation) {
-        Task {
+        guard let qWeatherService else {
+            PTNSLogConsole("ℹ️ [和风降级服务] 服务尚未初始化，跳过备用请求。")
+            return
+        }
+
+        Task { @MainActor [weak self, qWeatherService] in
+            guard let self else { return }
             do {
                 let lon = String(format: "%.2f", location.coordinate.longitude)
                 let lat = String(format: "%.2f", location.coordinate.latitude)
                 let parameter = WeatherParameter(location: "\(lon),\(lat)")
                 
-                let response = try await QWeather.instance.weatherNow(parameter)
+                let response = try await qWeatherService.weatherNow(parameter)
                 let iconCode = response.now.icon
                 
                 // 🌟 成功拿到和风天气后，持久化和风的特征码，并播放动画

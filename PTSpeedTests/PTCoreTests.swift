@@ -1060,6 +1060,252 @@ final class PTCoreTests: XCTestCase {
         XCTAssertTrue(result.factors.contains(.storm))
     }
 
+    // EN: A successful WeatherKit run must not touch the QWeather fallback.
+    // ES: Una ejecución exitosa de WeatherKit no debe tocar la reserva de QWeather.
+    // 中文：WeatherKit 全部成功时，不能调用 QWeather 备用服务。
+    @MainActor
+    func testRouteWeatherUsesWeatherKitWhenEverySampleSucceeds() async throws {
+        let weatherKitCalls = PTRouteWeatherCallCounter()
+        let qWeatherCalls = PTRouteWeatherCallCounter()
+        let service = PTRouteWeatherRiskService(
+            weatherKitLoader: { coordinate, date in
+                _ = await weatherKitCalls.increment()
+                return makeRouteWeatherTestSample(coordinate: coordinate, date: date)
+            },
+            qWeatherLoader: { coordinate, date in
+                _ = await qWeatherCalls.increment()
+                return makeRouteWeatherTestSample(coordinate: coordinate, date: date)
+            }
+        )
+
+        let report = try await service.analyze(
+            coordinates: [
+                CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737),
+                CLLocationCoordinate2D(latitude: 31.2404, longitude: 121.4837)
+            ],
+            startDate: Date(timeIntervalSince1970: 1_700_000_000),
+            estimatedDuration: 600
+        )
+
+        XCTAssertEqual(report.provider, .weatherKit)
+        XCTAssertEqual(report.points.count, 2)
+        let weatherKitCallCount = await weatherKitCalls.value
+        let qWeatherCallCount = await qWeatherCalls.value
+        XCTAssertEqual(weatherKitCallCount, 2)
+        XCTAssertEqual(qWeatherCallCount, 0)
+    }
+
+    // EN: A partial WeatherKit failure must be discarded before QWeather retries the full route.
+    // ES: Un fallo parcial de WeatherKit debe descartarse antes de que QWeather reintente toda la ruta.
+    // 中文：WeatherKit 部分失败后，必须丢弃半成品，再由 QWeather 重试整条路线。
+    @MainActor
+    func testRouteWeatherFallbackRestartsFromTheFirstSample() async throws {
+        let weatherKitCalls = PTRouteWeatherCallCounter()
+        let qWeatherCalls = PTRouteWeatherCallCounter()
+        let service = PTRouteWeatherRiskService(
+            weatherKitLoader: { coordinate, date in
+                let call = await weatherKitCalls.increment()
+                if call == 2 {
+                    throw PTRouteWeatherTestError.providerUnavailable
+                }
+                return makeRouteWeatherTestSample(coordinate: coordinate, date: date, condition: "rain")
+            },
+            qWeatherLoader: { coordinate, date in
+                _ = await qWeatherCalls.increment()
+                return makeRouteWeatherTestSample(coordinate: coordinate, date: date, condition: "clear")
+            }
+        )
+
+        let report = try await service.analyze(
+            coordinates: [
+                CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737),
+                CLLocationCoordinate2D(latitude: 31.2404, longitude: 121.4837),
+                CLLocationCoordinate2D(latitude: 31.2504, longitude: 121.4937)
+            ],
+            startDate: Date(timeIntervalSince1970: 1_700_000_000),
+            estimatedDuration: 900
+        )
+
+        XCTAssertEqual(report.provider, .qWeather)
+        XCTAssertEqual(report.points.count, 3)
+        XCTAssertTrue(report.points.allSatisfy { $0.sample.condition == "clear" })
+        let weatherKitCallCount = await weatherKitCalls.value
+        let qWeatherCallCount = await qWeatherCalls.value
+        XCTAssertEqual(weatherKitCallCount, 2)
+        XCTAssertEqual(qWeatherCallCount, 3)
+    }
+
+    // EN: A missing QWeather configuration must produce a structured fallback error.
+    // ES: Una configuración ausente de QWeather debe producir un error de reserva estructurado.
+    // 中文：未配置 QWeather 时，必须返回结构化的备用服务错误。
+    @MainActor
+    func testRouteWeatherReportsUnavailableFallback() async throws {
+        let service = PTRouteWeatherRiskService(
+            weatherKitLoader: { _, _ in
+                throw PTRouteWeatherTestError.providerUnavailable
+            }
+        )
+
+        do {
+            _ = try await service.analyze(
+                coordinates: [CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737)],
+                startDate: Date(timeIntervalSince1970: 1_700_000_000),
+                estimatedDuration: 60
+            )
+            XCTFail("Expected unavailable fallback")
+        } catch let error as PTRouteWeatherRiskError {
+            XCTAssertEqual(error, .fallbackUnavailable)
+        }
+    }
+
+    // EN: If both providers fail, the UI receives one stable provider-neutral error.
+    // ES: Si ambos proveedores fallan, la interfaz recibe un único error estable e independiente.
+    // 中文：两个提供方都失败时，界面必须收到稳定且与提供方无关的统一错误。
+    @MainActor
+    func testRouteWeatherReportsAllProvidersFailed() async throws {
+        let service = PTRouteWeatherRiskService(
+            weatherKitLoader: { _, _ in
+                throw PTRouteWeatherTestError.providerUnavailable
+            },
+            qWeatherLoader: { _, _ in
+                throw PTRouteWeatherTestError.providerUnavailable
+            }
+        )
+
+        do {
+            _ = try await service.analyze(
+                coordinates: [CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737)],
+                startDate: Date(timeIntervalSince1970: 1_700_000_000),
+                estimatedDuration: 60
+            )
+            XCTFail("Expected all providers to fail")
+        } catch let error as PTRouteWeatherRiskError {
+            XCTAssertEqual(error, .allProvidersFailed)
+        }
+    }
+
+    // EN: QWeather must not be called for a route beyond its 168-hour hourly horizon.
+    // ES: QWeather no debe llamarse para una ruta fuera de su horizonte horario de 168 horas.
+    // 中文：路线超出 168 小时预报范围时，不得调用 QWeather。
+    @MainActor
+    func testRouteWeatherRejectsDatesOutsideQWeatherHorizon() async throws {
+        let qWeatherCalls = PTRouteWeatherCallCounter()
+        let service = PTRouteWeatherRiskService(
+            weatherKitLoader: { _, _ in
+                throw PTRouteWeatherTestError.providerUnavailable
+            },
+            qWeatherLoader: { coordinate, date in
+                _ = await qWeatherCalls.increment()
+                return makeRouteWeatherTestSample(coordinate: coordinate, date: date)
+            }
+        )
+
+        do {
+            _ = try await service.analyze(
+                coordinates: [CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737)],
+                startDate: Date().addingTimeInterval(169 * 60 * 60),
+                estimatedDuration: 60
+            )
+            XCTFail("Expected forecast horizon error")
+        } catch let error as PTRouteWeatherRiskError {
+            XCTAssertEqual(error, .forecastOutsideSupportedRange)
+        }
+
+        let qWeatherCallCount = await qWeatherCalls.value
+        XCTAssertEqual(qWeatherCallCount, 0)
+    }
+
+    // EN: Cancellation must stop analysis without silently switching providers.
+    // ES: La cancelación debe detener el análisis sin cambiar de proveedor silenciosamente.
+    // 中文：取消任务必须终止分析，不能悄悄切换到另一个提供方。
+    @MainActor
+    func testRouteWeatherCancellationDoesNotFallback() async throws {
+        let qWeatherCalls = PTRouteWeatherCallCounter()
+        let service = PTRouteWeatherRiskService(
+            weatherKitLoader: { _, _ in throw CancellationError() },
+            qWeatherLoader: { coordinate, date in
+                _ = await qWeatherCalls.increment()
+                return makeRouteWeatherTestSample(coordinate: coordinate, date: date)
+            }
+        )
+
+        do {
+            _ = try await service.analyze(
+                coordinates: [CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737)],
+                startDate: Date(timeIntervalSince1970: 1_700_000_000),
+                estimatedDuration: 60
+            )
+            XCTFail("Expected cancellation")
+        } catch let error as PTRouteWeatherRiskError {
+            XCTAssertEqual(error, .cancelled)
+        }
+
+        let qWeatherCallCount = await qWeatherCalls.value
+        XCTAssertEqual(qWeatherCallCount, 0)
+    }
+
+    // EN: Reports written before provider tracking must remain readable.
+    // ES: Los informes creados antes del seguimiento del proveedor deben seguir siendo legibles.
+    // 中文：在记录天气提供方之前保存的报告必须继续可读取。
+    func testRouteWeatherReportDecodingDefaultsLegacyProvider() throws {
+        let data = Data("""
+        {"createdAt":0,"startDate":0,"points":[]}
+        """.utf8)
+
+        let report = try JSONDecoder().decode(PTRouteWeatherRiskReport.self, from: data)
+
+        XCTAssertEqual(report.provider, .weatherKit)
+        XCTAssertTrue(report.points.isEmpty)
+    }
+
+    // EN: QWeather condition fallbacks must classify rain, snow and fog icon ranges conservatively.
+    // ES: Las reservas de condiciones de QWeather deben clasificar lluvia, nieve y niebla de forma conservadora.
+    // 中文：QWeather 条件备用映射必须保守识别雨、雪和雾图标范围。
+    func testQWeatherConditionFallbackUsesIconRanges() {
+        XCTAssertEqual(qWeatherCondition(text: "", iconCode: "301"), "rain")
+        XCTAssertEqual(qWeatherCondition(text: "", iconCode: "302"), "thunderstorm")
+        XCTAssertEqual(qWeatherCondition(text: "", iconCode: "401"), "snow")
+        XCTAssertEqual(qWeatherCondition(text: "", iconCode: "403"), "snowstorm")
+        XCTAssertEqual(qWeatherCondition(text: "", iconCode: "501"), "fog")
+        XCTAssertEqual(qWeatherCondition(text: "", iconCode: "507"), "duststorm")
+        XCTAssertEqual(qWeatherCondition(text: "晴", iconCode: "300"), "晴")
+    }
+
+    // EN: Forecast tolerance and the 168-hour horizon must include their exact boundaries only.
+    // ES: La tolerancia y el horizonte de 168 horas deben incluir solo sus límites exactos.
+    // 中文：预报时间容差和 168 小时范围必须包含恰好边界，但拒绝超出边界。
+    func testRouteWeatherForecastBoundaries() {
+        let requestedDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+
+        XCTAssertTrue(
+            isRouteWeatherForecastWithinTolerance(
+                actualDate: requestedDate.addingTimeInterval(90 * 60),
+                requestedDate: requestedDate,
+                maximumDifference: 90 * 60
+            )
+        )
+        XCTAssertFalse(
+            isRouteWeatherForecastWithinTolerance(
+                actualDate: requestedDate.addingTimeInterval(90 * 60 + 0.1),
+                requestedDate: requestedDate,
+                maximumDifference: 90 * 60
+            )
+        )
+        XCTAssertTrue(
+            isRouteWeatherDateWithinQWeatherHorizon(
+                now.addingTimeInterval(168 * 60 * 60),
+                now: now
+            )
+        )
+        XCTAssertFalse(
+            isRouteWeatherDateWithinQWeatherHorizon(
+                now.addingTimeInterval(168 * 60 * 60 + 0.1),
+                now: now
+            )
+        )
+    }
+
     // EN: The security timeline must deduplicate repeated callbacks and remove expired evidence.
     // ES: La línea temporal debe deduplicar callbacks repetidos y eliminar evidencias caducadas.
     // 中文：防盗时间轴必须去重重复回调，并清理过期证据。
@@ -1239,4 +1485,45 @@ final class PTCoreTests: XCTestCase {
             reviewEvents: [event]
         )
     }
+}
+
+// EN: The actor keeps fallback call-count assertions race-free under Swift concurrency.
+// ES: El actor mantiene seguras las aserciones de llamadas de reserva bajo concurrencia de Swift.
+// 中文：使用 actor 让 Swift 并发测试中的备用调用次数断言不发生数据竞争。
+private actor PTRouteWeatherCallCounter {
+    private(set) var value = 0
+
+    func increment() -> Int {
+        value += 1
+        return value
+    }
+}
+
+// EN: Test-only provider errors keep orchestration tests deterministic and isolated from network state.
+// ES: Los errores de proveedor de prueba mantienen deterministas las pruebas y aisladas de la red.
+// 中文：测试专用提供方错误让编排测试稳定，并与网络状态隔离。
+private enum PTRouteWeatherTestError: Error, Sendable {
+    case providerUnavailable
+}
+
+// EN: Test samples make provider orchestration assertions independent from live weather services.
+// ES: Las muestras de prueba hacen que las aserciones de orquestación sean independientes de servicios reales.
+// 中文：测试采样数据让提供方编排断言不依赖真实天气服务。
+private func makeRouteWeatherTestSample(
+    coordinate: CLLocationCoordinate2D,
+    date: Date,
+    condition: String = "clear"
+) -> PTRouteWeatherSample {
+    PTRouteWeatherSample(
+        coordinate: PTRideCoordinate(
+            latitude: coordinate.latitude,
+            longitude: coordinate.longitude
+        ),
+        forecastDate: date,
+        condition: condition,
+        temperatureCelsius: 20,
+        precipitationProbability: 0.1,
+        windKmh: 10,
+        visibilityKm: 10
+    )
 }

@@ -371,9 +371,17 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
     private func showWeatherReport(_ report: PTRouteWeatherRiskReport) {
         let riskyPoints = report.points.filter { $0.level != .clear }.prefix(5)
         var lines = [
+            PTDashboardConfig.language(
+                key: "route_weather_source",
+                weatherProviderTitle(report.provider)
+            ),
             PTDashboardConfig.language(key: "route_weather_worst", riskLevelTitle(report.worstLevel)),
             PTDashboardConfig.language(key: "route_weather_risky_points", report.riskyPointCount)
         ]
+
+        if report.provider == .qWeather {
+            lines.append(PTDashboardConfig.languageFunc(text: "route_weather_fallback_used"))
+        }
 
         if riskyPoints.isEmpty {
             lines.append(PTDashboardConfig.languageFunc(text: "route_weather_no_risk"))
@@ -420,6 +428,18 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
         }
     }
 
+    // EN: The report explains which single provider supplied every route point.
+    // ES: El informe explica qué único proveedor suministró todos los puntos de la ruta.
+    // 中文：报告明确说明整条路线的所有采样点来自哪个单一提供方。
+    private func weatherProviderTitle(_ provider: PTRouteWeatherProvider) -> String {
+        switch provider {
+        case .weatherKit:
+            return PTDashboardConfig.languageFunc(text: "route_weather_source_weatherkit")
+        case .qWeather:
+            return PTDashboardConfig.languageFunc(text: "route_weather_source_qweather")
+        }
+    }
+
     private func confirmDelete(_ roadbook: PTRoadbook) {
         let alert = UIAlertController(
             title: PTDashboardConfig.languageFunc(text: "roadbook_delete"),
@@ -462,7 +482,7 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
         guard viewIfLoaded?.window != nil else { return }
         let alert = UIAlertController(
             title: PTDashboardConfig.languageFunc(text: "alert_title"),
-            message: error.localizedDescription,
+            message: weatherErrorMessage(error),
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(
@@ -470,5 +490,31 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
             style: .default
         ))
         present(alert, animated: true)
+    }
+
+    // EN: Route-weather errors use the app catalog; unrelated errors keep their existing message.
+    // ES: Los errores meteorológicos de ruta usan el catálogo de la app; los demás conservan su mensaje.
+    // 中文：路线天气错误统一使用应用本地化目录，其他错误保持原有提示。
+    private func weatherErrorMessage(_ error: Error) -> String {
+        guard let routeError = error as? PTRouteWeatherRiskError else {
+            return error.localizedDescription
+        }
+
+        let key: String
+        switch routeError {
+        case .invalidRoute:
+            key = "route_weather_error_invalid_route"
+        case .noForecast:
+            key = "route_weather_error_no_forecast"
+        case .fallbackUnavailable:
+            key = "route_weather_error_fallback_unavailable"
+        case .allProvidersFailed:
+            key = "route_weather_error_all_providers_failed"
+        case .forecastOutsideSupportedRange:
+            key = "route_weather_error_outside_range"
+        case .cancelled:
+            key = "route_weather_error_cancelled"
+        }
+        return PTDashboardConfig.languageFunc(text: key)
     }
 }

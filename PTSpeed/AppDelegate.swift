@@ -91,13 +91,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         PTAppBaseConfig.share.navTitleFont = .appfont(size: 24,bold: true)
         appNotifiCenter()
         
-//        configureQWeatherIfAvailable()
-        Task {
+        // EN: Configure one QWeather actor and inject it into every read-only weather service.
+        // ES: Configura un solo actor de QWeather y lo inyecta en todos los servicios meteorológicos de solo lectura.
+        // 中文：只初始化一个 QWeather actor，并将它注入所有只读天气服务。
+        Task { @MainActor in
             do {
                 let jwt = JWTGenerator(privateKey: "MC4CAQAwBQYDK2VwBCIEIE/J2HAiPGXdCgaKWj8V9SNWngayd/UVVqKtdZ6wA4EZ", pid: "2C88VNJQXF", kid: "KMB2ME5R85")
-                let _ = try await QWeather.getInstance("nj5khxjpk2.re.qweatherapi.com").setupTokenGenerator(jwt).setupLogEnable(true)
+                let configuredService = try await QWeather.getInstance("nj5khxjpk2.re.qweatherapi.com")
+                    .setupTokenGenerator(jwt)
+                    .setupLogEnable(true)
+                PTWeatherManager.shared.configureQWeather(configuredService)
+                PTRouteWeatherRiskService.shared.configureQWeather(configuredService)
+                PTNSLogConsole("✅ [天气服务] 和风天气备用服务已注入当前天气和路线风险服务")
             } catch {
-                PTNSLogConsole(error.localizedDescription)
+                PTNSLogConsole("❌ [天气服务] 和风天气备用服务初始化失败，继续使用 WeatherKit: \(error.localizedDescription)")
             }
         }
 
