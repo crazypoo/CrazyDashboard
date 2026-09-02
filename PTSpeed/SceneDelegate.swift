@@ -33,14 +33,22 @@ class SceneDelegate: PTWindowSceneDelegate {
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
         guard let scene = (scene as? UIWindowScene) else { return }
+
+        // EN: A new scene never restores the developer console or its high-risk permission from stale process state.
+        // ES: Una escena nueva nunca restaura la consola de desarrollador ni su permiso de riesgo desde un estado obsoleto.
+        // 中文：新场景绝不从过期进程状态恢复开发者控制台或高风险权限。
+        PTMotoUserDefaultStruct.BleTestDataGet = false
+        if PTDeveloperSafetyGate.shared.isEnabled {
+            PTDeveloperSafetyGate.shared.disable(reason: .lifecycleReset)
+        }
         self.makeKeyAndVisible(in: scene, viewController: PTMotoBaseTabbarController(), tint: .white)
         connectionOptions.urlContexts.forEach { enqueueExternalURL($0.url) }
         
         PTGCDManager.shared.delayOnMain(time: 0.5) {
-            AppWindows?.addSubviews([self.snifferOverlay,self.weatherOverlay])
-            if PTMotoUserDefaultStruct.BleTestDataGet {
-                self.snifferOverlay.showSniffer()
-            }
+            // EN: Add the sniffer last so the compact developer control stays above the weather surface.
+            // ES: Añade el sniffer al final para que su control compacto quede encima de la superficie meteorológica.
+            // 中文：最后添加嗅探器，确保紧凑开发者按钮位于天气界面之上。
+            AppWindows?.addSubviews([self.weatherOverlay, self.snifferOverlay])
         }
     }
 

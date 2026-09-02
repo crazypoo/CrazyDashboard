@@ -19,5 +19,10 @@ final class PTSpeedUITests: XCTestCase {
             app.wait(for: .runningForeground, timeout: 10),
             "PTSpeed should reach the foreground without entering a developer or write flow."
         )
+
+        // EN: A cold launch must not restore the global developer control from stale state.
+        // ES: Un arranque en frío no debe restaurar el control global de desarrollador desde un estado obsoleto.
+        // 中文：冷启动不能从过期状态恢复全局开发者按钮。
+        XCTAssertFalse(app.buttons["developer.compactButton"].isHittable)
     }
 }

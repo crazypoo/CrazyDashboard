@@ -1838,6 +1838,114 @@
         }
       }
     },
+    "dev_sniffer_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "⚡️ ECU RAW DATA SNIFFER (DEV MODE)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "⚡️ ECU HAM VERİ YAKALAYICI (GELİŞTİRİCİ)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "⚡️ ECU 原始数据嗅探器（开发者模式）" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "⚡️ ECU 原始資料嗅探器（開發者模式）" } }
+      }
+    },
+    "dev_collapse_overlay" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Collapse" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Küçült" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "收起" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "收起" } }
+      }
+    },
+    "dev_exit_session" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Exit developer session" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Geliştirici oturumundan çık" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "退出开发者会话" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "退出開發者工作階段" } }
+      }
+    },
+    "dev_high_risk_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Developer high-risk operations" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Geliştirici yüksek riskli işlemleri" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开发者高风险操作" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開發者高風險操作" } }
+      }
+    },
+    "dev_find_command" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Find command" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Komut bul" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "查找命令" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "尋找指令" } }
+      }
+    },
+    "dev_filter_all" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Showing all (tap to filter known)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Tümü gösteriliyor (bilinenleri filtrelemek için dokunun)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已显示全部（点击过滤已知帧）" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已顯示全部（點擊過濾已知訊框）" } }
+      }
+    },
+    "dev_filter_unknown" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Noise reduced (unknown only)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gürültü azaltıldı (yalnızca bilinmeyen)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已开启降噪（仅显示未知帧）" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已開啟降噪（僅顯示未知訊框）" } }
+      }
+    },
+    "dev_export_logs" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export logs" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Günlükleri dışa aktar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导出日志" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "匯出記錄" } }
+      }
+    },
+    "dev_compact_label" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open developer console" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Geliştirici konsolunu aç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开开发者控制台" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟開發者主控台" } }
+      }
+    },
+    "dev_compact_high_risk_on" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "High-risk access enabled" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yüksek riskli erişim açık" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "高风险权限已开启" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "高風險權限已開啟" } }
+      }
+    },
+    "dev_compact_high_risk_off" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "High-risk access disabled" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yüksek riskli erişim kapalı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "高风险权限已关闭" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "高風險權限已關閉" } }
+      }
+    },
+    "dev_firmware_preflight_result" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "State: %@\nBlockers: %@" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Durum: %@\nEngeller: %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "状态：%@\n阻止原因：%@" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "狀態：%@\n阻擋原因：%@" } }
+      }
+    },
     "direction_east" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -10292,6 +10400,15 @@
         "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yakalama kaydedildi" } },
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "抓包已保存" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "抓包已保存" } }
+      }
+    },
+    "can_lab_capture_stopped_safety" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Capture stopped because developer access was revoked" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Geliştirici erişimi iptal edildiği için yakalama durduruldu" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开发者权限已撤销，抓包已停止" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開發者權限已撤銷，抓包已停止" } }
       }
     },
     "can_lab_capture_marked" : {

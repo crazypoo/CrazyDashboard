@@ -28,6 +28,7 @@ final class PTCANLabViewController: PTMotoBaseViewController {
     private var files: [URL] = []
     private var comparisonFiles: [URL] = []
     private var captureTask: Task<Void, Never>?
+    private var safetyObserver: NSObjectProtocol?
 
     lazy var reloadButton:PTBaseButton = {
         let view = PTBaseButton(type:.custom)
@@ -54,6 +55,7 @@ final class PTCANLabViewController: PTMotoBaseViewController {
         configureTable()
         if mode == .developerCapture {
             configureCaptureControls()
+            observeDeveloperSafetyState()
         }
         reloadFiles()
     }
@@ -151,18 +153,53 @@ final class PTCANLabViewController: PTMotoBaseViewController {
     }
 
     @objc private func stopCapture() {
+        stopActiveCapture(statusKey: nil)
+    }
+
+    // EN: Stop an active capture and preserve the reason when the safety gate revoked it.
+    // ES: Detiene una captura activa y conserva el motivo cuando la puerta de seguridad la revoca.
+    // 中文：停止活动抓包，并在安全门禁撤销时保留停止原因。
+    private func stopActiveCapture(statusKey: String?) {
         guard mode == .developerCapture, captureTask != nil else { return }
         captureTask?.cancel()
         captureTask = nil
         Task { @MainActor [weak self] in
             guard let self else { return }
             let session = await PTMotoTelemetryManager.shared.stopPTCANExperiment()
-            statusLabel.text = session == nil
-                ? localized("can_lab_capture_empty")
-                : localized("can_lab_capture_saved")
+            if let statusKey {
+                statusLabel.text = localized(statusKey)
+            } else {
+                statusLabel.text = session == nil
+                    ? localized("can_lab_capture_empty")
+                    : localized("can_lab_capture_saved")
+            }
             updateCaptureControls(isCapturing: false)
             reloadFiles()
         }
+    }
+
+    // EN: A gate reset stops only developer capture; public capture history remains available.
+    // ES: Un reinicio de la puerta detiene solo la captura de desarrollador; el historial público sigue disponible.
+    // 中文：门禁重置只停止开发者抓包，公开的历史浏览功能仍然可用。
+    private func observeDeveloperSafetyState() {
+        safetyObserver = NotificationCenter.default.addObserver(
+            forName: PTDeveloperSafetyGate.stateDidChange,
+            object: PTDeveloperSafetyGate.shared,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.handleDeveloperSafetyReset()
+            }
+        }
+    }
+
+    // EN: The next explicit developer action can start a fresh capture after re-authorization.
+    // ES: La siguiente acción explícita de desarrollador puede iniciar una captura nueva tras reautorizar.
+    // 中文：重新授权后，下一次明确的开发者操作可以开始新的抓包。
+    private func handleDeveloperSafetyReset() {
+        guard mode == .developerCapture, captureTask != nil else { return }
+        guard !PTDeveloperSafetyGate.shared.isEnabled else { return }
+        stopActiveCapture(statusKey: "can_lab_capture_stopped_safety")
     }
 
     @objc private func markCaptureEvent() {
@@ -329,6 +366,12 @@ final class PTCANLabViewController: PTMotoBaseViewController {
 
     private func localized(_ key: String) -> String {
         PTDashboardConfig.languageFunc(text: key)
+    }
+
+    @MainActor deinit {
+        if let safetyObserver {
+            NotificationCenter.default.removeObserver(safetyObserver)
+        }
     }
 }
 

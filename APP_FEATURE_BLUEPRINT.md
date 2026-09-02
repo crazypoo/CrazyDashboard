@@ -4,9 +4,9 @@
 >
 > 快照日期：2026-09-02
 >
-> 仓库基线：`d7b298887cd32c97ca1029cc9bf5c11d3e1b33a5`（Build 41 实施前）
+> 仓库基线：`d2483867f6ad3feecd2d2f0cfb0aed442d5b11cd` + 当前工作区 Build 42 改动（代码已实现，待真机/适配器验证）
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests `CURRENT_PROJECT_VERSION = 41`
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests `CURRENT_PROJECT_VERSION = 42`
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -262,7 +262,7 @@ OBD BLE / Wi-Fi / Mock
 | ID | 状态 | 功能 | 当前能力与边界 |
 | --- | --- | --- | --- |
 | DEV-001 | ✅ | 四指 Dev 入口 | TestFlight 中提供隐藏开发者工具入口 |
-| DEV-002 | 🧪 | OBD / CAN Sniffer | 只供开发诊断；退出、失败或断线后必须恢复 Header、轮询与 Sniffer 状态 |
+| DEV-002 | 🧪 | OBD / CAN Sniffer | 只供开发诊断；收起只隐藏控制台并保留当前会话，显式退出、失败、后台或断线后必须恢复 Header、轮询与 Sniffer 状态 |
 | DEV-003 | 🧪 | 高风险功能总开关 | 默认关闭；开发者必须在 Dev 页面明确开启后才能进入实验流程 |
 | DEV-004 | 🧪 | DID Fuzz | 必须限制范围、速率、超时和取消，不允许无边界全车扫描 |
 | DEV-005 | 🧪 | 节点与深度读取 | 只读、结构化返回并保留失败节点，不得依赖日志作为数据接口 |
@@ -272,6 +272,7 @@ OBD BLE / Wi-Fi / Mock
 | DEV-009 | ⬜ | 原固件备份与完整性校验 | 空备份或固定成功结果不能视为功能完成 |
 | DEV-010 | 🧪 | 刷写前置检查 | 计划校验电压、连接、车型、文件签名、备份、用户确认和恢复资源 |
 | DEV-011 | ⬜ | LiDAR 碰撞辅助 | `PTLiDARCollisionManager` 尚未接入正式功能链路 |
+| DEV-012 | 🧪 | Dev 会话与浮层生命周期 | Overlay 支持隐藏、收起和展开三态；收起后保留紧凑 DEV 按钮与当前会话，显式退出、退后台或断车自动撤销门禁 |
 
 高风险操作统一规则：
 
@@ -351,3 +352,4 @@ OBD BLE / Wi-Fi / Mock
 | 2026-09-01 | 当前工作区 | IDEA-006～IDEA-010 已完成第一版外围实现：路线天气风险、防盗事件时间轴、PTT 点位分享、只读 XP400 证据库和 Dev 固件前置状态机；保留 WeatherKit/PTT/实车协议验证缺口，未修改 BLE 与 OBD 稳定核心 |
 | 2026-09-02 | 当前工作区 Build 40 | NAV-013、RIDE-007、RIDE-009、RIDE-012、RIDE-013、OBD-006、OBD-014、OBD-015 已完成代码接入；iOS、Widget、Watch 和测试 Target 已完成编译，纯数据单元测试已登记但因当前 Simulator destination 与工程支持平台不匹配尚未执行；真实设备/车辆验证仍待补，受保护核心未修改 |
 | 2026-09-02 | 当前工作区 Build 41 | IDEA-006 路线天气改为 WeatherKit 首选、单点失败后整路线 QWeather 回退；报告记录唯一提供方，QWeather 复用 App 启动时已初始化的实例；新增取消、无备用服务、双服务失败和 168 小时边界处理；主 App Debug 编译通过，真实天气权限/网络与设备验证仍待补 |
+| 2026-09-02 | 当前工作区 Build 42 | DEV-012 已完成开发者浮层三态、显式退出/生命周期撤销、全局紧凑按钮、触摸穿透、可拖动边界、门禁通知同步和 CAN Lab 自动停止接入；Debug/Release 目标构建和测试构建已通过，XCTest 实际运行、真实设备与适配器验证待补 |

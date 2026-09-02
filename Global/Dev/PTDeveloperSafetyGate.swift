@@ -30,6 +30,7 @@ public enum PTDeveloperSafetyRejection: String, Codable, Sendable {
     case highRiskModeDisabled
     case protocolEvidenceMissing
     case lifecycleReset
+    case userDisabled
 }
 
 public struct PTDeveloperSafetyEvent: Codable, Sendable {
@@ -57,6 +58,7 @@ public struct PTDeveloperSafetyEvent: Codable, Sendable {
 @MainActor
 public final class PTDeveloperSafetyGate {
     public static let shared = PTDeveloperSafetyGate()
+    public static let stateDidChange = Notification.Name("PTDeveloperSafetyGate.stateDidChange")
 
     public private(set) var isEnabled = false
     public private(set) var lastEvent: PTDeveloperSafetyEvent?
@@ -96,16 +98,22 @@ public final class PTDeveloperSafetyGate {
         observers = [backgroundObserver, vehicleObserver]
     }
 
-    /// EN: The switch is intentionally in-memory and defaults to off.
-    /// ES: El interruptor solo vive en memoria y empieza desactivado.
-    /// 中文：开关只保存在内存中，默认关闭。
+    /// EN: The switch is intentionally in-memory and defaults to off; its observers refresh their UI from this value.
+    /// ES: El interruptor solo vive en memoria y empieza desactivado; sus observadores actualizan la interfaz desde este valor.
+    /// 中文：开关只保存在内存中且默认关闭，所有观察者都从该值刷新界面。
     public func setEnabled(_ enabled: Bool) {
-        isEnabled = enabled
+        if enabled {
+            guard !isEnabled else { return }
+            isEnabled = true
+            publishStateChange()
+        } else {
+            disable(reason: .userDisabled)
+        }
     }
 
-    /// EN: Closing the developer surface immediately revokes authorization.
-    /// ES: Cerrar la superficie de desarrollador revoca la autorización de inmediato.
-    /// 中文：关闭开发者界面后立即撤销授权。
+    /// EN: Explicit exit, backgrounding, and vehicle disconnects revoke authorization; collapsing the surface does not.
+    /// ES: La salida explícita, el fondo y la desconexión del vehículo revocan la autorización; minimizar la superficie no.
+    /// 中文：显式退出、进入后台和车辆断开会撤销授权；收起界面不会撤销授权。
     public func disable(reason: PTDeveloperSafetyRejection = .lifecycleReset) {
         isEnabled = false
         record(
@@ -115,6 +123,7 @@ public final class PTDeveloperSafetyGate {
                 rejection: reason
             )
         )
+        publishStateChange()
     }
 
     /// EN: Records the decision so the UI and exported developer log have structured evidence.
@@ -162,6 +171,13 @@ public final class PTDeveloperSafetyGate {
         if events.count > 64 {
             events.removeFirst(events.count - 64)
         }
+    }
+
+    /// EN: A single notification keeps every developer surface synchronized without adding another state store.
+    /// ES: Una sola notificación mantiene sincronizadas todas las superficies de desarrollador sin añadir otro almacén de estado.
+    /// 中文：使用一个通知同步所有开发者界面，不再新增第二套状态存储。
+    private func publishStateChange() {
+        NotificationCenter.default.post(name: Self.stateDidChange, object: self)
     }
 
     deinit {

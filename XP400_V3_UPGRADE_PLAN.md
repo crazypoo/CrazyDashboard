@@ -8,7 +8,7 @@
 >
 > 发布方式：只维护现有 `PTSpeed` TestFlight 版本，不新增 Lab Scheme、App Target、Bundle ID 或第二发布渠道；当前没有 App Store 上架计划。
 >
-> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 为 Build 41，下一次 TestFlight 从 Build 42 开始。
+> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 为 Build 42，下一次 TestFlight 从 Build 43 开始。
 >
 > 文件名中的 `V3` 仅为保留现有路径和链接，不代表需要修改 App 大版本号。
 >
@@ -46,10 +46,10 @@
 ### 版本与 Build 规则
 
 - [ ] `PTSpeed`、Widget 和 Watch 的 `MARKETING_VERSION` 永久保持 `2.0.8`。
-- [x] 当前主 App、Widget、Watch 和 Tests Build 已统一为 `41`；下一次 TestFlight 使用 Build `42`。
-- [ ] 每次上传 TestFlight 只将 `CURRENT_PROJECT_VERSION` 加一：42、43、44……
-- [ ] App、Widget 和 Watch 每次使用完全相同的 Build 号，避免嵌入扩展版本不一致。
-- [x] Tests Target 已同步到主 App Build `41`，此后与主 App、Widget 和 Watch 一起递增。
+- [x] 当前主 App、Widget、Watch 和 Tests Build 已统一为 `42`；下一次 TestFlight 使用 Build `43`。
+- [x] 每次上传 TestFlight 只将 `CURRENT_PROJECT_VERSION` 加一：42、43、44……
+- [x] App、Widget 和 Watch 每次使用完全相同的 Build 号，避免嵌入扩展版本不一致；Build 42 Release 产物均核验为 `2.0.8 (42)`。
+- [x] Tests Target 已同步到主 App Build `42`，此后与主 App、Widget 和 Watch 一起递增。
 - [ ] 不允许脚本、Archive 或 CI 自动修改 `MARKETING_VERSION`。
 - [ ] 设置页和诊断报告显示格式统一为 `2.0.8 (Build N)`。
 - [ ] 不把 Build 号加入仪表 BLE 认证、握手、广播或配置数据。
@@ -151,7 +151,7 @@ public enum PTOBDLinkState: Sendable, Equatable
 - [ ] 开关默认关闭，打开前显示一次明确的仪表损坏风险确认。
 - [ ] 在 `PTMotoUserDefaultStruct` 增加 `DevHighRiskOBDEnabled`，默认值为 `false`；`BleTestDataGet` 继续只负责 Overlay 显示状态。
 - [ ] 开关状态直接读写 `DevHighRiskOBDEnabled`，不新增 Keychain、CryptoKit、授权文件、安装 ID 或第二个开发者中心。
-- [ ] App 每次启动、关闭 `PTECUSnifferOverlay`、进入后台、OBD 断开或刷写任务结束时自动关闭开关。
+- [x] App 新场景启动、显式退出 `PTECUSnifferOverlay`、进入后台或 OBD 断开时自动关闭开关；单纯收起浮层不撤销当前前台会话。
 - [ ] `writeDashboardConfig`、`testPSABootLogoCommands`、OTA 和仪表 Flasher 在执行前检查该开关。
 - [ ] 开关关闭时保持当前只读拒绝行为，不发送任何高风险帧。
 - [ ] 开关打开后，开发者可以直接从 Dev 工具按钮调用，也可以在测试代码中调用现有高风险方法。
@@ -535,7 +535,7 @@ Peugeot 官方资料确认 XP400 GT 使用 5 英寸连接式 TFT 和 i-Connect�
 
 ### 执行前置条件
 
-- [ ] `PTECUSnifferOverlay` 已显示且高风险开关已开启。
+- [ ] Dev 会话已显式开启，`PTECUSnifferOverlay` 可展开或收起且高风险开关已开启。
 - [ ] 开发者已确认本次 Level、ECU、地址和固件哈希。
 - [ ] 原始配置或原始固件已经保存并完成读取校验。
 - [ ] 目标硬件/软件版本与操作档案完全匹配。
@@ -563,7 +563,7 @@ Peugeot 官方资料确认 XP400 GT 使用 5 英寸连接式 TFT 和 i-Connect�
 - [x] 纯策略契约覆盖 PTT 零成员、有成员、音频不可用和开发者门禁；重复 Activity、重启和权限关闭仍待真机补测。
 - [ ] 覆盖 iCloud 离线、延迟下载、冲突、损坏 JSON 和旧格式迁移。
 - [ ] 覆盖 Watch 未配对、断连、重连、重启和过期数据覆盖。
-- [ ] 覆盖 Dev 高风险开关默认关闭、开启、关闭 Overlay、退后台和 OBD 断开，确保自动关闭后零帧发送。
+- [ ] 覆盖 Dev 高风险开关默认关闭、开启、收起/展开 Overlay、显式退出、退后台和 OBD 断开，确保撤销后零帧发送。
 - [ ] 覆盖 dry-run、单次写入、读取回验、恢复、阶段化取消、断连和未知结果处理。
 - [ ] 覆盖未通过四指长按进入 Dev 工具时无法调用高风险操作。
 - [ ] 使用 Thread Sanitizer 验证可确定复现的并发流程。
@@ -601,7 +601,7 @@ Peugeot 官方资料确认 XP400 GT 使用 5 英寸连接式 TFT 和 i-Connect�
 - [ ] 单元测试、UI Test、Archive 和导出校验通过。
 - [ ] 真机、Watch、仪表 BLE、OBD、普通模式和 Dev 高风险模式回归通过。
 - [ ] 无启动崩溃、数据损坏、重复 Live Activity 或连接成功率明显退化。
-- [ ] Dev 高风险开关默认关闭，关闭工具、退后台和断连后不会保留开启状态。
+- [ ] Dev 高风险开关默认关闭，显式退出、退后台和断连后不会保留开启状态；单纯收起只保留当前前台会话。
 - [ ] 保留上一稳定构建和可关闭 Live Activity、Watch 同步等非核心功能的开关。
 
 发布顺序：
@@ -754,7 +754,7 @@ Peugeot 官方资料确认 XP400 GT 使用 5 英寸连接式 TFT 和 i-Connect�
 >
 > 仓库基线：`b6d39a0952f6d027811cb8cb2720af3ff905a05c`
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch `CURRENT_PROJECT_VERSION = 39`
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch `CURRENT_PROJECT_VERSION = 42`
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -1169,3 +1169,37 @@ OBD BLE / Wi-Fi / Mock
 ### 21.3 回滚与发布门禁
 
 如需回滚，仅回退路线天气服务、PTWeatherManager 的 QWeather 注入、Roadbook 本地化、测试、工程 Build 号和本节记录；不回退三个稳定核心文件，不修改 B208-01/B208-02 的既定范围。只有真实天气回退和相关 Target/Archive 验证完成后，才能把 IDEA-006 或本记录从 `🟨` 提升为 `✅`。
+
+---
+
+## 22. Build 42 开发者会话与 ECU Sniffer 浮层优化实施记录（2026-09-02）
+
+本轮继续使用营销版本 `2.0.8`，仅将 PTSpeed、Widget、Watch 和 Tests 的 Build 统一推进到 `42`。目标是解决 App 启动或进入其他开发者页面后，`PTECUSnifferOverlay` 作为全屏窗口层阻碍操作，以及收起界面错误撤销高风险开发者授权的问题。三个稳定核心文件保持不变。
+
+### 22.1 已实施内容
+
+- [x] `PTECUSnifferOverlay` 改为 `hidden`、`compact`、`expanded` 三态；收起只隐藏控制台，保留紧凑 `DEV` 按钮和当前前台会话。
+- [x] 新增独立的“收起”和“退出开发者会话”操作；兼容旧 `hideSniffer()` API，并将其定义为完整退出。
+- [x] 紧凑 `DEV` 按钮限制在安全区域内，可拖动调整位置；浮层未占用的区域向下透传触摸，避免阻碍普通页面。
+- [x] 高风险授权继续只由 `PTDeveloperSafetyGate` 持有；显式退出、进入后台或 OBD 断开时撤销，收起时不撤销。
+- [x] 增加门禁状态通知，浮层、CAN Lab 和高风险控件同步同一状态；生命周期撤销后停止浮层 Fuzz 和活动 CAN 抓包。
+- [x] 高风险门禁失效后 CAN Lab 自动停止实时抓包并显示停止原因；重新授权后由开发者明确点击开始，不自动恢复。
+- [x] 新场景启动清除旧的 `BleTestDataGet`，不恢复上一次开发者界面或高风险权限；天气浮层先挂载，确保开发者按钮层级正确。
+- [x] 浮层日志待渲染队列增加上限；定时器使用弱引用，接收回调统一切换到 `MainActor`，降低长时间运行的内存和数据竞争风险。
+- [x] 开发者浮层新增和补齐四种现有语言的按钮、状态、前置检查和 CAN Lab 停止文案。
+- [x] 新增开发者浮层收起/展开/显式退出、门禁生命周期重置和冷启动不可见性测试。
+- [x] 未修改 `Global/BLE/PTBluetoothManager.swift`、`Global/OBD/Function/PTHiddenOBDConnector.swift` 和 `Global/OBD/Function/PTOBDCommand.swift`。
+
+### 22.2 验证记录
+
+- [x] `git diff --check` 通过。
+- [x] `Global/Localizable.xcstrings` JSON 结构检查通过。
+- [x] 本轮修改 Swift 文件通过 `swiftc -frontend -parse` 语法扫描。
+- [x] PTSpeed、Widget、Watch 和 Tests 的 Build 42 目标构建已完成：PTSpeed Debug/Release、Widget Debug/Release、Watch Debug/Release，以及 PTSpeed `build-for-testing` 均通过；构建均使用 `CODE_SIGNING_ALLOWED=NO`、`ENABLE_PREVIEWS=NO`，仅保留既有第三方依赖警告。
+- [ ] XCTest 实际运行待匹配的 iOS Simulator 或真机环境执行；本轮 `build-for-testing` 已通过，但 `xcodebuild test` 因当前 PTSpeed Scheme 与本机 iOS 27 arm64 Simulator 的支持平台不匹配而退出，测试用例未执行。
+- [ ] 真实 iPhone 验证四指进入、收起后操作其他 Dev 页面、拖动按钮、退后台、断车和重新授权。
+- [ ] 真实 OBD/CAN 适配器验证门禁撤销后不残留 Sniffer、Header、轮询或活动抓包。
+
+### 22.3 回滚与发布门禁
+
+如需回滚，只回退本节新增的浮层状态、门禁通知、CAN Lab 观察、冷启动处理、测试、本地化和 Build 42 工程配置；不回退、不覆盖三个稳定核心文件。未完成真机/适配器回归前，`DEV-012` 继续保持 `🧪`，普通用户入口不得暴露高风险操作。

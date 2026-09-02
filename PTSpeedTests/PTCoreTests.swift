@@ -1037,6 +1037,54 @@ final class PTCoreTests: XCTestCase {
         gate.disable()
     }
 
+    // EN: Collapsing the developer console must keep the current foreground authorization alive.
+    // ES: Minimizar la consola de desarrollador debe mantener activa la autorización de primer plano actual.
+    // 中文：收起开发者控制台后，当前前台授权必须继续有效。
+    @MainActor
+    func testDeveloperOverlayCollapseKeepsSafetySession() {
+        let gate = PTDeveloperSafetyGate.shared
+        gate.disable(reason: .lifecycleReset)
+        let overlay = PTECUSnifferOverlay(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        defer { overlay.endDeveloperSession() }
+
+        gate.setEnabled(true)
+        overlay.showSniffer()
+        overlay.collapseSniffer()
+
+        XCTAssertEqual(overlay.presentationState, .compact)
+        XCTAssertTrue(gate.isEnabled)
+        XCTAssertTrue(PTMotoUserDefaultStruct.BleTestDataGet)
+
+        overlay.showSniffer()
+        XCTAssertEqual(overlay.presentationState, .expanded)
+
+        overlay.endDeveloperSession()
+        XCTAssertEqual(overlay.presentationState, .hidden)
+        XCTAssertFalse(gate.isEnabled)
+        XCTAssertFalse(PTMotoUserDefaultStruct.BleTestDataGet)
+    }
+
+    // EN: Lifecycle revocation must collapse the console and stop exposing an active developer surface.
+    // ES: La revocación del ciclo de vida debe minimizar la consola y dejar de exponer una superficie activa de desarrollador.
+    // 中文：生命周期撤销授权后，控制台必须收起，不能继续暴露活动中的开发者界面。
+    @MainActor
+    func testDeveloperOverlayCollapsesWhenSafetyGateResets() async {
+        let gate = PTDeveloperSafetyGate.shared
+        gate.disable(reason: .lifecycleReset)
+        let overlay = PTECUSnifferOverlay(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        defer { overlay.endDeveloperSession() }
+
+        gate.setEnabled(true)
+        overlay.showSniffer()
+        let notification = expectation(forNotification: PTDeveloperSafetyGate.stateDidChange, object: gate)
+        gate.disable(reason: .lifecycleReset)
+        await fulfillment(of: [notification], timeout: 1)
+        await Task.yield()
+
+        XCTAssertEqual(overlay.presentationState, .compact)
+        XCTAssertFalse(gate.isEnabled)
+    }
+
     // EN: Route weather scoring must classify rain, crosswind and poor visibility deterministically.
     // ES: La puntuación meteorológica debe clasificar lluvia, viento lateral y poca visibilidad de forma determinista.
     // 中文：路线天气评分必须稳定识别降雨、横风和低能见度风险。
