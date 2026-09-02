@@ -138,7 +138,7 @@ public final class PTNotificationCenter: NSObject {
             if let error = error {
                 PTNSLogConsole("❌ [消息推送] 发送失败: \(error.localizedDescription)")
             } else {
-                PTNSLogConsole("🚀 [消息推送] 消息已交给 iOS 系统，即将通过 ANCS 弹窗推送到车机！")
+                PTNSLogConsole("🚀 [消息推送] 消息已提交给 iOS 通知中心；是否由 XP400 通过系统 ANCS 显示取决于配对和系统设置。")
             }
         }
     }

@@ -10833,6 +10833,249 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无法验证位置" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "無法驗證位置" } }
       }
+    },
+    "dashboard_notification_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Phone, messages and notifications" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Telefon, mesajlar ve bildirimler" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "电话、短信和通知" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "電話、訊息與通知" } }
+      }
+    },
+    "dashboard_notification_setup" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Set up / Test" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ayarla / Test et" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "设置 / 测试" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "設定／測試" } }
+      }
+    },
+    "dashboard_notification_alert_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "XP400 notifications" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "XP400 bildirimleri" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "XP400 仪表通知" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "XP400 儀表通知" } }
+      }
+    },
+    "dashboard_notification_status" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dashboard: %@\nPTSpeed permission: %@\n\n%@" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gösterge: %@\nPTSpeed izni: %@\n\n%@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仪表连接：%@\n本 App 通知权限：%@\n\n%@" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "儀表連線：%@\n本 App 通知權限：%@\n\n%@" } }
+      }
+    },
+    "dashboard_notification_system_managed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "System ANCS is managed by iOS Bluetooth settings. This app cannot read or toggle it." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sistem ANCS, iOS Bluetooth ayarları tarafından yönetilir. Bu uygulama onu okuyamaz veya değiştiremez." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "系统 ANCS 由 iOS 蓝牙设置管理，App 无法读取或切换其状态。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "系統 ANCS 由 iOS 藍牙設定管理，App 無法讀取或切換其狀態。" } }
+      }
+    },
+    "dashboard_notification_connected" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Connected" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bağlı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已连接" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已連線" } }
+      }
+    },
+    "dashboard_notification_disconnected" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Disconnected" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bağlı değil" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未连接" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "未連線" } }
+      }
+    },
+    "dashboard_notification_permission_authorized" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Allowed" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "İzin verildi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已允许" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已允許" } }
+      }
+    },
+    "dashboard_notification_permission_denied" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Denied" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Reddedildi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已拒绝" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已拒絕" } }
+      }
+    },
+    "dashboard_notification_permission_pending" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Not requested" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "İstenmedi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "尚未请求" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "尚未請求" } }
+      }
+    },
+    "dashboard_notification_permission_limited" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Limited" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sınırlı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "有限权限" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "有限權限" } }
+      }
+    },
+    "dashboard_notification_permission_unknown" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unknown" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bilinmiyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未知" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "未知" } }
+      }
+    },
+    "dashboard_notification_request_permission" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Allow PTSpeed notifications" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "PTSpeed bildirimlerine izin ver" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "允许本 App 通知" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "允許本 App 通知" } }
+      }
+    },
+    "dashboard_notification_open_settings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open notification settings" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bildirim ayarlarını aç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开通知设置" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟通知設定" } }
+      }
+    },
+    "dashboard_notification_send_test" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Send test notification" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Test bildirimi gönder" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "发送测试通知" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "傳送測試通知" } }
+      }
+    },
+    "dashboard_notification_guide" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Setup guide" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kurulum kılavuzu" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "设置指引" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "設定指引" } }
+      }
+    },
+    "dashboard_notification_test_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "XP400 notification test" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "XP400 bildirim testi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "XP400 通知测试" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "XP400 通知測試" } }
+      }
+    },
+    "dashboard_notification_test_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "If the instrument shows this message, system notification sharing is working." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gösterge bu mesajı gösterirse sistem bildirim paylaşımı çalışıyor demektir." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "如果仪表显示此消息，说明系统通知分享链路正常。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "如果儀表顯示此訊息，代表系統通知分享鏈路正常。" } }
+      }
+    },
+    "dashboard_notification_permission_failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Notification permission request failed" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bildirim izni isteği başarısız" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "通知权限请求失败" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "通知權限請求失敗" } }
+      }
+    },
+    "dashboard_notification_permission_updated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "PTSpeed notification permission updated." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "PTSpeed bildirim izni güncellendi." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "本 App 通知权限已更新。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "本 App 通知權限已更新。" } }
+      }
+    },
+    "dashboard_notification_test_scheduled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Test notification scheduled for 5 seconds later." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Test bildirimi 5 saniye sonrasına planlandı." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "测试通知已安排，将在 5 秒后发送。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "測試通知已安排，將在 5 秒後傳送。" } }
+      }
+    },
+    "dashboard_notification_test_denied" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "PTSpeed notifications are denied in iOS settings." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "PTSpeed bildirimleri iOS ayarlarında reddedildi." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "iOS 设置中已拒绝本 App 通知。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "iOS 設定中已拒絕本 App 通知。" } }
+      }
+    },
+    "dashboard_notification_test_not_determined" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Allow PTSpeed notifications first, then try the test again." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Önce PTSpeed bildirimlerine izin verin, sonra testi yeniden deneyin." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请先允许本 App 通知，再重新测试。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請先允許本 App 通知，再重新測試。" } }
+      }
+    },
+    "dashboard_notification_test_suppressed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The test notification was suppressed by the app's delivery rules." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Test bildirimi uygulamanın teslim kuralları tarafından bastırıldı." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "测试通知被 App 的投递规则抑制。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "測試通知被 App 的傳送規則抑制。" } }
+      }
+    },
+    "dashboard_notification_test_failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Test notification failed" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Test bildirimi başarısız" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "测试通知失败" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "測試通知失敗" } }
+      }
+    },
+    "dashboard_notification_guide_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "XP400 system notification setup" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "XP400 sistem bildirim kurulumu" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "XP400 系统通知设置" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "XP400 系統通知設定" } }
+      }
+    },
+    "dashboard_notification_guide_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "1. Open Settings > Bluetooth > XP400 and enable Share System Notifications.\n2. Check Notifications > Show Previews.\n3. Review Focus mode and per-app notification settings.\n4. Return to the app and send the test notification." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "1. Ayarlar > Bluetooth > XP400 bölümünü açın ve Sistem Bildirimlerini Paylaş seçeneğini etkinleştirin.\n2. Bildirimler > Önizlemeleri Göster seçeneğini kontrol edin.\n3. Odak modunu ve uygulama bildirim ayarlarını inceleyin.\n4. Uygulamaya dönüp test bildirimini gönderin." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "1. 打开“设置”>“蓝牙”>“XP400”，开启“共享系统通知”。\n2. 检查“通知”>“显示预览”。\n3. 检查专注模式和各 App 的通知设置。\n4. 返回本 App，发送测试通知。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "1. 開啟「設定」>「藍牙」>「XP400」，啟用「分享系統通知」。\n2. 檢查「通知」>「顯示預覽」。\n3. 檢查專注模式和各 App 的通知設定。\n4. 返回本 App，傳送測試通知。" } }
+      }
     }
   },
   "version" : "1.0"

@@ -8,7 +8,7 @@
 >
 > 发布方式：只维护现有 `PTSpeed` TestFlight 版本，不新增 Lab Scheme、App Target、Bundle ID 或第二发布渠道；当前没有 App Store 上架计划。
 >
-> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 为 Build 42，下一次 TestFlight 从 Build 43 开始。
+> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 为 Build 43，下一次 TestFlight 从 Build 44 开始。
 >
 > 文件名中的 `V3` 仅为保留现有路径和链接，不代表需要修改 App 大版本号。
 >
@@ -46,8 +46,8 @@
 ### 版本与 Build 规则
 
 - [ ] `PTSpeed`、Widget 和 Watch 的 `MARKETING_VERSION` 永久保持 `2.0.8`。
-- [x] 当前主 App、Widget、Watch 和 Tests Build 已统一为 `42`；下一次 TestFlight 使用 Build `43`。
-- [x] 每次上传 TestFlight 只将 `CURRENT_PROJECT_VERSION` 加一：42、43、44……
+- [x] 当前主 App、Widget、Watch 和 Tests Build 已统一为 `43`；下一次 TestFlight 使用 Build `44`。
+- [x] 每次上传 TestFlight 只将 `CURRENT_PROJECT_VERSION` 加一：43、44、45……
 - [x] App、Widget 和 Watch 每次使用完全相同的 Build 号，避免嵌入扩展版本不一致；Build 42 Release 产物均核验为 `2.0.8 (42)`。
 - [x] Tests Target 已同步到主 App Build `42`，此后与主 App、Widget 和 Watch 一起递增。
 - [ ] 不允许脚本、Archive 或 CI 自动修改 `MARKETING_VERSION`。
@@ -1203,3 +1203,37 @@ OBD BLE / Wi-Fi / Mock
 ### 22.3 回滚与发布门禁
 
 如需回滚，只回退本节新增的浮层状态、门禁通知、CAN Lab 观察、冷启动处理、测试、本地化和 Build 42 工程配置；不回退、不覆盖三个稳定核心文件。未完成真机/适配器回归前，`DEV-012` 继续保持 `🧪`，普通用户入口不得暴露高风险操作。
+
+---
+
+## 23. Build 43 XP400 电话、短信与系统通知实施记录（2026-09-02）
+
+本轮继续使用营销版本 `2.0.8`，仅将 PTSpeed、Widget、Watch 和 Tests 的 Build 统一推进到 `43`。目标是验证并引导 XP400 使用 iOS 系统通知中心与标准 ANCS 的原生链路，不在 App 内读取其他 App 通知，也不新增第二套 BLE 通知传输层。
+
+### 23.1 已实施内容
+
+- [x] `PTMotoSettingViewController` 新增“电话、短信和通知”设置入口，展示当前仪表连接状态与 PTSpeed 自身的通知授权状态。
+- [x] 仅在用户明确操作后请求 PTSpeed 通知权限；拒绝时只跳转 iOS 公开通知设置页。
+- [x] 新增 5 秒延迟本地测试通知和 XP400 系统通知配置指引，测试内容不包含车辆敏感数据。
+- [x] `PTNotificationCenter` 成功日志改为准确表述“已提交给 iOS 通知中心”；是否由 XP400 显示取决于 iOS 配对、系统设置和 XP400 固件能力。
+- [x] 新增英语、土耳其语、简体中文和繁体中文文案。
+- [x] 未新增自定义 ANCS 服务、通知队列、CallKit、通知扩展或私有蓝牙设置 URL。
+- [x] 未启用 `PTBluetoothManager.swift` 中未完成的 ANCS 原型，未修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift` 和 `PTOBDCommand.swift`。
+
+### 23.2 验证记录
+
+- [x] `Global/Localizable.xcstrings` JSON 结构检查通过。
+- [x] 本轮修改 Swift 文件通过 `swiftc -frontend -parse` 语法扫描。
+- [x] `git diff --check` 通过。
+- [x] PTSpeed、Widget、Watch 和 Tests 的 Build 43 目标编译、`build-for-testing` 与 Release 目标构建已完成（使用 `.xcworkspace`、`CODE_SIGNING_ALLOWED=NO`、`ENABLE_PREVIEWS=NO`）；完整 Archive、签名和导出校验仍待补。
+- [ ] XCTest 实际执行仍需匹配的 iOS Simulator 或真机环境；`build-for-testing` 不等同于测试已执行。
+- [ ] 真实 XP400 GT 硬件验证：来电、短信、第三方通知、锁屏/解锁、前后台、Focus、显示预览、断连/重连、重复与过期通知。
+- [ ] P0 能力门禁：只有在 iPhone 的 XP400 蓝牙详情出现系统通知分享能力，或抓包确认标准 ANCS 交互后，才可评估 `SYS-013` 是否能够提升状态。
+
+### 23.3 边界、隐私与回滚
+
+- iOS App 只能查询和安排自己的本地通知，不能读取电话、短信或其他 App 的通知正文；本功能依赖 iOS 与 XP400 之间的系统 ANCS。
+- PTSpeed 通知权限被拒绝不会代表 XP400 的电话/短信 ANCS 被拒绝，两者状态必须分开说明。
+- 不持久化、不记录和不导出电话、短信或第三方通知正文；第一版不支持通知动作、UID 缓存或回复。
+- 若真实 XP400 不支持系统 ANCS，只保留设置引导和本地测试，不伪造“已连接/已激活”状态。
+- 如需回滚，只回退本节设置入口、通知日志、本地化和 Build 43 工程配置；不得回退或覆盖三个稳定核心文件，也不改变既有 OBD、BLE、Widget、Watch 和 iCloud 数据链路。

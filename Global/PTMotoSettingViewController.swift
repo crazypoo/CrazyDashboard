@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import UserNotifications
 import PooTools
 import SwifterSwift
 import SnapKit
@@ -126,6 +127,29 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         view.addTarget(self, action: #selector(pttRestoreSwitchChanged(_:)), for: .valueChanged)
         return view
     }()
+
+    // EN: This row opens the read-only XP400 phone, message and notification setup guide.
+    // ES: Esta fila abre la guía de configuración de solo lectura para llamadas, mensajes y avisos del XP400.
+    // 中文：此行打开 XP400 电话、短信和通知的只读配置指引。
+    private lazy var dashboardNotificationTitle: UILabel = {
+        let view = baseTitle(value: PTDashboardConfig.languageFunc(text: "dashboard_notification_title"))
+        view.numberOfLines = 0
+        return view
+    }()
+
+    // EN: The button exposes setup and a delayed local test without claiming that ANCS is active.
+    // ES: El botón ofrece configuración y una prueba local diferida sin afirmar que ANCS esté activo.
+    // 中文：按钮提供设置和延迟本地测试，但不会伪称 ANCS 已激活。
+    private lazy var dashboardNotificationButton: UIButton = {
+        let view = UIButton(type: .system)
+        view.titleLabel?.font = .appfont(size: 16)
+        view.setTitleColor(.white, for: .normal)
+        view.setTitle(PTDashboardConfig.languageFunc(text: "dashboard_notification_setup"), for: .normal)
+        view.addActionHandlers { [weak self] _ in
+            self?.presentDashboardNotificationSupport()
+        }
+        return view
+    }()
     
     lazy var disconnect:UIButton = {
         let view = UIButton(type: .custom)
@@ -236,7 +260,8 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         settingsContainer.addSubviews([dashBoadColorTitle, dashBoardColorButton,
                                         dashUniTitle, dashBoardUniButton,
                                         dashLanguageTitle, dashBoardLanguageButton,
-                                        pttRestoreTitle, pttRestoreSwitch])
+                                        pttRestoreTitle, pttRestoreSwitch,
+                                        dashboardNotificationTitle, dashboardNotificationButton])
         
         view.addSubviews([garageButton, shortCut, shortcutsButton, disconnect, socialStackView, versionLabel])
         
@@ -288,6 +313,18 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         pttRestoreSwitch.snp.makeConstraints { make in
             make.right.equalToSuperview().inset(16)
             make.top.equalTo(dashBoardLanguageButton.snp.bottom).offset(20)
+        }
+
+        dashboardNotificationTitle.snp.makeConstraints { make in
+            make.left.equalToSuperview().inset(16)
+            make.right.lessThanOrEqualTo(dashboardNotificationButton.snp.left).offset(-12)
+            make.centerY.equalTo(dashboardNotificationButton)
+        }
+        dashboardNotificationButton.snp.makeConstraints { make in
+            make.right.equalToSuperview().inset(16)
+            make.top.equalTo(pttRestoreSwitch.snp.bottom).offset(20)
+            make.height.equalTo(34)
+            make.width.greaterThanOrEqualTo(110)
             make.bottom.equalToSuperview().inset(16)
         }
         
@@ -331,6 +368,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         dashBoardColorButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashBoardUniButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashBoardLanguageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
+        dashboardNotificationButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         garageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         disconnect.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         
@@ -338,6 +376,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             self.dashBoardColorButton.viewCorner(radius: 4)
             self.dashBoardUniButton.viewCorner(radius: 4)
             self.dashBoardLanguageButton.viewCorner(radius: 4)
+            self.dashboardNotificationButton.viewCorner(radius: 4)
             self.garageButton.viewCorner(radius: 4)
             self.disconnect.viewCorner(radius: 4)
         }
@@ -348,6 +387,8 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 self.dashBoadColorTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_color_set_title")
                 self.dashUniTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_set_title")
                 self.pttRestoreTitle.text = PTDashboardConfig.languageFunc(text: "ptt_restore_on_launch")
+                self.dashboardNotificationTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_notification_title")
+                self.dashboardNotificationButton.setTitle(PTDashboardConfig.languageFunc(text: "dashboard_notification_setup"), for: .normal)
                 self.disconnect.setTitle(PTDashboardConfig.languageFunc(text: "button_dis_connect"), for: .normal)
                 self.garageButton.setTitle(PTDashboardConfig.languageFunc(text: "garage_open"), for: .normal)
                 self.updateShortcutGuide()
@@ -414,6 +455,194 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         let help = PTDashboardConfig.languageFunc(text: "shortcuts_help")
         shortCut.text = "\(title)\n\(help)"
     }
+
+    // EN: Read the iOS notification permission and dashboard state before showing the support actions.
+    // ES: Lee el permiso de notificaciones de iOS y el estado del tablero antes de mostrar las acciones.
+    // 中文：显示支持操作前，先读取 iOS 通知权限和仪表连接状态。
+    private func presentDashboardNotificationSupport() {
+        PTNotificationCenter.authorizationStatus { [weak self] status in
+            let authorizationRawValue = status.rawValue
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let isDashboardConnected = PTVehicleConnectivityCoordinator.shared.snapshot.isDashboardConnected
+                self.showDashboardNotificationSupport(
+                    authorizationStatus: UNAuthorizationStatus(rawValue: authorizationRawValue) ?? .notDetermined,
+                    isDashboardConnected: isDashboardConnected
+                )
+            }
+        }
+    }
+
+    // EN: Explain the native ANCS boundary and expose only safe, read-only actions.
+    // ES: Explica el límite de ANCS nativo y expone únicamente acciones seguras de solo lectura.
+    // 中文：说明系统 ANCS 的边界，只提供安全的只读操作。
+    @MainActor
+    private func showDashboardNotificationSupport(
+        authorizationStatus: UNAuthorizationStatus,
+        isDashboardConnected: Bool
+    ) {
+        let dashboardStateKey = isDashboardConnected
+            ? "dashboard_notification_connected"
+            : "dashboard_notification_disconnected"
+        let permissionState = notificationPermissionText(authorizationStatus)
+        let statusTemplate = PTDashboardConfig.languageFunc(text: "dashboard_notification_status")
+        let statusMessage = String(
+            format: statusTemplate,
+            PTDashboardConfig.languageFunc(text: dashboardStateKey),
+            permissionState,
+            PTDashboardConfig.languageFunc(text: "dashboard_notification_system_managed")
+        )
+
+        let alert = UIAlertController(
+            title: PTDashboardConfig.languageFunc(text: "dashboard_notification_alert_title"),
+            message: statusMessage,
+            preferredStyle: .actionSheet
+        )
+
+        switch authorizationStatus {
+        case .notDetermined:
+            alert.addAction(UIAlertAction(
+                title: PTDashboardConfig.languageFunc(text: "dashboard_notification_request_permission"),
+                style: .default
+            ) { [weak self] _ in
+                self?.requestDashboardNotificationPermission()
+            })
+        case .denied:
+            alert.addAction(UIAlertAction(
+                title: PTDashboardConfig.languageFunc(text: "dashboard_notification_open_settings"),
+                style: .default
+            ) { [weak self] _ in
+                self?.openDashboardNotificationSettings()
+            })
+        case .authorized, .provisional, .ephemeral:
+            break
+        @unknown default:
+            break
+        }
+
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "dashboard_notification_send_test"),
+            style: .default
+        ) { [weak self] _ in
+            self?.sendDashboardNotificationTest()
+        })
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "dashboard_notification_guide"),
+            style: .default
+        ) { [weak self] _ in
+            self?.showDashboardNotificationGuide()
+        })
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "button_cancel"),
+            style: .cancel
+        ))
+
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = dashboardNotificationButton
+            popover.sourceRect = dashboardNotificationButton.bounds
+        }
+        present(alert, animated: true)
+    }
+
+    // EN: Map the system permission to a user-facing state without exposing a false ANCS status.
+    // ES: Convierte el permiso del sistema en un estado visible sin inventar un estado de ANCS.
+    // 中文：把系统权限映射成用户可理解的状态，不虚构 ANCS 状态。
+    @MainActor
+    private func notificationPermissionText(_ status: UNAuthorizationStatus) -> String {
+        switch status {
+        case .authorized:
+            return PTDashboardConfig.languageFunc(text: "dashboard_notification_permission_authorized")
+        case .denied:
+            return PTDashboardConfig.languageFunc(text: "dashboard_notification_permission_denied")
+        case .notDetermined:
+            return PTDashboardConfig.languageFunc(text: "dashboard_notification_permission_pending")
+        case .provisional, .ephemeral:
+            return PTDashboardConfig.languageFunc(text: "dashboard_notification_permission_limited")
+        @unknown default:
+            return PTDashboardConfig.languageFunc(text: "dashboard_notification_permission_unknown")
+        }
+    }
+
+    // EN: Request permission only after an explicit user action; system ANCS remains independent.
+    // ES: Solicita permiso solo tras una acción explícita; el ANCS del sistema sigue siendo independiente.
+    // 中文：仅在用户明确操作后申请权限；系统 ANCS 仍由系统独立管理。
+    private func requestDashboardNotificationPermission() {
+        PTNotificationCenter.requestAuthorization { [weak self] granted, error in
+            let errorMessage = error?.localizedDescription
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let message: String
+                if let errorMessage, !errorMessage.isEmpty {
+                    message = "\(PTDashboardConfig.languageFunc(text: "dashboard_notification_permission_failed")): \(errorMessage)"
+                } else if granted {
+                    message = PTDashboardConfig.languageFunc(text: "dashboard_notification_permission_updated")
+                } else {
+                    message = PTDashboardConfig.languageFunc(text: "dashboard_notification_test_denied")
+                }
+                PTProgressHUD.show(text: message)
+                self.dashboardNotificationButton.isEnabled = true
+            }
+        }
+    }
+
+    // EN: Open only the public notification settings URL supplied by iOS.
+    // ES: Abre únicamente la URL pública de ajustes de notificaciones proporcionada por iOS.
+    // 中文：只打开 iOS 提供的公开通知设置 URL。
+    @MainActor
+    private func openDashboardNotificationSettings() {
+        guard let url = URL(string: UIApplication.openNotificationSettingsURLString) else { return }
+        UIApplication.shared.open(url, options: [:])
+    }
+
+    // EN: Schedule one delayed local notification so the owner can verify the complete system path.
+    // ES: Programa un aviso local retrasado para que el propietario pueda verificar toda la ruta del sistema.
+    // 中文：安排一条延迟本地通知，方便用户验证完整的系统通知链路。
+    private func sendDashboardNotificationTest() {
+        let request = PTNotificationRequest(
+            kind: .generic,
+            title: PTDashboardConfig.languageFunc(text: "dashboard_notification_test_title"),
+            body: PTDashboardConfig.languageFunc(text: "dashboard_notification_test_body"),
+            identifier: "pt.dashboard.notification.test.\(UUID().uuidString)",
+            interruptionLevel: .active,
+            trigger: UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
+        )
+
+        PTNotificationCenter.schedule(request) { result in
+            Task { @MainActor in
+                let message: String
+                switch result {
+                case .scheduled:
+                    message = PTDashboardConfig.languageFunc(text: "dashboard_notification_test_scheduled")
+                case .denied:
+                    message = PTDashboardConfig.languageFunc(text: "dashboard_notification_test_denied")
+                case .notDetermined:
+                    message = PTDashboardConfig.languageFunc(text: "dashboard_notification_test_not_determined")
+                case .suppressed:
+                    message = PTDashboardConfig.languageFunc(text: "dashboard_notification_test_suppressed")
+                case .failed(let reason):
+                    message = "\(PTDashboardConfig.languageFunc(text: "dashboard_notification_test_failed")): \(reason)"
+                }
+                PTProgressHUD.show(text: message)
+            }
+        }
+    }
+
+    // EN: Keep the hardware instructions explicit because iOS cannot query or toggle XP400 ANCS sharing.
+    // ES: Mantiene instrucciones claras porque iOS no puede consultar ni cambiar el uso de ANCS del XP400.
+    // 中文：明确展示硬件设置步骤，因为 iOS 无法读取或切换 XP400 的 ANCS 分享状态。
+    @MainActor
+    private func showDashboardNotificationGuide() {
+        let alert = UIAlertController(
+            title: PTDashboardConfig.languageFunc(text: "dashboard_notification_guide_title"),
+            message: PTDashboardConfig.languageFunc(text: "dashboard_notification_guide_body"),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "button_confirm"),
+            style: .default
+        ))
+        present(alert, animated: true)
+    }
     
     func dashBoardSetResult(finish:Bool) {
         if finish {
@@ -441,10 +670,12 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             self.dashUniTitle.textColor = PTDashboardConfig.shared.appMainColor
             self.dashLanguageTitle.textColor = PTDashboardConfig.shared.appMainColor
             self.pttRestoreTitle.textColor = PTDashboardConfig.shared.appMainColor
+            self.dashboardNotificationTitle.textColor = PTDashboardConfig.shared.appMainColor
             self.pttRestoreSwitch.onTintColor = PTDashboardConfig.shared.appMainColor
             self.garageButton.setTitle(PTDashboardConfig.languageFunc(text: "garage_open"), for: .normal)
                         
             self.garageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
+            self.dashboardNotificationButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
             self.disconnect.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         }
     }
