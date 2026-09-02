@@ -75,6 +75,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             title: PTDashboardConfig.languageFunc(text: "button_done")
         )
         
+        PTAppBaseConfig.share.viewControllerBaseBackgroundColor = .black
         PTAppBaseConfig.share.tab26Mode = true
         PTAppBaseConfig.share.tabbarMetailMode = true
         PTAppBaseConfig.share.tabSelectedMetailColor = .grayCA

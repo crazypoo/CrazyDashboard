@@ -58,7 +58,7 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
     
     lazy var importGPXButton:PTBaseButton = {
         let view = PTBaseButton(type:.custom)
-        view.setImage(UIImage(.plus), for: .normal)
+        view.setImage(UIImage(.plus).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
         view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers(handler: { _ in
             self.importGPX()
@@ -69,7 +69,7 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
     lazy var createButton:PTBaseButton = {
         let view = PTBaseButton(type:.custom)
         view.titleLabel?.font = .appfont(size: 16)
-        view.setTitleColor(.black, for: .normal)
+        view.setTitleColor(.white, for: .normal)
         view.setTitle(PTDashboardConfig.languageFunc(text: "roadbook_create"), for: .normal)
         view.bounds = .init(origin: .zero, size: .init(width: view.sizeFor().width + 20, height: PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers(handler: { _ in
@@ -81,7 +81,7 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
     override func viewDidLoad() {
         super.viewDidLoad()
         pt_Title = PTDashboardConfig.languageFunc(text: "roadbook_title")
-
+        
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(refreshVisibleState),
@@ -107,6 +107,8 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
         var mSections = [PTSection]()
         let permissionRows = roadbooks.map {
             let cellModel = PTFusionCellModel()
+            cellModel.nameColor = .white
+            cellModel.contentTextColor = .white
             cellModel.name = $0.name
             let active = manager.activeRoadbook?.id == $0.id && manager.isSessionActive
             let stateText = active ? " · \(stateTitle(manager.state))" : ""
@@ -115,7 +117,6 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
                 $0.waypoints.count
             )
             cellModel.content = waypointText + stateText
-            
             let row = PTRows(ID: PTFusionCell.ID,dataModel: cellModel)
             row.cellClass = PTFusionCell.self
             return row

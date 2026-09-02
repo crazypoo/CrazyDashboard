@@ -150,7 +150,7 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
     // 中文：把安全工具放在骑行摘要旁边，但不与车辆传输层耦合。
     @objc private func openSafetyCenter() {
         let controller = PTRideSafetyViewController()
-        present(PTBaseNavControl(rootViewController: controller), animated: true)
+        safePushViewController(controller)
     }
 
     private func configureLabels() {

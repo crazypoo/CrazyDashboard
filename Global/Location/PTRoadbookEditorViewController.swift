@@ -31,7 +31,7 @@ final class PTRoadbookEditorViewController: PTMotoBaseViewController {
     lazy var titleButton:PTBaseButton = {
         let view = PTBaseButton(type: .custom)
         view.titleLabel?.font = PTAppBaseConfig.share.navTitleFont
-        view.setTitleColor(.black, for: .normal)
+        view.setTitleColor(.white, for: .normal)
         view.setTitle(roadbookName, for: .normal)
         view.bounds = .init(origin: .zero, size: .init(width: view.sizeFor().width + 15, height: PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers(handler: { _ in
@@ -43,7 +43,7 @@ final class PTRoadbookEditorViewController: PTMotoBaseViewController {
     lazy var saveButton:PTBaseButton = {
         let view = PTBaseButton(type: .custom)
         view.titleLabel?.font = .appfont(size: 16)
-        view.setTitleColor(.black, for: .normal)
+        view.setTitleColor(.white, for: .normal)
         view.setTitle(localized("roadbook_save"), for: .normal)
         view.bounds = .init(origin: .zero, size: .init(width: view.sizeFor().width + 20, height: PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers(handler: { _ in
@@ -55,7 +55,7 @@ final class PTRoadbookEditorViewController: PTMotoBaseViewController {
     lazy var editButton:PTBaseButton = {
         let view = PTBaseButton(type: .custom)
         view.titleLabel?.font = .appfont(size: 16)
-        view.setTitleColor(.black, for: .normal)
+        view.setTitleColor(.white, for: .normal)
         view.setTitle(localized("Edit"), for: .normal)
         view.bounds = .init(origin: .zero, size: .init(width: view.sizeFor().width + 20, height: PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers(handler: { _ in
@@ -80,7 +80,6 @@ final class PTRoadbookEditorViewController: PTMotoBaseViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .systemGroupedBackground
         configureMap()
         configureTable()
         configureButtons()
@@ -119,6 +118,7 @@ final class PTRoadbookEditorViewController: PTMotoBaseViewController {
         tableView.dataSource = self
         tableView.delegate = self
         tableView.tableFooterView = UIView(frame: .zero)
+        tableView.backgroundColor = .clear
         view.addSubview(tableView)
         NSLayoutConstraint.activate([
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
