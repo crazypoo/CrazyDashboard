@@ -1619,7 +1619,7 @@ extension PTBluetoothServerManager {
     private func mockData3() -> [UInt8] {
         let auto: UInt16 = 2500 // 250.0 km 剩余续航
         let col: UInt8 = 0x80 // Red (0x80) + 公制
-        let dist: UInt16 = 4500 // 4500 km 距离保养
+        let dist: UInt16 = 1100 // 1100 km 距离保养
         let lang: UInt8 = 0x02 // 英文
         
         return [

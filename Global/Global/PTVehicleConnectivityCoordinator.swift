@@ -302,13 +302,25 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         dashboardIdentityConflict
     }
 
+    // EN: Mock and real dashboard sessions share the same bounded garage snapshot path.
+    // ES: Las sesiones de tablero simulado y real comparten la misma ruta limitada de instantáneas del garaje.
+    // 中文：模拟仪表和真实仪表共用同一条有边界的车库快照路径。
+    private var dashboardSupportsGarageSync: Bool {
+        switch snapshot.dashboard.transport {
+        case .dashboardBluetooth?, .dashboardMock?:
+            return true
+        default:
+            return false
+        }
+    }
+
     /// EN: Force the same snapshot path used by automatic checkpoints for the visible vehicle.
     /// ES: Fuerza la misma ruta de instantánea usada por los puntos automáticos para el vehículo visible.
     /// 中文：手动操作也复用自动检查点使用的同一份快照路径。
     @discardableResult
     public func syncCurrentGarageVehicleNow() -> PTGarageDashboardSyncResult {
         guard snapshot.dashboard.state == .connected,
-              snapshot.dashboard.transport == .dashboardBluetooth else {
+              dashboardSupportsGarageSync else {
             return .unavailable
         }
         guard dashboardGarageVehicleID != nil else {
@@ -517,7 +529,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
 
     private func beginDashboardGarageSession() {
         guard !dashboardSessionActive,
-              snapshot.dashboard.transport == .dashboardBluetooth else {
+              dashboardSupportsGarageSync else {
             return
         }
 
@@ -536,10 +548,18 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         dashboardDidPersistInitialSample = false
         dashboardLastPersistedAt = nil
 
-        if let pendingDashboardIdentity {
-            resolveDashboardIdentity(pendingDashboardIdentity)
+        if snapshot.dashboard.transport == .dashboardMock {
+            // EN: A local mock has no hardware identity, so it is safely scoped to the selected motorcycle.
+            // ES: Un simulador local no tiene identidad de hardware y se limita de forma segura a la motocicleta seleccionada.
+            // 中文：本地模拟仪表没有硬件身份，因此安全地绑定到当前选中的摩托车。
+            dashboardGarageVehicleID = PTMotorcycleGarageStore.shared.selectedVehicleID
+            dashboardIdentityResolved = dashboardGarageVehicleID != nil
+        } else {
+            if let pendingDashboardIdentity {
+                resolveDashboardIdentity(pendingDashboardIdentity)
+            }
+            scheduleDashboardIdentityResolution()
         }
-        scheduleDashboardIdentityResolution()
         notifyDashboardGarageSyncChanged()
     }
 
@@ -677,7 +697,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
 
     private func receiveDashboardSample(_ sample: PTVehicleDashboardSample) {
         guard snapshot.dashboard.state == .connected,
-              snapshot.dashboard.transport == .dashboardBluetooth else {
+              dashboardSupportsGarageSync else {
             return
         }
         if !dashboardSessionActive {

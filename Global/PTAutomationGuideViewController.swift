@@ -447,6 +447,7 @@ final class PTAutomationGuideViewController: PTMotoBaseViewController {
         let feedback = localized("automation_guide_scheme_copied")
         PTNSLogConsole("[自动化说明] \(feedback): \(example)")
         UIAccessibility.post(notification: .announcement, argument: feedback)
+        PTProgressHUD.show(text: feedback)
     }
 
     private func openSystemSettings() {

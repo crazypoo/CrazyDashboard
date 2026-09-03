@@ -625,7 +625,22 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
             return
         }
 
-        switch coordinator.syncCurrentGarageVehicleNow() {
+        let dashboardResult = coordinator.syncCurrentGarageVehicleNow()
+        let didSaveOBD = store.saveCurrentOBDSnapshot() != nil
+
+        if didSaveOBD {
+            switch dashboardResult {
+            case .identityConflict, .vehicleNotFound:
+                showMessage(
+                    "\(localized("garage_sync_success"))\n\(localized("garage_sync_identity_conflict"))"
+                )
+            default:
+                showMessage(localized("garage_sync_success"))
+            }
+            return
+        }
+
+        switch dashboardResult {
         case .updated:
             showMessage(localized("garage_sync_success"))
         case .unchanged:

@@ -11468,6 +11468,15 @@
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "編輯摩托車名稱" } }
       }
     },
+    "garage_vehicle_name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Motorcycle name" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Motosiklet adı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "摩托车名称" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "摩托車名稱" } }
+      }
+    },
     "garage_maintenance_title" : {
       "extractionState" : "manual",
       "localizations" : {
