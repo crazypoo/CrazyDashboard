@@ -26,6 +26,11 @@ struct PTMotoUserDefaultStruct {
     // 中文：对讲状态恢复必须显式开启，确保冷启动不会自动组网或启动音频服务。
     @PTUserDefault(withKey: "PTTLaunchAutoRestoreEnabled", defaultValue: false) public static var PTTLaunchAutoRestoreEnabled:Bool
 
+    // EN: Keep the explicit PTT nickname in the shared preference layer without starting audio services.
+    // ES: Conserva el apodo explícito de PTT en preferencias compartidas sin iniciar servicios de audio.
+    // 中文：将用户明确设置的 PTT 昵称放在共享偏好层，读取时不会启动音频服务。
+    @PTUserDefault(withKey: "PT_CustomUserName", defaultValue: "") public static var PTTCustomUserName:String
+
     // EN: Anti-theft monitoring is a user opt-in and never arms from stale launch data.
     // ES: La vigilancia antirrobo requiere consentimiento del usuario y nunca se arma con datos antiguos al iniciar.
     // 中文：防盗监控必须由用户主动开启，冷启动不会依据旧数据自动布防。

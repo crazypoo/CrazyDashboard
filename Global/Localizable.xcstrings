@@ -9370,6 +9370,64 @@
         }
       }
     },
+    "dashboard_config_sent" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dashboard command sent"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gösterge paneli komutu gönderildi"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仪表指令已发送"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "儀表指令已傳送"
+          }
+        }
+      }
+    },
+    "dashboard_config_unconfirmed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No dashboard confirmation received"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gösterge panelinden onay alınamadı"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未收到仪表确认"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未收到儀表確認"
+          }
+        }
+      }
+    },
     "shake_value" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -11399,6 +11457,123 @@
         "tr" : { "stringUnit" : { "state" : "translated", "value" : "Boş olmayan bir hedef gerektirir" } },
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "必须提供非空目的地" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "必須提供非空目的地" } }
+      }
+    },
+    "garage_edit_vehicle_name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit motorcycle name" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Motosiklet adını düzenle" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "编辑摩托车名称" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "編輯摩托車名稱" } }
+      }
+    },
+    "garage_maintenance_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Maintenance item" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bakım işlemi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保养项目" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "保養項目" } }
+      }
+    },
+    "garage_vehicle_name_form_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Choose a name for this motorcycle." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bu motosiklet için bir ad seçin." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "为这辆摩托车设置名称。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "為這輛摩托車設定名稱。" } }
+      }
+    },
+    "garage_dashboard_identity" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dashboard ID" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gösterge kimliği" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仪表身份" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "儀表身份" } }
+      }
+    },
+    "garage_sync_auto_active" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dashboard data is syncing automatically" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gösterge verileri otomatik eşzamanlanıyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仪表数据正在自动同步" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "儀表資料正在自動同步" } }
+      }
+    },
+    "garage_sync_waiting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Waiting for dashboard data to sync" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gösterge verilerinin eşzamanlanması bekleniyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "等待同步仪表数据" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "等待同步儀表資料" } }
+      }
+    },
+    "garage_sync_last_update" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Last dashboard update" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Son gösterge güncellemesi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "上次仪表更新" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "上次儀表更新" } }
+      }
+    },
+    "garage_sync_identity_conflict" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dashboard identity needs confirmation" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gösterge kimliği onay gerektiriyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仪表身份需要确认" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "儀表身份需要確認" } }
+      }
+    },
+    "garage_sync_other_vehicle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The connected dashboard belongs to another motorcycle" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bağlı gösterge başka bir motosiklete ait" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "当前连接的仪表属于另一辆摩托车" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "目前連線的儀表屬於另一輛摩托車" } }
+      }
+    },
+    "garage_bind_dashboard_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Associate the current dashboard with this motorcycle and sync its latest data?" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Mevcut gösterge bu motosikletle ilişkilendirilsin ve son veriler eşzamanlansın mı?" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "是否将当前仪表关联到这辆摩托车并同步最新数据？" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "是否將目前儀表關聯至這輛摩托車並同步最新資料？" } }
+      }
+    },
+    "garage_bind_dashboard" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Associate dashboard" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Göstergeyi ilişkilendir" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关联仪表" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "關聯儀表" } }
+      }
+    },
+    "garage_bind_success" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dashboard associated and data synced." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gösterge ilişkilendirildi ve veriler eşzamanlandı." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仪表已关联，数据已同步。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "儀表已關聯，資料已同步。" } }
+      }
+    },
+    "garage_sync_latest" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The garage already has the latest dashboard data." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Garajda zaten en güncel gösterge verileri var." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "车库中已经是最新仪表数据。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "車庫中已經是最新儀表資料。" } }
       }
     }
   },

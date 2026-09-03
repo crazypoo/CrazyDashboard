@@ -187,6 +187,14 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
     public var year: Int?
     public var vin: String
     public var odometerKm: Double
+    // EN: Dashboard identity is local association metadata, not an authentication credential.
+    // ES: La identidad del tablero solo sirve para asociar datos localmente, no es una credencial de autenticación.
+    // 中文：仪表身份仅用于本地关联数据，不是认证凭证。
+    public var dashboardBLEIdentifier: UUID?
+    public var dashboardSerialNumber: String?
+    public var dashboardMaintenanceDistanceKm: Int?
+    public var dashboardMaintenanceFlag: Int?
+    public var lastDashboardSyncAt: Date?
     public var maintenanceWarningDistanceKm: Double?
     public var tankCapacityLiters: Double?
     public var reserveFuelPercent: Int?
@@ -205,6 +213,11 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
         year: Int? = nil,
         vin: String = "",
         odometerKm: Double = 0,
+        dashboardBLEIdentifier: UUID? = nil,
+        dashboardSerialNumber: String? = nil,
+        dashboardMaintenanceDistanceKm: Int? = nil,
+        dashboardMaintenanceFlag: Int? = nil,
+        lastDashboardSyncAt: Date? = nil,
         maintenanceWarningDistanceKm: Double? = nil,
         tankCapacityLiters: Double? = nil,
         reserveFuelPercent: Int? = nil,
@@ -222,6 +235,11 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
         self.year = year
         self.vin = vin
         self.odometerKm = odometerKm
+        self.dashboardBLEIdentifier = dashboardBLEIdentifier
+        self.dashboardSerialNumber = dashboardSerialNumber
+        self.dashboardMaintenanceDistanceKm = dashboardMaintenanceDistanceKm
+        self.dashboardMaintenanceFlag = dashboardMaintenanceFlag
+        self.lastDashboardSyncAt = lastDashboardSyncAt
         self.maintenanceWarningDistanceKm = maintenanceWarningDistanceKm
         self.tankCapacityLiters = tankCapacityLiters
         self.reserveFuelPercent = reserveFuelPercent
@@ -244,13 +262,54 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
+// EN: A bounded dashboard sample keeps transport callbacks separate from garage persistence.
+// ES: Una muestra limitada del tablero separa los callbacks de transporte de la persistencia del garaje.
+// 中文：有边界的仪表快照将传输回调与车库存储隔离开。
+public struct PTGarageDashboardSnapshot: Equatable, Sendable {
+    public let odometerKm: Double?
+    public let maintenanceDistanceKm: Int?
+    public let maintenanceFlag: Int?
+    public let capturedAt: Date
+
+    public init(
+        odometerKm: Double? = nil,
+        maintenanceDistanceKm: Int? = nil,
+        maintenanceFlag: Int? = nil,
+        capturedAt: Date = Date()
+    ) {
+        self.odometerKm = odometerKm
+        self.maintenanceDistanceKm = maintenanceDistanceKm
+        self.maintenanceFlag = maintenanceFlag
+        self.capturedAt = capturedAt
+    }
+
+    public var hasAnyValue: Bool {
+        odometerKm != nil || maintenanceDistanceKm != nil || maintenanceFlag != nil
+    }
+}
+
+public enum PTGarageDashboardSyncResult: String, Equatable, Sendable {
+    case updated
+    case unchanged
+    case unavailable
+    case identityConflict
+    case vehicleNotFound
+}
+
+public enum PTGarageDashboardIdentityResolution: Equatable, Sendable {
+    case matched(UUID)
+    case candidate(UUID)
+    case conflict
+    case unavailable
+}
+
 public struct PTMotorcycleGarageDocument: Codable, Equatable, Sendable {
     public let schemaVersion: Int
     public let selectedVehicleID: UUID?
     public let vehicles: [PTMotorcycleProfile]
 
     nonisolated public init(
-        schemaVersion: Int = 3,
+        schemaVersion: Int = 4,
         selectedVehicleID: UUID? = nil,
         vehicles: [PTMotorcycleProfile] = []
     ) {
@@ -269,7 +328,7 @@ public final class PTMotorcycleGarageStore {
     public static let didChangeNotification = Notification.Name("PTMotorcycleGarageStoreDidChange")
 
     public static let storageKey = "PTMotorcycleGarageDocument.v1"
-    public static let currentSchemaVersion = 3
+    public static let currentSchemaVersion = 4
     public static let defaultMaintenanceWarningDistanceKm = 2_500.0
     public static let maximumMaintenanceWarningDistanceKm = 65_535.0
     public static let maximumVehicleCount = 32
@@ -345,11 +404,20 @@ public final class PTMotorcycleGarageStore {
         return vehicles.first { $0.id == selectedVehicleID }
     }
 
+    public func vehicle(id: UUID) -> PTMotorcycleProfile? {
+        vehicles.first { $0.id == id }
+    }
+
     /// EN: The selected vehicle's threshold is the canonical runtime value for legacy dashboard consumers.
     /// ES: El umbral del vehículo seleccionado es el valor de ejecución canónico para los consumidores antiguos del tablero.
     /// 中文：当前车辆的预警值是旧仪表页面运行时使用的统一值。
     public var currentMaintenanceWarningDistanceKm: Double {
         Self.normalizedMaintenanceWarningDistance(currentVehicle?.maintenanceWarningDistanceKm)
+            ?? Self.defaultMaintenanceWarningDistanceKm
+    }
+
+    public func maintenanceWarningDistanceKm(for vehicleID: UUID) -> Double {
+        Self.normalizedMaintenanceWarningDistance(vehicle(id: vehicleID)?.maintenanceWarningDistanceKm)
             ?? Self.defaultMaintenanceWarningDistanceKm
     }
 
@@ -362,6 +430,20 @@ public final class PTMotorcycleGarageStore {
         }
         selectedVehicleID = id
         syncLegacyWarningDistance()
+        persist()
+        return true
+    }
+
+    @discardableResult
+    public func updateVehicleName(_ name: String, vehicleID: UUID? = nil) -> Bool {
+        guard let index = indexOfVehicle(vehicleID),
+              let normalizedName = nonEmptyText(name) else {
+            return false
+        }
+        guard vehicles[index].name != normalizedName else { return true }
+
+        vehicles[index].name = normalizedName
+        touchVehicle(at: index)
         persist()
         return true
     }
@@ -507,33 +589,190 @@ public final class PTMotorcycleGarageStore {
         return true
     }
 
+    /// EN: Resolve a dashboard identity before any live sample is assigned to a vehicle.
+    /// ES: Resuelve la identidad del tablero antes de asignar cualquier muestra a una motocicleta.
+    /// 中文：在把实时数据分配给车辆前，先解析仪表身份。
+    public func resolveDashboardIdentity(
+        _ identity: PTDashboardConnectionIdentity,
+        preferredVehicleID: UUID? = nil
+    ) -> PTGarageDashboardIdentityResolution {
+        let serial = Self.normalizedDashboardSerial(identity.reportedSerialNumber)
+        let centralID = identity.centralIdentifier
+
+        let serialMatches = vehicles.filter {
+            guard let storedSerial = Self.normalizedDashboardSerial($0.dashboardSerialNumber) else { return false }
+            return serial != nil && storedSerial == serial
+        }
+        let centralMatches = vehicles.filter {
+            centralID != nil && $0.dashboardBLEIdentifier == centralID
+        }
+
+        if serialMatches.count > 1 || centralMatches.count > 1 {
+            return .conflict
+        }
+
+        let serialVehicleID = serialMatches.first?.id
+        let centralVehicleID = centralMatches.first?.id
+        if let serialVehicleID, let centralVehicleID, serialVehicleID != centralVehicleID {
+            return .conflict
+        }
+        if let matchedID = serialVehicleID ?? centralVehicleID {
+            return .matched(matchedID)
+        }
+
+        if let preferredVehicleID,
+           let preferredVehicle = vehicle(id: preferredVehicleID),
+           preferredVehicle.dashboardBLEIdentifier == nil,
+           Self.normalizedDashboardSerial(preferredVehicle.dashboardSerialNumber) == nil {
+            return .candidate(preferredVehicleID)
+        }
+
+        return .unavailable
+    }
+
+    /// EN: Bind only unused identity values or the same vehicle's refreshed UUID alias.
+    /// ES: Solo vincula identidades libres o un alias UUID actualizado de la misma motocicleta.
+    /// 中文：只绑定未占用的身份，或更新同一车辆重新配对后的 UUID 别名。
+    @discardableResult
+    public func bindDashboardIdentity(
+        _ identity: PTDashboardConnectionIdentity,
+        to vehicleID: UUID
+    ) -> Bool {
+        guard let index = vehicles.firstIndex(where: { $0.id == vehicleID }) else { return false }
+        let serial = Self.normalizedDashboardSerial(identity.reportedSerialNumber)
+        let centralID = identity.centralIdentifier
+
+        for vehicle in vehicles where vehicle.id != vehicleID {
+            if let serial,
+               Self.normalizedDashboardSerial(vehicle.dashboardSerialNumber) == serial {
+                return false
+            }
+            if let centralID, vehicle.dashboardBLEIdentifier == centralID {
+                return false
+            }
+        }
+
+        if let serial,
+           let storedSerial = Self.normalizedDashboardSerial(vehicles[index].dashboardSerialNumber),
+           storedSerial != serial {
+            return false
+        }
+
+        var didChange = false
+        if vehicles[index].dashboardBLEIdentifier != centralID, let centralID {
+            vehicles[index].dashboardBLEIdentifier = centralID
+            didChange = true
+        }
+        if vehicles[index].dashboardSerialNumber != serial, let serial {
+            vehicles[index].dashboardSerialNumber = serial
+            didChange = true
+        }
+        guard didChange else { return true }
+        touchVehicle(at: index)
+        persist()
+        return true
+    }
+
+    /// EN: Explicit reassignment is used only after the user confirms a conflicting dashboard identity.
+    /// ES: La reasignación explícita solo se usa después de que el usuario confirme una identidad conflictiva.
+    /// 中文：只有用户确认仪表身份冲突后，才能执行显式重新关联。
+    @discardableResult
+    public func reassignDashboardIdentity(
+        _ identity: PTDashboardConnectionIdentity,
+        to vehicleID: UUID
+    ) -> Bool {
+        guard identity.isUsable,
+              let targetIndex = vehicles.firstIndex(where: { $0.id == vehicleID }) else {
+            return false
+        }
+
+        let serial = Self.normalizedDashboardSerial(identity.reportedSerialNumber)
+        let centralID = identity.centralIdentifier
+        var didChange = false
+
+        for index in vehicles.indices where index != targetIndex {
+            let ownsSerial = serial != nil
+                && Self.normalizedDashboardSerial(vehicles[index].dashboardSerialNumber) == serial
+            let ownsCentral = centralID != nil
+                && vehicles[index].dashboardBLEIdentifier == centralID
+            guard ownsSerial || ownsCentral else { continue }
+
+            if ownsSerial {
+                vehicles[index].dashboardSerialNumber = nil
+            }
+            if ownsCentral {
+                vehicles[index].dashboardBLEIdentifier = nil
+            }
+            touchVehicle(at: index)
+            didChange = true
+        }
+
+        if let centralID, vehicles[targetIndex].dashboardBLEIdentifier != centralID {
+            vehicles[targetIndex].dashboardBLEIdentifier = centralID
+            didChange = true
+        }
+        if let serial, vehicles[targetIndex].dashboardSerialNumber != serial {
+            vehicles[targetIndex].dashboardSerialNumber = serial
+            didChange = true
+        }
+
+        guard didChange else { return true }
+        touchVehicle(at: targetIndex)
+        persist()
+        return true
+    }
+
+    /// EN: Apply a bounded dashboard snapshot atomically and keep the odometer monotonic.
+    /// ES: Aplica una instantánea limitada del tablero de forma atómica y mantiene el odómetro monotónico.
+    /// 中文：原子应用有边界的仪表快照，并保证总里程不会自动倒退。
+    @discardableResult
+    public func applyDashboardSnapshot(
+        _ snapshot: PTGarageDashboardSnapshot,
+        to vehicleID: UUID,
+        recordReceiptWhenUnchanged: Bool = false
+    ) -> PTGarageDashboardSyncResult {
+        guard let index = vehicles.firstIndex(where: { $0.id == vehicleID }) else {
+            return .vehicleNotFound
+        }
+
+        let odometer = snapshot.odometerKm.flatMap(Self.normalizedOdometer)
+        let maintenanceDistance = snapshot.maintenanceDistanceKm.flatMap(Self.normalizedDashboardMaintenanceDistance)
+        let maintenanceFlag = snapshot.maintenanceFlag.flatMap(Self.normalizedDashboardMaintenanceFlag)
+        guard odometer != nil || maintenanceDistance != nil || maintenanceFlag != nil else {
+            return .unavailable
+        }
+
+        var didChange = false
+        if let odometer,
+           odometer >= vehicles[index].odometerKm,
+           vehicles[index].odometerKm != odometer {
+            vehicles[index].odometerKm = odometer
+            didChange = true
+        }
+        if let maintenanceDistance,
+           vehicles[index].dashboardMaintenanceDistanceKm != maintenanceDistance {
+            vehicles[index].dashboardMaintenanceDistanceKm = maintenanceDistance
+            didChange = true
+        }
+        if let maintenanceFlag,
+           vehicles[index].dashboardMaintenanceFlag != maintenanceFlag {
+            vehicles[index].dashboardMaintenanceFlag = maintenanceFlag
+            didChange = true
+        }
+
+        guard didChange || recordReceiptWhenUnchanged else { return .unchanged }
+        vehicles[index].lastDashboardSyncAt = snapshot.capturedAt
+        touchVehicle(at: index)
+        persist()
+        return .updated
+    }
+
     /// EN: Explicitly sync a safe, monotonic odometer sample from the existing dashboard coordinator.
     /// ES: Sincroniza explícitamente una muestra de odómetro segura y monotónica desde el coordinador existente.
     /// 中文：从现有仪表协调器显式同步安全且不倒退的里程数据。
     @discardableResult
     public func syncCurrentVehicleFromLiveData() -> Bool {
-        guard let index = indexOfVehicle(nil) else { return false }
-        var didChange = false
-
-        if let dashboardData = PTBluetoothServerManager.shared.latestData1,
-           let odometer = safeLiveOdometer(dashboardData.odoKm),
-           odometer >= vehicles[index].odometerKm {
-            if odometer != vehicles[index].odometerKm {
-                vehicles[index].odometerKm = odometer
-                didChange = true
-            }
-        }
-
-        let telemetryVIN = normalizeVIN(PTMotoTelemetryManager.shared.obdInfo.vin)
-        if vehicles[index].vin.isEmpty, !telemetryVIN.isEmpty {
-            vehicles[index].vin = telemetryVIN
-            didChange = true
-        }
-
-        guard didChange else { return false }
-        touchVehicle(at: index)
-        persist()
-        return true
+        PTVehicleConnectivityCoordinator.shared.syncCurrentGarageVehicleNow() == .updated
     }
 
     @discardableResult
@@ -728,9 +967,13 @@ public final class PTMotorcycleGarageStore {
         return String(normalized.prefix(64))
     }
 
-    private func validOdometer(_ value: Double) -> Double? {
+    private static func normalizedOdometer(_ value: Double) -> Double? {
         guard value.isFinite, value >= 0, value <= 2_000_000 else { return nil }
         return value
+    }
+
+    private func validOdometer(_ value: Double) -> Double? {
+        Self.normalizedOdometer(value)
     }
 
     private func validOptionalOdometer(_ value: Double?) -> Double? {
@@ -743,8 +986,22 @@ public final class PTMotorcycleGarageStore {
         return value
     }
 
-    private func safeLiveOdometer(_ value: Double) -> Double? {
-        validOdometer(value)
+    private static func normalizedDashboardMaintenanceDistance(_ value: Int) -> Int? {
+        guard (0...Int(UInt16.max)).contains(value) else { return nil }
+        return value
+    }
+
+    private static func normalizedDashboardMaintenanceFlag(_ value: Int) -> Int? {
+        guard (0...Int(UInt8.max)).contains(value) else { return nil }
+        return value
+    }
+
+    private static func normalizedDashboardSerial(_ value: String?) -> String? {
+        guard let value else { return nil }
+        let normalized = value
+            .filter { $0.isASCII && !$0.isNewline && !$0.isWhitespace }
+            .uppercased()
+        return normalized.isEmpty ? nil : String(normalized.prefix(64))
     }
 
     private static func normalizedMaintenanceWarningDistance(_ value: Double?) -> Double? {

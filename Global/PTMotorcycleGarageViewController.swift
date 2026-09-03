@@ -32,6 +32,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
     private let switchVehicleButton: UIButton
     private let addVehicleButton: UIButton
     private let deleteVehicleButton: UIButton
+    private let editVehicleNameButton: UIButton
     private let editMileageButton: UIButton
     private let syncLiveDataButton: UIButton
     private let fuelProfileButton: UIButton
@@ -45,6 +46,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         self.switchVehicleButton = Self.makeActionButton(titleKey: "garage_switch_vehicle")
         self.addVehicleButton = Self.makeActionButton(titleKey: "garage_add_vehicle")
         self.deleteVehicleButton = Self.makeActionButton(titleKey: "garage_delete_vehicle", color: .systemRed)
+        self.editVehicleNameButton = Self.makeActionButton(titleKey: "garage_edit_vehicle_name")
         self.editMileageButton = Self.makeActionButton(titleKey: "garage_edit_mileage")
         self.syncLiveDataButton = Self.makeActionButton(titleKey: "garage_sync_live_data")
         self.fuelProfileButton = Self.makeActionButton(titleKey: "garage_set_fuel_profile")
@@ -72,6 +74,12 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
             selector: #selector(garageDidChange),
             name: PTMotorcycleGarageStore.didChangeNotification,
             object: store
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(garageDashboardSyncDidChange),
+            name: PTVehicleConnectivityCoordinator.dashboardGarageSyncDidChange,
+            object: nil
         )
         refreshUI()
     }
@@ -110,6 +118,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         switchVehicleButton.addTarget(self, action: #selector(showVehiclePicker), for: .touchUpInside)
         addVehicleButton.addTarget(self, action: #selector(showAddVehicleForm), for: .touchUpInside)
         deleteVehicleButton.addTarget(self, action: #selector(confirmDeleteVehicle), for: .touchUpInside)
+        editVehicleNameButton.addTarget(self, action: #selector(showVehicleNameForm), for: .touchUpInside)
         editMileageButton.addTarget(self, action: #selector(showMileageForm), for: .touchUpInside)
         syncLiveDataButton.addTarget(self, action: #selector(syncLiveData), for: .touchUpInside)
         fuelProfileButton.addTarget(self, action: #selector(showFuelProfileForm), for: .touchUpInside)
@@ -132,7 +141,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
             vehicleMileageLabel,
             vehicleFuelProfileLabel,
             makeButtonRow([switchVehicleButton, addVehicleButton, deleteVehicleButton]),
-            makeButtonRow([editMileageButton, syncLiveDataButton]),
+            makeButtonRow([editVehicleNameButton, editMileageButton, syncLiveDataButton]),
             fuelProfileButton
         ])
         vehicleBody.axis = .vertical
@@ -213,9 +222,15 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         let detailParts = [vehicle.brand, vehicle.model, vehicle.year.map(String.init)]
             .compactMap { $0 }
             .filter { !$0.isEmpty }
-        vehicleDetailsLabel.text = detailParts.isEmpty
+        var details = detailParts
+        if let serialNumber = vehicle.dashboardSerialNumber {
+            details.append("\(localized("garage_dashboard_identity")): \(serialNumber)")
+        } else if let identifier = vehicle.dashboardBLEIdentifier {
+            details.append("\(localized("garage_dashboard_identity")): \(identifier.uuidString.suffix(8))")
+        }
+        vehicleDetailsLabel.text = details.isEmpty
             ? localized("garage_no_vehicle_details")
-            : detailParts.joined(separator: " · ")
+            : details.joined(separator: " · ")
         vehicleVINLabel.text = "\(localized("garage_vin")): \(vehicle.vin.isEmpty ? localized("garage_no_vin") : vehicle.vin)"
         vehicleMileageLabel.text = "\(localized("garage_mileage")): \(formattedMileage(vehicle.odometerKm))"
         if let capacity = vehicle.tankCapacityLiters {
@@ -244,11 +259,14 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
     }
 
     private func refreshMaintenanceStatus() {
+        guard let vehicle = store.currentVehicle else { return }
         let thresholdKm = Int(store.currentMaintenanceWarningDistanceKm.rounded())
-        let dashboard = PTBluetoothServerManager.shared
-        let isDashboardConnected = PTVehicleConnectivityCoordinator.shared.snapshot.isDashboardConnected
-        let distanceKm = isDashboardConnected ? dashboard.latestData3?.distToMaintenance : nil
-        let maintenanceFlag = isDashboardConnected ? dashboard.latestData2?.maintenance : nil
+        let coordinator = PTVehicleConnectivityCoordinator.shared
+        let isBoundLiveVehicle = coordinator.dashboardDataIsBoundToSelectedVehicle
+            && coordinator.dashboardGarageVehicleID == vehicle.id
+        let liveSnapshot = isBoundLiveVehicle ? coordinator.dashboardLiveSnapshot : nil
+        let distanceKm = liveSnapshot?.maintenanceDistanceKm ?? vehicle.dashboardMaintenanceDistanceKm
+        let maintenanceFlag = liveSnapshot?.maintenanceFlag ?? vehicle.dashboardMaintenanceFlag
         let advice = PTRideMaintenanceAdvisor.advise(
             distanceToMaintenanceKm: distanceKm,
             rawMaintenanceFlag: maintenanceFlag,
@@ -275,7 +293,12 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         maintenanceStatusLabel.text = [
             "\(localized("garage_maintenance_warning_distance")): \(formattedMileage(Double(thresholdKm)))",
             "\(localized("garage_maintenance_remaining")): \(remaining)",
-            "\(localized("garage_maintenance_status")): \(status)"
+            "\(localized("garage_maintenance_status")): \(status)",
+            syncStatusDescription(
+                vehicle: vehicle,
+                coordinator: coordinator,
+                isBoundLiveVehicle: isBoundLiveVehicle
+            )
         ].joined(separator: "\n")
     }
 
@@ -336,6 +359,27 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
                 self?.store.removeMaintenance(id: record.id)
             }
         )
+    }
+
+    private func syncStatusDescription(
+        vehicle: PTMotorcycleProfile,
+        coordinator: PTVehicleConnectivityCoordinator,
+        isBoundLiveVehicle: Bool
+    ) -> String {
+        if coordinator.dashboardIdentityIsConflicted {
+            return localized("garage_sync_identity_conflict")
+        }
+        if let boundVehicleID = coordinator.dashboardGarageVehicleID,
+           boundVehicleID != vehicle.id {
+            return localized("garage_sync_other_vehicle")
+        }
+        if isBoundLiveVehicle {
+            return localized("garage_sync_auto_active")
+        }
+        if let lastSync = vehicle.lastDashboardSyncAt {
+            return "\(localized("garage_sync_last_update")): \(formattedDate(lastSync))"
+        }
+        return localized("garage_sync_waiting")
     }
 
     private func makeDiagnosticRow(_ report: PTGarageDiagnosticReport) -> UIView {
@@ -442,6 +486,10 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         refreshUI()
     }
 
+    @objc private func garageDashboardSyncDidChange() {
+        refreshUI()
+    }
+
     @objc private func showVehiclePicker() {
         let alert = UIAlertController(
             title: localized("garage_switch_vehicle"),
@@ -466,7 +514,14 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
             message: localized("garage_vehicle_form_hint"),
             preferredStyle: .alert
         )
-        alert.addTextField { $0.placeholder = self.localized("garage_vehicle_name") }
+        alert.addTextField { field in
+            field.placeholder = self.localized("garage_vehicle_name")
+            let nickname = PTMotoUserDefaultStruct.PTTCustomUserName
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !nickname.isEmpty {
+                field.text = nickname
+            }
+        }
         alert.addTextField { $0.placeholder = self.localized("garage_brand") }
         alert.addTextField { $0.placeholder = self.localized("garage_model") }
         alert.addTextField { $0.placeholder = self.localized("garage_year") ; $0.keyboardType = .numberPad }
@@ -513,6 +568,28 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         present(alert, animated: true)
     }
 
+    @objc private func showVehicleNameForm() {
+        let alert = UIAlertController(
+            title: localized("garage_edit_vehicle_name"),
+            message: localized("garage_vehicle_name_form_hint"),
+            preferredStyle: .alert
+        )
+        alert.addTextField { field in
+            field.text = self.store.currentVehicle?.name
+            field.placeholder = self.localized("garage_vehicle_name")
+        }
+        alert.addAction(UIAlertAction(title: localized("button_cancel"), style: .cancel))
+        alert.addAction(UIAlertAction(title: localized("button_confirm"), style: .default) { [weak self, weak alert] _ in
+            guard let self,
+                  let name = alert?.textFields?.first?.text,
+                  self.store.updateVehicleName(name) else {
+                self?.showMessage(self?.localized("garage_invalid_input") ?? "")
+                return
+            }
+        })
+        present(alert, animated: true)
+    }
+
     @objc private func showMileageForm() {
         let alert = UIAlertController(
             title: localized("garage_edit_mileage"),
@@ -536,11 +613,49 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
     }
 
     @objc private func syncLiveData() {
-        if store.syncCurrentVehicleFromLiveData() {
-            showMessage(localized("garage_sync_success"))
-        } else {
-            showMessage(localized("garage_no_live_data"))
+        let coordinator = PTVehicleConnectivityCoordinator.shared
+        if (coordinator.dashboardNeedsGarageVehicleAssociation || coordinator.dashboardIdentityIsConflicted),
+           coordinator.dashboardConnectionIdentity?.isUsable == true {
+            presentDashboardAssociationPrompt(titleKey: "garage_sync_identity_conflict")
+            return
         }
+        if let boundVehicleID = coordinator.dashboardGarageVehicleID,
+           boundVehicleID != store.selectedVehicleID {
+            presentDashboardAssociationPrompt(titleKey: "garage_sync_other_vehicle")
+            return
+        }
+
+        switch coordinator.syncCurrentGarageVehicleNow() {
+        case .updated:
+            showMessage(localized("garage_sync_success"))
+        case .unchanged:
+            showMessage(localized("garage_sync_latest"))
+        case .unavailable:
+            showMessage(localized("garage_no_live_data"))
+        case .identityConflict, .vehicleNotFound:
+            showMessage(localized("garage_sync_identity_conflict"))
+        }
+    }
+
+    // EN: Keep explicit dashboard reassignment behind one confirmation alert.
+    // ES: Mantén la reasignación explícita del tablero detrás de una única confirmación.
+    // 中文：所有显式仪表重新关联都必须经过一次确认弹窗。
+    private func presentDashboardAssociationPrompt(titleKey: String) {
+        let alert = UIAlertController(
+            title: localized(titleKey),
+            message: localized("garage_bind_dashboard_hint"),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: localized("button_cancel"), style: .cancel))
+        alert.addAction(UIAlertAction(title: localized("garage_bind_dashboard"), style: .default) { [weak self] _ in
+            guard let self else { return }
+            if PTVehicleConnectivityCoordinator.shared.associateCurrentDashboardWithSelectedVehicle() {
+                self.showMessage(self.localized("garage_bind_success"))
+            } else {
+                self.showMessage(self.localized("garage_sync_identity_conflict"))
+            }
+        })
+        present(alert, animated: true)
     }
 
     @objc private func showMaintenanceWarningForm() {

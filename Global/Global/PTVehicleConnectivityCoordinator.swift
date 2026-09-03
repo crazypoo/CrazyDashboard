@@ -8,6 +8,34 @@
 //
 
 import Foundation
+import UIKit
+
+// EN: This value type is the only dashboard identity that leaves the BLE core.
+// ES: Este tipo de valor es la única identidad del tablero que sale del núcleo BLE.
+// 中文：这个值类型是唯一允许从 BLE 核心向外传递的仪表身份。
+public struct PTDashboardConnectionIdentity: Codable, Equatable, Sendable {
+    public let centralIdentifier: UUID?
+    public let reportedSerialNumber: String?
+
+    public init(centralIdentifier: UUID? = nil, reportedSerialNumber: String? = nil) {
+        self.centralIdentifier = centralIdentifier
+        self.reportedSerialNumber = Self.normalizeSerial(reportedSerialNumber)
+    }
+
+    public var isUsable: Bool {
+        centralIdentifier != nil || reportedSerialNumber != nil
+    }
+
+    private static func normalizeSerial(_ value: String?) -> String? {
+        guard let value else { return nil }
+        var printable = ""
+        for scalar in value.unicodeScalars where scalar.value >= 0x20 && scalar.value <= 0x7E {
+            printable.unicodeScalars.append(scalar)
+        }
+        let normalized = printable.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        return normalized.isEmpty ? nil : String(normalized.prefix(64))
+    }
+}
 
 public enum PTVehicleConnectionState: String, Codable, Sendable {
     case idle
@@ -15,6 +43,51 @@ public enum PTVehicleConnectionState: String, Codable, Sendable {
     case connected
     case disconnected
     case failed
+}
+
+private enum PTVehicleDashboardSample: Sendable {
+    case odometer(Double)
+    case maintenanceDistance(Int)
+    case maintenanceFlag(Int)
+}
+
+// EN: The buffer keeps only the newest primitive values, so a 10 Hz mock stream cannot grow memory.
+// ES: El búfer conserva solo los valores primitivos más recientes y evita crecer con un flujo simulado de 10 Hz.
+// 中文：缓冲区只保留最新的基础值，10Hz 模拟数据也不会造成内存增长。
+private struct PTDashboardLiveBuffer: Sendable {
+    var odometerKm: Double?
+    var maintenanceDistanceKm: Int?
+    var maintenanceFlag: Int?
+
+    init() {
+        odometerKm = nil
+        maintenanceDistanceKm = nil
+        maintenanceFlag = nil
+    }
+
+    var hasAnyValue: Bool {
+        odometerKm != nil || maintenanceDistanceKm != nil || maintenanceFlag != nil
+    }
+
+    mutating func merge(_ sample: PTVehicleDashboardSample) {
+        switch sample {
+        case .odometer(let value):
+            odometerKm = value
+        case .maintenanceDistance(let value):
+            maintenanceDistanceKm = value
+        case .maintenanceFlag(let value):
+            maintenanceFlag = value
+        }
+    }
+
+    func snapshot(capturedAt: Date = Date()) -> PTGarageDashboardSnapshot {
+        PTGarageDashboardSnapshot(
+            odometerKm: odometerKm,
+            maintenanceDistanceKm: maintenanceDistanceKm,
+            maintenanceFlag: maintenanceFlag,
+            capturedAt: capturedAt
+        )
+    }
 }
 
 public enum PTVehicleTransport: String, Codable, Sendable {
@@ -95,10 +168,15 @@ public struct PTVehicleSnapshot: Codable, Equatable, Sendable {
 public final class PTVehicleConnectivityCoordinator: NSObject {
     public static let shared = PTVehicleConnectivityCoordinator()
     public static let snapshotDidChange = Notification.Name("PTVehicleConnectivityCoordinator.snapshotDidChange")
+    public static let dashboardGarageSyncDidChange = Notification.Name("PTVehicleConnectivityCoordinator.dashboardGarageSyncDidChange")
 
     public private(set) var snapshot: PTVehicleSnapshot = .initial
+    public private(set) var dashboardConnectionIdentity: PTDashboardConnectionIdentity?
+    public private(set) var dashboardGarageVehicleID: UUID?
+    public private(set) var dashboardLiveSnapshot: PTGarageDashboardSnapshot?
 
     private let widgetAppGroupID = PTWidgetDataKeys.appGroupID
+    private let dashboardAutoSyncInterval: TimeInterval = 60
     private var dashboardAttemptInFlight = false
     private var obdAttemptInFlight = false
     private var obdRetryRequired = false
@@ -106,17 +184,44 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
     private var dashboardObserversActivated = false
     private var dashboardAttemptTask: Task<Void, Never>?
     private var obdAttemptTask: Task<Void, Never>?
+    private var pendingDashboardIdentity: PTDashboardConnectionIdentity?
+    private var dashboardLiveBuffer = PTDashboardLiveBuffer()
+    private var dashboardFlushTask: Task<Void, Never>?
+    private var dashboardIdentityTask: Task<Void, Never>?
+    private var dashboardSessionToken = UUID()
+    private var dashboardSessionActive = false
+    private var dashboardIdentityResolved = false
+    private var dashboardIdentityConflict = false
+    private var dashboardPendingCandidateVehicleID: UUID?
+    private var dashboardDidPersistInitialSample = false
+    private var dashboardLastPersistedAt: Date?
+    private var backgroundObserver: NSObjectProtocol?
 
     private override init() {
         super.init()
         PTBluetoothServerManager.shared.addDelegate(self)
         PTMotoTelemetryManager.shared.addDelegate(self)
+        backgroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, self.dashboardSessionActive else { return }
+                _ = self.flushDashboardData(force: false)
+            }
+        }
         synchronizeInitialState()
     }
 
     isolated deinit {
         dashboardAttemptTask?.cancel()
         obdAttemptTask?.cancel()
+        dashboardFlushTask?.cancel()
+        dashboardIdentityTask?.cancel()
+        if let backgroundObserver {
+            NotificationCenter.default.removeObserver(backgroundObserver)
+        }
         PTBluetoothServerManager.shared.removeDelegate(self)
         PTMotoTelemetryManager.shared.removeDelegate(self)
     }
@@ -180,6 +285,62 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         }
 
         updateDashboardState(.disconnected, transport: transport)
+    }
+
+    public var dashboardDataIsBoundToSelectedVehicle: Bool {
+        dashboardGarageVehicleID != nil
+            && dashboardGarageVehicleID == PTMotorcycleGarageStore.shared.selectedVehicleID
+    }
+
+    public var dashboardNeedsGarageVehicleAssociation: Bool {
+        snapshot.dashboard.state == .connected
+            && snapshot.dashboard.transport == .dashboardBluetooth
+            && dashboardGarageVehicleID == nil
+    }
+
+    public var dashboardIdentityIsConflicted: Bool {
+        dashboardIdentityConflict
+    }
+
+    /// EN: Force the same snapshot path used by automatic checkpoints for the visible vehicle.
+    /// ES: Fuerza la misma ruta de instantánea usada por los puntos automáticos para el vehículo visible.
+    /// 中文：手动操作也复用自动检查点使用的同一份快照路径。
+    @discardableResult
+    public func syncCurrentGarageVehicleNow() -> PTGarageDashboardSyncResult {
+        guard snapshot.dashboard.state == .connected,
+              snapshot.dashboard.transport == .dashboardBluetooth else {
+            return .unavailable
+        }
+        guard dashboardGarageVehicleID != nil else {
+            return dashboardIdentityConflict ? .identityConflict : .unavailable
+        }
+        guard dashboardDataIsBoundToSelectedVehicle else { return .identityConflict }
+        return flushDashboardData(force: true)
+    }
+
+    /// EN: A user-confirmed association is the only path allowed to recover from an ambiguous vehicle match.
+    /// ES: La asociación confirmada por el usuario es la única vía para resolver una coincidencia ambigua.
+    /// 中文：只有用户确认的关联操作可以解决车辆身份不明确的问题。
+    @discardableResult
+    public func associateCurrentDashboardWithSelectedVehicle() -> Bool {
+        guard snapshot.dashboard.state == .connected,
+              snapshot.dashboard.transport == .dashboardBluetooth,
+              let selectedVehicleID = PTMotorcycleGarageStore.shared.selectedVehicleID,
+              let identity = dashboardConnectionIdentity,
+              identity.isUsable,
+              PTMotorcycleGarageStore.shared.reassignDashboardIdentity(identity, to: selectedVehicleID) else {
+            return false
+        }
+
+        dashboardGarageVehicleID = selectedVehicleID
+        dashboardIdentityResolved = true
+        dashboardIdentityConflict = false
+        dashboardPendingCandidateVehicleID = nil
+        dashboardIdentityTask?.cancel()
+        applySuggestedVehicleNameIfNeeded(vehicleID: selectedVehicleID)
+        notifyDashboardGarageSyncChanged()
+        _ = flushDashboardData(force: true)
+        return true
     }
 
     @discardableResult
@@ -250,9 +411,12 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         let initialDashboard = PTVehicleLinkSnapshot(state: dashboardState, transport: dashboardTransport, updatedAt: now)
         let initialOBD = PTVehicleLinkSnapshot(state: obdState, updatedAt: now)
         snapshot = PTVehicleSnapshot(dashboard: initialDashboard, obd: initialOBD, updatedAt: now)
+        pendingDashboardIdentity = PTBluetoothServerManager.shared.dashboardConnectionIdentity
+        dashboardConnectionIdentity = pendingDashboardIdentity
 
         if dashboardState == .connected {
             activateDashboardObserversIfNeeded()
+            beginDashboardGarageSession()
         }
     }
 
@@ -351,6 +515,274 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         )
     }
 
+    private func beginDashboardGarageSession() {
+        guard !dashboardSessionActive,
+              snapshot.dashboard.transport == .dashboardBluetooth else {
+            return
+        }
+
+        dashboardSessionActive = true
+        dashboardSessionToken = UUID()
+        dashboardFlushTask?.cancel()
+        dashboardIdentityTask?.cancel()
+        dashboardFlushTask = nil
+        dashboardIdentityTask = nil
+        dashboardGarageVehicleID = nil
+        dashboardLiveSnapshot = nil
+        dashboardLiveBuffer = PTDashboardLiveBuffer()
+        dashboardIdentityResolved = false
+        dashboardIdentityConflict = false
+        dashboardPendingCandidateVehicleID = nil
+        dashboardDidPersistInitialSample = false
+        dashboardLastPersistedAt = nil
+
+        if let pendingDashboardIdentity {
+            resolveDashboardIdentity(pendingDashboardIdentity)
+        }
+        scheduleDashboardIdentityResolution()
+        notifyDashboardGarageSyncChanged()
+    }
+
+    private func endDashboardGarageSession() {
+        guard dashboardSessionActive else { return }
+
+        _ = flushDashboardData(force: !dashboardDidPersistInitialSample)
+        dashboardSessionActive = false
+        dashboardSessionToken = UUID()
+        dashboardFlushTask?.cancel()
+        dashboardIdentityTask?.cancel()
+        dashboardFlushTask = nil
+        dashboardIdentityTask = nil
+        dashboardGarageVehicleID = nil
+        dashboardLiveSnapshot = nil
+        dashboardLiveBuffer = PTDashboardLiveBuffer()
+        dashboardIdentityResolved = false
+        dashboardIdentityConflict = false
+        dashboardPendingCandidateVehicleID = nil
+        dashboardDidPersistInitialSample = false
+        dashboardLastPersistedAt = nil
+        dashboardConnectionIdentity = nil
+        pendingDashboardIdentity = nil
+        notifyDashboardGarageSyncChanged()
+    }
+
+    private func receiveDashboardIdentity(_ identity: PTDashboardConnectionIdentity?) {
+        dashboardConnectionIdentity = identity
+        pendingDashboardIdentity = identity
+        guard dashboardSessionActive else { return }
+
+        guard let identity, identity.isUsable else {
+            dashboardIdentityConflict = false
+            notifyDashboardGarageSyncChanged()
+            return
+        }
+        resolveDashboardIdentity(identity)
+    }
+
+    private func resolveDashboardIdentity(_ identity: PTDashboardConnectionIdentity) {
+        let resolution = PTMotorcycleGarageStore.shared.resolveDashboardIdentity(
+            identity,
+            preferredVehicleID: PTMotorcycleGarageStore.shared.selectedVehicleID
+        )
+
+        switch resolution {
+        case .matched(let vehicleID):
+            guard PTMotorcycleGarageStore.shared.bindDashboardIdentity(identity, to: vehicleID) else {
+                dashboardIdentityConflict = true
+                dashboardGarageVehicleID = nil
+                notifyDashboardGarageSyncChanged()
+                return
+            }
+            dashboardGarageVehicleID = vehicleID
+            dashboardIdentityResolved = true
+            dashboardIdentityConflict = false
+            dashboardPendingCandidateVehicleID = nil
+            dashboardIdentityTask?.cancel()
+            applySuggestedVehicleNameIfNeeded(vehicleID: vehicleID)
+            notifyDashboardGarageSyncChanged()
+            scheduleDashboardFlush()
+
+        case .candidate(let vehicleID):
+            dashboardPendingCandidateVehicleID = vehicleID
+            dashboardIdentityConflict = false
+            // EN: Wait briefly for the reported serial before claiming an unbound profile with only a UUID.
+            // ES: Espera brevemente el número de serie antes de reclamar un perfil libre solo con UUID.
+            // 中文：仅有 UUID 时短暂等待序列号，避免错误占用未绑定档案。
+            if identity.reportedSerialNumber != nil {
+                bindPendingDashboardCandidateIfPossible()
+            }
+            notifyDashboardGarageSyncChanged()
+
+        case .conflict:
+            dashboardIdentityConflict = true
+            dashboardGarageVehicleID = nil
+            dashboardIdentityResolved = false
+            dashboardPendingCandidateVehicleID = nil
+            dashboardFlushTask?.cancel()
+            dashboardFlushTask = nil
+            notifyDashboardGarageSyncChanged()
+
+        case .unavailable:
+            dashboardIdentityConflict = false
+            dashboardGarageVehicleID = nil
+            dashboardIdentityResolved = false
+            dashboardPendingCandidateVehicleID = nil
+            notifyDashboardGarageSyncChanged()
+        }
+    }
+
+    private func bindPendingDashboardCandidateIfPossible() {
+        guard let vehicleID = dashboardPendingCandidateVehicleID else {
+            notifyDashboardGarageSyncChanged()
+            return
+        }
+        guard let identity = dashboardConnectionIdentity,
+              identity.isUsable else {
+            notifyDashboardGarageSyncChanged()
+            return
+        }
+        guard PTMotorcycleGarageStore.shared.bindDashboardIdentity(identity, to: vehicleID) else {
+            dashboardIdentityConflict = true
+            dashboardGarageVehicleID = nil
+            dashboardIdentityResolved = false
+            notifyDashboardGarageSyncChanged()
+            return
+        }
+
+        dashboardGarageVehicleID = vehicleID
+        dashboardIdentityResolved = true
+        dashboardIdentityConflict = false
+        dashboardPendingCandidateVehicleID = nil
+        dashboardIdentityTask?.cancel()
+        applySuggestedVehicleNameIfNeeded(vehicleID: vehicleID)
+        notifyDashboardGarageSyncChanged()
+        scheduleDashboardFlush()
+    }
+
+    private func scheduleDashboardIdentityResolution() {
+        let token = dashboardSessionToken
+        dashboardIdentityTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            guard let self,
+                  !Task.isCancelled,
+                  self.dashboardSessionActive,
+                  self.dashboardSessionToken == token,
+                  !self.dashboardIdentityResolved,
+                  !self.dashboardIdentityConflict else {
+                return
+            }
+            self.bindPendingDashboardCandidateIfPossible()
+        }
+    }
+
+    private func receiveDashboardSample(_ sample: PTVehicleDashboardSample) {
+        guard snapshot.dashboard.state == .connected,
+              snapshot.dashboard.transport == .dashboardBluetooth else {
+            return
+        }
+        if !dashboardSessionActive {
+            beginDashboardGarageSession()
+        }
+        guard dashboardSessionActive else { return }
+
+        dashboardLiveBuffer.merge(sample)
+        dashboardLiveSnapshot = dashboardLiveBuffer.snapshot()
+        notifyDashboardGarageSyncChanged()
+        guard dashboardIdentityResolved, !dashboardIdentityConflict else { return }
+        scheduleDashboardFlush()
+    }
+
+    private func scheduleDashboardFlush() {
+        guard dashboardSessionActive,
+              dashboardIdentityResolved,
+              dashboardGarageVehicleID != nil,
+              dashboardLiveBuffer.hasAnyValue,
+              dashboardFlushTask == nil else {
+            return
+        }
+
+        let delay: TimeInterval
+        if dashboardDidPersistInitialSample {
+            let earliest = (dashboardLastPersistedAt ?? .distantPast)
+                .addingTimeInterval(dashboardAutoSyncInterval)
+            delay = max(0.5, earliest.timeIntervalSinceNow)
+        } else {
+            delay = 1
+        }
+
+        let token = dashboardSessionToken
+        let nanoseconds = UInt64(max(0, delay) * 1_000_000_000)
+        dashboardFlushTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: nanoseconds)
+            guard let self,
+                  !Task.isCancelled,
+                  self.dashboardSessionActive,
+                  self.dashboardSessionToken == token else {
+                return
+            }
+            _ = self.flushDashboardData(force: false)
+        }
+    }
+
+    @discardableResult
+    private func flushDashboardData(force: Bool) -> PTGarageDashboardSyncResult {
+        dashboardFlushTask?.cancel()
+        dashboardFlushTask = nil
+        guard dashboardSessionActive,
+              let vehicleID = dashboardGarageVehicleID,
+              dashboardLiveBuffer.hasAnyValue else {
+            return .unavailable
+        }
+
+        let result = PTMotorcycleGarageStore.shared.applyDashboardSnapshot(
+            dashboardLiveBuffer.snapshot(),
+            to: vehicleID,
+            recordReceiptWhenUnchanged: force || !dashboardDidPersistInitialSample
+        )
+        switch result {
+        case .updated:
+            dashboardDidPersistInitialSample = true
+            dashboardLastPersistedAt = Date()
+        case .unchanged:
+            dashboardDidPersistInitialSample = true
+        case .unavailable, .identityConflict, .vehicleNotFound:
+            break
+        }
+        notifyDashboardGarageSyncChanged()
+        return result
+    }
+
+    private func applySuggestedVehicleNameIfNeeded(vehicleID: UUID) {
+        let nickname = PTMotoUserDefaultStruct.PTTCustomUserName
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !nickname.isEmpty,
+              let vehicle = PTMotorcycleGarageStore.shared.vehicle(id: vehicleID),
+              vehicle.name == PTMotorcycleProfile.defaultXP400GT.name else {
+            return
+        }
+
+        let normalizedName: String
+        let nameAlreadyUsed = PTMotorcycleGarageStore.shared.vehicles.contains {
+            $0.id != vehicleID && $0.name.caseInsensitiveCompare(nickname) == .orderedSame
+        }
+        if nameAlreadyUsed {
+            let suffix = dashboardConnectionIdentity?.reportedSerialNumber.map { String($0.suffix(4)) }
+                ?? dashboardConnectionIdentity?.centralIdentifier.map { String($0.uuidString.suffix(4)) }
+                ?? "MOTO"
+            normalizedName = "\(nickname) · \(suffix)"
+        } else {
+            normalizedName = nickname
+        }
+        _ = PTMotorcycleGarageStore.shared.updateVehicleName(normalizedName, vehicleID: vehicleID)
+    }
+
+    private func notifyDashboardGarageSyncChanged() {
+        NotificationCenter.default.post(
+            name: Self.dashboardGarageSyncDidChange,
+            object: self
+        )
+    }
+
     private func startDashboardWatchdog() {
         dashboardAttemptTask?.cancel()
         dashboardAttemptTask = Task { @MainActor [weak self] in
@@ -385,6 +817,11 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         dashboardAttemptInFlight = false
         dashboardAttemptTask?.cancel()
         dashboardAttemptTask = nil
+        if isConnected {
+            beginDashboardGarageSession()
+        } else {
+            endDashboardGarageSession()
+        }
         updateDashboardState(
             isConnected ? .connected : .disconnected,
             transport: snapshot.dashboard.transport ?? .dashboardBluetooth
@@ -409,6 +846,33 @@ extension PTVehicleConnectivityCoordinator: PTBLEDashboardDelegate {
     nonisolated func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool) {
         Task { @MainActor [weak self] in
             self?.receiveDashboardConnection(isConnected)
+        }
+    }
+
+    nonisolated func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
+        let sample: PTVehicleDashboardSample?
+        if let data1 = data as? PTDashboardData1 {
+            sample = .odometer(data1.odoKm)
+        } else if let data2 = data as? PTDashboardData2 {
+            sample = .maintenanceFlag(data2.maintenance)
+        } else if let data3 = data as? PTDashboardData3 {
+            sample = .maintenanceDistance(data3.distToMaintenance)
+        } else {
+            sample = nil
+        }
+
+        guard let sample else { return }
+        Task { @MainActor [weak self] in
+            self?.receiveDashboardSample(sample)
+        }
+    }
+
+    nonisolated func dashboardManager(
+        _ manager: PTBluetoothServerManager,
+        didUpdateConnectionIdentity identity: PTDashboardConnectionIdentity?
+    ) {
+        Task { @MainActor [weak self] in
+            self?.receiveDashboardIdentity(identity)
         }
     }
 }

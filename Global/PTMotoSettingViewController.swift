@@ -12,7 +12,35 @@ import SwifterSwift
 import SnapKit
 import SafeSFSymbols
 
+// EN: Describes the dashboard values that must be echoed by Data3 before a setting is considered applied.
+// ES: Describe los valores del tablero que Data3 debe devolver antes de considerar aplicada la configuración.
+// 中文：描述必须由 Data3 回读的仪表值，只有匹配后才认为设置已生效。
+struct PTDashboardConfigurationExpectation {
+    let color: PTConfigColor
+    let unit: PTConfigUnit
+    let language: PTConfigLanguage
+
+    // EN: Compare decoded dashboard values instead of the raw mixed bit fields.
+    // ES: Compara los valores decodificados del tablero y no los campos de bits mezclados sin procesar.
+    // 中文：比较已经解码的仪表值，避免直接比较混合位字段。
+    func matches(_ data3: PTDashboardData3) -> Bool {
+        data3.dashboardColor.rawValue == color.rawValue &&
+        data3.unitType.rawValue == unit.rawValue &&
+        data3.languageType.rawValue == language.rawValue
+    }
+}
+
 class PTMotoSettingViewController: PTMotoBaseViewController {
+
+    // EN: Keep only the latest configuration request while waiting for a Data3 echo.
+    // ES: Conserva solo la última solicitud mientras esperamos el eco Data3.
+    // 中文：等待 Data3 回读期间只保留最后一次配置请求。
+    private var pendingDashboardConfiguration: (token: UUID, expectation: PTDashboardConfigurationExpectation, isSent: Bool)?
+
+    // EN: Cancels the five-second confirmation timeout when the request finishes early.
+    // ES: Cancela el tiempo de espera de cinco segundos cuando la solicitud termina antes.
+    // 中文：配置提前完成时取消 5 秒确认超时任务。
+    private var dashboardConfigurationTimeout: DispatchWorkItem?
 
     lazy var appLogo:UIImageView = {
         let view = UIImageView()
@@ -46,9 +74,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 let colorCase = PTConfigColor.allCases[index]
                 let uniConfig = PTBluetoothServerManager.shared.latestData3?.unitType ?? .metric
                 let language = PTBluetoothServerManager.shared.latestData3?.languageType ?? .english
-                PTBluetoothServerManager.shared.sendConfiguration(color: colorCase, unit: uniConfig, language: language) { finish in
-                    self.dashBoardSetResult(finish: finish)
-                }
+                self.sendDashboardConfiguration(color: colorCase, unit: uniConfig, language: language)
             })
         })
         return view
@@ -76,10 +102,8 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             UIAlertController.baseCustomActionSheet(titleItem: titleItem,cancelItem: PTActionSheetItem(title: PTDashboardConfig.languageFunc(text: "button_cancel")), contentItems: contentImtes, otherBlock: { sheet,index,title in
                 let colorType:PTConfigColor = PTBluetoothServerManager.shared.latestData3?.dashboardColor ?? .blue
                 let uniConfig = PTConfigUnit.allCases[index]
-                let language = PTConfigLanguage(rawValue: UInt8((PTBluetoothServerManager.shared.latestData3?.language ?? 1)))!
-                PTBluetoothServerManager.shared.sendConfiguration(color: colorType, unit: uniConfig, language: language) { finish in
-                    self.dashBoardSetResult(finish: finish)
-                }
+                let language = PTBluetoothServerManager.shared.latestData3?.languageType ?? .english
+                self.sendDashboardConfiguration(color: colorType, unit: uniConfig, language: language)
             })
         })
         return view
@@ -107,9 +131,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 let colorType:PTConfigColor = PTBluetoothServerManager.shared.latestData3?.dashboardColor ?? .blue
                 let uniConfig = PTBluetoothServerManager.shared.latestData3?.unitType ?? .metric
                 let language = PTConfigLanguage.allCases[index]
-                PTBluetoothServerManager.shared.sendConfiguration(color: colorType, unit: uniConfig, language: language) { finish in
-                    self.dashBoardSetResult(finish: finish)
-                }
+                self.sendDashboardConfiguration(color: colorType, unit: uniConfig, language: language)
             })
         })
         return view
@@ -240,6 +262,14 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
         setCustomRightButtons(buttons: [globalButton])
+    }
+
+    // EN: Do not surface a delayed confirmation after leaving the settings screen.
+    // ES: No muestres una confirmación retrasada después de abandonar la pantalla de ajustes.
+    // 中文：离开设置页后不再显示延迟到达的配置确认。
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        cancelDashboardConfigurationWait()
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -447,6 +477,66 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         return view
     }
 
+    // EN: Accept success only after the dashboard echoes all requested values in Data3.
+    // ES: Acepta el éxito solo después de que el tablero devuelva todos los valores solicitados en Data3.
+    // 中文：只有仪表通过 Data3 回读全部目标值后才确认成功。
+    override func handleMotorcycleData(data: Any?) {
+        guard let data3 = data as? PTDashboardData3,
+              let pending = pendingDashboardConfiguration,
+              pending.isSent,
+              pending.expectation.matches(data3) else {
+            return
+        }
+
+        pendingDashboardConfiguration = nil
+        dashboardConfigurationTimeout?.cancel()
+        dashboardConfigurationTimeout = nil
+        PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "set_success"))
+        globalChangeDashBoardData()
+    }
+
+    // EN: Show transport success immediately, then wait up to five seconds for the dashboard echo.
+    // ES: Muestra el envío inmediato y espera hasta cinco segundos el eco del tablero.
+    // 中文：传输成功后立即显示已发送，并等待仪表最多 5 秒回读确认。
+    private func sendDashboardConfiguration(color: PTConfigColor, unit: PTConfigUnit, language: PTConfigLanguage) {
+        cancelDashboardConfigurationWait()
+
+        let requestToken = UUID()
+        let expectation = PTDashboardConfigurationExpectation(color: color, unit: unit, language: language)
+        pendingDashboardConfiguration = (token: requestToken, expectation: expectation, isSent: false)
+
+        PTBluetoothServerManager.shared.sendConfiguration(color: color, unit: unit, language: language) { [weak self] didSend in
+            guard let self, var pending = self.pendingDashboardConfiguration, pending.token == requestToken else { return }
+
+            guard didSend else {
+                self.pendingDashboardConfiguration = nil
+                PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "set_bad"))
+                return
+            }
+
+            pending.isSent = true
+            self.pendingDashboardConfiguration = pending
+            PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "dashboard_config_sent"))
+            let timeout = DispatchWorkItem { [weak self] in
+                guard let self, self.pendingDashboardConfiguration?.token == requestToken else { return }
+                self.pendingDashboardConfiguration = nil
+                self.dashboardConfigurationTimeout = nil
+                PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "dashboard_config_unconfirmed"))
+            }
+            self.dashboardConfigurationTimeout = timeout
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: timeout)
+        }
+    }
+
+    // EN: Clear the pending request and its timeout as one lifecycle operation.
+    // ES: Limpia la solicitud pendiente y su tiempo de espera como una sola operación de ciclo de vida.
+    // 中文：将待确认请求和超时任务作为一个生命周期整体清理。
+    private func cancelDashboardConfigurationWait() {
+        pendingDashboardConfiguration = nil
+        dashboardConfigurationTimeout?.cancel()
+        dashboardConfigurationTimeout = nil
+    }
+
     // EN: Present the supported Siri and Shortcuts actions without exposing raw test URLs in the production settings page.
     // ES: Presenta las acciones compatibles de Siri y Atajos sin exponer URL de prueba en los ajustes de producción.
     // 中文：在正式设置页展示支持的 Siri 与快捷指令操作，不再暴露原始测试 URL。
@@ -642,17 +732,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             style: .default
         ))
         present(alert, animated: true)
-    }
-    
-    func dashBoardSetResult(finish:Bool) {
-        if finish {
-            PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "set_success"))
-            self.globalChangeDashBoardData()
-        } else {
-            PTGCDManager.shared.delayOnMain(time: 0.55) {
-                PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "set_bad"))
-            }
-        }
     }
     
     func globalChangeDashBoardData() {

@@ -681,12 +681,20 @@ protocol PTBLEDashboardDelegate: AnyObject {
     func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool)
     func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?)
     func dashboardManager(_ manager: PTBluetoothServerManager, unknownData data: String)
+    func dashboardManager(
+        _ manager: PTBluetoothServerManager,
+        didUpdateConnectionIdentity identity: PTDashboardConnectionIdentity?
+    )
 }
 
 extension PTBLEDashboardDelegate {
     func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool) {}
     func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {}
     func dashboardManager(_ manager: PTBluetoothServerManager, unknownData data: String) {}
+    func dashboardManager(
+        _ manager: PTBluetoothServerManager,
+        didUpdateConnectionIdentity identity: PTDashboardConnectionIdentity?
+    ) {}
 }
 
 // 只保留外设管理器，做纯粹的服务器
@@ -735,6 +743,10 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     public private(set) var latestData3: PTDashboardData3?
     public private(set) var latestControl: PTDashboardControl?
     public private(set) var latestAbsStatus: PTAbsStatus?
+    // EN: Expose only the current dashboard identity; authentication and transport remain private.
+    // ES: Expone solo la identidad actual del tablero; la autenticación y el transporte permanecen privados.
+    // 中文：只暴露当前仪表身份，认证和传输逻辑继续保持私有。
+    private(set) var dashboardConnectionIdentity: PTDashboardConnectionIdentity?
 
     // 🚨 核心修复 1：必须使用 16-bit 短标识！否则会撑爆 iOS 的 31 字节广播包，导致摩托车看不见！
     let TIO_SERVICE = CBUUID(string: "FEFB")
@@ -840,8 +852,16 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     
     // MARK: - 监听订阅
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
+        let identityChanged = connectedCentral?.identifier != central.identifier
         connectedCentral = central
+        dashboardConnectionIdentity = PTDashboardConnectionIdentity(centralIdentifier: central.identifier)
         PTOBDLogger.moto.ptLog("⚡️ [雷达] 摩托车订阅成功: \(characteristic.uuid.uuidString)")
+
+        if identityChanged {
+            delegates.forEach {
+                $0.delegate?.dashboardManager(self, didUpdateConnectionIdentity: dashboardConnectionIdentity)
+            }
+        }
         
         if characteristic.uuid == UART_TX { isTioSubscribed = true }
         if characteristic.uuid == UART_TX_CREDITS { isCreditsSubscribed = true }
@@ -863,6 +883,11 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         if PTDashboardConfig.shared.blueConnected {
             self.cleanupDelegates()
             self.delegates.forEach( { $0.delegate?.dashboardManager(self, didChangeConnectionState: false) })
+        }
+        dashboardConnectionIdentity = nil
+        connectedCentral = nil
+        delegates.forEach {
+            $0.delegate?.dashboardManager(self, didUpdateConnectionIdentity: nil)
         }
     }
     
@@ -1256,6 +1281,18 @@ extension PTBluetoothServerManager {
         
         switch id {
         case 1:
+            if let asciiString = String(bytes: bytes, encoding: .ascii) {
+                dashboardConnectionIdentity = PTDashboardConnectionIdentity(
+                    centralIdentifier: connectedCentral?.identifier,
+                    reportedSerialNumber: asciiString
+                )
+                delegates.forEach {
+                    $0.delegate?.dashboardManager(
+                        self,
+                        didUpdateConnectionIdentity: dashboardConnectionIdentity
+                    )
+                }
+            }
             delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:1 (心跳/连接) -> \(hexString)") })
             if let asciiString = String(bytes: bytes, encoding: .ascii) {
                 PTOBDLogger.moto.ptLog("🔗 [状态] 车机报告连接正常 (CONNECTION) | 设备序列号: \(asciiString)")

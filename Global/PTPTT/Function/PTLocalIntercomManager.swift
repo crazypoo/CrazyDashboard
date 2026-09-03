@@ -202,8 +202,12 @@ public class PTLocalIntercomManager: NSObject {
     }()
     
     public var customUserName: String {
-        get { return UserDefaults.standard.string(forKey: "PT_CustomUserName") ?? UIDevice.current.name }
-        set { UserDefaults.standard.set(newValue, forKey: "PT_CustomUserName") }
+        get {
+            let savedName = PTMotoUserDefaultStruct.PTTCustomUserName
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return savedName.isEmpty ? UIDevice.current.name : savedName
+        }
+        set { PTMotoUserDefaultStruct.PTTCustomUserName = newValue }
     }
 
     // EN: Expose the stable local identity for validated, non-audio PTT payloads.

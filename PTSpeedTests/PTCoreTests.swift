@@ -276,6 +276,131 @@ final class PTCoreTests: XCTestCase {
                        PTMotorcycleGarageStore.defaultMaintenanceWarningDistanceKm)
     }
 
+    // EN: Dashboard identity matching must prefer the reported serial and reject cross-vehicle conflicts.
+    // ES: La coincidencia de identidad debe preferir el número de serie e impedir conflictos entre motocicletas.
+    // 中文：仪表身份匹配必须优先使用序列号，并拒绝跨车辆身份冲突。
+    @MainActor
+    func testDashboardIdentityResolutionUsesSerialPrecedence() throws {
+        let suiteName = "PTDashboardIdentityTests.\(UUID().uuidString)"
+        let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { userDefaults.removePersistentDomain(forName: suiteName) }
+
+        let store = PTMotorcycleGarageStore(userDefaults: userDefaults)
+        let firstVehicle = try XCTUnwrap(store.currentVehicle)
+        let secondVehicle = try XCTUnwrap(
+            store.createVehicle(name: "Second Bike", brand: "Peugeot", model: "XP400 GT")
+        )
+        let firstCentralID = UUID()
+        let secondCentralID = UUID()
+        let firstIdentity = PTDashboardConnectionIdentity(
+            centralIdentifier: firstCentralID,
+            reportedSerialNumber: " serial-a "
+        )
+        let secondIdentity = PTDashboardConnectionIdentity(
+            centralIdentifier: secondCentralID,
+            reportedSerialNumber: "SERIAL-B"
+        )
+
+        XCTAssertTrue(store.bindDashboardIdentity(firstIdentity, to: firstVehicle.id))
+        XCTAssertTrue(store.bindDashboardIdentity(secondIdentity, to: secondVehicle.id))
+        XCTAssertEqual(
+            store.resolveDashboardIdentity(
+                PTDashboardConnectionIdentity(
+                    centralIdentifier: secondCentralID,
+                    reportedSerialNumber: "SERIAL-A"
+                )
+            ),
+            .conflict
+        )
+        XCTAssertEqual(
+            store.resolveDashboardIdentity(
+                PTDashboardConnectionIdentity(reportedSerialNumber: "serial-a")
+            ),
+            .matched(firstVehicle.id)
+        )
+        XCTAssertEqual(
+            store.resolveDashboardIdentity(
+                PTDashboardConnectionIdentity(centralIdentifier: firstCentralID)
+            ),
+            .matched(firstVehicle.id)
+        )
+    }
+
+    // EN: A UUID-only first connection may wait for a serial and then claim only the unbound selected profile.
+    // ES: Una primera conexión solo con UUID puede esperar el número de serie y reclamar únicamente el perfil seleccionado sin vínculo.
+    // 中文：首次仅有 UUID 的连接可以等待序列号，但只能候选当前未绑定的车辆档案。
+    @MainActor
+    func testDashboardIdentityCandidateAndExplicitReassignment() throws {
+        let suiteName = "PTDashboardCandidateTests.\(UUID().uuidString)"
+        let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { userDefaults.removePersistentDomain(forName: suiteName) }
+
+        let store = PTMotorcycleGarageStore(userDefaults: userDefaults)
+        let firstVehicle = try XCTUnwrap(store.currentVehicle)
+        let secondVehicle = try XCTUnwrap(
+            store.createVehicle(name: "Second Bike", brand: "Peugeot", model: "XP400 GT")
+        )
+        let identity = PTDashboardConnectionIdentity(centralIdentifier: UUID())
+
+        XCTAssertEqual(
+            store.resolveDashboardIdentity(identity, preferredVehicleID: secondVehicle.id),
+            .candidate(secondVehicle.id)
+        )
+        XCTAssertTrue(store.bindDashboardIdentity(identity, to: secondVehicle.id))
+        XCTAssertTrue(
+            store.reassignDashboardIdentity(
+                PTDashboardConnectionIdentity(
+                    centralIdentifier: identity.centralIdentifier,
+                    reportedSerialNumber: "SERIAL-SECOND"
+                ),
+                to: firstVehicle.id
+            )
+        )
+        XCTAssertNil(store.vehicle(id: secondVehicle.id)?.dashboardBLEIdentifier)
+        XCTAssertEqual(store.vehicle(id: firstVehicle.id)?.dashboardSerialNumber, "SERIAL-SECOND")
+    }
+
+    // EN: Dashboard persistence must retain the highest odometer while accepting newer maintenance values.
+    // ES: La persistencia debe conservar el odómetro más alto y aceptar valores de mantenimiento nuevos.
+    // 中文：仪表持久化必须保留较高里程，同时接受更新的保养数据。
+    @MainActor
+    func testDashboardSnapshotIsMonotonicAndVehicleOwned() throws {
+        let suiteName = "PTDashboardSnapshotTests.\(UUID().uuidString)"
+        let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { userDefaults.removePersistentDomain(forName: suiteName) }
+
+        let store = PTMotorcycleGarageStore(userDefaults: userDefaults)
+        let vehicleID = try XCTUnwrap(store.currentVehicle?.id)
+        let firstDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let firstSnapshot = PTGarageDashboardSnapshot(
+            odometerKm: 12_000,
+            maintenanceDistanceKm: 2_000,
+            maintenanceFlag: 0,
+            capturedAt: firstDate
+        )
+
+        XCTAssertEqual(store.applyDashboardSnapshot(firstSnapshot, to: vehicleID), .updated)
+        let secondSnapshot = PTGarageDashboardSnapshot(
+            odometerKm: 11_999,
+            maintenanceDistanceKm: 1_000,
+            maintenanceFlag: 1,
+            capturedAt: firstDate.addingTimeInterval(60)
+        )
+        XCTAssertEqual(store.applyDashboardSnapshot(secondSnapshot, to: vehicleID), .updated)
+        XCTAssertEqual(store.vehicle(id: vehicleID)?.odometerKm, 12_000)
+        XCTAssertEqual(store.vehicle(id: vehicleID)?.dashboardMaintenanceDistanceKm, 1_000)
+        XCTAssertEqual(store.vehicle(id: vehicleID)?.dashboardMaintenanceFlag, 1)
+
+        let unchangedSnapshot = PTGarageDashboardSnapshot(
+            odometerKm: 11_999,
+            maintenanceDistanceKm: 1_000,
+            maintenanceFlag: 1,
+            capturedAt: firstDate.addingTimeInterval(120)
+        )
+        XCTAssertEqual(store.applyDashboardSnapshot(unchangedSnapshot, to: vehicleID), .unchanged)
+        XCTAssertEqual(store.vehicle(id: vehicleID)?.lastDashboardSyncAt, secondSnapshot.capturedAt)
+    }
+
     // EN: Watch navigation context must round-trip without losing the maneuver identity used for haptics.
     // ES: El contexto de navegación del Watch debe conservar la identidad de maniobra usada por los hápticos.
     // 中文：Watch 导航上下文往返编码后，必须保留用于触觉去重的转向标识。
@@ -308,6 +433,32 @@ final class PTCoreTests: XCTestCase {
         let text = PTDashboardConfig.language(key: "ptt_ready_connect_count", 0)
 
         XCTAssertTrue(text.contains("0"), "Unexpected localized count text: \(text)")
+    }
+
+    // EN: A dashboard configuration is confirmed only when Data3 echoes all three requested values.
+    // ES: Una configuración se confirma solo cuando Data3 devuelve los tres valores solicitados.
+    // 中文：只有 Data3 回读三个目标值后，仪表配置才算确认成功。
+    func testDashboardConfigurationExpectationMatchesData3Echo() {
+        let expectation = PTDashboardConfigurationExpectation(
+            color: .red,
+            unit: .imperial,
+            language: .spanish
+        )
+        let echoedData = PTDashboardData3(
+            autonomyKm: 120,
+            distToMaintenance: 500,
+            colorMeasur: 0x88,
+            language: 0x08
+        )
+        let mismatchedData = PTDashboardData3(
+            autonomyKm: 120,
+            distToMaintenance: 500,
+            colorMeasur: 0x88,
+            language: 0x02
+        )
+
+        XCTAssertTrue(expectation.matches(echoedData))
+        XCTAssertFalse(expectation.matches(mismatchedData))
     }
 
     // EN: External routes must preserve legacy URLs while rejecting ambiguous parameters.

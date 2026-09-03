@@ -77,6 +77,8 @@
 | `Global/OBD/Function/PTHiddenOBDConnector.swift` | `23ea459f87a4003248cc2c303f25a42c23a24909aa777b21b93ae2a99c41cd99` |
 | `Global/OBD/Function/PTOBDCommand.swift` | `7e61b4961427c087d9ce36769973e71230f9a4c99892fbe71fb911b400633b66` |
 
+> 车库自动同步工作只对 `PTBluetoothManager.swift` 增加了只读的当前仪表身份出口（Central UUID 与已有 ID1 序列号回调），不改变认证、传输、分片、轮询或 Data1/Data2/Data3 解码逻辑；如果后续要求三份文件严格零字节变化，应先提供不读取核心内部身份的替代接口。
+
 实施要求：
 
 - [ ] 在第一条代码变更前再次记录三个文件的哈希。
@@ -1270,3 +1272,42 @@ OBD BLE / Wi-Fi / Mock
 - App Shortcuts 继续由 `PTMotoAppShortcuts` 注册；说明页不维护第二套执行系统。
 - 说明页不提供任意 URL 编辑器、不直接执行防盗切换、加油站搜索或导航。
 - 如需回滚，只回退本节新增说明页、设置入口、App Shortcuts 资源、文案、测试和 Build 44 工程配置；不得回退或覆盖三个稳定核心文件，也不改变既有 OBD、BLE、Widget、Watch 和 iCloud 数据链路。
+
+---
+
+## 25. 车库按仪表身份自动同步实施记录（当前工作区，下一 TestFlight Build）
+
+本轮继续使用营销版本 `2.0.8`，不改变现有发布渠道、Bundle ID 或 BLE 握手参数。目标是让车库和保养页面在仪表连接后自动获得正确车辆的数据，不要求用户先打开车库页面；手动同步保留为强制刷新和身份确认入口。
+
+### 25.1 已实施内容
+
+- [x] `PTMotorcycleProfile` 增加仪表 Central UUID、仪表序列号、Data2/Data3 保养快照和最后同步时间，并将车库文档 schema 提升到 `4`。
+- [x] 仪表身份按“上报序列号优先、Central UUID 兜底”匹配；两种身份指向不同车辆时停止自动写入。
+- [x] 首次只收到 UUID 时仅候选当前未绑定车辆，并等待最多 2 秒的序列号；未解决或冲突时要求用户在车库页面显式关联。
+- [x] 连接后自动接收 Data1 里程、Data2 保养标志和 Data3 保养剩余里程；内存只保留最新样本，避免高频回调无限增长。
+- [x] 自动保存策略统一为首次收到数据后保存、之后最多每 60 秒一次，并在退后台和断开时做最后一次刷新。
+- [x] 里程只允许单调增加；保养距离和保养标志独立更新；自动写入只作用于已确认归属的车辆。
+- [x] `PTMotoSafteyMileValue` 继续作为当前车辆的兼容阈值，同时每辆车保存自己的保养预警距离；`distToMaintenance` 与对应车辆阈值比较后更新页面和通知。
+- [x] PTT 自定义昵称只在默认 XP400 GT 档案首次关联时作为建议名称；车库名称可独立编辑，不会反向修改 PTT 身份。
+- [x] 手动同步复用自动同步路径；车辆身份冲突、连接到另一辆车或未解析时，不自动覆盖数据，需用户确认后才可重新关联。
+- [x] 主 App 启动阶段显式初始化协调器，自动同步不依赖打开车库或其他业务页面。
+- [x] `PTBluetoothManager.swift` 仅增加只读仪表身份回调和当前身份出口；未改动认证、传输、分片、轮询及 Data1/Data2/Data3 解码语义。`PTHiddenOBDConnector.swift` 与 `PTOBDCommand.swift` 未修改。
+
+### 25.2 验证记录
+
+- [x] `git diff --check` 通过。
+- [x] `Global/Localizable.xcstrings` JSON 结构检查通过，新增车库同步文案覆盖英语、土耳其语、简体中文和繁体中文。
+- [x] 新增身份优先级、UUID 候选与显式重新关联、里程单调性和保养快照更新测试；测试目标已完成 `build-for-testing` 编译。
+- [x] 使用 `CrazyDashboard.xcworkspace` 完成 PTSpeed Debug generic iOS 构建，结果为 `BUILD SUCCEEDED`。
+- [x] 使用 generic iOS 目标完成 PTSpeed `build-for-testing`，结果为 `TEST BUILD SUCCEEDED`。
+- [x] `PTHiddenOBDConnector.swift` SHA-256 仍为 `23ea459f87a4003248cc2c303f25a42c23a24909aa777b21b93ae2a99c41cd99`；`PTOBDCommand.swift` SHA-256 仍为 `7e61b4961427c087d9ce36769973e71230f9a4c99892fbe71fb911b400633b66`。
+- [ ] XCTest 尚未在当前 iOS 27 Simulator 实际执行：Xcode beta 将当前测试产物与可用 Simulator destination 判定为不兼容；不能把测试构建表述为测试通过。
+- [ ] 需要真实配对 iPhone、XP400 GT 仪表验证序列号读取、首次绑定、重连、退后台、断开刷新和 Data1/Data2/Data3 时序。
+- [ ] 需要两辆车档案的真机回归：正确车辆自动写入、身份冲突阻断、显式重新关联和切换当前车辆后不串写。
+
+### 25.3 边界与回滚
+
+- 自动同步只处理仪表的只读 Data1/Data2/Data3；不发送任何新增车辆控制、配置写入、OBD 写入或刷写命令。
+- 仅有 Central UUID 且没有序列号时，不会把数据静默写入已有车辆；只有“当前未绑定档案候选”或用户显式确认可以完成关联。
+- 如果身份冲突、车辆档案不存在或样本越界，保留旧档案数据并显示待确认/不可用状态。
+- 如需回滚，只回退车库 schema4 字段、身份协调、自动保存、保养关联、车库文案、测试和本节记录；不覆盖 OBD 两个稳定核心，也不回退 BLE 核心既有认证和传输逻辑。

@@ -117,6 +117,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         } else {
             PTLiveActivityManager.shared.reconcileIntercomActivitiesAtLaunch()
         }
+
+        // EN: Start dashboard observation at app launch so garage sync never depends on opening a page.
+        // ES: Inicia la observación del tablero al arrancar para que la sincronización no dependa de abrir una página.
+        // 中文：应用启动时就开始监听仪表，自动同步不再依赖用户打开某个页面。
+        _ = PTVehicleConnectivityCoordinator.shared.snapshot
         
         return true
     }

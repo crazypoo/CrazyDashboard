@@ -25,6 +25,7 @@ public final class PTMaintenanceManager: NSObject {
 
     private var latestMaintenanceFlag: Int?
     private var latestDistanceToMaintenanceKm: Int?
+    private var latestVehicleID: UUID?
 
     private override init() {
         super.init()
@@ -37,26 +38,45 @@ public final class PTMaintenanceManager: NSObject {
         )
     }
 
-    /// EN: Discard cached dashboard values after the active motorcycle changes.
-    /// ES: Descarta los datos guardados cuando cambia la motocicleta activa.
-    /// 中文：当前摩托车切换后，丢弃已经缓存的仪表数据。
+    /// EN: Garage persistence must not erase live values unless the physical dashboard binding changes.
+    /// ES: La persistencia del garaje no debe borrar valores en vivo salvo que cambie el vínculo físico.
+    /// 中文：车库保存数据时不能清空实时值，只有实际仪表绑定改变时才清理。
     @objc private func handleGarageChange() {
+        let boundVehicleID = PTVehicleConnectivityCoordinator.shared.dashboardGarageVehicleID
+        if latestVehicleID == boundVehicleID {
+            if let boundVehicleID {
+                evaluateAndNotify(vehicleID: boundVehicleID)
+            }
+            return
+        }
+        latestVehicleID = boundVehicleID
         latestMaintenanceFlag = nil
         latestDistanceToMaintenanceKm = nil
     }
 
     private func receive(_ sample: PTMaintenanceDashboardSample) {
+        guard let boundVehicleID = PTVehicleConnectivityCoordinator.shared.dashboardGarageVehicleID else {
+            return
+        }
+        if latestVehicleID != boundVehicleID {
+            latestVehicleID = boundVehicleID
+            latestMaintenanceFlag = nil
+            latestDistanceToMaintenanceKm = nil
+        }
         switch sample {
         case .maintenanceFlag(let value):
             latestMaintenanceFlag = value
         case .distanceToMaintenance(let value):
             latestDistanceToMaintenanceKm = value
         }
-        evaluateAndNotify()
+        evaluateAndNotify(vehicleID: boundVehicleID)
     }
 
-    private func evaluateAndNotify() {
-        let thresholdKm = Int(PTMotorcycleGarageStore.shared.currentMaintenanceWarningDistanceKm.rounded())
+    private func evaluateAndNotify(vehicleID: UUID? = nil) {
+        guard let vehicleID = vehicleID ?? latestVehicleID else { return }
+        let thresholdKm = Int(
+            PTMotorcycleGarageStore.shared.maintenanceWarningDistanceKm(for: vehicleID).rounded()
+        )
         let advice = PTRideMaintenanceAdvisor.advise(
             distanceToMaintenanceKm: latestDistanceToMaintenanceKm,
             rawMaintenanceFlag: latestMaintenanceFlag,
@@ -67,6 +87,7 @@ public final class PTMaintenanceManager: NSObject {
         case .required:
             triggerWarningIfNeeded(
                 state: .required,
+                vehicleID: vehicleID,
                 title: "🛠️" + PTDashboardConfig.languageFunc(text: "maintenance_need_title"),
                 body: PTDashboardConfig.languageFunc(text: "maintenance_need_msg")
             )
@@ -76,6 +97,7 @@ public final class PTMaintenanceManager: NSObject {
                 + PTDashboardConfig.shared.appShowUniLabel
             triggerWarningIfNeeded(
                 state: .dueSoon,
+                vehicleID: vehicleID,
                 title: "⚙️" + PTDashboardConfig.languageFunc(text: "maintenance_warning_title"),
                 body: PTDashboardConfig.language(key: "maintenance_warning_msg", displayedDistance)
             )
@@ -86,11 +108,10 @@ public final class PTMaintenanceManager: NSObject {
 
     private func triggerWarningIfNeeded(
         state: PTRideMaintenanceState,
+        vehicleID: UUID,
         title: String,
         body: String
     ) {
-        let vehicleID = PTMotorcycleGarageStore.shared.selectedVehicleID?.uuidString ?? "default"
-
         // EN: Route maintenance reminders through the typed notification center so permission and cooldown rules are shared.
         // ES: Envía los recordatorios de mantenimiento al centro tipado para compartir permisos y reglas de enfriamiento.
         // 中文：保养提醒统一经过类型化通知中心，复用权限和冷却规则。
@@ -100,7 +121,7 @@ public final class PTMaintenanceManager: NSObject {
                 title: title,
                 body: body,
                 identifier: "pt.notification.maintenance.\(state.rawValue)",
-                deduplicationKey: "maintenance-\(vehicleID)-\(state.rawValue)",
+                deduplicationKey: "maintenance-\(vehicleID.uuidString)-\(state.rawValue)",
                 cooldown: Self.warningInterval,
                 categoryIdentifier: PTNotificationCenter.maintenanceCategoryIdentifier,
                 userInfo: ["pt_notification_kind": PTAppNotificationKind.maintenance.rawValue]
@@ -114,6 +135,7 @@ public final class PTMaintenanceManager: NSObject {
     /// 中文：仪表断开后清除旧数据，避免旧读数再次触发提醒。
     private func receiveConnectionState(_ isConnected: Bool) {
         guard !isConnected else { return }
+        latestVehicleID = nil
         latestMaintenanceFlag = nil
         latestDistanceToMaintenanceKm = nil
     }
