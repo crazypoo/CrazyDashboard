@@ -1645,6 +1645,54 @@ final class PTCoreTests: XCTestCase {
         machine.reset()
     }
 
+    // EN: The documented configuration envelope must preserve its big-endian length and TIO chunk boundary.
+    // ES: La envoltura de configuración documentada debe conservar su longitud big-endian y el límite del fragmento TIO.
+    // 中文：文档确认的配置帧必须保持大端长度字段和 TIO 分片边界。
+    func testXP400BLEContractMatchesDocumentedConfigurationFrame() {
+        let frame = PTFrameBuilder.buildConfigurationFrame(color: 2, unit: 1, language: 1)
+
+        XCTAssertEqual(
+            frame,
+            Data([0x16, 0x07, 0x00, 0x06, 0x01, 0x02, 0x01, 0x01, 0x01, 0x01, 0x00])
+        )
+        XCTAssertTrue(PTXP400BLEProtocol.isValidOutboundFrame(frame))
+        XCTAssertEqual(PTXP400BLEProtocol.tioChunks(frame).map(\.count), [11])
+        XCTAssertEqual(
+            PTXP400BLEProtocol.tioChunks(Data(repeating: 0xAA, count: 41)).map(\.count),
+            [20, 20, 1]
+        )
+
+        var malformedFrame = frame
+        malformedFrame[3] = 0x07
+        XCTAssertFalse(PTXP400BLEProtocol.isValidOutboundFrame(malformedFrame))
+    }
+
+    // EN: Fixed vehicle status frames and the separate 15-byte authentication frame must not be conflated.
+    // ES: Las tramas fijas de estado y la trama de autenticación separada de 15 bytes no deben confundirse.
+    // 中文：固定长度的车辆状态帧和独立的 15 字节认证帧不能混淆。
+    func testXP400BLEContractSeparatesStatusAndAuthenticationFrames() {
+        let data1 = Data([0x16, 0x02, 0xFE, 0x00, 0x2D, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00])
+        let extendedData2 = Data([0x16, 0x03, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+        let connection = Data([0x16, 0x01]) + Data("A1B2C3D4E5F6".utf8) + Data([0x00])
+        let invalidConnection = Data([0x16, 0x01]) + Data("A1B2C3D4E5G6".utf8) + Data([0x00])
+
+        XCTAssertTrue(PTXP400BLEProtocol.isVehicleStatusFrame(data1))
+        XCTAssertFalse(PTXP400BLEProtocol.isVehicleStatusFrame(extendedData2))
+        XCTAssertEqual(PTXP400BLEProtocol.connectionSerial(in: connection), "A1B2C3D4E5F6")
+        XCTAssertNil(PTXP400BLEProtocol.connectionSerial(in: invalidConnection))
+    }
+
+    // EN: Navigation adapters must fall back from undocumented values to the safe straight maneuver.
+    // ES: Los adaptadores de navegación deben volver a la maniobra recta segura desde valores no documentados.
+    // 中文：导航适配层遇到未确认动作码时必须安全回退为直行。
+    func testXP400BLEContractRejectsUndocumentedManeuverCodes() {
+        XCTAssertEqual(PTXP400BLEProtocol.normalizedManeuverCode(0x2E), 0x2E)
+        XCTAssertEqual(PTXP400BLEProtocol.normalizedManeuverCode(0x2F), 0x2F)
+        XCTAssertEqual(PTXP400BLEProtocol.normalizedManeuverCode(0x2D), 0x01)
+        XCTAssertEqual(PTXP400BLEProtocol.normalizedManeuverCode(0x30), 0x01)
+        XCTAssertEqual(PTXP400BLEProtocol.normalizedManeuverCode(0x31), 0x01)
+    }
+
     private func makeRoutePoint(timestamp: Date, brakingG: Double) -> PTRoutePoint {
         PTRoutePoint(
             lat: 31.2304,

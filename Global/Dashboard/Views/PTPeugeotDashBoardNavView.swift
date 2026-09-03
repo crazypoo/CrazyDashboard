@@ -168,7 +168,7 @@ extension PTPeugeotDashBoardNavView:AMapNaviDriveManagerDelegate {
             
     func driveManager(_ driveManager: AMapNaviDriveManager, onCalculateRouteSuccessWith type: AMapNaviRoutePlanType) {
         errorRouteNameSet(value: "Rerouting...")
-        PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Rerouting...", title: "",nextManeuver: PTManeuverMap.rerouting)
+        PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Rerouting...", title: "",nextManeuver: PTXP400BLEProtocol.returnToRouteManeuverCode)
     }
         
     func driveManager(_ driveManager: AMapNaviDriveManager, update gpsSignalStrength: AMapNaviGPSSignalStrength) {
@@ -177,7 +177,7 @@ extension PTPeugeotDashBoardNavView:AMapNaviDriveManagerDelegate {
             break
         default:
             errorRouteNameSet(value: "Searching GPS...")
-            PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Searching GPS...", title: "",nextManeuver: PTManeuverMap.noGPS)
+            PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Searching GPS...", title: "",nextManeuver: PTXP400BLEProtocol.noValidActionManeuverCode)
         }
     }
 }

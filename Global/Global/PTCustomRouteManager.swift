@@ -633,7 +633,9 @@ public class PTCustomRouteManager: NSObject {
         let destinationDistance = remainingDistance(from: currentCoordinate, route: runtimeRoute)
         let speedMetersPerSecond = max(location?.speed ?? 0, 10.0 / 3.6)
         let estimatedSeconds = Int(max(0, destinationDistance / speedMetersPerSecond))
-        let maneuver = forceArrival ? PTManeuverMap.arrive : target.maneuverCode
+        let maneuver = forceArrival
+            ? PTManeuverMap.arrive
+            : PTXP400BLEProtocol.normalizedManeuverCode(target.maneuverCode)
 
         let navInfo = PTNavigationInfo(
             nextManeuver: maneuver,

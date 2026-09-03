@@ -250,7 +250,7 @@ extension PTMapView:AMapNaviDriveManagerDelegate {
     }
             
     func driveManager(_ driveManager: AMapNaviDriveManager, onCalculateRouteSuccessWith type: AMapNaviRoutePlanType) {
-        PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Rerouting...", title: "",nextManeuver: PTManeuverMap.rerouting)
+        PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Rerouting...", title: "",nextManeuver: PTXP400BLEProtocol.returnToRouteManeuverCode)
     }
         
     func driveManager(_ driveManager: AMapNaviDriveManager, update gpsSignalStrength: AMapNaviGPSSignalStrength) {
@@ -258,7 +258,7 @@ extension PTMapView:AMapNaviDriveManagerDelegate {
         case .smartPos:
             break
         default:
-            PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Searching GPS...", title: "",nextManeuver: PTManeuverMap.noGPS)
+            PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Searching GPS...", title: "",nextManeuver: PTXP400BLEProtocol.noValidActionManeuverCode)
         }
     }
 }

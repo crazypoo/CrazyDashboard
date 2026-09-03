@@ -10,41 +10,49 @@ import AMapNaviKit
 
 class PTMotoDashBoardNavFunction: NSObject {
     static func convertAMapIconToPTManeuver(iconType: AMapNaviIconType) -> UInt8 {
+        let code: UInt8
         switch iconType {
         case .none, .default:
-            return PTManeuverMap.straight
+            code = PTManeuverMap.straight
         case .straight:
-            return PTManeuverMap.straight
+            code = PTManeuverMap.straight
         case .left:
-            return PTManeuverMap.quiteLeft
+            code = PTManeuverMap.quiteLeft
         case .right:
-            return PTManeuverMap.quiteRight
+            code = PTManeuverMap.quiteRight
         case .leftFront:
-            return PTManeuverMap.lightLeft
+            code = PTManeuverMap.lightLeft
         case .rightFront:
-            return PTManeuverMap.lightRight
+            code = PTManeuverMap.lightRight
         case .leftBack:
-            return PTManeuverMap.heavyLeft // 0x0C 急左转
+            code = PTManeuverMap.heavyLeft
         case .rightBack:
-            return PTManeuverMap.heavyRight // 0x07 急右转
+            code = PTManeuverMap.heavyRight
         case .entryLeftRingUTurn:
-            return PTManeuverMap.uTurnLeft
+            code = PTManeuverMap.uTurnLeft
         case .entryLeftRingRight:
-            return PTManeuverMap.uTurnRight
+            code = PTManeuverMap.uTurnRight
         case .arrivedWayPoint:
-            return PTManeuverMap.straight
+            code = PTManeuverMap.straight
         case .arrivedDestination:
-            return PTManeuverMap.arrive // 0x2C 到达
-        // 🚨 新增：环岛处理逻辑
+            code = PTManeuverMap.arrive
+        // EN: Use the protocol's roundabout mapping for the supported default exit.
+        // ES: Usa el mapeo de rotonda del protocolo para la salida predeterminada compatible.
+        // 中文：使用协议规定的环岛映射处理已支持的默认出口。
         case .enterRoundabout:
-            // 协议规定右侧环岛 1 号出口为 0x13。
-            // 如果高德在 AMapNaviInfo 中提供了环岛出口编号 (ringRoundaboutExitCount)，你可以动态加上该编号减 1。
-            // 这里提供基础的 1 号出口映射作为安全回退机制。
-            return PTManeuverMap.roundaboutRightBase
+            // EN: The protocol maps the first right roundabout exit to 0x13.
+            // ES: El protocolo asigna 0x13 a la primera salida de una rotonda derecha.
+            // 中文：协议规定右侧环岛 1 号出口为 0x13。
+            // EN: Use the first-exit mapping as a safe fallback when the map SDK provides no exit count.
+            // ES: Usa la primera salida como respaldo seguro cuando el SDK de mapas no proporciona el número.
+            // 中文：地图 SDK 未提供出口编号时，使用 1 号出口作为安全回退。
+            code = PTManeuverMap.roundaboutRightBase
             
         default:
-            return PTManeuverMap.straight
+            code = PTManeuverMap.straight
         }
+
+        return PTXP400BLEProtocol.normalizedManeuverCode(code)
     }
     
     static func sendNavDataToDashboard(naviInfo: AMapNaviInfo,currentSpeedLimit:UInt8) {
@@ -60,20 +68,30 @@ class PTMotoDashBoardNavFunction: NSObject {
             )
         }
 
-        // --- 核心逻辑开始 ---
-        // 1. 获取距离下一个转弯动作的剩余距离 (米)
+        // EN: Build the dashboard navigation payload from the map callback.
+        // ES: Construye la carga de navegación del tablero a partir del callback del mapa.
+        // 中文：根据地图回调组装仪表盘导航数据。
+        // EN: Read the remaining distance to the next maneuver in meters.
+        // ES: Lee la distancia restante hasta la próxima maniobra en metros.
+        // 中文：获取距离下一个转弯动作的剩余距离（米）。
         let distanceToNextManeuver = naviInfo.segmentRemainDistance
         
-        // 2. 提取路名，并强制转为无声调拼音/英文，防止车机乱码
+        // EN: Convert road names to dashboard-safe Latin text to avoid encoding issues.
+        // ES: Convierte los nombres de calles a texto latino compatible para evitar problemas de codificación.
+        // 中文：将路名转换为仪表盘可识别的拉丁文本，避免编码问题。
         let rawNextRoad = naviInfo.nextRoadName ?? ""
         let rawCurrentRoad = naviInfo.currentRoadName ?? ""
         let safeNextRoad = rawNextRoad.toMotorcycleCompatiblePinyin()
         let safeCurrentRoad = rawCurrentRoad.toMotorcycleCompatiblePinyin()
         
-        // 3. 将高德的转向图标枚举转换为车机的动作码
+        // EN: Map the AMap maneuver enum to the dashboard maneuver code.
+        // ES: Convierte el enum de maniobra de AMap al código de maniobra del tablero.
+        // 中文：将高德转向图标枚举转换为仪表盘动作码。
         let maneuverCode = PTMotoDashBoardNavFunction.convertAMapIconToPTManeuver(iconType: naviInfo.iconType)
         
-        // 4. 组装车机数据模型 (限速字段使用全局变量 currentSpeedLimit)
+        // EN: Assemble the dashboard model; the speed limit comes from the caller.
+        // ES: Ensambla el modelo del tablero; el límite de velocidad procede del llamador.
+        // 中文：组装仪表盘数据模型，限速字段使用调用方传入的值。
         let info = PTNavigationInfo(
             nextManeuver: maneuverCode,
             metersToNextManeuver: UInt32(max(0, distanceToNextManeuver)),
@@ -84,7 +102,9 @@ class PTMotoDashBoardNavFunction: NSObject {
             estimatedTimeToDestinationSec: max(0, naviInfo.routeRemainTime)
         )
         
-        // 5. 核心动作：通过蓝牙将数据泵送给摩托车！
+        // EN: Send the validated navigation model through the existing BLE core.
+        // ES: Envía el modelo de navegación validado mediante el núcleo BLE existente.
+        // 中文：通过现有 BLE 核心发送已校验的导航模型。
         PTBluetoothServerManager.shared.sendNavigation(info: info)
 
     }
