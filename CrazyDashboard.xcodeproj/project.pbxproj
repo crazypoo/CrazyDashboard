@@ -133,14 +133,14 @@
 		600000010000000000000152 /* PTRideSafetyViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000152 /* PTRideSafetyViewController.swift */; };
 		600000010000000000000153 /* PTXP400InstructionEvidenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000153 /* PTXP400InstructionEvidenceStore.swift */; };
 		600000010000000000000154 /* PTFirmwareUpgradeStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000154 /* PTFirmwareUpgradeStateMachine.swift */; };
-		600000010000000000000170 /* PTXP400BLEProtocolContract.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000170 /* PTXP400BLEProtocolContract.swift */; };
-		600000010000000000000171 /* PTXP400BLEInboundReassembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000171 /* PTXP400BLEInboundReassembler.swift */; };
-		600000010000000000000180 /* PTLaunchAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000180 /* PTLaunchAnimationView.swift */; };
 		600000010000000000000155 /* PTDiagnosticCenterViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000155 /* PTDiagnosticCenterViewController.swift */; };
 		600000010000000000000156 /* PTCANLabViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000156 /* PTCANLabViewController.swift */; };
 		600000010000000000000157 /* PTRoadbookEditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000157 /* PTRoadbookEditorViewController.swift */; };
 		600000010000000000000160 /* PTAutomationGuideViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000160 /* PTAutomationGuideViewController.swift */; };
 		600000010000000000000162 /* AppShortcuts.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000162 /* AppShortcuts.xcstrings */; };
+		600000010000000000000170 /* PTXP400BLEProtocolContract.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000170 /* PTXP400BLEProtocolContract.swift */; };
+		600000010000000000000171 /* PTXP400BLEInboundReassembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000171 /* PTXP400BLEInboundReassembler.swift */; };
+		600000010000000000000180 /* PTLaunchAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000180 /* PTLaunchAnimationView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -335,14 +335,14 @@
 		600000020000000000000152 /* PTRideSafetyViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideSafetyViewController.swift; sourceTree = "<group>"; };
 		600000020000000000000153 /* PTXP400InstructionEvidenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400InstructionEvidenceStore.swift; sourceTree = "<group>"; };
 		600000020000000000000154 /* PTFirmwareUpgradeStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFirmwareUpgradeStateMachine.swift; sourceTree = "<group>"; };
-		600000020000000000000170 /* PTXP400BLEProtocolContract.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400BLEProtocolContract.swift; sourceTree = "<group>"; };
-		600000020000000000000171 /* PTXP400BLEInboundReassembler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400BLEInboundReassembler.swift; sourceTree = "<group>"; };
-		600000020000000000000180 /* PTLaunchAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLaunchAnimationView.swift; sourceTree = "<group>"; };
 		600000020000000000000155 /* PTDiagnosticCenterViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDiagnosticCenterViewController.swift; sourceTree = "<group>"; };
 		600000020000000000000156 /* PTCANLabViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCANLabViewController.swift; sourceTree = "<group>"; };
 		600000020000000000000157 /* PTRoadbookEditorViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRoadbookEditorViewController.swift; sourceTree = "<group>"; };
 		600000020000000000000160 /* PTAutomationGuideViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTAutomationGuideViewController.swift; sourceTree = "<group>"; };
 		600000020000000000000162 /* AppShortcuts.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = AppShortcuts.xcstrings; sourceTree = "<group>"; };
+		600000020000000000000170 /* PTXP400BLEProtocolContract.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400BLEProtocolContract.swift; sourceTree = "<group>"; };
+		600000020000000000000171 /* PTXP400BLEInboundReassembler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400BLEInboundReassembler.swift; sourceTree = "<group>"; };
+		600000020000000000000180 /* PTLaunchAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLaunchAnimationView.swift; sourceTree = "<group>"; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -369,8 +369,6 @@
 		};
 		555DC840303820E3002B003B /* xp400watch Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "xp400watch Watch App";
 			sourceTree = "<group>";
 		};
@@ -633,8 +631,6 @@
 		55CA9DF23024528A00A3A677 /* OBD */ = {
 			isa = PBXGroup;
 			children = (
-				600000020000000000000155 /* PTDiagnosticCenterViewController.swift */,
-				600000020000000000000156 /* PTCANLabViewController.swift */,
 				55F1E2F03026D1DF0032EAD5 /* Function */,
 				55CA9E17302457F300A3A677 /* ViewController */,
 				55CA9DF33024529000A3A677 /* View */,
@@ -653,6 +649,8 @@
 		55CA9E17302457F300A3A677 /* ViewController */ = {
 			isa = PBXGroup;
 			children = (
+				600000020000000000000156 /* PTCANLabViewController.swift */,
+				600000020000000000000155 /* PTDiagnosticCenterViewController.swift */,
 				55CA9E183024582300A3A677 /* PTOBDDataViewControllerCollection.swift */,
 			);
 			path = ViewController;
@@ -1063,9 +1061,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -1102,9 +1104,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
