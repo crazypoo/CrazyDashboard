@@ -72,6 +72,11 @@ public final class PTLiveActivityManager: NSObject {
     
     // 保持对当前活动实例的引用
     private var currentNaviActivity: Activity<MotoNaviAttributes>?
+    // EN: Track navigation lifecycle operations so stale updates cannot race with stop.
+    // ES: Rastrea las operaciones del ciclo de navegación para que las actualizaciones obsoletas no compitan con la detención.
+    // 中文：跟踪导航生命周期操作，避免过期更新与停止操作发生竞态。
+    private var navigationActivityGeneration: UInt = 0
+    private var navigationCleanupTask: Task<Void, Never>?
     private var currentIntercomActivity: Activity<MotoIntercomAttributes>?
     private var intercomActivityGeneration: UInt = 0
     private var desiredIntercomChannel = "机车通讯"
@@ -97,9 +102,15 @@ public final class PTLiveActivityManager: NSObject {
     
     /// 开始导航 Live Activity
     public func startNavigationActivity(destination: String, expectedArrival: Date) {
+        navigationActivityGeneration &+= 1
+        let generation = navigationActivityGeneration
+        navigationCleanupTask?.cancel()
+        navigationCleanupTask = nil
+
         // 确保设备支持且用户未在系统设置中关闭权限
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-        
+
+        let existingActivities = Activity<MotoNaviAttributes>.activities
         let attributes = MotoNaviAttributes(destinationName: destination)
         // 初始状态
         let initialState = MotoNaviAttributes.ContentState(progress: 0, remainingDistanceKm: 0, estimatedArrivalTime: expectedArrival)
@@ -110,6 +121,22 @@ public final class PTLiveActivityManager: NSObject {
             currentNaviActivity = try Activity.request(attributes: attributes, content: content, pushType: nil)
             latestNavigationStatus = PTLiveActivityStatus(state: .active, peerCount: 0, message: "导航已启动")
             logger.info("Navigation activity started")
+
+            // EN: Replace any orphaned navigation activities left by an earlier manager instance.
+            // ES: Reemplaza las actividades de navegación huérfanas dejadas por una instancia anterior del gestor.
+            // 中文：清理上一个管理器实例遗留的孤立导航 Activity。
+            let newActivityID = currentNaviActivity?.id
+            let staleActivities = existingActivities.filter { $0.id != newActivityID }
+            if !staleActivities.isEmpty {
+                navigationCleanupTask = Task { @MainActor [weak self] in
+                    for activity in staleActivities {
+                        guard !Task.isCancelled else { return }
+                        await activity.end(activity.content, dismissalPolicy: .immediate)
+                    }
+                    guard let self, self.navigationActivityGeneration == generation else { return }
+                    self.navigationCleanupTask = nil
+                }
+            }
         } catch {
             latestNavigationStatus = PTLiveActivityStatus(state: .failed, peerCount: 0, message: error.localizedDescription)
             logger.error("Navigation activity start failed: \(error.localizedDescription, privacy: .public)")
@@ -119,6 +146,7 @@ public final class PTLiveActivityManager: NSObject {
     /// 刷新导航实时数据 (在 AMapNaviDriveManager 的回调中调用)
     public func updateNavigationActivity(progress: Double, remainingKm: Double, expectedArrival: Date) {
         guard let activity = currentNaviActivity else { return }
+        let generation = navigationActivityGeneration
         
         let updatedState = MotoNaviAttributes.ContentState(
             progress: max(0.0, min(1.0, progress)), // 限制在 0~1 之间，防止 UI 溢出
@@ -126,22 +154,43 @@ public final class PTLiveActivityManager: NSObject {
             estimatedArrivalTime: expectedArrival
         )
         
-        Task { @MainActor in
+        Task { @MainActor [weak self] in
+            guard let self,
+                  self.navigationActivityGeneration == generation,
+                  self.currentNaviActivity?.id == activity.id else { return }
             let content = ActivityContent(state: updatedState, staleDate: nil)
             await activity.update(content, alertConfiguration: nil)
+            guard self.navigationActivityGeneration == generation,
+                  self.currentNaviActivity?.id == activity.id else { return }
             self.latestNavigationStatus = PTLiveActivityStatus(state: .active, peerCount: 0, message: "导航更新")
         }
     }
 
     /// 结束导航 Live Activity
     public func stopNavigationActivity() {
-        guard let activity = currentNaviActivity else { return }
-        Task {  @MainActor in
-            // 立即结束并从锁屏移除
-            await activity.end(activity.content, dismissalPolicy: .immediate)
-            currentNaviActivity = nil
-            latestNavigationStatus = PTLiveActivityStatus(state: .ended, peerCount: 0, message: "导航已结束")
-            logger.info("Navigation activity ended")
+        navigationActivityGeneration &+= 1
+        let generation = navigationActivityGeneration
+        navigationCleanupTask?.cancel()
+        currentNaviActivity = nil
+
+        // EN: ActivityKit owns the complete activity list; the local reference may be missing or stale.
+        // ES: ActivityKit posee la lista completa; la referencia local puede faltar o estar obsoleta.
+        // 中文：ActivityKit 才拥有完整 Activity 列表，本地引用可能为空或已经过期。
+        let activities = Activity<MotoNaviAttributes>.activities
+        navigationCleanupTask = Task { @MainActor [weak self] in
+            for activity in activities {
+                guard !Task.isCancelled else { return }
+                // EN: Immediate dismissal removes every discovered navigation activity from the system UI.
+                // ES: El descarte inmediato elimina de la interfaz del sistema cada actividad de navegación encontrada.
+                // 中文：立即结束每一个发现的导航 Activity，使其从系统界面移除。
+                await activity.end(activity.content, dismissalPolicy: .immediate)
+            }
+
+            guard let self,
+                  self.navigationActivityGeneration == generation else { return }
+            self.navigationCleanupTask = nil
+            self.latestNavigationStatus = PTLiveActivityStatus(state: .ended, peerCount: 0, message: "导航已结束")
+            self.logger.info("Navigation activities ended: \(activities.count)")
         }
     }
     
