@@ -6994,6 +6994,35 @@
         }
       }
     },
+    "ride_replay_events" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Events"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Olaylar"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "事件"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "事件"
+          }
+        }
+      }
+    },
     "ride_replay_event_hard_acceleration" : {
       "extractionState" : "manual",
       "localizations" : {
