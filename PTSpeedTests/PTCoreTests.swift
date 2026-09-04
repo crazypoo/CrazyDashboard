@@ -1749,6 +1749,37 @@ final class PTCoreTests: XCTestCase {
         XCTAssertNil(PTXP400BLEProtocol.connectionSerial(in: invalidConnection))
     }
 
+    // EN: Data2 and ABS mock payloads must produce the confirmed 11-byte vehicle status frame.
+    // ES: Las cargas simuladas Data2 y ABS deben producir la trama de estado vehicular confirmada de 11 bytes.
+    // 中文：Data2 和 ABS Mock Payload 必须组成协议确认的 11 字节车辆状态帧。
+    func testXP400MockStatusSamplesUseElevenByteFrames() {
+        func makeFrame(id: UInt8, payload: [UInt8]) -> Data {
+            Data([PTXP400BLEProtocol.preamble, id] + payload + [PTXP400BLEProtocol.terminator])
+        }
+
+        let data2Frame = makeFrame(
+            id: PTXP400BLEProtocol.data2FrameID,
+            payload: [0x00, 0x02, 0x00, 0x00, 0x55, 0x8E, 0x00, 0x00]
+        )
+        let absFrame = makeFrame(
+            id: PTXP400BLEProtocol.absFrameID,
+            payload: [0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]
+        )
+
+        XCTAssertEqual(data2Frame.count, PTXP400BLEProtocol.vehicleStatusFrameLength)
+        XCTAssertEqual(absFrame.count, PTXP400BLEProtocol.vehicleStatusFrameLength)
+        XCTAssertTrue(PTXP400BLEProtocol.isVehicleStatusFrame(data2Frame))
+        XCTAssertTrue(PTXP400BLEProtocol.isVehicleStatusFrame(absFrame))
+        XCTAssertFalse(PTXP400BLEProtocol.isVehicleStatusFrame(makeFrame(
+            id: PTXP400BLEProtocol.data2FrameID,
+            payload: [0x00, 0x02, 0x00, 0x00, 0x55, 0x8E, 0x00, 0x00, 0x00]
+        )))
+        XCTAssertFalse(PTXP400BLEProtocol.isVehicleStatusFrame(makeFrame(
+            id: PTXP400BLEProtocol.absFrameID,
+            payload: [0x00, 0x00, 0x01]
+        )))
+    }
+
     // EN: Credit writes and authentication envelopes must reject malformed lengths and overflow attempts.
     // ES: Las escrituras de créditos y las envolturas de autenticación deben rechazar longitudes malformadas y desbordamientos.
     // 中文：Credits 写入和认证包络必须拒绝错误长度及可能溢出的输入。

@@ -1905,6 +1905,24 @@ extension PTBluetoothServerManager {
         }
         
         let id = value[1]
+
+        // EN: Enforce the confirmed wire length for known inbound frames without changing unknown-frame diagnostics.
+        // ES: Aplica la longitud de cable confirmada para las tramas entrantes conocidas sin cambiar el diagnóstico de tramas desconocidas.
+        // 中文：对已知入站帧执行已确认的线协议长度校验，同时保留未知帧的诊断行为。
+        switch id {
+        case PTXP400BLEProtocol.connectionFrameID:
+            guard value.count == PTXP400BLEProtocol.connectionFrameLength else {
+                PTOBDLogger.moto.ptLog("⚠️ [解析拦截] Connection Frame 长度无效: \(value.count)，期待 \(PTXP400BLEProtocol.connectionFrameLength)")
+                return
+            }
+        case PTXP400BLEProtocol.data1FrameID...PTXP400BLEProtocol.absFrameID:
+            guard value.count == PTXP400BLEProtocol.vehicleStatusFrameLength else {
+                PTOBDLogger.moto.ptLog("⚠️ [解析拦截] 车辆状态帧长度无效: ID=0x\(String(format: "%02X", id))，实际 \(value.count)，期待 \(PTXP400BLEProtocol.vehicleStatusFrameLength)")
+                return
+            }
+        default:
+            break
+        }
         
         // 3. 🚨 核心修复：摩托车的上行状态帧没有长度字段！
         // Payload 直接从索引 2 开始，到倒数第二个字节结束
@@ -2340,8 +2358,10 @@ extension PTBluetoothServerManager {
         let temp: UInt8 = 35 + 50 // 35°C (逆向公式: byte - 50)
         let batt: UInt8 = 142 // 14.2V (逆向公式: byte * 0.1)
         
-        // 此帧要求至少 9 个字节以规避解析拦截
-        return [0x00, engineStatus, 0x00, 0x00, temp, batt, 0x00, 0x00, 0x00]
+        // EN: Keep the mock Data2 payload at the confirmed 8-byte size, including two reserved bytes.
+        // ES: Mantén la carga simulada Data2 en los 8 bytes confirmados, incluidos dos bytes reservados.
+        // 中文：让 Data2 Mock 保持协议确认的 8 字节 Payload，并保留两个预留字节。
+        return [0x00, engineStatus, 0x00, 0x00, temp, batt, 0x00, 0x00]
     }
     
     /// 伪造 DATA3 (续航里程、仪表盘颜色/单位、保养距离、语言)
@@ -2378,9 +2398,12 @@ extension PTBluetoothServerManager {
         let frontSpeedRaw = UInt16(PTMockPhysicsState.mockSpeed / 0.01)
         let absByte: UInt8 = 0x01 // ABS 状态正常
         
+        // EN: Pad ABS with five reserved bytes so every vehicle status mock is an 11-byte frame on the wire.
+        // ES: Rellena ABS con cinco bytes reservados para que toda trama simulada de estado tenga 11 bytes en el cable.
+        // 中文：ABS 补齐五个预留字节，让所有车辆状态 Mock 在线路上都保持 11 字节。
         return [
             UInt8((frontSpeedRaw >> 8) & 0xFF), UInt8(frontSpeedRaw & 0xFF),
-            absByte
+            absByte, 0x00, 0x00, 0x00, 0x00, 0x00
         ]
     }
 }
