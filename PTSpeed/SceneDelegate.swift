@@ -42,6 +42,7 @@ class SceneDelegate: PTWindowSceneDelegate {
             PTDeveloperSafetyGate.shared.disable(reason: .lifecycleReset)
         }
         self.makeKeyAndVisible(in: scene, viewController: PTMotoBaseTabbarController(), tint: .white)
+        PTLaunchAnimationPresenter.present(in: scene)
         connectionOptions.urlContexts.forEach { enqueueExternalURL($0.url) }
         
         PTGCDManager.shared.delayOnMain(time: 0.5) {
@@ -49,6 +50,7 @@ class SceneDelegate: PTWindowSceneDelegate {
             // ES: Añade el sniffer al final para que su control compacto quede encima de la superficie meteorológica.
             // 中文：最后添加嗅探器，确保紧凑开发者按钮位于天气界面之上。
             AppWindows?.addSubviews([self.weatherOverlay, self.snifferOverlay])
+            PTLaunchAnimationPresenter.bringToFrontIfVisible(in: scene)
         }
     }
 
@@ -57,6 +59,9 @@ class SceneDelegate: PTWindowSceneDelegate {
         // This occurs shortly after the scene enters the background, or when its session is discarded.
         // Release any resources associated with this scene that can be re-created the next time the scene connects.
         // The scene may re-connect later, as its session was not necessarily discarded (see `application:didDiscardSceneSessions` instead).
+        if let windowScene = scene as? UIWindowScene {
+            PTLaunchAnimationPresenter.dismiss(in: windowScene)
+        }
         PTNSLogConsole(">>>>>>>>>>>>>>>>>>>>>sceneDidDisconnect")
     }
 
@@ -70,6 +75,9 @@ class SceneDelegate: PTWindowSceneDelegate {
     func sceneWillResignActive(_ scene: UIScene) {
         // Called when the scene will move from an active state to an inactive state.
         // This may occur due to temporary interruptions (ex. an incoming phone call).
+        if let windowScene = scene as? UIWindowScene {
+            PTLaunchAnimationPresenter.dismiss(in: windowScene)
+        }
     }
 
     func sceneWillEnterForeground(_ scene: UIScene) {

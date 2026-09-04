@@ -135,6 +135,7 @@
 		600000010000000000000154 /* PTFirmwareUpgradeStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000154 /* PTFirmwareUpgradeStateMachine.swift */; };
 		600000010000000000000170 /* PTXP400BLEProtocolContract.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000170 /* PTXP400BLEProtocolContract.swift */; };
 		600000010000000000000171 /* PTXP400BLEInboundReassembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000171 /* PTXP400BLEInboundReassembler.swift */; };
+		600000010000000000000180 /* PTLaunchAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000180 /* PTLaunchAnimationView.swift */; };
 		600000010000000000000155 /* PTDiagnosticCenterViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000155 /* PTDiagnosticCenterViewController.swift */; };
 		600000010000000000000156 /* PTCANLabViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000156 /* PTCANLabViewController.swift */; };
 		600000010000000000000157 /* PTRoadbookEditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000157 /* PTRoadbookEditorViewController.swift */; };
@@ -336,6 +337,7 @@
 		600000020000000000000154 /* PTFirmwareUpgradeStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFirmwareUpgradeStateMachine.swift; sourceTree = "<group>"; };
 		600000020000000000000170 /* PTXP400BLEProtocolContract.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400BLEProtocolContract.swift; sourceTree = "<group>"; };
 		600000020000000000000171 /* PTXP400BLEInboundReassembler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400BLEInboundReassembler.swift; sourceTree = "<group>"; };
+		600000020000000000000180 /* PTLaunchAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLaunchAnimationView.swift; sourceTree = "<group>"; };
 		600000020000000000000155 /* PTDiagnosticCenterViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDiagnosticCenterViewController.swift; sourceTree = "<group>"; };
 		600000020000000000000156 /* PTCANLabViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCANLabViewController.swift; sourceTree = "<group>"; };
 		600000020000000000000157 /* PTRoadbookEditorViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRoadbookEditorViewController.swift; sourceTree = "<group>"; };
@@ -772,6 +774,7 @@
 				55F52C42303D4025007527C2 /* LaunchScreen.storyboard */,
 				55F52C47303D4025007527C2 /* Main.storyboard */,
 				55F52C48303D4025007527C2 /* PTCarPlaySceneDelegate.swift */,
+				600000020000000000000180 /* PTLaunchAnimationView.swift */,
 				55F52C49303D4025007527C2 /* PTSpeed.entitlements */,
 				55F52C4A303D4025007527C2 /* SceneDelegate.swift */,
 				55F52C4B303D4025007527C2 /* ViewController.swift */,
@@ -1154,6 +1157,7 @@
 				55F52C51303D4025007527C2 /* AppDelegate.swift in Sources */,
 				55F52C52303D4025007527C2 /* PTCarPlaySceneDelegate.swift in Sources */,
 				55F52C53303D4025007527C2 /* SceneDelegate.swift in Sources */,
+				600000010000000000000180 /* PTLaunchAnimationView.swift in Sources */,
 				55F52C54303D4025007527C2 /* ViewController.swift in Sources */,
 				600000010000000000000160 /* PTAutomationGuideViewController.swift in Sources */,
 				5598668230114A980049684D /* PTFuelRoutingManager.swift in Sources */,
