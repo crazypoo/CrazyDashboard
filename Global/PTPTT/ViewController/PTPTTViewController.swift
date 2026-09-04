@@ -92,6 +92,17 @@ class PTPTTViewController: PTMotoBaseViewController {
     private let statusLabel = UILabel()
     private let peersCountLabel = UILabel()
     private let pttButton = UIButton(type: .custom) // 巨大的 PTT 对讲按钮
+    private lazy var resumeAudioButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle(PTDashboardConfig.languageFunc(text: "ptt_resume_audio"), for: .normal)
+        button.setTitleColor(.white, for: .normal)
+        button.titleLabel?.font = .appfont(size: 15, bold: true)
+        button.backgroundColor = .systemOrange
+        button.layer.cornerRadius = 8
+        button.addTarget(self, action: #selector(resumeAudio), for: .touchUpInside)
+        button.isHidden = true
+        return button
+    }()
     
     // 震动反馈引擎，提升按键真实感
     private let hapticGenerator = UIImpactFeedbackGenerator(style: .heavy)
@@ -302,11 +313,20 @@ class PTPTTViewController: PTMotoBaseViewController {
             make.left.right.height.equalTo(self.modeSwitchButton)
         }
 
+        view.addSubview(resumeAudioButton)
+        resumeAudioButton.snp.makeConstraints { make in
+            make.top.equalTo(powerButton.snp.bottom).offset(12)
+            make.centerX.equalToSuperview()
+            make.leading.trailing.equalTo(powerButton)
+            make.height.equalTo(44)
+        }
+
         pt_observerLanguage {
             if self.vcDidLoad {
                 self.statusLabel.text = PTDashboardConfig.languageFunc(text: "ptt_ready_connect")
                 self.updatePeerCount(self.connectFriend)
                 self.pttButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_push"), for: .normal)
+                self.resumeAudioButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_resume_audio"), for: .normal)
             }
         }
         vcDidLoad = true
@@ -384,6 +404,14 @@ class PTPTTViewController: PTMotoBaseViewController {
         refreshPeerUI()
     }
 
+    // EN: Resume only the playback graph; the user must explicitly enable the microphone again.
+    // ES: Reanuda solo el grafo de reproducción; el usuario debe habilitar el micrófono explícitamente.
+    // 中文：只恢复播放音频图，麦克风必须由用户重新主动开启。
+    @objc private func resumeAudio() {
+        PTLocalIntercomManager.shared.resumeAudioAfterInterruption()
+        updateUIState()
+    }
+
     // MARK: - 按键交互逻辑
     @objc private func pttButtonTouchDown() {
         hapticGenerator.impactOccurred() // 物理震动反馈
@@ -421,6 +449,10 @@ class PTPTTViewController: PTMotoBaseViewController {
             powerButton.backgroundColor = .systemRed
             modeSwitchButton.isHidden = false
             pttButton.isHidden = false
+            let needsAudioResume = PTLocalIntercomManager.shared.needsAudioResume
+            resumeAudioButton.isHidden = !needsAudioResume
+            modeSwitchButton.isEnabled = !needsAudioResume
+            pttButton.isEnabled = !needsAudioResume && hasConnectedPeers
             
             // 恢复免提状态下的 UI
             if isHandsFree {
@@ -432,9 +464,9 @@ class PTPTTViewController: PTMotoBaseViewController {
             } else {
                 modeSwitchButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_change_hand_free"), for: .normal)
                 modeSwitchButton.backgroundColor = .darkGray
-                modeSwitchButton.isEnabled = hasConnectedPeers
-                pttButton.isEnabled = hasConnectedPeers
-                pttButton.backgroundColor = hasConnectedPeers ? .systemOrange : .systemGray
+                modeSwitchButton.isEnabled = hasConnectedPeers && !needsAudioResume
+                pttButton.isEnabled = hasConnectedPeers && !needsAudioResume
+                pttButton.backgroundColor = hasConnectedPeers && !needsAudioResume ? .systemOrange : .systemGray
                 pttButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_push"), for: .normal)
             }
         } else {
@@ -443,6 +475,7 @@ class PTPTTViewController: PTMotoBaseViewController {
             powerButton.backgroundColor = PTDashboardConfig.shared.appMainColor
             modeSwitchButton.isHidden = true
             pttButton.isHidden = true
+            resumeAudioButton.isHidden = true
         }
     }
 }
@@ -453,6 +486,7 @@ extension PTPTTViewController: PTLocalIntercomDelegate {
         // 确保在主线程更新 UI
         DispatchQueue.main.async {
             self.statusLabel.text = status
+            self.updateUIState()
         }
     }
     

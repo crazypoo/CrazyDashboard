@@ -37,6 +37,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
     private let editVehicleNameButton: UIButton
     private let editMileageButton: UIButton
     private let syncLiveDataButton: UIButton
+    private let lidarMeasureButton: UIButton
     private let fuelProfileButton: UIButton
     private let maintenanceWarningButton: UIButton
     private let addMaintenanceButton: UIButton
@@ -53,6 +54,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         self.editVehicleNameButton = Self.makeActionButton(titleKey: "garage_edit_vehicle_name")
         self.editMileageButton = Self.makeActionButton(titleKey: "garage_edit_mileage")
         self.syncLiveDataButton = Self.makeActionButton(titleKey: "garage_sync_live_data")
+        self.lidarMeasureButton = Self.makeActionButton(titleKey: "garage_lidar_measure")
         self.fuelProfileButton = Self.makeActionButton(titleKey: "garage_set_fuel_profile")
         self.maintenanceWarningButton = Self.makeActionButton(titleKey: "garage_set_maintenance_warning")
         self.addMaintenanceButton = Self.makeActionButton(titleKey: "garage_add_maintenance")
@@ -132,6 +134,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         editVehicleNameButton.addTarget(self, action: #selector(showVehicleNameForm), for: .touchUpInside)
         editMileageButton.addTarget(self, action: #selector(showMileageForm), for: .touchUpInside)
         syncLiveDataButton.addTarget(self, action: #selector(syncLiveData), for: .touchUpInside)
+        lidarMeasureButton.addTarget(self, action: #selector(openLiDARGarageMeasure), for: .touchUpInside)
         fuelProfileButton.addTarget(self, action: #selector(showFuelProfileForm), for: .touchUpInside)
         maintenanceWarningButton.addTarget(self, action: #selector(showMaintenanceWarningForm), for: .touchUpInside)
         addMaintenanceButton.addTarget(self, action: #selector(showMaintenanceForm), for: .touchUpInside)
@@ -155,6 +158,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
             vehicleFuelProfileLabel,
             makeButtonRow([switchVehicleButton, addVehicleButton, deleteVehicleButton]),
             makeButtonRow([editVehicleNameButton, editMileageButton, syncLiveDataButton]),
+            makeButtonRow([lidarMeasureButton]),
             fuelProfileButton
         ])
         vehicleBody.axis = .vertical
@@ -776,6 +780,16 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         case .identityConflict, .vehicleNotFound:
             showMessage(localized("garage_sync_identity_conflict"))
         }
+    }
+
+    // EN: Open the explicit garage LiDAR measurement tool without starting a vehicle command.
+    // ES: Abre la herramienta explícita de medición LiDAR del garaje sin iniciar comandos del vehículo.
+    // 中文：打开用户主动使用的车库 LiDAR 测距工具，不发送任何车辆指令。
+    @objc private func openLiDARGarageMeasure() {
+        navigationController?.pushViewController(
+            PTLiDARAssistViewController(mode: .garageMeasure),
+            animated: true
+        )
     }
 
     // EN: Keep explicit dashboard reassignment behind one confirmation alert.

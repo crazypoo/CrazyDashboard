@@ -153,8 +153,15 @@ public class PTLocalIntercomManager: NSObject {
     // EN: Live Activity eligibility requires a working audio path and a usable microphone permission state.
     // ES: La elegibilidad de Live Activity requiere una ruta de audio funcional y un permiso de micrófono utilizable.
     // 中文：Live Activity 资格还必须满足音频通路正常且麦克风权限状态可用。
-    private var isAudioOperational = false
-    private var isMicrophoneUnavailable = false
+    private let audioLifecycleLock = NSLock()
+    private var isAudioOperationalStorage = false
+    private var isMicrophoneUnavailableStorage = false
+    // EN: An interruption never resumes microphone transmission implicitly.
+    // ES: Una interrupción nunca reanuda implícitamente la transmisión del micrófono.
+    // 中文：音频中断后绝不隐式恢复麦克风发送。
+    private var audioResumeRequiredStorage = false
+    private var audioInterruptionObserver: NSObjectProtocol?
+    private var mediaServicesResetObserver: NSObjectProtocol?
 
     private var pingTimer: Timer?
     
@@ -179,6 +186,54 @@ public class PTLocalIntercomManager: NSObject {
     public var connectedPeersCount: Int {
         guard isRunning else { return 0 }
         return activePeers.count
+    }
+
+    public var needsAudioResume: Bool {
+        audioLifecycleLock.lock()
+        defer { audioLifecycleLock.unlock() }
+        return audioResumeRequiredStorage
+    }
+
+    // EN: Audio lifecycle flags are touched by both the main thread and the audio queue.
+    // ES: Las banderas del ciclo de audio se usan en el hilo principal y en la cola de audio.
+    // 中文：音频生命周期标记会同时被主线程和音频队列访问。
+    private var audioResumeRequired: Bool {
+        get {
+            audioLifecycleLock.lock()
+            defer { audioLifecycleLock.unlock() }
+            return audioResumeRequiredStorage
+        }
+        set {
+            audioLifecycleLock.lock()
+            audioResumeRequiredStorage = newValue
+            audioLifecycleLock.unlock()
+        }
+    }
+
+    private var isAudioOperational: Bool {
+        get {
+            audioLifecycleLock.lock()
+            defer { audioLifecycleLock.unlock() }
+            return isAudioOperationalStorage
+        }
+        set {
+            audioLifecycleLock.lock()
+            isAudioOperationalStorage = newValue
+            audioLifecycleLock.unlock()
+        }
+    }
+
+    private var isMicrophoneUnavailable: Bool {
+        get {
+            audioLifecycleLock.lock()
+            defer { audioLifecycleLock.unlock() }
+            return isMicrophoneUnavailableStorage
+        }
+        set {
+            audioLifecycleLock.lock()
+            isMicrophoneUnavailableStorage = newValue
+            audioLifecycleLock.unlock()
+        }
     }
 
     // EN: Location sharing is an explicit user opt-in and is disabled by default.
@@ -327,11 +382,21 @@ public class PTLocalIntercomManager: NSObject {
         super.init()
         setupPeerID()
         setupMultipeer()
-        
-        audioQueue.async {
-            self.setupAudioEngine(needsMic: false)
-        }
         NotificationCenter.default.addObserver(self, selector: #selector(handleAudioRouteChange), name: AVAudioSession.routeChangeNotification, object: nil)
+        audioInterruptionObserver = NotificationCenter.default.addObserver(
+            forName: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance(),
+            queue: nil
+        ) { [weak self] notification in
+            self?.handleAudioInterruption(notification)
+        }
+        mediaServicesResetObserver = NotificationCenter.default.addObserver(
+            forName: AVAudioSession.mediaServicesWereResetNotification,
+            object: AVAudioSession.sharedInstance(),
+            queue: nil
+        ) { [weak self] notification in
+            self?.handleMediaServicesReset(notification)
+        }
     }
     
     private func sendMyAvatar(to peer: MCPeerID, avatarImage: UIImage) {
@@ -550,6 +615,15 @@ public class PTLocalIntercomManager: NSObject {
         connectingPeers.removeAll()
         publishPeerSnapshot([], force: true)
         isRunning = true
+        audioResumeRequired = false
+        isAudioOperational = false
+
+        // EN: Activate the audio graph only after the user explicitly starts PTT.
+        // ES: Activa el grafo de audio solo después de que el usuario inicie PTT explícitamente.
+        // 中文：只有用户明确开启 PTT 后才激活音频图。
+        audioQueue.async { [weak self] in
+            self?.setupAudioEngine(needsMic: false)
+        }
 
         // EN: PTT keeps a location lease only while the intercom service is explicitly running.
         // ES: PTT mantiene un arrendamiento de ubicación solo mientras el intercomunicador está activo explícitamente.
@@ -600,9 +674,16 @@ public class PTLocalIntercomManager: NSObject {
 
         guard wasRunning else { return }
 
-        audioEngine.stop()
-        audioQueue.async {
-            self.setupAudioEngine(needsMic: false)
+        audioQueue.async { [weak self] in
+            guard let self else { return }
+            self.audioEngine.inputNode.removeTap(onBus: 0)
+            self.audioEngine.stop()
+            self.deactivateAudioSession()
+            DispatchQueue.main.async {
+                self.isAudioOperational = false
+                self.audioResumeRequired = false
+                self.globalStatusChangeSet()
+            }
         }
 
         currentStatusText = PTDashboardConfig.languageFunc(text: "ptt_close")
@@ -664,6 +745,14 @@ public class PTLocalIntercomManager: NSObject {
             PTNSLogConsole("❌ [音频引擎] AudioSession 动态切换失败: \(error)")
         }
     }
+
+    private func deactivateAudioSession() {
+        do {
+            try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        } catch {
+            PTNSLogConsole("⚠️ [音频引擎] 释放 AudioSession 失败: \(error)")
+        }
+    }
     
     private func setupAudioEngine(needsMic: Bool) {
         audioEngine.stop() // 停掉旧的
@@ -699,14 +788,16 @@ public class PTLocalIntercomManager: NSObject {
             try audioEngine.start()
             PTNSLogConsole("🔄 [音频引擎] 成功从休克状态中硬重启！")
             DispatchQueue.main.async { [weak self] in
-                self?.isAudioOperational = true
-                self?.globalStatusChangeSet()
+                guard let self, self.isRunning, !self.audioResumeRequired else { return }
+                self.isAudioOperational = true
+                self.globalStatusChangeSet()
             }
         } catch {
             PTNSLogConsole("❌ [音频引擎] 硬重启失败: \(error)")
             DispatchQueue.main.async { [weak self] in
-                self?.isAudioOperational = false
-                self?.globalStatusChangeSet()
+                guard let self, self.isRunning else { return }
+                self.isAudioOperational = false
+                self.globalStatusChangeSet()
             }
         }
     }
@@ -714,6 +805,7 @@ public class PTLocalIntercomManager: NSObject {
     @objc private func handleAudioRouteChange(notification: Notification) {
         audioQueue.async { [weak self] in
             guard let self = self else { return }
+            guard self.isRunning, !self.audioResumeRequired else { return }
             let needsMic = self.isHandsFreeMode || self.isTalking
             self.setupAudioEngine(needsMic: needsMic)
             
@@ -725,8 +817,107 @@ public class PTLocalIntercomManager: NSObject {
         }
     }
 
+    // EN: Stop the graph on interruption and wait for an explicit user resume action.
+    // ES: Detiene el grafo durante la interrupción y espera una acción explícita del usuario.
+    // 中文：音频中断时停止音频图，等待用户明确点击恢复。
+    private func handleAudioInterruption(_ notification: Notification) {
+        guard let rawValue = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: rawValue) else { return }
+        let apply: () -> Void = { [weak self] in
+            self?.applyAudioInterruption(type)
+        }
+        if Thread.isMainThread {
+            apply()
+        } else {
+            DispatchQueue.main.async(execute: apply)
+        }
+    }
+
+    private func applyAudioInterruption(_ type: AVAudioSession.InterruptionType) {
+        let wasRunning = isRunning
+
+        switch type {
+        case .began:
+            audioResumeRequired = wasRunning
+            isAudioOperational = false
+            isHandsFreeMode = false
+            isTalking = false
+            isLocalUserSpeaking = false
+            audioQueue.async { [weak self] in
+                guard let self else { return }
+                self.audioEngine.inputNode.removeTap(onBus: 0)
+                self.audioEngine.stop()
+                self.deactivateAudioSession()
+            }
+            currentStatusText = PTDashboardConfig.languageFunc(text: "ptt_audio_interrupted")
+            globalStatusChangeSet()
+        case .ended:
+            guard wasRunning else { return }
+            // Do not auto-resume a microphone or VOX after a phone call/navigation interruption.
+            audioResumeRequired = true
+            isAudioOperational = false
+            currentStatusText = PTDashboardConfig.languageFunc(text: "ptt_audio_interrupted")
+            globalStatusChangeSet()
+        @unknown default:
+            break
+        }
+    }
+
+    // EN: Media-service reset requires graph reconstruction, but microphone use remains opt-in.
+    // ES: El reinicio de los servicios multimedia exige reconstruir el grafo, pero el micrófono sigue siendo opcional.
+    // 中文：媒体服务重置后重建音频图，但麦克风使用仍必须由用户主动开启。
+    private func handleMediaServicesReset(_ notification: Notification) {
+        let apply: () -> Void = { [weak self] in
+            self?.applyMediaServicesReset()
+        }
+        if Thread.isMainThread {
+            apply()
+        } else {
+            DispatchQueue.main.async(execute: apply)
+        }
+    }
+
+    private func applyMediaServicesReset() {
+        guard isRunning else { return }
+        audioResumeRequired = true
+        isAudioOperational = false
+        isHandsFreeMode = false
+        isTalking = false
+        isLocalUserSpeaking = false
+        audioQueue.async { [weak self] in
+            guard let self else { return }
+            self.audioEngine.stop()
+            self.deactivateAudioSession()
+        }
+        currentStatusText = PTDashboardConfig.languageFunc(text: "ptt_audio_interrupted")
+        globalStatusChangeSet()
+    }
+
+    public func resumeAudioAfterInterruption() {
+        guard isRunning, audioResumeRequired else { return }
+        audioQueue.async { [weak self] in
+            guard let self else { return }
+            self.setupAudioEngine(needsMic: false)
+            let engineStarted = self.audioEngine.isRunning
+            DispatchQueue.main.async {
+                guard self.isRunning else { return }
+                guard engineStarted else {
+                    self.isAudioOperational = false
+                    self.globalStatusChangeSet()
+                    return
+                }
+                self.audioResumeRequired = false
+                self.isAudioOperational = true
+                self.currentStatusText = self.session.connectedPeers.isEmpty
+                    ? PTDashboardConfig.languageFunc(text: "ptt_ready_connect")
+                    : PTDashboardConfig.languageFunc(text: "ptt_ready_connected")
+                self.globalStatusChangeSet()
+            }
+        }
+    }
+
     public func startTalking() {
-        guard isRunning, hasConnectedPeers, !isTalking else { return }
+        guard isRunning, hasConnectedPeers, !isTalking, !audioResumeRequired else { return }
         micRequest {
             self.internalStartTalking()
         }
@@ -753,6 +944,7 @@ public class PTLocalIntercomManager: NSObject {
     private func internalStartTalking() {
         audioQueue.async { [weak self] in
             guard let self = self else { return }
+            guard self.isRunning, self.hasConnectedPeers, !self.audioResumeRequired else { return }
             
             if !self.isHandsFreeMode {
                 self.setupAudioEngine(needsMic: true)
@@ -820,7 +1012,7 @@ public class PTLocalIntercomManager: NSObject {
 
     private func sendAudioData(_ data: Data) {
         let peers = session.connectedPeers
-        guard !peers.isEmpty else { return }
+        guard isRunning, !audioResumeRequired, !peers.isEmpty else { return }
         do {
             // 使用 do-catch，如果发送失败，立刻在控制台打印出致命原因！
             try session.send(data, toPeers: peers, with: .unreliable)
@@ -830,13 +1022,14 @@ public class PTLocalIntercomManager: NSObject {
     }
     
     fileprivate func receiveAndPlay(data: Data) {
-        guard !isTalking else { return }
+        guard isRunning, !audioResumeRequired, !isTalking else { return }
         
         // 用全网统一的 commonFormat 去解码对方发来的 Data
         if let buffer = data.toPCMBuffer(format: commonFormat) {
             audioQueue.async { [weak self] in
-                self?.safeStartPlayerNode()
-                self?.playerNode.scheduleBuffer(buffer, completionHandler: nil)
+                guard let self, self.isRunning, !self.audioResumeRequired else { return }
+                self.safeStartPlayerNode()
+                self.playerNode.scheduleBuffer(buffer, completionHandler: nil)
             }
         }
     }
@@ -871,7 +1064,7 @@ public class PTLocalIntercomManager: NSObject {
     }
     
     public func toggleHandsFreeMode(isOn: Bool) {
-        guard !isOn || (isRunning && hasConnectedPeers) else { return }
+        guard !audioResumeRequired, (!isOn || (isRunning && hasConnectedPeers)) else { return }
         isHandsFreeMode = isOn
         
         if isOn {
@@ -887,8 +1080,10 @@ public class PTLocalIntercomManager: NSObject {
         // 同样加入权限校验
         micRequest { [weak self] in
             guard let self = self else { return }
+            guard self.isRunning, self.hasConnectedPeers, !self.audioResumeRequired else { return }
             
             self.audioQueue.async {
+                guard self.isRunning, self.hasConnectedPeers, !self.audioResumeRequired else { return }
                 self.setupAudioEngine(needsMic: true)
                 
                 let inputNode = self.audioEngine.inputNode
@@ -1002,11 +1197,13 @@ public class PTLocalIntercomManager: NSObject {
             peerStates.append(state)
         }
         
+        let microphonePermission = AVAudioSession.sharedInstance().recordPermission
+        let microphoneAvailable = !isMicrophoneUnavailable && microphonePermission == .granted
         let liveActivityPeers = PTLiveActivityEligibility.shouldDisplayPTT(
             isRunning: isRunning,
             connectedPeerCount: activePeers.count,
             audioOperational: isAudioOperational,
-            microphoneAvailable: !isMicrophoneUnavailable
+            microphoneAvailable: microphoneAvailable
         ) ? peerStates : []
 
         // 只有已连接成员存在时才创建或更新锁屏组件；空群组会结束全部旧 Activity。

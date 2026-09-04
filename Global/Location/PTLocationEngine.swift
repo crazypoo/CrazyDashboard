@@ -30,6 +30,10 @@ public enum PTLocationUsage: String, Hashable, Sendable {
     case map
     case ptt
     case antiTheft
+    // EN: LiDAR owns a location lease only while mounted low-speed assistance is visible.
+    // ES: LiDAR solo posee un arrendamiento mientras la asistencia montada de baja velocidad está visible.
+    // 中文：只有安装式低速 LiDAR 辅助页面可见时才持有定位租约。
+    case lidar
 }
 
 // EN: This coordinator owns only usage leases; the existing location engine remains the transport implementation.

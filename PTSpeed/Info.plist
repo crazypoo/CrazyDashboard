@@ -18,6 +18,8 @@
 		<string>_pt-moto-voice._tcp</string>
 		<string>_pt-moto-voice._udp</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>用于低速骑行辅助和车库测距</string>
 	<key>NSMicrophoneInjectionUsageDescription</key>
 	<string>我要用Mic</string>
 	<key>QWeatherHost</key>

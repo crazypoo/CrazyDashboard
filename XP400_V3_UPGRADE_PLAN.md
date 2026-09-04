@@ -8,7 +8,7 @@
 >
 > 发布方式：只维护现有 `PTSpeed` TestFlight 版本，不新增 Lab Scheme、App Target、Bundle ID 或第二发布渠道；当前没有 App Store 上架计划。
 >
-> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 为 Build 45，下一次 TestFlight 从 Build 46 开始。
+> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 为 Build 46，下一次 TestFlight 从 Build 47 开始。
 >
 > 文件名中的 `V3` 仅为保留现有路径和链接，不代表需要修改 App 大版本号。
 >
@@ -46,7 +46,7 @@
 ### 版本与 Build 规则
 
 - [x] `PTSpeed`、Widget 和 Watch 的 `MARKETING_VERSION` 保持 `2.0.8`。
-- [x] 当前主 App、Widget、Watch 和 Tests Build 已统一为 `45`；下一次 TestFlight 使用 Build `46`。
+- [x] 当前主 App、Widget、Watch 和 Tests Build 已统一为 `46`；下一次 TestFlight 使用 Build `47`。
 - [x] 每次上传 TestFlight 只将 `CURRENT_PROJECT_VERSION` 加一：44、45、46……
 - [x] App、Widget、Watch 和 Tests 每次使用完全相同的 Build 号；Build 45 Debug/Release 目标构建和无签名 Archive 已按对应验收记录核验。
 - [x] Tests Target 已同步到主 App Build `45`，此后与主 App、Widget 和 Watch 一起递增。
@@ -1021,7 +1021,7 @@ OBD BLE / Wi-Fi / Mock
 | DEV-008 | ⬜ | ECU 固件刷写 | 当前不具备真实固件格式、分块传输、校验与失败回滚闭环 |
 | DEV-009 | ⬜ | 原固件备份与完整性校验 | 空备份或固定成功结果不能视为功能完成 |
 | DEV-010 | 🧪 | 刷写前置检查 | 计划校验电压、连接、车型、文件签名、备份、用户确认和恢复资源 |
-| DEV-011 | ⬜ | LiDAR 碰撞辅助 | `PTLiDARCollisionManager` 尚未接入正式功能链路 |
+| DEV-011 | 🟨 | LiDAR 碰撞辅助 | 已接入统一 LiDAR 服务和安全/车库入口；Dev 入口用于只读实验，真实硬件和误报验证待补 |
 
 高风险操作统一规则：
 
@@ -1471,3 +1471,43 @@ OBD BLE / Wi-Fi / Mock
 - [x] 最终归档产物：`/tmp/CrazyDashboard-Build45-final.xcarchive`；归档完成后再次核对三个受保护核心文件 SHA-256，仍与第 2 节一致。
 - [x] 失败记录保留：三目标并行 Release 构建曾因临时目录磁盘空间不足失败，清理本轮生成的临时构建目录后改为串行构建并通过；Release 测试构建首次因未开启 `ENABLE_TESTABILITY` 失败，修正参数后通过。
 - 回滚方式：只回退本节新增外围模型、协调器接线、车库/路线/CAN/证据/Watch 代码、测试、工程版本号和文档；不覆盖三个受保护核心文件。
+
+## 28. Build 46 LiDAR、PTT 音频生命周期与系统能力实施记录（2026-09-05）
+
+### 28.1 工作包与实施结果
+
+| 状态 | ID | 内容 | 结果 |
+|---|---|---|---|
+| 🟨 | `B46-00` | Build 与核心保护 | 保持营销版本 `2.0.8`，主 App、Widget、Watch、Tests 工程配置统一为 Build `46`；三个受保护核心文件未修改，签名发布待补 |
+| 🟨 | `B46-01` | LiDAR 采样服务 | `PTLiDARCollisionManager` 增加 sceneDepth/smoothedSceneDepth 选择、ROI 三区采样、置信度过滤、覆盖率检查、15% 近端统计、10 Hz 限速和单次缓冲区锁定；不保留原始 `ARFrame` |
+| 🟨 | `B46-02` | 低速门禁与报警稳定性 | 仪表车速优先、OBD 次之、GPS 最后；仪表/OBD 2 秒、GPS 3 秒过期，8 km/h 进入、10 km/h 退出，8～10 km/h 保持滞回；warning/critical/clear 分别使用 0.5/0.3/0.8 秒驻留和 +0.25 米清除回差 |
+| 🟨 | `B46-03` | 车库测距与安全入口 | 新增 `PTLiDARAssistViewController`，车库入口支持冻结、备注、按当前车辆保存和 JSON/CSV 导出；安全中心提供安装式低速入口；不自动开启、不改变车库 iCloud schema |
+| 🟨 | `B46-04` | PTT 音频生命周期 | 单例初始化不再设置 AudioSession 或启动音频图；显式启动才建立播放图；电话/导航中断、媒体服务重置停止图并显示显式恢复按钮；恢复只重建播放图，麦克风和 VOX 仍须用户再次启用 |
+| ⬜ | `B46-05` | CallKit / PushKit | 本 Build 不添加 VoIP 推送或 CallKit。当前 PTT 是 MultipeerConnectivity 局域网对讲，没有服务端来电、账号、接听/拒接语义和后台 VoIP 合规依据；后续单独立项 |
+| 🟨 | `B46-06` | 测试、资源与发布门禁 | 已加入 LiDAR 深度/置信度、车速门禁、测量存储、CSV 转义和 PTT Activity 资格测试；主 App、Widget、Watch 目标和 Tests `build-for-testing` 均已通过，真实设备/车辆、XCTest 实际执行和签名 Archive 待补 |
+
+### 28.2 关键实现边界
+
+- LiDAR 只使用 `PTLocationUsage.lidar` 租约；安装模式在页面运行期间持有，车库模式不额外启动持续定位。进入后台、系统中断、失败、离开页面和显式停止都会暂停会话并释放租约。
+- `PTLiDARMeasurementStore` 只保存最多 100 条结构化测量，不保存深度图或原始相机帧；导出支持 JSON 和 CSV，备注字段进行标准 CSV 转义。
+- 低速辅助只提供视觉距离和触觉警告，不自动播放音频、不自动记录骑行事件；只有用户明确保存安装模式测量且正在记录行程时，才写入一个骑行事件。
+- PTT Activity 仍由 `PTLiveActivityManager` 单一入口管理；只有服务运行、有效成员、音频图正常且麦克风权限已授权时才提交成员列表。空成员、音频中断、停止和冷启动清理都会结束遗留 Activity。
+- CallKit/PushKit 没有新增 entitlement、后台模式、Provider 或推送 token。没有在线 PTT 后端前不伪装为系统来电，也不使用 PushKit 维持局域网会话。
+- 本轮没有修改 `Global/BLE/PTBluetoothManager.swift`、`Global/OBD/Function/PTHiddenOBDConnector.swift`、`Global/OBD/Function/PTOBDCommand.swift`。
+
+### 28.3 自动验证与外部验证边界
+
+- [x] `PTLiDARDepthAnalyzer` 合成深度/低置信度过滤测试已加入 `PTSpeedTests/PTCoreTests.swift`。
+- [x] `PTLiDARRidingSpeedGate` 已加入过期车速、进入/退出阈值和滞回测试。
+- [x] `PTLiDARMeasurementStore` 已加入 100 条上限、JSON 编码、CSV 导出和逗号转义测试。
+- [x] `PTLiveActivityEligibility` 已保留“无成员/音频不正常不可展示”的回归测试。
+- [x] `git diff --check`、Info.plist/xcstrings 语法检查、主 App Debug 构建和 Tests `build-for-testing` 已通过。
+- [x] Widget 与 Watch 目标已在释放临时空间后串行重新构建通过；前一次并行构建失败原因为 `No space left on device`，不是代码诊断错误。
+- [ ] XCTest 实际执行、LiDAR 真机相机权限、不同 iPhone LiDAR 机型、安装角度/风雨/夜间误报、PTT 电话/导航/蓝牙耳机、多设备 Live Activity 和签名 TestFlight 仍未验证。
+
+### 28.4 回滚与发布规则
+
+- LiDAR 可通过移除安全中心/车库入口或停止调用 `start(mode:)` 独立关闭；本地测量使用独立 UserDefaults key `PTLiDARMeasurementStore.v1`，旧版本忽略该 key。
+- PTT 回滚只涉及音频生命周期标记、显式恢复 UI 和本轮新增本地化 key；不回退 PTT 的组网、音频传输和 Live Activity 核心数据结构。
+- Build 46 不因 CallKit/PushKit 缺失而阻塞普通 TestFlight；在没有后端和真实系统通话需求前，保持未实现状态。
+- 发布前必须再次验证三个核心文件 SHA-256 与第 2 节一致，并补充 Widget/Watch 串行构建、签名 Archive、XCTest 执行和真实设备/车辆证据；在这些证据完成前 B46 工作包保持 `🟨`。

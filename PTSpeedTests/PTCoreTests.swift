@@ -9,6 +9,9 @@
 import XCTest
 import MultipeerConnectivity
 import CoreLocation
+import CoreVideo
+import ARKit
+import CoreGraphics
 @testable import XP400Ride
 
 final class PTCoreTests: XCTestCase {
@@ -180,6 +183,125 @@ final class PTCoreTests: XCTestCase {
         let restored = PTWidgetSharedStatus(applicationContext: source.applicationContext)
 
         XCTAssertEqual(restored, source)
+    }
+
+    // EN: LiDAR sampling must separate the three regions and reject low-confidence depth values.
+    // ES: El muestreo LiDAR debe separar las tres zonas y rechazar profundidades de baja confianza.
+    // 中文：LiDAR 采样必须分离三个区域，并拒绝低置信度深度值。
+    func testLiDARDepthAnalyzerSeparatesZonesAndFiltersConfidence() throws {
+        let depth = try makeFloatPixelBuffer(width: 30, height: 10) { x, _ in
+            switch x {
+            case 0..<10: return 2.0
+            case 10..<20: return 0.8
+            default: return 3.0
+            }
+        }
+        let regions: [PTLiDARZone: CGRect] = [
+            .left: CGRect(x: 0, y: 0, width: 1.0 / 3.0, height: 1),
+            .center: CGRect(x: 1.0 / 3.0, y: 0, width: 1.0 / 3.0, height: 1),
+            .right: CGRect(x: 2.0 / 3.0, y: 0, width: 1.0 / 3.0, height: 1)
+        ]
+
+        let readings = PTLiDARDepthAnalyzer.analyze(depthMap: depth, confidenceMap: nil, regions: regions)
+        XCTAssertEqual(readings.count, 3)
+        XCTAssertEqual(readings.first { $0.zone == .left }?.distanceMeters ?? 0, 2, accuracy: 0.001)
+        XCTAssertEqual(readings.first { $0.zone == .center }?.distanceMeters ?? 0, 0.8, accuracy: 0.001)
+        XCTAssertEqual(readings.first { $0.zone == .right }?.distanceMeters ?? 0, 3, accuracy: 0.001)
+
+        let lowConfidence = try makeBytePixelBuffer(width: 30, height: 10) { _, _ in
+            UInt8(ARConfidenceLevel.low.rawValue)
+        }
+        let filteredReadings = PTLiDARDepthAnalyzer.analyze(
+            depthMap: depth,
+            confidenceMap: lowConfidence,
+            regions: regions
+        )
+        XCTAssertEqual(filteredReadings.count, 3)
+        XCTAssertTrue(filteredReadings.allSatisfy { $0.distanceMeters == nil })
+    }
+
+    // EN: The mounted gate must use entry/exit hysteresis and reject stale vehicle speed.
+    // ES: La puerta montada debe usar histéresis de entrada/salida y rechazar velocidad obsoleta.
+    // 中文：安装模式门禁必须使用进入/退出滞回，并拒绝过期车速。
+    func testLiDARRidingSpeedGateUsesHysteresisAndFreshness() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        var gate = PTLiDARRidingSpeedGate()
+
+        var result = gate.update(
+            sample: PTLiDARSpeedSample(speedKmh: 9, source: .dashboard, timestamp: now),
+            now: now,
+            entrySpeedKmh: 8,
+            maximumSpeedKmh: 10
+        )
+        XCTAssertFalse(result.isArmed)
+        XCTAssertEqual(result.reason, .speedHysteresis)
+
+        result = gate.update(
+            sample: PTLiDARSpeedSample(speedKmh: 8, source: .dashboard, timestamp: now),
+            now: now,
+            entrySpeedKmh: 8,
+            maximumSpeedKmh: 10
+        )
+        XCTAssertTrue(result.isArmed)
+        XCTAssertEqual(result.state, .armed)
+
+        result = gate.update(
+            sample: PTLiDARSpeedSample(speedKmh: 9.5, source: .dashboard, timestamp: now),
+            now: now,
+            entrySpeedKmh: 8,
+            maximumSpeedKmh: 10
+        )
+        XCTAssertTrue(result.isArmed)
+
+        result = gate.update(
+            sample: PTLiDARSpeedSample(speedKmh: 10.1, source: .dashboard, timestamp: now),
+            now: now,
+            entrySpeedKmh: 8,
+            maximumSpeedKmh: 10
+        )
+        XCTAssertFalse(result.isArmed)
+        XCTAssertEqual(result.reason, .speedTooHigh)
+
+        result = gate.update(
+            sample: PTLiDARSpeedSample(speedKmh: 8, source: .dashboard, timestamp: now.addingTimeInterval(-2.1)),
+            now: now,
+            entrySpeedKmh: 8,
+            maximumSpeedKmh: 10
+        )
+        XCTAssertFalse(result.isArmed)
+        XCTAssertEqual(result.reason, .speedStale)
+    }
+
+    // EN: LiDAR measurement storage is bounded and exports data without losing zone values.
+    // ES: El almacenamiento de mediciones LiDAR está limitado y exporta los valores de las zonas.
+    // 中文：LiDAR 测量存储有数量上限，导出时不能丢失区域数值。
+    @MainActor
+    func testLiDARMeasurementStoreIsBoundedAndExportable() throws {
+        let suiteName = "PTLiDARMeasurementTests.\(UUID().uuidString)"
+        let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { userDefaults.removePersistentDomain(forName: suiteName) }
+
+        let store = PTLiDARMeasurementStore(userDefaults: userDefaults)
+        let snapshot = PTLiDARProximitySnapshot(
+            mode: .garageMeasure,
+            state: .running,
+            readings: [
+                PTLiDARZoneReading(zone: .left, distanceMeters: 1.2, confidence: .medium, coverage: 0.8),
+                PTLiDARZoneReading(zone: .center, distanceMeters: 0.7, confidence: .high, coverage: 0.9),
+                PTLiDARZoneReading(zone: .right, distanceMeters: nil, confidence: .unavailable, coverage: 0.1)
+            ]
+        )
+        for index in 0..<(PTLiDARMeasurementStore.maximumRecordCount + 1) {
+            XCTAssertNotNil(store.save(snapshot: snapshot, note: "row,\(index)"))
+        }
+
+        XCTAssertEqual(store.measurements.count, PTLiDARMeasurementStore.maximumRecordCount)
+        let csvURL = try store.exportURL(format: .csv)
+        let csv = try String(contentsOf: csvURL, encoding: .utf8)
+        XCTAssertTrue(csv.contains("distanceMeters"))
+        XCTAssertTrue(csv.contains("row,100"))
+        XCTAssertFalse(csv.contains("row,0"))
+        try FileManager.default.removeItem(at: csvURL)
     }
 
     // EN: Garage records must stay attached to the selected motorcycle and survive a document reload.
@@ -2205,6 +2327,88 @@ final class PTCoreTests: XCTestCase {
             gForceZ: 0,
             slipRatio: 0
         )
+    }
+
+    // EN: Create deterministic depth buffers for LiDAR tests without requiring a real camera.
+    // ES: Crea buffers de profundidad deterministas para probar LiDAR sin una cámara real.
+    // 中文：为 LiDAR 测试创建确定性的深度缓冲区，不依赖真实摄像头。
+    private func makeFloatPixelBuffer(
+        width: Int,
+        height: Int,
+        value: (Int, Int) -> Float32
+    ) throws -> CVPixelBuffer {
+        var buffer: CVPixelBuffer?
+        let result = CVPixelBufferCreate(
+            kCFAllocatorDefault,
+            width,
+            height,
+            kCVPixelFormatType_DepthFloat32,
+            nil,
+            &buffer
+        )
+        guard result == kCVReturnSuccess, let buffer else {
+            throw NSError(domain: "PTCoreTests", code: Int(result), userInfo: [
+                NSLocalizedDescriptionKey: "Unable to create float depth buffer"
+            ])
+        }
+
+        CVPixelBufferLockBaseAddress(buffer, [])
+        defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
+        guard let baseAddress = CVPixelBufferGetBaseAddress(buffer) else {
+            throw NSError(domain: "PTCoreTests", code: -1, userInfo: [
+                NSLocalizedDescriptionKey: "Depth buffer has no base address"
+            ])
+        }
+
+        let rowStride = CVPixelBufferGetBytesPerRow(buffer) / MemoryLayout<Float32>.stride
+        let pixels = baseAddress.assumingMemoryBound(to: Float32.self)
+        for y in 0..<height {
+            for x in 0..<width {
+                pixels[y * rowStride + x] = value(x, y)
+            }
+        }
+        return buffer
+    }
+
+    // EN: Create deterministic confidence buffers for LiDAR tests.
+    // ES: Crea buffers de confianza deterministas para probar LiDAR.
+    // 中文：为 LiDAR 测试创建确定性的置信度缓冲区。
+    private func makeBytePixelBuffer(
+        width: Int,
+        height: Int,
+        value: (Int, Int) -> UInt8
+    ) throws -> CVPixelBuffer {
+        var buffer: CVPixelBuffer?
+        let result = CVPixelBufferCreate(
+            kCFAllocatorDefault,
+            width,
+            height,
+            kCVPixelFormatType_OneComponent8,
+            nil,
+            &buffer
+        )
+        guard result == kCVReturnSuccess, let buffer else {
+            throw NSError(domain: "PTCoreTests", code: Int(result), userInfo: [
+                NSLocalizedDescriptionKey: "Unable to create confidence buffer"
+            ])
+        }
+
+        CVPixelBufferLockBaseAddress(buffer, [])
+        defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
+        guard let baseAddress = CVPixelBufferGetBaseAddress(buffer) else {
+            throw NSError(domain: "PTCoreTests", code: -1, userInfo: [
+                NSLocalizedDescriptionKey: "Confidence buffer has no base address"
+            ])
+        }
+
+        let rowStride = CVPixelBufferGetBytesPerRow(buffer)
+        let pixels = baseAddress.assumingMemoryBound(to: UInt8.self)
+        for y in 0..<height {
+            for x in 0..<width {
+                pixels[y * rowStride + x] = value(x, y)
+            }
+        }
+        return buffer
     }
 
     private func makeTripReport(

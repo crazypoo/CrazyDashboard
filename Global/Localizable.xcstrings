@@ -12475,6 +12475,339 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "车库中已经是最新仪表数据。" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "車庫中已經是最新儀表資料。" } }
       }
+    },
+    "garage_lidar_measure" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR measure" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR ölçümü" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR 测距" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR 測距" } }
+      }
+    },
+    "lidar_open_mounted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open low-speed LiDAR" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Düşük hız LiDAR'ını aç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开低速 LiDAR" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟低速 LiDAR" } }
+      }
+    },
+    "lidar_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR Assist" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR Yardımı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR 辅助" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR 輔助" } }
+      }
+    },
+    "lidar_mode_mounted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mounted" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Monteli" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "安装模式" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "安裝模式" } }
+      }
+    },
+    "lidar_mode_garage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Garage" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Garaj" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "车库测距" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "車庫測距" } }
+      }
+    },
+    "lidar_mounted_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Armed only with fresh speed data at or below 8 km/h." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yalnızca 8 km/sa veya altındaki güncel hız verisiyle etkinleşir." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仅在新鲜车速不超过 8 km/h 时进入辅助状态。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "僅在最新車速不超過 8 km/h 時進入輔助狀態。" } }
+      }
+    },
+    "lidar_garage_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Point the phone toward the motorcycle and freeze a reading to save it." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Telefonu motosiklete doğrultun ve kaydetmek için ölçümü dondurun." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "将手机对准摩托车，冻结测量后即可保存。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "將手機對準摩托車，凍結測量後即可儲存。" } }
+      }
+    },
+    "lidar_start" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Başlat" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开始" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開始" } }
+      }
+    },
+    "lidar_stop" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Stop" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Durdur" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "停止" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "停止" } }
+      }
+    },
+    "lidar_resume" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Resume" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürdür" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "恢复" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "恢復" } }
+      }
+    },
+    "lidar_freeze" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Freeze" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Dondur" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "冻结" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "凍結" } }
+      }
+    },
+    "lidar_unfreeze" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Live" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Canlı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "实时" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "即時" } }
+      }
+    },
+    "lidar_save" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kaydet" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保存" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "儲存" } }
+      }
+    },
+    "lidar_note_placeholder" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Note (optional)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Not (isteğe bağlı)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "备注（可选）" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "備註（可選）" } }
+      }
+    },
+    "lidar_saved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Measurement saved." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ölçüm kaydedildi." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "测量已保存。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "測量已儲存。" } }
+      }
+    },
+    "lidar_no_measurement" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No valid distance reading is available." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Geçerli bir mesafe ölçümü yok." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "当前没有有效的距离测量。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "目前沒有有效的距離測量。" } }
+      }
+    },
+    "lidar_camera_permission_denied" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Camera access is required for LiDAR assistance." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR yardımı için kamera erişimi gerekir." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR 辅助需要相机权限。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR 輔助需要相機權限。" } }
+      }
+    },
+    "lidar_unsupported" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This device does not support LiDAR depth." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bu aygıt LiDAR derinliğini desteklemiyor." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "此设备不支持 LiDAR 深度。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "此裝置不支援 LiDAR 深度。" } }
+      }
+    },
+    "lidar_zone_left" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Left" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sol" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "左侧" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "左側" } }
+      }
+    },
+    "lidar_zone_center" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Center" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Merkez" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "中间" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "中間" } }
+      }
+    },
+    "lidar_zone_right" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Right" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sağ" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "右侧" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "右側" } }
+      }
+    },
+    "lidar_state_idle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ready" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hazır" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "准备就绪" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "準備就緒" } }
+      }
+    },
+    "lidar_state_running" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Scanning" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Tarama" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "扫描中" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "掃描中" } }
+      }
+    },
+    "lidar_state_armed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Low-speed guard armed" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Düşük hız koruması etkin" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "低速防护已启用" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "低速防護已啟用" } }
+      }
+    },
+    "lidar_state_standby" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Standby" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Beklemede" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "待机" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "待機" } }
+      }
+    },
+    "lidar_state_interrupted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Interrupted" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kesintiye uğradı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已中断" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已中斷" } }
+      }
+    },
+    "lidar_state_permissionDenied" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Camera permission needed" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kamera izni gerekli" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "需要相机权限" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "需要相機權限" } }
+      }
+    },
+    "lidar_state_unsupported" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR unavailable" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR kullanılamıyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR 不可用" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR 無法使用" } }
+      }
+    },
+    "lidar_state_failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR error" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR hatası" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR 错误" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR 錯誤" } }
+      }
+    },
+    "lidar_speed_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Speed unavailable" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hız kullanılamıyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "车速不可用" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "車速無法使用" } }
+      }
+    },
+    "lidar_ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ready for a safe reading" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Güvenli ölçüm için hazır" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "可以开始安全测量" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "可以開始安全測量" } }
+      }
+    },
+    "lidar_clear" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Clear" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Temiz" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "安全" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "安全" } }
+      }
+    },
+    "lidar_warning" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Obstacle nearby" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yakında engel var" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "附近有障碍物" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "附近有障礙物" } }
+      }
+    },
+    "lidar_critical_warning" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Critical distance" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kritik mesafe" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "危险距离" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "危險距離" } }
+      }
+    },
+    "lidar_ride_event" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR measurement" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR ölçümü" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR 测量" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "LiDAR 測量" } }
+      }
+    },
+    "ptt_audio_interrupted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Audio interrupted. Tap resume to continue." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ses kesildi. Devam etmek için sürdür düğmesine dokunun." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "音频已中断，请点击恢复后继续。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "音訊已中斷，請點擊恢復後繼續。" } }
+      }
+    },
+    "ptt_resume_audio" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Resume audio" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sesi sürdür" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "恢复音频" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "恢復音訊" } }
+      }
     }
   },
   "version" : "1.0"

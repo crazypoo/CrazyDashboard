@@ -117,6 +117,24 @@ final class PTRideSafetyViewController: PTMotoBaseViewController {
             buttons: timelineButtons
         ))
 
+        // EN: LiDAR is an explicit foreground tool and is never started by loading the safety page.
+        // ES: LiDAR es una herramienta explícita en primer plano y nunca se inicia al cargar seguridad.
+        // 中文：LiDAR 是用户主动开启的前台工具，进入安全中心时绝不自动启动。
+        let lidarButton = makeButton(
+            title: PTDashboardConfig.languageFunc(text: "lidar_open_mounted"),
+            color: PTDashboardConfig.shared.appMainColor
+        ) { [weak self] in
+            self?.navigationController?.pushViewController(
+                PTLiDARAssistViewController(mode: .mountedLowSpeed),
+                animated: true
+            )
+        }
+        stackView.addArrangedSubview(makeCard(
+            title: PTDashboardConfig.languageFunc(text: "lidar_title"),
+            body: PTDashboardConfig.languageFunc(text: "lidar_mounted_hint"),
+            buttons: [lidarButton]
+        ))
+
         let antiTheftSnapshot = PTAntiTheftManager.shared.snapshot
         let antiTheftButton = makeButton(
             title: PTDashboardConfig.languageFunc(

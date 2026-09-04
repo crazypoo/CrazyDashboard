@@ -912,6 +912,9 @@ final class PTXP400EvidenceViewController: PTListViewController, UIDocumentPicke
         return view
     }()
     
+    override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
+        return .solid(.clear)
+    }
     override func viewDidLoad() {
         super.viewDidLoad()
         pt_Title = PTDashboardConfig.languageFunc(text: "obd_evidence_title")
@@ -921,7 +924,6 @@ final class PTXP400EvidenceViewController: PTListViewController, UIDocumentPicke
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setCustomRightButtons(buttons: [clearButton, exportButton, importButton], buttonSpacing: CGFloat.GlobalItemSpacing)
-        self.showDetail()
     }
 
     func showDetail() {
@@ -930,6 +932,8 @@ final class PTXP400EvidenceViewController: PTListViewController, UIDocumentPicke
             let cellModel = PTFusionCellModel()
             cellModel.name = "\($0.address.tx) → \($0.address.rx) · \($0.did) · \($0.evidenceLevel.rawValue)"
             cellModel.content = "\($0.status.rawValue) · \($0.rawResponse)"
+            cellModel.nameColor = .white
+            cellModel.contentTextColor = .white
             
             let row = PTRows(ID: PTFusionCell.ID,dataModel: cellModel)
             row.cellClass = PTFusionCell.self
@@ -943,6 +947,8 @@ final class PTXP400EvidenceViewController: PTListViewController, UIDocumentPicke
                 let cellModel = PTFusionCellModel()
                 cellModel.name = "BLE · \(report.vehicleModel) · \(session.id.uuidString.prefix(8))"
                 cellModel.content = "\(report.frameCount) frames · invalid \(report.invalidFrameCount) · \(report.sourceFileName)"
+                cellModel.nameColor = .white
+                cellModel.contentTextColor = .white
                 let row = PTRows(ID: PTFusionCell.ID, dataModel: cellModel)
                 row.cellClass = PTFusionCell.self
                 return row
