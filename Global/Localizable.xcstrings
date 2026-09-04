@@ -11849,10 +11849,19 @@
     "dashboard_notification_send_test" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Send test notification" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Test bildirimi gönder" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "发送测试通知" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "傳送測試通知" } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Test iPhone local notification" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "iPhone yerel bildirimini test et" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "测试 iPhone 本地通知" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "測試 iPhone 本機通知" } }
+      }
+    },
+    "dashboard_notification_verify_ancs" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Verify instrument notifications" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gösterge bildirimlerini doğrula" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "验证仪表通知" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "驗證儀表通知" } }
       }
     },
     "dashboard_notification_guide" : {
@@ -11867,19 +11876,19 @@
     "dashboard_notification_test_title" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "XP400 notification test" } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "XP400 bildirim testi" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "XP400 通知测试" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "XP400 通知測試" } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "PTSpeed local notification test" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "PTSpeed yerel bildirim testi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "PTSpeed 本地通知测试" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "PTSpeed 本機通知測試" } }
       }
     },
     "dashboard_notification_test_body" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "If the instrument shows this message, system notification sharing is working." } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gösterge bu mesajı gösterirse sistem bildirim paylaşımı çalışıyor demektir." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "如果仪表显示此消息，说明系统通知分享链路正常。" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "如果儀表顯示此訊息，代表系統通知分享鏈路正常。" } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This tests the iPhone notification center only. It does not prove that XP400 received an ANCS notification." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bu yalnızca iPhone bildirim merkezini test eder. XP400'in bir ANCS bildirimi aldığını kanıtlamaz." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "此测试仅验证 iPhone 通知中心，不代表 XP400 已收到 ANCS 通知。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "此測試僅驗證 iPhone 通知中心，不代表 XP400 已收到 ANCS 通知。" } }
       }
     },
     "dashboard_notification_permission_failed" : {
@@ -11903,10 +11912,10 @@
     "dashboard_notification_test_scheduled" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Test notification scheduled for 5 seconds later." } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Test bildirimi 5 saniye sonrasına planlandı." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "测试通知已安排，将在 5 秒后发送。" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "測試通知已安排，將在 5 秒後傳送。" } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Local notification scheduled for 10 seconds later. Lock the iPhone; this does not confirm delivery to XP400." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yerel bildirim 10 saniye sonrasına planlandı. iPhone'u kilitleyin; bu, XP400'e teslim edildiğini doğrulamaz." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "本地通知已安排，将在 10 秒后发送。请锁定 iPhone；这不会确认通知已投递到 XP400。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "本機通知已安排，將在 10 秒後傳送。請鎖定 iPhone；這不會確認通知已傳送到 XP400。" } }
       }
     },
     "dashboard_notification_test_denied" : {
@@ -11957,10 +11966,28 @@
     "dashboard_notification_guide_body" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "1. Open Settings > Bluetooth > XP400 and enable Share System Notifications.\n2. Check Notifications > Show Previews.\n3. Review Focus mode and per-app notification settings.\n4. Return to the app and send the test notification." } },
-        "tr" : { "stringUnit" : { "state" : "translated", "value" : "1. Ayarlar > Bluetooth > XP400 bölümünü açın ve Sistem Bildirimlerini Paylaş seçeneğini etkinleştirin.\n2. Bildirimler > Önizlemeleri Göster seçeneğini kontrol edin.\n3. Odak modunu ve uygulama bildirim ayarlarını inceleyin.\n4. Uygulamaya dönüp test bildirimini gönderin." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "1. 打开“设置”>“蓝牙”>“XP400”，开启“共享系统通知”。\n2. 检查“通知”>“显示预览”。\n3. 检查专注模式和各 App 的通知设置。\n4. 返回本 App，发送测试通知。" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "1. 開啟「設定」>「藍牙」>「XP400」，啟用「分享系統通知」。\n2. 檢查「通知」>「顯示預覽」。\n3. 檢查專注模式和各 App 的通知設定。\n4. 返回本 App，傳送測試通知。" } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "1. Open Settings > Bluetooth > XP400 and enable Share System Notifications.\n2. Check Notifications > Show Previews and Focus settings.\n3. Keep PTSpeed connected, close the Peugeot app, and lock the iPhone.\n4. Use another phone to place a real call and send a real SMS; test third-party app notifications separately." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "1. Ayarlar > Bluetooth > XP400 bölümünü açın ve Sistem Bildirimlerini Paylaş seçeneğini etkinleştirin.\n2. Bildirimler > Önizlemeleri Göster ve Odak ayarlarını kontrol edin.\n3. PTSpeed'i bağlı tutun, Peugeot uygulamasını kapatın ve iPhone'u kilitleyin.\n4. Başka bir telefondan gerçek bir arama yapın ve gerçek bir SMS gönderin; üçüncü taraf uygulama bildirimlerini ayrıca test edin." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "1. 打开“设置”>“蓝牙”>“XP400”，开启“共享系统通知”。\n2. 检查“通知”>“显示预览”和“专注模式”设置。\n3. 保持 PTSpeed 连接，退出 Peugeot 官方 App，并锁定 iPhone。\n4. 使用另一台手机拨打真实电话并发送真实短信；第三方 App 通知请单独测试。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "1. 開啟「設定」>「藍牙」>「XP400」，啟用「分享系統通知」。\n2. 檢查「通知」>「顯示預覽」和「專注模式」設定。\n3. 保持 PTSpeed 連線，退出 Peugeot 官方 App，並鎖定 iPhone。\n4. 使用另一支手機撥打真實電話並傳送真實訊息；第三方 App 通知請另外測試。" } }
+      }
+    },
+    "dashboard_notification_verify_ancs_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Verify XP400 system notifications" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "XP400 sistem bildirimlerini doğrula" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "验证 XP400 系统通知" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "驗證 XP400 系統通知" } }
+      }
+    },
+    "dashboard_notification_verify_ancs_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "1. Keep PTSpeed connected to XP400 and close the Peugeot app.\n2. Lock the iPhone.\n3. Use another phone to place a real call and send a real SMS.\n4. Test a third-party app notification separately.\n\nThis is the valid instrument test. The iPhone local test only verifies iOS notification delivery." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "1. PTSpeed'i XP400'e bağlı tutun ve Peugeot uygulamasını kapatın.\n2. iPhone'u kilitleyin.\n3. Başka bir telefondan gerçek bir arama yapın ve gerçek bir SMS gönderin.\n4. Üçüncü taraf uygulama bildirimini ayrıca test edin.\n\nBu, gösterge için geçerli testtir. iPhone yerel testi yalnızca iOS bildirim teslimini doğrular." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "1. 保持 PTSpeed 与 XP400 连接，并退出 Peugeot 官方 App。\n2. 锁定 iPhone。\n3. 使用另一台手机拨打真实电话并发送真实短信。\n4. 另行测试第三方 App 通知。\n\n这才是有效的仪表测试；iPhone 本地测试只能验证 iOS 通知投递。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "1. 保持 PTSpeed 與 XP400 連線，並退出 Peugeot 官方 App。\n2. 鎖定 iPhone。\n3. 使用另一支手機撥打真實電話並傳送真實訊息。\n4. 另外測試第三方 App 通知。\n\n這才是有效的儀表測試；iPhone 本機測試只能驗證 iOS 通知傳送。" } }
       }
     },
     "automation_guide_title" : {

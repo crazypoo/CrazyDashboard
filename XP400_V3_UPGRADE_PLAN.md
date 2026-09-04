@@ -1216,7 +1216,8 @@ OBD BLE / Wi-Fi / Mock
 
 - [x] `PTMotoSettingViewController` 新增“电话、短信和通知”设置入口，展示当前仪表连接状态与 PTSpeed 自身的通知授权状态。
 - [x] 仅在用户明确操作后请求 PTSpeed 通知权限；拒绝时只跳转 iOS 公开通知设置页。
-- [x] 新增 5 秒延迟本地测试通知和 XP400 系统通知配置指引，测试内容不包含车辆敏感数据。
+- [x] 新增 10 秒延迟的 PTSpeed iPhone 本地测试通知和 XP400 系统通知配置指引；本地测试只验证 iPhone 通知中心，不作为仪表 ANCS 收到通知的证据。
+- [x] 新增独立的真实仪表验证指引，明确使用另一台手机拨打真实电话和发送真实短信，并要求退出 Peugeot 官方 App。
 - [x] `PTNotificationCenter` 成功日志改为准确表述“已提交给 iOS 通知中心”；是否由 XP400 显示取决于 iOS 配对、系统设置和 XP400 固件能力。
 - [x] 新增英语、土耳其语、简体中文和繁体中文文案。
 - [x] 未新增自定义 ANCS 服务、通知队列、CallKit、通知扩展或私有蓝牙设置 URL。
@@ -1229,8 +1230,9 @@ OBD BLE / Wi-Fi / Mock
 - [x] `git diff --check` 通过。
 - [x] PTSpeed、Widget、Watch 和 Tests 的 Build 43 目标编译、`build-for-testing` 与 Release 目标构建已完成（使用 `.xcworkspace`、`CODE_SIGNING_ALLOWED=NO`、`ENABLE_PREVIEWS=NO`）；完整 Archive、签名和导出校验仍待补。
 - [ ] XCTest 实际执行仍需匹配的 iOS Simulator 或真机环境；`build-for-testing` 不等同于测试已执行。
-- [ ] 真实 XP400 GT 硬件验证：来电、短信、第三方通知、锁屏/解锁、前后台、Focus、显示预览、断连/重连、重复与过期通知。
-- [ ] P0 能力门禁：只有在 iPhone 的 XP400 蓝牙详情出现系统通知分享能力，或抓包确认标准 ANCS 交互后，才可评估 `SYS-013` 是否能够提升状态。
+- [x] 真实 XP400 GT 硬件已完成初步验证：在开启系统通知分享、退出 Peugeot 官方 App、仅连接 PTSpeed 的条件下，真实来电和短信可以显示在仪表。
+- [ ] 真实 XP400 GT 矩阵验证仍待补：第三方通知、锁屏/解锁、前后台、Focus、显示预览、断连/重连、重复与过期通知，以及不同仪表固件。
+- [x] P0 初步能力门禁已满足：iPhone 的 XP400 蓝牙详情存在并已启用系统通知分享，且 PTSpeed-only 真机来电/短信链路已验证；`SYS-013` 仍保持部分完成，不能据此宣称第三方通知全部支持。
 
 ### 23.3 边界、隐私与回滚
 

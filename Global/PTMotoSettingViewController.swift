@@ -618,7 +618,16 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             title: PTDashboardConfig.languageFunc(text: "dashboard_notification_send_test"),
             style: .default
         ) { [weak self] _ in
-            self?.sendDashboardNotificationTest()
+            self?.sendLocalNotificationTest()
+        })
+        // EN: Offer the real-device verification path separately from the local iPhone test.
+        // ES: Ofrece por separado la verificación en dispositivo real de la prueba local del iPhone.
+        // 中文：将真机仪表验证与 iPhone 本地通知测试分开提供。
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "dashboard_notification_verify_ancs"),
+            style: .default
+        ) { [weak self] _ in
+            self?.showDashboardANCSVerificationGuide()
         })
         alert.addAction(UIAlertAction(
             title: PTDashboardConfig.languageFunc(text: "dashboard_notification_guide"),
@@ -688,17 +697,17 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         UIApplication.shared.open(url, options: [:])
     }
 
-    // EN: Schedule one delayed local notification so the owner can verify the complete system path.
-    // ES: Programa un aviso local retrasado para que el propietario pueda verificar toda la ruta del sistema.
-    // 中文：安排一条延迟本地通知，方便用户验证完整的系统通知链路。
-    private func sendDashboardNotificationTest() {
+    // EN: Schedule a local iPhone notification; iOS does not expose dashboard ANCS delivery to this app.
+    // ES: Programa una notificación local del iPhone; iOS no expone a esta app la entrega ANCS al tablero.
+    // 中文：安排一条 iPhone 本地通知；iOS 不向本 App 暴露仪表 ANCS 投递结果。
+    private func sendLocalNotificationTest() {
         let request = PTNotificationRequest(
             kind: .generic,
             title: PTDashboardConfig.languageFunc(text: "dashboard_notification_test_title"),
             body: PTDashboardConfig.languageFunc(text: "dashboard_notification_test_body"),
             identifier: "pt.dashboard.notification.test.\(UUID().uuidString)",
             interruptionLevel: .active,
-            trigger: UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
+            trigger: UNTimeIntervalNotificationTrigger(timeInterval: 10, repeats: false)
         )
 
         PTNotificationCenter.schedule(request) { result in
@@ -729,6 +738,23 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         let alert = UIAlertController(
             title: PTDashboardConfig.languageFunc(text: "dashboard_notification_guide_title"),
             message: PTDashboardConfig.languageFunc(text: "dashboard_notification_guide_body"),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "button_confirm"),
+            style: .default
+        ))
+        present(alert, animated: true)
+    }
+
+    // EN: Explain the real-device ANCS verification path without claiming that a local notification reaches the instrument.
+    // ES: Explica la verificación ANCS en un dispositivo real sin afirmar que una notificación local llega al tablero.
+    // 中文：说明真机 ANCS 验证路径，不把本地通知误认为已到达仪表。
+    @MainActor
+    private func showDashboardANCSVerificationGuide() {
+        let alert = UIAlertController(
+            title: PTDashboardConfig.languageFunc(text: "dashboard_notification_verify_ancs_title"),
+            message: PTDashboardConfig.languageFunc(text: "dashboard_notification_verify_ancs_body"),
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(
