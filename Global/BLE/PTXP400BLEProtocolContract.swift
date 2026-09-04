@@ -18,7 +18,12 @@ public enum PTXP400BLEProtocol {
     public static let maxTIOChunkLength = 20
     public static let maxCredits = 25
     public static let creditRefillThreshold = 4
+    // EN: Keep every confirmed logical packet size explicit for state-aware ingress reassembly.
+    // ES: Mantén explícito el tamaño de cada paquete lógico confirmado para el reensamblado de entrada consciente del estado.
+    // 中文：为按状态进行的入站重组明确保留每种已确认逻辑数据包的长度。
     public static let vehicleStatusFrameLength = 11
+    public static let authenticationKeyConfigurationFrameLength = 15
+    public static let authenticationChallengeLength = 20
     public static let connectionFrameLength = 15
     public static let authenticationKeyID: UInt32 = 0x0000_2236
 

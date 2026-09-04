@@ -258,7 +258,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
 
     @discardableResult
     public func connectMockDashboard() -> Bool {
-        if PTDashboardConfig.shared.blueConnected || dashboardAttemptInFlight {
+        guard prepareForMockDashboardConnection() else {
             return false
         }
 
@@ -266,6 +266,50 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         updateDashboardState(.connecting, transport: .dashboardMock)
         startDashboardWatchdog()
         PTBluetoothServerManager.shared.startMockDashboardData()
+        return true
+    }
+
+    // EN: Reconcile launch-time restore state before starting a mock; a stale flag or pending scan must not block developer testing.
+    // ES: Reconcilia el estado de restauración del arranque antes de iniciar el simulador; una marca obsoleta o un escaneo pendiente no debe bloquear las pruebas.
+    // 中文：启动模拟器前先校正恢复状态，过期标记或待处理扫描不能阻塞开发者测试。
+    private func prepareForMockDashboardConnection() -> Bool {
+        if snapshot.dashboard.state == .connected,
+           snapshot.dashboard.transport == .dashboardMock {
+            return false
+        }
+
+        // EN: A live central identity proves that the real dashboard is still active; never replace it implicitly.
+        // ES: Una identidad central activa demuestra que el tablero real sigue conectado; nunca lo sustituimos implícitamente.
+        // 中文：存在有效的真实中心设备身份就说明真仪表仍在连接，绝不隐式替换。
+        guard PTBluetoothServerManager.shared.dashboardConnectionIdentity?.isUsable != true else {
+            return false
+        }
+
+        if snapshot.dashboard.transport == .dashboardBluetooth {
+            switch snapshot.dashboard.state {
+            case .connected:
+                endDashboardGarageSession()
+                dashboardConnectionIdentity = nil
+                pendingDashboardIdentity = nil
+                updateDashboardState(.idle, transport: nil)
+            case .connecting:
+                dashboardAttemptInFlight = false
+                dashboardAttemptTask?.cancel()
+                dashboardAttemptTask = nil
+            default:
+                break
+            }
+        } else if dashboardAttemptInFlight {
+            return false
+        }
+
+        dashboardConnectionIdentity = nil
+        pendingDashboardIdentity = nil
+
+        // EN: This flag is only valid after a live dashboard callback; clear it when no hardware identity exists.
+        // ES: Esta marca solo es válida después de un callback activo del tablero; se limpia si no existe identidad de hardware.
+        // 中文：该标记只有收到真实仪表回调后才有效，没有硬件身份时清除它。
+        PTDashboardConfig.shared.blueConnected = false
         return true
     }
 
@@ -425,13 +469,24 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
 
     private func synchronizeInitialState() {
         let now = Date()
-        let dashboardState: PTVehicleConnectionState = PTDashboardConfig.shared.blueConnected ? .connected : .idle
+        let currentDashboardIdentity = PTBluetoothServerManager.shared.dashboardConnectionIdentity
+        let hasLiveDashboard = PTDashboardConfig.shared.blueConnected
+            && currentDashboardIdentity?.isUsable == true
+
+        // EN: A volatile connected flag cannot survive without the core's current hardware identity.
+        // ES: Una marca volátil de conexión no puede mantenerse sin la identidad de hardware actual del núcleo.
+        // 中文：易失的连接标记没有底层当前硬件身份时不能继续被视为已连接。
+        if PTDashboardConfig.shared.blueConnected && !hasLiveDashboard {
+            PTDashboardConfig.shared.blueConnected = false
+        }
+
+        let dashboardState: PTVehicleConnectionState = hasLiveDashboard ? .connected : .idle
         let obdState: PTVehicleConnectionState = PTMotoTelemetryManager.shared.isConnected ? .connected : .idle
-        let dashboardTransport: PTVehicleTransport? = PTDashboardConfig.shared.blueConnected ? .dashboardBluetooth : nil
+        let dashboardTransport: PTVehicleTransport? = hasLiveDashboard ? .dashboardBluetooth : nil
         let initialDashboard = PTVehicleLinkSnapshot(state: dashboardState, transport: dashboardTransport, updatedAt: now)
         let initialOBD = PTVehicleLinkSnapshot(state: obdState, updatedAt: now)
         snapshot = PTVehicleSnapshot(dashboard: initialDashboard, obd: initialOBD, updatedAt: now)
-        pendingDashboardIdentity = PTBluetoothServerManager.shared.dashboardConnectionIdentity
+        pendingDashboardIdentity = currentDashboardIdentity
         dashboardConnectionIdentity = pendingDashboardIdentity
 
         if dashboardState == .connected {

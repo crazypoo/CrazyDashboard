@@ -1749,6 +1749,96 @@ final class PTCoreTests: XCTestCase {
         XCTAssertNil(PTXP400BLEProtocol.connectionSerial(in: invalidConnection))
     }
 
+    // EN: Handshake writes split across CoreBluetooth callbacks must be reassembled before the state machine sees them.
+    // ES: Las escrituras del handshake divididas entre callbacks de CoreBluetooth deben reensamblarse antes de llegar a la máquina de estados.
+    // 中文：跨 CoreBluetooth 回调拆分的认证写入必须在进入状态机前完成重组。
+    func testXP400BLEInboundReassemblerReassemblesSplitAndMergedHandshakeFrames() {
+        let key = Data([0x00, 0x00, 0x22, 0x36] + Array(repeating: 0xAA, count: 11))
+        let response = Data((0..<20).map(UInt8.init))
+        var merged = key
+        merged.append(response)
+
+        var reassembler = PTXP400BLEInboundReassembler()
+        reassembler.append(Data(merged.prefix(4)))
+        XCTAssertEqual(reassembler.nextFrame(for: .keyConfiguration), .waiting)
+
+        reassembler.append(Data(merged.dropFirst(4)))
+        XCTAssertEqual(reassembler.nextFrame(for: .keyConfiguration), .frame(key))
+        XCTAssertEqual(reassembler.nextFrame(for: .authenticationResponse), .frame(response))
+        XCTAssertEqual(reassembler.nextFrame(for: .randomChallenge), .waiting)
+    }
+
+    // EN: Fixed status frames must survive both a split write and two frames merged into one write.
+    // ES: Las tramas de estado fijas deben sobrevivir tanto a una escritura dividida como a dos tramas combinadas en una sola escritura.
+    // 中文：固定状态帧必须同时正确处理拆分写入和两个帧合并写入。
+    func testXP400BLEInboundReassemblerHandlesSplitAndMergedStatusFrames() {
+        let firstStatus = Data([0x16, 0x02, 0xFE, 0x00, 0x2D, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00])
+        let secondStatus = Data([0x16, 0x04, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x00])
+        var merged = Data(firstStatus.prefix(5))
+        merged.append(firstStatus.dropFirst(5))
+        merged.append(secondStatus)
+
+        var reassembler = PTXP400BLEInboundReassembler()
+        reassembler.append(Data(merged.prefix(5)))
+        XCTAssertEqual(reassembler.nextFrame(for: .vehicleStatus), .waiting)
+
+        reassembler.append(Data(merged.dropFirst(5)))
+        XCTAssertEqual(reassembler.nextFrame(for: .vehicleStatus), .frame(firstStatus))
+        XCTAssertEqual(reassembler.nextFrame(for: .vehicleStatus), .frame(secondStatus))
+        XCTAssertEqual(reassembler.nextFrame(for: .vehicleStatus), .waiting)
+    }
+
+    // EN: A malformed key marker must be dropped while a valid key marker remains recoverable.
+    // ES: Un marcador de clave malformado debe descartarse, mientras que un marcador válido debe seguir siendo recuperable.
+    // 中文：非法 Key 标记必须被丢弃，但后续合法 Key 标记仍要能够恢复解析。
+    func testXP400BLEInboundReassemblerRecoversAfterInvalidKey() {
+        let invalidKey = Data([0x00, 0x00, 0x22, 0x35] + Array(repeating: 0xAA, count: 11))
+        let validKey = Data([0x00, 0x00, 0x22, 0x36] + Array(repeating: 0xBB, count: 11))
+        var reassembler = PTXP400BLEInboundReassembler()
+
+        reassembler.append(invalidKey)
+        XCTAssertEqual(reassembler.nextFrame(for: .keyConfiguration), .dropped)
+        XCTAssertEqual(reassembler.bufferedByteCount, 0)
+
+        reassembler.append(validKey)
+        XCTAssertEqual(reassembler.nextFrame(for: .keyConfiguration), .frame(validKey))
+    }
+
+    // EN: Connection frames require their exact 15-byte shape and hexadecimal identity before delivery.
+    // ES: Las tramas de conexión requieren exactamente 15 bytes y una identidad hexadecimal válida antes de entregarse.
+    // 中文：连接帧只有满足严格 15 字节结构和十六进制身份格式后才能交付。
+    func testXP400BLEInboundReassemblerValidatesConnectionFrameAndResynchronizes() {
+        let invalidConnection = Data([0x16, 0x01]) + Data("A1B2C3D4E5G6".utf8) + Data([0x00])
+        let validConnection = Data([0x16, 0x01]) + Data("A1B2C3D4E5F6".utf8) + Data([0x00])
+        var merged = invalidConnection
+        merged.append(validConnection)
+
+        var reassembler = PTXP400BLEInboundReassembler()
+        reassembler.append(merged)
+        XCTAssertEqual(reassembler.nextFrame(for: .connectionFrame), .dropped)
+        XCTAssertEqual(reassembler.nextFrame(for: .connectionFrame), .frame(validConnection))
+    }
+
+    // EN: Raw 20-byte challenge phases wait for the final byte and reject a duplicate from the preceding phase.
+    // ES: Las fases de desafío sin delimitador esperan el vigésimo byte y rechazan un duplicado de la fase anterior.
+    // 中文：无分隔符的 20 字节挑战阶段会等待最后一个字节，并拒绝前一阶段的重复帧。
+    func testXP400BLEInboundReassemblerHandlesRawChallengeBoundaryAndDuplicate() {
+        let authenticationResponse = Data(repeating: 0x42, count: 20)
+        let randomChallenge = Data((0..<20).map { UInt8($0 + 1) })
+        var reassembler = PTXP400BLEInboundReassembler()
+
+        reassembler.append(authenticationResponse)
+        XCTAssertEqual(reassembler.nextFrame(for: .authenticationResponse), .frame(authenticationResponse))
+
+        reassembler.append(authenticationResponse)
+        XCTAssertEqual(reassembler.nextFrame(for: .randomChallenge), .dropped)
+
+        reassembler.append(Data(randomChallenge.prefix(19)))
+        XCTAssertEqual(reassembler.nextFrame(for: .randomChallenge), .waiting)
+        reassembler.append(Data(randomChallenge.suffix(1)))
+        XCTAssertEqual(reassembler.nextFrame(for: .randomChallenge), .frame(randomChallenge))
+    }
+
     // EN: Navigation adapters must fall back from undocumented values to the safe straight maneuver.
     // ES: Los adaptadores de navegación deben volver a la maniobra recta segura desde valores no documentados.
     // 中文：导航适配层遇到未确认动作码时必须安全回退为直行。

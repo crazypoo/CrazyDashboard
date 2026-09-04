@@ -134,6 +134,7 @@
 		600000010000000000000153 /* PTXP400InstructionEvidenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000153 /* PTXP400InstructionEvidenceStore.swift */; };
 		600000010000000000000154 /* PTFirmwareUpgradeStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000154 /* PTFirmwareUpgradeStateMachine.swift */; };
 		600000010000000000000170 /* PTXP400BLEProtocolContract.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000170 /* PTXP400BLEProtocolContract.swift */; };
+		600000010000000000000171 /* PTXP400BLEInboundReassembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000171 /* PTXP400BLEInboundReassembler.swift */; };
 		600000010000000000000155 /* PTDiagnosticCenterViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000155 /* PTDiagnosticCenterViewController.swift */; };
 		600000010000000000000156 /* PTCANLabViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000156 /* PTCANLabViewController.swift */; };
 		600000010000000000000157 /* PTRoadbookEditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000157 /* PTRoadbookEditorViewController.swift */; };
@@ -334,6 +335,7 @@
 		600000020000000000000153 /* PTXP400InstructionEvidenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400InstructionEvidenceStore.swift; sourceTree = "<group>"; };
 		600000020000000000000154 /* PTFirmwareUpgradeStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFirmwareUpgradeStateMachine.swift; sourceTree = "<group>"; };
 		600000020000000000000170 /* PTXP400BLEProtocolContract.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400BLEProtocolContract.swift; sourceTree = "<group>"; };
+		600000020000000000000171 /* PTXP400BLEInboundReassembler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400BLEInboundReassembler.swift; sourceTree = "<group>"; };
 		600000020000000000000155 /* PTDiagnosticCenterViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDiagnosticCenterViewController.swift; sourceTree = "<group>"; };
 		600000020000000000000156 /* PTCANLabViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCANLabViewController.swift; sourceTree = "<group>"; };
 		600000020000000000000157 /* PTRoadbookEditorViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRoadbookEditorViewController.swift; sourceTree = "<group>"; };
@@ -659,6 +661,7 @@
 			children = (
 				55FE295A300CA4E8000E741F /* PTBluetoothManager.swift */,
 				600000020000000000000170 /* PTXP400BLEProtocolContract.swift */,
+				600000020000000000000171 /* PTXP400BLEInboundReassembler.swift */,
 				55FE2A5C300DF42A000E741F /* PTBLEConnectViewController.swift */,
 			);
 			path = BLE;
@@ -1184,6 +1187,7 @@
 				554110DB301E65AB0059BFCF /* PTLiDARCollisionManager.swift in Sources */,
 				55FE295C300CA4E8000E741F /* PTBluetoothManager.swift in Sources */,
 				600000010000000000000170 /* PTXP400BLEProtocolContract.swift in Sources */,
+				600000010000000000000171 /* PTXP400BLEInboundReassembler.swift in Sources */,
 				55499CFA3019D83800A1A2D9 /* PTDashboardBaseView.swift in Sources */,
 				557D0056302ED2A9008BA492 /* PTPeugeotLEDDashBoard.swift in Sources */,
 				5590187230107A1C00A77571 /* PTRoutePlantCell.swift in Sources */,

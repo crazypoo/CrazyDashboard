@@ -2,11 +2,11 @@
 
 > 文档版本：1.1
 >
-> 审计日期：2026-09-03
+> 审计日期：2026-09-04
 >
 > iOS 代码基线：`75b3acf`
 > 文档定位：项目内部实现规范 / 真车抓包校验依据
-> 1.1 更新记录：补充 iOS 运行时边界、证据分层、导航实际链路和 BLE-OPT 优化清单
+> 1.1 更新记录：补充 iOS 运行时边界、证据分层、导航实际链路和 BLE-OPT 优化清单；完成 BLE-OPT-001 上行分片重组实现与纯逻辑验证
 
 ## 1. 文档边界
 
@@ -173,7 +173,15 @@ audio
 
 ### 4.4 当前实现的传输边界
 
-当前代码默认一次 `CBATTRequest.value` 就是一段可以直接交给认证状态机或状态解析器的数据。代码中没有独立的上行分片重组器，也没有处理多个 BLE 写入合并成一段数据的逻辑。研究文档虽然指出了分片、丢包和重组风险，但没有给出车辆固件的完整重组规则，因此这部分必须保持“待真车验证”。
+`UART_RX` 的写入现在先经过 `PTXP400BLEInboundReassembler`，再交给认证状态机或状态解析器。重组器按照当前认证阶段识别边界，不使用一个通用的 Header + Length 规则混淆不同报文：
+
+- 首轮 Key/Configuration：固定 15 bytes，前 4 bytes 必须是大端 `00 00 22 36`；
+- 首轮认证响应：固定 20 bytes；
+- 第二轮随机挑战：固定 20 bytes；
+- 认证完成帧：严格 15 bytes，格式为 `0x16 0x01 + 12-byte hexadecimal identity + 0x00`；
+- 认证后的车辆状态：严格 11 bytes，Frame ID 为 `0x02`～`0x06`；认证后重复出现的连接/心跳帧仍按严格 15 bytes 兼容解析。
+
+因此，拆分写入会先缓存到完整长度，合并写入会在一次回调中连续排空多个逻辑帧；带 `0x16` 边界的连接帧和状态帧遇到非法数据后会寻找下一个帧头重新同步。认证响应和随机挑战在协议上没有帧头、长度字段或结束符，重组器只能按 20-byte 边界处理，这是该协议本身的恢复上限，不能据此推断丢失字节后的真实边界。重复的前一认证阶段帧会在进入下一阶段前丢弃，避免误推进认证状态机。
 
 需要纳入后续优化的运行边界：
 
@@ -197,7 +205,7 @@ waitAuthMsg
 waitRandomNums
     ↓ 收到 20-byte 第二轮挑战并完成计算
 waitConnectionFrame
-    ↓ 收到以 0x16 开头的连接帧
+    ↓ 收到严格 15-byte 连接帧（0x16 0x01 + 12-byte hexadecimal identity + 0x00）
 success
 ```
 
@@ -557,7 +565,7 @@ Frame ID：`0x06`，标准 Payload 为 8 bytes。
 | GATT Server、订阅、写入回调 | `PTBluetoothServerManager` | 维护 CoreBluetooth Peripheral 状态和连接身份 |
 | 发送帧、配置帧、导航帧 | `PTFrameBuilder` | 只负责构造数据，不负责车辆确认 |
 | 认证状态机 | `PTScooterAuth` + `PTAuthState` | 负责查表计算和四阶段握手 |
-| 长度、分片、连接帧校验 | `PTXP400BLEProtocol` | 纯数据契约和单元测试入口 |
+| 长度、上行重组、连接帧校验 | `PTXP400BLEProtocol` + `PTXP400BLEInboundReassembler` | 纯数据契约、阶段化重组和单元测试入口 |
 | AMap 导航适配 | `PTMotoDashBoardNavFunction` | 将 AMap 动作和道路信息转成 XP400 Payload |
 | 连接 watchdog、车库同步 | `PTVehicleConnectivityCoordinator` | 应用层状态协调，不等于 BLE 协议状态 |
 
@@ -572,8 +580,13 @@ Frame ID：`0x06`，标准 Payload 为 8 bytes。
 | `testXP400BLEContractMatchesDocumentedConfigurationFrame` | 配置帧 Big-Endian 长度、完整 Hex 向量、20-byte 分片边界 | CoreBluetooth 真机发送、仪表接受配置 |
 | `testXP400BLEContractSeparatesStatusAndAuthenticationFrames` | 11-byte 状态帧、15-byte 连接身份帧、非法身份字符 | 真实认证时序和车辆重组 |
 | `testXP400BLEContractRejectsUndocumentedManeuverCodes` | 未确认动作码安全回退到 `0x01` | AMap 每一种动作在不同固件上的实际图标 |
+| `testXP400BLEInboundReassemblerReassemblesSplitAndMergedHandshakeFrames` | 拆分 Key、合并认证写入和阶段切换 | 真车实际回调的分片边界 |
+| `testXP400BLEInboundReassemblerHandlesSplitAndMergedStatusFrames` | 拆分状态帧、合并状态帧和连续排空 | 真车连续状态流量下的长期稳定性 |
+| `testXP400BLEInboundReassemblerRecoversAfterInvalidKey` | 非法 Key 丢弃和合法 Key 恢复 | 车辆固件异常噪声的真实分布 |
+| `testXP400BLEInboundReassemblerValidatesConnectionFrameAndResynchronizes` | 15-byte 连接帧严格校验和帧头重同步 | 真车非法连接帧后的恢复行为 |
+| `testXP400BLEInboundReassemblerHandlesRawChallengeBoundaryAndDuplicate` | 20-byte 挑战边界和前阶段重复帧拦截 | 丢字节后的协议级恢复能力 |
 
-当前没有看到覆盖 `PTBluetoothServerManager` 真实回调时序、空 Credits 输入、断连后队列清理、后台恢复或 `PTScooterAuth` 完整握手的自动化测试；这些属于 `BLE-OPT-001`～`010` 的后续证据范围。
+BLE-OPT-001 已有纯重组逻辑测试，但当前仍没有覆盖 `PTBluetoothServerManager` 真实回调时序、空 Credits 输入、断连后队列清理、后台恢复或 `PTScooterAuth` 完整握手的自动化测试；这些属于真实设备回归和其他 `BLE-OPT-002`～`010` 的后续证据范围。
 
 ## 11. 当前尚未交付或仅供开发者测试的能力
 
@@ -681,7 +694,7 @@ TCS、灯光和 ABS 状态字段，以及断开帧的 Frame ID，已经有 `BLE-
 
 ### P0：连接安全和会话边界
 
-- [ ] **BLE-OPT-001 上行分片重组**：分别处理认证数据、固定状态帧和可能被拆分/合并的 UART 写入；验收标准是分片、合并、重复和非法包不会误推进认证状态机。
+- [x] **BLE-OPT-001 上行分片重组**：分别处理认证数据、固定状态帧和可能被拆分/合并的 UART 写入；验收标准是分片、合并、重复和非法包不会误推进认证状态机。已加入阶段化重组器、严格认证长度、连接帧/状态帧校验、非法帧重同步和纯数据测试；真车实际分片边界仍需现场验收。
 - [ ] **BLE-OPT-002 Credits 输入保护**：空数据、超大额度和异常写入不得越界或无限累加；验收标准是 `UART_RX_CREDITS` 的所有非法输入都被拒绝并留下脱敏日志。
 - [ ] **BLE-OPT-003 连接会话清理**：断连或新 Central 到来时清空发送队列、发送额度、本地额度、发送阻塞状态和认证临时数据；验收标准是旧会话导航/配置不会进入新会话。
 

@@ -773,6 +773,10 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     private var connectedCentral: CBCentral?
     
     private var sendCredits = 0
+    // EN: Keep reassembly at the UART ingress boundary; authentication, credits, sending, and decoding remain unchanged.
+    // ES: Mantén el reensamblado en el límite de entrada UART; la autenticación, los créditos, el envío y la decodificación permanecen sin cambios.
+    // 中文：仅在 UART 入站边界增加重组；认证、Credits、发送和解码逻辑保持不变。
+    private var inboundReassembler = PTXP400BLEInboundReassembler()
         
     struct PTNotifyJob {
         let data: Data
@@ -858,6 +862,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         PTOBDLogger.moto.ptLog("⚡️ [雷达] 摩托车订阅成功: \(characteristic.uuid.uuidString)")
 
         if identityChanged {
+            inboundReassembler.reset()
             delegates.forEach {
                 $0.delegate?.dashboardManager(self, didUpdateConnectionIdentity: dashboardConnectionIdentity)
             }
@@ -870,6 +875,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
             PTOBDLogger.moto.ptLog("🔗 [状态] 通道订阅完毕！等待车机写入 8758...")
             authState = .waitKeyId
             authenticated = false
+            inboundReassembler.reset()
         }
     }
     
@@ -880,6 +886,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         isTioSubscribed = false
         isCreditsSubscribed = false
         authState = .waitKeyId
+        inboundReassembler.reset()
         if PTDashboardConfig.shared.blueConnected {
             self.cleanupDelegates()
             self.delegates.forEach( { $0.delegate?.dashboardManager(self, didChangeConnectionState: false) })
@@ -905,7 +912,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
                     localCredits -= 1
                     if localCredits <= 4 { grantScooterCredits() }
                 }
-                handleIncoming(data: data)
+                receiveUARTData(data)
             } else if request.characteristic.uuid == UART_RX_CREDITS {
                 // 🚨 核心修复 1：接收摩托车发放的发送令牌 (Credits)！
                 let addedCredits = Int(data[0])
@@ -914,6 +921,46 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
                 
                 // 拿到令牌后，立刻启动发送泵，把积压的导航数据发出去
                 self.pumpQueue()
+            }
+        }
+    }
+
+    // EN: Map the established authentication state to the packet shape expected by the ingress assembler.
+    // ES: Mapea el estado de autenticación establecido a la forma de paquete esperada por el ensamblador de entrada.
+    // 中文：把既有认证状态映射为入站重组器所期待的数据包类型。
+    private var currentInboundPhase: PTXP400BLEInboundPhase {
+        if authenticated {
+            return .vehicleStatus
+        }
+
+        switch authState {
+        case .waitKeyId:
+            return .keyConfiguration
+        case .waitAuthMsg:
+            return .authenticationResponse
+        case .waitRandomNums:
+            return .randomChallenge
+        case .waitConnectionFrame:
+            return .connectionFrame
+        case .success:
+            return .vehicleStatus
+        }
+    }
+
+    // EN: Drain all complete logical packets from one or more BLE writes before waiting for more bytes.
+    // ES: Vacía todos los paquetes lógicos completos de una o más escrituras BLE antes de esperar más bytes.
+    // 中文：在等待更多字节前，排空一次或多次 BLE 写入中所有完整的逻辑数据包。
+    private func receiveUARTData(_ data: Data) {
+        inboundReassembler.append(data)
+
+        while true {
+            switch inboundReassembler.nextFrame(for: currentInboundPhase) {
+            case .frame(let frame):
+                handleIncoming(data: frame)
+            case .dropped:
+                PTOBDLogger.moto.ptLog("⚠️ [上行重组] 丢弃当前认证阶段无法匹配的数据，剩余缓存: \(inboundReassembler.bufferedByteCount) 字节")
+            case .waiting:
+                return
             }
         }
     }
@@ -929,22 +976,33 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         switch authState {
         case .waitKeyId:
             let bytes = [UInt8](data)
-            if data.count >= 4 {
-                let productId = (Int(bytes[0]) << 24) | (Int(bytes[1]) << 16) | (Int(bytes[2]) << 8) | Int(bytes[3])
-                if productId == 8758 {
-                    PTOBDLogger.moto.ptLog("✅ [握手 1/4] 收到 8758！下发挑战码...")
-                    let challenge = auth.createChallenge()
-                    var challengeData = Data()
-                    for num in challenge {
-                        var beNum = num.bigEndian
-                        challengeData.append(Data(bytes: &beNum, count: 2))
-                    }
-                    sendChunkedData(data: challengeData, to: txChar)
-                    authState = .waitAuthMsg
-                }
+            guard data.count == PTXP400BLEProtocol.authenticationKeyConfigurationFrameLength, bytes.count >= 4 else {
+                PTOBDLogger.moto.ptLog("⚠️ [握手干扰] Key/Configuration 帧长度无效: \(data.count)")
+                return
             }
+
+            let productId = (Int(bytes[0]) << 24) | (Int(bytes[1]) << 16) | (Int(bytes[2]) << 8) | Int(bytes[3])
+            guard productId == Int(PTXP400BLEProtocol.authenticationKeyID) else {
+                PTOBDLogger.moto.ptLog("⚠️ [握手干扰] 收到未知产品 Key ID")
+                return
+            }
+
+            PTOBDLogger.moto.ptLog("✅ [握手 1/4] 收到 8758！下发挑战码...")
+            let challenge = auth.createChallenge()
+            var challengeData = Data()
+            for num in challenge {
+                var beNum = num.bigEndian
+                challengeData.append(Data(bytes: &beNum, count: 2))
+            }
+            sendChunkedData(data: challengeData, to: txChar)
+            authState = .waitAuthMsg
             
         case .waitAuthMsg:
+            guard data.count == PTXP400BLEProtocol.authenticationChallengeLength else {
+                PTOBDLogger.moto.ptLog("⚠️ [握手干扰] 认证响应长度无效: \(data.count)")
+                return
+            }
+
             if auth.checkAuthMsg(scooterResponse: data) {
                 PTOBDLogger.moto.ptLog("✅ [握手 2/4] 车机答题正确！发送 KeyID，等待车机出题...")
                 sendChunkedData(data: auth.getScooterKeyId(), to: txChar)
@@ -957,30 +1015,34 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
             
         case .waitRandomNums:
             // 🚨 核心修复：这就是你抓到的 27b21814... (车机的考题)
-            if data.count >= 20 {
-                PTOBDLogger.moto.ptLog("✅ [握手 3/4] 收到车机挑战码！正在计算答案并回复...")
-                var r = [UInt16](repeating: 0, count: 10)
-                let n = min(10, data.count / 2)
-                for i in 0..<n {
-                    let start = i * 2
-                    let byte0 = UInt16(data[start])
-                    let byte1 = UInt16(data[start+1])
-                    r[i] = (byte0 << 8) | byte1
-                }
-                
-                // 计算答案发给车机
-                let authMsg = auth.createAuthenticationMessage(r: r)
-                sendChunkedData(data: authMsg, to: txChar)
-                
-                // 答完题，等待车机的 0x16 确认信
-                authState = .waitConnectionFrame
-            } else {
+            guard data.count == PTXP400BLEProtocol.authenticationChallengeLength else {
                 PTOBDLogger.moto.ptLog("⚠️ [握手干扰] 期待 20 字节挑战码，实际收到: \(data.count) 字节")
+                return
             }
+
+            PTOBDLogger.moto.ptLog("✅ [握手 3/4] 收到车机挑战码！正在计算答案并回复...")
+            var r = [UInt16](repeating: 0, count: 10)
+            for i in 0..<10 {
+                let start = i * 2
+                let byte0 = UInt16(data[start])
+                let byte1 = UInt16(data[start + 1])
+                r[i] = (byte0 << 8) | byte1
+            }
+
+            // EN: Calculate the response without changing the established authentication algorithm.
+            // ES: Calcula la respuesta sin cambiar el algoritmo de autenticación establecido.
+            // 中文：在不改变既有认证算法的前提下计算响应。
+            let authMsg = auth.createAuthenticationMessage(r: r)
+            sendChunkedData(data: authMsg, to: txChar)
+
+            // 答完题，等待车机的 0x16 确认信
+            authState = .waitConnectionFrame
             
         case .waitConnectionFrame:
-            // 收到车机认可后的第一个真实数据帧 (以 0x16 开头)
-            if data.count >= 4 && data[0] == 0x16 {
+            // EN: Accept authentication only after the exact 15-byte connection identity frame is validated.
+            // ES: Acepta la autenticación solo después de validar la trama de identidad de conexión exacta de 15 bytes.
+            // 中文：只有严格校验 15 字节连接身份帧后，才接受认证完成。
+            if PTXP400BLEProtocol.connectionSerial(in: data) != nil {
                 PTOBDLogger.moto.ptLog("🎉 [握手 4/4] 互信认证全部打通！蓝灯长亮！解锁数据通道！")
                 
                 authState = .success
