@@ -17,6 +17,11 @@ class PTMainProgressViewModel:NSObject {
     var currentValue:Double = 0.0
     var maxValue:Double = 0.0
     var uni:String = ""
+
+    // EN: Keep unavailable dashboard readings out of the numeric presentation.
+    // ES: Mantén las lecturas no disponibles del tablero fuera de la presentación numérica.
+    // 中文：让不可用的仪表读数不再以数字形式展示。
+    var isValueAvailable = true
     
 }
 
@@ -24,14 +29,20 @@ class PTMainProgressView: UIView {
 
     var modelSet:PTMainProgressViewModel! {
         didSet {
+            let currentValue = modelSet.isValueAvailable
+                ? String(format: "%.2f", modelSet.currentValue)
+                : PTDashboardConfig.languageFunc(text: "ride_not_available")
             let nameAtt: ASAttributedString = """
                         \(wrap: .embedding("""
                         \(modelSet.name,.foreground(.lightGray),.font(.appfont(size: 13)))
-                        \(String(format: "%.2f", modelSet.currentValue),.foreground(.white),.font(.appfont(size: 16,bold:true)))\(modelSet.uni,.foreground(.white),.font(.appfont(size: 16,bold:true)))
+                        \(currentValue,.foreground(.white),.font(.appfont(size: 16,bold:true)))\(modelSet.isValueAvailable ? modelSet.uni : "",.foreground(.white),.font(.appfont(size: 16,bold:true)))
                         """),.paragraph(.alignment(.left)))
                         """
             infoLabel.attributed.text = nameAtt
-            dataProgress.animationProgress(duration: 0.35, value: modelSet.currentValue / modelSet.maxValue)
+            let progress = modelSet.isValueAvailable && modelSet.maxValue > 0
+                ? modelSet.currentValue / modelSet.maxValue
+                : 0
+            dataProgress.animationProgress(duration: 0.35, value: progress)
         }
     }
     
@@ -76,10 +87,16 @@ class PTMotoFuelInfoView:UIView {
             var fuelValue = "0"
             var fuelDouble:Double = 0
             if let viewModel = viewModel {
-                fuelValue = "\(viewModel.fuelLevelPct)"
-                fuelDouble = Double(viewModel.fuelLevelPct)
+                if viewModel.fuelLevelAvailability.isAvailable {
+                    fuelValue = "\(viewModel.fuelLevelPct)"
+                    fuelDouble = Double(viewModel.fuelLevelPct)
+                } else {
+                    fuelValue = PTDashboardConfig.languageFunc(text: "ride_not_available")
+                }
             }
-            fuelValueLabel.text = "\(fuelValue)%"
+            fuelValueLabel.text = fuelValue == PTDashboardConfig.languageFunc(text: "ride_not_available")
+                ? fuelValue
+                : "\(fuelValue)%"
             
             dataProgress.animationProgress(duration: 0.35, value: fuelDouble / 100)
 
@@ -180,19 +197,29 @@ class PTMotoFuelInfoView:UIView {
     }
     
     func fuelTripStringSet(fuelTripModel:PTDashboardData3?) {
-        var value:String = "0"
-        if let fuelTripModel = self.fuelTripModel {
+        var value: String
+        if let fuelTripModel = self.fuelTripModel, fuelTripModel.autonomyAvailability.isAvailable {
             value = PTDashboardConfig.shared.appShowMileageValueString(fuelTripModel.autonomyKm)
+        } else {
+            value = PTDashboardConfig.languageFunc(text: "ride_not_available")
         }
-        self.fuelTripLabel.text = PTDashboardConfig.languageFunc(text: "casa_card_oil_trip") + "\(value)\(PTDashboardConfig.shared.appShowUniLabel)"
+        let suffix = value == PTDashboardConfig.languageFunc(text: "ride_not_available")
+            ? ""
+            : PTDashboardConfig.shared.appShowUniLabel
+        self.fuelTripLabel.text = PTDashboardConfig.languageFunc(text: "casa_card_oil_trip") + "\(value)\(suffix)"
     }
     
     func fuelModelStringSet(avgFuel:PTDashboardData1?) {
-        var avgFuelValue = "0.0"
-        if let avgFuel = self.viewModel {
+        var avgFuelValue: String
+        if let avgFuel = self.viewModel, avgFuel.averageConsumptionAvailability.isAvailable {
             avgFuelValue = String(format: "%.1f", avgFuel.avgConsumptionLt)
+        } else {
+            avgFuelValue = PTDashboardConfig.languageFunc(text: "ride_not_available")
         }
-        self.avgFuelLabel.text = PTDashboardConfig.languageFunc(text: "casa_card_avg_oil") + " \(avgFuelValue)L/\(PTDashboardConfig.shared.appShowMileageValueString(100))\(PTDashboardConfig.shared.appShowUniLabel)"
+        let suffix = avgFuelValue == PTDashboardConfig.languageFunc(text: "ride_not_available")
+            ? ""
+            : "L/\(PTDashboardConfig.shared.appShowMileageValueString(100))\(PTDashboardConfig.shared.appShowUniLabel)"
+        self.avgFuelLabel.text = PTDashboardConfig.languageFunc(text: "casa_card_avg_oil") + " \(avgFuelValue)\(suffix)"
     }
     
     required init?(coder: NSCoder) {

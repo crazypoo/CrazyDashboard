@@ -163,6 +163,18 @@ struct PTAncsNotif {
 }
 
 // MARK: - 导航与状态数据模型
+// EN: Preserve the raw dashboard payload while making decoded-value validity explicit.
+// ES: Conserva la carga útil sin procesar del tablero y hace explícita la validez del valor decodificado.
+// 中文：保留仪表原始 Payload，同时明确标记解码值是否有效。
+public enum PTDashboardValueAvailability: String, Codable, Equatable, Sendable {
+    case available
+    case unavailable
+
+    public var isAvailable: Bool {
+        self == .available
+    }
+}
+
 struct PTDashboardControl {
     /// 当前车速 (数值取决于仪表盘的单位设置，可能是 km/h 或 mph)
     let vehicleSpeedKmh: Double
@@ -179,6 +191,41 @@ struct PTDashboardControl {
     let isHazardOn: Bool
     
     let isTcsSystemReady:Bool
+
+    // EN: Keep the complete payload and the availability of the two numeric control fields.
+    // ES: Conserva la carga útil completa y la disponibilidad de los dos campos numéricos de control.
+    // 中文：保留完整 Payload，并记录两个控制数值字段的可用性。
+    let rawPayload: Data
+    let vehicleSpeedAvailability: PTDashboardValueAvailability
+    let engineRpmAvailability: PTDashboardValueAvailability
+
+    init(
+        vehicleSpeedKmh: Double,
+        engineRpm: Int,
+        tcsMode: PTTCSMode,
+        isLowBeamOn: Bool,
+        isHighBeamOn: Bool,
+        isLeftTurnOn: Bool,
+        isRightTurnOn: Bool,
+        isHazardOn: Bool,
+        isTcsSystemReady: Bool,
+        rawPayload: Data = Data(),
+        vehicleSpeedAvailability: PTDashboardValueAvailability = .available,
+        engineRpmAvailability: PTDashboardValueAvailability = .available
+    ) {
+        self.vehicleSpeedKmh = vehicleSpeedKmh
+        self.engineRpm = engineRpm
+        self.tcsMode = tcsMode
+        self.isLowBeamOn = isLowBeamOn
+        self.isHighBeamOn = isHighBeamOn
+        self.isLeftTurnOn = isLeftTurnOn
+        self.isRightTurnOn = isRightTurnOn
+        self.isHazardOn = isHazardOn
+        self.isTcsSystemReady = isTcsSystemReady
+        self.rawPayload = rawPayload
+        self.vehicleSpeedAvailability = vehicleSpeedAvailability
+        self.engineRpmAvailability = engineRpmAvailability
+    }
 }
 
 struct PTDashboardData1 {
@@ -190,6 +237,37 @@ struct PTDashboardData1 {
     let fuelLevelPct: Int
     /// 平均油耗 (L/100km)
     let avgConsumptionLt: Double
+
+    // EN: Keep the original eight-byte payload and field-level availability flags.
+    // ES: Conserva la carga útil original de ocho bytes y las banderas de disponibilidad por campo.
+    // 中文：保留原始八字节 Payload，并记录每个字段的可用性。
+    let rawPayload: Data
+    let fuelLevelAvailability: PTDashboardValueAvailability
+    let averageConsumptionAvailability: PTDashboardValueAvailability
+    let tripAvailability: PTDashboardValueAvailability
+    let odometerAvailability: PTDashboardValueAvailability
+
+    init(
+        tripKm: Double,
+        odoKm: Double,
+        fuelLevelPct: Int,
+        avgConsumptionLt: Double,
+        rawPayload: Data = Data(),
+        fuelLevelAvailability: PTDashboardValueAvailability = .available,
+        averageConsumptionAvailability: PTDashboardValueAvailability = .available,
+        tripAvailability: PTDashboardValueAvailability = .available,
+        odometerAvailability: PTDashboardValueAvailability = .available
+    ) {
+        self.tripKm = tripKm
+        self.odoKm = odoKm
+        self.fuelLevelPct = fuelLevelPct
+        self.avgConsumptionLt = avgConsumptionLt
+        self.rawPayload = rawPayload
+        self.fuelLevelAvailability = fuelLevelAvailability
+        self.averageConsumptionAvailability = averageConsumptionAvailability
+        self.tripAvailability = tripAvailability
+        self.odometerAvailability = odometerAvailability
+    }
 }
 
 struct PTDashboardData2 {
@@ -209,6 +287,45 @@ struct PTDashboardData2 {
     let isKickstandDown: Bool
     
     let batteryDisplayState: Int
+
+    // EN: Keep source bytes and distinguish unavailable engine, maintenance, temperature, and battery values.
+    // ES: Conserva los bytes de origen y distingue los valores no disponibles del motor, mantenimiento, temperatura y batería.
+    // 中文：保留源字节，并区分发动机、保养、温度和电瓶字段的不可用状态。
+    let rawPayload: Data
+    let engineAvailability: PTDashboardValueAvailability
+    let maintenanceAvailability: PTDashboardValueAvailability
+    let outsideTemperatureAvailability: PTDashboardValueAvailability
+    let batteryAvailability: PTDashboardValueAvailability
+
+    init(
+        batteryVolt: Double,
+        outsideTempC: Int,
+        engineStatus: Int,
+        maintenance: Int,
+        backlightMode: PTBacklightMode,
+        engineTempC: Int,
+        isKickstandDown: Bool,
+        batteryDisplayState: Int,
+        rawPayload: Data = Data(),
+        engineAvailability: PTDashboardValueAvailability = .available,
+        maintenanceAvailability: PTDashboardValueAvailability = .available,
+        outsideTemperatureAvailability: PTDashboardValueAvailability = .available,
+        batteryAvailability: PTDashboardValueAvailability = .available
+    ) {
+        self.batteryVolt = batteryVolt
+        self.outsideTempC = outsideTempC
+        self.engineStatus = engineStatus
+        self.maintenance = maintenance
+        self.backlightMode = backlightMode
+        self.engineTempC = engineTempC
+        self.isKickstandDown = isKickstandDown
+        self.batteryDisplayState = batteryDisplayState
+        self.rawPayload = rawPayload
+        self.engineAvailability = engineAvailability
+        self.maintenanceAvailability = maintenanceAvailability
+        self.outsideTemperatureAvailability = outsideTemperatureAvailability
+        self.batteryAvailability = batteryAvailability
+    }
 }
 
 struct PTDashboardData3 {
@@ -220,22 +337,64 @@ struct PTDashboardData3 {
     let colorMeasur: Int
     /// 当前系统语言设置原始值
     let language: Int
+
+    // EN: Preserve Data3 bytes and expose validity for range, maintenance, configuration, and language.
+    // ES: Conserva los bytes de Data3 y expone la validez de autonomía, mantenimiento, configuración e idioma.
+    // 中文：保留 Data3 原始字节，并公开续航、保养、配置和语言的有效性。
+    let rawPayload: Data
+    let autonomyAvailability: PTDashboardValueAvailability
+    let maintenanceDistanceAvailability: PTDashboardValueAvailability
+    let configurationAvailability: PTDashboardValueAvailability
+    let languageAvailability: PTDashboardValueAvailability
+
+    init(
+        autonomyKm: Double,
+        distToMaintenance: Int,
+        colorMeasur: Int,
+        language: Int,
+        rawPayload: Data = Data(),
+        autonomyAvailability: PTDashboardValueAvailability = .available,
+        maintenanceDistanceAvailability: PTDashboardValueAvailability = .available,
+        configurationAvailability: PTDashboardValueAvailability = .available,
+        languageAvailability: PTDashboardValueAvailability = .available
+    ) {
+        self.autonomyKm = autonomyKm
+        self.distToMaintenance = distToMaintenance
+        self.colorMeasur = colorMeasur
+        self.language = language
+        self.rawPayload = rawPayload
+        self.autonomyAvailability = autonomyAvailability
+        self.maintenanceDistanceAvailability = maintenanceDistanceAvailability
+        self.configurationAvailability = configurationAvailability
+        self.languageAvailability = languageAvailability
+    }
+
     /// [新增] 解析出的里程表单位制：true 为公制(公里/Km)，false 为英制(英里/Mil)
     var isMetric: Bool {
+        guard configurationAvailability.isAvailable else { return true }
         // 如果包含 0x08 标志位，则是英里，否则是公里
         return (colorMeasur & 0x08) == 0
     }
     
     /// [新增] 直接获取用于 UI 展示的单位字符串 ("Km" 或 "Mil")
     var unitString: String {
+        guard configurationAvailability.isAvailable else { return "-" }
         return PTDashboardLabels.unitLabel(c: colorMeasur)
     }
     
     var unitType: PTConfigUnit {
+        // EN: An unavailable configuration must fall back to the documented metric default.
+        // ES: Una configuración no disponible debe volver al valor métrico predeterminado documentado.
+        // 中文：配置不可用时必须回退到协议约定的公制默认值。
+        guard configurationAvailability.isAvailable else { return .metric }
         return (colorMeasur & 0x08) != 0 ? .imperial : .metric
     }
     
     var languageType: PTConfigLanguage {
+        // EN: Do not decode an unavailable language byte as English by accident.
+        // ES: No decodifiques por accidente un byte de idioma no disponible como inglés.
+        // 中文：语言字节不可用时，不要误解码成英语。
+        guard languageAvailability.isAvailable else { return .english }
         // 1. 将 Int 转换为 UInt8
         let decodedCode = UInt8((language >> 1) & 0x0F)
         // 2. 尝试用 rawValue 初始化枚举。
@@ -244,6 +403,10 @@ struct PTDashboardData3 {
     }
     
     var dashboardColor: PTConfigColor {
+        // EN: An unavailable color/configuration byte must not select a color from sentinel bits.
+        // ES: Un byte de color/configuración no disponible no debe seleccionar un color desde bits centinela.
+        // 中文：颜色/配置字节不可用时，不能从哨兵位中推导颜色。
+        guard configurationAvailability.isAvailable else { return .blue }
         // 使用 0xC0 掩码提取最高两位
         let colorMask = colorMeasur & 0xC0
         
@@ -269,6 +432,29 @@ struct PTAbsStatus {
     let isAbsLightOn: Bool
     
     let frontWheelSpeedKmh:Double
+
+    // EN: Keep the ABS payload and distinguish unavailable wheel speed from a real zero speed.
+    // ES: Conserva la carga útil ABS y distingue la velocidad de rueda no disponible de una velocidad real de cero.
+    // 中文：保留 ABS Payload，并区分轮速不可用与真实零速。
+    let rawPayload: Data
+    let frontWheelSpeedAvailability: PTDashboardValueAvailability
+    let statusAvailability: PTDashboardValueAvailability
+
+    init(
+        absRaw: Int,
+        isAbsLightOn: Bool,
+        frontWheelSpeedKmh: Double,
+        rawPayload: Data = Data(),
+        frontWheelSpeedAvailability: PTDashboardValueAvailability = .available,
+        statusAvailability: PTDashboardValueAvailability = .available
+    ) {
+        self.absRaw = absRaw
+        self.isAbsLightOn = isAbsLightOn
+        self.frontWheelSpeedKmh = frontWheelSpeedKmh
+        self.rawPayload = rawPayload
+        self.frontWheelSpeedAvailability = frontWheelSpeedAvailability
+        self.statusAvailability = statusAvailability
+    }
 }
 
 // MARK: - 状态标签转换工具
@@ -399,7 +585,10 @@ class PTScooterAuth {
     
     // 2. 验证摩托车发回来的 20 字节是否正确
     func checkAuthMsg(scooterResponse: Data) -> Bool {
-        guard scooterResponse.count >= 10 else { return false }
+        // EN: Validate the complete 20-byte envelope before comparing the ten authenticated bytes.
+        // ES: Valida la envoltura completa de 20 bytes antes de comparar los diez bytes autenticados.
+        // 中文：先校验完整 20 字节包络，再比较参与认证的十个字节。
+        guard PTXP400BLEProtocol.isValidAuthenticationChallenge(scooterResponse) else { return false }
         let expected = createAuthenticationMessage(r: randomNumbers)
         // 只严格比对前 10 个有效响应字节
         for i in 0..<10 {
@@ -732,11 +921,19 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     // MARK: - TCS 物理打滑监控系统
     private var currentFrontSpeed: Double = 0.0
     private var currentRearSpeed: Double = 0.0
+    private var currentFrontSpeedAvailable = false
+    private var currentRearSpeedAvailable = false
     /// 允许的最大轮速差安全阈值 (km/h)，可根据测试结果微调
     private let slipThreshold: Double = 5.0
     
     /// 核心逻辑：比对轮速差，复现 TCS 触发条件
     private func checkTCSIntervention() {
+        // EN: Do not infer traction loss from a sentinel value converted to zero.
+        // ES: No infieras pérdida de tracción a partir de un valor centinela convertido a cero.
+        // 中文：不可用哨兵值换算成零后，不能据此推断发生打滑。
+        guard currentFrontSpeedAvailable, currentRearSpeedAvailable else {
+            return
+        }
         let speedDelta = currentRearSpeed - currentFrontSpeed
         // 当后轮速大于前轮速，且差值超过阈值时，判定为打滑
         if speedDelta > slipThreshold {
@@ -797,10 +994,53 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     private var serviceAddInFlight = false
     private var serviceConfigured = false
     private var dashboardService: CBMutableService?
+
+    // EN: Coalesce only navigation jobs; configuration, authentication, and control jobs keep their order.
+    // ES: Agrupa solo los trabajos de navegación; configuración, autenticación y control conservan su orden.
+    // 中文：只合并导航任务；配置、认证和控制任务继续保持原有顺序。
+    private struct PTNavigationFingerprint: Equatable {
+        let maneuver: UInt8
+        let nextRoad: String
+        let currentRoad: String
+        let speedLimit: UInt8
+        let nextDistanceBucket: UInt32
+        let destinationDistanceBucket: UInt32
+        let etaBucket: Int
+
+        init(info: PTNavigationInfo) {
+            maneuver = info.nextManeuver
+            nextRoad = info.nameNextRoad
+            currentRoad = info.nameCurrentRoad
+            speedLimit = info.currentSpeedLimit
+            nextDistanceBucket = info.metersToNextManeuver / 10
+            destinationDistanceBucket = info.distanceToDestination / 50
+            etaBucket = max(info.estimatedTimeToDestinationSec, 0) / 30
+        }
+    }
+
+    private struct PendingNavigation {
+        let frame: Data
+        let fingerprint: PTNavigationFingerprint
+    }
+
+    // EN: Tune this conservative gate with real dashboard traces; it limits traffic without changing frame encoding.
+    // ES: Ajusta esta barrera conservadora con trazas reales del tablero; limita el tráfico sin cambiar la codificación.
+    // 中文：该保守阈值应结合真车抓包调整；它只限制发送频率，不改变帧编码。
+    private let navigationMinimumSendInterval: TimeInterval = 0.5
+    private var lastNavigationFingerprint: PTNavigationFingerprint?
+    private var lastNavigationSentAt: Date?
+    private var pendingNavigation: PendingNavigation?
+    private var pendingNavigationFlushWorkItem: DispatchWorkItem?
         
     struct PTNotifyJob {
+        enum Kind {
+            case regular
+            case navigation
+        }
+
         let data: Data
         let characteristic: CBMutableCharacteristic
+        let kind: Kind
         let completion: (() -> Void)? // 🚨 新增：该分片成功压入硬件后的回调
     }
     private var sendQueue: [PTNotifyJob] = []
@@ -989,10 +1229,10 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         }
     }
 
-    // EN: Clear only transport-session identity and authentication when CoreBluetooth becomes unavailable.
-    // ES: Limpia solo la identidad y autenticación de la sesión de transporte cuando CoreBluetooth deja de estar disponible.
-    // 中文：CoreBluetooth 不可用时仅清理传输会话身份和认证状态。
-    private func resetDashboardSessionForPeripheralLoss() {
+    // EN: Clear every session-owned resource so a later central cannot inherit stale work or credits.
+    // ES: Limpia todos los recursos propios de la sesión para que otro central no herede trabajos ni créditos obsoletos.
+    // 中文：清理全部会话资源，避免后续 Central 继承旧任务或旧额度。
+    private func resetDashboardSession(notifyDelegates: Bool) {
         let hadSession = authenticated
             || isTioSubscribed
             || isCreditsSubscribed
@@ -1000,6 +1240,20 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
             || dashboardConnectionIdentity != nil
             || PTDashboardConfig.shared.blueConnected
 
+        sendQueue.removeAll(keepingCapacity: false)
+        sendCredits = 0
+        localCredits = 0
+        isSending = false
+        activeNotifications.removeAll(keepingCapacity: false)
+        pendingNavigationFlushWorkItem?.cancel()
+        pendingNavigationFlushWorkItem = nil
+        pendingNavigation = nil
+        lastNavigationFingerprint = nil
+        lastNavigationSentAt = nil
+        currentFrontSpeed = 0
+        currentRearSpeed = 0
+        currentFrontSpeedAvailable = false
+        currentRearSpeedAvailable = false
         authenticated = false
         isTioSubscribed = false
         isCreditsSubscribed = false
@@ -1008,7 +1262,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         connectedCentral = nil
         dashboardConnectionIdentity = nil
 
-        guard hadSession else { return }
+        guard notifyDelegates, hadSession else { return }
 
         PTOBDLogger.moto.stopFileLogging()
         PTDashboardConfig.shared.blueConnected = false
@@ -1017,16 +1271,30 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
             $0.delegate?.dashboardManager(self, didUpdateConnectionIdentity: nil)
         }
     }
+
+    // EN: Bluetooth loss follows the same cleanup path as an explicit unsubscribe.
+    // ES: La pérdida de Bluetooth usa la misma limpieza que una cancelación explícita de suscripción.
+    // 中文：蓝牙不可用时与显式取消订阅共用同一套清理路径。
+    private func resetDashboardSessionForPeripheralLoss() {
+        resetDashboardSession(notifyDelegates: true)
+    }
     
     // MARK: - 监听订阅
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
         let identityChanged = connectedCentral?.identifier != central.identifier
+
+        if identityChanged {
+            // EN: A new central starts with an empty authenticated session and empty outbound state.
+            // ES: Un central nuevo comienza con una sesión autenticada y un estado de salida vacíos.
+            // 中文：新的 Central 必须从空认证会话和空发送状态开始。
+            resetDashboardSession(notifyDelegates: true)
+        }
+
         connectedCentral = central
         dashboardConnectionIdentity = PTDashboardConnectionIdentity(centralIdentifier: central.identifier)
         PTOBDLogger.moto.ptLog("⚡️ [雷达] 摩托车订阅成功: \(characteristic.uuid.uuidString)")
 
         if identityChanged {
-            inboundReassembler.reset()
             delegates.forEach {
                 $0.delegate?.dashboardManager(self, didUpdateConnectionIdentity: dashboardConnectionIdentity)
             }
@@ -1045,48 +1313,55 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didUnsubscribeFrom characteristic: CBCharacteristic) {
         PTOBDLogger.moto.ptLog("⚠️ [状态] 摩托车断开了通道")
-        PTOBDLogger.moto.stopFileLogging()
-        authenticated = false
-        isTioSubscribed = false
-        isCreditsSubscribed = false
-        authState = .waitKeyId
-        inboundReassembler.reset()
-        if PTDashboardConfig.shared.blueConnected {
-            self.cleanupDelegates()
-            self.delegates.forEach( { $0.delegate?.dashboardManager(self, didChangeConnectionState: false) })
-        }
-        dashboardConnectionIdentity = nil
-        connectedCentral = nil
-        delegates.forEach {
-            $0.delegate?.dashboardManager(self, didUpdateConnectionIdentity: nil)
-        }
+        resetDashboardSession(notifyDelegates: true)
     }
     
     // MARK: - 监听写入
     func peripheralManager(_ peripheral: CBPeripheralManager, didReceiveWrite requests: [CBATTRequest]) {
-        if let first = requests.first, first.characteristic.properties.contains(.write) {
-            peripheralManager.respond(to: first, withResult: .success)
-        }
-        
         for request in requests {
-            guard let data = request.value else { continue }
-            
             if request.characteristic.uuid == UART_RX {
+                guard let data = request.value else { continue }
                 if authenticated && localCredits > 0 {
                     localCredits -= 1
                     if localCredits <= 4 { grantScooterCredits() }
                 }
                 receiveUARTData(data)
             } else if request.characteristic.uuid == UART_RX_CREDITS {
-                // 🚨 核心修复 1：接收摩托车发放的发送令牌 (Credits)！
-                let addedCredits = Int(data[0])
-                self.sendCredits += addedCredits
-                PTOBDLogger.moto.ptLog("🎟️ [流控通道] 摩托车发放了 \(addedCredits) 个发送令牌，当前总余额: \(self.sendCredits)")
-                
-                // 拿到令牌后，立刻启动发送泵，把积压的导航数据发出去
-                self.pumpQueue()
+                // EN: Respond to every write-with-response credit request only after validation.
+                // ES: Responde a cada solicitud de créditos con respuesta solo después de validarla.
+                // 中文：只有 Credits 写入校验通过后，才响应每个需要回复的写请求。
+                let result = acceptRemoteCredits(request.value)
+                if request.characteristic.properties.contains(.write) {
+                    peripheralManager.respond(to: request, withResult: result)
+                }
             }
         }
+    }
+
+    // EN: Reject malformed, zero, oversized, and overflowing credit updates without touching session state.
+    // ES: Rechaza actualizaciones de créditos malformadas, cero, grandes o desbordadas sin tocar el estado de sesión.
+    // 中文：拒绝格式错误、零值、超大或会溢出的 Credits 更新，不改变当前会话状态。
+    private func acceptRemoteCredits(_ data: Data?) -> CBATTError.Code {
+        guard let data else {
+            PTOBDLogger.moto.ptLog("⚠️ [流控通道] 拒绝空 Credits 写入")
+            return .invalidAttributeValueLength
+        }
+
+        guard let addedCredits = PTXP400BLEProtocol.validatedRemoteCreditValue(in: data) else {
+            PTOBDLogger.moto.ptLog("⚠️ [流控通道] 拒绝非法 Credits 写入，长度: \(data.count)")
+            return data.count == 1 ? .unlikelyError : .invalidAttributeValueLength
+        }
+
+        guard PTXP400BLEProtocol.canAcceptRemoteCredits(current: sendCredits, adding: addedCredits) else {
+            PTOBDLogger.moto.ptLog("⚠️ [流控通道] 拒绝超过会话上限的 Credits 更新")
+            return .unlikelyError
+        }
+
+        sendCredits += addedCredits
+        PTOBDLogger.moto.ptLog("🎟️ [流控通道] 收到 Credits: \(addedCredits)，当前余额: \(sendCredits)")
+        flushPendingNavigationIfPossible()
+        pumpQueue()
+        return .success
     }
 
     // EN: Map the established authentication state to the packet shape expected by the ingress assembler.
@@ -1139,15 +1414,8 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         
         switch authState {
         case .waitKeyId:
-            let bytes = [UInt8](data)
-            guard data.count == PTXP400BLEProtocol.authenticationKeyConfigurationFrameLength, bytes.count >= 4 else {
+            guard PTXP400BLEProtocol.isValidAuthenticationKeyConfiguration(data) else {
                 PTOBDLogger.moto.ptLog("⚠️ [握手干扰] Key/Configuration 帧长度无效: \(data.count)")
-                return
-            }
-
-            let productId = (Int(bytes[0]) << 24) | (Int(bytes[1]) << 16) | (Int(bytes[2]) << 8) | Int(bytes[3])
-            guard productId == Int(PTXP400BLEProtocol.authenticationKeyID) else {
-                PTOBDLogger.moto.ptLog("⚠️ [握手干扰] 收到未知产品 Key ID")
                 return
             }
 
@@ -1162,7 +1430,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
             authState = .waitAuthMsg
             
         case .waitAuthMsg:
-            guard data.count == PTXP400BLEProtocol.authenticationChallengeLength else {
+            guard PTXP400BLEProtocol.isValidAuthenticationChallenge(data) else {
                 PTOBDLogger.moto.ptLog("⚠️ [握手干扰] 认证响应长度无效: \(data.count)")
                 return
             }
@@ -1179,7 +1447,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
             
         case .waitRandomNums:
             // 🚨 核心修复：这就是你抓到的 27b21814... (车机的考题)
-            guard data.count == PTXP400BLEProtocol.authenticationChallengeLength else {
+            guard PTXP400BLEProtocol.isValidAuthenticationChallenge(data) else {
                 PTOBDLogger.moto.ptLog("⚠️ [握手干扰] 期待 20 字节挑战码，实际收到: \(data.count) 字节")
                 return
             }
@@ -1231,7 +1499,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     
     // MARK: - 发送逻辑 (队列保持不变)
     private func grantScooterCredits() {
-        let refill = 25 - localCredits
+        let refill = PTXP400BLEProtocol.maxCredits - localCredits
         if refill <= 0 { return }
         localCredits += refill
         let data = Data([UInt8(refill)])
@@ -1240,10 +1508,98 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     
     func peripheralManagerIsReady(toUpdateSubscribers peripheral: CBPeripheralManager) {
         isSending = false
+        flushPendingNavigationIfPossible()
         pumpQueue()
     }
 
-    private func sendChunkedData(data: Data, to characteristic: CBMutableCharacteristic, completion: (() -> Void)? = nil) {
+    // EN: Flush the newest navigation frame only when credits and the minimum interval allow it.
+    // ES: Envía la navegación más reciente solo cuando hay créditos y se cumple el intervalo mínimo.
+    // 中文：只有 Credits 足够且满足最小间隔时，才发送最新导航帧。
+    private func flushPendingNavigationIfPossible() {
+        guard authenticated,
+              sendCredits > 0,
+              let pendingNavigation else {
+            return
+        }
+
+        if lastNavigationFingerprint == pendingNavigation.fingerprint {
+            self.pendingNavigation = nil
+            pendingNavigationFlushWorkItem?.cancel()
+            pendingNavigationFlushWorkItem = nil
+            return
+        }
+
+        if let lastNavigationSentAt {
+            let elapsed = Date().timeIntervalSince(lastNavigationSentAt)
+            let remaining = navigationMinimumSendInterval - elapsed
+            if remaining > 0 {
+                schedulePendingNavigationFlush(after: remaining)
+                return
+            }
+        }
+
+        self.pendingNavigation = nil
+        pendingNavigationFlushWorkItem?.cancel()
+        pendingNavigationFlushWorkItem = nil
+        enqueueNavigationFrame(pendingNavigation.frame, fingerprint: pendingNavigation.fingerprint)
+    }
+
+    // EN: Replace a scheduled flush with one timer so frequent map callbacks cannot build work items.
+    // ES: Reemplaza el envío programado con un solo temporizador para que los callbacks frecuentes no acumulen tareas.
+    // 中文：始终只保留一个延迟任务，避免高频地图回调堆积任务。
+    private func schedulePendingNavigationFlush(after delay: TimeInterval) {
+        guard pendingNavigation != nil else { return }
+
+        pendingNavigationFlushWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.pendingNavigationFlushWorkItem = nil
+            self.flushPendingNavigationIfPossible()
+        }
+        pendingNavigationFlushWorkItem = workItem
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + max(delay, 0),
+            execute: workItem
+        )
+    }
+
+    // EN: Remove only superseded navigation chunks and leave every other protocol job untouched.
+    // ES: Elimina solo los fragmentos de navegación sustituidos y conserva los demás trabajos del protocolo.
+    // 中文：只删除被替换的导航分片，其他协议任务保持不变。
+    private func removeQueuedNavigationJobs() {
+        let wasBlockedNavigation = isSending
+            && sendQueue.first.map { job in
+                if case .navigation = job.kind { return true }
+                return false
+            } == true
+        sendQueue.removeAll { job in
+            if case .navigation = job.kind { return true }
+            return false
+        }
+        if wasBlockedNavigation {
+            isSending = false
+        }
+    }
+
+    // EN: Record a navigation update at queue admission, then split it with the existing transport path.
+    // ES: Registra la actualización al admitirla en la cola y después usa el transporte fragmentado existente.
+    // 中文：导航进入队列时记录状态，然后继续复用现有分片发送路径。
+    private func enqueueNavigationFrame(_ frame: Data, fingerprint: PTNavigationFingerprint) {
+        pendingNavigation = nil
+        pendingNavigationFlushWorkItem?.cancel()
+        pendingNavigationFlushWorkItem = nil
+        removeQueuedNavigationJobs()
+        lastNavigationFingerprint = fingerprint
+        lastNavigationSentAt = Date()
+        sendChunkedData(data: frame, to: txChar, kind: .navigation)
+    }
+
+    private func sendChunkedData(
+        data: Data,
+        to characteristic: CBMutableCharacteristic,
+        kind: PTNotifyJob.Kind = .regular,
+        completion: (() -> Void)? = nil
+    ) {
         var offset = 0
         let hexString = data.map { String(format: "%02hhx", $0) }.joined()
         PTOBDLogger.moto.ptLog("⬆️ [发送包] 正在发射指令: \(hexString)")
@@ -1262,6 +1618,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
             sendQueue.append(PTNotifyJob(
                 data: data.subdata(in: offset..<end),
                 characteristic: characteristic,
+                kind: kind,
                 completion: isLastChunk ? completion : nil
             ))
             offset = end
@@ -1327,12 +1684,61 @@ extension PTBluetoothServerManager {
     
     // 发送导航定位信息
     func sendNavigation(info: PTNavigationInfo) {
+        sendNavigation(info: info, bypassCoalescing: false)
+    }
+
+    // EN: Keep welcome text immediate while normal map updates use the latest-state gate.
+    // ES: Mantén inmediato el texto de bienvenida mientras las actualizaciones normales usan la barrera de último estado.
+    // 中文：欢迎文字保持即时发送，普通地图更新使用最新状态合并策略。
+    private func sendNavigation(info: PTNavigationInfo, bypassCoalescing: Bool) {
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in
+                self?.sendNavigation(info: info, bypassCoalescing: bypassCoalescing)
+            }
+            return
+        }
+
         guard authenticated else {
             PTOBDLogger.moto.ptLog( "⚠️ 尚未完成认证，无法发送导航数据")
             return
         }
         let frame = PTFrameBuilder.buildNavigationFrame(info: info)
-        sendChunkedData(data: frame, to: txChar)
+
+        guard !bypassCoalescing else {
+            sendChunkedData(data: frame, to: txChar)
+            return
+        }
+
+        let fingerprint = PTNavigationFingerprint(info: info)
+        if lastNavigationFingerprint == fingerprint {
+            pendingNavigationFlushWorkItem?.cancel()
+            pendingNavigationFlushWorkItem = nil
+            pendingNavigation = nil
+            return
+        }
+        if pendingNavigation?.fingerprint == fingerprint {
+            return
+        }
+
+        removeQueuedNavigationJobs()
+        let pending = PendingNavigation(frame: frame, fingerprint: fingerprint)
+        guard sendCredits > 0 else {
+            pendingNavigation = pending
+            pumpQueue()
+            return
+        }
+
+        if let lastNavigationSentAt {
+            let elapsed = Date().timeIntervalSince(lastNavigationSentAt)
+            let remaining = navigationMinimumSendInterval - elapsed
+            if remaining > 0 {
+                pendingNavigation = pending
+                schedulePendingNavigationFlush(after: remaining)
+                return
+            }
+        }
+
+        enqueueNavigationFrame(frame, fingerprint: fingerprint)
     }
     
     public func sendWelcomeMessage(next:String = "",title:String,nextManeuver:UInt8 = PTManeuverMap.depart) {
@@ -1351,7 +1757,7 @@ extension PTBluetoothServerManager {
         
         PTOBDLogger.moto.ptLog("🎉 [视觉交互] 正在向仪表盘推送欢迎信息: \(welcomeInfo.nameCurrentRoad)")
         // 复用你已有的导航发送方法
-        self.sendNavigation(info: welcomeInfo)
+        self.sendNavigation(info: welcomeInfo, bypassCoalescing: true)
     }
 
     // MARK: - 逆向工程：模糊测试 (Fuzzing) 通道
@@ -1532,15 +1938,40 @@ extension PTBluetoothServerManager {
             let hiddenBits = "b[1]:\(bytes[1].binaryString)"
             delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "🔬 [未知] DATA1 隐藏位: \(hiddenBits)") })
             
-            let fuelRaw = Double(bytes[0])
-            let fuel = min(max(Int(round(fuelRaw * 0.3937)), 0), 100)
-            let avg = Double(bytes[2]) * 0.1
-            let tripRaw = (Int(bytes[3]) << 8) | Int(bytes[4])
-            let odoRaw = (Int(bytes[5]) << 16) | (Int(bytes[6]) << 8) | Int(bytes[7])
-            let data1 = PTDashboardData1(tripKm: Double(tripRaw) * 0.1, odoKm: Double(odoRaw) * 0.1, fuelLevelPct: fuel, avgConsumptionLt: avg)
+            // EN: Keep sentinel bytes unchanged in rawPayload and never expose their converted values as real readings.
+            // ES: Conserva los bytes centinela en rawPayload y nunca expone sus conversiones como lecturas reales.
+            // 中文：在 rawPayload 中保留哨兵字节，不把哨兵换算结果当成真实读数。
+            let fuelRaw = bytes[0]
+            let fuelAvailability: PTDashboardValueAvailability = fuelRaw == 0xFF ? .unavailable : .available
+            let fuel = fuelAvailability.isAvailable
+                ? min(max(Int(round(Double(fuelRaw) * 0.3937)), 0), 100)
+                : 0
+            let averageRaw = bytes[2]
+            let averageAvailability: PTDashboardValueAvailability = averageRaw == 0xFF ? .unavailable : .available
+            let avg = averageAvailability.isAvailable ? Double(averageRaw) * 0.1 : 0
+            let tripRaw = (UInt16(bytes[3]) << 8) | UInt16(bytes[4])
+            let tripAvailability: PTDashboardValueAvailability = tripRaw == UInt16.max ? .unavailable : .available
+            let trip = tripAvailability.isAvailable ? Double(tripRaw) * 0.1 : 0
+            let odoRaw = (UInt32(bytes[5]) << 16) | (UInt32(bytes[6]) << 8) | UInt32(bytes[7])
+            let odometerAvailability: PTDashboardValueAvailability = odoRaw == 0xFF_FFFF ? .unavailable : .available
+            let odo = odometerAvailability.isAvailable ? Double(odoRaw) * 0.1 : 0
+            let data1 = PTDashboardData1(
+                tripKm: trip,
+                odoKm: odo,
+                fuelLevelPct: fuel,
+                avgConsumptionLt: avg,
+                rawPayload: payload,
+                fuelLevelAvailability: fuelAvailability,
+                averageConsumptionAvailability: averageAvailability,
+                tripAvailability: tripAvailability,
+                odometerAvailability: odometerAvailability
+            )
             self.latestData1 = data1
             delegates.forEach( { $0.delegate?.dashboardManager(self, dashboardData: data1) })
-            PTOBDLogger.moto.ptLog("📊 [DATA1] 油量: \(fuel)%, 消耗: \(avg)L, 总里程: \(Double(odoRaw) * 0.1)km")
+            let fuelDescription = fuelAvailability.isAvailable ? "\(fuel)%" : "-"
+            let averageDescription = averageAvailability.isAvailable ? "\(avg)L" : "-"
+            let odometerDescription = odometerAvailability.isAvailable ? "\(odo)km" : "-"
+            PTOBDLogger.moto.ptLog("📊 [DATA1] 油量: \(fuelDescription), 消耗: \(averageDescription), 总里程: \(odometerDescription)")
             
         case 3: // DATA2
             delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:3 (DATA2) -> \(hexString)") })
@@ -1553,27 +1984,55 @@ extension PTBluetoothServerManager {
             }
             delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "🔬 [未知] DATA2 隐藏位: \(hiddenBits)") })
 
-            let engineRaw = Int(bytes[1])
+            let engineRawByte = bytes[1]
+            let engineAvailability: PTDashboardValueAvailability = engineRawByte == 0xFF ? .unavailable : .available
+            let engineRaw = Int(engineRawByte)
             // 通过 rawValue 安全地转换为枚举对象，如果匹配失败则回退到 .unknown
             let backlightModeRaw = UInt8((engineRaw & 0xC0) >> 6)
-            let currentBacklightMode = PTBacklightMode(rawValue: backlightModeRaw) ?? .unknown
+            let currentBacklightMode = engineAvailability.isAvailable
+                ? (PTBacklightMode(rawValue: backlightModeRaw) ?? .unknown)
+                : .unknown
 
-            let batteryDisplayState = (engineRaw & 0x0C) >> 2
+            let batteryDisplayState = engineAvailability.isAvailable ? (engineRaw & 0x0C) >> 2 : 0
             // 提取最低 2 位获取引擎状态 (0:未启动, 1:启动中, 2:运转中, 3:关闭中)
-            let engineStatus = engineRaw & 0x03
+            let engineStatus = engineAvailability.isAvailable ? engineRaw & 0x03 : 0
 
-            let isKickstandDown = (engineRaw & 0x30) != 0
+            let isKickstandDown = engineAvailability.isAvailable && (engineRaw & 0x30) != 0
             
             let engineTempC = 0
 
             let engine = Int(bytes[1])
-            let maint = Int(bytes[3])
-            let temp = Int(bytes[4]) - 50
-            let batt = Double(bytes[5]) * 0.1
-            let data2 = PTDashboardData2(batteryVolt: batt, outsideTempC: temp, engineStatus: engineStatus, maintenance: maint,backlightMode: currentBacklightMode,engineTempC: engineTempC,isKickstandDown: isKickstandDown,batteryDisplayState:batteryDisplayState)
+            let maintenanceRaw = bytes[3]
+            let maintenanceAvailability: PTDashboardValueAvailability = maintenanceRaw == 0xFF ? .unavailable : .available
+            let maint = maintenanceAvailability.isAvailable ? Int(maintenanceRaw) : 0
+            let outsideTemperatureRaw = bytes[4]
+            let outsideTemperatureAvailability: PTDashboardValueAvailability = outsideTemperatureRaw == 0xFF ? .unavailable : .available
+            let temp = outsideTemperatureAvailability.isAvailable ? Int(outsideTemperatureRaw) - 50 : 0
+            let batteryRaw = bytes[5]
+            let batteryAvailability: PTDashboardValueAvailability = batteryRaw == 0xFF ? .unavailable : .available
+            let batt = batteryAvailability.isAvailable ? Double(batteryRaw) * 0.1 : 0
+            let data2 = PTDashboardData2(
+                batteryVolt: batt,
+                outsideTempC: temp,
+                engineStatus: engineStatus,
+                maintenance: maint,
+                backlightMode: currentBacklightMode,
+                engineTempC: engineTempC,
+                isKickstandDown: isKickstandDown,
+                batteryDisplayState: batteryDisplayState,
+                rawPayload: payload,
+                engineAvailability: engineAvailability,
+                maintenanceAvailability: maintenanceAvailability,
+                outsideTemperatureAvailability: outsideTemperatureAvailability,
+                batteryAvailability: batteryAvailability
+            )
             self.latestData2 = data2
             delegates.forEach( { $0.delegate?.dashboardManager(self, dashboardData: data2) })
-            PTOBDLogger.moto.ptLog("🔋 [DATA2] 引擎: \(PTDashboardLabels.engineStatusLabel(raw: engine)), 电压: \(batt)V")
+            let engineDescription = engineAvailability.isAvailable
+                ? PTDashboardLabels.engineStatusLabel(raw: engine)
+                : "-"
+            let batteryDescription = batteryAvailability.isAvailable ? "\(batt)V" : "-"
+            PTOBDLogger.moto.ptLog("🔋 [DATA2] 引擎: \(engineDescription), 电压: \(batteryDescription)")
             
         case 4: // DATA3
             delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:4 (DATA3) -> \(hexString)") })
@@ -1583,14 +2042,30 @@ extension PTBluetoothServerManager {
                 delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "🔬 [未知] DATA3 隐藏位: \(hiddenBits)") })
             }
 
-            let autoRaw = (Int(bytes[0]) << 8) | Int(bytes[1])
+            let autoRaw = (UInt16(bytes[0]) << 8) | UInt16(bytes[1])
+            let autonomyAvailability: PTDashboardValueAvailability = autoRaw == UInt16.max ? .unavailable : .available
             let col = Int(bytes[2])
-            let dist = (Int(bytes[3]) << 8) | Int(bytes[4])
+            let distRaw = (UInt16(bytes[3]) << 8) | UInt16(bytes[4])
+            let maintenanceDistanceAvailability: PTDashboardValueAvailability = distRaw == UInt16.max ? .unavailable : .available
+            let dist = maintenanceDistanceAvailability.isAvailable ? Int(distRaw) : 0
             let lang = Int(bytes[5])
-            let data3 = PTDashboardData3(autonomyKm: Double(autoRaw) * 0.1, distToMaintenance: dist, colorMeasur: col, language: lang)
+            let configurationAvailability: PTDashboardValueAvailability = bytes[2] == 0xFF ? .unavailable : .available
+            let languageAvailability: PTDashboardValueAvailability = bytes[5] == 0xFF ? .unavailable : .available
+            let data3 = PTDashboardData3(
+                autonomyKm: autonomyAvailability.isAvailable ? Double(autoRaw) * 0.1 : 0,
+                distToMaintenance: dist,
+                colorMeasur: col,
+                language: lang,
+                rawPayload: payload,
+                autonomyAvailability: autonomyAvailability,
+                maintenanceDistanceAvailability: maintenanceDistanceAvailability,
+                configurationAvailability: configurationAvailability,
+                languageAvailability: languageAvailability
+            )
             self.latestData3 = data3
             delegates.forEach( { $0.delegate?.dashboardManager(self, dashboardData: data3) })
-            PTOBDLogger.moto.ptLog("🛣️ [DATA3] 剩余续航: \(Double(autoRaw) * 0.1)km")
+            let autonomyDescription = autonomyAvailability.isAvailable ? "\(Double(autoRaw) * 0.1)km" : "-"
+            PTOBDLogger.moto.ptLog("🛣️ [DATA3] 剩余续航: \(autonomyDescription)")
             
         case 5: // CONTROL
             delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:5 (CONTROL) -> \(hexString)") })
@@ -1621,35 +2096,63 @@ extension PTBluetoothServerManager {
             let isHazardAuxBitOn = (byte2 & 0b00000001) != 0
             let isHazardOn = isLeftTurnOn && isRightTurnOn && isHazardAuxBitOn
 
-            let vehicleRaw = (Int(bytes[6]) << 8) | Int(bytes[7])
-            let rearSpeed = Double(vehicleRaw) * 0.01
+            let vehicleRaw = (UInt16(bytes[6]) << 8) | UInt16(bytes[7])
+            let vehicleSpeedAvailability: PTDashboardValueAvailability = vehicleRaw == UInt16.max ? .unavailable : .available
+            let rearSpeed = vehicleSpeedAvailability.isAvailable ? Double(vehicleRaw) * 0.01 : 0
 
             self.currentRearSpeed = rearSpeed
+            self.currentRearSpeedAvailable = vehicleSpeedAvailability.isAvailable
             self.checkTCSIntervention()
 
-            let engineRaw = (Int(bytes[4]) << 8) | Int(bytes[5])
-            let control = PTDashboardControl(vehicleSpeedKmh: Double(vehicleRaw) * 0.01, engineRpm: Int(Double(engineRaw) * 0.25),tcsMode: currentTCS,isLowBeamOn: isLowBeamOn,isHighBeamOn: isHighBeamOn,isLeftTurnOn: isLeftTurnOn,isRightTurnOn: isRightTurnOn,isHazardOn: isHazardOn,isTcsSystemReady: isTcsSystemReady)
+            let engineRaw = (UInt16(bytes[4]) << 8) | UInt16(bytes[5])
+            let engineRpmAvailability: PTDashboardValueAvailability = engineRaw == UInt16.max ? .unavailable : .available
+            let control = PTDashboardControl(
+                vehicleSpeedKmh: rearSpeed,
+                engineRpm: engineRpmAvailability.isAvailable ? Int(Double(engineRaw) * 0.25) : 0,
+                tcsMode: currentTCS,
+                isLowBeamOn: isLowBeamOn,
+                isHighBeamOn: isHighBeamOn,
+                isLeftTurnOn: isLeftTurnOn,
+                isRightTurnOn: isRightTurnOn,
+                isHazardOn: isHazardOn,
+                isTcsSystemReady: isTcsSystemReady,
+                rawPayload: payload,
+                vehicleSpeedAvailability: vehicleSpeedAvailability,
+                engineRpmAvailability: engineRpmAvailability
+            )
             self.latestControl = control
             delegates.forEach( { $0.delegate?.dashboardManager(self, dashboardData: control) })
-            PTOBDLogger.moto.ptLog("🏍️ [CONTROL] 车速: \(Double(vehicleRaw) * 0.01) km/h, 转速: \(Int(Double(engineRaw) * 0.25)) rpm")
+            let speedDescription = vehicleSpeedAvailability.isAvailable ? "\(rearSpeed) km/h" : "-"
+            let rpmDescription = engineRpmAvailability.isAvailable ? "\(Int(Double(engineRaw) * 0.25)) rpm" : "-"
+            PTOBDLogger.moto.ptLog("🏍️ [CONTROL] 车速: \(speedDescription), 转速: \(rpmDescription)")
             
         case 6: // ABS
             delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:6 (ABS) -> \(hexString)") })
             guard bytes.count >= 3 else { return }
             
             // 🚨 新挖掘：提取前轮独立车速 (Byte 0 和 Byte 1)
-            let frontSpeedRaw = (Int(bytes[0]) << 8) | Int(bytes[1])
-            let frontSpeed = Double(frontSpeedRaw) * 0.01
-            
+            let frontSpeedRaw = (UInt16(bytes[0]) << 8) | UInt16(bytes[1])
+            let frontWheelSpeedAvailability: PTDashboardValueAvailability = frontSpeedRaw == UInt16.max ? .unavailable : .available
+            let frontSpeed = frontWheelSpeedAvailability.isAvailable ? Double(frontSpeedRaw) * 0.01 : 0
+
             // 更新本实例的前轮车速，并触发 TCS 打滑检测
             self.currentFrontSpeed = frontSpeed
+            self.currentFrontSpeedAvailable = frontWheelSpeedAvailability.isAvailable
             self.checkTCSIntervention()
                         
             let byte1 = bytes[1]
             // 如果结果为 0 (即 00000000)，说明灯是亮起的
-            let isAbsLightOn = (byte1 & 0b00010000) == 0
+            let statusAvailability: PTDashboardValueAvailability = bytes[2] == 0xFF ? .unavailable : .available
+            let isAbsLightOn = statusAvailability.isAvailable && (byte1 & 0b00010000) == 0
 
-            let absStatus = PTAbsStatus(absRaw: Int(bytes[2]),isAbsLightOn: isAbsLightOn,frontWheelSpeedKmh: frontSpeed)
+            let absStatus = PTAbsStatus(
+                absRaw: statusAvailability.isAvailable ? Int(bytes[2]) : 0,
+                isAbsLightOn: isAbsLightOn,
+                frontWheelSpeedKmh: frontSpeed,
+                rawPayload: payload,
+                frontWheelSpeedAvailability: frontWheelSpeedAvailability,
+                statusAvailability: statusAvailability
+            )
             self.latestAbsStatus = absStatus
             delegates.forEach( { $0.delegate?.dashboardManager(self, dashboardData: absStatus) })
             PTOBDLogger.moto.ptLog("🛑 [ABS] 状态: \(PTDashboardLabels.absLabel(raw: Int(bytes[2])))")

@@ -316,10 +316,11 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
               coordinator.snapshot.dashboard.transport == .dashboardMock,
               (coordinator.snapshot.dashboard.state == .connecting
                 || coordinator.snapshot.dashboard.state == .connected),
-              let odometerKm = PTBluetoothServerManager.shared.latestData1?.odoKm else {
+              let data1 = PTBluetoothServerManager.shared.latestData1,
+              data1.odometerAvailability.isAvailable else {
             return nil
         }
-        return PTGarageDashboardSnapshot(odometerKm: odometerKm, source: .mock)
+        return PTGarageDashboardSnapshot(odometerKm: data1.odoKm, source: .mock)
     }
 
     private func displayedOdometer(

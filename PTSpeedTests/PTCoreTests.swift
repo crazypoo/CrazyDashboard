@@ -1749,6 +1749,70 @@ final class PTCoreTests: XCTestCase {
         XCTAssertNil(PTXP400BLEProtocol.connectionSerial(in: invalidConnection))
     }
 
+    // EN: Credit writes and authentication envelopes must reject malformed lengths and overflow attempts.
+    // ES: Las escrituras de créditos y las envolturas de autenticación deben rechazar longitudes malformadas y desbordamientos.
+    // 中文：Credits 写入和认证包络必须拒绝错误长度及可能溢出的输入。
+    func testXP400BLEStrictCreditsAndAuthenticationBoundaries() {
+        XCTAssertNil(PTXP400BLEProtocol.validatedRemoteCreditValue(in: Data()))
+        XCTAssertNil(PTXP400BLEProtocol.validatedRemoteCreditValue(in: Data([0x00])))
+        XCTAssertNil(PTXP400BLEProtocol.validatedRemoteCreditValue(in: Data([0x1A])))
+        XCTAssertNil(PTXP400BLEProtocol.validatedRemoteCreditValue(in: Data([0x01, 0x02])))
+        XCTAssertEqual(PTXP400BLEProtocol.validatedRemoteCreditValue(in: Data([0x19])), 25)
+        XCTAssertTrue(PTXP400BLEProtocol.canAcceptRemoteCredits(current: 0, adding: 25))
+        XCTAssertFalse(PTXP400BLEProtocol.canAcceptRemoteCredits(current: 24, adding: 2))
+
+        let validKey = Data([0x00, 0x00, 0x22, 0x36] + Array(repeating: 0xAA, count: 11))
+        XCTAssertTrue(PTXP400BLEProtocol.isValidAuthenticationKeyConfiguration(validKey))
+        XCTAssertFalse(PTXP400BLEProtocol.isValidAuthenticationKeyConfiguration(Data(validKey.dropLast())))
+        XCTAssertFalse(
+            PTXP400BLEProtocol.isValidAuthenticationKeyConfiguration(
+                Data([0x00, 0x00, 0x22, 0x35] + Array(repeating: 0xAA, count: 11))
+            )
+        )
+        XCTAssertTrue(PTXP400BLEProtocol.isValidAuthenticationChallenge(Data(repeating: 0x42, count: 20)))
+        XCTAssertFalse(PTXP400BLEProtocol.isValidAuthenticationChallenge(Data(repeating: 0x42, count: 19)))
+        XCTAssertFalse(PTXP400BLEProtocol.isValidAuthenticationChallenge(Data(repeating: 0x42, count: 21)))
+    }
+
+    // EN: Unavailable dashboard models preserve the raw payload and never claim a sentinel is usable.
+    // ES: Los modelos no disponibles conservan la carga útil original y nunca declaran utilizable un centinela.
+    // 中文：不可用仪表模型必须保留原始 Payload，并明确标记哨兵值不可用。
+    func testXP400DashboardUnavailableValueContract() {
+        let data1 = PTDashboardData1(
+            tripKm: 0,
+            odoKm: 0,
+            fuelLevelPct: 0,
+            avgConsumptionLt: 0,
+            rawPayload: Data(repeating: 0xFF, count: 8),
+            fuelLevelAvailability: .unavailable,
+            averageConsumptionAvailability: .unavailable,
+            tripAvailability: .unavailable,
+            odometerAvailability: .unavailable
+        )
+        XCTAssertEqual(data1.rawPayload.count, 8)
+        XCTAssertFalse(data1.fuelLevelAvailability.isAvailable)
+        XCTAssertFalse(data1.odometerAvailability.isAvailable)
+
+        let data3 = PTDashboardData3(
+            autonomyKm: 0,
+            distToMaintenance: 0,
+            colorMeasur: 0xFF,
+            language: 0xFF,
+            rawPayload: Data(repeating: 0xFF, count: 8),
+            autonomyAvailability: .unavailable,
+            maintenanceDistanceAvailability: .unavailable,
+            configurationAvailability: .unavailable,
+            languageAvailability: .unavailable
+        )
+        XCTAssertEqual(data3.rawPayload.count, 8)
+        XCTAssertEqual(data3.unitString, "-")
+        XCTAssertEqual(data3.unitType.rawValue, PTConfigUnit.metric.rawValue)
+        XCTAssertEqual(data3.languageType.rawValue, PTConfigLanguage.english.rawValue)
+        XCTAssertEqual(data3.dashboardColor.rawValue, PTConfigColor.blue.rawValue)
+        XCTAssertFalse(data3.autonomyAvailability.isAvailable)
+        XCTAssertFalse(data3.maintenanceDistanceAvailability.isAvailable)
+    }
+
     // EN: Handshake writes split across CoreBluetooth callbacks must be reassembled before the state machine sees them.
     // ES: Las escrituras del handshake divididas entre callbacks de CoreBluetooth deben reensamblarse antes de llegar a la máquina de estados.
     // 中文：跨 CoreBluetooth 回调拆分的认证写入必须在进入状态机前完成重组。

@@ -436,12 +436,17 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
     override func handleMotorcycleData(data: Any?) {
         super.handleMotorcycleData(data: data)
         if let data1 = data as? PTDashboardData1 {
-            let tripKm = data1.tripKm
-            let odoKm = data1.odoKm
-            
             DispatchQueue.main.async {
-                let newTripDesc = "\(PTDashboardConfig.shared.appShowMileageValueString(tripKm))\(PTDashboardConfig.shared.appShowUniLabel)"
-                let newOdoDesc = "\(PTDashboardConfig.shared.appShowMileageValueString(odoKm))\(PTDashboardConfig.shared.appShowUniLabel)"
+                // EN: Render unavailable trip and odometer values as unavailable instead of numeric zero.
+                // ES: Muestra como no disponibles los valores de viaje y odómetro no disponibles, en vez de cero.
+                // 中文：小计和总里程不可用时显示不可用，不显示数字零。
+                let unavailable = PTDashboardConfig.languageFunc(text: "ride_not_available")
+                let newTripDesc = data1.tripAvailability.isAvailable
+                    ? "\(PTDashboardConfig.shared.appShowMileageValueString(data1.tripKm))\(PTDashboardConfig.shared.appShowUniLabel)"
+                    : unavailable
+                let newOdoDesc = data1.odometerAvailability.isAvailable
+                    ? "\(PTDashboardConfig.shared.appShowMileageValueString(data1.odoKm))\(PTDashboardConfig.shared.appShowUniLabel)"
+                    : unavailable
                 
                 self.tripItem.configure(systemIcon: UIImage(.point.topleftDownToPointBottomrightCurvepath),
                                            iconColor: PTDashboardConfig.shared.appMainColor,
@@ -454,14 +459,21 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                 self.fuelModelView.viewModel = data1
             }
         } else if let data2 = data as? PTDashboardData2 {
-            let volt = data2.batteryVolt
-            let temp = data2.outsideTempC
-            let engineStatus = data2.engineStatus
-            
             DispatchQueue.main.async {
-                let newEngineDesc = PTDashboardLabels.engineStatusLabel(raw: engineStatus)
-                let newTempDesc = "\(temp)°C"
-                self.voltageLabel.modelSet = self.modelvoltageSet(currentValue: volt)
+                // EN: Only label a decoded Data2 field when its source byte is available.
+                // ES: Solo etiqueta un campo Data2 decodificado cuando su byte de origen está disponible.
+                // 中文：只有 Data2 源字节有效时，才把解码字段作为真实值显示。
+                let unavailable = PTDashboardConfig.languageFunc(text: "ride_not_available")
+                let newEngineDesc = data2.engineAvailability.isAvailable
+                    ? PTDashboardLabels.engineStatusLabel(raw: data2.engineStatus)
+                    : unavailable
+                let newTempDesc = data2.outsideTemperatureAvailability.isAvailable
+                    ? "\(data2.outsideTempC)°C"
+                    : unavailable
+                self.voltageLabel.modelSet = self.modelvoltageSet(
+                    currentValue: data2.batteryVolt,
+                    isAvailable: data2.batteryAvailability.isAvailable
+                )
                 
                 self.engineItem.configure(systemIcon: UIImage(.engine.combustion),
                                            iconColor: PTDashboardConfig.shared.appMainColor,
@@ -474,14 +486,17 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                                            value: newTempDesc)
             }
         } else if let data3 = data as? PTDashboardData3 {
-            let distToMaintenance = data3.distToMaintenance
-            let language = data3.languageType.getTypeName()
-            
             DispatchQueue.main.async {
-                
+                // EN: Do not turn an unavailable maintenance distance or language into a false reading.
+                // ES: No conviertas una distancia de mantenimiento o idioma no disponible en una lectura falsa.
+                // 中文：保养距离或语言不可用时，不转换成虚假的有效读数。
+                let unavailable = PTDashboardConfig.languageFunc(text: "ride_not_available")
                 self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(
                     max: PTDashboardConfig.shared.appShowMileage(PTMotorcycleGarageStore.shared.currentMaintenanceWarningDistanceKm),
-                    current: PTDashboardConfig.shared.appShowMileage(Double(distToMaintenance))
+                    current: data3.maintenanceDistanceAvailability.isAvailable
+                        ? PTDashboardConfig.shared.appShowMileage(Double(data3.distToMaintenance))
+                        : 0,
+                    isAvailable: data3.maintenanceDistanceAvailability.isAvailable
                 )
                 
                 self.fuelModelView.fuelTripModel = data3
@@ -489,20 +504,35 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                 self.globeItem.configure(systemIcon: UIImage(.globe),
                                            iconColor: PTDashboardConfig.shared.appMainColor,
                                            title: PTDashboardConfig.languageFunc(text: "casa_card_lan"),
-                                           value: language)
-                self.fuelModelView.dataProgress.barColor = data3.dashboardColor.getColor()
-                self.speedometer.progressColor = data3.dashboardColor.getColor()
-                self.speedometerReversed.progressColor = data3.dashboardColor.getColor()
+                                           value: data3.languageAvailability.isAvailable ? data3.languageType.getTypeName() : unavailable)
+                let dashboardColor = data3.configurationAvailability.isAvailable
+                    ? data3.dashboardColor.getColor()
+                    : PTDashboardConfig.shared.appMainColor
+                self.fuelModelView.dataProgress.barColor = dashboardColor
+                self.speedometer.progressColor = dashboardColor
+                self.speedometerReversed.progressColor = dashboardColor
             }
         } else if let control = data as? PTDashboardControl,!PTMotoTelemetryManager.shared.isConnected {
-            let vehicleSpeedKmh = control.vehicleSpeedKmh
-            let engineRpm = control.engineRpm
-
             // 💡 车速和转速驱动的是 CoreAnimation 动画指针（PTSpeedometerView），本身不会闪烁，直接驱动即可
             DispatchQueue.main.async {
-                self.speedometer.updateSpeed(vehicleSpeedKmh)
-                self.speedometerReversed.updateSpeed(CGFloat(engineRpm))
-                self.speedometerReversed.applyShiftLightLogic(currentRpm: engineRpm)
+                if control.vehicleSpeedAvailability.isAvailable {
+                    self.speedometer.updateSpeed(control.vehicleSpeedKmh)
+                } else {
+                    // EN: Reset the speed pointer when the dashboard reports an unavailable sample.
+                    // ES: Restablece el indicador de velocidad cuando el tablero informa una muestra no disponible.
+                    // 中文：仪表报告车速不可用时，重置车速指针。
+                    self.speedometer.updateSpeed(0)
+                }
+                if control.engineRpmAvailability.isAvailable {
+                    self.speedometerReversed.updateSpeed(CGFloat(control.engineRpm))
+                    self.speedometerReversed.applyShiftLightLogic(currentRpm: control.engineRpm)
+                } else {
+                    // EN: Reset the RPM pointer and shift light for an unavailable sample.
+                    // ES: Restablece el indicador de RPM y la luz de cambio para una muestra no disponible.
+                    // 中文：转速不可用时，重置转速指针和换挡灯。
+                    self.speedometerReversed.updateSpeed(0)
+                    self.speedometerReversed.applyShiftLightLogic(currentRpm: 0)
+                }
             }
         }
     }
@@ -601,21 +631,37 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         
         pt_observerLanguage {
             if self.vcDidLoad {
-                self.voltageLabel.modelSet = self.modelvoltageSet(currentValue: 0)
-                self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(max: PTDashboardConfig.shared.appShowMileage(PTMotorcycleGarageStore.shared.currentMaintenanceWarningDistanceKm), current: 0)
+                let latestData1 = PTBluetoothServerManager.shared.latestData1
+                let latestData2 = PTBluetoothServerManager.shared.latestData2
+                let latestData3 = PTBluetoothServerManager.shared.latestData3
+                let unavailable = PTDashboardConfig.languageFunc(text: "ride_not_available")
+                self.voltageLabel.modelSet = self.modelvoltageSet(
+                    currentValue: latestData2?.batteryVolt ?? 0,
+                    isAvailable: latestData2?.batteryAvailability.isAvailable ?? false
+                )
+                self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(
+                    max: PTDashboardConfig.shared.appShowMileage(PTMotorcycleGarageStore.shared.currentMaintenanceWarningDistanceKm),
+                    current: PTDashboardConfig.shared.appShowMileage(Double(latestData3?.distToMaintenance ?? 0)),
+                    isAvailable: latestData3?.maintenanceDistanceAvailability.isAvailable ?? false
+                )
                 
                 self.tripItem.configure(systemIcon: UIImage(.point.topleftDownToPointBottomrightCurvepath),
                                            iconColor: PTDashboardConfig.shared.appMainColor,
                                            title: PTDashboardConfig.languageFunc(text: "casa_card_little_trip"),
-                                           value: "\(PTDashboardConfig.shared.appShowMileageValueString(PTBluetoothServerManager.shared.latestData1?.tripKm ?? 0))\(PTDashboardConfig.shared.appShowUniLabel)")
+                                           value: latestData1?.tripAvailability.isAvailable == true
+                                                ? "\(PTDashboardConfig.shared.appShowMileageValueString(latestData1?.tripKm ?? 0))\(PTDashboardConfig.shared.appShowUniLabel)"
+                                                : unavailable)
                 
                 self.odoItem.configure(systemIcon: UIImage(systemName: "speedometer")!,
                                            iconColor: PTDashboardConfig.shared.appMainColor,
                                            title: PTDashboardConfig.languageFunc(text: "casa_card_odo_trip"),
-                                           value: "\(PTDashboardConfig.shared.appShowMileageValueString(PTBluetoothServerManager.shared.latestData1?.odoKm ?? 0))\(PTDashboardConfig.shared.appShowUniLabel)")
+                                           value: latestData1?.odometerAvailability.isAvailable == true
+                                                ? "\(PTDashboardConfig.shared.appShowMileageValueString(latestData1?.odoKm ?? 0))\(PTDashboardConfig.shared.appShowUniLabel)"
+                                                : unavailable)
                 
                 var engineStatus = "-"
-                if let engineStatusValue = PTBluetoothServerManager.shared.latestData2?.engineStatus {
+                if let engineStatusValue = latestData2?.engineStatus,
+                   latestData2?.engineAvailability.isAvailable == true {
                     engineStatus = PTDashboardLabels.engineStatusLabel(raw: engineStatusValue)
                 }
                 self.engineItem.configure(systemIcon: UIImage(.engine.combustion),
@@ -626,12 +672,16 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                 self.temItem.configure(systemIcon: UIImage(.thermometer),
                                            iconColor: PTDashboardConfig.shared.appMainColor,
                                            title: PTDashboardConfig.languageFunc(text: "casa_card_tem"),
-                                           value: "\(PTBluetoothServerManager.shared.latestData2?.outsideTempC ?? 0)°C")
+                                           value: latestData2?.outsideTemperatureAvailability.isAvailable == true
+                                                ? "\(latestData2?.outsideTempC ?? 0)°C"
+                                                : unavailable)
                 
                 self.globeItem.configure(systemIcon: UIImage(.globe),
                                            iconColor: PTDashboardConfig.shared.appMainColor,
                                            title: PTDashboardConfig.languageFunc(text: "casa_card_lan"),
-                                           value: PTBluetoothServerManager.shared.latestData3?.languageType.getTypeName() ?? PTConfigLanguage.english.getTypeName())
+                                           value: latestData3?.languageAvailability.isAvailable == true
+                                                ? latestData3?.languageType.getTypeName() ?? PTConfigLanguage.english.getTypeName()
+                                                : unavailable)
             }
         }
         
@@ -643,28 +693,35 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         }
     }
     
-    func modelvoltageSet(currentValue:Double) ->PTMainProgressViewModel {
+    func modelvoltageSet(currentValue: Double, isAvailable: Bool = true) -> PTMainProgressViewModel {
         let modelvoltage = PTMainProgressViewModel()
         modelvoltage.name = PTDashboardConfig.languageFunc(text: "casa_batt")
         modelvoltage.currentValue = currentValue
         modelvoltage.maxValue = 14.5
         modelvoltage.uni = "V"
+        modelvoltage.isValueAvailable = isAvailable
         return modelvoltage
     }
     
-    func distToMaintenancemodelSet(max:Double,current:Double) ->PTMainProgressViewModel {
+    func distToMaintenancemodelSet(max: Double, current: Double, isAvailable: Bool = true) -> PTMainProgressViewModel {
         let distToMaintenancemodel = PTMainProgressViewModel()
         distToMaintenancemodel.name = PTDashboardConfig.languageFunc(text: "casa_dist_to_maintenance")
         distToMaintenancemodel.currentValue = current
         distToMaintenancemodel.maxValue = max
         distToMaintenancemodel.uni = PTDashboardConfig.shared.appShowUniLabel
+        distToMaintenancemodel.isValueAvailable = isAvailable
         return distToMaintenancemodel
     }
             
     // MARK: - 状态回调
     @objc func dashBoardReload() {
         PTGCDManager.shared.runOnMain {
-            self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(max: PTDashboardConfig.shared.appShowMileage(PTMotorcycleGarageStore.shared.currentMaintenanceWarningDistanceKm), current: PTDashboardConfig.shared.appShowMileage(Double(PTBluetoothServerManager.shared.latestData3?.distToMaintenance ?? 0)))
+            let data3 = PTBluetoothServerManager.shared.latestData3
+            self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(
+                max: PTDashboardConfig.shared.appShowMileage(PTMotorcycleGarageStore.shared.currentMaintenanceWarningDistanceKm),
+                current: PTDashboardConfig.shared.appShowMileage(Double(data3?.distToMaintenance ?? 0)),
+                isAvailable: data3?.maintenanceDistanceAvailability.isAvailable ?? false
+            )
             self.speedometer.unitLabel.text = PTDashboardConfig.shared.appShowUniLabel
             self.speedometer.maxSpeed = PTDashboardConfig.shared.appUniIsMetric ? 180 : 110
             self.speedometer.progressColor = PTDashboardConfig.shared.appMainColor

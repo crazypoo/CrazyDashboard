@@ -1126,22 +1126,37 @@ extension PTTripManager:PTBLEDashboardDelegate {
     
     func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
         if isRiding, let data1 = data as? PTDashboardData1 {
-            if !hasOdometerData && data1.odoKm > 0 {
+            // EN: Ignore unavailable dashboard metrics so a sentinel cannot alter trip statistics.
+            // ES: Ignora las métricas no disponibles para que un centinela no altere las estadísticas.
+            // 中文：忽略不可用仪表指标，避免哨兵值改变骑行统计。
+            if data1.odometerAvailability.isAvailable, !hasOdometerData, data1.odoKm > 0 {
                 startOdo = data1.odoKm
                 hasOdometerData = true
             }
-            latestOdo = data1.odoKm
-            latestConsumption = data1.avgConsumptionLt
+            if data1.odometerAvailability.isAvailable {
+                latestOdo = data1.odoKm
+            }
+            if data1.averageConsumptionAvailability.isAvailable {
+                latestConsumption = data1.avgConsumptionLt
+            }
         } else if isRiding, let control = data as? PTDashboardControl,!PTMotoTelemetryManager.shared.isConnected{
-            let rpm = control.engineRpm
-            self.currentLiveRpm = rpm
-            if rpm > maxRpm { maxRpm = rpm }
-            
-            // 🌟 将最高精度的蓝牙车速喂给分析引擎
-            processSpeedMetrics(speedKmh: control.vehicleSpeedKmh, timestamp: Date())
+            if control.engineRpmAvailability.isAvailable {
+                let rpm = control.engineRpm
+                self.currentLiveRpm = rpm
+                if rpm > maxRpm { maxRpm = rpm }
+            }
+
+            // EN: Feed only an available BLE speed into ride metrics.
+            // ES: Alimenta las métricas solo con una velocidad BLE disponible.
+            // 中文：只有 BLE 车速有效时，才写入骑行分析。
+            if control.vehicleSpeedAvailability.isAvailable {
+                processSpeedMetrics(speedKmh: control.vehicleSpeedKmh, timestamp: Date())
+            }
         } else if isRiding, let absStatus = data as? PTAbsStatus {
-            self.lastFrontSpeed = absStatus.frontWheelSpeedKmh
-            calculateSlipRatio()
+            if absStatus.frontWheelSpeedAvailability.isAvailable {
+                self.lastFrontSpeed = absStatus.frontWheelSpeedKmh
+                calculateSlipRatio()
+            }
         }
     }
 }

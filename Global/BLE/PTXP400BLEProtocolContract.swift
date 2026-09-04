@@ -27,6 +27,11 @@ public enum PTXP400BLEProtocol {
     public static let connectionFrameLength = 15
     public static let authenticationKeyID: UInt32 = 0x0000_2236
 
+    // EN: Keep the confirmed authentication prefix and credit bounds in one pure contract.
+    // ES: Mantén el prefijo de autenticación confirmado y los límites de créditos en un contrato puro.
+    // 中文：把已确认的认证前缀和 Credits 边界集中在纯协议契约中。
+    private static let authenticationKeyPrefix = Data([0x00, 0x00, 0x22, 0x36])
+
     public static let tioServiceUUID = "FEFB"
     public static let uartRXUUID = "00000001-0000-1000-8000-008025000000"
     public static let uartTXUUID = "00000002-0000-1000-8000-008025000000"
@@ -85,6 +90,47 @@ public enum PTXP400BLEProtocol {
             let end = min(offset + maxTIOChunkLength, data.count)
             return data.subdata(in: offset..<end)
         }
+    }
+
+    /// EN: Accept exactly one positive credit byte within the protocol limit.
+    /// ES: Acepta exactamente un byte de crédito positivo dentro del límite del protocolo.
+    /// 中文：只接受一个处于协议上限内的正 Credits 字节。
+    public static func validatedRemoteCreditValue(in data: Data) -> Int? {
+        guard data.count == 1,
+              let rawValue = data.first,
+              rawValue > 0,
+              Int(rawValue) <= maxCredits else {
+            return nil
+        }
+        return Int(rawValue)
+    }
+
+    /// EN: Prevent a valid credit increment from overflowing the per-session balance.
+    /// ES: Evita que un incremento válido desborde el saldo de créditos de la sesión.
+    /// 中文：防止合法的 Credits 增量让当前会话余额超过上限。
+    public static func canAcceptRemoteCredits(current: Int, adding amount: Int) -> Bool {
+        guard current >= 0,
+              current <= maxCredits,
+              amount > 0,
+              amount <= maxCredits else {
+            return false
+        }
+        return current <= maxCredits - amount
+    }
+
+    /// EN: Validate the complete fixed-size vehicle key/configuration envelope.
+    /// ES: Valida la envoltura completa y de tamaño fijo de clave/configuración del vehículo.
+    /// 中文：校验完整且固定长度的车辆 Key/Configuration 包络。
+    public static func isValidAuthenticationKeyConfiguration(_ data: Data) -> Bool {
+        data.count == authenticationKeyConfigurationFrameLength
+            && data.prefix(authenticationKeyPrefix.count).elementsEqual(authenticationKeyPrefix)
+    }
+
+    /// EN: Both raw authentication challenges use an exact 20-byte boundary.
+    /// ES: Ambos desafíos de autenticación sin envoltura usan exactamente 20 bytes.
+    /// 中文：两种无包络认证挑战都必须严格使用 20 字节边界。
+    public static func isValidAuthenticationChallenge(_ data: Data) -> Bool {
+        data.count == authenticationChallengeLength
     }
 
     /// EN: Vehicle status frames are fixed-size frames for IDs 0x02 through 0x06.

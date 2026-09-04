@@ -48,7 +48,11 @@ public class PTFuelRoutingManager: NSObject, AMapSearchDelegate {
     }
     
     @objc private func handleData1(_ notification: Notification) {
-        guard let data1 = notification.object as? PTDashboardData1 else { return }
+        // EN: Ignore a fuel sentinel so it cannot trigger a false low-fuel route.
+        // ES: Ignora un centinela de combustible para que no active una ruta falsa hacia una gasolinera.
+        // 中文：忽略油量哨兵值，避免误触发加油导航。
+        guard let data1 = notification.object as? PTDashboardData1,
+              data1.fuelLevelAvailability.isAvailable else { return }
         
         if data1.fuelLevelPct <= lowFuelThreshold && !hasTriggeredLowFuel {
             hasTriggeredLowFuel = true
@@ -139,7 +143,8 @@ extension PTFuelRoutingManager:PTBLEDashboardDelegate {
     }
     
     func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
-        if let data1 = data as? PTDashboardData1 {
+        if let data1 = data as? PTDashboardData1,
+           data1.fuelLevelAvailability.isAvailable {
             if data1.fuelLevelPct <= lowFuelThreshold && !hasTriggeredLowFuel {
                 hasTriggeredLowFuel = true
                 PTNSLogConsole("⚠️ [加油管家] 检测到低油量 (\(data1.fuelLevelPct)%)，启动后台搜寻...")

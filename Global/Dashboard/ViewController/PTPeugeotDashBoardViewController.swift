@@ -153,39 +153,66 @@ class PTPeugeotDashBoardViewController: PTMotoBaseViewController {
     
     override func handleMotorcycleData(data: Any?) {
         if let data1 = data as? PTDashboardData1 {
-            let fuelLevelPct = data1.fuelLevelPct
-            let odoKm = data1.odoKm
-            let avgConsumptionLt = data1.avgConsumptionLt
-            let tripKm = data1.tripKm
             DispatchQueue.main.async {
-                self.ledDashboard.odoLabel.text = "\(String(format: "%.0f", odoKm)) km"
-                self.ledDashboard.leftFuelGauge.progress = CGFloat(fuelLevelPct) / 100
-                self.ledDashboard.consumptionLabel.text = "✉️ \(avgConsumptionLt) l/100"
-                self.ledDashboard.tripLabel.text = "\(String(format: "%.1f", tripKm)) km"
+                // EN: Keep unavailable Data1 fields visibly unavailable on the main dashboard.
+                // ES: Mantén visibles como no disponibles los campos Data1 no disponibles en el tablero principal.
+                // 中文：Data1 字段不可用时，在主仪表明确显示不可用。
+                let unavailable = PTDashboardConfig.languageFunc(text: "ride_not_available")
+                self.ledDashboard.odoLabel.text = data1.odometerAvailability.isAvailable
+                    ? "\(String(format: "%.0f", data1.odoKm)) km"
+                    : unavailable
+                self.ledDashboard.leftFuelGauge.progress = data1.fuelLevelAvailability.isAvailable
+                    ? CGFloat(data1.fuelLevelPct) / 100
+                    : 0
+                self.ledDashboard.consumptionLabel.text = data1.averageConsumptionAvailability.isAvailable
+                    ? "✉️ \(data1.avgConsumptionLt) l/100"
+                    : unavailable
+                self.ledDashboard.tripLabel.text = data1.tripAvailability.isAvailable
+                    ? "\(String(format: "%.1f", data1.tripKm)) km"
+                    : unavailable
             }
         } else if let data1 = data as? PTDashboardData2 {
-            let outsideTempC = data1.outsideTempC
-            let batteryVolt = data1.batteryVolt
             DispatchQueue.main.async {
-                self.tempValue = "\(outsideTempC)"
-                self.voltageValue = "\(String(format: "%.1f", batteryVolt))"
+                let unavailable = PTDashboardConfig.languageFunc(text: "ride_not_available")
+                self.tempValue = data1.outsideTemperatureAvailability.isAvailable
+                    ? "\(data1.outsideTempC)"
+                    : unavailable
+                self.voltageValue = data1.batteryAvailability.isAvailable
+                    ? "\(String(format: "%.1f", data1.batteryVolt))"
+                    : unavailable
                 self.outSideTemVoltageSet()
             }
         } else if let data1 = data as? PTDashboardData3 {
-            let autonomyKm = data1.autonomyKm
             DispatchQueue.main.async {
-                self.ledDashboard.rangeLabel.text = "⛽️ \(String(format: "%.0f", autonomyKm)) km"
+                let unavailable = PTDashboardConfig.languageFunc(text: "ride_not_available")
+                self.ledDashboard.rangeLabel.text = data1.autonomyAvailability.isAvailable
+                    ? "⛽️ \(String(format: "%.0f", data1.autonomyKm)) km"
+                    : unavailable
             }
         } else if let control = data as? PTDashboardControl,!PTMotoTelemetryManager.shared.isConnected {
-            let vehicleSpeedKmh = control.vehicleSpeedKmh
-            let engineRpm = control.engineRpm
-
             // 💡 车速和转速驱动的是 CoreAnimation 动画指针（PTSpeedometerView），本身不会闪烁，直接驱动即可
             DispatchQueue.main.async {
-                self.ledDashboard.speedLabel.text = String(format: "%.0f", vehicleSpeedKmh)
-                self.speedometer.updateSpeed(vehicleSpeedKmh)
-                self.speedometerReversed.updateSpeed(CGFloat(engineRpm))
-                self.speedometerReversed.applyShiftLightLogic(currentRpm: engineRpm)
+                let unavailable = PTDashboardConfig.languageFunc(text: "ride_not_available")
+                if control.vehicleSpeedAvailability.isAvailable {
+                    self.ledDashboard.speedLabel.text = String(format: "%.0f", control.vehicleSpeedKmh)
+                    self.speedometer.updateSpeed(control.vehicleSpeedKmh)
+                } else {
+                    // EN: Clear the old pointer when the new speed sample is unavailable.
+                    // ES: Limpia el indicador anterior cuando la nueva muestra de velocidad no está disponible.
+                    // 中文：新车速样本不可用时，清除仪表上一次的指针和数值。
+                    self.ledDashboard.speedLabel.text = unavailable
+                    self.speedometer.updateSpeed(0)
+                }
+                if control.engineRpmAvailability.isAvailable {
+                    self.speedometerReversed.updateSpeed(CGFloat(control.engineRpm))
+                    self.speedometerReversed.applyShiftLightLogic(currentRpm: control.engineRpm)
+                } else {
+                    // EN: Reset the RPM pointer and shift light instead of retaining a stale reading.
+                    // ES: Restablece el indicador de RPM y la luz de cambio en vez de conservar una lectura obsoleta.
+                    // 中文：转速不可用时重置指针和换挡灯，不保留旧读数。
+                    self.speedometerReversed.updateSpeed(0)
+                    self.speedometerReversed.applyShiftLightLogic(currentRpm: 0)
+                }
             }
         }
     }
@@ -210,6 +237,12 @@ extension PTPeugeotDashBoardViewController:PTMotoTelemetryDelegate {
 
 extension PTPeugeotDashBoardViewController {
     func outSideTemVoltageSet() {
-        ledDashboard.tempVoltageLabel.text = "🌡 \(self.tempValue)°C\n🔋 \(voltageValue)V"
+        // EN: Append units only to available values so the unavailable marker stays readable.
+        // ES: Añade unidades solo a los valores disponibles para que el marcador no disponible siga siendo legible.
+        // 中文：只给有效值追加单位，保证不可用标记清晰可读。
+        let unavailable = PTDashboardConfig.languageFunc(text: "ride_not_available")
+        let temperature = tempValue == unavailable ? tempValue : "\(tempValue)°C"
+        let voltage = voltageValue == unavailable ? voltageValue : "\(voltageValue)V"
+        ledDashboard.tempVoltageLabel.text = "🌡 \(temperature)\n🔋 \(voltage)"
     }
 }

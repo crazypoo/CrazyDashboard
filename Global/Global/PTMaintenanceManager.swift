@@ -144,9 +144,14 @@ public final class PTMaintenanceManager: NSObject {
 extension PTMaintenanceManager: PTBLEDashboardDelegate {
     nonisolated func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
         let sample: PTMaintenanceDashboardSample?
-        if let data2 = data as? PTDashboardData2 {
+        // EN: Do not overwrite a vehicle's maintenance state with an unavailable sentinel.
+        // ES: No sobrescribas el estado de mantenimiento con un centinela no disponible.
+        // 中文：不可用哨兵值不能覆盖车库中的保养状态。
+        if let data2 = data as? PTDashboardData2,
+           data2.maintenanceAvailability.isAvailable {
             sample = .maintenanceFlag(data2.maintenance)
-        } else if let data3 = data as? PTDashboardData3 {
+        } else if let data3 = data as? PTDashboardData3,
+                  data3.maintenanceDistanceAvailability.isAvailable {
             sample = .distanceToMaintenance(data3.distToMaintenance)
         } else {
             sample = nil

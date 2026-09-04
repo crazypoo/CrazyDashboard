@@ -464,7 +464,11 @@ extension PTAntiTheftManager: PTBLEDashboardDelegate {
     }
 
     func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
-        guard let data2 = data as? PTDashboardData2 else { return }
+        // EN: Never arm or disarm from an unavailable engine sentinel.
+        // ES: Nunca armes ni desarmes a partir de un centinela de motor no disponible.
+        // 中文：发动机状态不可用时，不能依据哨兵值布防或撤防。
+        guard let data2 = data as? PTDashboardData2,
+              data2.engineAvailability.isAvailable else { return }
         updateArmingState(engineStatus: data2.engineStatus)
     }
 

@@ -24,7 +24,11 @@ struct PTDashboardConfigurationExpectation {
     // ES: Compara los valores decodificados del tablero y no los campos de bits mezclados sin procesar.
     // 中文：比较已经解码的仪表值，避免直接比较混合位字段。
     func matches(_ data3: PTDashboardData3) -> Bool {
-        data3.dashboardColor.rawValue == color.rawValue &&
+        guard data3.configurationAvailability.isAvailable,
+              data3.languageAvailability.isAvailable else {
+            return false
+        }
+        return data3.dashboardColor.rawValue == color.rawValue &&
         data3.unitType.rawValue == unit.rawValue &&
         data3.languageType.rawValue == language.rawValue
     }

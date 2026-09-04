@@ -1,13 +1,14 @@
 # Peugeot XP400 iOS BLE 通信协议与实现规范
 
-> 文档版本：1.2
+> 文档版本：1.3
 >
 > 审计日期：2026-09-04
 >
-> iOS 代码基线：`75b3acf`
+> iOS 代码基线：`5c88228`
 > 文档定位：项目内部实现规范 / 真车抓包校验依据
 > 1.1 更新记录：补充 iOS 运行时边界、证据分层、导航实际链路和 BLE-OPT 优化清单；完成 BLE-OPT-001 上行分片重组实现与纯逻辑验证
 > 1.2 更新记录：完成 BLE-OPT-005 服务生命周期编排；服务添加成功后才开始广播，支持重复启动、显式停止、蓝牙状态恢复及前后台幂等校正
+> 1.3 更新记录：完成 BLE-OPT-002/003/004/006/007；补齐 Credits 与会话清理、严格认证帧校验、导航最新状态合并，以及 Data1～Data3/Control/ABS 的不可用值状态
 
 ## 1. 文档边界
 
@@ -40,9 +41,9 @@
 | 来源 | 快照信息 | 用途 |
 |---|---|---|
 | 参考 APK | `Peugeot+Motocycles_2.1.37_APKPure.xapk`，versionCode `104` | 仅作为研究来源，不代表 iOS 包或 Peugeot 官方规范 |
-| iOS 代码 | Git 提交 `75b3acf` | 本文当前实现事实的基线 |
-| BLE 核心快照 | `PTBluetoothManager.swift` SHA-256：`2a72e60029f5bd058b3a19f16374ccf7cc7a89a9cb1f33d5c9ac8b5ec71b56ca` | 记录包含 BLE-OPT-005 生命周期编排的当前工作树快照 |
-| 协议契约快照 | `PTXP400BLEProtocolContract.swift` SHA-256：`9cdeee5c887e481a596cac2a2fb63f6b0139babf6a3531d77ca1454508bc892b` | 固定纯数据校验器版本 |
+| iOS 代码 | Git 提交 `5c88228` | 本文当前实现事实的基线 |
+| BLE 核心快照 | `PTBluetoothManager.swift` SHA-256：`fe7a9d445c0536f24b434b68d6cf018cb399c6cc1d60c510e6c51a6050c732a8` | 记录包含 BLE-OPT-002/003/004/005/006/007 的当前工作树快照 |
+| 协议契约快照 | `PTXP400BLEProtocolContract.swift` SHA-256：`69a7c77857c06eaa8c796dc495908b206afc4b3a2b2c79e8493f667a78aad9dd` | 固定 Credits 与认证纯数据校验器版本 |
 
 如果任一代码快照发生变化，应重新核对本文档，而不是只修改版本号。
 
@@ -94,7 +95,7 @@ XP400 连接并订阅 TX / TX Credits
 
 当前广告只包含服务 UUID，不主动广播本地设备名称。蓝牙未处于 `.poweredOn` 时不会启动广播；启动请求会保留，待蓝牙恢复后继续配置服务。
 
-断开订阅后，代码会清除认证状态、订阅标志、连接身份和日志状态，并通知业务代理连接已经结束。
+断开订阅后，代码会清除认证状态、订阅标志、连接身份、日志状态、发送队列、会话 Credits、发送阻塞状态、活跃通知和待发送导航，并通知业务代理连接已经结束。新 Central 到来时先执行同一套清理，再建立新会话。
 
 `startBaseStationAndScan()` 的名称沿用了历史命名；当前实现只启动 iOS Peripheral 广播，不执行 BLE Central 扫描。服务生命周期单独记录为：`unavailable`（蓝牙不可用）、`idle`（未请求广播）、`configuring`（等待 `didAdd`）、`ready`（服务已添加但未广播）和 `advertising`（已请求/正在广播）。订阅和认证仍然是后续独立阶段，不能用 `advertising` 或 `blueConnected` 代替。
 
@@ -201,13 +202,13 @@ audio
 
 因此，拆分写入会先缓存到完整长度，合并写入会在一次回调中连续排空多个逻辑帧；带 `0x16` 边界的连接帧和状态帧遇到非法数据后会寻找下一个帧头重新同步。认证响应和随机挑战在协议上没有帧头、长度字段或结束符，重组器只能按 20-byte 边界处理，这是该协议本身的恢复上限，不能据此推断丢失字节后的真实边界。重复的前一认证阶段帧会在进入下一阶段前丢弃，避免误推进认证状态机。
 
-需要纳入后续优化的运行边界：
+已完成的传输边界优化：
 
-- `UART_RX_CREDITS` 当前直接读取 `data[0]`，空数据会触发越界风险；
-- `sendCredits` 只累加收到的字节，当前没有统一上限、负载合法性和会话重置规则；
-- 断开订阅时当前代码没有显式清空 `sendQueue`、`sendCredits`、`localCredits` 和 `isSending`，旧会话的队列或额度可能影响下一次连接；
-- `didReceiveWrite` 只对第一个需要响应的写请求调用响应方法，多请求批次的 ATT 响应行为仍需验证；
-- 没有应用层 ACK、序号、CRC 或自动重传，发送完成只代表 CoreBluetooth 接受了该分片。
+- `UART_RX_CREDITS` 只接受一个 `1...25` 的字节；空数据、额外字节、零值和超大值会被拒绝，不再读取越界；
+- `sendCredits` 以 25 为会话上限，累加可能溢出上限时拒绝，合法请求逐个返回 ATT 结果；
+- 断开订阅、蓝牙不可用和新 Central 到来时清空 `sendQueue`、`sendCredits`、`localCredits`、`isSending`、活跃通知和认证临时状态；
+- 导航队列项单独标记，只有被替换的导航分片会被清理，认证、配置和控制任务不受影响；
+- 仍然没有应用层 ACK、序号、CRC 或自动重传，发送完成只代表 CoreBluetooth 接受了该分片。
 
 ## 5. 私有双向认证
 
@@ -231,10 +232,10 @@ success
 
 | 步骤 | 仪表 → iPhone | iPhone → 仪表 | 当前状态 |
 |---:|---|---|---|
-| 1 | 研究文档描述为 15-byte 车辆 Key/Configuration；当前代码只检查前 4 bytes 的 Big-Endian Product ID `8758`，并接受 `>=4` | 10 个随机 `UInt16`，共 20 bytes | **核心已实现，首包剩余字段未消费** |
-| 2 | 研究文档描述为 20-byte 第一轮响应；当前代码只要求 `>=10`，只比较前 10 bytes | 15-byte iOS Key/Configuration | **核心已实现，长度校验较宽松** |
-| 3 | 10 个 `UInt16`，共 20 bytes；当前代码读取前 20 bytes，额外数据会被忽略 | 20-byte 计算响应 | **已确认并实现** |
-| 4 | 研究文档描述为固定 15-byte Connection Frame；当前状态机只要求 `>=4` 且首字节为 `0x16` | 开放状态数据和业务帧 | **已实现但长度和字段检查较宽松** |
+| 1 | 严格 15-byte 车辆 Key/Configuration；前 4 bytes 必须是 Big-Endian Product ID `8758`，剩余字段按不透明字节保留 | 10 个随机 `UInt16`，共 20 bytes | **已实现，首包剩余字段不解释** |
+| 2 | 严格 20-byte 第一轮响应；认证算法仍只比较协议确认的前 10 bytes | 15-byte iOS Key/Configuration | **已实现，包络严格** |
+| 3 | 严格 20-byte、10 个 `UInt16` 的第二轮挑战；不会接受额外字节 | 20-byte 计算响应 | **已确认并实现** |
+| 4 | 严格 15-byte Connection Frame：`0x16 0x01 + 12-byte hexadecimal identity + 0x00` | 开放状态数据和业务帧 | **已实现，长度、帧头、结束符和身份字符严格校验** |
 
 认证成功后，代码设置 `authenticated = true`、保存车辆连接标志、授予仪表 Credits，并把第一包连接数据继续交给状态解析器。
 
@@ -427,11 +428,11 @@ PTFrameBuilder 去重音 + ISO-8859-1 + 50-byte 截断
 
 ### 7.5 导航发送时机的实际差异
 
-研究文档建议在动作、距离、ETA 或路线状态明显变化时发送；当前标准导航界面会在每次 AMap `update naviInfo` 回调中调用 `sendNavDataToDashboard`，当前没有在 BLE 适配层统一做动作去重、距离阈值或最低发送间隔。
+研究文档建议在动作、距离、ETA 或路线状态明显变化时发送；当前标准导航界面仍会在每次 AMap `update naviInfo` 回调中调用 `sendNavDataToDashboard`，但 BLE 适配层现在统一按动作、道路、限速、10 米转向距离桶、50 米目的地距离桶和 30 秒 ETA 桶去重，并限制最短发送间隔为 0.5 秒。
 
 自定义 Roadbook 则在位置和目标点状态变化时发送。标准导航结束路径目前使用默认 `sendWelcomeMessage` 动作 `DEPART` 显示结束文字，而自定义 Roadbook 的强制到达路径使用 `ARRIVE`；这两个行为需要在真车上确认并统一。
 
-因此，当前导航“帧格式已实现”不等于“发送频率已经符合研究文档建议”。在 Credits 不足或 CoreBluetooth 暂时不可写时，应优先保留最新导航状态，避免过期导航排满发送队列。
+当 Credits 不足或 CoreBluetooth 暂时不可写时，适配层只保留最新待发送导航；新的导航只删除旧导航分片，不会删除配置、认证或控制任务。欢迎文字使用兼容路径发送，不被普通导航节流误吞。
 
 ## 8. 仪表配置帧
 
@@ -478,7 +479,7 @@ Frame ID：`0x02`，标准 Payload 为 8 bytes。
 | 3 | 2 | Trip | `UInt16 BE × 0.1 km` |
 | 5 | 3 | Odometer | `UInt24 BE × 0.1 km` |
 
-`0xFF` 可能代表不可用，但当前代码没有把所有不可用值统一提升为独立状态。
+`0xFF` 代表字段不可用时，代码保留完整 `rawPayload`，并通过 `fuelLevelAvailability`、`averageConsumptionAvailability`、`tripAvailability` 和 `odometerAvailability` 标记各字段状态；不可用字段的解码数值仅作为兼容占位，业务和 UI 必须检查状态后再使用。
 
 ### 9.2 Data2：发动机、保养、温度和电压
 
@@ -528,6 +529,8 @@ Data3 解码规则：
 
 语言解码值 1～5 分别对应 English、French、German、Spanish、Italian，未知值回退 English。
 
+当续航或保养距离为 `0xFFFF`、颜色/单位或语言为 `0xFF` 时，代码仍保留原始 Payload，并分别输出 `autonomyAvailability`、`maintenanceDistanceAvailability`、`configurationAvailability` 和 `languageAvailability`；设置回读确认会拒绝不可用的 Data3。
+
 ### 9.4 Control：车速和转速
 
 Frame ID：`0x05`，标准 Payload 为 8 bytes。
@@ -556,13 +559,13 @@ Frame ID：`0x06`，标准 Payload 为 8 bytes。
 
 ### 9.6 不可用值和保留位
 
-研究文档约定了部分不可用值，例如 Data1 的 `0xFF`、Control 的 `0xFFFF`，但当前 iOS 解析器主要按数值公式继续解码，没有把所有不可用值统一成独立的 `unavailable` 状态。
+研究文档约定了部分不可用值，例如 Data1 的 `0xFF`、Control 的 `0xFFFF`。当前 iOS 解析器已统一保留原始 Payload，并在解码模型中输出 `PTDashboardValueAvailability.available / unavailable`。Data2 的单字节字段、Data3 的 `0xFFFF`/`0xFF`、Control 的 `0xFFFF` 以及 ABS 的轮速/状态哨兵均按同一原则处理。
 
 在协议文档和 UI 之间使用数据时，应区分：
 
 - **原始值**：必须保留，便于抓包复核；
-- **解码值**：可以用于仪表盘显示；
-- **有效性**：说明该解码值是否来自可用原始值；
+- **解码值**：只有在对应有效性为 `available` 时才用于仪表盘显示；
+- **有效性**：通过 `PTDashboardValueAvailability` 说明该解码值是否来自可用原始值；
 - **推断字段**：不能因为有数值就显示为确定的车辆状态。
 
 未被 `BLE-OPT-009` 真车证据覆盖的保留字节当前只记录或忽略，不应在没有对应证据时重新解释为控制指令。
@@ -603,8 +606,10 @@ Frame ID：`0x06`，标准 Payload 为 8 bytes。
 | `testXP400BLEInboundReassemblerRecoversAfterInvalidKey` | 非法 Key 丢弃和合法 Key 恢复 | 车辆固件异常噪声的真实分布 |
 | `testXP400BLEInboundReassemblerValidatesConnectionFrameAndResynchronizes` | 15-byte 连接帧严格校验和帧头重同步 | 真车非法连接帧后的恢复行为 |
 | `testXP400BLEInboundReassemblerHandlesRawChallengeBoundaryAndDuplicate` | 20-byte 挑战边界和前阶段重复帧拦截 | 丢字节后的协议级恢复能力 |
+| `testXP400BLEStrictCreditsAndAuthenticationBoundaries` | Credits 载荷/累计上限、15-byte Key 和 20-byte Challenge 严格边界 | CoreBluetooth ATT 回调和真实认证时序 |
+| `testXP400DashboardUnavailableValueContract` | 原始 Payload 保留、Data1/Data3 不可用状态和配置单位占位 | 每种车辆固件哨兵值的现场确认 |
 
-BLE-OPT-001 已有纯重组逻辑测试。BLE-OPT-005 已加入服务生命周期状态保护和前后台校正，但当前仍没有在 XCTest 中驱动真实 `CBPeripheralManager` 回调时序；空 Credits 输入、断连后队列清理、后台恢复和 `PTScooterAuth` 完整握手仍属于其他工作包或真车回归范围。
+BLE-OPT-001、BLE-OPT-002、BLE-OPT-004 和 BLE-OPT-007 已有纯逻辑测试；BLE-OPT-003 和 BLE-OPT-006 的状态清理/队列行为已接入核心实现，但当前没有在 XCTest 中驱动真实 `CBPeripheralManager` 回调时序。BLE-OPT-005 的服务生命周期和前后台校正、Credits ATT 响应、断连清理、导航节流和完整认证握手仍需真车回归。
 
 ## 11. 当前尚未交付或仅供开发者测试的能力
 
@@ -713,15 +718,15 @@ TCS、灯光和 ABS 状态字段，以及断开帧的 Frame ID，已经有 `BLE-
 ### P0：连接安全和会话边界
 
 - [x] **BLE-OPT-001 上行分片重组**：分别处理认证数据、固定状态帧和可能被拆分/合并的 UART 写入；验收标准是分片、合并、重复和非法包不会误推进认证状态机。已加入阶段化重组器、严格认证长度、连接帧/状态帧校验、非法帧重同步和纯数据测试；真车实际分片边界仍需现场验收。
-- [ ] **BLE-OPT-002 Credits 输入保护**：空数据、超大额度和异常写入不得越界或无限累加；验收标准是 `UART_RX_CREDITS` 的所有非法输入都被拒绝并留下脱敏日志。
-- [ ] **BLE-OPT-003 连接会话清理**：断连或新 Central 到来时清空发送队列、发送额度、本地额度、发送阻塞状态和认证临时数据；验收标准是旧会话导航/配置不会进入新会话。
+- [x] **BLE-OPT-002 Credits 输入保护**：`UART_RX_CREDITS` 只接受单字节合法额度并限制会话累计上限；非法输入返回 ATT 错误并留下脱敏日志。纯逻辑边界已测试，真实中心端写入仍需现场验收。
+- [x] **BLE-OPT-003 连接会话清理**：断连、蓝牙不可用或新 Central 到来时清空发送队列、发送额度、本地额度、发送阻塞状态、活跃通知、待发送导航和认证临时数据；真实多 Central 时序仍需现场验收。
 
 ### P1：协议一致性和运行稳定性
 
-- [ ] **BLE-OPT-004 严格认证帧校验**：在保留兼容策略前提下，增加 15-byte Key/Configuration、20-byte Challenge/Response 和 15-byte Connection Frame 的长度、Frame ID、结束符及身份字符校验。
+- [x] **BLE-OPT-004 严格认证帧校验**：15-byte Key/Configuration、20-byte Challenge/Response 和 15-byte Connection Frame 已统一使用纯协议校验；认证查表和前 10-byte 兼容算法未改变。真实车辆兼容性仍需现场验收。
 - [x] **BLE-OPT-005 服务生命周期**：已明确 `didUpdateState`、`didAdd service`、开始广播、停止广播和重复启动的状态；蓝牙不可用时停止广播并保留启动意图，恢复后重新注册服务；前后台切换采用幂等校正且后台不主动中断已请求的 Peripheral 会话。真实设备的蓝牙开关、系统后台挂起和进程终止结果仍需现场验收。
-- [ ] **BLE-OPT-006 导航状态合并**：在应用层或 BLE 适配边界增加动作/距离/ETA 去重和最低发送间隔；Credits 不足时只保留最新待发送导航，不能让过期指令占满队列。
-- [ ] **BLE-OPT-007 不可用值统一**：将 `0xFF`、`0xFFFF` 等不可用值保留为原始值，同时输出明确的有效性状态，避免 UI 把不可用数据显示成真实数值。
+- [x] **BLE-OPT-006 导航状态合并**：已增加动作/道路/距离/ETA 去重、0.5 秒最低发送间隔，以及 Credits 不足时的最新导航保留；其他协议任务不会被导航合并删除。真实仪表显示频率仍需现场验收。
+- [x] **BLE-OPT-007 不可用值统一**：Data1～Data3、Control 和 ABS 已保留原始 Payload 并输出字段级有效性；车库、保养、续航、仪表和骑行统计在使用前检查状态。不同固件的哨兵语义仍需现场验收。
 - [ ] **BLE-OPT-008 严格 Mock 样本**：让 Data2 和 ABS Mock 先符合标准 11-byte 状态帧，再评估是否收紧 `parseDashboardFrame(_:)` 的长度检查。
 
 ### P2：高阶字段和扩展能力
@@ -740,15 +745,15 @@ TCS、灯光和 ABS 状态字段，以及断开帧的 Frame ID，已经有 `BLE-
 
 未完成工作包不得把本文件中的“已确认并实现”状态升级为“真车已验证”。
 
-## 17. 1.2 版审计结论
+## 17. 1.3 版审计结论
 
 与外部研究文档相比，当前 iOS 代码已经覆盖 XP400 的主要 TIO UART 业务路径，但仍有以下细节不应被忽略：
 
-- 协议来源中的严格固定长度与当前宽松解析不同；
+- 认证关键固定长度、Key 前缀、Connection identity 和 Credits 输入已在纯协议层严格校验；
 - 认证和连接超时在 iOS 核心中尚未完整实现；
-- 当前导航来源是 AMap，并且发送频率没有统一节流；
+- 当前导航来源是 AMap，BLE 边界已统一做状态合并、最新值保留和最低发送间隔；
 - 后台模式已声明；服务添加和前后台广播校正已实现，但 CoreBluetooth State Restoration 仍未实现；
-- 断连清理、Credits 健壮性和上行重组是优先级最高的工程优化点；
+- 断连清理、Credits 健壮性、上行重组和不可用值状态已经接入；CoreBluetooth 回调时序仍需现场回归；
 - ANCS 通道仍未实现；TCS、灯光、ABS 前轮速度和部分保留位已经具备真车字段证据，但 TCS/背光写入指令和跨车型兼容性仍不能直接当作正式支持能力。
 
-因此，当前文档可以作为 iOS BLE 实现和真车验证基线，但不能替代车辆固件协议确认。
+因此，当前文档可以作为 iOS BLE 实现和真车验证基线，但不能替代车辆固件协议确认；本次实现没有改写认证查表、TIO 分片算法或已稳定的核心传输边界。

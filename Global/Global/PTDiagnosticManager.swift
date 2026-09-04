@@ -69,7 +69,12 @@ extension PTDiagnosticManager:PTBLEDashboardDelegate {
         if let data2 = data as? PTDashboardData2 {
             // 1. 电瓶健康诊断逻辑
             // 只有在引擎未启动 (状态 0) 时，测量到的才是真实的电瓶静态电压。
-            if data2.engineStatus == 0 {
+            // EN: Sentinel values must not enter health thresholds.
+            // ES: Los valores centinela no deben entrar en los umbrales de salud.
+            // 中文：哨兵值不能参与健康阈值判断。
+            if data2.engineAvailability.isAvailable,
+               data2.batteryAvailability.isAvailable,
+               data2.engineStatus == 0 {
                 // 🚨 核心修复 1：加入 > 6.0 的下限约束。
                 // 蓝牙能连上说明电瓶至少有 6V 以上的残余电量，低于 6V(尤其是 0V) 绝对是刚开机传感器还没采集到的假数据。
                 if data2.batteryVolt < 11.0 && data2.batteryVolt > 6.0 && !hasWarnedBattery && PTDashboardConfig.shared.blueConnected {
@@ -89,7 +94,11 @@ extension PTDiagnosticManager:PTBLEDashboardDelegate {
             // 2. 环境温度与路面结冰诊断逻辑
             // 🚨 核心修复 2：加入 > -40 的下限约束。
             // -50°C 通常是底层硬件传过来的 0 值 (0 - 50 = -50)，代表温度传感器尚未工作。
-            if data2.outsideTempC <= 3 && data2.outsideTempC > -40 && !hasWarnedIcyRoad && PTDashboardConfig.shared.blueConnected {
+            if data2.outsideTemperatureAvailability.isAvailable,
+               data2.outsideTempC <= 3,
+               data2.outsideTempC > -40,
+               !hasWarnedIcyRoad,
+               PTDashboardConfig.shared.blueConnected {
                 
                 hasWarnedIcyRoad = true
                 

@@ -274,7 +274,12 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
         let vehicle = PTVehicleConnectivityCoordinator.shared.snapshot
         let isDashboardConnected = vehicle.isDashboardConnected
         let warningDistanceKm = Int(PTMotorcycleGarageStore.shared.currentMaintenanceWarningDistanceKm.rounded())
-        let liveConsumption = dashboardManager.latestData1?.avgConsumptionLt
+        let liveData1 = dashboardManager.latestData1
+        let liveData2 = dashboardManager.latestData2
+        let liveData3 = dashboardManager.latestData3
+        let liveConsumption = liveData1.flatMap {
+            $0.averageConsumptionAvailability.isAvailable ? $0.avgConsumptionLt : nil
+        }
         let historyConsumption = PTRideRangeEstimator.weightedConsumption(
             from: PTTripManager.shared.tripHistory
         )
@@ -286,15 +291,31 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
         let profile = PTMotorcycleGarageStore.shared.currentVehicle
         let summary = PTRideExperienceSummary(
             vehicle: vehicle,
-            fuelLevelPercent: dashboardManager.latestData1?.fuelLevelPct ?? widgetStatus.fuelLevel,
-            tripKm: dashboardManager.latestData1?.tripKm ?? widgetStatus.tripKm,
-            odometerKm: dashboardManager.latestData1?.odoKm,
+            fuelLevelPercent: liveData1.flatMap {
+                $0.fuelLevelAvailability.isAvailable ? $0.fuelLevelPct : nil
+            } ?? widgetStatus.fuelLevel,
+            tripKm: liveData1.flatMap {
+                $0.tripAvailability.isAvailable ? $0.tripKm : nil
+            } ?? widgetStatus.tripKm,
+            odometerKm: liveData1.flatMap {
+                $0.odometerAvailability.isAvailable ? $0.odoKm : nil
+            },
             averageConsumptionLitersPer100Km: rangeConsumption,
-            dashboardAutonomyKm: dashboardManager.latestData3?.autonomyKm,
-            batteryVoltage: dashboardManager.latestData2?.batteryVolt,
-            outsideTemperatureCelsius: dashboardManager.latestData2?.outsideTempC,
-            maintenanceDistanceKm: isDashboardConnected ? dashboardManager.latestData3?.distToMaintenance : nil,
-            maintenanceFlag: isDashboardConnected ? dashboardManager.latestData2?.maintenance : nil,
+            dashboardAutonomyKm: liveData3.flatMap {
+                $0.autonomyAvailability.isAvailable ? $0.autonomyKm : nil
+            },
+            batteryVoltage: liveData2.flatMap {
+                $0.batteryAvailability.isAvailable ? $0.batteryVolt : nil
+            },
+            outsideTemperatureCelsius: liveData2.flatMap {
+                $0.outsideTemperatureAvailability.isAvailable ? $0.outsideTempC : nil
+            },
+            maintenanceDistanceKm: isDashboardConnected ? liveData3.flatMap {
+                $0.maintenanceDistanceAvailability.isAvailable ? $0.distToMaintenance : nil
+            } : nil,
+            maintenanceFlag: isDashboardConnected ? liveData2.flatMap {
+                $0.maintenanceAvailability.isAvailable ? $0.maintenance : nil
+            } : nil,
             maintenanceWarningDistanceKm: warningDistanceKm,
             parkedLatitude: widgetStatus.parkedLat,
             parkedLongitude: widgetStatus.parkedLon,

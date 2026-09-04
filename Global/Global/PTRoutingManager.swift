@@ -177,7 +177,11 @@ public final class PTRoutingManager: NSObject {
     public func execute(action: PTExternalAction, in scene: UIWindowScene? = nil) -> PTRouteExecutionResult {
         switch action {
         case .checkFuel:
-            guard let latestData = PTBluetoothServerManager.shared.latestData1 else {
+            // EN: Do not start a low-fuel route from an unavailable fuel sentinel.
+            // ES: No inicies una ruta por combustible bajo a partir de un centinela no disponible.
+            // 中文：油量不可用时，不根据哨兵值启动低油量路线。
+            guard let latestData = PTBluetoothServerManager.shared.latestData1,
+                  latestData.fuelLevelAvailability.isAvailable else {
                 PTMessagePusher.pushToDashboard(
                     title: PTDashboardConfig.languageFunc(text: "ride_not_available"),
                     body: PTDashboardConfig.languageFunc(text: "ride_not_available")

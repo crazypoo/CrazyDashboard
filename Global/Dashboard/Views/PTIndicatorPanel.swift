@@ -126,7 +126,15 @@ public class PTIndicatorPanel: PTDashboardBaseView {
     }
     
     func updateData2(data2: PTDashboardData2) {
-        
+        // EN: Do not present derived engine-byte indicators while their source is unavailable.
+        // ES: No muestres indicadores derivados del byte del motor mientras su fuente no esté disponible.
+        // 中文：发动机源字节不可用时，不展示由它推导出的状态指示。
+        guard data2.engineAvailability.isAvailable else {
+            toggleGlow(for: kickstandIcon, isOn: false, activeColor: .systemRed)
+            toggleGlow(for: backlightIcon, isOn: false, activeColor: .GoldColor)
+            return
+        }
+
         toggleGlow(for: kickstandIcon, isOn: data2.isKickstandDown, activeColor: .systemRed)
         
          switch data2.backlightMode {

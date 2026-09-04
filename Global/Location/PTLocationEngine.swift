@@ -229,8 +229,9 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
                 lastWidgetUpdateTime = now
 
                 // 获取最新的机车数据
-                let currentFuel = PTBluetoothServerManager.shared.latestData1?.fuelLevelPct ?? 0
-                let currentTrip = PTBluetoothServerManager.shared.latestData1?.tripKm ?? 0
+                let widgetValues = currentWidgetVehicleValues()
+                let currentFuel = widgetValues.fuelLevel
+                let currentTrip = widgetValues.tripKm
                 let isConnected = PTDashboardConfig.shared.blueConnected
 
                 // 🚨 核心修复：安全解包！
@@ -319,8 +320,9 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
         let lon = lastLocation?.coordinate.longitude ?? 0.0
         
         // 2. 从蓝牙数据单例中抓取最后一次记录的仪表盘数据
-        let finalFuel = PTBluetoothServerManager.shared.latestData1?.fuelLevelPct ?? 0
-        let finalTrip = PTBluetoothServerManager.shared.latestData1?.tripKm ?? 0
+        let widgetValues = currentWidgetVehicleValues()
+        let finalFuel = widgetValues.fuelLevel
+        let finalTrip = widgetValues.tripKm
         
         // 3. 强制推送给小组件管理器 (此时 isConnected 传 false，代表已停车)
         // 地址暂传 "停车打卡中..."，因为逆地理编码需要网络时间
@@ -335,6 +337,24 @@ public class PTLocationEngine: NSObject, AMapLocationManagerDelegate { // 🌟 �
         
         PTNSLogConsole("✅ [小组件同步] 蓝牙已断开，成功强制推送最终骑行数据到小组件！")
     }
+
+    // EN: Reuse the last valid dashboard values when a new packet carries an unavailable sentinel.
+    // ES: Reutiliza los últimos valores válidos cuando un paquete nuevo contiene un centinela no disponible.
+    // 中文：新报文携带不可用哨兵值时，沿用最近一次有效仪表数据。
+    private func currentWidgetVehicleValues() -> (fuelLevel: Int, tripKm: Double) {
+        let latestData1 = PTBluetoothServerManager.shared.latestData1
+        let storedStatus = PTWidgetSharedStatus.read(
+            from: UserDefaults(suiteName: PTWidgetDataKeys.appGroupID)
+        )
+        return (
+            latestData1.flatMap {
+                $0.fuelLevelAvailability.isAvailable ? $0.fuelLevelPct : nil
+            } ?? storedStatus.fuelLevel,
+            latestData1.flatMap {
+                $0.tripAvailability.isAvailable ? $0.tripKm : nil
+            } ?? storedStatus.tripKm
+        )
+    }
 }
 
 extension PTLocationEngine:AMapSearchDelegate {
@@ -348,8 +368,9 @@ extension PTLocationEngine:AMapSearchDelegate {
         let lon = request.location.longitude
         
         // 获取最新的机车数据 (这取决于你的业务逻辑保存在哪里)
-        let currentFuel = PTBluetoothServerManager.shared.latestData1?.fuelLevelPct ?? 0
-        let currentTrip = PTBluetoothServerManager.shared.latestData1?.tripKm ?? 0 // 替换为真实的 PTDashboardData1 小计里程
+        let widgetValues = currentWidgetVehicleValues()
+        let currentFuel = widgetValues.fuelLevel
+        let currentTrip = widgetValues.tripKm // 替换为真实的 PTDashboardData1 小计里程
         let isConnected = PTDashboardConfig.shared.blueConnected // 或蓝牙状态
         
         // 🌟 3. 调用数据管理器，推送到小组件！

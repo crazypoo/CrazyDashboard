@@ -938,11 +938,17 @@ extension PTVehicleConnectivityCoordinator: PTBLEDashboardDelegate {
 
     nonisolated func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
         let sample: PTVehicleDashboardSample?
-        if let data1 = data as? PTDashboardData1 {
+        // EN: Only persist dashboard fields whose source bytes are available.
+        // ES: Solo persiste los campos del tablero cuyos bytes de origen están disponibles.
+        // 中文：只持久化源字节有效的仪表字段。
+        if let data1 = data as? PTDashboardData1,
+           data1.odometerAvailability.isAvailable {
             sample = .odometer(data1.odoKm)
-        } else if let data2 = data as? PTDashboardData2 {
+        } else if let data2 = data as? PTDashboardData2,
+                  data2.maintenanceAvailability.isAvailable {
             sample = .maintenanceFlag(data2.maintenance)
-        } else if let data3 = data as? PTDashboardData3 {
+        } else if let data3 = data as? PTDashboardData3,
+                  data3.maintenanceDistanceAvailability.isAvailable {
             sample = .maintenanceDistance(data3.distToMaintenance)
         } else {
             sample = nil
