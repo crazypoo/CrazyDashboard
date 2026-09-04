@@ -246,7 +246,7 @@ OBD BLE / Wi-Fi / Mock
 | SYS-010 | ✅ | URL Scheme | 支持 `checkFuel`、`antiTheft`、`openHUD`、`openSafety`、`confirmGasStationRoute`、`navigate` 路由 |
 | SYS-011 | 🟨 | 本地通知 | 支持部分维护、诊断、防盗和骑行事件，需权限降级与去重 |
 | SYS-012 | ✅ | Bugly 崩溃上报 | 收集生产测试崩溃；日志不得包含密钥和敏感车辆数据 |
-| SYS-013 | 🟨 | XP400 系统通知镜像 | 复用 iOS 通知中心和系统 ANCS 条件；设置页区分 iPhone 本地通知测试与真实仪表验证指引。已确认仅连接 PTSpeed、退出 Peugeot 官方 App 时真实来电和短信可显示；第三方通知、锁屏/专注模式、重连和多固件仍待验证，不读取其他 App 通知、不自建第二套 BLE 通道 |
+| SYS-013 | 🟨 | XP400 系统通知镜像 | 复用 iOS 通知中心和系统 ANCS 条件；设置页区分 iPhone 本地通知测试、App 自有 ANCS 风格固定英文测试和真实仪表验证指引。已确认仅连接 PTSpeed、退出 Peugeot 官方 App 时真实来电和短信可显示；自有测试通道不读取其他 App 通知、不替代系统 ANCS，真实服务订阅和显示仍待验证 |
 
 ### 5.8 设置与产品基础
 
@@ -373,3 +373,4 @@ OBD BLE / Wi-Fi / Mock
 | 2026-09-02 | 当前工作区 Build 44 | CORE-011 已接入独立 Siri、App Shortcuts 与 URL Scheme 说明页；设置入口改为页内导航，Scheme 示例仅复制不执行，保留真实 Siri、Shortcuts 和外部 Scheme 真机验证 |
 | 2026-09-03 | 当前工作区 | IDEA-004 车库自动同步已接入：按仪表序列号优先、Central UUID 兜底进行车辆关联；Data1 里程、Data2 保养标志和 Data3 保养剩余里程按车持久化，首次/每 60 秒/退后台/断开自动保存，身份冲突必须用户确认；PTT 昵称只用于默认名称。主 App 与测试构建已通过，真实仪表和多车切换验证待补 |
 | 2026-09-04 | `8c51ee8` / Build 45 | Build 45 已完成 RIDE-014～RIDE-017、NAV-014、SYS-014、SYS-015、DEV-013 的外围代码接入：出发检查、轮胎/悬挂档案、加油与续航校准、综合路线风险、Watch 摘要、保养费用闭环、BLE 证据导入和多车库 iCloud；当前统一标记为部分完成，实施证据和验证缺口见升级计划第 27 节 |
+| 2026-09-04 | 当前工作区 | SYS-013 新增 `PTDashboardANCSProvider`：复用现有 `CBPeripheralManager` 提供 App 自有 ANCS 风格测试通道，设置页可发送固定英文消息；系统电话/短信链路不变，服务注册、XP400 订阅和仪表显示仍待真机验证 |

@@ -141,6 +141,7 @@
 		600000010000000000000170 /* PTXP400BLEProtocolContract.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000170 /* PTXP400BLEProtocolContract.swift */; };
 		600000010000000000000171 /* PTXP400BLEInboundReassembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000171 /* PTXP400BLEInboundReassembler.swift */; };
 		600000010000000000000180 /* PTLaunchAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000180 /* PTLaunchAnimationView.swift */; };
+		600000010000000000000190 /* PTDashboardANCSProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000190 /* PTDashboardANCSProvider.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -343,6 +344,7 @@
 		600000020000000000000170 /* PTXP400BLEProtocolContract.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400BLEProtocolContract.swift; sourceTree = "<group>"; };
 		600000020000000000000171 /* PTXP400BLEInboundReassembler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400BLEInboundReassembler.swift; sourceTree = "<group>"; };
 		600000020000000000000180 /* PTLaunchAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLaunchAnimationView.swift; sourceTree = "<group>"; };
+		600000020000000000000190 /* PTDashboardANCSProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashboardANCSProvider.swift; sourceTree = "<group>"; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -659,6 +661,7 @@
 		55E616B4301B88BF0075F883 /* BLE */ = {
 			isa = PBXGroup;
 			children = (
+				600000020000000000000190 /* PTDashboardANCSProvider.swift */,
 				55FE295A300CA4E8000E741F /* PTBluetoothManager.swift */,
 				600000020000000000000170 /* PTXP400BLEProtocolContract.swift */,
 				600000020000000000000171 /* PTXP400BLEInboundReassembler.swift */,
@@ -1196,6 +1199,7 @@
 				600000010000000000000061 /* PTRideExperienceViewController.swift in Sources */,
 				554110DB301E65AB0059BFCF /* PTLiDARCollisionManager.swift in Sources */,
 				55FE295C300CA4E8000E741F /* PTBluetoothManager.swift in Sources */,
+				600000010000000000000190 /* PTDashboardANCSProvider.swift in Sources */,
 				600000010000000000000170 /* PTXP400BLEProtocolContract.swift in Sources */,
 				600000010000000000000171 /* PTXP400BLEInboundReassembler.swift in Sources */,
 				55499CFA3019D83800A1A2D9 /* PTDashboardBaseView.swift in Sources */,

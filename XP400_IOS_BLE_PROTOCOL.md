@@ -11,6 +11,7 @@
 > 1.3 更新记录：完成 BLE-OPT-002/003/004/006/007；补齐 Credits 与会话清理、严格认证帧校验、导航最新状态合并，以及 Data1～Data3/Control/ABS 的不可用值状态
 > 1.4 更新记录：完成 BLE-OPT-008；Data2 和 ABS Mock 统一为 11-byte 车辆状态帧，并对已知入站帧补齐严格长度校验
 > 1.5 更新记录：记录 PTSpeed-only 真车场景下真实来电和短信可通过系统 ANCS 显示；区分 iPhone 本地测试通知与仪表验证，保留第三方通知和跨条件矩阵待验证
+> 1.6 更新记录：新增 `PTDashboardANCSProvider`，通过现有 `CBPeripheralManager` 提供 App 自有的 ANCS 风格测试通道；设置页增加固定英文直连测试入口。该通道不读取、不伪造系统电话或短信通知，真实 XP400 的服务接受、订阅和显示仍需真机验证
 
 ## 1. 文档边界
 
@@ -36,7 +37,7 @@
 | 自动化测试 | `PTSpeedTests/PTCoreTests.swift` 中的 BLE 契约测试 | 说明可重复验证的纯数据行为 |
 | 真车验证 | 抓包、仪表显示和多版本车辆记录 | 没有记录时保持“待验证” |
 
-当前审计结论：GATT、Credits、认证主流程、导航封装、配置封装以及 Data1～Data3 的核心换算没有重大方向性差异；已补齐已知车辆状态帧的长度校验和严格 Mock 样本，认证超时、专用 ANCS 风格通道和部分写入指令仍存在实现差异。真车已确认系统通知链路在 PTSpeed 单独连接场景下可显示真实来电和短信；TCS、灯光、ABS 前轮速度、部分保留位和断开帧 ID 也已有真车抓包证据，协议字段与代码实现仍需分开记录。
+当前审计结论：GATT、Credits、认证主流程、导航封装、配置封装以及 Data1～Data3 的核心换算没有重大方向性差异；已补齐已知车辆状态帧的长度校验和严格 Mock 样本，并新增可失败即安全退出的 ANCS 风格测试通道。真车已确认系统通知链路在 PTSpeed 单独连接场景下可显示真实来电和短信；TCS、灯光、ABS 前轮速度、部分保留位和断开帧 ID 也已有真车抓包证据，协议字段与代码实现仍需分开记录。
 
 ### 1.1 审计来源和快照
 
@@ -335,7 +336,7 @@ frame.count == payload.count + 5
 | 认证 Challenge / Response | Big-Endian | 每个 `UInt16` 按两字节处理 |
 | 连接身份 | ASCII | 研究格式为 12 个十六进制字符 |
 | 道路名称 | ISO-8859-1 | 上层会先将中文路名转换为兼容拼音 |
-| ANCS 原型 UID 和长度 | Little-Endian | 仅适用于当前未完成的 ANCS 构造器 |
+| ANCS UID 和长度 | Little-Endian | 适用于 App 自有 ANCS 风格测试通道；不代表可注入系统通知 |
 | 应用层 CRC / Checksum | 无 | 当前代码和研究文档都没有发现 |
 
 这套协议存在方向不对称性：不能把固定 11-byte 车辆状态帧交给 iPhone → 仪表的长度帧解析器，也不能把带 Payload Length 的发送帧直接当成认证或车辆状态帧。
@@ -617,7 +618,7 @@ BLE-OPT-001、BLE-OPT-002、BLE-OPT-004 和 BLE-OPT-007 已有纯逻辑测试；
 
 ### 11.1 电话、短信和第三方通知
 
-当前代码存在 `PTAncsNotif` 以及 Notification Source / Data Source 构造器，但 `sendCustomAlertToDashboard` 只构造数据，没有实际绑定 ANCS GATT 服务、特征和发送队列。这部分仍是未启用的专用通道原型。
+当前代码新增 `PTDashboardANCSProvider`，复用现有 `CBPeripheralManager` 注册标准 ANCS UUID 的 Notification Source、Control Point 和 Data Source 特征，并维护订阅会话、UID、Control Point 属性读取和受 MTU 限制的分片队列。设置页的“发送直接 ANCS 测试”会发送固定英文的 App 自有消息；原有稳定 BLE 管理器和 TIO 传输逻辑未被重写。
 
 真实设备验证已经确认：在 XP400 已启用 `Share System Notifications`、只保持 PTSpeed 与 XP400 连接并退出 Peugeot 官方 App 的条件下，真实来电和短信可以显示在仪表上。这说明当前 PTSpeed 使用 iOS 系统通知/ANCS 链路的路径是可工作的。
 
@@ -626,7 +627,8 @@ BLE-OPT-001、BLE-OPT-002、BLE-OPT-004 和 BLE-OPT-007 已有纯逻辑测试；
 - PTSpeed 的本地测试通知可以由系统通知中心提交，但只能验证 iPhone 本地通知投递；它不证明 XP400 已收到 ANCS 通知；
 - 真实来电和短信在“仅 PTSpeed 连接、官方 App 已退出”的真机条件下已经可以显示在 XP400 仪表；
 - iOS 不能读取其他 App 的通知正文并任意转发给 XP400；
-- XP400 专用 ANCS 风格 GATT 通道尚未完成，不应因为构造器存在而宣称该通道已交付；
+- App 自有 ANCS 风格通道只发送 PTSpeed 主动生成的测试消息，不替代系统电话、短信或第三方通知链路；系统通知仍由 iOS 的 ANCS 条件决定；
+- 该通道在服务注册失败、仪表未订阅或队列满时返回明确状态，不改变 TIO 连接；标准 ANCS 服务在 iOS 外设端的注册和 XP400 固件兼容性仍需真机验证；
 - 第三方 App 通知、锁屏/专注模式、断连重连和不同仪表固件的兼容性仍待矩阵验证，当前不能对外宣称全部电话、短信和第三方通知场景均已支持。
 
 ### 11.2 TCS、背光和断开指令

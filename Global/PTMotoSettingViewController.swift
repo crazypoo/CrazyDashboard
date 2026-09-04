@@ -620,6 +620,15 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         ) { [weak self] _ in
             self?.sendLocalNotificationTest()
         })
+        // EN: Offer the app-owned GATT notification test separately from iOS local notifications.
+        // ES: Ofrece la prueba GATT propia de la app por separado de las notificaciones locales de iOS.
+        // 中文：将 App 自有 GATT 通知测试与 iOS 本地通知分开提供。
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "dashboard_notification_send_custom_ancs"),
+            style: .default
+        ) { [weak self] _ in
+            self?.sendCustomANCSNotificationTest()
+        })
         // EN: Offer the real-device verification path separately from the local iPhone test.
         // ES: Ofrece por separado la verificación en dispositivo real de la prueba local del iPhone.
         // 中文：将真机仪表验证与 iPhone 本地通知测试分开提供。
@@ -728,6 +737,24 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 PTProgressHUD.show(text: message)
             }
         }
+    }
+
+    // EN: Send a fixed English payload through the app-owned ANCS-shaped GATT channel.
+    // ES: Envía un contenido inglés fijo mediante el canal GATT propio con forma ANCS.
+    // 中文：通过 App 自有 ANCS 风格 GATT 通道发送固定英文内容。
+    private func sendCustomANCSNotificationTest() {
+        PTDashboardANCSProvider.shared.install()
+        let result = PTDashboardANCSProvider.shared.sendTestNotification()
+        let message: String
+        switch result {
+        case .queued:
+            message = PTDashboardConfig.languageFunc(text: "dashboard_notification_custom_ancs_queued")
+        case .waitingForDashboard:
+            message = PTDashboardConfig.languageFunc(text: "dashboard_notification_custom_ancs_waiting")
+        case .unavailable:
+            message = PTDashboardConfig.languageFunc(text: "dashboard_notification_custom_ancs_unavailable")
+        }
+        PTProgressHUD.show(text: message)
     }
 
     // EN: Keep the hardware instructions explicit because iOS cannot query or toggle XP400 ANCS sharing.

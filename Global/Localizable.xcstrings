@@ -11990,6 +11990,42 @@
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "1. 保持 PTSpeed 與 XP400 連線，並退出 Peugeot 官方 App。\n2. 鎖定 iPhone。\n3. 使用另一支手機撥打真實電話並傳送真實訊息。\n4. 另外測試第三方 App 通知。\n\n這才是有效的儀表測試；iPhone 本機測試只能驗證 iOS 通知傳送。" } }
       }
     },
+    "dashboard_notification_send_custom_ancs" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Send direct ANCS test" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Doğrudan ANCS testi gönder" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "发送直接 ANCS 测试" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "傳送直接 ANCS 測試" } }
+      }
+    },
+    "dashboard_notification_custom_ancs_queued" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "ANCS test queued. Keep XP400 connected and watch the dashboard." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "ANCS testi sıraya alındı. XP400'i bağlı tutun ve göstergeyi izleyin." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "ANCS 测试已加入队列。请保持 XP400 连接并观察仪表盘。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "ANCS 測試已加入佇列。請保持 XP400 連線並觀察儀表。" } }
+      }
+    },
+    "dashboard_notification_custom_ancs_waiting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The XP400 notification channel is not subscribed. Reconnect the dashboard and try again." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "XP400 bildirim kanalı abone değil. Göstergeyi yeniden bağlayıp tekrar deneyin." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "XP400 尚未订阅通知通道。请重新连接仪表盘后重试。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "XP400 尚未訂閱通知通道。請重新連線儀表後重試。" } }
+      }
+    },
+    "dashboard_notification_custom_ancs_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The direct ANCS channel is unavailable. System phone and SMS notifications are unchanged." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Doğrudan ANCS kanalı kullanılamıyor. Sistem arama ve SMS bildirimleri değişmedi." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "直接 ANCS 通道不可用。系统电话和短信通知不受影响。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "直接 ANCS 通道不可用。系統電話和簡訊通知不受影響。" } }
+      }
+    },
     "automation_guide_title" : {
       "extractionState" : "manual",
       "localizations" : {

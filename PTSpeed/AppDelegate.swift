@@ -118,6 +118,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             PTLiveActivityManager.shared.reconcileIntercomActivitiesAtLaunch()
         }
 
+        // EN: Install the optional app-owned ANCS-shaped channel before the dashboard connection can start.
+        // ES: Instala el canal opcional con forma ANCS antes de que pueda comenzar la conexión con el tablero.
+        // 中文：在仪表连接可能开始前安装可选的 App 自有 ANCS 风格通道。
+        PTDashboardANCSProvider.shared.install()
+
         // EN: Start dashboard observation at app launch so garage sync never depends on opening a page.
         // ES: Inicia la observación del tablero al arrancar para que la sincronización no dependa de abrir una página.
         // 中文：应用启动时就开始监听仪表，自动同步不再依赖用户打开某个页面。
