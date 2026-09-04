@@ -12,17 +12,22 @@ import WatchKit
 final class PTWatchStatusStore: NSObject, ObservableObject, WCSessionDelegate {
     @Published private(set) var status: PTWidgetSharedStatus
     @Published private(set) var navigation: PTWatchRideAssistantState
+    @Published private(set) var readiness: PTWatchReadinessStatus
 
     private let session = WCSession.default
     private var lastHapticIdentifier: String?
+    private var lastReadinessHapticIdentifier: String?
 
     override init() {
         let initialContext = WCSession.default.receivedApplicationContext
         let initialStatus = PTWidgetSharedStatus(applicationContext: initialContext) ?? .placeholder
         let initialNavigation = PTWatchRideAssistantState(applicationContext: initialContext) ?? .placeholder
+        let initialReadiness = PTWatchReadinessStatus(applicationContext: initialContext) ?? .placeholder
         status = initialStatus
         navigation = initialNavigation
+        readiness = initialReadiness
         lastHapticIdentifier = initialNavigation.hapticIdentifier
+        lastReadinessHapticIdentifier = initialReadiness.hapticIdentifier
 
         super.init()
 
@@ -64,6 +69,14 @@ final class PTWatchStatusStore: NSObject, ObservableObject, WCSessionDelegate {
             status = nextStatus
         }
 
+        if let nextReadiness = PTWatchReadinessStatus(applicationContext: applicationContext) {
+            let previousReadiness = readiness
+            readiness = nextReadiness
+            if playHaptic {
+                playReadinessHapticIfNeeded(previous: previousReadiness, next: nextReadiness)
+            }
+        }
+
         guard let nextNavigation = PTWatchRideAssistantState(applicationContext: applicationContext) else {
             return
         }
@@ -71,6 +84,27 @@ final class PTWatchStatusStore: NSObject, ObservableObject, WCSessionDelegate {
         navigation = nextNavigation
         guard playHaptic else { return }
         playHapticIfNeeded(next: nextNavigation)
+    }
+
+    // EN: Readiness haptics fire only on a ready-to-attention edge and never on repeated snapshots.
+    // ES: El háptico de preparación solo se activa al pasar de listo a atención y nunca por instantáneas repetidas.
+    // 中文：准备度触觉只在“正常→需要注意”边沿触发，不会因重复快照持续震动。
+    private func playReadinessHapticIfNeeded(
+        previous: PTWatchReadinessStatus,
+        next: PTWatchReadinessStatus
+    ) {
+        guard previous.state == .ready,
+              next.state == .attention,
+              let identifier = next.hapticIdentifier,
+              identifier != lastReadinessHapticIdentifier else {
+            if next.state == .ready {
+                lastReadinessHapticIdentifier = nil
+            }
+            return
+        }
+
+        lastReadinessHapticIdentifier = identifier
+        WKInterfaceDevice.current().play(.notification)
     }
 
     // EN: Haptics are edge-triggered by maneuver identity, never by every GPS update.

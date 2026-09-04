@@ -226,6 +226,31 @@ public actor PTDataPersistenceActor {
         }
     }
 
+    // EN: Read only the cloud copy so conflict-aware clients can compare local and cloud snapshots.
+    // ES: Lee solo la copia en la nube para que los clientes puedan comparar instantáneas locales y remotas.
+    // 中文：只读取云端副本，供需要处理冲突的模块比较本地与云端快照。
+    public func readCloudData(fileName: String,
+                             downloadTimeout: TimeInterval = 8) async throws -> Data {
+        let validFileName = try validatedFileName(fileName)
+        guard let cloudDirectoryURL = try cloudDirectoryURL(createIfNeeded: false) else {
+            throw PTDataPersistenceError.iCloudUnavailable
+        }
+        let cloudURL = cloudDirectoryURL.appendingPathComponent(validFileName, isDirectory: false)
+        guard fileManager.fileExists(atPath: cloudURL.path) else {
+            throw PTDataPersistenceError.fileNotFound(validFileName)
+        }
+        try await waitUntilCloudFileIsDownloaded(
+            at: cloudURL,
+            fileName: validFileName,
+            timeout: downloadTimeout
+        )
+        do {
+            return try Data(contentsOf: cloudURL)
+        } catch {
+            throw PTDataPersistenceError.iCloudReadFailed(error.localizedDescription)
+        }
+    }
+
     public func ensureLocalFileURL(fileName: String,
                                    downloadTimeout: TimeInterval = 8) async throws -> URL {
         let validFileName = try validatedFileName(fileName)

@@ -9,13 +9,18 @@
 
 import Foundation
 
-public struct PTGarageMaintenanceRecord: Codable, Equatable, Identifiable, Sendable {
+nonisolated public struct PTGarageMaintenanceRecord: Codable, Equatable, Identifiable, Sendable {
     public let id: UUID
     public let title: String
     public let completedAt: Date
     public let mileageKm: Double
     public let nextDueMileageKm: Double?
     public let notes: String
+    public let cost: Double?
+    public let currency: String?
+    public let dueDate: Date?
+    public let associatedPartIDs: [UUID]
+    public let updatedAt: Date
 
     nonisolated public init(
         id: UUID = UUID(),
@@ -23,7 +28,12 @@ public struct PTGarageMaintenanceRecord: Codable, Equatable, Identifiable, Senda
         completedAt: Date = Date(),
         mileageKm: Double,
         nextDueMileageKm: Double? = nil,
-        notes: String = ""
+        notes: String = "",
+        cost: Double? = nil,
+        currency: String? = nil,
+        dueDate: Date? = nil,
+        associatedPartIDs: [UUID] = [],
+        updatedAt: Date = Date()
     ) {
         self.id = id
         self.title = title
@@ -31,16 +41,327 @@ public struct PTGarageMaintenanceRecord: Codable, Equatable, Identifiable, Senda
         self.mileageKm = mileageKm
         self.nextDueMileageKm = nextDueMileageKm
         self.notes = notes
+        self.cost = cost
+        self.currency = currency
+        self.dueDate = dueDate
+        self.associatedPartIDs = associatedPartIDs
+        self.updatedAt = updatedAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, title, completedAt, mileageKm, nextDueMileageKm, notes, cost, currency, dueDate, associatedPartIDs, updatedAt
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let completedAt = try container.decodeIfPresent(Date.self, forKey: .completedAt) ?? Date()
+        self.init(
+            id: try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID(),
+            title: try container.decode(String.self, forKey: .title),
+            completedAt: completedAt,
+            mileageKm: try container.decodeIfPresent(Double.self, forKey: .mileageKm) ?? 0,
+            nextDueMileageKm: try container.decodeIfPresent(Double.self, forKey: .nextDueMileageKm),
+            notes: try container.decodeIfPresent(String.self, forKey: .notes) ?? "",
+            cost: try container.decodeIfPresent(Double.self, forKey: .cost),
+            currency: try container.decodeIfPresent(String.self, forKey: .currency),
+            dueDate: try container.decodeIfPresent(Date.self, forKey: .dueDate),
+            associatedPartIDs: try container.decodeIfPresent([UUID].self, forKey: .associatedPartIDs) ?? [],
+            updatedAt: try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? completedAt
+        )
     }
 }
 
-public struct PTGaragePartRecord: Codable, Equatable, Identifiable, Sendable {
+// EN: This profile stores observations and setup values per motorcycle without pretending they are factory specifications.
+// ES: Este perfil guarda observaciones y ajustes por motocicleta sin presentarlos como especificaciones de fábrica.
+// 中文：该档案按车辆保存观察值和设定值，不把它们伪装成厂家规格。
+nonisolated public struct PTGarageTireSuspensionProfile: Codable, Equatable, Sendable {
+    public let frontTireBrand: String
+    public let frontTireModel: String
+    public let frontTireSize: String
+    public let rearTireBrand: String
+    public let rearTireModel: String
+    public let rearTireSize: String
+    public let coldFrontPressure: Double?
+    public let coldRearPressure: Double?
+    public let hotFrontPressure: Double?
+    public let hotRearPressure: Double?
+    public let pressureUnit: String
+    public let loadScenario: String
+    public let frontPreload: String
+    public let frontRebound: String
+    public let frontCompression: String
+    public let rearPreload: String
+    public let rearRebound: String
+    public let rearCompression: String
+    public let odometerKm: Double?
+    public let notes: String
+    public let updatedAt: Date
+
+    public init(
+        frontTireBrand: String = "",
+        frontTireModel: String = "",
+        frontTireSize: String = "",
+        rearTireBrand: String = "",
+        rearTireModel: String = "",
+        rearTireSize: String = "",
+        coldFrontPressure: Double? = nil,
+        coldRearPressure: Double? = nil,
+        hotFrontPressure: Double? = nil,
+        hotRearPressure: Double? = nil,
+        pressureUnit: String = "bar",
+        loadScenario: String = "",
+        frontPreload: String = "",
+        frontRebound: String = "",
+        frontCompression: String = "",
+        rearPreload: String = "",
+        rearRebound: String = "",
+        rearCompression: String = "",
+        odometerKm: Double? = nil,
+        notes: String = "",
+        updatedAt: Date = Date()
+    ) {
+        self.frontTireBrand = frontTireBrand
+        self.frontTireModel = frontTireModel
+        self.frontTireSize = frontTireSize
+        self.rearTireBrand = rearTireBrand
+        self.rearTireModel = rearTireModel
+        self.rearTireSize = rearTireSize
+        self.coldFrontPressure = Self.validPressure(coldFrontPressure)
+        self.coldRearPressure = Self.validPressure(coldRearPressure)
+        self.hotFrontPressure = Self.validPressure(hotFrontPressure)
+        self.hotRearPressure = Self.validPressure(hotRearPressure)
+        self.pressureUnit = pressureUnit.lowercased() == "psi" ? "psi" : (pressureUnit.lowercased() == "kpa" ? "kPa" : "bar")
+        self.loadScenario = loadScenario
+        self.frontPreload = frontPreload
+        self.frontRebound = frontRebound
+        self.frontCompression = frontCompression
+        self.rearPreload = rearPreload
+        self.rearRebound = rearRebound
+        self.rearCompression = rearCompression
+        self.odometerKm = Self.validOdometer(odometerKm)
+        self.notes = notes
+        self.updatedAt = updatedAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case frontTireBrand, frontTireModel, frontTireSize
+        case rearTireBrand, rearTireModel, rearTireSize
+        case coldFrontPressure, coldRearPressure, hotFrontPressure, hotRearPressure
+        case pressureUnit, loadScenario
+        case frontPreload, frontRebound, frontCompression
+        case rearPreload, rearRebound, rearCompression
+        case odometerKm, notes, updatedAt
+    }
+
+    // EN: Decode every field optionally so profiles saved before Build 45 remain usable.
+    // ES: Decodifica todos los campos como opcionales para conservar los perfiles guardados antes de Build 45.
+    // 中文：所有字段都兼容缺失，确保 Build45 之前保存的档案仍可使用。
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? Date()
+        self.init(
+            frontTireBrand: try container.decodeIfPresent(String.self, forKey: .frontTireBrand) ?? "",
+            frontTireModel: try container.decodeIfPresent(String.self, forKey: .frontTireModel) ?? "",
+            frontTireSize: try container.decodeIfPresent(String.self, forKey: .frontTireSize) ?? "",
+            rearTireBrand: try container.decodeIfPresent(String.self, forKey: .rearTireBrand) ?? "",
+            rearTireModel: try container.decodeIfPresent(String.self, forKey: .rearTireModel) ?? "",
+            rearTireSize: try container.decodeIfPresent(String.self, forKey: .rearTireSize) ?? "",
+            coldFrontPressure: try container.decodeIfPresent(Double.self, forKey: .coldFrontPressure),
+            coldRearPressure: try container.decodeIfPresent(Double.self, forKey: .coldRearPressure),
+            hotFrontPressure: try container.decodeIfPresent(Double.self, forKey: .hotFrontPressure),
+            hotRearPressure: try container.decodeIfPresent(Double.self, forKey: .hotRearPressure),
+            pressureUnit: try container.decodeIfPresent(String.self, forKey: .pressureUnit) ?? "bar",
+            loadScenario: try container.decodeIfPresent(String.self, forKey: .loadScenario) ?? "",
+            frontPreload: try container.decodeIfPresent(String.self, forKey: .frontPreload) ?? "",
+            frontRebound: try container.decodeIfPresent(String.self, forKey: .frontRebound) ?? "",
+            frontCompression: try container.decodeIfPresent(String.self, forKey: .frontCompression) ?? "",
+            rearPreload: try container.decodeIfPresent(String.self, forKey: .rearPreload) ?? "",
+            rearRebound: try container.decodeIfPresent(String.self, forKey: .rearRebound) ?? "",
+            rearCompression: try container.decodeIfPresent(String.self, forKey: .rearCompression) ?? "",
+            odometerKm: try container.decodeIfPresent(Double.self, forKey: .odometerKm),
+            notes: try container.decodeIfPresent(String.self, forKey: .notes) ?? "",
+            updatedAt: updatedAt
+        )
+    }
+
+    private static func validPressure(_ value: Double?) -> Double? {
+        guard let value, value.isFinite, (0.1...200).contains(value) else { return nil }
+        return value
+    }
+
+    private static func validOdometer(_ value: Double?) -> Double? {
+        guard let value, value.isFinite, (0...2_000_000).contains(value) else { return nil }
+        return value
+    }
+}
+
+// EN: Refuel records are user-entered observations and never overwrite the dashboard odometer.
+// ES: Los repostajes son observaciones introducidas por el usuario y nunca sobrescriben el odómetro del tablero.
+// 中文：加油记录是用户输入的观察数据，绝不覆盖仪表原始里程。
+nonisolated public struct PTGarageRefuelRecord: Codable, Equatable, Identifiable, Sendable {
+    public let id: UUID
+    public let date: Date
+    public let odometerKm: Double
+    public let liters: Double
+    public let amount: Double?
+    public let currency: String?
+    public let isFullTank: Bool
+    public let notes: String
+    public let updatedAt: Date
+
+    public init(
+        id: UUID = UUID(),
+        date: Date = Date(),
+        odometerKm: Double,
+        liters: Double,
+        amount: Double? = nil,
+        currency: String? = nil,
+        isFullTank: Bool,
+        notes: String = "",
+        updatedAt: Date = Date()
+    ) {
+        self.id = id
+        self.date = date
+        self.odometerKm = odometerKm
+        self.liters = liters
+        self.amount = amount
+        self.currency = currency
+        self.isFullTank = isFullTank
+        self.notes = notes
+        self.updatedAt = updatedAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, date, odometerKm, liters, amount, currency, isFullTank, notes, updatedAt
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let date = try container.decodeIfPresent(Date.self, forKey: .date) ?? Date()
+        self.init(
+            id: try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID(),
+            date: date,
+            odometerKm: try container.decodeIfPresent(Double.self, forKey: .odometerKm) ?? 0,
+            liters: try container.decodeIfPresent(Double.self, forKey: .liters) ?? 0,
+            amount: try container.decodeIfPresent(Double.self, forKey: .amount),
+            currency: try container.decodeIfPresent(String.self, forKey: .currency),
+            isFullTank: try container.decodeIfPresent(Bool.self, forKey: .isFullTank) ?? false,
+            notes: try container.decodeIfPresent(String.self, forKey: .notes) ?? "",
+            updatedAt: try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? date
+        )
+    }
+}
+
+nonisolated public struct PTFuelEconomySample: Codable, Equatable, Sendable {
+    public let litersPer100Km: Double
+    public let distanceKm: Double
+    public let sourceRecordIDs: [UUID]
+
+    public init(litersPer100Km: Double, distanceKm: Double, sourceRecordIDs: [UUID]) {
+        self.litersPer100Km = litersPer100Km
+        self.distanceKm = distanceKm
+        self.sourceRecordIDs = sourceRecordIDs
+    }
+}
+
+// EN: Full-tank calibration accepts only monotonic and plausible samples, so mock data cannot contaminate range estimates.
+// ES: La calibración de tanque lleno acepta solo muestras plausibles y monotónicas, evitando que el simulador contamine la autonomía.
+// 中文：满箱校准只接受合理且单调递增的样本，避免 mock 数据污染续航估算。
+nonisolated public enum PTFuelRangeCalculator {
+    public static func samples(
+        from records: [PTGarageRefuelRecord],
+        maximumLitersPer100Km: ClosedRange<Double> = 1...20
+    ) -> [PTFuelEconomySample] {
+        // EN: Preserve entry chronology so a lower mock or rollback odometer cannot be sorted into a false sample.
+        // ES: Conserva la cronología para que un odómetro menor, simulado o retrocedido no genere una muestra falsa al ordenarlo.
+        // 中文：按记录时间保持真实顺序，避免把较低的 mock/回拨里程排序后伪造成有效样本。
+        let ordered = records.sorted {
+            if $0.date == $1.date {
+                return $0.id.uuidString < $1.id.uuidString
+            }
+            return $0.date < $1.date
+        }
+        guard !ordered.isEmpty else { return [] }
+
+        var previousFullTank: PTGarageRefuelRecord?
+        var samples: [PTFuelEconomySample] = []
+        for record in ordered {
+            guard record.odometerKm.isFinite,
+                  record.odometerKm >= 0,
+                  record.liters.isFinite,
+                  record.liters > 0 else {
+                previousFullTank = nil
+                continue
+            }
+
+            guard record.isFullTank else {
+                previousFullTank = nil
+                continue
+            }
+
+            guard let previous = previousFullTank else {
+                previousFullTank = record
+                continue
+            }
+
+            let distance = record.odometerKm - previous.odometerKm
+            guard distance >= 5 else {
+                // EN: A rollback, duplicate or implausible distance breaks the full-tank chain.
+                // ES: Un retroceso, duplicado o distancia inverosímil rompe la cadena de tanque lleno.
+                // 中文：回拨、重复或不合理的里程会中断满箱样本链。
+                previousFullTank = nil
+                continue
+            }
+
+            let economy = record.liters / distance * 100
+            guard maximumLitersPer100Km.contains(economy) else {
+                previousFullTank = nil
+                continue
+            }
+
+            samples.append(
+                PTFuelEconomySample(
+                    litersPer100Km: economy,
+                    distanceKm: distance,
+                    sourceRecordIDs: [previous.id, record.id]
+                )
+            )
+            previousFullTank = record
+        }
+
+        return samples
+    }
+
+    public static func weightedConsumption(from records: [PTGarageRefuelRecord]) -> (litersPer100Km: Double, sampleCount: Int)? {
+        let validSamples = samples(from: records)
+        let totalDistance = validSamples.reduce(0) { $0 + $1.distanceKm }
+        guard !validSamples.isEmpty, totalDistance > 0 else { return nil }
+        let weighted = validSamples.reduce(0) { $0 + $1.litersPer100Km * $1.distanceKm } / totalDistance
+        return (weighted, validSamples.count)
+    }
+
+    public static func estimatedRange(
+        fuelLevelPercent: Int,
+        tankCapacityLiters: Double,
+        reservePercent: Int,
+        records: [PTGarageRefuelRecord]
+    ) -> Double? {
+        guard (0...100).contains(fuelLevelPercent), tankCapacityLiters > 0 else { return nil }
+        let consumption = weightedConsumption(from: records)?.litersPer100Km
+        guard let consumption, consumption > 0 else { return nil }
+        let usablePercent = max(0, fuelLevelPercent - min(max(reservePercent, 0), 100))
+        return tankCapacityLiters * Double(usablePercent) / 100 / consumption * 100
+    }
+}
+
+nonisolated public struct PTGaragePartRecord: Codable, Equatable, Identifiable, Sendable {
     public let id: UUID
     public let name: String
     public let partNumber: String
     public let installedAt: Date
     public let mileageKm: Double?
     public let notes: String
+    public let updatedAt: Date
 
     nonisolated public init(
         id: UUID = UUID(),
@@ -48,7 +369,8 @@ public struct PTGaragePartRecord: Codable, Equatable, Identifiable, Sendable {
         partNumber: String = "",
         installedAt: Date = Date(),
         mileageKm: Double? = nil,
-        notes: String = ""
+        notes: String = "",
+        updatedAt: Date = Date()
     ) {
         self.id = id
         self.name = name
@@ -56,13 +378,32 @@ public struct PTGaragePartRecord: Codable, Equatable, Identifiable, Sendable {
         self.installedAt = installedAt
         self.mileageKm = mileageKm
         self.notes = notes
+        self.updatedAt = updatedAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, partNumber, installedAt, mileageKm, notes, updatedAt
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let installedAt = try container.decodeIfPresent(Date.self, forKey: .installedAt) ?? Date()
+        self.init(
+            id: try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID(),
+            name: try container.decode(String.self, forKey: .name),
+            partNumber: try container.decodeIfPresent(String.self, forKey: .partNumber) ?? "",
+            installedAt: installedAt,
+            mileageKm: try container.decodeIfPresent(Double.self, forKey: .mileageKm),
+            notes: try container.decodeIfPresent(String.self, forKey: .notes) ?? "",
+            updatedAt: try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? installedAt
+        )
     }
 }
 
 /// EN: Persist only the read-only diagnostic evidence needed for a vehicle history.
 /// ES: Solo conserva la evidencia de diagnóstico de solo lectura necesaria para el historial del vehículo.
 /// 中文：只保存车辆历史所需的只读诊断证据。
-public struct PTGarageDIDRecord: Codable, Equatable, Sendable {
+nonisolated public struct PTGarageDIDRecord: Codable, Equatable, Sendable {
     public let did: String
     public let rawResponse: String
     public let payloadHex: String?
@@ -98,7 +439,7 @@ public struct PTGarageDIDRecord: Codable, Equatable, Sendable {
     }
 }
 
-public struct PTGarageDiagnosticReport: Codable, Equatable, Identifiable, Sendable {
+nonisolated public struct PTGarageDiagnosticReport: Codable, Equatable, Identifiable, Sendable {
     public let id: UUID
     public let capturedAt: Date
     public let vin: String
@@ -182,13 +523,13 @@ public struct PTGarageDiagnosticReport: Codable, Equatable, Identifiable, Sendab
 /// EN: Identifies where the stored odometer value came from.
 /// ES: Identifica el origen del valor de odómetro almacenado.
 /// 中文：标识车库中保存的里程数值来源。
-public enum PTMotorcycleOdometerSource: String, Codable, Sendable {
+nonisolated public enum PTMotorcycleOdometerSource: String, Codable, Sendable {
     case manual
     case dashboard
     case mock
 }
 
-public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
+nonisolated public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
     public let id: UUID
     public var name: String
     public var brand: String
@@ -209,9 +550,14 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
     public var tankCapacityLiters: Double?
     public var reserveFuelPercent: Int?
     public var preferredDiagnosticAddress: PTOBDiagnosticAddress?
+    public var tireSuspensionProfile: PTGarageTireSuspensionProfile?
+    public var refuelRecords: [PTGarageRefuelRecord]?
+    public var deletedRefuelIDs: [String: Date]?
     public var maintenanceRecords: [PTGarageMaintenanceRecord]
+    public var deletedMaintenanceIDs: [String: Date]?
     public var diagnosticReports: [PTGarageDiagnosticReport]
     public var parts: [PTGaragePartRecord]
+    public var deletedPartIDs: [String: Date]?
     public let createdAt: Date
     public var updatedAt: Date
 
@@ -233,9 +579,14 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
         tankCapacityLiters: Double? = nil,
         reserveFuelPercent: Int? = nil,
         preferredDiagnosticAddress: PTOBDiagnosticAddress? = nil,
+        tireSuspensionProfile: PTGarageTireSuspensionProfile? = nil,
+        refuelRecords: [PTGarageRefuelRecord]? = nil,
+        deletedRefuelIDs: [String: Date]? = nil,
         maintenanceRecords: [PTGarageMaintenanceRecord] = [],
+        deletedMaintenanceIDs: [String: Date]? = nil,
         diagnosticReports: [PTGarageDiagnosticReport] = [],
         parts: [PTGaragePartRecord] = [],
+        deletedPartIDs: [String: Date]? = nil,
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
@@ -256,9 +607,14 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
         self.tankCapacityLiters = tankCapacityLiters
         self.reserveFuelPercent = reserveFuelPercent
         self.preferredDiagnosticAddress = preferredDiagnosticAddress
+        self.tireSuspensionProfile = tireSuspensionProfile
+        self.refuelRecords = refuelRecords
+        self.deletedRefuelIDs = deletedRefuelIDs
         self.maintenanceRecords = maintenanceRecords
+        self.deletedMaintenanceIDs = deletedMaintenanceIDs
         self.diagnosticReports = diagnosticReports
         self.parts = parts
+        self.deletedPartIDs = deletedPartIDs
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -290,12 +646,12 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
 /// EN: Describes whether a dashboard snapshot came from hardware or the local simulator.
 /// ES: Describe si una instantánea procede del hardware o del simulador local.
 /// 中文：描述仪表快照来自真实硬件还是本地模拟器。
-public enum PTGarageDashboardSource: String, Codable, Sendable {
+nonisolated public enum PTGarageDashboardSource: String, Codable, Sendable {
     case dashboard
     case mock
 }
 
-public struct PTGarageDashboardSnapshot: Equatable, Sendable {
+nonisolated public struct PTGarageDashboardSnapshot: Equatable, Sendable {
     public let odometerKm: Double?
     public let maintenanceDistanceKm: Int?
     public let maintenanceFlag: Int?
@@ -321,7 +677,7 @@ public struct PTGarageDashboardSnapshot: Equatable, Sendable {
     }
 }
 
-public enum PTGarageDashboardSyncResult: String, Equatable, Sendable {
+nonisolated public enum PTGarageDashboardSyncResult: String, Equatable, Sendable {
     case updated
     case unchanged
     case unavailable
@@ -329,26 +685,409 @@ public enum PTGarageDashboardSyncResult: String, Equatable, Sendable {
     case vehicleNotFound
 }
 
-public enum PTGarageDashboardIdentityResolution: Equatable, Sendable {
+nonisolated public enum PTGarageDashboardIdentityResolution: Equatable, Sendable {
     case matched(UUID)
     case candidate(UUID)
     case conflict
     case unavailable
 }
 
-public struct PTMotorcycleGarageDocument: Codable, Equatable, Sendable {
+nonisolated public struct PTMotorcycleGarageDocument: Codable, Equatable, Sendable {
     public let schemaVersion: Int
     public let selectedVehicleID: UUID?
     public let vehicles: [PTMotorcycleProfile]
+    public let deletedVehicleIDs: [String: Date]?
 
     nonisolated public init(
-        schemaVersion: Int = 4,
+        schemaVersion: Int = 6,
         selectedVehicleID: UUID? = nil,
-        vehicles: [PTMotorcycleProfile] = []
+        vehicles: [PTMotorcycleProfile] = [],
+        deletedVehicleIDs: [String: Date]? = nil
     ) {
         self.schemaVersion = schemaVersion
         self.selectedVehicleID = selectedVehicleID
         self.vehicles = vehicles
+        self.deletedVehicleIDs = deletedVehicleIDs
+    }
+}
+
+// EN: Cloud records contain vehicle business data but intentionally omit local Bluetooth binding metadata.
+// ES: Los registros en la nube contienen datos del vehículo, pero omiten deliberadamente la vinculación Bluetooth local.
+// 中文：云端记录只包含车辆业务数据，刻意排除本机 Bluetooth 绑定信息。
+nonisolated public struct PTGarageCloudVehicle: Codable, Equatable, Sendable {
+    public let id: UUID
+    public let name: String
+    public let brand: String
+    public let model: String
+    public let year: Int?
+    public let vin: String
+    public let odometerKm: Double
+    public let odometerSource: PTMotorcycleOdometerSource?
+    public let maintenanceWarningDistanceKm: Double?
+    public let tankCapacityLiters: Double?
+    public let reserveFuelPercent: Int?
+    public let tireSuspensionProfile: PTGarageTireSuspensionProfile?
+    public let refuelRecords: [PTGarageRefuelRecord]
+    public let deletedRefuelIDs: [String: Date]?
+    public let maintenanceRecords: [PTGarageMaintenanceRecord]
+    public let deletedMaintenanceIDs: [String: Date]?
+    public let diagnosticReports: [PTGarageDiagnosticReport]
+    public let parts: [PTGaragePartRecord]
+    public let deletedPartIDs: [String: Date]?
+    public let createdAt: Date
+    public let updatedAt: Date
+
+    nonisolated public init(
+        id: UUID,
+        name: String,
+        brand: String,
+        model: String,
+        year: Int?,
+        vin: String,
+        odometerKm: Double,
+        odometerSource: PTMotorcycleOdometerSource?,
+        maintenanceWarningDistanceKm: Double?,
+        tankCapacityLiters: Double?,
+        reserveFuelPercent: Int?,
+        tireSuspensionProfile: PTGarageTireSuspensionProfile?,
+        refuelRecords: [PTGarageRefuelRecord],
+        deletedRefuelIDs: [String: Date]?,
+        maintenanceRecords: [PTGarageMaintenanceRecord],
+        deletedMaintenanceIDs: [String: Date]?,
+        diagnosticReports: [PTGarageDiagnosticReport],
+        parts: [PTGaragePartRecord],
+        deletedPartIDs: [String: Date]?,
+        createdAt: Date,
+        updatedAt: Date
+    ) {
+        self.id = id
+        self.name = name
+        self.brand = brand
+        self.model = model
+        self.year = year
+        self.vin = vin
+        self.odometerKm = odometerKm
+        self.odometerSource = odometerSource
+        self.maintenanceWarningDistanceKm = maintenanceWarningDistanceKm
+        self.tankCapacityLiters = tankCapacityLiters
+        self.reserveFuelPercent = reserveFuelPercent
+        self.tireSuspensionProfile = tireSuspensionProfile
+        self.refuelRecords = refuelRecords
+        self.deletedRefuelIDs = deletedRefuelIDs
+        self.maintenanceRecords = maintenanceRecords
+        self.deletedMaintenanceIDs = deletedMaintenanceIDs
+        self.diagnosticReports = diagnosticReports
+        self.parts = parts
+        self.deletedPartIDs = deletedPartIDs
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+
+    nonisolated public init(profile: PTMotorcycleProfile) {
+        id = profile.id
+        name = profile.name
+        brand = profile.brand
+        model = profile.model
+        year = profile.year
+        vin = profile.vin
+        odometerKm = profile.odometerKm
+        odometerSource = profile.odometerSource
+        maintenanceWarningDistanceKm = profile.maintenanceWarningDistanceKm
+        tankCapacityLiters = profile.tankCapacityLiters
+        reserveFuelPercent = profile.reserveFuelPercent
+        tireSuspensionProfile = profile.tireSuspensionProfile
+        refuelRecords = profile.refuelRecords ?? []
+        deletedRefuelIDs = profile.deletedRefuelIDs
+        maintenanceRecords = profile.maintenanceRecords
+        deletedMaintenanceIDs = profile.deletedMaintenanceIDs
+        diagnosticReports = profile.diagnosticReports
+        parts = profile.parts
+        deletedPartIDs = profile.deletedPartIDs
+        createdAt = profile.createdAt
+        updatedAt = profile.updatedAt
+    }
+
+    nonisolated public func applying(to local: PTMotorcycleProfile?) -> PTMotorcycleProfile {
+        PTMotorcycleProfile(
+            id: id,
+            name: name,
+            brand: brand,
+            model: model,
+            year: year,
+            vin: vin,
+            odometerKm: odometerKm,
+            odometerSource: odometerSource,
+            dashboardBLEIdentifier: local?.dashboardBLEIdentifier,
+            dashboardSerialNumber: local?.dashboardSerialNumber,
+            dashboardMaintenanceDistanceKm: local?.dashboardMaintenanceDistanceKm,
+            dashboardMaintenanceFlag: local?.dashboardMaintenanceFlag,
+            lastDashboardSyncAt: local?.lastDashboardSyncAt,
+            maintenanceWarningDistanceKm: maintenanceWarningDistanceKm,
+            tankCapacityLiters: tankCapacityLiters,
+            reserveFuelPercent: reserveFuelPercent,
+            preferredDiagnosticAddress: local?.preferredDiagnosticAddress,
+            tireSuspensionProfile: tireSuspensionProfile,
+            refuelRecords: refuelRecords,
+            deletedRefuelIDs: deletedRefuelIDs,
+            maintenanceRecords: maintenanceRecords,
+            deletedMaintenanceIDs: deletedMaintenanceIDs,
+            diagnosticReports: diagnosticReports,
+            parts: parts,
+            deletedPartIDs: deletedPartIDs,
+            createdAt: createdAt,
+            updatedAt: updatedAt
+        )
+    }
+}
+
+nonisolated public struct PTGarageCloudDocument: Codable, Equatable, Sendable {
+    public static let currentSchemaVersion = 2
+    public let schemaVersion: Int
+    public let selectedVehicleID: UUID?
+    public let vehicles: [PTGarageCloudVehicle]
+    public let deletedVehicleIDs: [String: Date]
+    public let modifiedAt: Date
+
+    nonisolated public init(
+        schemaVersion: Int = currentSchemaVersion,
+        selectedVehicleID: UUID?,
+        vehicles: [PTGarageCloudVehicle],
+        deletedVehicleIDs: [String: Date] = [:],
+        modifiedAt: Date = Date()
+    ) {
+        self.schemaVersion = schemaVersion
+        self.selectedVehicleID = selectedVehicleID
+        self.vehicles = vehicles
+        self.deletedVehicleIDs = deletedVehicleIDs
+        self.modifiedAt = modifiedAt
+    }
+
+    nonisolated public init(local document: PTMotorcycleGarageDocument) {
+        self.init(
+            selectedVehicleID: document.selectedVehicleID,
+            vehicles: document.vehicles.map(PTGarageCloudVehicle.init(profile:)),
+            deletedVehicleIDs: document.deletedVehicleIDs ?? [:]
+        )
+    }
+
+    nonisolated public static func merge(_ local: Self, _ remote: Self?) -> Self {
+        guard let remote else { return local }
+        var mergedByID = Dictionary(uniqueKeysWithValues: local.vehicles.map { ($0.id, $0) })
+        for remoteVehicle in remote.vehicles {
+            if let localVehicle = mergedByID[remoteVehicle.id] {
+                mergedByID[remoteVehicle.id] = mergeVehicles(localVehicle, remoteVehicle)
+            } else {
+                mergedByID[remoteVehicle.id] = remoteVehicle
+            }
+        }
+
+        var tombstones = local.deletedVehicleIDs
+        for (id, date) in remote.deletedVehicleIDs {
+            if date > (tombstones[id] ?? .distantPast) {
+                tombstones[id] = date
+            }
+        }
+        let visibleVehicles = mergedByID.values
+            .filter { vehicle in
+                tombstones[vehicle.id.uuidString] == nil
+            }
+            .sorted { $0.createdAt < $1.createdAt }
+        let preferredSelection = local.selectedVehicleID.flatMap { id in
+            visibleVehicles.contains(where: { $0.id == id }) ? id : nil
+        } ?? remote.selectedVehicleID.flatMap { id in
+            visibleVehicles.contains(where: { $0.id == id }) ? id : nil
+        } ?? visibleVehicles.first?.id
+        return Self(
+            selectedVehicleID: preferredSelection,
+            vehicles: visibleVehicles,
+            deletedVehicleIDs: tombstones,
+            modifiedAt: max(local.modifiedAt, remote.modifiedAt)
+        )
+    }
+
+    // EN: Merge vehicle-owned records independently so one device cannot erase another device's unrelated edit.
+    // ES: Combina los registros propios del vehículo por separado para que una edición no borre otra edición independiente.
+    // 中文：按车辆子记录分别合并，避免一台设备的无关更新抹掉另一台设备的修改。
+    private nonisolated static func mergeVehicles(
+        _ local: PTGarageCloudVehicle,
+        _ remote: PTGarageCloudVehicle
+    ) -> PTGarageCloudVehicle {
+        let scalarSource = remote.updatedAt > local.updatedAt ? remote : local
+        let refuelTombstones = mergeTombstones(local.deletedRefuelIDs, remote.deletedRefuelIDs)
+        let maintenanceTombstones = mergeTombstones(local.deletedMaintenanceIDs, remote.deletedMaintenanceIDs)
+        let partTombstones = mergeTombstones(local.deletedPartIDs, remote.deletedPartIDs)
+        return PTGarageCloudVehicle(
+            id: scalarSource.id,
+            name: scalarSource.name,
+            brand: scalarSource.brand,
+            model: scalarSource.model,
+            year: scalarSource.year,
+            vin: scalarSource.vin,
+            odometerKm: scalarSource.odometerKm,
+            odometerSource: scalarSource.odometerSource,
+            maintenanceWarningDistanceKm: scalarSource.maintenanceWarningDistanceKm,
+            tankCapacityLiters: scalarSource.tankCapacityLiters,
+            reserveFuelPercent: scalarSource.reserveFuelPercent,
+            tireSuspensionProfile: newerTireProfile(local.tireSuspensionProfile, remote.tireSuspensionProfile),
+            refuelRecords: mergeRecords(
+                local.refuelRecords,
+                remote.refuelRecords,
+                tombstones: refuelTombstones,
+                id: \.id,
+                updatedAt: \.updatedAt
+            ),
+            deletedRefuelIDs: refuelTombstones.isEmpty ? nil : refuelTombstones,
+            maintenanceRecords: mergeRecords(
+                local.maintenanceRecords,
+                remote.maintenanceRecords,
+                tombstones: maintenanceTombstones,
+                id: \.id,
+                updatedAt: \.updatedAt
+            ),
+            deletedMaintenanceIDs: maintenanceTombstones.isEmpty ? nil : maintenanceTombstones,
+            diagnosticReports: newerRecords(local.diagnosticReports, remote.diagnosticReports),
+            parts: mergeRecords(
+                local.parts,
+                remote.parts,
+                tombstones: partTombstones,
+                id: \.id,
+                updatedAt: \.updatedAt
+            ),
+            deletedPartIDs: partTombstones.isEmpty ? nil : partTombstones,
+            createdAt: min(local.createdAt, remote.createdAt),
+            updatedAt: max(local.updatedAt, remote.updatedAt)
+        )
+    }
+
+    private nonisolated static func mergeTombstones(
+        _ local: [String: Date]?,
+        _ remote: [String: Date]?
+    ) -> [String: Date] {
+        var result = local ?? [:]
+        for (id, date) in remote ?? [:] where date > (result[id] ?? .distantPast) {
+            result[id] = date
+        }
+        return result
+    }
+
+    private nonisolated static func newerTireProfile(
+        _ local: PTGarageTireSuspensionProfile?,
+        _ remote: PTGarageTireSuspensionProfile?
+    ) -> PTGarageTireSuspensionProfile? {
+        switch (local, remote) {
+        case (nil, let remote): return remote
+        case (let local, nil): return local
+        case let (.some(local), .some(remote)):
+            return remote.updatedAt > local.updatedAt ? remote : local
+        }
+    }
+
+    private nonisolated static func mergeRecords<Record>(
+        _ local: [Record],
+        _ remote: [Record],
+        tombstones: [String: Date],
+        id: (Record) -> UUID,
+        updatedAt: (Record) -> Date
+    ) -> [Record] {
+        var records = Dictionary(uniqueKeysWithValues: local.map { (id($0), $0) })
+        for record in remote {
+            let recordID = id(record)
+            if let existing = records[recordID] {
+                if updatedAt(record) > updatedAt(existing) {
+                    records[recordID] = record
+                }
+            } else {
+                records[recordID] = record
+            }
+        }
+        return records.values
+            .filter { record in
+                tombstones[id(record).uuidString] == nil
+            }
+            .sorted {
+                if updatedAt($0) == updatedAt($1) {
+                    return id($0).uuidString < id($1).uuidString
+                }
+                return updatedAt($0) > updatedAt($1)
+            }
+    }
+
+    private nonisolated static func newerRecords<Record: Identifiable>(
+        _ local: [Record],
+        _ remote: [Record]
+    ) -> [Record] where Record.ID: Hashable {
+        var records = Dictionary(uniqueKeysWithValues: local.map { ($0.id, $0) })
+        for record in remote where records[record.id] == nil {
+            records[record.id] = record
+        }
+        return Array(records.values)
+    }
+}
+
+public struct PTGarageCloudSyncResult: Sendable {
+    public let document: PTGarageCloudDocument
+    public let didReadCloud: Bool
+    public let didWriteCloud: Bool
+    public let cloudErrorDescription: String?
+}
+
+// EN: The cloud actor serializes garage merges and makes offline edits safe to retry.
+// ES: El actor de nube serializa las fusiones del garaje y permite reintentar ediciones sin conexión de forma segura.
+// 中文：云端 actor 串行处理车库合并，让离线编辑可以安全重试。
+public actor PTMotorcycleGarageCloudSyncService {
+    public static let shared = PTMotorcycleGarageCloudSyncService()
+    public static let fileName = "PTMotorcycleGarageCloud.json"
+
+    public func synchronize(local: PTGarageCloudDocument) async -> PTGarageCloudSyncResult {
+        var remote: PTGarageCloudDocument?
+        var didReadCloud = false
+        do {
+            let data = try await PTDataPersistenceActor.shared.readCloudData(fileName: Self.fileName)
+            remote = try JSONDecoder.ptGarageDecoder.decode(PTGarageCloudDocument.self, from: data)
+            didReadCloud = true
+        } catch {
+            remote = nil
+        }
+
+        let merged = PTGarageCloudDocument.merge(local, remote)
+        do {
+            let data = try JSONEncoder.ptGarageEncoder.encode(merged)
+            let result = try await PTDataPersistenceActor.shared.writeData(
+                data,
+                fileName: Self.fileName,
+                syncToICloud: true
+            )
+            return PTGarageCloudSyncResult(
+                document: merged,
+                didReadCloud: didReadCloud,
+                didWriteCloud: result.didWriteCloud,
+                cloudErrorDescription: result.cloudErrorDescription
+            )
+        } catch {
+            return PTGarageCloudSyncResult(
+                document: merged,
+                didReadCloud: didReadCloud,
+                didWriteCloud: false,
+                cloudErrorDescription: error.localizedDescription
+            )
+        }
+    }
+}
+
+private extension JSONEncoder {
+    nonisolated static var ptGarageEncoder: JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.sortedKeys]
+        return encoder
+    }
+}
+
+private extension JSONDecoder {
+    nonisolated static var ptGarageDecoder: JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
     }
 }
 
@@ -361,7 +1100,7 @@ public final class PTMotorcycleGarageStore {
     public static let didChangeNotification = Notification.Name("PTMotorcycleGarageStoreDidChange")
 
     public static let storageKey = "PTMotorcycleGarageDocument.v1"
-    public static let currentSchemaVersion = 4
+    public static let currentSchemaVersion = 6
     public static let defaultMaintenanceWarningDistanceKm = 2_500.0
     public static let maximumMaintenanceWarningDistanceKm = 65_535.0
     public static let maximumVehicleCount = 32
@@ -372,6 +1111,8 @@ public final class PTMotorcycleGarageStore {
     private let userDefaults: UserDefaults
     public private(set) var vehicles: [PTMotorcycleProfile]
     public private(set) var selectedVehicleID: UUID?
+    private var deletedVehicleIDs: [String: Date]
+    private var cloudSyncTask: Task<Void, Never>?
 
     public init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
@@ -384,10 +1125,12 @@ public final class PTMotorcycleGarageStore {
             self.vehicles = document.vehicles
             self.selectedVehicleID = document.selectedVehicleID
                 ?? document.vehicles.first?.id
+            self.deletedVehicleIDs = document.deletedVehicleIDs ?? [:]
         } else {
             let defaultVehicle = PTMotorcycleProfile.defaultXP400GT
             self.vehicles = [defaultVehicle]
             self.selectedVehicleID = defaultVehicle.id
+            self.deletedVehicleIDs = [:]
         }
 
         var shouldPersist = storedSchemaVersion < Self.currentSchemaVersion
@@ -427,7 +1170,7 @@ public final class PTMotorcycleGarageStore {
         }
 
         if shouldPersist {
-            persist(notify: false)
+            persist(notify: false, scheduleCloud: false)
         }
         syncLegacyWarningDistance()
     }
@@ -532,6 +1275,7 @@ public final class PTMotorcycleGarageStore {
         }
 
         vehicles.remove(at: index)
+        deletedVehicleIDs[id.uuidString] = Date()
         if selectedVehicleID == id {
             selectedVehicleID = vehicles.first?.id
         }
@@ -608,6 +1352,88 @@ public final class PTMotorcycleGarageStore {
         touchVehicle(at: index)
         persist()
         return true
+    }
+
+    // EN: Save tire, pressure and suspension observations on the selected motorcycle only.
+    // ES: Guarda observaciones de neumáticos, presión y suspensión únicamente en la motocicleta seleccionada.
+    // 中文：只把轮胎、胎压和悬挂观察值保存到当前车辆。
+    @discardableResult
+    public func updateTireSuspensionProfile(
+        _ profile: PTGarageTireSuspensionProfile?,
+        vehicleID: UUID? = nil
+    ) -> Bool {
+        guard let index = indexOfVehicle(vehicleID) else { return false }
+        guard vehicles[index].tireSuspensionProfile != profile else { return true }
+        vehicles[index].tireSuspensionProfile = profile
+        touchVehicle(at: index)
+        persist()
+        return true
+    }
+
+    // EN: Add a bounded refuel observation without changing the authoritative odometer value.
+    // ES: Añade una observación de repostaje limitada sin cambiar el odómetro autorizado.
+    // 中文：增加有边界的加油观察记录，不改变权威里程值。
+    @discardableResult
+    public func addRefuel(
+        date: Date = Date(),
+        odometerKm: Double,
+        liters: Double,
+        amount: Double? = nil,
+        currency: String? = nil,
+        isFullTank: Bool,
+        notes: String = "",
+        vehicleID: UUID? = nil
+    ) -> PTGarageRefuelRecord? {
+        guard let index = indexOfVehicle(vehicleID),
+              let normalizedOdometer = validOdometer(odometerKm),
+              liters.isFinite,
+              liters > 0,
+              liters <= 100,
+              amount == nil || (amount?.isFinite == true && amount! >= 0) else {
+            return nil
+        }
+
+        let normalizedCurrency = normalizeText(currency ?? "")
+        let record = PTGarageRefuelRecord(
+            date: date,
+            odometerKm: normalizedOdometer,
+            liters: liters,
+            amount: amount,
+            currency: normalizedCurrency.isEmpty ? nil : normalizedCurrency,
+            isFullTank: isFullTank,
+            notes: normalizeText(notes)
+        )
+        var records = vehicles[index].refuelRecords ?? []
+        records.insert(record, at: 0)
+        vehicles[index].refuelRecords = Array(records.prefix(200))
+        touchVehicle(at: index)
+        persist()
+        return record
+    }
+
+    @discardableResult
+    public func removeRefuel(id: UUID, vehicleID: UUID? = nil) -> Bool {
+        guard let index = indexOfVehicle(vehicleID),
+              var records = vehicles[index].refuelRecords,
+              let recordIndex = records.firstIndex(where: { $0.id == id }) else {
+            return false
+        }
+        records.remove(at: recordIndex)
+        vehicles[index].refuelRecords = records
+        var tombstones = vehicles[index].deletedRefuelIDs ?? [:]
+        tombstones[id.uuidString] = max(tombstones[id.uuidString] ?? .distantPast, Date())
+        vehicles[index].deletedRefuelIDs = tombstones
+        touchVehicle(at: index)
+        persist()
+        return true
+    }
+
+    public func fuelEconomy(vehicleID: UUID? = nil) -> (litersPer100Km: Double, sampleCount: Int)? {
+        guard let resolvedVehicleID = vehicleID ?? selectedVehicleID,
+              let vehicle = vehicle(id: resolvedVehicleID) else {
+            return nil
+        }
+        return PTFuelRangeCalculator.weightedConsumption(from: vehicle.refuelRecords ?? [])
     }
 
     @discardableResult
@@ -840,21 +1666,36 @@ public final class PTMotorcycleGarageStore {
         mileageKm: Double? = nil,
         nextDueMileageKm: Double? = nil,
         notes: String = "",
+        cost: Double? = nil,
+        currency: String? = nil,
+        dueDate: Date? = nil,
+        associatedPartIDs: [UUID] = [],
         vehicleID: UUID? = nil
     ) -> PTGarageMaintenanceRecord? {
         guard let index = indexOfVehicle(vehicleID),
               let normalizedTitle = nonEmptyText(title),
               let normalizedMileage = validOdometer(mileageKm ?? vehicles[index].odometerKm),
-              validOptionalOdometer(nextDueMileageKm) != nil || nextDueMileageKm == nil else {
+              validOptionalOdometer(nextDueMileageKm) != nil || nextDueMileageKm == nil,
+              cost == nil || (cost?.isFinite == true && cost! >= 0) else {
             return nil
         }
 
+        let normalizedCurrency = normalizeText(currency ?? "")
+        let availablePartIDs = Set(vehicles[index].parts.map(\.id))
+        var normalizedPartIDs: [UUID] = []
+        for partID in associatedPartIDs where availablePartIDs.contains(partID) && !normalizedPartIDs.contains(partID) {
+            normalizedPartIDs.append(partID)
+        }
         let record = PTGarageMaintenanceRecord(
             title: normalizedTitle,
             completedAt: completedAt,
             mileageKm: normalizedMileage,
             nextDueMileageKm: validOptionalOdometer(nextDueMileageKm),
-            notes: normalizeText(notes)
+            notes: normalizeText(notes),
+            cost: cost,
+            currency: normalizedCurrency.isEmpty ? nil : normalizedCurrency,
+            dueDate: dueDate,
+            associatedPartIDs: normalizedPartIDs
         )
         vehicles[index].maintenanceRecords.insert(record, at: 0)
         vehicles[index].maintenanceRecords = Array(
@@ -872,6 +1713,9 @@ public final class PTMotorcycleGarageStore {
             return false
         }
         vehicles[index].maintenanceRecords.remove(at: recordIndex)
+        var tombstones = vehicles[index].deletedMaintenanceIDs ?? [:]
+        tombstones[id.uuidString] = max(tombstones[id.uuidString] ?? .distantPast, Date())
+        vehicles[index].deletedMaintenanceIDs = tombstones
         touchVehicle(at: index)
         persist()
         return true
@@ -913,6 +1757,9 @@ public final class PTMotorcycleGarageStore {
             return false
         }
         vehicles[index].parts.remove(at: partIndex)
+        var tombstones = vehicles[index].deletedPartIDs ?? [:]
+        tombstones[id.uuidString] = max(tombstones[id.uuidString] ?? .distantPast, Date())
+        vehicles[index].deletedPartIDs = tombstones
         touchVehicle(at: index)
         persist()
         return true
@@ -994,17 +1841,84 @@ public final class PTMotorcycleGarageStore {
         vehicles[index].updatedAt = Date()
     }
 
-    private func persist(notify: Bool = true) {
+    // EN: Local persistence stays synchronous for UIKit; cloud synchronization is debounced and off the main thread.
+    // ES: La persistencia local sigue siendo síncrona para UIKit; la nube se sincroniza con debounce fuera del hilo principal.
+    // 中文：本地保存继续同步提供给 UIKit，云端同步采用防抖并在主线程之外执行。
+    private func persist(notify: Bool = true, scheduleCloud: Bool = true) {
         let document = PTMotorcycleGarageDocument(
             schemaVersion: Self.currentSchemaVersion,
             selectedVehicleID: selectedVehicleID,
-            vehicles: vehicles
+            vehicles: vehicles,
+            deletedVehicleIDs: deletedVehicleIDs
         )
         guard let data = try? JSONEncoder().encode(document) else { return }
         userDefaults.set(data, forKey: Self.storageKey)
+        if scheduleCloud {
+            scheduleCloudSync(document)
+        }
         if notify {
             NotificationCenter.default.post(name: Self.didChangeNotification, object: self)
         }
+    }
+
+    // EN: Sync keeps local hardware bindings private and only uploads the business archive.
+    // ES: La sincronización mantiene privadas las vinculaciones de hardware y solo sube el archivo de negocio.
+    // 中文：同步只上传业务档案，本机硬件绑定信息始终留在本机。
+    public func syncGarageToICloud() {
+        let document = PTMotorcycleGarageDocument(
+            schemaVersion: Self.currentSchemaVersion,
+            selectedVehicleID: selectedVehicleID,
+            vehicles: vehicles,
+            deletedVehicleIDs: deletedVehicleIDs
+        )
+        scheduleCloudSync(document)
+    }
+
+    // EN: Pulling cloud changes is explicit so a delayed network result never silently replaces an active UI edit.
+    // ES: La descarga de cambios es explícita para que una respuesta tardía nunca reemplace silenciosamente una edición activa.
+    // 中文：云端合并采用显式触发，避免延迟网络结果静默覆盖用户正在编辑的内容。
+    @discardableResult
+    public func refreshGarageFromICloud() async -> Bool {
+        let localDocument = PTMotorcycleGarageDocument(
+            schemaVersion: Self.currentSchemaVersion,
+            selectedVehicleID: selectedVehicleID,
+            vehicles: vehicles,
+            deletedVehicleIDs: deletedVehicleIDs
+        )
+        let result = await PTMotorcycleGarageCloudSyncService.shared.synchronize(
+            local: PTGarageCloudDocument(local: localDocument)
+        )
+        guard result.didReadCloud else { return false }
+        applyCloudDocument(result.document)
+        return true
+    }
+
+    private func scheduleCloudSync(_ document: PTMotorcycleGarageDocument) {
+        cloudSyncTask?.cancel()
+        let cloudDocument = PTGarageCloudDocument(local: document)
+        cloudSyncTask = Task.detached(priority: .utility) {
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            guard !Task.isCancelled else { return }
+            _ = await PTMotorcycleGarageCloudSyncService.shared.synchronize(local: cloudDocument)
+        }
+    }
+
+    private func applyCloudDocument(_ document: PTGarageCloudDocument) {
+        let localByID = Dictionary(uniqueKeysWithValues: vehicles.map { ($0.id, $0) })
+        let mergedVehicles = document.vehicles.map { cloudVehicle in
+            cloudVehicle.applying(to: localByID[cloudVehicle.id])
+        }
+        let cloudIDs = Set(mergedVehicles.map(\.id))
+        let retainedLocalVehicles = vehicles.filter {
+            !cloudIDs.contains($0.id) && document.deletedVehicleIDs[$0.id.uuidString] == nil
+        }
+        vehicles = Array((retainedLocalVehicles + mergedVehicles).prefix(Self.maximumVehicleCount))
+        deletedVehicleIDs = document.deletedVehicleIDs
+        selectedVehicleID = document.selectedVehicleID.flatMap { id in
+            vehicles.contains(where: { $0.id == id }) ? id : nil
+        } ?? vehicles.first?.id
+        syncLegacyWarningDistance()
+        persist(notify: true, scheduleCloud: false)
     }
 
     private func normalizeText(_ value: String) -> String {

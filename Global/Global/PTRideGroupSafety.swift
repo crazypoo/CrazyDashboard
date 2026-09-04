@@ -11,11 +11,11 @@ import Foundation
 import CoreLocation
 import MultipeerConnectivity
 
-public struct PTRideCoordinate: Codable, Equatable, Sendable {
+nonisolated public struct PTRideCoordinate: Codable, Equatable, Sendable {
     public let latitude: Double
     public let longitude: Double
 
-    public init(latitude: Double, longitude: Double) {
+    nonisolated public init(latitude: Double, longitude: Double) {
         self.latitude = latitude
         self.longitude = longitude
     }

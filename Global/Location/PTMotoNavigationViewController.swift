@@ -556,6 +556,10 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     @MainActor deinit {
         blockObserverTokens.forEach { NotificationCenter.default.removeObserver($0) }
         NotificationCenter.default.removeObserver(self)
+        // EN: Release only this screen's location lease; other features may still be using the engine.
+        // ES: Libera solo el arrendamiento de esta pantalla; otras funciones pueden seguir usando el motor.
+        // 中文：只释放当前页面的定位租约，其他功能仍可继续使用定位引擎。
+        PTLocationUsageCoordinator.shared.release(.navigation)
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -845,10 +849,10 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
 
     // MARK: - 初始化配置
     private func setupLocationManager() {
-        PTLocationEngine.shared.switchEngineMode(to: .riding)
-        if !PTLocationEngine.shared.isTracking {
-            PTLocationEngine.shared.startTracking()
-        }
+        // EN: The navigation screen owns a lease instead of starting or stopping the shared engine directly.
+        // ES: La pantalla de navegación posee un arrendamiento en lugar de controlar directamente el motor compartido.
+        // 中文：导航页面通过租约使用共享定位引擎，不再直接启动或停止它。
+        PTLocationUsageCoordinator.shared.acquire(.navigation)
         NotificationCenter.default.addObserver(self, selector: #selector(handleLocationUpdate(_:)), name: PTLocationEngineDidUpdate, object: nil)
     }
         

@@ -8,7 +8,7 @@
 >
 > 发布方式：只维护现有 `PTSpeed` TestFlight 版本，不新增 Lab Scheme、App Target、Bundle ID 或第二发布渠道；当前没有 App Store 上架计划。
 >
-> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 为 Build 44，下一次 TestFlight 从 Build 45 开始。
+> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 为 Build 45，下一次 TestFlight 从 Build 46 开始。
 >
 > 文件名中的 `V3` 仅为保留现有路径和链接，不代表需要修改 App 大版本号。
 >
@@ -46,10 +46,10 @@
 ### 版本与 Build 规则
 
 - [x] `PTSpeed`、Widget 和 Watch 的 `MARKETING_VERSION` 保持 `2.0.8`。
-- [x] 当前主 App、Widget、Watch 和 Tests Build 已统一为 `44`；下一次 TestFlight 使用 Build `45`。
+- [x] 当前主 App、Widget、Watch 和 Tests Build 已统一为 `45`；下一次 TestFlight 使用 Build `46`。
 - [x] 每次上传 TestFlight 只将 `CURRENT_PROJECT_VERSION` 加一：44、45、46……
-- [x] App、Widget、Watch 和 Tests 每次使用完全相同的 Build 号；Build 44 Debug 目标构建已核验，Release/Archive 仍按对应验收记录。
-- [x] Tests Target 已同步到主 App Build `44`，此后与主 App、Widget 和 Watch 一起递增。
+- [x] App、Widget、Watch 和 Tests 每次使用完全相同的 Build 号；Build 45 Debug/Release 目标构建和无签名 Archive 已按对应验收记录核验。
+- [x] Tests Target 已同步到主 App Build `45`，此后与主 App、Widget 和 Watch 一起递增。
 - [ ] 不允许脚本、Archive 或 CI 自动修改 `MARKETING_VERSION`。
 - [ ] 设置页和诊断报告显示格式统一为 `2.0.8 (Build N)`。
 - [ ] 不把 Build 号加入仪表 BLE 认证、握手、广播或配置数据。
@@ -228,7 +228,7 @@ public enum PTOBDLinkState: Sendable, Equatable
 - 性能基线：已确认 Xcode Instruments CLI 可见 `Time Profiler`、`Allocations`、`Animation Hitches`、`Activity Monitor`、`Leaks` 等模板；尚未采集冷启动、主线程、内存、卡顿或能耗数值，必须在可运行的 arm64 构建和真机/模拟器环境补测。
 - PTT/Live Activity 静态基线：`PTSpeed/AppDelegate.swift` 启动时调用 `PTLocalIntercomManager.shared.restoreIntercomStateAtLaunch()`；该方法依据 `PTIntercomPowerStateKey` 恢复组网。`PTLocalIntercomManager` 只有在 `isRunning && hasConnectedPeers` 时向 `PTLiveActivityManager` 提交成员列表；`PTLiveActivityManager.syncIntercomActivity` 对空成员执行已有 Activity 清理，对非空成员才允许 `Activity.request`。因此“启动后恢复 PTT 状态”和“Activity 创建”是两个不同门槛，但残留 Activity 清理、组网回调时序和真实系统行为仍未完成真机验证，留给 `B208-06`。
 - Widget/Watch/iCloud 静态基线：`PTLocationEngine` 在连接状态下按 600 秒节流并在断开/逆地理编码回调中调用 `PTWidgetDataManager`；该管理器写入 App Group、调用 WatchConnectivity、发起 iCloud 快照保存并刷新 Widget timeline。Watch 端消费最近的 application context；本阶段未验证后台、离线、重启和 iCloud 实际同步。
-- BLE/OBD 基线：未执行真实仪表 BLE、OBD 蓝牙/Wi-Fi 连接计时、成功率和断连恢复测试；三个核心文件哈希保持不变：`PTBluetoothManager.swift` = `8a1ce464f87076041b7d1c2af0940f0a014bad7d0479ae6d108914cb81d270d7`，`PTHiddenOBDConnector.swift` = `23ea459f87a4003248cc2c303f25a42c23a24909aa777b21b93ae2a99c41cd99`，`PTOBDCommand.swift` = `7e61b4961427c087d9ce36769973e71230f9a4c99892fbe71fb911b400633b66`。
+- BLE/OBD 基线：未执行真实仪表 BLE、OBD 蓝牙/Wi-Fi 连接计时、成功率和断连恢复测试；三个核心文件哈希保持不变：`PTBluetoothManager.swift` = `27bc0720e0ba9ed42c497b340fecff02dde2c6966d0aad38d7989887c763f448`，`PTHiddenOBDConnector.swift` = `23ea459f87a4003248cc2c303f25a42c23a24909aa777b21b93ae2a99c41cd99`，`PTOBDCommand.swift` = `7e61b4961427c087d9ce36769973e71230f9a4c99892fbe71fb911b400633b66`。
 - 真机/车辆状态：当前会话没有可用于本阶段验收的物理 iPhone、配对 Apple Watch、XP400 GT 仪表或 OBD 设备；BLE、OBD、Multipeer Connectivity、Live Activity、Widget 后台和 iCloud 的运行时结果均标记为待补。
 - 当前阻塞：①测试产物与 iOS 27 模拟器架构不匹配；②B208-00 所需 Instruments 数值未采集；③真实 BLE/OBD/PTT/Live Activity/Watch/iCloud 行为需要设备或车辆。B208-00 保持 `🟨`，不提前标记完成。
 - 回滚方式：本次只产生计划文件变更；如需回退，仅回退本节和实施记录的文档改动，不触碰三个核心文件或其他工作区状态。
@@ -711,7 +711,7 @@ Peugeot 官方资料确认 XP400 GT 使用 5 英寸连接式 TFT 和 i-Connect�
 - App 版本：2.0.8
 - Build：未修改
 - 修改文件：新增 `Global/Global/PTVehicleConnectivityCoordinator.swift`；修改 `Global/Global/PTMotoUserDefaultStruct.swift`、`Global/Global/PTMotoBaseViewController.swift`、`Global/BLE/PTBLEConnectViewController.swift`、`Global/Dashboard/ViewController/PTPeugeotDashBoardViewController.swift`、`Global/Dev/PTECUSnifferOverlay.swift`、`Global/OBD/View/PTOBDDataView.swift`、`Global/OBD/ViewController/PTOBDDataViewControllerCollection.swift`、`Global/PTMotoInfoViewController.swift`、`Global/PTMotoSettingViewController.swift`、`PTSpeed/ViewController.swift`、`PTSpeed/PTCarPlaySceneDelegate.swift`、`PTSpeedTests/PTCoreTests.swift` 和工程文件
-- 未修改核心：`PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`；本次改动后 SHA-256 仍分别为 `8a1ce464f87076041b7d1c2af0940f0a014bad7d0479ae6d108914cb81d270d7`、`23ea459f87a4003248cc2c303f25a42c23a24909aa777b21b93ae2a99c41cd99`、`7e61b4961427c087d9ce36769973e71230f9a4c99892fbe71fb911b400633b66`
+- 未修改核心：`PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`；本次改动后 SHA-256 仍分别为 `27bc0720e0ba9ed42c497b340fecff02dde2c6966d0aad38d7989887c763f448`、`23ea459f87a4003248cc2c303f25a42c23a24909aa777b21b93ae2a99c41cd99`、`7e61b4961427c087d9ce36769973e71230f9a4c99892fbe71fb911b400633b66`
 - 实施内容：新增仪表 BLE 与 OBD BLE/Wi-Fi/Mock 的独立快照和生命周期协调；保留旧 Manager 作为唯一传输/轮询实现；关闭默认 OBD 自动连接；将页面直接连接、断开和恢复入口转发到协调器；补齐页面 delegate、Timer 和观察者生命周期；CarPlay 连接时仅初始化协调器用于状态观察；通过现有 `PTWidgetSharedStatus` 投影仪表连接状态，使 Dashboard、CarPlay、Widget、Watch 不再各自推断连接状态
 - 静态检查：`swiftc -parse` 覆盖本次修改的 Swift 文件通过；`plutil -lint CrazyDashboard.xcodeproj/project.pbxproj` 通过；`git diff --check` 通过；新增状态独立性 XCTest 已写入但尚未执行
 - Debug/Release 构建：使用 `CrazyDashboard.xcworkspace` 进行 Debug generic iOS 构建时，在 SmartCodable 依赖获取 `swiftlang/swift-syntax` 时因网络超时中断，未到达 PTSpeed 主 target 的最终编译结果；未将该结果表述为完整构建通过；Release 未执行
@@ -1352,20 +1352,20 @@ OBD BLE / Wi-Fi / Mock
 
 | 状态 | ID | 工作包 | 依赖 | 完成条件摘要 |
 | --- | --- | --- | --- | --- |
-| ⬜ | `B45-00` | 基线、文档与核心保护 | 无 | 记录构建/性能基线，修正文档漂移，三个核心文件哈希冻结 |
-| ⬜ | `B45-01` | 连接生命周期与定位租约 | B45-00 | 冷启动无断开副作用，真实会话只结束一次，最后一个定位用途释放后停止定位 |
-| ⬜ | `B45-02` | PTT、车友位置与 Live Activity | B45-01 | 人数稳定、无数据竞争、位置可选择/可过期、零成员 Activity 自动结束 |
-| ⬜ | `B45-03` | 行程归属与行程 iCloud 合并 | B45-01 | 行程按车辆归属，旧记录可迁移，删除记录不被云端复活 |
-| ⬜ | `B45-04` | CAN 实验室拆分与流式分析 | B45-00 | 大文件不整包加载，分析支持进度/取消且不占用主线程 |
-| ⬜ | `B45-05` | Swift 并发与主线程告警治理 | B45-01～B45-04 | 项目自身并发告警归零，不使用无依据的 `@unchecked Sendable` |
-| ⬜ | `B45-06` | 出发检查 | B45-01、B45-03 | Ride Center 显示只读 `ready/attention/unavailable` 摘要，不触发新硬件或网络任务 |
-| ⬜ | `B45-07` | 每车轮胎/悬挂档案与保养闭环 | B45-03 | 可按车记录设定、保养项目、费用和配件，不伪造厂家周期或 TPMS 数据 |
-| ⬜ | `B45-08` | 加油记录与校准续航 | B45-03 | 满箱法形成可解释油耗，异常样本不污染模型，仪表原始里程只读 |
-| ⬜ | `B45-09` | 综合路线骑行风险 | B45-06 | 弯道、天气、预计时段风险统一分级，不提供竞速建议，不重构 QWeather |
-| ⬜ | `B45-10` | Watch 出发检查 | B45-06 | 复用 application context 展示最新摘要，离线恢复且不创建第二同步通道 |
-| ⬜ | `B45-11` | BLE 实车证据导入与报告 | B45-04 | Dev 只读导入、校验、脱敏和导出，不发送或重放帧，不改 BLE 核心 |
-| ⬜ | `B45-12` | 多车库 iCloud 同步 | B45-07、B45-08 | 云端业务档案可合并/删除，本机 BLE 身份绑定绝不上传或串车 |
-| ⬜ | `B45-13` | 隐私、本地化、性能与 TestFlight 门禁 | B45-00～B45-12 | 四语言、隐私说明、自动测试、目标构建、Archive 和真机矩阵分别留证 |
+| 🟨 | `B45-00` | 基线、文档与核心保护 | 无 | 代码基线、版本号和核心哈希已记录；性能、Archive 和设备证据待补 |
+| 🟨 | `B45-01` | 连接生命周期与定位租约 | B45-00 | 已接入连接状态门禁与定位用途租约；真实会话断连矩阵待补 |
+| 🟨 | `B45-02` | PTT、车友位置与 Live Activity | B45-01 | 已接入人数对账、位置限频/过期和 Activity 去重；多真机与系统生命周期待补 |
+| 🟨 | `B45-03` | 行程归属与行程 iCloud 合并 | B45-01 | 已接入车辆归属、稳定 ID、墓碑合并和旧数据兼容；真实 iCloud 冲突待补 |
+| 🟨 | `B45-04` | CAN 实验室拆分与流式分析 | B45-00 | 已接入 JSONL 有界流式分析、进度和取消；大文件设备性能待补 |
+| 🟨 | `B45-05` | Swift 并发与主线程告警治理 | B45-01～B45-04 | 项目新增路径已收口并通过 Debug 编译；完整 Swift 6 模式与全量告警基线待补 |
+| 🟨 | `B45-06` | 出发检查 | B45-01、B45-03 | Ride Center 已展示只读准备度摘要；真实数据和页面验收待补 |
+| 🟨 | `B45-07` | 每车轮胎/悬挂档案与保养闭环 | B45-03 | 已接入按车轮胎/悬挂、保养费用和配件数据；真实车辆和单位场景待补 |
+| 🟨 | `B45-08` | 加油记录与校准续航 | B45-03 | 已接入满箱法和回拨断链保护；连续实车加油样本待补 |
+| 🟨 | `B45-09` | 综合路线骑行风险 | B45-06 | 已接入弯道、时段和天气风险报告，保留原 QWeather 回退；道路与网络边界待补 |
+| 🟨 | `B45-10` | Watch 出发检查 | B45-06 | 已复用 application context 与一次性触觉；真实配对、离线恢复和表径待补 |
+| 🟨 | `B45-11` | BLE 实车证据导入与报告 | B45-04 | 已接入 Dev 只读 JSON/CSV 导入、分类、脱敏与导出；真实抓包样本待补 |
+| 🟨 | `B45-12` | 多车库 iCloud 同步 | B45-07、B45-08 | 已接入业务档案云端合并并排除本机绑定；多设备冲突与换机恢复待补 |
+| 🟨 | `B45-13` | 隐私、本地化、性能与 TestFlight 门禁 | B45-00～B45-12 | 已完成版本/隐私资源/本地化静态复核、Debug/Release 目标构建、build-for-testing 和无签名 Archive；签名发布与设备矩阵待补 |
 
 执行波次：先完成 `B45-00`；`B45-01` 与 `B45-04` 可并行；之后依次完成 `B45-02/B45-03`、`B45-05/B45-06`、`B45-07～B45-12`；最后由 `B45-13` 统一工程文件、String Catalog、Build 号和发布证据，避免多个工作包同时修改这些共享文件。
 
@@ -1448,9 +1448,24 @@ OBD BLE / Wi-Fi / Mock
 - [ ] 满箱油耗、单位换算、异常里程、路线缺失天气、Watch 旧 context、BLE 非法导入和 iCloud 冲突具有边界测试。
 - [ ] `PTSpeed`、Widget、Watch、Tests 的 Debug/Release 目标构建以及 `build-for-testing` 分别通过；XCTest 实际执行单独记录。
 - [ ] 使用真实配对 iPhone/Watch、两台 PTT iPhone、XP400 GT、OBD BLE/Wi-Fi 和至少两台 iCloud 设备完成对应矩阵；缺少设备时保持未完成状态。
-- [ ] 正式 Archive 前才统一设置 Build 45，并复核 App Group、iCloud、Watch Companion、隐私清单、四语言 String Catalog 和签名资源。
-- [ ] 发布前复核三个受保护核心文件 SHA-256 与第 2 节一致；任一不一致立即停止发布。
+- [x] 已完成 Build 45 无签名 Archive，App Group、iCloud、Watch Companion、隐私清单和四语言 String Catalog 完成静态复核；正式签名 Archive 与上传仍待项目签名环境。
+- [x] 发布前复核三个受保护核心文件 SHA-256 与第 2 节一致；任一不一致立即停止发布。
 
 ### 27.6 回滚边界
 
 每个 `B45-*` 工作包必须可以独立回退。数据升级采用“先兼容读取、再写新版本”，回滚版本仍须能够读取旧数据或忽略新增字段。云端同步、校准续航、路线风险、Watch 摘要和 BLE 证据导入均不得成为仪表连接、标准 OBD、基础导航或现有车库启动的前置条件。
+
+### 27.7 Build 45 实施记录（2026-09-04）
+
+- [x] 保持营销版本 `2.0.8`，将 PTSpeed、Widget、Watch、PTSpeedTests 和 PTSpeedUITests 的 `CURRENT_PROJECT_VERSION` 统一为 `45`。
+- [x] 三个受保护核心文件 SHA-256 已复核，仍为本文件第 2 节记录值；本轮没有修改其字节。
+- [x] B45-01～B45-05：连接状态与定位租约、PTT/Live Activity、行程归属/iCloud 合并、CAN JSONL 流式分析、项目新增并发边界已完成代码接入；主 App Debug 构建通过，项目自身新增路径未再产生并发编译错误。
+- [x] B45-06～B45-12：出发检查、按车轮胎/悬挂与保养、加油续航、综合路线风险、Watch 摘要、BLE 证据导入、多车库 iCloud 已完成外围代码接入；未触碰 BLE/OBD 稳定核心，也未改 QWeather 初始化与回退链路。
+- [x] B45-07 字段闭环：轮胎/悬挂档案现可保存品牌、型号、尺寸、冷热胎压、单位、载荷、前后预载/回弹/压缩、观察里程和备注；保养记录保存并展示已存在配件的关联 ID；旧档案缺失新增字段时安全使用默认值。
+- [x] B45-13：四语言 String Catalog、已有隐私清单、App Group/Watch Companion 配置和工程版本号完成静态复核；补充 CAN、油耗、准备度、车库云墓碑和 PTT 位置序列化测试。
+- [x] 已完成检查：`git diff --check`、String Catalog JSON 解析、核心文件哈希、主 App/Widget/Watch Debug 和 Release 目标构建、Debug/Release `build-for-testing`（Release 使用 `ENABLE_TESTABILITY=YES`）、无签名 Archive 结构和版本检查。
+- [ ] 待补证据：XCTest 实际运行、真实 iPhone/Watch/两台 PTT 设备/XP400/OBD/iCloud 性能矩阵、签名 Archive 与 TestFlight 上传；当前工程的 iOS Simulator 目的地与测试产物架构不匹配，因此没有把测试编译结果表述为 XCTest 已执行，在这些证据出现前各工作包保持 `🟨`。
+- [x] Release 验收结果：PTSpeed、Widget 和 Watch 无签名 Release 目标构建通过；`PTSpeed` Release `build-for-testing` 通过；无签名 Archive 中 App、Widget、Watch 的 `CFBundleShortVersionString = 2.0.8`、`CFBundleVersion = 45`，Watch 的 `WKApplication = true` 且 `WKCompanionAppBundleIdentifier = com.yd.PTSpeed`。
+- [x] 最终归档产物：`/tmp/CrazyDashboard-Build45-final.xcarchive`；归档完成后再次核对三个受保护核心文件 SHA-256，仍与第 2 节一致。
+- [x] 失败记录保留：三目标并行 Release 构建曾因临时目录磁盘空间不足失败，清理本轮生成的临时构建目录后改为串行构建并通过；Release 测试构建首次因未开启 `ENABLE_TESTABILITY` 失败，修正参数后通过。
+- 回滚方式：只回退本节新增外围模型、协调器接线、车库/路线/CAN/证据/Watch 代码、测试、工程版本号和文档；不覆盖三个受保护核心文件。

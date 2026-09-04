@@ -53,6 +53,16 @@ public struct PTLiveActivityStatus: Equatable, Sendable {
     }
 }
 
+// EN: Equatable PTT requests prevent repeated UI callbacks from creating update storms.
+// ES: Las solicitudes PTT comparables evitan tormentas de actualizaciones causadas por callbacks repetidos de la UI.
+// 中文：可比较的 PTT 请求可以阻止重复 UI 回调造成 Activity 更新风暴。
+private struct PTIntercomActivityRequest: Equatable, Sendable {
+    let channel: String
+    let isTalking: Bool
+    let status: String
+    let peers: [PeerLiveState]
+}
+
 public enum PTLiveActivityEligibility {
     /// EN: PTT may be shown only when the service, audio path, permission and peer list are all valid.
     /// ES: PTT solo puede mostrarse cuando el servicio, el audio, el permiso y la lista de pares son válidos.
@@ -83,6 +93,7 @@ public final class PTLiveActivityManager: NSObject {
     private var desiredIntercomTalking = false
     private var desiredIntercomStatus = ""
     private var desiredIntercomPeers: [PeerLiveState] = []
+    private var lastIntercomRequest: PTIntercomActivityRequest?
     private var intercomReconciliationTask: Task<Void, Never>?
 
     public private(set) var latestIntercomStatus = PTLiveActivityStatus(
@@ -205,15 +216,24 @@ public final class PTLiveActivityManager: NSObject {
 
     /// PTT Activity 的唯一同步入口：只有存在已连接成员时才允许显示。
     public func syncIntercomActivity(channel: String, isTalking: Bool, status: String, peers: [PeerLiveState]) {
-        desiredIntercomChannel = channel
-        desiredIntercomTalking = isTalking
-        desiredIntercomStatus = status
-        desiredIntercomPeers = peers
+        let request = PTIntercomActivityRequest(
+            channel: channel,
+            isTalking: isTalking,
+            status: status,
+            peers: peers
+        )
+        guard request != lastIntercomRequest else { return }
+        lastIntercomRequest = request
+        desiredIntercomChannel = request.channel
+        desiredIntercomTalking = request.isTalking
+        desiredIntercomStatus = request.status
+        desiredIntercomPeers = request.peers
         intercomActivityGeneration &+= 1
         scheduleIntercomReconciliation()
     }
 
     public func stopIntercomActivity() {
+        lastIntercomRequest = nil
         syncIntercomActivity(channel: "机车通讯", isTalking: false, status: "", peers: [])
     }
 

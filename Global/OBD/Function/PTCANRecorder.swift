@@ -194,6 +194,10 @@ public enum PTCANCaptureStoreError: Error, LocalizedError, Sendable {
 /// - 不负责 CAN 通信
 /// - 不负责发送任何车辆数据
 /// - 不负责启动/停止 Sniffer
+///
+/// EN: The unchecked Sendable boundary is intentional: every mutable store field is accessed through its serial state/write queues.
+/// ES: El límite Sendable no comprobado es intencional: todos los campos mutables se acceden mediante colas seriales de estado/escritura.
+/// 中文：这里有意使用 unchecked Sendable：所有可变存储字段都只能通过状态队列或写入队列访问。
 nonisolated public final class PTCANCaptureStore: @unchecked Sendable {
     
     public static let shared = PTCANCaptureStore()
@@ -856,6 +860,9 @@ private extension PTCANCaptureStore {
 ///
 /// Recorder 自身只使用 NSLock 保护状态。
 /// 文件 IO 全部由 PTCANCaptureStore 的独立串行队列处理。
+// EN: The unchecked Sendable boundary is justified by the lock-protected recorder state and queue-isolated file I/O.
+// ES: El límite Sendable no comprobado se justifica por el estado protegido por bloqueo y el I/O aislado en colas.
+// 中文：此 unchecked Sendable 边界由锁保护的录制状态和队列隔离的文件 I/O 保证。
 public final class PTCANRecorder: @unchecked Sendable {
     
     public static let shared = PTCANRecorder()
@@ -1632,7 +1639,7 @@ public struct PTCANCaptureDiff:
     }
 }
 
-public enum PTCANCaptureAnalyzer {
+nonisolated public enum PTCANCaptureAnalyzer {
     
     /// 比较两个离线抓包中：
     /// 同一个 CAN ID 的 dominant payload。
@@ -1689,6 +1696,7 @@ public enum PTCANCaptureAnalyzer {
     
     public struct SignalSummary:
         Codable,
+        Equatable,
         Sendable {
         
         public let header: String
@@ -1696,6 +1704,20 @@ public enum PTCANCaptureAnalyzer {
         public let dominantPayload: String
         public let averagePeriod: TimeInterval?
         public let payloadVariants: Int
+
+        public init(
+            header: String,
+            frameCount: Int,
+            dominantPayload: String,
+            averagePeriod: TimeInterval?,
+            payloadVariants: Int
+        ) {
+            self.header = header
+            self.frameCount = frameCount
+            self.dominantPayload = dominantPayload
+            self.averagePeriod = averagePeriod
+            self.payloadVariants = payloadVariants
+        }
 
         // EN: This score ranks observable periodic changes without assigning a semantic meaning to any byte.
         // ES: Esta puntuación ordena cambios periódicos observables sin asignar significado semántico a ningún byte.
@@ -2830,6 +2852,288 @@ private extension PTCANEventAnalyzer {
         }
         
         return result
+    }
+}
+
+// MARK: - Streaming Capture Analysis
+
+// EN: Progress is value-only so a caller can update a progress UI without sharing analyzer state.
+// ES: El progreso solo contiene valores para que la UI pueda actualizarse sin compartir el estado del analizador.
+// 中文：进度对象只包含值，UI 可以更新进度而不共享分析器内部状态。
+nonisolated public struct PTCANStreamingProgress: Sendable {
+    public let processedBytes: Int64
+    public let totalBytes: Int64
+    public let lineCount: Int
+    public let decodedFrameCount: Int
+    public let invalidLineCount: Int
+
+    public var fractionCompleted: Double? {
+        guard totalBytes > 0 else { return nil }
+        return min(max(Double(processedBytes) / Double(totalBytes), 0), 1)
+    }
+
+    public init(
+        processedBytes: Int64,
+        totalBytes: Int64,
+        lineCount: Int,
+        decodedFrameCount: Int,
+        invalidLineCount: Int
+    ) {
+        self.processedBytes = processedBytes
+        self.totalBytes = totalBytes
+        self.lineCount = lineCount
+        self.decodedFrameCount = decodedFrameCount
+        self.invalidLineCount = invalidLineCount
+    }
+}
+
+nonisolated public struct PTCANStreamingAnalysis: Codable, Equatable, Sendable {
+    public let fileName: String
+    public let totalBytes: Int64
+    public let lineCount: Int
+    public let decodedFrameCount: Int
+    public let invalidLineCount: Int
+    public let firstTimestamp: TimeInterval?
+    public let lastTimestamp: TimeInterval?
+    public let summaries: [PTCANCaptureAnalyzer.SignalSummary]
+
+    public init(
+        fileName: String,
+        totalBytes: Int64,
+        lineCount: Int,
+        decodedFrameCount: Int,
+        invalidLineCount: Int,
+        firstTimestamp: TimeInterval?,
+        lastTimestamp: TimeInterval?,
+        summaries: [PTCANCaptureAnalyzer.SignalSummary]
+    ) {
+        self.fileName = fileName
+        self.totalBytes = totalBytes
+        self.lineCount = lineCount
+        self.decodedFrameCount = decodedFrameCount
+        self.invalidLineCount = invalidLineCount
+        self.firstTimestamp = firstTimestamp
+        self.lastTimestamp = lastTimestamp
+        self.summaries = summaries
+    }
+}
+
+public enum PTCANStreamingAnalysisError: Error, LocalizedError, Sendable {
+    case invalidChunkSize
+    case fileReadFailed
+    case cancelled
+
+    public var errorDescription: String? {
+        switch self {
+        case .invalidChunkSize:
+            return "CAN 流式分析块大小无效 / El tamaño del bloque de análisis CAN no es válido."
+        case .fileReadFailed:
+            return "CAN 抓包读取失败 / No se pudo leer la captura CAN."
+        case .cancelled:
+            return "CAN 流式分析已取消 / El análisis CAN en streaming fue cancelado."
+        }
+    }
+}
+
+// EN: Reads JSONL in bounded chunks and never materializes the capture frame array.
+// ES: Lee JSONL en bloques limitados y nunca materializa todo el arreglo de frames.
+// 中文：按有界块读取 JSONL，不把整个 Capture 的帧数组加载到内存。
+public enum PTCANCaptureStreamAnalyzer {
+    // EN: The async entry point owns a utility-priority worker so large captures never run on the UI actor.
+    // ES: La entrada asíncrona usa un trabajador con prioridad utility para que las capturas grandes nunca se ejecuten en el actor de UI.
+    // 中文：异步入口使用 utility 优先级后台任务，确保大抓包不会在 UI actor 上分析。
+    nonisolated public static func analyzeJSONLInBackground(
+        at url: URL,
+        maximumResults: Int = 20,
+        chunkSize: Int = 64 * 1024,
+        progress: @escaping @Sendable (PTCANStreamingProgress) -> Void = { _ in }
+    ) async throws -> PTCANStreamingAnalysis {
+        guard !Task.isCancelled else {
+            throw PTCANStreamingAnalysisError.cancelled
+        }
+
+        // EN: Cancel the worker task itself so no shared mutable cancellation box is needed.
+        // ES: Cancela la propia tarea de trabajo para no necesitar una caja mutable compartida.
+        // 中文：直接取消后台任务本身，不再引入共享可变的取消盒子。
+        let worker = Task.detached(priority: .utility) {
+            try Self.analyzeJSONL(
+                at: url,
+                maximumResults: maximumResults,
+                chunkSize: chunkSize,
+                shouldCancel: { Task.isCancelled },
+                progress: progress
+            )
+        }
+        return try await withTaskCancellationHandler(operation: {
+            try await worker.value
+        }, onCancel: {
+            worker.cancel()
+        })
+    }
+
+    nonisolated public static func analyzeJSONL(
+        at url: URL,
+        maximumResults: Int = 20,
+        chunkSize: Int = 64 * 1024,
+        shouldCancel: @escaping @Sendable () -> Bool = { Task.isCancelled },
+        progress: @escaping @Sendable (PTCANStreamingProgress) -> Void = { _ in }
+    ) throws -> PTCANStreamingAnalysis {
+        guard maximumResults > 0, chunkSize > 0 else {
+            throw PTCANStreamingAnalysisError.invalidChunkSize
+        }
+
+        let totalBytes = Int64((try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber)?.int64Value ?? 0)
+        let handle: FileHandle
+        do {
+            handle = try FileHandle(forReadingFrom: url)
+        } catch {
+            throw PTCANStreamingAnalysisError.fileReadFailed
+        }
+        defer { try? handle.close() }
+
+        var buffer = Data()
+        buffer.reserveCapacity(chunkSize)
+        var processedBytes: Int64 = 0
+        var lineCount = 0
+        var decodedFrameCount = 0
+        var invalidLineCount = 0
+        var firstTimestamp: TimeInterval?
+        var lastTimestamp: TimeInterval?
+        var accumulators: [String: PTCANStreamingAccumulator] = [:]
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        func reportProgress() {
+            progress(
+                PTCANStreamingProgress(
+                    processedBytes: processedBytes,
+                    totalBytes: totalBytes,
+                    lineCount: lineCount,
+                    decodedFrameCount: decodedFrameCount,
+                    invalidLineCount: invalidLineCount
+                )
+            )
+        }
+
+        func consume(_ lineData: Data) throws {
+            if shouldCancel() {
+                throw PTCANStreamingAnalysisError.cancelled
+            }
+            let trimmedData = lineData.last == 0x0D ? lineData.dropLast() : lineData[...]
+            guard !trimmedData.isEmpty else { return }
+            lineCount += 1
+            guard let frame = try? decoder.decode(PTCANFrame.self, from: trimmedData),
+                  let header = frame.header,
+                  let payload = frame.dataHex else {
+                invalidLineCount += 1
+                return
+            }
+
+            decodedFrameCount += 1
+            firstTimestamp = minTimestamp(firstTimestamp, frame.timestamp)
+            lastTimestamp = maxTimestamp(lastTimestamp, frame.timestamp)
+            accumulators[header, default: PTCANStreamingAccumulator()].append(
+                payload: payload,
+                timestamp: frame.timestamp
+            )
+        }
+
+        while true {
+            if shouldCancel() {
+                throw PTCANStreamingAnalysisError.cancelled
+            }
+            let chunk: Data?
+            do {
+                chunk = try handle.read(upToCount: chunkSize)
+            } catch {
+                throw PTCANStreamingAnalysisError.fileReadFailed
+            }
+            guard let chunk, !chunk.isEmpty else { break }
+            processedBytes += Int64(chunk.count)
+            buffer.append(chunk)
+
+            while let newlineIndex = buffer.firstIndex(of: 0x0A) {
+                let lineData = Data(buffer[..<newlineIndex])
+                buffer.removeSubrange(...newlineIndex)
+                try consume(lineData)
+            }
+            reportProgress()
+        }
+
+        if !buffer.isEmpty {
+            try consume(buffer)
+            reportProgress()
+        }
+
+        let summaries = accumulators.map { header, accumulator in
+            accumulator.summary(header: header)
+        }
+        .sorted {
+            if $0.candidateScore == $1.candidateScore {
+                return $0.header < $1.header
+            }
+            return $0.candidateScore > $1.candidateScore
+        }
+        .prefix(maximumResults)
+        .map { $0 }
+
+        return PTCANStreamingAnalysis(
+            fileName: url.lastPathComponent,
+            totalBytes: totalBytes,
+            lineCount: lineCount,
+            decodedFrameCount: decodedFrameCount,
+            invalidLineCount: invalidLineCount,
+            firstTimestamp: firstTimestamp,
+            lastTimestamp: lastTimestamp,
+            summaries: summaries
+        )
+    }
+
+    nonisolated private static func minTimestamp(_ current: TimeInterval?, _ candidate: TimeInterval) -> TimeInterval {
+        guard let current else { return candidate }
+        return min(current, candidate)
+    }
+
+    nonisolated private static func maxTimestamp(_ current: TimeInterval?, _ candidate: TimeInterval) -> TimeInterval {
+        guard let current else { return candidate }
+        return max(current, candidate)
+    }
+}
+
+// EN: This accumulator retains only counts and the previous timestamp for each CAN ID.
+// ES: Este acumulador conserva solo contadores y la marca temporal anterior de cada ID CAN.
+// 中文：该累加器针对每个 CAN ID 只保存计数和上一帧时间戳。
+private nonisolated struct PTCANStreamingAccumulator: Sendable {
+    private var frameCount = 0
+    private var payloadCounts: [String: Int] = [:]
+    private var previousTimestamp: TimeInterval?
+    private var periodTotal: TimeInterval = 0
+    private var periodCount = 0
+
+    mutating func append(payload: String, timestamp: TimeInterval) {
+        frameCount += 1
+        payloadCounts[payload, default: 0] += 1
+        if let previousTimestamp,
+           timestamp > previousTimestamp {
+            periodTotal += timestamp - previousTimestamp
+            periodCount += 1
+        }
+        previousTimestamp = timestamp
+    }
+
+    func summary(header: String) -> PTCANCaptureAnalyzer.SignalSummary {
+        let dominantPayload = payloadCounts.max {
+            if $0.value == $1.value { return $0.key > $1.key }
+            return $0.value < $1.value
+        }?.key ?? ""
+        let averagePeriod = periodCount > 0 ? periodTotal / Double(periodCount) : nil
+        return PTCANCaptureAnalyzer.SignalSummary(
+            header: header,
+            frameCount: frameCount,
+            dominantPayload: dominantPayload,
+            averagePeriod: averagePeriod,
+            payloadVariants: payloadCounts.count
+        )
     }
 }
 

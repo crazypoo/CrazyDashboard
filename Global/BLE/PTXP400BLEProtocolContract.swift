@@ -166,7 +166,7 @@ public enum PTXP400BLEProtocol {
         return String(decoding: serialData, as: UTF8.self)
     }
 
-    private static func isHexASCII(_ byte: UInt8) -> Bool {
+    nonisolated private static func isHexASCII(_ byte: UInt8) -> Bool {
         (0x30...0x39).contains(byte) ||
         (0x41...0x46).contains(byte) ||
         (0x61...0x66).contains(byte)

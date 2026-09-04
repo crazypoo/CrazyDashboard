@@ -355,10 +355,10 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
         weatherTask = Task { @MainActor [weak self, weak loadingAlert] in
             guard let self else { return }
             do {
-                let report = try await PTRouteWeatherRiskService.shared.analyze(roadbook: roadbook)
+                let report = try await PTRouteWeatherRiskService.shared.analyzeRiding(roadbook: roadbook)
                 guard !Task.isCancelled else { return }
                 loadingAlert?.dismiss(animated: true) {
-                    self.showWeatherReport(report)
+                    self.showRidingRiskReport(report)
                 }
             } catch {
                 guard !Task.isCancelled else { return }
@@ -410,6 +410,54 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
         present(alert, animated: true)
     }
 
+    // EN: Show the combined report as preparation guidance, never as a racing or speed recommendation.
+    // ES: Muestra el informe combinado como preparación, nunca como recomendación de velocidad o competición.
+    // 中文：把综合报告作为出发准备提示展示，绝不提供竞速或速度建议。
+    private func showRidingRiskReport(_ report: PTRouteRidingRiskReport) {
+        let riskyPoints = report.points.filter { $0.level != .clear }.prefix(5)
+        var lines = [
+            PTDashboardConfig.languageFunc(text: "route_weather_riding_report"),
+            PTDashboardConfig.language(
+                key: "route_weather_source",
+                report.weatherProvider.map(weatherProviderTitle)
+                    ?? PTDashboardConfig.languageFunc(text: "route_weather_source_unavailable")
+            ),
+            PTDashboardConfig.language(key: "route_weather_worst", riskLevelTitle(report.worstLevel)),
+            PTDashboardConfig.language(key: "route_weather_risky_points", report.riskyPointCount),
+            PTDashboardConfig.languageFunc(text: "route_weather_riding_note")
+        ]
+
+        if !report.missingData.isEmpty {
+            let missing = report.missingData.map(ridingFactorTitle).joined(separator: ", ")
+            lines.append(PTDashboardConfig.language(key: "route_weather_missing_data", missing))
+        }
+
+        if riskyPoints.isEmpty {
+            lines.append(PTDashboardConfig.languageFunc(text: "route_weather_no_risk"))
+        } else {
+            lines.append(contentsOf: riskyPoints.map { point in
+                let coordinate = String(
+                    format: "%.4f, %.4f",
+                    point.coordinate.latitude,
+                    point.coordinate.longitude
+                )
+                let factors = point.factors.map(ridingFactorTitle).joined(separator: ", ")
+                return "\(riskLevelTitle(point.level)) · \(coordinate) · \(factors)"
+            })
+        }
+
+        let alert = UIAlertController(
+            title: PTDashboardConfig.languageFunc(text: "route_weather_report"),
+            message: lines.joined(separator: "\n"),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "button_confirm"),
+            style: .default
+        ))
+        present(alert, animated: true)
+    }
+
     private func riskLevelTitle(_ level: PTRouteWeatherRiskLevel) -> String {
         switch level {
         case .clear: return PTDashboardConfig.languageFunc(text: "route_weather_clear")
@@ -426,6 +474,20 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
         case .heat: return PTDashboardConfig.languageFunc(text: "route_weather_factor_heat")
         case .lowVisibility: return PTDashboardConfig.languageFunc(text: "route_weather_factor_visibility")
         case .storm: return PTDashboardConfig.languageFunc(text: "route_weather_factor_storm")
+        }
+    }
+
+    private func ridingFactorTitle(_ factor: PTRouteRidingRiskFactor) -> String {
+        switch factor {
+        case .precipitation: return PTDashboardConfig.languageFunc(text: "route_weather_factor_precipitation")
+        case .wind: return PTDashboardConfig.languageFunc(text: "route_weather_factor_wind")
+        case .cold: return PTDashboardConfig.languageFunc(text: "route_weather_factor_cold")
+        case .heat: return PTDashboardConfig.languageFunc(text: "route_weather_factor_heat")
+        case .lowVisibility: return PTDashboardConfig.languageFunc(text: "route_weather_factor_visibility")
+        case .storm: return PTDashboardConfig.languageFunc(text: "route_weather_factor_storm")
+        case .night: return PTDashboardConfig.languageFunc(text: "route_weather_factor_night")
+        case .continuousCurves: return PTDashboardConfig.languageFunc(text: "route_weather_factor_curves")
+        case .weatherUnavailable: return PTDashboardConfig.languageFunc(text: "route_weather_factor_unavailable")
         }
     }
 

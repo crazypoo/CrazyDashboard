@@ -28,6 +28,7 @@ final class PTCANLabViewController: PTMotoBaseViewController {
     private var files: [URL] = []
     private var comparisonFiles: [URL] = []
     private var captureTask: Task<Void, Never>?
+    private var analysisTask: Task<Void, Never>?
     private var safetyObserver: NSObjectProtocol?
 
     lazy var reloadButton:PTBaseButton = {
@@ -68,6 +69,8 @@ final class PTCANLabViewController: PTMotoBaseViewController {
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        analysisTask?.cancel()
+        analysisTask = nil
         if mode == .developerCapture, captureTask != nil {
             stopCapture()
         }
@@ -249,9 +252,20 @@ final class PTCANLabViewController: PTMotoBaseViewController {
     }
 
     private func analyze(fileURL: URL) {
-        Task { @MainActor [weak self] in
+        analysisTask?.cancel()
+        analysisTask = Task { @MainActor [weak self] in
             guard let self else { return }
+            defer { analysisTask = nil }
             do {
+                if fileURL.pathExtension.lowercased() == "jsonl" {
+                    let analysis = try await PTCANCaptureStreamAnalyzer.analyzeJSONLInBackground(
+                        at: fileURL
+                    )
+                    guard !Task.isCancelled else { return }
+                    showStreamingAnalysis(analysis)
+                    return
+                }
+
                 let session = try await loadSession(fileURL: fileURL)
                 let summaries = PTCANCaptureAnalyzer.summarize(session)
                 var lines = [
@@ -289,9 +303,33 @@ final class PTCANLabViewController: PTMotoBaseViewController {
                 }
                 showMessage(title: localized("can_lab_analysis"), message: lines.joined(separator: "\n"))
             } catch {
+                guard !Task.isCancelled else { return }
                 showMessage(title: localized("can_lab_analysis"), message: error.localizedDescription)
             }
         }
+    }
+
+    // EN: Large JSONL files use bounded streaming analysis so history browsing cannot allocate every frame.
+    // ES: Los archivos JSONL grandes usan análisis por streaming acotado para que el historial no reserve todos los frames.
+    // 中文：大 JSONL 文件使用有界流式分析，浏览历史时不会把全部报文加载进内存。
+    private func showStreamingAnalysis(_ analysis: PTCANStreamingAnalysis) {
+        let duration: Double
+        if let firstTimestamp = analysis.firstTimestamp,
+           let lastTimestamp = analysis.lastTimestamp {
+            duration = max(0, lastTimestamp - firstTimestamp)
+        } else {
+            duration = 0
+        }
+
+        var lines = [
+            "\(localized("can_lab_frames")): \(analysis.decodedFrameCount)",
+            "\(localized("can_lab_duration")): \(String(format: "%.1fs", duration))",
+            "\(localized("can_lab_invalid_lines")): \(analysis.invalidLineCount)"
+        ]
+        lines.append(contentsOf: analysis.summaries.map {
+            "\($0.header) · \($0.frameCount) · \(String(format: "%.3fs", $0.averagePeriod ?? 0))"
+        })
+        showMessage(title: localized("can_lab_analysis"), message: lines.joined(separator: "\n"))
     }
 
     private func loadSession(fileURL: URL) async throws -> PTCANCaptureSession {

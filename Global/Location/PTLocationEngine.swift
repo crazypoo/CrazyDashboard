@@ -19,6 +19,66 @@ public enum PTLocationEngineMode {
     case antiTheft   // 防盗模式：注重后台保活，禁止系统挂起，随时抓取最新位置
 }
 
+// EN: A usage reason keeps independent features from stopping the shared location engine for one another.
+// ES: Un motivo de uso evita que una función detenga el motor de ubicación compartido de otra función.
+// 中文：用途租约防止某个功能释放定位时误停掉其他功能正在使用的共享定位引擎。
+public enum PTLocationUsage: String, Hashable, Sendable {
+    case dashboard
+    case ride
+    case navigation
+    case fuelSearch
+    case map
+    case ptt
+    case antiTheft
+}
+
+// EN: This coordinator owns only usage leases; the existing location engine remains the transport implementation.
+// ES: Este coordinador solo posee los arrendamientos de uso; el motor de ubicación existente sigue siendo la implementación del transporte.
+// 中文：该协调器只管理用途租约，现有定位引擎仍然是唯一的定位实现。
+@MainActor
+public final class PTLocationUsageCoordinator {
+    public static let shared = PTLocationUsageCoordinator()
+
+    private var activeUsages: Set<PTLocationUsage> = []
+
+    private init() {}
+
+    public var usages: Set<PTLocationUsage> {
+        activeUsages
+    }
+
+    public func acquire(_ usage: PTLocationUsage) {
+        let didInsert = activeUsages.insert(usage).inserted
+        guard didInsert else { return }
+        applyEngineState()
+    }
+
+    public func release(_ usage: PTLocationUsage) {
+        guard activeUsages.remove(usage) != nil else { return }
+        if activeUsages.isEmpty {
+            PTLocationEngine.shared.stopTracking()
+        } else {
+            applyEngineState()
+        }
+    }
+
+    public func releaseAll() {
+        activeUsages.removeAll()
+        PTLocationEngine.shared.stopTracking()
+    }
+
+    private func applyEngineState() {
+        guard !activeUsages.isEmpty else {
+            PTLocationEngine.shared.stopTracking()
+            return
+        }
+
+        let shouldUseAntiTheft = activeUsages.contains(.antiTheft)
+        PTLocationEngine.shared.switchEngineMode(to: shouldUseAntiTheft ? .antiTheft : .riding)
+        PTLocationEngine.shared.startTracking()
+    }
+}
+
 public struct PTTripData: Sendable {
     public var courseDegree: Double = 0.0
     public var altitude: Double = 0.0

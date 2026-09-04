@@ -22,6 +22,7 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
     private let fuelValueLabel = UILabel()
     private let tripValueLabel = UILabel()
     private let rangeValueLabel = UILabel()
+    private let readinessValueLabel = UILabel()
     private let maintenanceValueLabel = UILabel()
     private let parkingValueLabel = UILabel()
     private let updatedValueLabel = UILabel()
@@ -157,6 +158,7 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
         let labels = [
             dashboardValueLabel, obdValueLabel, pttValueLabel, fuelValueLabel,
             tripValueLabel, rangeValueLabel, maintenanceValueLabel,
+            readinessValueLabel,
             parkingValueLabel, updatedValueLabel, storyValueLabel,
             groupSafetyValueLabel, blackBoxValueLabel
         ]
@@ -200,6 +202,7 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
                 (PTDashboardConfig.languageFunc(text: "casa_card_oil"), fuelValueLabel),
                 (PTDashboardConfig.languageFunc(text: "casa_card_little_trip"), tripValueLabel),
                 (PTDashboardConfig.languageFunc(text: "ride_range"), rangeValueLabel),
+                (PTDashboardConfig.languageFunc(text: "ride_readiness"), readinessValueLabel),
                 (PTDashboardConfig.languageFunc(text: "casa_dist_to_maintenance"), maintenanceValueLabel)
             ]
         ))
@@ -326,6 +329,17 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
             rangeConsumptionSource: rangeSource,
             updatedAt: max(vehicle.updatedAt, widgetStatus.lastUpdateTime)
         )
+        let readiness = PTRideReadinessEvaluator.evaluate(
+            vehicleName: profile?.name ?? "XP400 GT",
+            vehicle: summary.vehicle,
+            fuelLevelPercent: summary.fuelLevelPercent,
+            rangeEstimate: summary.rangeEstimate,
+            batteryVoltage: summary.batteryVoltage,
+            maintenanceAdvice: summary.maintenanceAdvice,
+            pttPeerCount: summary.pttPeerCount,
+            pttLocationSharingEnabled: PTLocalIntercomManager.shared.locationSharingEnabled,
+            dataUpdatedAt: summary.updatedAt
+        )
 
         dashboardValueLabel.text = linkDescription(summary.vehicle.dashboard)
         obdValueLabel.text = linkDescription(summary.vehicle.obd)
@@ -344,6 +358,8 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
         } else {
             rangeValueLabel.text = PTDashboardConfig.languageFunc(text: "ride_not_available")
         }
+        readinessValueLabel.text = readinessDescription(readiness)
+        PTWatchConnectivityManager.shared.update(readiness: readiness)
         maintenanceValueLabel.text = maintenanceDescription(summary.maintenanceAdvice)
         storyValueLabel.text = storyDescription(for: PTTripManager.shared.tripHistory.first)
         groupSafetyValueLabel.text = groupSafetyDescription(PTRideGroupSafetyCoordinator.shared.snapshot)
@@ -549,6 +565,35 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
         case .unknown:
             return PTDashboardConfig.languageFunc(text: "ride_not_available")
         }
+    }
+
+    // EN: Present readiness as a compact localized summary while keeping the underlying issues structured.
+    // ES: Presenta la preparación como un resumen localizado y compacto, manteniendo los problemas estructurados.
+    // 中文：以紧凑的本地化摘要展示准备度，同时保留结构化问题列表。
+    private func readinessDescription(_ report: PTRideReadinessReport) -> String {
+        let stateKey: String
+        switch report.state {
+        case .ready: stateKey = "ride_readiness_ready"
+        case .attention: stateKey = "ride_readiness_attention"
+        case .unavailable: stateKey = "ride_readiness_unavailable"
+        }
+        guard !report.issues.isEmpty else {
+            return PTDashboardConfig.languageFunc(text: stateKey)
+        }
+        let issueKeys = report.issues.prefix(2).map { issue -> String in
+            switch issue {
+            case .dashboardDisconnected: return "ride_readiness_issue_dashboard"
+            case .obdDisconnected: return "ride_readiness_issue_obd"
+            case .lowFuel: return "ride_readiness_issue_fuel"
+            case .rangeUnavailable: return "ride_readiness_issue_range"
+            case .maintenanceRequired: return "ride_readiness_issue_maintenance"
+            case .batteryLow: return "ride_readiness_issue_battery"
+            case .staleData: return "ride_readiness_issue_stale"
+            case .pttLocationSharingDisabled: return "ride_readiness_issue_ptt"
+            }
+        }
+        let issueText = issueKeys.map { PTDashboardConfig.languageFunc(text: $0) }.joined(separator: "、")
+        return "\(PTDashboardConfig.languageFunc(text: stateKey))\n\(issueText)"
     }
 
     private func formattedMaintenanceDistance(_ distanceKm: Int) -> String {

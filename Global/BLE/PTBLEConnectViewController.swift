@@ -11,7 +11,11 @@ import SnapKit
 import SwifterSwift
 import SafeSFSymbols
 
-class PTBLEConnectViewController: PTMotoBaseViewController,@unchecked Sendable {
+// EN: This controller is UI-bound; main-actor isolation is safer than pretending UIKit state is freely Sendable.
+// ES: Este controlador pertenece a la UI; el aislamiento del actor principal es más seguro que declarar Sendable para el estado de UIKit.
+// 中文：该控制器属于 UI，使用主 actor 隔离比把 UIKit 状态伪装成可 Sendable 更安全。
+@MainActor
+class PTBLEConnectViewController: PTMotoBaseViewController {
     
     var bleSuccessCallback:PTActionTask?
     lazy var connectBLE:UIButton = {
@@ -38,7 +42,9 @@ class PTBLEConnectViewController: PTMotoBaseViewController,@unchecked Sendable {
         view.setTitle(PTDashboardConfig.languageFunc(text: "connect_step_2"), for: .normal)
         view.addActionHandlers { sender in
             PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "alert_loading")) {
-                _ = PTVehicleConnectivityCoordinator.shared.connectDashboardIfNeeded()
+                Task { @MainActor in
+                    _ = PTVehicleConnectivityCoordinator.shared.connectDashboardIfNeeded()
+                }
             }
         }
         view.backgroundColor = .systemBlue
@@ -142,11 +148,16 @@ class PTBLEConnectViewController: PTMotoBaseViewController,@unchecked Sendable {
     @objc func handleAuthSuccess() {
         PTDashboardConfig.shared.blueConnected = true
         PTMOTOParkingManager.shared.clearParkingSpot()
-        PTGCDManager.shared.delayOnMain(time: 3) {
-            PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "connect_success")) {
-                self.bleSuccessCallback?()
-                if self.presentingViewController != nil {
-                    self.dismissAnimated()
+        let successCallback = bleSuccessCallback
+        PTGCDManager.shared.delayOnMain(time: 3) { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "connect_success")) { [weak self] in
+                    successCallback?()
+                    guard let self else { return }
+                    if self.presentingViewController != nil {
+                        self.dismissAnimated()
+                    }
                 }
             }
         }

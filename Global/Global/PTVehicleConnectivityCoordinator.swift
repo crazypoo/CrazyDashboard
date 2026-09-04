@@ -336,7 +336,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
             PTBluetoothServerManager.shared.sendDisconnect()
         }
 
-        updateDashboardState(.disconnected, transport: transport)
+        finalizeDashboardDisconnect(transport: transport)
     }
 
     public var dashboardDataIsBoundToSelectedVehicle: Bool {
@@ -907,11 +907,26 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
             )
             beginDashboardGarageSession()
         } else {
-            endDashboardGarageSession()
-            updateDashboardState(
-                .disconnected,
+            finalizeDashboardDisconnect(
                 transport: snapshot.dashboard.transport ?? .dashboardBluetooth
             )
+        }
+    }
+
+    // EN: One transition owns disconnect side effects, so manual and delegate paths cannot double-save or skip the final snapshot.
+    // ES: Una sola transición posee los efectos de desconexión, evitando duplicar o saltar el guardado final entre la acción manual y el delegado.
+    // 中文：所有断开路径共用一次状态转换，避免手动操作与代理回调重复保存或漏掉最终快照。
+    private func finalizeDashboardDisconnect(transport: PTVehicleTransport) {
+        let wasConnected = snapshot.dashboard.state == .connected
+        endDashboardGarageSession()
+        updateDashboardState(.disconnected, transport: transport)
+
+        // EN: Only a real connected-to-disconnected transition may save parking and finalize the widget snapshot.
+        // ES: Solo una transición real de conectado a desconectado puede guardar el estacionamiento y cerrar el snapshot del widget.
+        // 中文：只有真实的“已连接→已断开”转换才能保存停车点并完成 Widget 快照。
+        if wasConnected, transport == .dashboardBluetooth {
+            PTLocationEngine.shared.forceUpdateWidgetOnDisconnect()
+            PTMOTOParkingManager.shared.saveCurrentLocationAsParkingSpot()
         }
     }
 
@@ -937,10 +952,16 @@ extension PTVehicleConnectivityCoordinator: PTBLEDashboardDelegate {
     }
 
     nonisolated func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
+        Task { @MainActor [weak self] in
+            self?.receiveDashboardData(data)
+        }
+    }
+
+    // EN: Cast dashboard payloads only on the main actor, where availability metadata is isolated.
+    // ES: Convierte los datos del tablero solo en el actor principal, donde está aislada la disponibilidad.
+    // 中文：仅在主 actor 中转换仪表数据，因为可用性元数据属于主 actor 隔离状态。
+    private func receiveDashboardData(_ data: Any?) {
         let sample: PTVehicleDashboardSample?
-        // EN: Only persist dashboard fields whose source bytes are available.
-        // ES: Solo persiste los campos del tablero cuyos bytes de origen están disponibles.
-        // 中文：只持久化源字节有效的仪表字段。
         if let data1 = data as? PTDashboardData1,
            data1.odometerAvailability.isAvailable {
             sample = .odometer(data1.odoKm)
@@ -955,9 +976,7 @@ extension PTVehicleConnectivityCoordinator: PTBLEDashboardDelegate {
         }
 
         guard let sample else { return }
-        Task { @MainActor [weak self] in
-            self?.receiveDashboardSample(sample)
-        }
+        receiveDashboardSample(sample)
     }
 
     nonisolated func dashboardManager(

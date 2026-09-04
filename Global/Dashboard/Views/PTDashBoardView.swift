@@ -210,10 +210,7 @@ class PTDashBoardView: UIView {
     
     // MARK: - 引擎管理
     @MainActor private func startPootoolsEngines() {
-        PTLocationEngine.shared.switchEngineMode(to: .riding)
-        if !PTLocationEngine.shared.isTracking {
-            PTLocationEngine.shared.startTracking()
-        }
+        PTLocationUsageCoordinator.shared.acquire(.dashboard)
         if !PTDashboardConfig.shared.blueConnected {
             PTMotion.shared.calibrateZeroPoint()
             PTTripManager.shared.handleConnect()
@@ -242,9 +239,6 @@ class PTDashBoardView: UIView {
     
     @objc func handleMotorcycleDisconnect() {
         speedometer.resetToZeroWithAnimation()
-        PTLocationEngine.shared.switchEngineMode(to: .antiTheft)
-        PTLocationEngine.shared.forceUpdateWidgetOnDisconnect()
-        PTMOTOParkingManager.shared.saveCurrentLocationAsParkingSpot()
     }
 }
 

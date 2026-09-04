@@ -94,9 +94,16 @@ public struct PTRideReviewEvent: Codable, Hashable, Sendable {
     }
 }
 
-// 🚨 升级 1：让模型支持 Codable，以便于本地持久化存储
+// EN: A stable report ID prevents equal timestamps from deleting or merging the wrong ride.
+// ES: Un identificador estable evita borrar o fusionar el viaje equivocado cuando las fechas coinciden.
+// 中文：稳定的报告 ID 可以避免相同时间戳导致误删或错误合并行程。
 public struct PTTripReport: Codable, Sendable {
     public let schemaVersion: Int = 2
+    // EN: Private setters keep metadata immutable to callers while allowing the memberwise initializer to accept it.
+    // ES: Los setters privados mantienen los metadatos inmutables para los llamadores y permiten recibirlos en el inicializador miembro a miembro.
+    // 中文：私有 setter 对外保持元数据不可变，同时让成员初始化器可以接收这些字段。
+    public private(set) var id: String = UUID().uuidString
+    public private(set) var vehicleID: UUID? = nil
     public let startTime: Date
     public let endTime: Date
     public let durationMinutes: Int
@@ -147,11 +154,50 @@ public struct PTTripReport: Codable, Sendable {
 private nonisolated struct PTTripHistoryDocument: Codable, Sendable {
     let schemaVersion: Int
     let trips: [PTTripReport]
+    let deletedTripIDs: [String: Date]
+    let clearedAt: Date?
+    let modifiedAt: Date
+
+    init(
+        schemaVersion: Int = 3,
+        trips: [PTTripReport],
+        deletedTripIDs: [String: Date] = [:],
+        clearedAt: Date? = nil,
+        modifiedAt: Date = Date()
+    ) {
+        self.schemaVersion = schemaVersion
+        self.trips = trips
+        self.deletedTripIDs = deletedTripIDs
+        self.clearedAt = clearedAt
+        self.modifiedAt = modifiedAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion, trips, deletedTripIDs, clearedAt, modifiedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            schemaVersion: try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1,
+            trips: try container.decode([PTTripReport].self, forKey: .trips),
+            deletedTripIDs: try container.decodeIfPresent([String: Date].self, forKey: .deletedTripIDs) ?? [:],
+            clearedAt: try container.decodeIfPresent(Date.self, forKey: .clearedAt),
+            modifiedAt: try container.decodeIfPresent(Date.self, forKey: .modifiedAt) ?? Date()
+        )
+    }
+}
+
+private struct PTTripHistorySnapshot: Sendable {
+    let trips: [PTTripReport]
+    let deletedTripIDs: [String: Date]
+    let clearedAt: Date?
+    let modifiedAt: Date
 }
 
 extension PTTripReport {
     private enum CodingKeys: String, CodingKey {
-        case schemaVersion, startTime, endTime, durationMinutes, maxSpeedKmh, maxRpm
+        case schemaVersion, id, vehicleID, startTime, endTime, durationMinutes, maxSpeedKmh, maxRpm
         case startOdoKm, endOdoKm, distanceKm, avgConsumption, maxLeanAngleLeft, maxLeanAngleRight
         case leanAngleTrace, maxAccelerationG, maxBrakingG, maxCorneringG, maxBumpG, maxPitchUp, maxPitchDown
         case gForceYTrace, gForceXTrace, gForceZTrace, pitchTrace, relativeAltitudeTrace, pressureTrace
@@ -161,8 +207,12 @@ extension PTTripReport {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        // schemaVersion 的默认值由当前模型统一管理；旧文件仍按兼容字段解码。
-        // La versión del esquema la gestiona el modelo actual; los archivos antiguos siguen usando decodificación compatible.
+        // EN: The schema and identity defaults keep older ride JSON readable.
+        // ES: Los valores predeterminados del esquema y la identidad mantienen legible el JSON antiguo.
+        // 中文：通过默认 schema 和身份值继续兼容旧版行程 JSON。
+        id = try container.decodeIfPresent(String.self, forKey: .id)
+            ?? Self.legacyIdentifier(startTime: try container.decode(Date.self, forKey: .startTime), endTime: try container.decode(Date.self, forKey: .endTime))
+        vehicleID = try container.decodeIfPresent(UUID.self, forKey: .vehicleID)
         startTime = try container.decode(Date.self, forKey: .startTime)
         endTime = try container.decode(Date.self, forKey: .endTime)
         durationMinutes = try container.decodeIfPresent(Int.self, forKey: .durationMinutes) ?? 0
@@ -202,6 +252,10 @@ extension PTTripReport {
         distanceSource = try container.decodeIfPresent(PTTripDistanceSource.self, forKey: .distanceSource) ?? .gps
         reviewEvents = try container.decodeIfPresent([PTRideReviewEvent].self, forKey: .reviewEvents) ?? []
     }
+
+    private static func legacyIdentifier(startTime: Date, endTime: Date) -> String {
+        "legacy-\(Int(startTime.timeIntervalSince1970 * 1_000_000))-\(Int(endTime.timeIntervalSince1970 * 1_000_000))"
+    }
 }
 
 // 🚨 升级 2：定义一个新的通知，告诉 UI 界面 "有新报告生成了"
@@ -239,6 +293,7 @@ public class PTTripManager: NSObject {
     private var maxRpm: Int = 0
     private var startOdo: Double = 0
     private var latestOdo: Double = 0
+    private var activeTripVehicleID: UUID?
     private var hasOdometerData = false
     private var latestConsumption: Double = 0
     
@@ -306,7 +361,9 @@ public class PTTripManager: NSObject {
     private var historyHasLoaded = false
     private var historyMutationPendingBeforeLoad = false
     private var historyWasClearedBeforeLoad = false
-    private var historyDeletedStartTimesBeforeLoad = Set<Date>()
+    private var historyDeletedTripIDs: [String: Date] = [:]
+    private var historyClearedAt: Date?
+    private var historyDeletedTripIDsBeforeLoad = Set<String>()
 
     private override init() {
         super.init()
@@ -343,7 +400,7 @@ public class PTTripManager: NSObject {
 
     // MARK: - 持久化存储逻辑
     private enum HistoryLoadResult: Sendable {
-        case loaded([PTTripReport])
+        case loaded(PTTripHistorySnapshot)
         case empty
         case corrupt(String)
         case failed(String)
@@ -352,7 +409,7 @@ public class PTTripManager: NSObject {
     /// EN: Decode history off the main thread and keep legacy array files readable.
     /// ES: Decodifica el historial fuera del hilo principal y conserva la lectura de archivos heredados en forma de array.
     /// 中文：在后台解码历史记录，并继续兼容旧版数组格式文件。
-    nonisolated private static func decodeHistory(_ data: Data) throws -> [PTTripReport] {
+    nonisolated private static func decodeHistory(_ data: Data) throws -> PTTripHistorySnapshot {
         let decoder = JSONDecoder()
         decoder.nonConformingFloatDecodingStrategy = .convertFromString(
             positiveInfinity: "INF",
@@ -361,9 +418,67 @@ public class PTTripManager: NSObject {
         )
 
         if let document = try? decoder.decode(PTTripHistoryDocument.self, from: data) {
-            return document.trips
+            return PTTripHistorySnapshot(
+                trips: document.trips,
+                deletedTripIDs: document.deletedTripIDs,
+                clearedAt: document.clearedAt,
+                modifiedAt: document.modifiedAt
+            )
         }
-        return try decoder.decode([PTTripReport].self, from: data)
+        return PTTripHistorySnapshot(
+            trips: try decoder.decode([PTTripReport].self, from: data),
+            deletedTripIDs: [:],
+            clearedAt: nil,
+            modifiedAt: Date()
+        )
+    }
+
+    // EN: Merge local and cloud snapshots by stable ID, keeping the newer copy and honoring tombstones.
+    // ES: Fusiona instantáneas locales y de nube por ID estable, conserva la copia más nueva y respeta las lápidas.
+    // 中文：按稳定 ID 合并本地和云端快照，保留较新副本并尊重删除墓碑。
+    nonisolated private static func mergeHistory(
+        local: PTTripHistorySnapshot?,
+        remote: PTTripHistorySnapshot?
+    ) -> PTTripHistorySnapshot? {
+        guard let local else { return remote }
+        guard let remote else { return local }
+
+        var tripsByID = Dictionary(uniqueKeysWithValues: local.trips.map { ($0.id, $0) })
+        for remoteTrip in remote.trips {
+            guard let localTrip = tripsByID[remoteTrip.id] else {
+                tripsByID[remoteTrip.id] = remoteTrip
+                continue
+            }
+            if remoteTrip.endTime > localTrip.endTime {
+                tripsByID[remoteTrip.id] = remoteTrip
+            }
+        }
+
+        var deletedTripIDs = local.deletedTripIDs
+        for (id, date) in remote.deletedTripIDs where date > (deletedTripIDs[id] ?? .distantPast) {
+            deletedTripIDs[id] = date
+        }
+        let clearedAt = maxDate(local.clearedAt, remote.clearedAt)
+        let visibleTrips = tripsByID.values.filter { trip in
+            guard let deletedAt = deletedTripIDs[trip.id] else {
+                return clearedAt.map { $0 < trip.endTime } ?? true
+            }
+            return deletedAt < trip.endTime && (clearedAt.map { $0 < trip.endTime } ?? true)
+        }
+        return PTTripHistorySnapshot(
+            trips: visibleTrips.sorted { $0.startTime > $1.startTime },
+            deletedTripIDs: deletedTripIDs,
+            clearedAt: clearedAt,
+            modifiedAt: max(local.modifiedAt, remote.modifiedAt)
+        )
+    }
+
+    nonisolated private static func maxDate(_ lhs: Date?, _ rhs: Date?) -> Date? {
+        switch (lhs, rhs) {
+        case let (lhs?, rhs?): return max(lhs, rhs)
+        case let (value?, nil), let (nil, value?): return value
+        case (nil, nil): return nil
+        }
     }
 
     /// EN: Loading is asynchronous so first launch never performs large disk or cloud I/O on the UI thread.
@@ -372,31 +487,54 @@ public class PTTripManager: NSObject {
     private func loadHistory() {
         let fileName = historyFileName
         let loadTask = Task.detached(priority: .utility) {
+            var localSnapshot: PTTripHistorySnapshot?
+            var remoteSnapshot: PTTripHistorySnapshot?
+            var localError: String?
+            var corruptLocalData: Data?
+
             do {
                 let data = try await PTDataPersistenceActor.shared.readData(
                     fileName: fileName,
-                    restoreFromICloud: true,
+                    restoreFromICloud: false,
                     downloadTimeout: 8
                 )
                 do {
-                    return HistoryLoadResult.loaded(try Self.decodeHistory(data))
+                    localSnapshot = try Self.decodeHistory(data)
                 } catch {
-                    _ = try? await PTDataPersistenceActor.shared.preserveCorruptData(
-                        data,
-                        fileName: fileName
-                    )
-                    return HistoryLoadResult.corrupt(error.localizedDescription)
+                    localError = error.localizedDescription
+                    corruptLocalData = data
                 }
             } catch let error as PTDataPersistenceError {
-                switch error {
-                case .fileNotFound, .iCloudUnavailable:
-                    return HistoryLoadResult.empty
-                default:
-                    return HistoryLoadResult.failed(error.localizedDescription)
+                if case .fileNotFound = error {
+                    localSnapshot = nil
+                } else {
+                    localError = error.localizedDescription
                 }
             } catch {
-                return HistoryLoadResult.failed(error.localizedDescription)
+                localError = error.localizedDescription
             }
+
+            if let corruptLocalData {
+                _ = try? await PTDataPersistenceActor.shared.preserveCorruptData(
+                    corruptLocalData,
+                    fileName: fileName
+                )
+            }
+
+            if let data = try? await PTDataPersistenceActor.shared.readCloudData(
+                fileName: fileName,
+                downloadTimeout: 8
+            ) {
+                remoteSnapshot = try? Self.decodeHistory(data)
+            }
+
+            guard let merged = Self.mergeHistory(local: localSnapshot, remote: remoteSnapshot) else {
+                if let localError {
+                    return HistoryLoadResult.corrupt(localError)
+                }
+                return HistoryLoadResult.empty
+            }
+            return HistoryLoadResult.loaded(merged)
         }
 
         historyLoadTask = Task { [weak self] in
@@ -409,29 +547,39 @@ public class PTTripManager: NSObject {
 
     private func applyHistoryLoadResult(_ result: HistoryLoadResult) {
         switch result {
-        case .loaded(let savedTrips):
+        case .loaded(let snapshot):
+            var mergedDeletedTripIDs = snapshot.deletedTripIDs
+            for (id, date) in historyDeletedTripIDs where date > (mergedDeletedTripIDs[id] ?? .distantPast) {
+                mergedDeletedTripIDs[id] = date
+            }
+            historyDeletedTripIDs = mergedDeletedTripIDs
+            historyClearedAt = Self.maxDate(historyClearedAt, snapshot.clearedAt)
+
             if historyMutationPendingBeforeLoad {
                 var mergedTrips = historyWasClearedBeforeLoad ? [] : tripHistory
-                let existingStartTimes = Set(mergedTrips.map(\.startTime))
+                let existingTripIDs = Set(mergedTrips.map(\.id))
                 if !historyWasClearedBeforeLoad {
-                    let pendingDeletes = historyDeletedStartTimesBeforeLoad
-                    for savedTrip in savedTrips where
-                        !pendingDeletes.contains(savedTrip.startTime) &&
-                        !existingStartTimes.contains(savedTrip.startTime) {
+                    for savedTrip in snapshot.trips where
+                        !historyDeletedTripIDsBeforeLoad.contains(savedTrip.id) &&
+                        !existingTripIDs.contains(savedTrip.id) {
                         mergedTrips.append(savedTrip)
                     }
                 }
-                tripHistory = mergedTrips.sorted { $0.startTime > $1.startTime }
+                tripHistory = mergedTrips
+                    .filter(isTripVisible(_:))
+                    .sorted { $0.startTime > $1.startTime }
                 lastPersistenceError = nil
                 historyHasLoaded = true
                 resetPendingHistoryMutations()
                 saveHistory()
                 PTNSLogConsole("✅ [行程记录] 已合并加载结果，当前历史总数: \(tripHistory.count)")
             } else {
-                tripHistory = savedTrips
+                tripHistory = snapshot.trips
+                    .filter(isTripVisible(_:))
+                    .sorted { $0.startTime > $1.startTime }
                 historyHasLoaded = true
                 lastPersistenceError = nil
-                PTNSLogConsole("✅ [行程记录] 成功加载 \(savedTrips.count) 条历史记录")
+                PTNSLogConsole("✅ [行程记录] 成功加载 \(tripHistory.count) 条历史记录")
             }
         case .empty:
             historyHasLoaded = true
@@ -463,7 +611,14 @@ public class PTTripManager: NSObject {
     private func resetPendingHistoryMutations() {
         historyMutationPendingBeforeLoad = false
         historyWasClearedBeforeLoad = false
-        historyDeletedStartTimesBeforeLoad.removeAll()
+        historyDeletedTripIDsBeforeLoad.removeAll()
+    }
+
+    private func isTripVisible(_ trip: PTTripReport) -> Bool {
+        guard let deletedAt = historyDeletedTripIDs[trip.id] else {
+            return historyClearedAt.map { $0 < trip.endTime } ?? true
+        }
+        return deletedAt < trip.endTime && (historyClearedAt.map { $0 < trip.endTime } ?? true)
     }
 
     /// EN: Encode and persist a snapshot in a utility task; the actor serializes writes and rejects stale snapshots.
@@ -474,6 +629,8 @@ public class PTTripManager: NSObject {
         historyWriteRevision &+= 1
         let revision = historyWriteRevision
         let trips = tripHistory
+        let deletedTripIDs = historyDeletedTripIDs
+        let clearedAt = historyClearedAt
         let count = trips.count
         let fileName = historyFileName
 
@@ -485,7 +642,12 @@ public class PTTripManager: NSObject {
                     negativeInfinity: "-INF",
                     nan: "NaN"
                 )
-                let data = try encoder.encode(PTTripHistoryDocument(schemaVersion: 2, trips: trips))
+                let data = try encoder.encode(PTTripHistoryDocument(
+                    schemaVersion: 3,
+                    trips: trips,
+                    deletedTripIDs: deletedTripIDs,
+                    clearedAt: clearedAt
+                ))
                 let result = try await PTDataPersistenceActor.shared.writeData(
                     data,
                     fileName: fileName,
@@ -515,9 +677,10 @@ public class PTTripManager: NSObject {
     /// 提供给外部：清空所有历史记录 (可绑定到 UI 上的"清空记录"按钮)
     public func clearAllTrips() {
         markHistoryMutation()
+        historyClearedAt = Date()
         if !historyHasLoaded {
             historyWasClearedBeforeLoad = true
-            historyDeletedStartTimesBeforeLoad.removeAll()
+            historyDeletedTripIDsBeforeLoad.removeAll()
         }
         tripHistory.removeAll()
         saveHistory()
@@ -549,6 +712,7 @@ public class PTTripManager: NSObject {
         latestOdo = 0
         hasOdometerData = false
         latestConsumption = 0
+        activeTripVehicleID = PTMotorcycleGarageStore.shared.selectedVehicleID
         accumulatedGpsDistance = 0.0 // 🌟 重置 GPS 里程
         lastGpsLocation = nil        // 🌟 重置 GPS 参考点
         
@@ -616,8 +780,7 @@ public class PTTripManager: NSObject {
             self.broadcastLiveStats()
         }
             
-        PTLocationEngine.shared.switchEngineMode(to: .riding)
-        PTLocationEngine.shared.startTracking()
+        PTLocationUsageCoordinator.shared.acquire(.ride)
     }
         
     @objc private func handleLocationUpdate(_ notification: Notification) {
@@ -688,8 +851,8 @@ public class PTTripManager: NSObject {
                 _ = await checkpointTask?.value
                 try? await PTRideBlackBoxStore.shared.clearJournal()
             }
-            // 记得把定位切回防盗模式
-            PTLocationEngine.shared.switchEngineMode(to: .antiTheft)
+            PTLocationUsageCoordinator.shared.release(.ride)
+            activeTripVehicleID = nil
             return
         }
         
@@ -702,10 +865,11 @@ public class PTTripManager: NSObject {
             CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon)
         }
         
-        // 切回防盗模式
-        PTLocationEngine.shared.switchEngineMode(to: .antiTheft)
+        PTLocationUsageCoordinator.shared.release(.ride)
 
         let report = PTTripReport(
+            id: UUID().uuidString,
+            vehicleID: activeTripVehicleID,
             startTime: start,
             endTime: endTime,
             durationMinutes: durationMin,
@@ -753,6 +917,7 @@ public class PTTripManager: NSObject {
             distanceSource: hasOdometerData ? .odometer : .gps,
             reviewEvents: reviewEvents
         )
+        activeTripVehicleID = nil
         
         // 1. 存入内存数组的最前面 (保证最新记录在列表顶部)
         tripHistory.insert(report, at: 0)
@@ -1036,9 +1201,10 @@ extension PTTripManager {
         // 使用 removeAll(where:) 是 Swift 中最高效的做法
         markHistoryMutation()
         if !historyHasLoaded {
-            historyDeletedStartTimesBeforeLoad.insert(trip.startTime)
+            historyDeletedTripIDsBeforeLoad.insert(trip.id)
         }
-        tripHistory.removeAll { $0.startTime == trip.startTime }
+        historyDeletedTripIDs[trip.id] = Date()
+        tripHistory.removeAll { $0.id == trip.id }
         
         // 2. 重新写入历史记录的 JSON 文件，并触发 iCloud 同步
         saveHistory()

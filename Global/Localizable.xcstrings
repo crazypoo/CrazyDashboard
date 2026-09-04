@@ -2555,6 +2555,520 @@
         }
       }
     },
+    "garage_edit_tire_suspension" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit tires & suspension"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lastik ve süspansiyonu düzenle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑轮胎与悬挂"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "編輯輪胎與懸掛"
+          }
+        }
+      }
+    },
+    "garage_add_refuel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add refuel"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yakıt ekle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加加油记录"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增加油記錄"
+          }
+        }
+      }
+    },
+    "garage_tire_suspension" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tires & suspension"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lastik ve süspansiyon"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轮胎与悬挂"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "輪胎與懸掛"
+          }
+        }
+      }
+    },
+    "garage_tire_suspension_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Record observed values only; they are not manufacturer recommendations."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yalnızca gözlemlenen değerleri kaydeder; üretici tavsiyesi değildir."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅记录观察值，不代表厂家推荐值。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "僅記錄觀察值，不代表原廠建議值。"
+          }
+        }
+      }
+    },
+    "garage_tire_suspension_not_set" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not recorded"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kaydedilmedi"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚未记录"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚未記錄"
+          }
+        }
+      }
+    },
+    "garage_front_tire_size" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Front tire size" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ön lastik ölçüsü" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "前轮规格" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "前輪規格" } }
+      }
+    },
+    "garage_rear_tire_size" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rear tire size" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Arka lastik ölçüsü" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "后轮规格" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "後輪規格" } }
+      }
+    },
+    "garage_front_pressure" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cold front pressure" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ön soğuk basınç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "前轮冷胎压" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "前輪冷胎壓" } }
+      }
+    },
+    "garage_rear_pressure" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cold rear pressure" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Arka soğuk basınç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "后轮冷胎压" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "後輪冷胎壓" } }
+      }
+    },
+    "garage_load_scenario" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Load scenario" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yük senaryosu" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "载荷场景" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "載荷情境" } }
+      }
+    },
+    "garage_front_preload" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Front preload" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ön ön yük" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "前悬预载" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "前懸預載" } }
+      }
+    },
+    "garage_rear_preload" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rear preload" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Arka ön yük" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "后悬预载" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "後懸預載" } }
+      }
+    },
+    "garage_tire_details" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tire details" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Lastik ayrıntıları" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "轮胎信息" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "輪胎資訊" } }
+      }
+    },
+    "garage_tire_front_brand" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Front tire brand" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ön lastik markası" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "前轮品牌" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "前輪品牌" } }
+      }
+    },
+    "garage_tire_front_model" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Front tire model" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ön lastik modeli" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "前轮型号" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "前輪型號" } }
+      }
+    },
+    "garage_tire_rear_brand" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rear tire brand" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Arka lastik markası" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "后轮品牌" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "後輪品牌" } }
+      }
+    },
+    "garage_tire_rear_model" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rear tire model" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Arka lastik modeli" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "后轮型号" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "後輪型號" } }
+      }
+    },
+    "garage_pressure_observations" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pressure observations" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Basınç gözlemleri" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "胎压观察" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "胎壓觀察" } }
+      }
+    },
+    "garage_hot_front_pressure" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hot front pressure" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ön sıcak basınç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "前轮热胎压" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "前輪熱胎壓" } }
+      }
+    },
+    "garage_hot_rear_pressure" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hot rear pressure" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Arka sıcak basınç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "后轮热胎压" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "後輪熱胎壓" } }
+      }
+    },
+    "garage_hot_pressure" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hot pressure" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sıcak basınç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "热胎压" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "熱胎壓" } }
+      }
+    },
+    "garage_pressure_unit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pressure unit" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Basınç birimi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "胎压单位" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "胎壓單位" } }
+      }
+    },
+    "garage_suspension_settings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Suspension settings" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Süspansiyon ayarları" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "悬挂设置" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "懸掛設定" } }
+      }
+    },
+    "garage_front_rebound" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Front rebound" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ön geri tepme" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "前悬回弹" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "前懸回彈" } }
+      }
+    },
+    "garage_front_compression" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Front compression" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ön sıkıştırma" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "前悬压缩" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "前懸壓縮" } }
+      }
+    },
+    "garage_rear_rebound" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rear rebound" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Arka geri tepme" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "后悬回弹" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "後懸回彈" } }
+      }
+    },
+    "garage_rear_compression" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rear compression" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Arka sıkıştırma" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "后悬压缩" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "後懸壓縮" } }
+      }
+    },
+    "garage_observations" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Observations" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gözlemler" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "观察记录" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "觀察記錄" } }
+      }
+    },
+    "garage_observation_mileage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Observation mileage (km)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gözlem kilometresi (km)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "观察里程（公里）" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "觀察里程（公里）" } }
+      }
+    },
+    "garage_associated_parts" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Associated parts (names, comma-separated)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "İlişkili parçalar (virgülle ayrılmış adlar)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关联配件（名称用逗号分隔）" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "關聯配件（名稱以逗號分隔）" } }
+      }
+    },
+    "garage_front_tire" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Front" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ön" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "前轮" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "前輪" } }
+      }
+    },
+    "garage_rear_tire" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rear" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Arka" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "后轮" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "後輪" } }
+      }
+    },
+    "garage_cold_pressure" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cold pressure" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Soğuk basınç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "冷胎压" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "冷胎壓" } }
+      }
+    },
+    "garage_refuel_empty" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No refuel records" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yakıt kaydı yok" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂无加油记录" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "暫無加油記錄" } }
+      }
+    },
+    "garage_refuel_count" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Refuels" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yakıt sayısı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "加油次数" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "加油次數" } }
+      }
+    },
+    "garage_refuel_need_two_full" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Need two full-tank records" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "İki tam depo kaydı gerekli" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "需要至少两次满箱记录" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "需要至少兩次滿箱記錄" } }
+      }
+    },
+    "garage_fuel_economy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Economy" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Tüketim" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "平均油耗" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "平均油耗" } }
+      }
+    },
+    "garage_refuel_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Only consecutive full-tank records calibrate consumption and range." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Tüketim ve menzil yalnızca ardışık tam depo kayıtlarıyla kalibre edilir." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "只有连续满箱记录才用于油耗和续航校准。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "僅連續滿箱記錄才用於油耗與續航校準。" } }
+      }
+    },
+    "garage_refuel_liters" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Liters" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Litre" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "升数" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "公升數" } }
+      }
+    },
+    "garage_cost_optional" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cost (optional)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Tutar (isteğe bağlı)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "金额（可选）" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "金額（可選）" } }
+      }
+    },
+    "garage_currency_optional" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Currency (optional)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Para birimi (isteğe bağlı)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "货币（可选）" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "貨幣（可選）" } }
+      }
+    },
+    "garage_due_date" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Due date" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Son tarih" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "到期日期" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "到期日期" } }
+      }
+    },
+    "garage_due_date_optional" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Due date (YYYY-MM-DD, optional)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Son tarih (YYYY-AA-GG, isteğe bağlı)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "到期日期（YYYY-MM-DD，可选）" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "到期日期（YYYY-MM-DD，可選）" } }
+      }
+    },
+    "garage_maintenance_form_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Record completed maintenance. The due mileage, date, cost and currency are optional." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Tamamlanan bakımı kaydedin. Son kilometre, tarih, tutar ve para birimi isteğe bağlıdır." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "记录已完成的保养；下次里程、日期、费用和货币均为可选。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "記錄已完成的保養；下次里程、日期、費用和貨幣均為可選。" } }
+      }
+    },
+    "garage_refuel_full_tank" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Full tank? Enter 1" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Tam depo? 1 yazın" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "是否加满？输入 1" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "是否加滿？輸入 1" } }
+      }
+    },
+    "garage_cost" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cost" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Tutar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "费用" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "費用" } }
+      }
+    },
     "garage_brand" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4556,6 +5070,93 @@
         }
       }
     },
+    "obd_evidence_import" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import BLE evidence"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BLE kanıtını içe aktar"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导入 BLE 证据"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "匯入 BLE 證據"
+          }
+        }
+      }
+    },
+    "obd_evidence_import_failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The evidence file could not be imported."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kanıt dosyası içe aktarılamadı."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "证据文件无法导入。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "證據檔案無法匯入。"
+          }
+        }
+      }
+    },
+    "obd_evidence_import_success" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imported %ld sessions, %ld frames; %ld invalid frames."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%ld oturum, %ld kare içe aktarıldı; %ld kare geçersiz."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已导入 %ld 个会话、%ld 帧；其中 %ld 帧无效。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已匯入 %ld 個工作階段、%ld 個訊框；其中 %ld 個無效。"
+          }
+        }
+      }
+    },
     "parking_location_updated" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5627,6 +6228,132 @@
             "value" : "連線狀態"
           }
         }
+      }
+    },
+    "ride_readiness" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Departure check" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürüş öncesi kontrol" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "出发检查" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "出發檢查" } }
+      }
+    },
+    "ride_readiness_ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ready" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hazır" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "可以出发" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "可以出發" } }
+      }
+    },
+    "ride_readiness_attention" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Attention" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Dikkat" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "需要注意" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "需要注意" } }
+      }
+    },
+    "ride_readiness_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unavailable" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kullanılamıyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂不可用" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "暫不可用" } }
+      }
+    },
+    "ride_readiness_ready_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Based on the latest cached data." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "En son saklanan verilere dayanır." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "基于最近一次缓存数据。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "根據最近一次快取資料。" } }
+      }
+    },
+    "ride_readiness_unavailable_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Connect a vehicle to refresh this check." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bu kontrolü yenilemek için bir araç bağlayın." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "连接车辆后才能刷新检查结果。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "連線車輛後才能重新整理檢查結果。" } }
+      }
+    },
+    "ride_readiness_issue_dashboard" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dashboard disconnected" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gösterge paneli bağlı değil" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仪表未连接" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "儀表未連線" } }
+      }
+    },
+    "ride_readiness_issue_obd" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OBD disconnected" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "OBD bağlı değil" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "OBD 未连接" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "OBD 未連線" } }
+      }
+    },
+    "ride_readiness_issue_fuel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Low fuel" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yakıt az" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "油量偏低" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "油量偏低" } }
+      }
+    },
+    "ride_readiness_issue_range" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Range unavailable" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Menzil kullanılamıyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "续航不可用" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "續航不可用" } }
+      }
+    },
+    "ride_readiness_issue_maintenance" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Maintenance due soon" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bakım yaklaşıyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "需要保养" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "需要保養" } }
+      }
+    },
+    "ride_readiness_issue_battery" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Battery voltage low" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Akü voltajı düşük" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "电瓶电压偏低" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "電瓶電壓偏低" } }
+      }
+    },
+    "ride_readiness_issue_stale" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Data is stale" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Veriler eski" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "数据已过期" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "資料已過期" } }
+      }
+    },
+    "ride_readiness_issue_ptt" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Group location sharing is off" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Grup konum paylaşımı kapalı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "车友位置共享未开启" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "車友位置共享未開啟" } }
       }
     },
     "ride_dashboard" : {
@@ -7889,6 +8616,69 @@
             "value" : "側風"
           }
         }
+      }
+    },
+    "route_weather_riding_report" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Combined riding risk" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Birleşik sürüş riski" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "综合骑行风险" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "綜合騎行風險" } }
+      }
+    },
+    "route_weather_riding_note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Preparation guidance only; not a speed or racing recommendation." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yalnızca hazırlık rehberidir; hız veya yarış önerisi değildir." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仅作为出发准备提示，不是速度或竞速建议。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "僅作為出發準備提示，不是速度或競速建議。" } }
+      }
+    },
+    "route_weather_source_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unavailable" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kullanılamıyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "不可用" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "不可用" } }
+      }
+    },
+    "route_weather_missing_data" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Missing data: %@" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Eksik veri: %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "缺少数据：%@" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "缺少資料：%@" } }
+      }
+    },
+    "route_weather_factor_night" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Night" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gece" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "夜间" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "夜間" } }
+      }
+    },
+    "route_weather_factor_curves" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continuous curves" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ardışık virajlar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "连续弯道" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "連續彎道" } }
+      }
+    },
+    "route_weather_factor_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Weather unavailable" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hava durumu kullanılamıyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "天气不可用" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "天氣不可用" } }
       }
     },
     "route_weather_hazardous" : {
@@ -10548,6 +11338,15 @@
         "tr" : { "stringUnit" : { "state" : "translated", "value" : "Süre" } },
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "时长" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "時長" } }
+      }
+    },
+    "can_lab_invalid_lines" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Invalid lines" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Geçersiz satırlar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "损坏行数" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "損壞行數" } }
       }
     },
     "can_lab_events" : {

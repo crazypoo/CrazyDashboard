@@ -23,6 +23,8 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
     private let vehicleVINLabel = UILabel()
     private let vehicleMileageLabel = UILabel()
     private let vehicleFuelProfileLabel = UILabel()
+    private let tireSuspensionSummaryLabel = UILabel()
+    private let refuelSummaryLabel = UILabel()
 
     private let maintenanceStatusLabel = UILabel()
     private let maintenanceRowsStack = UIStackView()
@@ -38,6 +40,8 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
     private let fuelProfileButton: UIButton
     private let maintenanceWarningButton: UIButton
     private let addMaintenanceButton: UIButton
+    private let tireSuspensionButton: UIButton
+    private let addRefuelButton: UIButton
     private let saveOBDButton: UIButton
     private let addPartButton: UIButton
 
@@ -52,6 +56,8 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         self.fuelProfileButton = Self.makeActionButton(titleKey: "garage_set_fuel_profile")
         self.maintenanceWarningButton = Self.makeActionButton(titleKey: "garage_set_maintenance_warning")
         self.addMaintenanceButton = Self.makeActionButton(titleKey: "garage_add_maintenance")
+        self.tireSuspensionButton = Self.makeActionButton(titleKey: "garage_edit_tire_suspension")
+        self.addRefuelButton = Self.makeActionButton(titleKey: "garage_add_refuel")
         self.saveOBDButton = Self.makeActionButton(titleKey: "garage_save_obd_snapshot")
         self.addPartButton = Self.makeActionButton(titleKey: "garage_add_part")
         super.init(nibName: nil, bundle: nil)
@@ -89,6 +95,11 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
             $0.numberOfLines = 0
             $0.textColor = .white
         }
+        [tireSuspensionSummaryLabel, refuelSummaryLabel].forEach {
+            $0.numberOfLines = 0
+            $0.textColor = .systemGray2
+            $0.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
+        }
         vehicleNameLabel.font = .systemFont(ofSize: 22, weight: .bold)
         vehicleDetailsLabel.font = .systemFont(ofSize: 14, weight: .regular)
         vehicleDetailsLabel.textColor = .systemGray
@@ -124,6 +135,8 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         fuelProfileButton.addTarget(self, action: #selector(showFuelProfileForm), for: .touchUpInside)
         maintenanceWarningButton.addTarget(self, action: #selector(showMaintenanceWarningForm), for: .touchUpInside)
         addMaintenanceButton.addTarget(self, action: #selector(showMaintenanceForm), for: .touchUpInside)
+        tireSuspensionButton.addTarget(self, action: #selector(showTireSuspensionForm), for: .touchUpInside)
+        addRefuelButton.addTarget(self, action: #selector(showRefuelForm), for: .touchUpInside)
         saveOBDButton.addTarget(self, action: #selector(saveCurrentOBDSnapshot), for: .touchUpInside)
         addPartButton.addTarget(self, action: #selector(showPartForm), for: .touchUpInside)
     }
@@ -151,11 +164,15 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         let maintenanceBody = UIStackView(arrangedSubviews: [maintenanceStatusLabel, maintenanceRowsStack, maintenanceActions])
         maintenanceBody.axis = .vertical
         maintenanceBody.spacing = 10
+        let tireBody = UIStackView(arrangedSubviews: [tireSuspensionSummaryLabel, makeButtonRow([tireSuspensionButton, addRefuelButton]), refuelSummaryLabel])
+        tireBody.axis = .vertical
+        tireBody.spacing = 10
         let diagnosticBody = makeSectionBody(rows: diagnosticRowsStack, action: saveOBDButton)
         let partsBody = makeSectionBody(rows: partsRowsStack, action: addPartButton)
 
         contentStack.addArrangedSubview(makeCard(title: localized("garage_current_vehicle"), body: vehicleBody))
         contentStack.addArrangedSubview(makeCard(title: localized("garage_maintenance"), body: maintenanceBody))
+        contentStack.addArrangedSubview(makeCard(title: localized("garage_tire_suspension"), body: tireBody))
         contentStack.addArrangedSubview(makeCard(title: localized("garage_diagnostics"), body: diagnosticBody))
         contentStack.addArrangedSubview(makeCard(title: localized("garage_parts"), body: partsBody))
 
@@ -241,6 +258,8 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         } else {
             vehicleFuelProfileLabel.text = "\(localized("garage_fuel_profile")): \(localized("garage_not_set"))"
         }
+        tireSuspensionSummaryLabel.text = tireSummary(for: vehicle)
+        refuelSummaryLabel.text = refuelSummary(for: vehicle)
         refreshMaintenanceStatus()
         refreshRows()
     }
@@ -304,6 +323,51 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         ].joined(separator: "\n")
     }
 
+    private func tireSummary(for vehicle: PTMotorcycleProfile) -> String {
+        guard let profile = vehicle.tireSuspensionProfile else {
+            return localized("garage_tire_suspension_not_set")
+        }
+        let frontName = [profile.frontTireBrand, profile.frontTireModel, profile.frontTireSize]
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        let rearName = [profile.rearTireBrand, profile.rearTireModel, profile.rearTireSize]
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        let front = frontName.isEmpty ? "-" : frontName
+        let rear = rearName.isEmpty ? "-" : rearName
+        let frontPressure = profile.coldFrontPressure.map { String(format: "%.2f %@", $0, profile.pressureUnit) } ?? "-"
+        let rearPressure = profile.coldRearPressure.map { String(format: "%.2f %@", $0, profile.pressureUnit) } ?? "-"
+        var lines = [
+            "\(localized("garage_front_tire")): \(front) · \(localized("garage_rear_tire")): \(rear)",
+            "\(localized("garage_cold_pressure")): \(frontPressure) / \(rearPressure)"
+        ]
+        let hotFront = profile.hotFrontPressure.map { String(format: "%.2f %@", $0, profile.pressureUnit) } ?? "-"
+        let hotRear = profile.hotRearPressure.map { String(format: "%.2f %@", $0, profile.pressureUnit) } ?? "-"
+        if profile.hotFrontPressure != nil || profile.hotRearPressure != nil {
+            lines.append("\(localized("garage_hot_pressure")): \(hotFront) / \(hotRear)")
+        }
+        if let odometerKm = profile.odometerKm {
+            lines.append("\(localized("garage_observation_mileage")): \(formattedMileage(odometerKm))")
+        }
+        if !profile.loadScenario.isEmpty {
+            lines.append("\(localized("garage_load_scenario")): \(profile.loadScenario)")
+        }
+        if !profile.notes.isEmpty {
+            lines.append("\(localized("garage_notes")): \(profile.notes)")
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private func refuelSummary(for vehicle: PTMotorcycleProfile) -> String {
+        guard let records = vehicle.refuelRecords, !records.isEmpty else {
+            return localized("garage_refuel_empty")
+        }
+        guard let economy = PTFuelRangeCalculator.weightedConsumption(from: records) else {
+            return "\(localized("garage_refuel_count")): \(records.count) · \(localized("garage_refuel_need_two_full"))"
+        }
+        return "\(localized("garage_refuel_count")): \(records.count) · \(localized("garage_fuel_economy")): \(String(format: "%.2f L/100 km", economy.litersPer100Km))"
+    }
+
     private func liveDashboardSnapshot(for vehicle: PTMotorcycleProfile) -> PTGarageDashboardSnapshot? {
         let coordinator = PTVehicleConnectivityCoordinator.shared
         if coordinator.dashboardDataIsBoundToSelectedVehicle,
@@ -357,7 +421,9 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         if vehicle.maintenanceRecords.isEmpty {
             maintenanceRowsStack.addArrangedSubview(makeEmptyRow(key: "garage_no_maintenance"))
         } else {
-            vehicle.maintenanceRecords.forEach { maintenanceRowsStack.addArrangedSubview(makeMaintenanceRow($0)) }
+            vehicle.maintenanceRecords.forEach {
+                maintenanceRowsStack.addArrangedSubview(makeMaintenanceRow($0, vehicle: vehicle))
+            }
         }
 
         if vehicle.diagnosticReports.isEmpty {
@@ -389,16 +455,30 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         return label
     }
 
-    private func makeMaintenanceRow(_ record: PTGarageMaintenanceRecord) -> UIView {
+    private func makeMaintenanceRow(
+        _ record: PTGarageMaintenanceRecord,
+        vehicle: PTMotorcycleProfile
+    ) -> UIView {
         let detail = [
             "\(localized("garage_mileage")): \(formattedMileage(record.mileageKm))",
             formattedDate(record.completedAt),
-            record.nextDueMileageKm.map { "\(localized("garage_next_due")): \(formattedMileage($0))" }
+            record.nextDueMileageKm.map { "\(localized("garage_next_due")): \(formattedMileage($0))" },
+            record.dueDate.map { "\(localized("garage_due_date")): \(formattedDate($0))" }
         ].compactMap { $0 }.joined(separator: " · ")
+        var detailWithCost = detail
+        if let cost = record.cost {
+            detailWithCost += " · \(localized("garage_cost")): \(String(format: "%.2f", cost))\(record.currency.map { " \($0)" } ?? "")"
+        }
+        let associatedParts = record.associatedPartIDs.compactMap { partID in
+            vehicle.parts.first(where: { $0.id == partID })?.name
+        }
+        if !associatedParts.isEmpty {
+            detailWithCost += " · \(localized("garage_parts")): \(associatedParts.joined(separator: ", "))"
+        }
         let notes = record.notes.isEmpty ? nil : record.notes
         return makeRecordRow(
             title: record.title,
-            detail: detail,
+            detail: detailWithCost,
             notes: notes,
             deleteHandler: { [weak self] in
                 self?.store.removeMaintenance(id: record.id)
@@ -672,6 +752,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
 
         let dashboardResult = coordinator.syncCurrentGarageVehicleNow()
         let didSaveOBD = store.saveCurrentOBDSnapshot() != nil
+        store.syncGarageToICloud()
 
         if didSaveOBD {
             switch dashboardResult {
@@ -755,7 +836,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
     @objc private func showMaintenanceForm() {
         let alert = UIAlertController(
             title: localized("garage_add_maintenance"),
-            message: nil,
+            message: localized("garage_maintenance_form_hint"),
             preferredStyle: .alert
         )
         alert.addTextField { $0.placeholder = self.localized("garage_maintenance_title") }
@@ -767,23 +848,103 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
             field.placeholder = self.localized("garage_next_due")
             field.keyboardType = .decimalPad
         }
+        alert.addTextField { $0.placeholder = self.localized("garage_due_date_optional") }
+        alert.addTextField { field in
+            field.placeholder = self.localized("garage_cost_optional")
+            field.keyboardType = .decimalPad
+        }
+        alert.addTextField { $0.placeholder = self.localized("garage_currency_optional") }
         alert.addTextField { $0.placeholder = self.localized("garage_notes") }
+        alert.addTextField { $0.placeholder = self.localized("garage_associated_parts") }
         alert.addAction(UIAlertAction(title: localized("button_cancel"), style: .cancel))
         alert.addAction(UIAlertAction(title: localized("button_confirm"), style: .default) { [weak self, weak alert] _ in
             guard let self, let alert else { return }
             let values = alert.textFields?.map { $0.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "" } ?? []
             let mileage = Self.optionalDouble(values[safe: 1])
             let nextDue = Self.optionalDouble(values[safe: 2])
+            let dueDateText = values[safe: 3] ?? ""
+            let dueDate = Self.optionalDate(dueDateText)
+            let cost = Self.optionalDouble(values[safe: 4])
+            let associatedNames = Set(
+                (values[safe: 7] ?? "")
+                    .split(separator: ",")
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
+                    .filter { !$0.isEmpty }
+            )
+            let associatedPartIDs = self.store.currentVehicle?.parts.compactMap { part in
+                associatedNames.contains(part.name.lowercased()) ? part.id : nil
+            } ?? []
+            let isDueDateValid = dueDateText.isEmpty || dueDate != nil
             guard !values.isEmpty,
+                  isDueDateValid,
                   self.store.addMaintenance(
                     title: values[0],
                     mileageKm: mileage,
                     nextDueMileageKm: nextDue,
-                    notes: values[safe: 3] ?? ""
+                    notes: values[safe: 6] ?? "",
+                    cost: cost,
+                    currency: values[safe: 5],
+                    dueDate: dueDate,
+                    associatedPartIDs: associatedPartIDs
                   ) != nil else {
                 self.showMessage(localized("garage_invalid_input"))
                 return
             }
+        })
+        present(alert, animated: true)
+    }
+
+    // EN: Present one scrollable editor so every observation field remains editable on iPhone.
+    // ES: Presenta un editor desplazable para que todos los campos de observación sigan siendo editables en iPhone.
+    // 中文：使用可滚动编辑页，确保 iPhone 上所有观察字段都可以编辑。
+    @objc private func showTireSuspensionForm() {
+        let editor = PTGarageTireSuspensionEditorViewController(
+            profile: store.currentVehicle?.tireSuspensionProfile
+        )
+        editor.onSave = { [weak self] profile in
+            _ = self?.store.updateTireSuspensionProfile(profile)
+        }
+        let navigationController = UINavigationController(rootViewController: editor)
+        navigationController.modalPresentationStyle = .pageSheet
+        present(navigationController, animated: true)
+    }
+
+    @objc private func showRefuelForm() {
+        let alert = UIAlertController(
+            title: localized("garage_add_refuel"),
+            message: localized("garage_refuel_hint"),
+            preferredStyle: .alert
+        )
+        let currentMileage = store.currentVehicle?.odometerKm ?? 0
+        alert.addTextField { field in
+            field.placeholder = self.localized("garage_mileage")
+            field.keyboardType = .decimalPad
+            field.text = String(format: "%.1f", currentMileage)
+        }
+        alert.addTextField { field in
+            field.placeholder = self.localized("garage_refuel_liters")
+            field.keyboardType = .decimalPad
+        }
+        alert.addTextField { field in
+            field.placeholder = self.localized("garage_cost_optional")
+            field.keyboardType = .decimalPad
+        }
+        alert.addTextField { $0.placeholder = self.localized("garage_refuel_full_tank") }
+        alert.addAction(UIAlertAction(title: localized("button_cancel"), style: .cancel))
+        alert.addAction(UIAlertAction(title: localized("button_confirm"), style: .default) { [weak self, weak alert] _ in
+            guard let self, let fields = alert?.textFields,
+                  let mileage = Self.optionalDouble(fields[safe: 0]?.text),
+                  let liters = Self.optionalDouble(fields[safe: 1]?.text),
+                  let record = self.store.addRefuel(
+                    odometerKm: mileage,
+                    liters: liters,
+                    amount: Self.optionalDouble(fields[safe: 2]?.text),
+                    isFullTank: (fields[safe: 3]?.text ?? "").lowercased() == "1"
+                  ) else {
+                self?.showMessage(self?.localized("garage_invalid_input") ?? "")
+                return
+            }
+            _ = record
         })
         present(alert, animated: true)
     }
@@ -898,6 +1059,16 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         return Double(value.replacingOccurrences(of: ",", with: "."))
     }
 
+    // EN: Maintenance due dates use an unambiguous ISO calendar date in the compact form.
+    // ES: Las fechas de vencimiento usan una fecha de calendario ISO inequívoca en el formulario compacto.
+    // 中文：紧凑表单中的保养到期日使用明确的 ISO 日历日期格式。
+    private static func optionalDate(_ value: String?) -> Date? {
+        guard let value, !value.isEmpty else { return nil }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate]
+        return formatter.date(from: value)
+    }
+
     private static func makeActionButton(titleKey: String, color: UIColor? = nil) -> UIButton {
         let button = UIButton(type: .system)
         var configuration = UIButton.Configuration.filled()
@@ -912,6 +1083,301 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         button.titleLabel?.numberOfLines = 2
         button.titleLabel?.textAlignment = .center
         return button
+    }
+}
+
+// EN: The editor keeps the complete tire and suspension profile in one scrollable, read-only-safe form.
+// ES: El editor conserva el perfil completo de neumáticos y suspensión en un formulario desplazable y seguro.
+// 中文：编辑器用一个可滚动表单保存完整的轮胎与悬挂档案，并保持只记录观察值。
+@MainActor
+private final class PTGarageTireSuspensionEditorViewController: UIViewController {
+    var onSave: ((PTGarageTireSuspensionProfile) -> Void)?
+
+    private let profile: PTGarageTireSuspensionProfile?
+    private let scrollView = UIScrollView()
+    private let contentStack = UIStackView()
+    private let pressureUnitControl = UISegmentedControl(items: ["bar", "kPa", "psi"])
+    private let notesView = UITextView()
+    private var fields: [String: UITextField] = [:]
+
+    init(profile: PTGarageTireSuspensionProfile?) {
+        self.profile = profile
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = localized("garage_edit_tire_suspension")
+        view.backgroundColor = .black
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            barButtonSystemItem: .cancel,
+            target: self,
+            action: #selector(cancel)
+        )
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            barButtonSystemItem: .save,
+            target: self,
+            action: #selector(save)
+        )
+        configureLayout()
+        populateProfile()
+    }
+
+    private func configureLayout() {
+        contentStack.axis = .vertical
+        contentStack.spacing = 18
+        contentStack.alignment = .fill
+
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        contentStack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentStack)
+        scrollView.alwaysBounceVertical = true
+        scrollView.showsVerticalScrollIndicator = false
+
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            contentStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor, constant: 16),
+            contentStack.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor, constant: 16),
+            contentStack.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor, constant: -16),
+            contentStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -24),
+            contentStack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -32)
+        ])
+
+        contentStack.addArrangedSubview(makeHintLabel())
+        addSection(
+            titleKey: "garage_tire_details",
+            fields: [
+                ("frontTireBrand", "garage_tire_front_brand", .default),
+                ("frontTireModel", "garage_tire_front_model", .default),
+                ("frontTireSize", "garage_front_tire_size", .default),
+                ("rearTireBrand", "garage_tire_rear_brand", .default),
+                ("rearTireModel", "garage_tire_rear_model", .default),
+                ("rearTireSize", "garage_rear_tire_size", .default)
+            ]
+        )
+        addSection(
+            titleKey: "garage_pressure_observations",
+            fields: [
+                ("coldFrontPressure", "garage_front_pressure", .decimalPad),
+                ("coldRearPressure", "garage_rear_pressure", .decimalPad),
+                ("hotFrontPressure", "garage_hot_front_pressure", .decimalPad),
+                ("hotRearPressure", "garage_hot_rear_pressure", .decimalPad)
+            ]
+        )
+        addUnitSection()
+        addSection(
+            titleKey: "garage_suspension_settings",
+            fields: [
+                ("loadScenario", "garage_load_scenario", .default),
+                ("frontPreload", "garage_front_preload", .default),
+                ("frontRebound", "garage_front_rebound", .default),
+                ("frontCompression", "garage_front_compression", .default),
+                ("rearPreload", "garage_rear_preload", .default),
+                ("rearRebound", "garage_rear_rebound", .default),
+                ("rearCompression", "garage_rear_compression", .default)
+            ]
+        )
+        addObservationSection()
+    }
+
+    private func addSection(
+        titleKey: String,
+        fields definitions: [(String, String, UIKeyboardType)]
+    ) {
+        let section = UIStackView()
+        section.axis = .vertical
+        section.spacing = 8
+        section.addArrangedSubview(makeSectionTitle(localized(titleKey)))
+        for (key, placeholderKey, keyboardType) in definitions {
+            let field = UITextField()
+            field.placeholder = localized(placeholderKey)
+            field.textColor = .white
+            field.tintColor = PTDashboardConfig.shared.appMainColor
+            field.keyboardType = keyboardType
+            field.autocorrectionType = .no
+            field.backgroundColor = UIColor.white.withAlphaComponent(0.09)
+            field.layer.cornerRadius = 8
+            field.layer.masksToBounds = true
+            field.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 10, height: 1))
+            field.leftViewMode = .always
+            field.heightAnchor.constraint(equalToConstant: 44).isActive = true
+            fields[key] = field
+            section.addArrangedSubview(field)
+        }
+        contentStack.addArrangedSubview(section)
+    }
+
+    private func addUnitSection() {
+        let section = UIStackView()
+        section.axis = .vertical
+        section.spacing = 8
+        section.addArrangedSubview(makeSectionTitle(localized("garage_pressure_unit")))
+        pressureUnitControl.selectedSegmentIndex = 0
+        pressureUnitControl.selectedSegmentTintColor = PTDashboardConfig.shared.appMainColor
+        section.addArrangedSubview(pressureUnitControl)
+        contentStack.addArrangedSubview(section)
+    }
+
+    private func addObservationSection() {
+        let section = UIStackView()
+        section.axis = .vertical
+        section.spacing = 8
+        section.addArrangedSubview(makeSectionTitle(localized("garage_observations")))
+
+        let mileageField = UITextField()
+        mileageField.placeholder = localized("garage_observation_mileage")
+        mileageField.textColor = .white
+        mileageField.tintColor = PTDashboardConfig.shared.appMainColor
+        mileageField.keyboardType = .decimalPad
+        mileageField.autocorrectionType = .no
+        mileageField.backgroundColor = UIColor.white.withAlphaComponent(0.09)
+        mileageField.layer.cornerRadius = 8
+        mileageField.layer.masksToBounds = true
+        mileageField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 10, height: 1))
+        mileageField.leftViewMode = .always
+        mileageField.heightAnchor.constraint(equalToConstant: 44).isActive = true
+        fields["odometerKm"] = mileageField
+        section.addArrangedSubview(mileageField)
+
+        section.addArrangedSubview(makeSectionTitle(localized("garage_notes")))
+        notesView.textColor = .white
+        notesView.tintColor = PTDashboardConfig.shared.appMainColor
+        notesView.font = .systemFont(ofSize: 16)
+        notesView.backgroundColor = UIColor.white.withAlphaComponent(0.09)
+        notesView.layer.cornerRadius = 8
+        notesView.layer.masksToBounds = true
+        notesView.textContainerInset = UIEdgeInsets(top: 10, left: 8, bottom: 10, right: 8)
+        notesView.heightAnchor.constraint(equalToConstant: 110).isActive = true
+        notesView.accessibilityLabel = localized("garage_notes")
+        section.addArrangedSubview(notesView)
+        contentStack.addArrangedSubview(section)
+    }
+
+    private func makeHintLabel() -> UILabel {
+        let label = UILabel()
+        label.text = localized("garage_tire_suspension_hint")
+        label.textColor = .systemGray2
+        label.font = .systemFont(ofSize: 13)
+        label.numberOfLines = 0
+        return label
+    }
+
+    private func makeSectionTitle(_ title: String) -> UILabel {
+        let label = UILabel()
+        label.text = title
+        label.textColor = PTDashboardConfig.shared.appMainColor
+        label.font = .systemFont(ofSize: 16, weight: .semibold)
+        return label
+    }
+
+    private func populateProfile() {
+        guard let profile else { return }
+        fields["frontTireBrand"]?.text = profile.frontTireBrand
+        fields["frontTireModel"]?.text = profile.frontTireModel
+        fields["frontTireSize"]?.text = profile.frontTireSize
+        fields["rearTireBrand"]?.text = profile.rearTireBrand
+        fields["rearTireModel"]?.text = profile.rearTireModel
+        fields["rearTireSize"]?.text = profile.rearTireSize
+        fields["coldFrontPressure"]?.text = formatted(profile.coldFrontPressure)
+        fields["coldRearPressure"]?.text = formatted(profile.coldRearPressure)
+        fields["hotFrontPressure"]?.text = formatted(profile.hotFrontPressure)
+        fields["hotRearPressure"]?.text = formatted(profile.hotRearPressure)
+        fields["loadScenario"]?.text = profile.loadScenario
+        fields["frontPreload"]?.text = profile.frontPreload
+        fields["frontRebound"]?.text = profile.frontRebound
+        fields["frontCompression"]?.text = profile.frontCompression
+        fields["rearPreload"]?.text = profile.rearPreload
+        fields["rearRebound"]?.text = profile.rearRebound
+        fields["rearCompression"]?.text = profile.rearCompression
+        fields["odometerKm"]?.text = formatted(profile.odometerKm)
+        notesView.text = profile.notes
+        pressureUnitControl.selectedSegmentIndex = ["bar", "kPa", "psi"].firstIndex(of: profile.pressureUnit) ?? 0
+    }
+
+    @objc private func cancel() {
+        dismiss(animated: true)
+    }
+
+    @objc private func save() {
+        let pressureValues = [
+            parseOptionalDouble("coldFrontPressure", range: 0.1...200),
+            parseOptionalDouble("coldRearPressure", range: 0.1...200),
+            parseOptionalDouble("hotFrontPressure", range: 0.1...200),
+            parseOptionalDouble("hotRearPressure", range: 0.1...200)
+        ]
+        let mileage = parseOptionalDouble("odometerKm", range: 0...2_000_000)
+        guard pressureValues.allSatisfy({ $0.isValid }), mileage.isValid else {
+            showInvalidInput()
+            return
+        }
+
+        let profile = PTGarageTireSuspensionProfile(
+            frontTireBrand: text("frontTireBrand"),
+            frontTireModel: text("frontTireModel"),
+            frontTireSize: text("frontTireSize"),
+            rearTireBrand: text("rearTireBrand"),
+            rearTireModel: text("rearTireModel"),
+            rearTireSize: text("rearTireSize"),
+            coldFrontPressure: pressureValues[0].value,
+            coldRearPressure: pressureValues[1].value,
+            hotFrontPressure: pressureValues[2].value,
+            hotRearPressure: pressureValues[3].value,
+            pressureUnit: ["bar", "kPa", "psi"][max(0, pressureUnitControl.selectedSegmentIndex)],
+            loadScenario: text("loadScenario"),
+            frontPreload: text("frontPreload"),
+            frontRebound: text("frontRebound"),
+            frontCompression: text("frontCompression"),
+            rearPreload: text("rearPreload"),
+            rearRebound: text("rearRebound"),
+            rearCompression: text("rearCompression"),
+            odometerKm: mileage.value,
+            notes: notesView.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        )
+        onSave?(profile)
+        dismiss(animated: true)
+    }
+
+    private func text(_ key: String) -> String {
+        fields[key]?.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
+
+    private func formatted(_ value: Double?) -> String {
+        value.map { String(format: "%.2f", $0) } ?? ""
+    }
+
+    private func parseOptionalDouble(
+        _ key: String,
+        range: ClosedRange<Double>
+    ) -> (value: Double?, isValid: Bool) {
+        let rawValue = text(key)
+        guard !rawValue.isEmpty else { return (nil, true) }
+        let value = Double(rawValue.replacingOccurrences(of: ",", with: "."))
+        guard let value, value.isFinite, range.contains(value) else {
+            return (nil, false)
+        }
+        return (value, true)
+    }
+
+    private func showInvalidInput() {
+        let alert = UIAlertController(
+            title: localized("garage_invalid_input"),
+            message: localized("garage_tire_suspension_hint"),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: localized("button_confirm"), style: .default))
+        present(alert, animated: true)
+    }
+
+    private func localized(_ key: String) -> String {
+        PTDashboardConfig.languageFunc(text: key)
     }
 }
 

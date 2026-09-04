@@ -45,9 +45,9 @@ class PTMotoBaseViewController: PTBaseViewController {
     }
     
     open func handleMotorcycleDisconnect() {
-        PTLocationEngine.shared.switchEngineMode(to: .antiTheft)
-        PTLocationEngine.shared.forceUpdateWidgetOnDisconnect()
-        PTMOTOParkingManager.shared.saveCurrentLocationAsParkingSpot()
+        // EN: Connection side effects are centralized in PTVehicleConnectivityCoordinator.
+        // ES: Los efectos secundarios de conexión se centralizan en PTVehicleConnectivityCoordinator.
+        // 中文：连接断开副作用统一由 PTVehicleConnectivityCoordinator 处理。
     }
     
     open func handleMotorcycleConnect() { }

@@ -15,7 +15,7 @@ import QWeatherSDK
 // EN: The risk level is intentionally small so the route UI can explain it quickly.
 // ES: El nivel de riesgo es deliberadamente pequeño para que la interfaz lo explique rápidamente.
 // 中文：风险等级保持简单，便于路线界面快速解释。
-public enum PTRouteWeatherRiskLevel: String, Codable, Comparable, Sendable {
+nonisolated public enum PTRouteWeatherRiskLevel: String, Codable, Comparable, Sendable {
     case clear
     case caution
     case hazardous
@@ -33,7 +33,7 @@ public enum PTRouteWeatherRiskLevel: String, Codable, Comparable, Sendable {
     }
 }
 
-public enum PTRouteWeatherRiskFactor: String, Codable, CaseIterable, Sendable {
+nonisolated public enum PTRouteWeatherRiskFactor: String, Codable, CaseIterable, Sendable {
     case precipitation
     case wind
     case cold
@@ -45,7 +45,7 @@ public enum PTRouteWeatherRiskFactor: String, Codable, CaseIterable, Sendable {
 // EN: The report records the single provider that produced every route sample.
 // ES: El informe registra el único proveedor que produjo todas las muestras de la ruta.
 // 中文：报告记录为整条路线生成全部采样点的唯一天气提供方。
-public enum PTRouteWeatherProvider: String, Codable, Sendable {
+nonisolated public enum PTRouteWeatherProvider: String, Codable, Sendable {
     case weatherKit
     case qWeather
 }
@@ -53,7 +53,7 @@ public enum PTRouteWeatherProvider: String, Codable, Sendable {
 // EN: Thresholds are explicit and testable instead of being hidden in a view controller.
 // ES: Los umbrales son explícitos y comprobables, no están ocultos en un controlador de vista.
 // 中文：阈值明确可测试，不把业务规则隐藏在视图控制器中。
-public struct PTRouteWeatherRiskPolicy: Codable, Equatable, Sendable {
+nonisolated public struct PTRouteWeatherRiskPolicy: Codable, Equatable, Sendable {
     public let cautionPrecipitationProbability: Double
     public let hazardousPrecipitationProbability: Double
     public let cautionWindKmh: Double
@@ -92,7 +92,7 @@ public struct PTRouteWeatherRiskPolicy: Codable, Equatable, Sendable {
     nonisolated public static let `default` = PTRouteWeatherRiskPolicy()
 }
 
-public struct PTRouteWeatherSample: Codable, Equatable, Sendable {
+nonisolated public struct PTRouteWeatherSample: Codable, Equatable, Sendable {
     public let coordinate: PTRideCoordinate
     public let forecastDate: Date
     public let condition: String
@@ -120,7 +120,7 @@ public struct PTRouteWeatherSample: Codable, Equatable, Sendable {
     }
 }
 
-public struct PTRouteWeatherRiskPoint: Codable, Equatable, Sendable {
+nonisolated public struct PTRouteWeatherRiskPoint: Codable, Equatable, Sendable {
     public let sample: PTRouteWeatherSample
     public let level: PTRouteWeatherRiskLevel
     public let factors: [PTRouteWeatherRiskFactor]
@@ -136,7 +136,7 @@ public struct PTRouteWeatherRiskPoint: Codable, Equatable, Sendable {
     }
 }
 
-public struct PTRouteWeatherRiskReport: Codable, Equatable, Sendable {
+nonisolated public struct PTRouteWeatherRiskReport: Codable, Equatable, Sendable {
     public let createdAt: Date
     public let startDate: Date
     public let provider: PTRouteWeatherProvider
@@ -189,7 +189,224 @@ public struct PTRouteWeatherRiskReport: Codable, Equatable, Sendable {
     }
 }
 
-public enum PTRouteWeatherRiskError: Error, Equatable, LocalizedError, Sendable {
+// EN: This factor list extends weather risk with route geometry and time-of-day without offering speed advice.
+// ES: Esta lista amplía el riesgo meteorológico con geometría y hora del día sin ofrecer consejos de velocidad.
+// 中文：该因素列表把路线几何和时段加入天气风险，但不提供速度建议。
+nonisolated public enum PTRouteRidingRiskFactor: String, Codable, Equatable, Sendable {
+    case precipitation
+    case wind
+    case cold
+    case heat
+    case lowVisibility
+    case storm
+    case night
+    case continuousCurves
+    case weatherUnavailable
+}
+
+nonisolated public struct PTRouteRidingRiskPoint: Codable, Equatable, Sendable {
+    public let coordinate: PTRideCoordinate
+    public let forecastDate: Date
+    public let level: PTRouteWeatherRiskLevel
+    public let factors: [PTRouteRidingRiskFactor]
+    public let curveAngleDegrees: Double
+
+    public init(
+        coordinate: PTRideCoordinate,
+        forecastDate: Date,
+        level: PTRouteWeatherRiskLevel,
+        factors: [PTRouteRidingRiskFactor],
+        curveAngleDegrees: Double = 0
+    ) {
+        self.coordinate = coordinate
+        self.forecastDate = forecastDate
+        self.level = level
+        self.factors = factors
+        self.curveAngleDegrees = max(curveAngleDegrees.isFinite ? curveAngleDegrees : 0, 0)
+    }
+}
+
+nonisolated public struct PTRouteRidingRiskReport: Codable, Equatable, Sendable {
+    public let createdAt: Date
+    public let startDate: Date
+    public let weatherProvider: PTRouteWeatherProvider?
+    public let points: [PTRouteRidingRiskPoint]
+    public let missingData: [PTRouteRidingRiskFactor]
+
+    public init(
+        createdAt: Date = Date(),
+        startDate: Date,
+        weatherProvider: PTRouteWeatherProvider?,
+        points: [PTRouteRidingRiskPoint],
+        missingData: [PTRouteRidingRiskFactor] = []
+    ) {
+        self.createdAt = createdAt
+        self.startDate = startDate
+        self.weatherProvider = weatherProvider
+        self.points = points
+        self.missingData = missingData
+    }
+
+    public var worstLevel: PTRouteWeatherRiskLevel {
+        points.map(\.level).max() ?? (missingData.isEmpty ? .clear : .caution)
+    }
+
+    public var riskyPointCount: Int {
+        points.count(where: { $0.level != .clear })
+    }
+}
+
+// EN: Geometry analysis is deterministic and bounded, so long GPX routes cannot monopolize the UI.
+// ES: El análisis geométrico es determinista y limitado, por lo que una ruta GPX larga no monopoliza la UI.
+// 中文：几何分析是确定且有边界的，长 GPX 路线不会独占 UI 资源。
+nonisolated public enum PTRouteRidingRiskAnalyzer {
+    nonisolated public static func analyze(
+        coordinates: [CLLocationCoordinate2D],
+        weatherReport: PTRouteWeatherRiskReport?,
+        startDate: Date,
+        estimatedDuration: TimeInterval?,
+        now: Date = Date()
+    ) -> PTRouteRidingRiskReport {
+        let validCoordinates = coordinates.filter(Self.isValidCoordinate)
+        guard !validCoordinates.isEmpty else {
+            return PTRouteRidingRiskReport(
+                startDate: startDate,
+                weatherProvider: weatherReport?.provider,
+                points: [],
+                missingData: [.weatherUnavailable]
+            )
+        }
+
+        let routeCoordinates = sampledCoordinates(validCoordinates)
+        let routeDuration = estimatedDuration.flatMap { $0.isFinite && $0 > 0 ? $0 : nil } ??
+            max(routeDistance(validCoordinates) / (40.0 / 3.6), 60)
+        let denominator = max(routeCoordinates.count - 1, 1)
+        let curveAngles = routeCoordinates.indices.map { index in
+            guard index > 0, index + 1 < routeCoordinates.count else { return 0.0 }
+            return turnAngle(
+                from: routeCoordinates[index - 1],
+                through: routeCoordinates[index],
+                to: routeCoordinates[index + 1]
+            )
+        }
+
+        var curveRun = 0
+        var curveRunLengths = Array(repeating: 0, count: routeCoordinates.count)
+        for index in routeCoordinates.indices {
+            if curveAngles[index] >= 35 {
+                curveRun += 1
+            } else {
+                curveRun = 0
+            }
+            curveRunLengths[index] = curveRun
+        }
+
+        let hasWeather = !(weatherReport?.points.isEmpty ?? true)
+        let missingData: [PTRouteRidingRiskFactor] = hasWeather ? [] : [.weatherUnavailable]
+        let points = routeCoordinates.enumerated().map { index, coordinate in
+            let fraction = Double(index) / Double(denominator)
+            let forecastDate = startDate.addingTimeInterval(routeDuration * fraction)
+            let weatherPoint = weatherReport?.points.min {
+                distanceMeters($0.sample.coordinate, coordinate) < distanceMeters($1.sample.coordinate, coordinate)
+            }
+
+            var factors: [PTRouteRidingRiskFactor] = []
+            var level = weatherPoint?.level ?? .clear
+            if let weatherPoint {
+                for factor in weatherPoint.factors {
+                    let mapped = PTRouteRidingRiskFactor(rawValue: factor.rawValue)
+                    if let mapped, !factors.contains(mapped) {
+                        factors.append(mapped)
+                    }
+                }
+            } else {
+                factors.append(.weatherUnavailable)
+                level = max(level, .caution)
+            }
+
+            let hour = Calendar.current.component(.hour, from: forecastDate)
+            if hour >= 21 || hour < 6 {
+                factors.append(.night)
+                level = max(level, .caution)
+            }
+            if curveRunLengths[index] >= 3 {
+                factors.append(.continuousCurves)
+                level = max(level, .caution)
+            }
+
+            return PTRouteRidingRiskPoint(
+                coordinate: PTRideCoordinate(
+                    latitude: coordinate.latitude,
+                    longitude: coordinate.longitude
+                ),
+                forecastDate: forecastDate,
+                level: level,
+                factors: factors,
+                curveAngleDegrees: curveAngles[index]
+            )
+        }
+
+        return PTRouteRidingRiskReport(
+            createdAt: now,
+            startDate: startDate,
+            weatherProvider: weatherReport?.provider,
+            points: points,
+            missingData: missingData
+        )
+    }
+
+    nonisolated private static func sampledCoordinates(_ coordinates: [CLLocationCoordinate2D]) -> [CLLocationCoordinate2D] {
+        guard coordinates.count > 240 else { return coordinates }
+        let stride = max(1, Int(ceil(Double(coordinates.count) / 240)))
+        var result = Array(coordinates.enumerated().filter { $0.offset % stride == 0 }.map(\.element))
+        if result.last?.latitude != coordinates.last?.latitude || result.last?.longitude != coordinates.last?.longitude {
+            result.append(coordinates.last!)
+        }
+        return result
+    }
+
+    nonisolated private static func isValidCoordinate(_ coordinate: CLLocationCoordinate2D) -> Bool {
+        CLLocationCoordinate2DIsValid(coordinate) &&
+            coordinate.latitude.isFinite && coordinate.longitude.isFinite
+    }
+
+    nonisolated private static func distanceMeters(_ lhs: PTRideCoordinate, _ rhs: CLLocationCoordinate2D) -> Double {
+        let first = CLLocation(latitude: lhs.latitude, longitude: lhs.longitude)
+        let second = CLLocation(latitude: rhs.latitude, longitude: rhs.longitude)
+        return first.distance(from: second)
+    }
+
+    nonisolated private static func routeDistance(_ coordinates: [CLLocationCoordinate2D]) -> Double {
+        guard coordinates.count > 1 else { return 0 }
+        return zip(coordinates, coordinates.dropFirst()).reduce(0) { total, pair in
+            total + CLLocation(latitude: pair.0.latitude, longitude: pair.0.longitude)
+                .distance(from: CLLocation(latitude: pair.1.latitude, longitude: pair.1.longitude))
+        }
+    }
+
+    nonisolated private static func turnAngle(
+        from previous: CLLocationCoordinate2D,
+        through current: CLLocationCoordinate2D,
+        to next: CLLocationCoordinate2D
+    ) -> Double {
+        let incoming = bearing(from: previous, to: current)
+        let outgoing = bearing(from: current, to: next)
+        let difference = abs(outgoing - incoming).truncatingRemainder(dividingBy: 360)
+        return min(difference, 360 - difference)
+    }
+
+    nonisolated private static func bearing(from: CLLocationCoordinate2D, to: CLLocationCoordinate2D) -> Double {
+        let latitude1 = from.latitude * .pi / 180
+        let latitude2 = to.latitude * .pi / 180
+        let deltaLongitude = (to.longitude - from.longitude) * .pi / 180
+        let y = sin(deltaLongitude) * cos(latitude2)
+        let x = cos(latitude1) * sin(latitude2) -
+            sin(latitude1) * cos(latitude2) * cos(deltaLongitude)
+        return atan2(y, x) * 180 / .pi
+    }
+}
+
+nonisolated public enum PTRouteWeatherRiskError: Error, Equatable, LocalizedError, Sendable {
     case invalidRoute
     case noForecast
     case fallbackUnavailable
@@ -218,7 +435,7 @@ public enum PTRouteWeatherRiskError: Error, Equatable, LocalizedError, Sendable 
 // EN: Pure risk calculation keeps weather policy deterministic and independent from networking.
 // ES: El cálculo puro mantiene la política meteorológica determinista e independiente de la red.
 // 中文：纯风险计算让天气规则确定且不依赖网络。
-public enum PTRouteWeatherRiskAnalyzer {
+nonisolated public enum PTRouteWeatherRiskAnalyzer {
     public static func analyze(
         sample: PTRouteWeatherSample,
         policy: PTRouteWeatherRiskPolicy = .default
@@ -425,6 +642,37 @@ public final class PTRouteWeatherRiskService {
             provider: result.provider,
             points: result.points
         )
+    }
+
+    // EN: Add geometry and night checks after the existing provider fallback has produced a weather report.
+    // ES: Añade geometría y noche después de que la reserva existente haya producido el informe meteorológico.
+    // 中文：沿用现有天气回退结果，再叠加路线几何和夜间检查。
+    public func analyzeRiding(
+        roadbook: PTRoadbook,
+        startDate: Date = Date(),
+        estimatedDuration: TimeInterval? = nil,
+        policy: PTRouteWeatherRiskPolicy = .default,
+        progress: (@MainActor @Sendable (Int, Int, PTRouteWeatherRiskPoint) -> Void)? = nil
+    ) async throws -> PTRouteRidingRiskReport {
+        let weatherReport = try await analyze(
+            coordinates: roadbook.waypoints.map(\.coordinate),
+            startDate: startDate,
+            estimatedDuration: estimatedDuration,
+            policy: policy,
+            progress: nil
+        )
+        let report = PTRouteRidingRiskAnalyzer.analyze(
+            coordinates: roadbook.waypoints.map(\.coordinate),
+            weatherReport: weatherReport,
+            startDate: startDate,
+            estimatedDuration: estimatedDuration
+        )
+        if let progress {
+            for (index, point) in weatherReport.points.enumerated() {
+                progress(index + 1, weatherReport.points.count, point)
+            }
+        }
+        return report
     }
 }
 

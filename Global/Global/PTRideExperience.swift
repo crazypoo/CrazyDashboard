@@ -276,3 +276,115 @@ public struct PTRideExperienceSummary: Codable, Equatable, Sendable {
         )
     }
 }
+
+// EN: Readiness is a conservative summary of cached app data, never a mechanical safety guarantee.
+// ES: La preparación es un resumen conservador de datos almacenados y nunca una garantía de seguridad mecánica.
+// 中文：准备度只是缓存数据的保守摘要，绝不等同于机械安全保证。
+public enum PTRideReadinessState: String, Codable, Equatable, Sendable {
+    case ready
+    case attention
+    case unavailable
+}
+
+public enum PTRideReadinessIssue: String, Codable, Equatable, Sendable, CaseIterable {
+    case dashboardDisconnected
+    case obdDisconnected
+    case lowFuel
+    case rangeUnavailable
+    case maintenanceRequired
+    case batteryLow
+    case staleData
+    case pttLocationSharingDisabled
+}
+
+public struct PTRideReadinessReport: Codable, Equatable, Sendable {
+    public let state: PTRideReadinessState
+    public let vehicleName: String
+    public let issues: [PTRideReadinessIssue]
+    public let checkedAt: Date
+
+    public init(
+        state: PTRideReadinessState,
+        vehicleName: String,
+        issues: [PTRideReadinessIssue],
+        checkedAt: Date = Date()
+    ) {
+        self.state = state
+        self.vehicleName = vehicleName
+        // EN: Keep issue order stable while removing duplicates without Foundation collection bridging.
+        // ES: Mantiene estable el orden de los problemas y elimina duplicados sin puentes de colecciones de Foundation.
+        // 中文：保持问题顺序稳定，并在不依赖 Foundation 集合桥接的情况下去重。
+        var uniqueIssues: [PTRideReadinessIssue] = []
+        for issue in issues where !uniqueIssues.contains(issue) {
+            uniqueIssues.append(issue)
+        }
+        self.issues = uniqueIssues
+        self.checkedAt = checkedAt
+    }
+
+    public var isActionable: Bool {
+        state != .ready || !issues.isEmpty
+    }
+}
+
+// EN: Keep the evaluator pure so UI, Watch and tests use exactly the same thresholds.
+// ES: Mantiene el evaluador puro para que la UI, el Watch y las pruebas usen los mismos umbrales.
+// 中文：保持评估器纯函数化，让 UI、Watch 和测试使用完全相同的阈值。
+public enum PTRideReadinessEvaluator {
+    public static func evaluate(
+        vehicleName: String,
+        vehicle: PTVehicleSnapshot,
+        fuelLevelPercent: Int?,
+        rangeEstimate: PTRideRangeEstimate?,
+        batteryVoltage: Double?,
+        maintenanceAdvice: PTRideMaintenanceAdvice,
+        pttPeerCount: Int,
+        pttLocationSharingEnabled: Bool,
+        dataUpdatedAt: Date,
+        now: Date = Date()
+    ) -> PTRideReadinessReport {
+        var issues: [PTRideReadinessIssue] = []
+        if !vehicle.isDashboardConnected {
+            issues.append(.dashboardDisconnected)
+        }
+        if !vehicle.isOBDConnected {
+            issues.append(.obdDisconnected)
+        }
+        if let fuelLevelPercent, fuelLevelPercent <= 15 {
+            issues.append(.lowFuel)
+        }
+        if fuelLevelPercent != nil, rangeEstimate == nil {
+            issues.append(.rangeUnavailable)
+        }
+        if maintenanceAdvice.state == .required || maintenanceAdvice.state == .dueSoon {
+            issues.append(.maintenanceRequired)
+        }
+        if let batteryVoltage, batteryVoltage.isFinite, batteryVoltage < 12.0 {
+            issues.append(.batteryLow)
+        }
+        let dataAge = now.timeIntervalSince(dataUpdatedAt)
+        if dataUpdatedAt == .distantPast || dataAge > 900 || dataAge < -30 {
+            issues.append(.staleData)
+        }
+        if pttPeerCount > 0 && !pttLocationSharingEnabled {
+            issues.append(.pttLocationSharingDisabled)
+        }
+
+        let hasVehicleLink = vehicle.isDashboardConnected || vehicle.isOBDConnected
+        let state: PTRideReadinessState
+        if !hasVehicleLink || (issues.contains(.staleData) && !hasVehicleLink) {
+            state = .unavailable
+        } else if issues.isEmpty {
+            state = .ready
+        } else {
+            state = .attention
+        }
+
+        return PTRideReadinessReport(
+            state: state,
+            vehicleName: vehicleName,
+            issues: issues,
+            checkedAt: now
+        )
+    }
+}

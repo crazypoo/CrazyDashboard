@@ -283,3 +283,109 @@ nonisolated public struct PTWatchRideAssistantState: Codable, Equatable, Sendabl
         return nil
     }
 }
+
+// EN: Readiness is a small, cached projection for the Watch; it never starts a vehicle or network request.
+// ES: La preparación es una proyección pequeña y almacenada para el Watch; nunca inicia el vehículo ni la red.
+// 中文：准备度是供 Watch 展示的精简缓存投影，不会启动车辆或网络请求。
+nonisolated public enum PTWatchReadinessState: String, Codable, Equatable, Sendable {
+    case ready
+    case attention
+    case unavailable
+}
+
+nonisolated public enum PTWatchReadinessIssue: String, Codable, Equatable, Sendable {
+    case dashboardDisconnected
+    case obdDisconnected
+    case lowFuel
+    case rangeUnavailable
+    case maintenanceRequired
+    case batteryLow
+    case staleData
+    case pttLocationSharingDisabled
+}
+
+nonisolated public enum PTWatchReadinessContextKeys {
+    public static let schemaVersion = "watch_readiness_schemaVersion"
+    public static let state = "watch_readiness_state"
+    public static let vehicleName = "watch_readiness_vehicleName"
+    public static let issues = "watch_readiness_issues"
+    public static let updatedAt = "watch_readiness_updatedAt"
+}
+
+nonisolated public struct PTWatchReadinessStatus: Codable, Equatable, Sendable {
+    public static let currentSchemaVersion = 1
+
+    public let schemaVersion: Int
+    public let state: PTWatchReadinessState
+    public let vehicleName: String
+    public let issues: [PTWatchReadinessIssue]
+    public let updatedAt: Date
+
+    nonisolated public static let placeholder = PTWatchReadinessStatus(
+        state: .unavailable,
+        vehicleName: "",
+        issues: [.staleData],
+        updatedAt: .distantPast
+    )
+
+    nonisolated public init(
+        state: PTWatchReadinessState,
+        vehicleName: String,
+        issues: [PTWatchReadinessIssue],
+        updatedAt: Date = Date()
+    ) {
+        schemaVersion = Self.currentSchemaVersion
+        self.state = state
+        self.vehicleName = vehicleName.trimmingCharacters(in: .whitespacesAndNewlines)
+        var uniqueIssues: [PTWatchReadinessIssue] = []
+        for issue in issues where !uniqueIssues.contains(issue) {
+            uniqueIssues.append(issue)
+        }
+        self.issues = uniqueIssues
+        self.updatedAt = updatedAt
+    }
+
+    nonisolated public init?(applicationContext: [String: Any]) {
+        guard let schemaVersion = Self.intValue(applicationContext[PTWatchReadinessContextKeys.schemaVersion]),
+              schemaVersion <= Self.currentSchemaVersion,
+              let stateRawValue = applicationContext[PTWatchReadinessContextKeys.state] as? String,
+              let state = PTWatchReadinessState(rawValue: stateRawValue),
+              let updatedAt = Self.doubleValue(applicationContext[PTWatchReadinessContextKeys.updatedAt]) else {
+            return nil
+        }
+        let issueValues = applicationContext[PTWatchReadinessContextKeys.issues] as? [String] ?? []
+        self.init(
+            state: state,
+            vehicleName: applicationContext[PTWatchReadinessContextKeys.vehicleName] as? String ?? "",
+            issues: issueValues.compactMap(PTWatchReadinessIssue.init(rawValue:)),
+            updatedAt: Date(timeIntervalSince1970: updatedAt)
+        )
+    }
+
+    nonisolated public var applicationContext: [String: Any] {
+        [
+            PTWatchReadinessContextKeys.schemaVersion: schemaVersion,
+            PTWatchReadinessContextKeys.state: state.rawValue,
+            PTWatchReadinessContextKeys.vehicleName: vehicleName,
+            PTWatchReadinessContextKeys.issues: issues.map(\.rawValue),
+            PTWatchReadinessContextKeys.updatedAt: updatedAt.timeIntervalSince1970
+        ]
+    }
+
+    nonisolated public var hapticIdentifier: String? {
+        guard state == .attention, updatedAt != .distantPast else { return nil }
+        return "\(state.rawValue)|\(issues.map(\.rawValue).joined(separator: ","))"
+    }
+
+    nonisolated private static func intValue(_ value: Any?) -> Int? {
+        if let value = value as? Int { return value }
+        if let value = value as? NSNumber { return value.intValue }
+        return nil
+    }
+
+    nonisolated private static func doubleValue(_ value: Any?) -> Double? {
+        if let value = value as? Double { return value }
+        if let value = value as? NSNumber { return value.doubleValue }
+        return nil
+    }
+}

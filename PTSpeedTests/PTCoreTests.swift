@@ -231,6 +231,60 @@ final class PTCoreTests: XCTestCase {
         XCTAssertEqual(restoredVehicle.diagnosticReports.first?.successfulDIDCount, 1)
     }
 
+    // EN: Build 45 garage additions must round-trip while profiles saved before them still decode safely.
+    // ES: Las ampliaciones del garaje de Build 45 deben conservarse y los perfiles anteriores deben seguir decodificando.
+    // 中文：Build45 新增的车库字段必须可往返保存，旧版本档案也必须安全解码。
+    func testGarageTireProfileAndMaintenancePartsRoundTrip() throws {
+        let partID = UUID()
+        let profile = PTGarageTireSuspensionProfile(
+            frontTireBrand: "Michelin",
+            frontTireModel: "Road 6",
+            frontTireSize: "120/70 R15",
+            rearTireBrand: "Michelin",
+            rearTireModel: "Road 6",
+            rearTireSize: "160/60 R15",
+            coldFrontPressure: 2.2,
+            coldRearPressure: 2.4,
+            hotFrontPressure: 2.3,
+            hotRearPressure: 2.5,
+            pressureUnit: "psi",
+            loadScenario: "Two-up",
+            frontPreload: "3",
+            frontRebound: "2 clicks",
+            frontCompression: "1 click",
+            rearPreload: "5",
+            rearRebound: "4 clicks",
+            rearCompression: "2 clicks",
+            odometerKm: 12_345,
+            notes: "Cold tires before a long ride"
+        )
+        let restoredProfile = try JSONDecoder().decode(
+            PTGarageTireSuspensionProfile.self,
+            from: JSONEncoder().encode(profile)
+        )
+        XCTAssertEqual(restoredProfile, profile)
+
+        let maintenance = PTGarageMaintenanceRecord(
+            title: "Tire inspection",
+            mileageKm: 12_345,
+            associatedPartIDs: [partID]
+        )
+        let restoredMaintenance = try JSONDecoder().decode(
+            PTGarageMaintenanceRecord.self,
+            from: JSONEncoder().encode(maintenance)
+        )
+        XCTAssertEqual(restoredMaintenance.associatedPartIDs, [partID])
+
+        let legacyJSON = ""
+            + "{\"frontTireSize\":\"120/70 R15\",\"rearTireSize\":\"160/60 R15\","
+            + "\"coldFrontPressure\":2.2,\"coldRearPressure\":2.4,\"pressureUnit\":\"bar\"}"
+        let legacyData = Data(legacyJSON.utf8)
+        let legacyProfile = try JSONDecoder().decode(PTGarageTireSuspensionProfile.self, from: legacyData)
+        XCTAssertNil(legacyProfile.odometerKm)
+        XCTAssertTrue(legacyProfile.notes.isEmpty)
+        XCTAssertEqual(legacyProfile.frontTireSize, "120/70 R15")
+    }
+
     // EN: Maintenance warning distances must belong to each vehicle and keep the legacy active-vehicle value in sync.
     // ES: Las distancias de aviso deben pertenecer a cada vehículo y mantener sincronizado el valor antiguo del vehículo activo.
     // 中文：保养预警里程必须归属于每辆车，并同步旧的当前车辆设置。
@@ -1943,6 +1997,198 @@ final class PTCoreTests: XCTestCase {
         XCTAssertEqual(PTXP400BLEProtocol.normalizedManeuverCode(0x2D), 0x01)
         XCTAssertEqual(PTXP400BLEProtocol.normalizedManeuverCode(0x30), 0x01)
         XCTAssertEqual(PTXP400BLEProtocol.normalizedManeuverCode(0x31), 0x01)
+    }
+
+    // EN: Large JSONL captures must produce bounded summaries without loading every frame into memory.
+    // ES: Las capturas JSONL grandes deben producir resúmenes limitados sin cargar todos los frames en memoria.
+    // 中文：大型 JSONL 抓包必须只生成有界摘要，不能把所有帧一次性加载进内存。
+    func testCANStreamingAnalyzerBuildsBoundedSummaries() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PTCANStreaming-(UUID().uuidString).jsonl")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let frames = [
+            PTCANFrame(
+                timestamp: 1_700_000_000,
+                sequence: 1,
+                direction: .rx,
+                rawLine: "7E8 03 41 0C 1A",
+                header: "7E8",
+                dataHex: "410C1A",
+                dlc: 3
+            ),
+            PTCANFrame(
+                timestamp: 1_700_000_001,
+                sequence: 2,
+                direction: .rx,
+                rawLine: "7E8 03 41 0C 1B",
+                header: "7E8",
+                dataHex: "410C1B",
+                dlc: 3
+            )
+        ]
+        let encoder = JSONEncoder()
+        let jsonl = try frames
+            .map { String(decoding: try encoder.encode($0), as: UTF8.self) }
+            .joined(separator: "\n")
+        try Data(jsonl.utf8).write(to: url, options: .atomic)
+
+        let result = try PTCANCaptureStreamAnalyzer.analyzeJSONL(
+            at: url,
+            maximumResults: 1,
+            chunkSize: 32
+        )
+
+        XCTAssertEqual(result.decodedFrameCount, 2)
+        XCTAssertEqual(result.invalidLineCount, 0)
+        XCTAssertEqual(result.summaries.count, 1)
+        XCTAssertEqual(result.summaries.first?.header, "7E8")
+        XCTAssertEqual(result.summaries.first?.payloadVariants, 2)
+    }
+
+    // EN: Fuel calibration must follow entry chronology and break after a rollback or non-full refill.
+    // ES: La calibración debe seguir la cronología y romperse tras un retroceso o un repostaje no lleno.
+    // 中文：油耗校准必须按录入时间计算，并在里程回拨或非满箱加油后中断链路。
+    func testFuelCalibrationRejectsChronologyRollbacks() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let records = [
+            PTGarageRefuelRecord(date: start, odometerKm: 100, liters: 5, isFullTank: true),
+            PTGarageRefuelRecord(date: start.addingTimeInterval(60), odometerKm: 200, liters: 5, isFullTank: true),
+            PTGarageRefuelRecord(date: start.addingTimeInterval(120), odometerKm: 50, liters: 5, isFullTank: true),
+            PTGarageRefuelRecord(date: start.addingTimeInterval(180), odometerKm: 150, liters: 5, isFullTank: true)
+        ]
+
+        let samples = PTFuelRangeCalculator.samples(from: records)
+
+        XCTAssertEqual(samples.count, 1)
+        XCTAssertEqual(samples.first?.litersPer100Km ?? -1, 5, accuracy: 0.001)
+    }
+
+    // EN: Readiness must remain deterministic and deduplicate repeated attention reasons.
+    // ES: La preparación debe ser determinista y eliminar motivos de atención repetidos.
+    // 中文：出发检查必须保持确定性，并去除重复的注意原因。
+    func testRideReadinessUsesSafeAttentionState() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let connectedDashboard = PTVehicleLinkSnapshot(
+            state: .connected,
+            transport: .dashboardBluetooth,
+            updatedAt: now
+        )
+        let vehicle = PTVehicleSnapshot(
+            dashboard: connectedDashboard,
+            obd: .idle,
+            updatedAt: now
+        )
+        let report = PTRideReadinessEvaluator.evaluate(
+            vehicleName: "XP400 GT",
+            vehicle: vehicle,
+            fuelLevelPercent: 10,
+            rangeEstimate: nil,
+            batteryVoltage: 11.5,
+            maintenanceAdvice: PTRideMaintenanceAdvice(state: .dueSoon, distanceToMaintenanceKm: 200),
+            pttPeerCount: 1,
+            pttLocationSharingEnabled: false,
+            dataUpdatedAt: now,
+            now: now
+        )
+
+        XCTAssertEqual(report.state, .attention)
+        XCTAssertEqual(report.issues.count, Set(report.issues).count)
+        XCTAssertTrue(report.issues.contains(.lowFuel))
+        XCTAssertTrue(report.issues.contains(.rangeUnavailable))
+        XCTAssertTrue(report.issues.contains(.batteryLow))
+        XCTAssertTrue(report.issues.contains(.maintenanceRequired))
+        XCTAssertTrue(report.issues.contains(.pttLocationSharingDisabled))
+    }
+
+    // EN: A garage tombstone must prevent an older vehicle record from being resurrected by cloud merge.
+    // ES: Una lápida del garaje debe impedir que la fusión en la nube resucite un vehículo antiguo.
+    // 中文：车库删除墓碑必须阻止云端合并复活较旧的车辆记录。
+    func testGarageCloudMergeHonorsVehicleDeletion() {
+        let vehicleID = UUID()
+        let profile = PTMotorcycleProfile(id: vehicleID, name: "XP400 GT")
+        let local = PTGarageCloudDocument(
+            local: PTMotorcycleGarageDocument(selectedVehicleID: vehicleID, vehicles: [profile])
+        )
+        let deletionDate = Date(timeIntervalSince1970: 1_700_000_100)
+        let remote = PTGarageCloudDocument(
+            selectedVehicleID: nil,
+            vehicles: [],
+            deletedVehicleIDs: [vehicleID.uuidString: deletionDate],
+            modifiedAt: deletionDate
+        )
+
+        let merged = PTGarageCloudDocument.merge(local, remote)
+
+        XCTAssertTrue(merged.vehicles.isEmpty)
+        XCTAssertEqual(merged.deletedVehicleIDs[vehicleID.uuidString], deletionDate)
+    }
+
+    // EN: Child-record tombstones must survive a merge without resurrecting a deleted maintenance item.
+    // ES: Las lápidas de registros secundarios deben sobrevivir a la fusión sin resucitar un mantenimiento eliminado.
+    // 中文：子记录删除墓碑必须在合并后保留，不能复活已删除的保养项目。
+    func testGarageCloudMergeHonorsMaintenanceTombstone() {
+        let vehicleID = UUID()
+        let maintenanceID = UUID()
+        let createdAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let deletionDate = createdAt.addingTimeInterval(120)
+        let record = PTGarageMaintenanceRecord(
+            id: maintenanceID,
+            title: "Oil",
+            completedAt: createdAt,
+            mileageKm: 1_000,
+            updatedAt: createdAt
+        )
+        let localProfile = PTMotorcycleProfile(
+            id: vehicleID,
+            name: "XP400 GT",
+            maintenanceRecords: [record],
+            updatedAt: createdAt
+        )
+        let remoteProfile = PTMotorcycleProfile(
+            id: vehicleID,
+            name: "XP400 GT",
+            deletedMaintenanceIDs: [maintenanceID.uuidString: deletionDate],
+            updatedAt: deletionDate
+        )
+        let local = PTGarageCloudDocument(
+            local: PTMotorcycleGarageDocument(selectedVehicleID: vehicleID, vehicles: [localProfile])
+        )
+        let remote = PTGarageCloudDocument(
+            local: PTMotorcycleGarageDocument(selectedVehicleID: vehicleID, vehicles: [remoteProfile])
+        )
+
+        let merged = PTGarageCloudDocument.merge(local, remote)
+
+        XCTAssertTrue(merged.vehicles.first?.maintenanceRecords.isEmpty == true)
+        XCTAssertEqual(
+            merged.vehicles.first?.deletedMaintenanceIDs?[maintenanceID.uuidString],
+            deletionDate
+        )
+    }
+
+    // EN: Peer location packets must preserve their expiry contract through serialization.
+    // ES: Los paquetes de ubicación deben conservar su contrato de caducidad al serializarse.
+    // 中文：车友位置数据包序列化后必须保留过期时间契约。
+    func testPeerLocationRoundTripKeepsExpiry() throws {
+        let createdAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let source = PTPeerLocation(
+            lat: 31.2304,
+            lon: 121.4737,
+            course: 90,
+            speed: 30,
+            originalSender: "rider-1",
+            ttl: 10,
+            createdAt: createdAt,
+            expiresAt: createdAt.addingTimeInterval(15)
+        )
+        let data = try JSONEncoder().encode(source)
+        let restored = try JSONDecoder().decode(PTPeerLocation.self, from: data)
+
+        XCTAssertEqual(restored.schemaVersion, PTPeerLocation.currentSchemaVersion)
+        XCTAssertEqual(restored.messageID, source.messageID)
+        XCTAssertEqual(restored.expiresAt, source.expiresAt)
+        XCTAssertTrue(restored.isValid)
     }
 
     private func makeRoutePoint(timestamp: Date, brakingG: Double) -> PTRoutePoint {

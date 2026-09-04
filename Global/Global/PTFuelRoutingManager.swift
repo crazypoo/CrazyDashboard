@@ -62,23 +62,28 @@ public class PTFuelRoutingManager: NSObject, AMapSearchDelegate {
     }
     
     private func startSearchingNearbyGasStation() {
-        // 复用高德单次定位
-        PTLocationEngine.shared.switchEngineMode(to: .riding)
-        if !PTDashboardConfig.shared.blueConnected {
-            PTLocationEngine.shared.startTracking()
-        }
-        PTMOTOParkingManager.shared.requestSingleLocationForAntiTheft { [weak self] location in
-            guard let self = self, let currentLoc = location else { return }
-            self.currentLocationForSearch = currentLoc
-            
-            let request = AMapPOIAroundSearchRequest()
-            request.location = AMapGeoPoint.location(withLatitude: CGFloat(currentLoc.coordinate.latitude),
-                                                     longitude: CGFloat(currentLoc.coordinate.longitude))
-            request.keywords = "加油站"
-            request.sortrule = 0
-            request.radius = 10000
-            
-            self.searchAPI.aMapPOIAroundSearch(request)
+        // EN: Hold a fuel-search location lease only for this one lookup.
+        // ES: Mantiene un arrendamiento de ubicación solo durante esta búsqueda.
+        // 中文：只在本次加油站搜索期间持有定位用途租约。
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            PTLocationUsageCoordinator.shared.acquire(.fuelSearch)
+            PTMOTOParkingManager.shared.requestSingleLocationForAntiTheft { [weak self] location in
+                Task { @MainActor in
+                    PTLocationUsageCoordinator.shared.release(.fuelSearch)
+                }
+                guard let self, let currentLoc = location else { return }
+                self.currentLocationForSearch = currentLoc
+
+                let request = AMapPOIAroundSearchRequest()
+                request.location = AMapGeoPoint.location(withLatitude: CGFloat(currentLoc.coordinate.latitude),
+                                                         longitude: CGFloat(currentLoc.coordinate.longitude))
+                request.keywords = "加油站"
+                request.sortrule = 0
+                request.radius = 10000
+
+                self.searchAPI.aMapPOIAroundSearch(request)
+            }
         }
     }
     

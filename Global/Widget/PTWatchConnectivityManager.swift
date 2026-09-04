@@ -29,6 +29,21 @@ public final class PTWatchConnectivityManager: NSObject, WCSessionDelegate {
         mergeAndSend(status.applicationContext)
     }
 
+    // EN: Publish the same read-only readiness result shown by Ride Center.
+    // ES: Publica el mismo resultado de preparación de solo lectura que muestra Ride Center.
+    // 中文：发送与 Ride Center 相同的只读出发准备度结果。
+    public func update(readiness: PTRideReadinessReport) {
+        let watchReadiness = PTWatchReadinessStatus(
+            state: PTWatchReadinessState(rawValue: readiness.state.rawValue) ?? .unavailable,
+            vehicleName: readiness.vehicleName,
+            issues: readiness.issues.compactMap {
+                PTWatchReadinessIssue(rawValue: $0.rawValue)
+            },
+            updatedAt: readiness.checkedAt
+        )
+        mergeAndSend(watchReadiness.applicationContext)
+    }
+
     // EN: Roadbook progress shares the same latest-state channel as vehicle status.
     // ES: El progreso del Roadbook comparte el mismo canal de último estado que el estado del vehículo.
     // 中文：Roadbook 进度与车辆状态共用同一个最新状态通道。

@@ -143,10 +143,16 @@ public final class PTMaintenanceManager: NSObject {
 
 extension PTMaintenanceManager: PTBLEDashboardDelegate {
     nonisolated func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
+        Task { @MainActor [weak self] in
+            self?.receiveDashboardData(data)
+        }
+    }
+
+    // EN: Read availability flags on the main actor before creating a Sendable maintenance sample.
+    // ES: Lee los indicadores de disponibilidad en el actor principal antes de crear una muestra Sendable.
+    // 中文：先在主 actor 读取可用性标志，再创建可 Sendable 的保养样本。
+    private func receiveDashboardData(_ data: Any?) {
         let sample: PTMaintenanceDashboardSample?
-        // EN: Do not overwrite a vehicle's maintenance state with an unavailable sentinel.
-        // ES: No sobrescribas el estado de mantenimiento con un centinela no disponible.
-        // 中文：不可用哨兵值不能覆盖车库中的保养状态。
         if let data2 = data as? PTDashboardData2,
            data2.maintenanceAvailability.isAvailable {
             sample = .maintenanceFlag(data2.maintenance)
@@ -158,9 +164,7 @@ extension PTMaintenanceManager: PTBLEDashboardDelegate {
         }
 
         guard let sample else { return }
-        Task { @MainActor [weak self] in
-            self?.receive(sample)
-        }
+        receive(sample)
     }
 
     nonisolated func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool) {

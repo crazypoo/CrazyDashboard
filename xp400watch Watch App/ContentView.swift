@@ -16,6 +16,7 @@ struct ContentView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 PTWatchVehicleStatusView(status: statusStore.status)
+                PTWatchReadinessView(readiness: statusStore.readiness)
                 PTWatchNavigationView(navigation: statusStore.navigation)
                 PTWatchParkingView(status: statusStore.status)
             }
@@ -23,6 +24,86 @@ struct ContentView: View {
             .padding(.vertical, 8)
         }
         .background(Color(white: 0.1).ignoresSafeArea())
+    }
+}
+
+// EN: This card mirrors the iPhone's cached departure check and stays read-only on Watch.
+// ES: Esta tarjeta refleja la comprobación de salida almacenada en el iPhone y permanece en solo lectura.
+// 中文：此卡片复用 iPhone 缓存的出发检查结果，并且在 Watch 上保持只读。
+private struct PTWatchReadinessView: View {
+    let readiness: PTWatchReadinessStatus
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 5) {
+                Image(systemName: iconName)
+                    .foregroundStyle(stateColor)
+                Text("ride_readiness")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                Spacer(minLength: 4)
+                Text(stateTitle)
+                    .font(.caption)
+                    .foregroundStyle(stateColor)
+            }
+
+            if readiness.updatedAt == .distantPast {
+                Text("ride_readiness_unavailable_hint")
+                    .font(.caption2)
+                    .foregroundStyle(.gray)
+            } else if readiness.issues.isEmpty {
+                Text("ride_readiness_ready_hint")
+                    .font(.caption2)
+                    .foregroundStyle(.gray)
+            } else {
+                ForEach(Array(readiness.issues.prefix(2)), id: \.rawValue) { issue in
+                    Label(issueTitle(for: issue), systemImage: "exclamationmark.circle")
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                        .lineLimit(1)
+                }
+            }
+        }
+        .padding(10)
+        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+        .accessibilityElement(children: .combine)
+    }
+
+    private var stateTitle: LocalizedStringKey {
+        switch readiness.state {
+        case .ready: return "ride_readiness_ready"
+        case .attention: return "ride_readiness_attention"
+        case .unavailable: return "ride_readiness_unavailable"
+        }
+    }
+
+    private var stateColor: Color {
+        switch readiness.state {
+        case .ready: return .green
+        case .attention: return .orange
+        case .unavailable: return .gray
+        }
+    }
+
+    private var iconName: String {
+        switch readiness.state {
+        case .ready: return "checkmark.shield.fill"
+        case .attention: return "exclamationmark.triangle.fill"
+        case .unavailable: return "questionmark.circle"
+        }
+    }
+
+    private func issueTitle(for issue: PTWatchReadinessIssue) -> LocalizedStringKey {
+        switch issue {
+        case .dashboardDisconnected: return "ride_readiness_issue_dashboard"
+        case .obdDisconnected: return "ride_readiness_issue_obd"
+        case .lowFuel: return "ride_readiness_issue_fuel"
+        case .rangeUnavailable: return "ride_readiness_issue_range"
+        case .maintenanceRequired: return "ride_readiness_issue_maintenance"
+        case .batteryLow: return "ride_readiness_issue_battery"
+        case .staleData: return "ride_readiness_issue_stale"
+        case .pttLocationSharingDisabled: return "ride_readiness_issue_ptt"
+        }
     }
 }
 

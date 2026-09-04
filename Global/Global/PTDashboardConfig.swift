@@ -373,6 +373,7 @@ extension PTDashboardConfig {
         return share
     }
     
+    @MainActor
     static func globalImageBrowser(mediaModels:[PTMediaBrowserModel],
                                    showIndex:Int = 0,
                                    dismissBarStatus:VCStatusBarChangeStatusType = .Auto,
@@ -380,34 +381,34 @@ extension PTDashboardConfig {
                                    customActionCallback:PTViewerEXIndexBlock? = nil,
                                    currentDataIndexCallback:((Int)->Void)? = nil,
                                    showed:PTActionTask? = nil) {
-        PTGCDManager.shared.runOnMain {
-            let mediaBroswer = PTDashboardConfig.gobalMediaBrowserConfig()
-            if customAction.count > 0 {
-                mediaBroswer.actionType = .DIY
-                mediaBroswer.moreActionEX = customAction
-            } else {
-                mediaBroswer.actionType = .Empty
-            }
-            mediaBroswer.dynamicBackground = true
-            mediaBroswer.showMore = PTDashboardConfig.languageFunc(text: "More")
-            mediaBroswer.moreActionImage = UIImage(.ellipsis.circleFill)
-            
-            let vc = PTMediaBrowserController(mediaData: mediaModels)
-            vc.defaultIndex = showIndex
-            vc.viewDismissBlock = {
-                PTGCDManager.shared.runOnMain {
-                    if let current = PTUtils.getCurrentVC() as? PTMotoBaseViewController {
-                        current.changeStatusBar(type: dismissBarStatus)
-                    }
+        let dismissBarStatusRawValue = dismissBarStatus.rawValue
+        let mediaBroswer = PTDashboardConfig.gobalMediaBrowserConfig()
+        if customAction.count > 0 {
+            mediaBroswer.actionType = .DIY
+            mediaBroswer.moreActionEX = customAction
+        } else {
+            mediaBroswer.actionType = .Empty
+        }
+        mediaBroswer.dynamicBackground = true
+        mediaBroswer.showMore = PTDashboardConfig.languageFunc(text: "More")
+        mediaBroswer.moreActionImage = UIImage(.ellipsis.circleFill)
+
+        let vc = PTMediaBrowserController(mediaData: mediaModels)
+        vc.defaultIndex = showIndex
+        vc.viewDismissBlock = {
+            Task { @MainActor in
+                if let current = PTUtils.getCurrentVC() as? PTMotoBaseViewController {
+                    let status = VCStatusBarChangeStatusType(rawValue: dismissBarStatusRawValue) ?? .Auto
+                    current.changeStatusBar(type: status)
                 }
             }
-            vc.viewMoreActionBlock = customActionCallback
-            vc.browserCurrentDataBlock = currentDataIndexCallback
-            let nav = PTBaseNavControl(rootViewController: vc)
-            UIViewController.currentPresentToSheet(vc: nav,sizes: [.fullscreen],completion: {
-                showed?()
-            }, dismissPanGes: false)
         }
+        vc.viewMoreActionBlock = customActionCallback
+        vc.browserCurrentDataBlock = currentDataIndexCallback
+        let nav = PTBaseNavControl(rootViewController: vc)
+        UIViewController.currentPresentToSheet(vc: nav,sizes: [.fullscreen],completion: {
+            showed?()
+        }, dismissPanGes: false)
     }
 
 }

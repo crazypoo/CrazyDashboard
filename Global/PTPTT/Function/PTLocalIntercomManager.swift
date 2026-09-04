@@ -21,23 +21,74 @@ public enum PTNetworkSignalLevel {
     case weak   // 一格红信号 (> 150ms)
 }
 
-public struct PTPeerLocation: Codable {
+// EN: Location packets carry an explicit freshness deadline so a relay cannot resurrect stale coordinates.
+// ES: Los paquetes de ubicación llevan una fecha límite explícita para que un repetidor no reviva coordenadas obsoletas.
+// 中文：位置数据包携带明确的过期时间，避免中继节点复活过期坐标。
+public struct PTPeerLocation: Codable, Sendable {
+    public static let currentSchemaVersion = 2
+    public let schemaVersion: Int
     public let lat: Double     // 纬度
     public let lon: Double     // 经度
     public let course: Double  // 车头朝向 (用于地图上旋转图标)
     public let speed: Double   // 车速
     public let originalSender: String // 源头发件人的 UUID
     public let messageID: String
+    public let createdAt: Date
+    public let expiresAt: Date
     public var ttl: Int = 10
-    public init(lat: Double, lon: Double, course: Double, speed: Double, originalSender: String, ttl: Int = 10) {
+    public init(
+        lat: Double,
+        lon: Double,
+        course: Double,
+        speed: Double,
+        originalSender: String,
+        ttl: Int = 10,
+        createdAt: Date = Date(),
+        expiresAt: Date? = nil
+    ) {
+        self.schemaVersion = Self.currentSchemaVersion
         self.lat = lat
         self.lon = lon
         self.course = course
         self.speed = speed
         self.originalSender = originalSender
         self.ttl = ttl
+        self.createdAt = createdAt
+        self.expiresAt = expiresAt ?? createdAt.addingTimeInterval(15)
         // 使用 UUID 结合时间戳作为绝对唯一的 ID
         self.messageID = "\(originalSender)_\(Date().timeIntervalSince1970)_\(UUID().uuidString.prefix(6))"
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion, lat, lon, course, speed, originalSender, messageID, createdAt, expiresAt, ttl
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let decodedCreatedAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+        self.schemaVersion = min(
+            max(try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1, 1),
+            Self.currentSchemaVersion
+        )
+        self.lat = try container.decode(Double.self, forKey: .lat)
+        self.lon = try container.decode(Double.self, forKey: .lon)
+        self.course = try container.decodeIfPresent(Double.self, forKey: .course) ?? 0
+        self.speed = try container.decodeIfPresent(Double.self, forKey: .speed) ?? 0
+        self.originalSender = try container.decode(String.self, forKey: .originalSender)
+        self.messageID = try container.decode(String.self, forKey: .messageID)
+        self.createdAt = decodedCreatedAt
+        self.expiresAt = try container.decodeIfPresent(Date.self, forKey: .expiresAt)
+            ?? decodedCreatedAt.addingTimeInterval(15)
+        self.ttl = max(0, min(10, try container.decodeIfPresent(Int.self, forKey: .ttl) ?? 10))
+    }
+
+    public var isExpired: Bool {
+        Date() >= expiresAt
+    }
+
+    public var isValid: Bool {
+        lat.isFinite && lon.isFinite && (-90...90).contains(lat) && (-180...180).contains(lon)
+            && course.isFinite && speed.isFinite && speed >= 0 && !originalSender.isEmpty
     }
 }
 
@@ -88,12 +139,16 @@ public class PTLocalIntercomManager: NSObject {
         didSet { if oldValue != currentStatusText { globalStatusChangeSet() } }
     }
     private let intercomPowerStateKey = "PTIntercomPowerStateKey"
+    private let locationSharingEnabledKey = "PTTLocationSharingEnabled"
     
     public var micVolumeMultiplier: Float = 3.0
     
     private var lastReceivedAudio: [MCPeerID: Date] = [:]
     private var currentSpeakingPeers: Set<MCPeerID> = []
     private var speakingTimer: Timer?
+    private let stateLock = NSLock()
+    private var avatarFileNames: [MCPeerID: String] = [:]
+    private var lastBroadcastLocation: (lat: Double, lon: Double, course: Double, sentAt: Date)?
 
     // EN: Live Activity eligibility requires a working audio path and a usable microphone permission state.
     // ES: La elegibilidad de Live Activity requiere una ruta de audio funcional y un permiso de micrófono utilizable.
@@ -124,6 +179,22 @@ public class PTLocalIntercomManager: NSObject {
     public var connectedPeersCount: Int {
         guard isRunning else { return 0 }
         return activePeers.count
+    }
+
+    // EN: Location sharing is an explicit user opt-in and is disabled by default.
+    // ES: Compartir ubicación requiere una activación explícita del usuario y está desactivado por defecto.
+    // 中文：位置共享必须由用户明确开启，默认关闭。
+    public var locationSharingEnabled: Bool {
+        get { UserDefaults.standard.bool(forKey: locationSharingEnabledKey) }
+        set {
+            UserDefaults.standard.set(newValue, forKey: locationSharingEnabledKey)
+            if !newValue {
+                stateLock.lock()
+                lastBroadcastLocation = nil
+                stateLock.unlock()
+            }
+            globalStatusChangeSet()
+        }
     }
 
     private var hasConnectedPeers: Bool {
@@ -171,8 +242,11 @@ public class PTLocalIntercomManager: NSObject {
         let changed = previousPeers != nextPeers || activePeers.count != snapshot.count
 
         for peer in previousPeers.subtracting(nextPeers) {
+            stateLock.lock()
             lastReceivedAudio.removeValue(forKey: peer)
             peerAvatars.removeValue(forKey: peer)
+            avatarFileNames.removeValue(forKey: peer)
+            stateLock.unlock()
             currentSpeakingPeers.remove(peer)
         }
         connectingPeers.subtract(nextPeers)
@@ -364,8 +438,37 @@ public class PTLocalIntercomManager: NSObject {
     }
 
     public func broadcastMyLocation(lat: Double, lon: Double, course: Double, speed: Double) {
+        guard isRunning,
+              locationSharingEnabled,
+              lat.isFinite,
+              lon.isFinite,
+              (-90...90).contains(lat),
+              (-180...180).contains(lon),
+              course.isFinite,
+              speed.isFinite,
+              speed >= 0,
+              let session else { return }
         let peers = session.connectedPeers
         guard !peers.isEmpty else { return }
+
+        let now = Date()
+        let shouldSend = withStateLock {
+            if let previous = lastBroadcastLocation {
+                let elapsed = now.timeIntervalSince(previous.sentAt)
+                guard elapsed >= 2 else { return false }
+                let distance = Self.distanceMeters(
+                    latitudeA: previous.lat,
+                    longitudeA: previous.lon,
+                    latitudeB: lat,
+                    longitudeB: lon
+                )
+                let headingChange = Self.headingDifference(previous.course, course)
+                guard distance >= 5 || headingChange >= 15 || elapsed >= 10 else { return false }
+            }
+            lastBroadcastLocation = (lat, lon, course, now)
+            return true
+        }
+        guard shouldSend else { return }
         
         let locData = PTPeerLocation(
             lat: lat,
@@ -384,7 +487,11 @@ public class PTLocalIntercomManager: NSObject {
             guard let payloadData = payloadString.data(using: .utf8) else { return }
             
             // 使用 .unreliable 发送，确保即使瞬间断网也不阻塞音频流
-            try? session.send(payloadData, toPeers: peers, with: .unreliable)
+            do {
+                try session.send(payloadData, toPeers: peers, with: .unreliable)
+            } catch {
+                PTNSLogConsole("⚠️ [位置共享] 发送失败: \(error.localizedDescription)")
+            }
         }
     }
 
@@ -443,6 +550,13 @@ public class PTLocalIntercomManager: NSObject {
         connectingPeers.removeAll()
         publishPeerSnapshot([], force: true)
         isRunning = true
+
+        // EN: PTT keeps a location lease only while the intercom service is explicitly running.
+        // ES: PTT mantiene un arrendamiento de ubicación solo mientras el intercomunicador está activo explícitamente.
+        // 中文：只有用户明确运行 PTT 时才持有定位用途租约。
+        Task { @MainActor in
+            PTLocationUsageCoordinator.shared.acquire(.ptt)
+        }
         
         UserDefaults.standard.set(true, forKey: intercomPowerStateKey)
         
@@ -458,6 +572,13 @@ public class PTLocalIntercomManager: NSObject {
     public func stopOfflineIntercom() {
         let wasRunning = isRunning
         isRunning = false
+
+        // EN: Release PTT's lease even for an idempotent stop, clearing a possible pending launch lease.
+        // ES: Libera el arrendamiento de PTT incluso en una detención idempotente para limpiar una solicitud pendiente.
+        // 中文：即使重复停止也释放 PTT 租约，清理可能尚未执行的启动租约。
+        Task { @MainActor in
+            PTLocationUsageCoordinator.shared.release(.ptt)
+        }
         
         UserDefaults.standard.set(false, forKey: intercomPowerStateKey)
         advertiser?.stopAdvertisingPeer()
@@ -496,7 +617,9 @@ public class PTLocalIntercomManager: NSObject {
     private func stopSpeakingDetector() {
         speakingTimer?.invalidate()
         speakingTimer = nil
+        stateLock.lock()
         lastReceivedAudio.removeAll()
+        stateLock.unlock()
         currentSpeakingPeers.removeAll()
     }
     
@@ -504,7 +627,8 @@ public class PTLocalIntercomManager: NSObject {
         let now = Date()
         var newSpeaking: Set<MCPeerID> = []
         
-        for (peer, lastTime) in lastReceivedAudio {
+        let receivedAudioSnapshot = withStateLock { lastReceivedAudio }
+        for (peer, lastTime) in receivedAudioSnapshot {
             if now.timeIntervalSince(lastTime) < 0.5 {
                 newSpeaking.insert(peer)
             }
@@ -869,10 +993,7 @@ public class PTLocalIntercomManager: NSObject {
         for peer in self.activePeers {
             // 如果你在内存字典里有这个人的自定义头像，就去 App Group 拿到它的文件名；如果没有，传 ""
             var fileName = ""
-            if let customAvatar = self.self.peerAvatars[peer] {
-                // 这里调用我们上面的辅助方法存入共享沙盒，并拿到文件名
-                fileName = savePeerAvatarToAppGroup(image: customAvatar, peerID: peer)
-            }
+            fileName = withStateLock { avatarFileNames[peer] ?? "" }
             
             // 判断这个人当前是否正在说话 (基于 currentSpeakingPeers 集合)
             let isSpeaking = self.currentSpeakingPeers.contains(peer)
@@ -918,18 +1039,18 @@ public class PTLocalIntercomManager: NSObject {
     }
     
     public func restoreIntercomStateAtLaunch() {
-        // 进程重启后 Activity 引用会丢失，启动阶段先清理系统中可能残留的旧活动。
+        // EN: Reconcile stale system activities without restoring a network session during cold launch.
+        // ES: Coordina las actividades obsoletas sin restaurar una sesión de red durante el lanzamiento en frío.
+        // 中文：冷启动时只清理遗留 Activity，不恢复网络会话。
         Task { @MainActor in
             PTLiveActivityManager.shared.reconcileIntercomActivitiesAtLaunch()
         }
 
-        let shouldAutoStart = UserDefaults.standard.bool(forKey: intercomPowerStateKey)
-        if shouldAutoStart {
-            PTNSLogConsole("🚀 [音频引擎] 检测到上次对讲机为开启状态，正在后台自动组网...")
-            startOfflineIntercom()
-        } else {
-            PTNSLogConsole("💤 [音频引擎] 上次对讲机为关闭状态，保持静默，省电模式")
-        }
+        // EN: A previous preference is informational only; the user must explicitly start PTT again.
+        // ES: La preferencia anterior es solo informativa; el usuario debe iniciar PTT explícitamente.
+        // 中文：上次的开关值仅作记录，必须由用户再次明确启动 PTT。
+        UserDefaults.standard.set(false, forKey: intercomPowerStateKey)
+        PTNSLogConsole("💤 [音频引擎] 冷启动保持静默，等待用户明确开启对讲")
     }
     
     private func savePeerAvatarToAppGroup(image: UIImage, peerID: MCPeerID) -> String {
@@ -942,6 +1063,34 @@ public class PTLocalIntercomManager: NSObject {
             return fileName
         }
         return ""
+    }
+
+    private func withStateLock<T>(_ body: () -> T) -> T {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return body()
+    }
+
+    private static func distanceMeters(
+        latitudeA: Double,
+        longitudeA: Double,
+        latitudeB: Double,
+        longitudeB: Double
+    ) -> Double {
+        let latitude1 = latitudeA * .pi / 180
+        let latitude2 = latitudeB * .pi / 180
+        let deltaLatitude = (latitudeB - latitudeA) * .pi / 180
+        let deltaLongitude = (longitudeB - longitudeA) * .pi / 180
+        let value = sin(deltaLatitude / 2) * sin(deltaLatitude / 2)
+            + cos(latitude1) * cos(latitude2) * sin(deltaLongitude / 2) * sin(deltaLongitude / 2)
+        return 6_371_000 * 2 * atan2(sqrt(value), sqrt(max(0, 1 - value)))
+    }
+
+    private static func headingDifference(_ first: Double, _ second: Double) -> Double {
+        let normalizedFirst = first.truncatingRemainder(dividingBy: 360)
+        let normalizedSecond = second.truncatingRemainder(dividingBy: 360)
+        let delta = abs(normalizedFirst - normalizedSecond)
+        return min(delta, 360 - delta)
     }
 }
 
@@ -1070,18 +1219,21 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
                 let jsonString = text.replacingOccurrences(of: "LOC:", with: "")
                 if let jsonData = jsonString.data(using: .utf8),
                    var location = try? JSONDecoder().decode(PTPeerLocation.self, from: jsonData) {
-                    
-                    guard location.originalSender != self.myUUID else { return }
-                    
+
+                    guard location.originalSender != self.myUUID,
+                          location.isValid,
+                          !location.isExpired else { return }
+
                     let now = Date()
-                    self.processedMessageIDs = self.processedMessageIDs.filter { now.timeIntervalSince($0.value) < 10 }
-                    
-                    if self.processedMessageIDs.keys.contains(location.messageID) {
-                        return
+                    let isDuplicate = self.withStateLock {
+                        self.processedMessageIDs = self.processedMessageIDs.filter { now.timeIntervalSince($0.value) < 15 }
+                        if self.processedMessageIDs.keys.contains(location.messageID) {
+                            return true
+                        }
+                        self.processedMessageIDs[location.messageID] = now
+                        return false
                     }
-                    
-                    // 记录这个新的包，打上时间戳
-                    self.processedMessageIDs[location.messageID] = now
+                    guard !isDuplicate else { return }
                     
                     // 利用全局通知将位置发送给外部地图控制器
                     DispatchQueue.main.async {
@@ -1161,7 +1313,9 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
         
         // 🌟 7. 解决头像错误闪烁：只有确实没有被上面的 Return 拦截，走到这里的才是真正的音频流！
         // 此时我们才记录它的说话时间！
-        lastReceivedAudio[peerID] = Date()
+        withStateLock {
+            lastReceivedAudio[peerID] = Date()
+        }
         self.receiveAndPlay(data: data)
     }
 
@@ -1184,7 +1338,13 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
             if let receivedImage = UIImage(data: imageData) {
                 PTNSLogConsole("🖼️ [头像传输] 成功接收到队友 \(peerID.displayName) 的头像！")
                 
-                self.peerAvatars[peerID] = receivedImage
+                let savedFileName = self.savePeerAvatarToAppGroup(image: receivedImage, peerID: peerID)
+                self.withStateLock {
+                    self.peerAvatars[peerID] = receivedImage
+                    if !savedFileName.isEmpty {
+                        self.avatarFileNames[peerID] = savedFileName
+                    }
+                }
                 self.globalStatusChangeSet()
                 // 🌟 发送全局通知，把照片扔给外部 UI 进行刷新
                 DispatchQueue.main.async {
