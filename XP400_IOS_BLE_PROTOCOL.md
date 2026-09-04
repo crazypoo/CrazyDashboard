@@ -1,12 +1,13 @@
 # Peugeot XP400 iOS BLE 通信协议与实现规范
 
-> 文档版本：1.1
+> 文档版本：1.2
 >
 > 审计日期：2026-09-04
 >
 > iOS 代码基线：`75b3acf`
 > 文档定位：项目内部实现规范 / 真车抓包校验依据
 > 1.1 更新记录：补充 iOS 运行时边界、证据分层、导航实际链路和 BLE-OPT 优化清单；完成 BLE-OPT-001 上行分片重组实现与纯逻辑验证
+> 1.2 更新记录：完成 BLE-OPT-005 服务生命周期编排；服务添加成功后才开始广播，支持重复启动、显式停止、蓝牙状态恢复及前后台幂等校正
 
 ## 1. 文档边界
 
@@ -24,7 +25,7 @@
 
 “已确认并实现”只表示“研究文档与当前代码能够对上”，不表示已经通过真实 XP400 车辆验证。真车验证必须另外记录车辆型号、仪表固件、iOS 版本、原始 Hex 和 UI 结果。
 
-本次 1.1 版新增了四类审计维度：
+本次审计继续沿用 1.1 版新增的四类审计维度：
 
 | 维度 | 判断依据 | 当前文档规则 |
 |---|---|---|
@@ -40,7 +41,7 @@
 |---|---|---|
 | 参考 APK | `Peugeot+Motocycles_2.1.37_APKPure.xapk`，versionCode `104` | 仅作为研究来源，不代表 iOS 包或 Peugeot 官方规范 |
 | iOS 代码 | Git 提交 `75b3acf` | 本文当前实现事实的基线 |
-| BLE 核心快照 | `PTBluetoothManager.swift` SHA-256：`db448bcf14d9092e1d7f51721ae24589ef00387ce07dee2006cc5bfd2be64248` | 证明协议审计对应的稳定核心版本 |
+| BLE 核心快照 | `PTBluetoothManager.swift` SHA-256：`2a72e60029f5bd058b3a19f16374ccf7cc7a89a9cb1f33d5c9ac8b5ec71b56ca` | 记录包含 BLE-OPT-005 生命周期编排的当前工作树快照 |
 | 协议契约快照 | `PTXP400BLEProtocolContract.swift` SHA-256：`9cdeee5c887e481a596cac2a2fb63f6b0139babf6a3531d77ca1454508bc892b` | 固定纯数据校验器版本 |
 
 如果任一代码快照发生变化，应重新核对本文档，而不是只修改版本号。
@@ -74,11 +75,15 @@ XP400 的 Connectivity Box 是 BLE Central / GATT Client，iPhone 是 BLE Periph
 启动流程：
 
 ```text
+startBaseStationAndScan() 保留“请求广播”意图
+        ↓
 CBPeripheralManager.state == .poweredOn
         ↓
-创建 FEFB 服务和四个特征
+创建 FEFB 服务和四个特征（configuring）
         ↓
-仅广播 FEFB Service UUID
+peripheralManager(_:didAdd:error:) 成功
+        ↓
+仅广播 FEFB Service UUID（advertising）
         ↓
 XP400 连接并订阅 TX / TX Credits
         ↓
@@ -87,11 +92,24 @@ XP400 连接并订阅 TX / TX Credits
 认证完成后开放业务帧
 ```
 
-当前广告只包含服务 UUID，不主动广播本地设备名称。蓝牙未处于 `.poweredOn` 时不会启动广播。
+当前广告只包含服务 UUID，不主动广播本地设备名称。蓝牙未处于 `.poweredOn` 时不会启动广播；启动请求会保留，待蓝牙恢复后继续配置服务。
 
 断开订阅后，代码会清除认证状态、订阅标志、连接身份和日志状态，并通知业务代理连接已经结束。
 
-`startBaseStationAndScan()` 的名称沿用了历史命名；当前实现只启动 iOS Peripheral 广播，不执行 BLE Central 扫描。服务添加、广播启动和订阅回调也没有在本文档中合并成一个“已连接”状态，后续排查连接问题时必须分别记录这三个阶段。
+`startBaseStationAndScan()` 的名称沿用了历史命名；当前实现只启动 iOS Peripheral 广播，不执行 BLE Central 扫描。服务生命周期单独记录为：`unavailable`（蓝牙不可用）、`idle`（未请求广播）、`configuring`（等待 `didAdd`）、`ready`（服务已添加但未广播）和 `advertising`（已请求/正在广播）。订阅和认证仍然是后续独立阶段，不能用 `advertising` 或 `blueConnected` 代替。
+
+`startBaseStationAndScan()` 是幂等操作：广播已经存在、服务正在添加或服务已经就绪时不会重复添加服务。`stopAdvertising()` 只停止广播并保留已添加服务，不强制断开已经订阅的仪表；下一次启动会复用服务。CoreBluetooth 没有独立的“广播成功”代理回调，因此 `advertising` 以 `startAdvertising` 请求和 `isAdvertising` 状态观察共同判断。
+
+状态转换规则：
+
+| 触发 | 处理 | 结果 |
+|---|---|---|
+| `startBaseStationAndScan()` | 记录广播意图，按当前蓝牙状态继续 | `.configuring` / `.ready` / `.advertising`，不可用时 `.unavailable` |
+| `didAdd service` 成功 | 仅在 FEFB 服务注册完成后启动广告 | `.ready` → `.advertising` |
+| `didAdd service` 失败 | 记录错误，不启动广告 | 回到 `.idle` |
+| 蓝牙关闭、未授权、重置或不支持 | 停止广告、废弃服务注册状态、清理会话认证 | `.unavailable`；保留启动意图 |
+| 蓝牙重新 `.poweredOn` | 重新添加服务并在 `didAdd` 成功后广播 | `.configuring` → `.advertising` |
+| App 回前台 | 调用幂等校正，补起被系统停止的广告 | 不重复添加服务或广播 |
 
 ## 2.3 iOS 后台与系统配置边界
 
@@ -104,9 +122,9 @@ location
 audio
 ```
 
-这只能证明工程声明了相应后台能力，不代表 XP400 连接在进程被系统挂起、终止或重新启动后可以自动恢复。当前 `PTBluetoothServerManager` 没有实现 CoreBluetooth State Restoration，也没有 `willRestoreState` 或 `didAdd service` 回调作为服务恢复和广播成功的证据。
+这只能证明工程声明了相应后台能力，不代表 XP400 连接在进程被系统挂起、终止或重新启动后可以自动恢复。当前 `PTBluetoothServerManager` 仍没有实现 CoreBluetooth State Restoration 或 `willRestoreState`；但服务添加已经通过 `didAdd service` 串行化，前台恢复会通过生命周期校正重新检查服务和广播。
 
-当前启动顺序是 `setupServices()` 调用 `peripheralManager.add(service)` 后立即调用 `startAdvertising(...)`，没有等待 `didAdd service` 成功回调；管理器也没有独立的公开 `stopAdvertising` 生命周期入口。服务重复添加、蓝牙状态切换和重新启动时，应把这些事实作为排查依据，而不能只看广告是否出现。
+当前启动顺序是 `setupServices()` 调用 `peripheralManager.add(service)`，等待 `didAdd service` 成功后才调用 `startAdvertising(...)`；管理器提供幂等的 `stopAdvertising()` 生命周期入口。进入后台不主动停止已请求的广播，因为工程声明了 `bluetooth-peripheral`；回到前台会再次校正。进程被系统终止后的自动恢复仍不在本次范围内。
 
 `PTVehicleConnectivityCoordinator` 另外有 15 秒的仪表连接 watchdog。它属于应用层连接尝试超时，不等同于研究文档中的 30 秒 GATT 超时或 6 秒 MTU 等待超时；watchdog 失败时仍应单独检查 Peripheral 广播、服务状态、发送队列和认证状态是否已经清理。
 
@@ -586,7 +604,7 @@ Frame ID：`0x06`，标准 Payload 为 8 bytes。
 | `testXP400BLEInboundReassemblerValidatesConnectionFrameAndResynchronizes` | 15-byte 连接帧严格校验和帧头重同步 | 真车非法连接帧后的恢复行为 |
 | `testXP400BLEInboundReassemblerHandlesRawChallengeBoundaryAndDuplicate` | 20-byte 挑战边界和前阶段重复帧拦截 | 丢字节后的协议级恢复能力 |
 
-BLE-OPT-001 已有纯重组逻辑测试，但当前仍没有覆盖 `PTBluetoothServerManager` 真实回调时序、空 Credits 输入、断连后队列清理、后台恢复或 `PTScooterAuth` 完整握手的自动化测试；这些属于真实设备回归和其他 `BLE-OPT-002`～`010` 的后续证据范围。
+BLE-OPT-001 已有纯重组逻辑测试。BLE-OPT-005 已加入服务生命周期状态保护和前后台校正，但当前仍没有在 XCTest 中驱动真实 `CBPeripheralManager` 回调时序；空 Credits 输入、断连后队列清理、后台恢复和 `PTScooterAuth` 完整握手仍属于其他工作包或真车回归范围。
 
 ## 11. 当前尚未交付或仅供开发者测试的能力
 
@@ -701,7 +719,7 @@ TCS、灯光和 ABS 状态字段，以及断开帧的 Frame ID，已经有 `BLE-
 ### P1：协议一致性和运行稳定性
 
 - [ ] **BLE-OPT-004 严格认证帧校验**：在保留兼容策略前提下，增加 15-byte Key/Configuration、20-byte Challenge/Response 和 15-byte Connection Frame 的长度、Frame ID、结束符及身份字符校验。
-- [ ] **BLE-OPT-005 服务生命周期**：明确 `didUpdateState`、服务添加完成、开始广播、停止广播和重复启动的状态；验证蓝牙关闭、重新开启、App 进入后台和回前台后的行为。
+- [x] **BLE-OPT-005 服务生命周期**：已明确 `didUpdateState`、`didAdd service`、开始广播、停止广播和重复启动的状态；蓝牙不可用时停止广播并保留启动意图，恢复后重新注册服务；前后台切换采用幂等校正且后台不主动中断已请求的 Peripheral 会话。真实设备的蓝牙开关、系统后台挂起和进程终止结果仍需现场验收。
 - [ ] **BLE-OPT-006 导航状态合并**：在应用层或 BLE 适配边界增加动作/距离/ETA 去重和最低发送间隔；Credits 不足时只保留最新待发送导航，不能让过期指令占满队列。
 - [ ] **BLE-OPT-007 不可用值统一**：将 `0xFF`、`0xFFFF` 等不可用值保留为原始值，同时输出明确的有效性状态，避免 UI 把不可用数据显示成真实数值。
 - [ ] **BLE-OPT-008 严格 Mock 样本**：让 Data2 和 ABS Mock 先符合标准 11-byte 状态帧，再评估是否收紧 `parseDashboardFrame(_:)` 的长度检查。
@@ -722,14 +740,14 @@ TCS、灯光和 ABS 状态字段，以及断开帧的 Frame ID，已经有 `BLE-
 
 未完成工作包不得把本文件中的“已确认并实现”状态升级为“真车已验证”。
 
-## 17. 1.1 版审计结论
+## 17. 1.2 版审计结论
 
 与外部研究文档相比，当前 iOS 代码已经覆盖 XP400 的主要 TIO UART 业务路径，但仍有以下细节不应被忽略：
 
 - 协议来源中的严格固定长度与当前宽松解析不同；
 - 认证和连接超时在 iOS 核心中尚未完整实现；
 - 当前导航来源是 AMap，并且发送频率没有统一节流；
-- 后台模式已声明，但 CoreBluetooth 状态恢复未实现；
+- 后台模式已声明；服务添加和前后台广播校正已实现，但 CoreBluetooth State Restoration 仍未实现；
 - 断连清理、Credits 健壮性和上行重组是优先级最高的工程优化点；
 - ANCS 通道仍未实现；TCS、灯光、ABS 前轮速度和部分保留位已经具备真车字段证据，但 TCS/背光写入指令和跨车型兼容性仍不能直接当作正式支持能力。
 

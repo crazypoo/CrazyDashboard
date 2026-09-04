@@ -77,6 +77,11 @@ class SceneDelegate: PTWindowSceneDelegate {
         // Use this method to undo the changes made on entering the background.
         PTNSLogConsole(">>>>>>>>>>>>>>>>>>>>>sceneWillEnterForeground")
         PTDashboardConfig.shared.appInBackground = false
+
+        // EN: Reconcile requested peripheral advertising after the scene returns; the operation is idempotent.
+        // ES: Reconcilia la publicidad solicitada al volver la escena; la operación es idempotente.
+        // 中文：场景回到前台后校正用户请求的外设广播，重复执行不会重复添加服务或广播。
+        PTBluetoothServerManager.shared.reconcilePeripheralLifecycle()
     }
 
     func sceneDidEnterBackground(_ scene: UIScene) {
@@ -86,6 +91,11 @@ class SceneDelegate: PTWindowSceneDelegate {
         PTNSLogConsole(">>>>>>>>>>>>>>>>>>>>>sceneDidEnterBackground")
         PTDashboardConfig.shared.appInBackground = true
         NotificationCenter.default.post(name: PTAppEnterBackgroundNotification, object: nil)
+
+        // EN: Keep an active peripheral session alive in the declared Bluetooth background mode.
+        // ES: Mantén activa una sesión periférica en el modo Bluetooth de background declarado.
+        // 中文：依靠工程声明的蓝牙后台模式保持已请求的外设会话，不因界面进入后台主动停止广播。
+        PTBluetoothServerManager.shared.reconcilePeripheralLifecycle()
     }
         
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {

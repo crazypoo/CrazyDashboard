@@ -699,6 +699,17 @@ extension PTBLEDashboardDelegate {
 
 // 只保留外设管理器，做纯粹的服务器
 class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
+
+    // EN: Track GATT setup and advertising separately; a connected central is not the same as a ready peripheral.
+    // ES: Separa la preparación GATT de la publicidad; un central conectado no equivale a un periférico listo.
+    // 中文：分开跟踪 GATT 配置和广播状态；已连接的中心设备不等于外设已经准备完成。
+    private enum PeripheralLifecycleState: String {
+        case unavailable
+        case idle
+        case configuring
+        case ready
+        case advertising
+    }
     
     static let shared = PTBluetoothServerManager()
     
@@ -777,6 +788,15 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     // ES: Mantén el reensamblado en el límite de entrada UART; la autenticación, los créditos, el envío y la decodificación permanecen sin cambios.
     // 中文：仅在 UART 入站边界增加重组；认证、Credits、发送和解码逻辑保持不变。
     private var inboundReassembler = PTXP400BLEInboundReassembler()
+
+    // EN: Keep the user's advertising intent across Bluetooth power transitions without starting it implicitly.
+    // ES: Conserva la intención de publicidad del usuario durante los cambios de Bluetooth sin iniciarla implícitamente.
+    // 中文：蓝牙状态切换期间保留用户的广播意图，但不隐式启动广播。
+    private var peripheralLifecycleState: PeripheralLifecycleState = .idle
+    private var shouldAdvertise = false
+    private var serviceAddInFlight = false
+    private var serviceConfigured = false
+    private var dashboardService: CBMutableService?
         
     struct PTNotifyJob {
         let data: Data
@@ -794,28 +814,108 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         
     // MARK: - 启动基站
     func startBaseStationAndScan() {
-        if peripheralManager.state == .poweredOn {
-            if peripheralManager.isAdvertising {
-                PTOBDLogger.moto.ptLog("⚠️ [状态] 基站已经在广播中了")
-                return
-            }
-            setupServices()
-            
-            // 🚨 核心修复 1 延续：只广播服务，不带名字，保证 FEFB 绝对暴露给摩托车！
-            peripheralManager.startAdvertising([
-                CBAdvertisementDataServiceUUIDsKey: [TIO_SERVICE]
-            ])
-            PTOBDLogger.moto.ptLog("📡 [状态] 信号发射！车机可以直接发现我们了...")
-        } else {
-            PTOBDLogger.moto.ptLog("❌ [错误] 蓝牙未开启，状态: \(peripheralManager.state.rawValue)")
-        }
+        // EN: Starting is an idempotent request; didUpdateState or didAdd will perform the next safe step.
+        // ES: El inicio es una solicitud idempotente; didUpdateState o didAdd ejecutará el siguiente paso seguro.
+        // 中文：启动只是幂等请求，后续安全步骤由 didUpdateState 或 didAdd 执行。
+        shouldAdvertise = true
+        reconcilePeripheralLifecycle()
     }
-    
+
+    // EN: Reconcile the requested peripheral state after foreground transitions or external Bluetooth changes.
+    // ES: Reconciliamos el estado solicitado del periférico después del foreground o de cambios externos de Bluetooth.
+    // 中文：在回到前台或蓝牙状态外部变化后，重新校正用户请求的外设状态。
+    func reconcilePeripheralLifecycle() {
+        guard shouldAdvertise else {
+            if peripheralManager.isAdvertising {
+                peripheralManager.stopAdvertising()
+            }
+            if peripheralLifecycleState == .advertising {
+                peripheralLifecycleState = serviceConfigured ? .ready : .idle
+            }
+            return
+        }
+
+        guard peripheralManager.state == .poweredOn else {
+            peripheralLifecycleState = .unavailable
+            PTOBDLogger.moto.ptLog("⏸️ [基站生命周期] 等待蓝牙可用，当前状态: \(peripheralManager.state.rawValue)")
+            return
+        }
+
+        startAdvertisingIfPossible()
+    }
+
+    // EN: Stop only advertising; an existing subscribed central is not forcefully disconnected by this lifecycle API.
+    // ES: Detén solo la publicidad; esta API no desconecta forzosamente a un central ya suscrito.
+    // 中文：该生命周期接口只停止广播，不强制断开已经订阅的中心设备。
+    public func stopAdvertising() {
+        shouldAdvertise = false
+        peripheralManager.stopAdvertising()
+        peripheralLifecycleState = serviceConfigured ? .ready : .idle
+        PTOBDLogger.moto.ptLog("⏹️ [基站生命周期] 已停止广播，服务保留以便下次幂等启动")
+    }
+
+    // EN: Start advertising only after the FEFB service is registered and the peripheral is powered on.
+    // ES: Inicia la publicidad solo después de registrar el servicio FEFB y confirmar que el periférico está encendido.
+    // 中文：只有 FEFB 服务注册完成且蓝牙外设处于开启状态后，才开始广播。
+    private func startAdvertisingIfPossible() {
+        guard !peripheralManager.isAdvertising else {
+            peripheralLifecycleState = .advertising
+            PTOBDLogger.moto.ptLog("⚠️ [基站生命周期] 广播已经存在，跳过重复启动")
+            return
+        }
+
+        guard !serviceAddInFlight else {
+            peripheralLifecycleState = .configuring
+            PTOBDLogger.moto.ptLog("⏳ [基站生命周期] 服务正在添加，等待 didAdd 回调后广播")
+            return
+        }
+
+        guard serviceConfigured, dashboardService != nil else {
+            setupServices()
+            return
+        }
+
+        // 🚨 核心修复延续：只广播服务，不带名字，保证 FEFB 绝对暴露给摩托车！
+        peripheralManager.startAdvertising([
+            CBAdvertisementDataServiceUUIDsKey: [TIO_SERVICE]
+        ])
+        peripheralLifecycleState = .advertising
+        PTOBDLogger.moto.ptLog("📡 [基站生命周期] 已请求广播 FEFB 服务")
+    }
+
     func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
         PTOBDLogger.moto.ptLog("🛠️ [DEBUG] 硬件状态: \(peripheral.state.rawValue)")
+
+        guard peripheral.state == .poweredOn else {
+            peripheral.stopAdvertising()
+            peripheral.removeAllServices()
+            serviceAddInFlight = false
+            serviceConfigured = false
+            dashboardService = nil
+            txChar = nil
+            txCreditsChar = nil
+            peripheralLifecycleState = .unavailable
+            resetDashboardSessionForPeripheralLoss()
+            return
+        }
+
+        peripheralLifecycleState = shouldAdvertise ? .ready : .idle
+        if shouldAdvertise {
+            startAdvertisingIfPossible()
+        }
     }
-    
+
     private func setupServices() {
+        guard peripheralManager.state == .poweredOn else {
+            peripheralLifecycleState = .unavailable
+            return
+        }
+
+        guard !serviceConfigured, !serviceAddInFlight else {
+            peripheralLifecycleState = serviceConfigured ? .ready : .configuring
+            return
+        }
+
         let rxChar = CBMutableCharacteristic(
             type: UART_RX,
             properties: [.writeWithoutResponse],
@@ -849,9 +949,73 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
 
         let service = CBMutableService(type: TIO_SERVICE, primary: true)
         service.characteristics = [rxChar, txChar, rxCreditsChar, txCreditsChar]
+        dashboardService = service
+        serviceAddInFlight = true
+        peripheralLifecycleState = .configuring
         peripheralManager.add(service)
                 
-        PTOBDLogger.moto.ptLog("🛠️ [DEBUG] 通道搭建完毕 (iOS 强制加密挂载完成)")
+        PTOBDLogger.moto.ptLog("🛠️ [基站生命周期] 服务注册请求已提交，等待 didAdd 回调")
+    }
+
+    // EN: Treat service registration completion as the only safe boundary before advertising.
+    // ES: Trata la finalización del registro del servicio como el único límite seguro antes de publicitar.
+    // 中文：把服务注册完成作为开始广播前唯一安全的边界。
+    func peripheralManager(_ peripheral: CBPeripheralManager, didAdd service: CBService, error: Error?) {
+        guard service.uuid == TIO_SERVICE else { return }
+
+        serviceAddInFlight = false
+        if let error {
+            serviceConfigured = false
+            dashboardService = nil
+            peripheralLifecycleState = .idle
+            PTOBDLogger.moto.ptLog("❌ [基站生命周期] FEFB 服务添加失败: \(error.localizedDescription)")
+            return
+        }
+
+        guard peripheral.state == .poweredOn else {
+            serviceConfigured = false
+            dashboardService = nil
+            peripheralLifecycleState = .unavailable
+            PTOBDLogger.moto.ptLog("⚠️ [基站生命周期] 服务添加完成时蓝牙已不可用，忽略本次服务")
+            return
+        }
+
+        serviceConfigured = true
+        peripheralLifecycleState = .ready
+        PTOBDLogger.moto.ptLog("✅ [基站生命周期] FEFB 服务添加完成")
+
+        if shouldAdvertise {
+            startAdvertisingIfPossible()
+        }
+    }
+
+    // EN: Clear only transport-session identity and authentication when CoreBluetooth becomes unavailable.
+    // ES: Limpia solo la identidad y autenticación de la sesión de transporte cuando CoreBluetooth deja de estar disponible.
+    // 中文：CoreBluetooth 不可用时仅清理传输会话身份和认证状态。
+    private func resetDashboardSessionForPeripheralLoss() {
+        let hadSession = authenticated
+            || isTioSubscribed
+            || isCreditsSubscribed
+            || connectedCentral != nil
+            || dashboardConnectionIdentity != nil
+            || PTDashboardConfig.shared.blueConnected
+
+        authenticated = false
+        isTioSubscribed = false
+        isCreditsSubscribed = false
+        authState = .waitKeyId
+        inboundReassembler.reset()
+        connectedCentral = nil
+        dashboardConnectionIdentity = nil
+
+        guard hadSession else { return }
+
+        PTOBDLogger.moto.stopFileLogging()
+        PTDashboardConfig.shared.blueConnected = false
+        delegates.forEach {
+            $0.delegate?.dashboardManager(self, didChangeConnectionState: false)
+            $0.delegate?.dashboardManager(self, didUpdateConnectionIdentity: nil)
+        }
     }
     
     // MARK: - 监听订阅
