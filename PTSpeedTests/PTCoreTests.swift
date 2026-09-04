@@ -401,6 +401,73 @@ final class PTCoreTests: XCTestCase {
         XCTAssertEqual(store.vehicle(id: vehicleID)?.lastDashboardSyncAt, secondSnapshot.capturedAt)
     }
 
+    // EN: Mock odometer data must not replace a real value, while real data can correct a previous mock value.
+    // ES: El odómetro simulado no debe reemplazar un valor real, pero el valor real puede corregir uno simulado anterior.
+    // 中文：模拟里程不能覆盖真实里程，但真实数据可以纠正之前保存的模拟里程。
+    @MainActor
+    func testMockOdometerCannotOverrideRealValue() throws {
+        let realSuiteName = "PTMockOdometerProtectionTests.real.\(UUID().uuidString)"
+        let realDefaults = try XCTUnwrap(UserDefaults(suiteName: realSuiteName))
+        defer { realDefaults.removePersistentDomain(forName: realSuiteName) }
+
+        let realStore = PTMotorcycleGarageStore(userDefaults: realDefaults)
+        let realVehicleID = try XCTUnwrap(realStore.currentVehicle?.id)
+        XCTAssertTrue(realStore.updateOdometer(9_998, vehicleID: realVehicleID))
+
+        let mockSnapshot = PTGarageDashboardSnapshot(
+            odometerKm: 15_800,
+            source: .mock
+        )
+        XCTAssertEqual(realStore.applyDashboardSnapshot(mockSnapshot, to: realVehicleID), .unchanged)
+        XCTAssertEqual(realStore.vehicle(id: realVehicleID)?.odometerKm, 9_998)
+
+        let lowerMockSnapshot = PTGarageDashboardSnapshot(
+            odometerKm: 1,
+            source: .mock
+        )
+
+        let legacySuiteName = "PTMockOdometerProtectionTests.legacy.\(UUID().uuidString)"
+        let legacyDefaults = try XCTUnwrap(UserDefaults(suiteName: legacySuiteName))
+        defer { legacyDefaults.removePersistentDomain(forName: legacySuiteName) }
+        let legacyVehicle = PTMotorcycleProfile(
+            name: "Legacy Mock Bike",
+            odometerKm: 15_800,
+            odometerSource: nil,
+            lastDashboardSyncAt: Date()
+        )
+        let legacyDocument = PTMotorcycleGarageDocument(
+            schemaVersion: PTMotorcycleGarageStore.currentSchemaVersion,
+            selectedVehicleID: legacyVehicle.id,
+            vehicles: [legacyVehicle]
+        )
+        legacyDefaults.set(
+            try JSONEncoder().encode(legacyDocument),
+            forKey: PTMotorcycleGarageStore.storageKey
+        )
+        let legacyStore = PTMotorcycleGarageStore(userDefaults: legacyDefaults)
+        XCTAssertEqual(legacyStore.applyDashboardSnapshot(lowerMockSnapshot, to: legacyVehicle.id), .updated)
+        XCTAssertEqual(legacyStore.vehicle(id: legacyVehicle.id)?.odometerKm, 1)
+
+        let mockSuiteName = "PTMockOdometerProtectionTests.mock.\(UUID().uuidString)"
+        let mockDefaults = try XCTUnwrap(UserDefaults(suiteName: mockSuiteName))
+        defer { mockDefaults.removePersistentDomain(forName: mockSuiteName) }
+
+        let mockStore = PTMotorcycleGarageStore(userDefaults: mockDefaults)
+        let mockVehicleID = try XCTUnwrap(mockStore.currentVehicle?.id)
+        XCTAssertEqual(mockStore.applyDashboardSnapshot(mockSnapshot, to: mockVehicleID), .updated)
+        XCTAssertEqual(mockStore.vehicle(id: mockVehicleID)?.odometerKm, 15_800)
+
+        XCTAssertEqual(mockStore.applyDashboardSnapshot(lowerMockSnapshot, to: mockVehicleID), .updated)
+        XCTAssertEqual(mockStore.vehicle(id: mockVehicleID)?.odometerKm, 1)
+
+        let realSnapshot = PTGarageDashboardSnapshot(
+            odometerKm: 9_998,
+            source: .dashboard
+        )
+        XCTAssertEqual(mockStore.applyDashboardSnapshot(realSnapshot, to: mockVehicleID), .updated)
+        XCTAssertEqual(mockStore.vehicle(id: mockVehicleID)?.odometerKm, 9_998)
+    }
+
     // EN: Watch navigation context must round-trip without losing the maneuver identity used for haptics.
     // ES: El contexto de navegación del Watch debe conservar la identidad de maniobra usada por los hápticos.
     // 中文：Watch 导航上下文往返编码后，必须保留用于触觉去重的转向标识。

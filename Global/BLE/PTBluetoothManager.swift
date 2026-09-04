@@ -1596,7 +1596,7 @@ extension PTBluetoothServerManager {
         let fuel = UInt8(PTMockPhysicsState.mockFuel) // 逆向公式: (254 * 0.3937) ≈ 100%
         let avg: UInt8 = 45 // 4.5 L/100km
         let trip: UInt16 = 1250 // 125.0 km
-        let odo: UInt32 = 158000 // 15800.0 km
+        let odo: UInt32 = 10 // 1.0 km
         
         return [
             fuel, 0x00, avg,

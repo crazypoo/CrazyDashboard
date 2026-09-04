@@ -232,7 +232,9 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
             ? localized("garage_no_vehicle_details")
             : details.joined(separator: " · ")
         vehicleVINLabel.text = "\(localized("garage_vin")): \(vehicle.vin.isEmpty ? localized("garage_no_vin") : vehicle.vin)"
-        vehicleMileageLabel.text = "\(localized("garage_mileage")): \(formattedMileage(vehicle.odometerKm))"
+        let liveSnapshot = liveDashboardSnapshot(for: vehicle)
+        let displayedOdometer = displayedOdometer(for: vehicle, liveSnapshot: liveSnapshot)
+        vehicleMileageLabel.text = "\(localized("garage_mileage")): \(formattedMileage(displayedOdometer))"
         if let capacity = vehicle.tankCapacityLiters {
             let reserve = vehicle.reserveFuelPercent ?? 10
             vehicleFuelProfileLabel.text = "\(localized("garage_fuel_profile")): \(String(format: "%.1f L", capacity)) · \(localized("garage_fuel_reserve")): \(reserve)%"
@@ -300,6 +302,48 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
                 isBoundLiveVehicle: isBoundLiveVehicle
             )
         ].joined(separator: "\n")
+    }
+
+    private func liveDashboardSnapshot(for vehicle: PTMotorcycleProfile) -> PTGarageDashboardSnapshot? {
+        let coordinator = PTVehicleConnectivityCoordinator.shared
+        if coordinator.dashboardDataIsBoundToSelectedVehicle,
+           coordinator.dashboardGarageVehicleID == vehicle.id,
+           let snapshot = coordinator.dashboardLiveSnapshot {
+            return snapshot
+        }
+
+        guard vehicle.id == store.selectedVehicleID,
+              coordinator.snapshot.dashboard.transport == .dashboardMock,
+              (coordinator.snapshot.dashboard.state == .connecting
+                || coordinator.snapshot.dashboard.state == .connected),
+              let odometerKm = PTBluetoothServerManager.shared.latestData1?.odoKm else {
+            return nil
+        }
+        return PTGarageDashboardSnapshot(odometerKm: odometerKm, source: .mock)
+    }
+
+    private func displayedOdometer(
+        for vehicle: PTMotorcycleProfile,
+        liveSnapshot: PTGarageDashboardSnapshot?
+    ) -> Double {
+        guard let liveSnapshot, let liveOdometer = liveSnapshot.odometerKm else {
+            return vehicle.odometerKm
+        }
+
+        switch liveSnapshot.source {
+        case .mock:
+            guard vehicle.odometerKm == 0
+                    || vehicle.odometerSource == .mock
+                    || vehicle.isLegacyMockOdometer else {
+                return vehicle.odometerKm
+            }
+            return liveOdometer
+        case .dashboard:
+            if vehicle.odometerSource == nil || vehicle.odometerSource == .mock {
+                return liveOdometer
+            }
+            return max(vehicle.odometerKm, liveOdometer)
+        }
     }
 
     private func refreshRows() {

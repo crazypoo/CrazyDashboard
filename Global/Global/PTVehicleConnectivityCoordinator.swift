@@ -80,11 +80,15 @@ private struct PTDashboardLiveBuffer: Sendable {
         }
     }
 
-    func snapshot(capturedAt: Date = Date()) -> PTGarageDashboardSnapshot {
+    func snapshot(
+        source: PTGarageDashboardSource = .dashboard,
+        capturedAt: Date = Date()
+    ) -> PTGarageDashboardSnapshot {
         PTGarageDashboardSnapshot(
             odometerKm: odometerKm,
             maintenanceDistanceKm: maintenanceDistanceKm,
             maintenanceFlag: maintenanceFlag,
+            source: source,
             capturedAt: capturedAt
         )
     }
@@ -196,6 +200,10 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
     private var dashboardDidPersistInitialSample = false
     private var dashboardLastPersistedAt: Date?
     private var backgroundObserver: NSObjectProtocol?
+
+    private var dashboardSnapshotSource: PTGarageDashboardSource {
+        snapshot.dashboard.transport == .dashboardMock ? .mock : .dashboard
+    }
 
     private override init() {
         super.init()
@@ -696,8 +704,8 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
     }
 
     private func receiveDashboardSample(_ sample: PTVehicleDashboardSample) {
-        guard snapshot.dashboard.state == .connected,
-              dashboardSupportsGarageSync else {
+        guard dashboardSupportsGarageSync,
+              snapshot.dashboard.state == .connecting || snapshot.dashboard.state == .connected else {
             return
         }
         if !dashboardSessionActive {
@@ -706,7 +714,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         guard dashboardSessionActive else { return }
 
         dashboardLiveBuffer.merge(sample)
-        dashboardLiveSnapshot = dashboardLiveBuffer.snapshot()
+        dashboardLiveSnapshot = dashboardLiveBuffer.snapshot(source: dashboardSnapshotSource)
         notifyDashboardGarageSyncChanged()
         guard dashboardIdentityResolved, !dashboardIdentityConflict else { return }
         scheduleDashboardFlush()
@@ -755,7 +763,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         }
 
         let result = PTMotorcycleGarageStore.shared.applyDashboardSnapshot(
-            dashboardLiveBuffer.snapshot(),
+            dashboardLiveBuffer.snapshot(source: dashboardSnapshotSource),
             to: vehicleID,
             recordReceiptWhenUnchanged: force || !dashboardDidPersistInitialSample
         )
@@ -838,14 +846,18 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         dashboardAttemptTask?.cancel()
         dashboardAttemptTask = nil
         if isConnected {
+            updateDashboardState(
+                .connected,
+                transport: snapshot.dashboard.transport ?? .dashboardBluetooth
+            )
             beginDashboardGarageSession()
         } else {
             endDashboardGarageSession()
+            updateDashboardState(
+                .disconnected,
+                transport: snapshot.dashboard.transport ?? .dashboardBluetooth
+            )
         }
-        updateDashboardState(
-            isConnected ? .connected : .disconnected,
-            transport: snapshot.dashboard.transport ?? .dashboardBluetooth
-        )
     }
 
     private func receiveOBDConnection(_ isConnected: Bool) {

@@ -179,6 +179,15 @@ public struct PTGarageDiagnosticReport: Codable, Equatable, Identifiable, Sendab
     }
 }
 
+/// EN: Identifies where the stored odometer value came from.
+/// ES: Identifica el origen del valor de odómetro almacenado.
+/// 中文：标识车库中保存的里程数值来源。
+public enum PTMotorcycleOdometerSource: String, Codable, Sendable {
+    case manual
+    case dashboard
+    case mock
+}
+
 public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
     public let id: UUID
     public var name: String
@@ -187,6 +196,7 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
     public var year: Int?
     public var vin: String
     public var odometerKm: Double
+    public var odometerSource: PTMotorcycleOdometerSource?
     // EN: Dashboard identity is local association metadata, not an authentication credential.
     // ES: La identidad del tablero solo sirve para asociar datos localmente, no es una credencial de autenticación.
     // 中文：仪表身份仅用于本地关联数据，不是认证凭证。
@@ -213,6 +223,7 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
         year: Int? = nil,
         vin: String = "",
         odometerKm: Double = 0,
+        odometerSource: PTMotorcycleOdometerSource? = .manual,
         dashboardBLEIdentifier: UUID? = nil,
         dashboardSerialNumber: String? = nil,
         dashboardMaintenanceDistanceKm: Int? = nil,
@@ -235,6 +246,7 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
         self.year = year
         self.vin = vin
         self.odometerKm = odometerKm
+        self.odometerSource = odometerSource
         self.dashboardBLEIdentifier = dashboardBLEIdentifier
         self.dashboardSerialNumber = dashboardSerialNumber
         self.dashboardMaintenanceDistanceKm = dashboardMaintenanceDistanceKm
@@ -251,6 +263,16 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
         self.updatedAt = updatedAt
     }
 
+    /// EN: Legacy automatic mock snapshots have no source field or hardware identity.
+    /// ES: Las instantáneas simuladas antiguas no tienen origen ni identidad de hardware.
+    /// 中文：旧版本自动保存的 mock 快照没有来源字段，也没有真实硬件身份。
+    var isLegacyMockOdometer: Bool {
+        odometerSource == nil
+            && lastDashboardSyncAt != nil
+            && dashboardBLEIdentifier == nil
+            && dashboardSerialNumber == nil
+    }
+
     public static var defaultXP400GT: PTMotorcycleProfile {
         PTMotorcycleProfile(
             name: "XP400 GT",
@@ -265,21 +287,32 @@ public struct PTMotorcycleProfile: Codable, Equatable, Identifiable, Sendable {
 // EN: A bounded dashboard sample keeps transport callbacks separate from garage persistence.
 // ES: Una muestra limitada del tablero separa los callbacks de transporte de la persistencia del garaje.
 // 中文：有边界的仪表快照将传输回调与车库存储隔离开。
+/// EN: Describes whether a dashboard snapshot came from hardware or the local simulator.
+/// ES: Describe si una instantánea procede del hardware o del simulador local.
+/// 中文：描述仪表快照来自真实硬件还是本地模拟器。
+public enum PTGarageDashboardSource: String, Codable, Sendable {
+    case dashboard
+    case mock
+}
+
 public struct PTGarageDashboardSnapshot: Equatable, Sendable {
     public let odometerKm: Double?
     public let maintenanceDistanceKm: Int?
     public let maintenanceFlag: Int?
+    public let source: PTGarageDashboardSource
     public let capturedAt: Date
 
     public init(
         odometerKm: Double? = nil,
         maintenanceDistanceKm: Int? = nil,
         maintenanceFlag: Int? = nil,
+        source: PTGarageDashboardSource = .dashboard,
         capturedAt: Date = Date()
     ) {
         self.odometerKm = odometerKm
         self.maintenanceDistanceKm = maintenanceDistanceKm
         self.maintenanceFlag = maintenanceFlag
+        self.source = source
         self.capturedAt = capturedAt
     }
 
@@ -515,6 +548,7 @@ public final class PTMotorcycleGarageStore {
         }
 
         vehicles[index].odometerKm = normalizedOdometer
+        vehicles[index].odometerSource = .manual
         touchVehicle(at: index)
         persist()
         return true
@@ -722,9 +756,9 @@ public final class PTMotorcycleGarageStore {
         return true
     }
 
-    /// EN: Apply a bounded dashboard snapshot atomically and keep the odometer monotonic.
-    /// ES: Aplica una instantánea limitada del tablero de forma atómica y mantiene el odómetro monotónico.
-    /// 中文：原子应用有边界的仪表快照，并保证总里程不会自动倒退。
+    /// EN: Apply a bounded dashboard snapshot atomically; mock data never replaces real/manual mileage, and hardware data stays monotonic.
+    /// ES: Aplica una instantánea limitada del tablero; los datos simulados nunca reemplazan el kilometraje real/manual y el hardware mantiene la monotonía.
+    /// 中文：原子应用有边界的仪表快照；模拟数据不能覆盖真实/手动里程，真实仪表数据仍保持单调递增。
     @discardableResult
     public func applyDashboardSnapshot(
         _ snapshot: PTGarageDashboardSnapshot,
@@ -743,11 +777,35 @@ public final class PTMotorcycleGarageStore {
         }
 
         var didChange = false
-        if let odometer,
-           odometer >= vehicles[index].odometerKm,
-           vehicles[index].odometerKm != odometer {
-            vehicles[index].odometerKm = odometer
-            didChange = true
+        if let odometer {
+            let currentOdometer = vehicles[index].odometerKm
+            let currentSource = vehicles[index].odometerSource
+            let isUsablePositiveSample = odometer > 0 || currentOdometer == 0
+            let shouldAcceptOdometer: Bool
+
+            switch snapshot.source {
+            case .mock:
+                shouldAcceptOdometer = currentOdometer == 0
+                    || ((currentSource == .mock || vehicles[index].isLegacyMockOdometer)
+                        && isUsablePositiveSample)
+            case .dashboard:
+                shouldAcceptOdometer = isUsablePositiveSample
+                    && (currentSource == nil
+                        || currentSource == .mock
+                        || odometer >= currentOdometer)
+            }
+
+            if shouldAcceptOdometer {
+                if currentOdometer != odometer {
+                    vehicles[index].odometerKm = odometer
+                    didChange = true
+                }
+                let nextSource: PTMotorcycleOdometerSource = snapshot.source == .mock ? .mock : .dashboard
+                if vehicles[index].odometerSource != nextSource {
+                    vehicles[index].odometerSource = nextSource
+                    didChange = true
+                }
+            }
         }
         if let maintenanceDistance,
            vehicles[index].dashboardMaintenanceDistanceKm != maintenanceDistance {
