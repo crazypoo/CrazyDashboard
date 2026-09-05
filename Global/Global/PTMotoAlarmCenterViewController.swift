@@ -435,13 +435,25 @@ final class PTMotoAlarmCenterViewController: PTMotoBaseViewController {
 }
 
 @MainActor
-private final class PTMotoAlarmDatePickerViewController: UIViewController {
+private final class PTMotoAlarmDatePickerViewController: PTMotoBaseViewController {
     private let initialDate: Date
     private let titleFieldEnabled: Bool
     private let onSelect: @MainActor (Date, String?) -> Void
     private let datePicker = UIDatePicker()
     private let titleField = UITextField()
-
+    
+    lazy var confirmButton:PTBaseButton = {
+        let view = PTBaseButton(type: .custom)
+        view.titleLabel?.font = .appfont(size: 16)
+        view.setTitleColor(.white, for: .normal)
+        view.setTitle(localized("button_confirm"), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: view.sizeFor().width, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { _ in
+            self.confirm()
+        })
+        return view
+    }()
+    
     init(
         initialDate: Date,
         titleFieldEnabled: Bool,
@@ -457,23 +469,17 @@ private final class PTMotoAlarmDatePickerViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        setCustomRightButtons(buttons: [confirmButton])
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = localized("alarm_choose_time")
+        pt_Title = localized("alarm_choose_time")
         view.backgroundColor = .black
-        navigationItem.leftBarButtonItem = UIBarButtonItem(
-            title: localized("button_cancel"),
-            style: .plain,
-            target: self,
-            action: #selector(cancel)
-        )
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            title: localized("button_confirm"),
-            style: .done,
-            target: self,
-            action: #selector(confirm)
-        )
 
+        datePicker.tintColor = .white
         datePicker.datePickerMode = .dateAndTime
         datePicker.preferredDatePickerStyle = .wheels
         datePicker.minimumDate = Date(timeIntervalSinceNow: 60)

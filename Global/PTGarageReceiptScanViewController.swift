@@ -12,6 +12,7 @@ import PhotosUI
 import UniformTypeIdentifiers
 import Vision
 import PooTools
+import SwifterSwift
 
 // EN: This draft is editable and never writes to the garage by itself.
 // ES: Este borrador se puede editar y nunca escribe en el garaje por sí solo.
@@ -161,7 +162,7 @@ public struct PTReceiptDraft: Equatable, Sendable {
 // ES: Un editor UIKit pequeño mantiene el flujo de importación explícito y reversible.
 // 中文：轻量 UIKit 编辑器让导入流程明确且可撤销。
 @MainActor
-final class PTGarageReceiptScanViewController: PTMotoBaseViewController, PHPickerViewControllerDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+final class PTGarageReceiptScanViewController: PTMotoBaseViewController {
     private let store: PTMotorcycleGarageStore
     private let scrollView = UIScrollView()
     private let contentStack = UIStackView()
@@ -218,7 +219,6 @@ final class PTGarageReceiptScanViewController: PTMotoBaseViewController, PHPicke
     private func configureView() {
 
         let photoButton = makeButton(title: localized("garage_receipt_choose_photo"), action: #selector(choosePhoto))
-        let cameraButton = makeButton(title: localized("garage_receipt_camera"), action: #selector(openCamera))
         let recognizeButton = makeButton(title: localized("garage_receipt_recognize"), action: #selector(recognizeCurrentImage))
 
         imageView.contentMode = .scaleAspectFit
@@ -268,7 +268,7 @@ final class PTGarageReceiptScanViewController: PTMotoBaseViewController, PHPicke
             contentStack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor)
         ])
 
-        let actionRow = UIStackView(arrangedSubviews: [photoButton, cameraButton, recognizeButton])
+        let actionRow = UIStackView(arrangedSubviews: [photoButton, recognizeButton])
         actionRow.axis = .horizontal
         actionRow.spacing = 8
         actionRow.distribution = .fillEqually
@@ -289,11 +289,17 @@ final class PTGarageReceiptScanViewController: PTMotoBaseViewController, PHPicke
 
     private func configureFields() {
         titleField.placeholder = localized("garage_receipt_title")
+        titleField.setPlaceHolderTextColor(.grayCA)
         odometerField.placeholder = localized("garage_receipt_odometer")
+        odometerField.setPlaceHolderTextColor(.grayCA)
         litersField.placeholder = localized("garage_receipt_liters")
+        litersField.setPlaceHolderTextColor(.grayCA)
         amountField.placeholder = localized("garage_receipt_amount")
+        amountField.setPlaceHolderTextColor(.grayCA)
         currencyField.placeholder = localized("garage_receipt_currency")
+        currencyField.setPlaceHolderTextColor(.grayCA)
         dateField.placeholder = localized("garage_receipt_date")
+        dateField.setPlaceHolderTextColor(.grayCA)
         notesField.text = ""
         notesField.accessibilityLabel = localized("garage_notes")
         [titleField, odometerField, litersField, amountField, currencyField, dateField].forEach {
@@ -322,24 +328,22 @@ final class PTGarageReceiptScanViewController: PTMotoBaseViewController, PHPicke
     }
 
     @objc private func choosePhoto() {
-//        var configuration = PHPickerConfiguration(photoLibrary: .shared())
-//        configuration.filter = .images
-//        configuration.selectionLimit = 1
-//        present(PHPickerViewController(configuration: configuration), animated: true)
-        PTMediaLibConfig.share.allowTakePhotoInLibrary = false
-        PTMediaLibConfig.share.allowEditImage = false
-        PTMediaLibConfig.share.allowSelectImage = true
-        PTMediaLibConfig.share.allowSelectVideo = false
-        PTMediaLibConfig.share.allowSelectGif = false
-        PTMediaLibConfig.share.allowEditVideo = false
-        PTMediaLibConfig.share.maxSelectCount = 1
-        PTMediaLibConfig.share.allowEditImage = false
-        let cam = PTCameraConfig()
+        var cam = PTMediaLibCameraOptions()
         cam.allowTakePhoto = true
         cam.allowRecordVideo = false
-        PTMediaLibConfig.share.cameraConfiguration = cam
 
+        var option = PTMediaLibSelectionOptions()
+        option.allowEditImage = false
+        option.allowTakePhotoInLibrary = true
+        option.allowSelectImage = true
+        option.allowSelectVideo = false
+        option.allowSelectGif = false
+        option.allowEditVideo = false
+        option.maxSelectCount = 1
+        option.allowEditImage = false
+        option.cameraOptions = cam
         let vc = PTMediaLibViewController()
+        vc.selectionOptions = option
         vc.mediaLibShow()
         vc.selectImageBlock = { result, isOriginal in
             if !result.isEmpty,let firstImge = result.first?.image,let imageData = firstImge.jpegData(compressionQuality: 1) {
@@ -350,46 +354,12 @@ final class PTGarageReceiptScanViewController: PTMotoBaseViewController, PHPicke
         }
     }
 
-    @objc private func openCamera() {
-        guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
-            showMessage(localized("garage_receipt_camera_unavailable"))
-            return
-        }
-        let picker = UIImagePickerController()
-        picker.sourceType = .camera
-        picker.delegate = self
-        present(picker, animated: true)
-    }
-
     @objc private func recognizeCurrentImage() {
         guard let image = imageView.image, let data = image.jpegData(compressionQuality: 0.9) else {
             showMessage(localized("garage_receipt_need_photo"))
             return
         }
         receive(imageData: data)
-    }
-
-    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-        dismiss(animated: true)
-        guard let provider = results.first?.itemProvider,
-              provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) else { return }
-        provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { [weak self] data, _ in
-            guard let data else { return }
-            Task { @MainActor [weak self] in
-                self?.receive(imageData: data)
-            }
-        }
-    }
-
-    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
-        dismiss(animated: true)
-        guard let image = info[.originalImage] as? UIImage,
-              let data = image.jpegData(compressionQuality: 0.9) else { return }
-        receive(imageData: data)
-    }
-
-    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-        dismiss(animated: true)
     }
 
     private func receive(imageData: Data) {
