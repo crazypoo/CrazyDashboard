@@ -8,6 +8,9 @@
 import WidgetKit
 import SwiftUI
 import CoreLocation
+import ActivityKit
+import AppIntents
+import AlarmKit
 
 // MARK: -  数据模型
 struct MotoStatusEntry: TimelineEntry {
@@ -410,6 +413,221 @@ struct MotoIntercomLiveActivity: Widget {
             } minimal: {
                 Image(systemName: "mic")
             }
+        }
+    }
+}
+
+// EN: AlarmKit countdown presentation stays visually consistent with the existing motorcycle activities.
+// ES: La presentación de cuenta atrás de AlarmKit mantiene el estilo visual de las actividades existentes.
+// 中文：AlarmKit 倒计时界面沿用现有摩托车 Live Activity 的视觉风格。
+@available(iOS 26.0, *)
+struct MotoAlarmLiveActivity: Widget {
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: AlarmAttributes<PTMotoAlarmMetadata>.self) { context in
+            MotoAlarmLockScreenView(context: context)
+                .activityBackgroundTint(Color.black.opacity(0.88))
+                .activitySystemActionForegroundColor(.white)
+        } dynamicIsland: { context in
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    Label(alarmTitle(context), systemImage: iconName(context))
+                        .font(.caption)
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    alarmTimeView(context)
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    HStack {
+                        if isCountdown(context) {
+                            Button(intent: PTPauseMotoAlarmIntent(alarmID: alarmID(context))) {
+                                Image(systemName: "pause.circle")
+                            }
+                            .tint(.orange)
+                        }
+                        Button(intent: PTStopMotoAlarmIntent(alarmID: alarmID(context))) {
+                            Image(systemName: "stop.circle")
+                        }
+                        .tint(.red)
+                    }
+                }
+            } compactLeading: {
+                Image(systemName: iconName(context))
+                    .foregroundColor(.blue)
+            } compactTrailing: {
+                alarmTimeView(context)
+            } minimal: {
+                Image(systemName: iconName(context))
+                    .foregroundColor(.blue)
+            }
+        }
+    }
+
+    private func alarmTitle(_ context: ActivityViewContext<AlarmAttributes<PTMotoAlarmMetadata>>) -> String {
+        context.attributes.metadata?.title
+            ?? String(localized: LocalizedStringResource("alarm_fallback_title", table: "Localizable"))
+    }
+
+    private func alarmID(_ context: ActivityViewContext<AlarmAttributes<PTMotoAlarmMetadata>>) -> UUID {
+        context.attributes.metadata?.alarmID ?? context.state.alarmID
+    }
+
+    private func iconName(_ context: ActivityViewContext<AlarmAttributes<PTMotoAlarmMetadata>>) -> String {
+        switch context.attributes.metadata?.kind {
+        case .departure:
+            return "flag.checkered"
+        case .maintenance:
+            return "wrench.and.screwdriver.fill"
+        case .parking:
+            return "parkingsign.circle.fill"
+        case .rideBreak:
+            return "cup.and.saucer.fill"
+        case .none:
+            return "motorcycle"
+        }
+    }
+
+    private func isCountdown(_ context: ActivityViewContext<AlarmAttributes<PTMotoAlarmMetadata>>) -> Bool {
+        switch context.state.mode {
+        case .countdown, .paused:
+            return true
+        case .alert:
+            return false
+        @unknown default:
+            return false
+        }
+    }
+
+    @ViewBuilder
+    private func alarmTimeView(_ context: ActivityViewContext<AlarmAttributes<PTMotoAlarmMetadata>>) -> some View {
+        switch context.state.mode {
+        case .countdown(let countdown):
+            Text(timerInterval: countdown.startDate...countdown.fireDate, countsDown: true)
+                .font(.headline.monospacedDigit())
+                .foregroundColor(.green)
+        case .paused(let paused):
+            Text(remainingText(
+                duration: paused.totalCountdownDuration - paused.previouslyElapsedDuration
+            ))
+            .font(.headline.monospacedDigit())
+            .foregroundColor(.orange)
+        case .alert(let alert):
+            Text(String(format: "%02d:%02d", alert.time.hour, alert.time.minute))
+                .font(.headline.monospacedDigit())
+                .foregroundColor(.red)
+        @unknown default:
+            Text(LocalizedStringResource("alarm_fallback_title", table: "Localizable"))
+                .font(.headline)
+                .foregroundColor(.gray)
+        }
+    }
+
+    private func remainingText(duration: TimeInterval) -> String {
+        let seconds = max(Int(duration.rounded()), 0)
+        return String(format: "%02d:%02d", seconds / 60, seconds % 60)
+    }
+}
+
+@available(iOS 26.0, *)
+private struct MotoAlarmLockScreenView: View {
+    let context: ActivityViewContext<AlarmAttributes<PTMotoAlarmMetadata>>
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label(
+                    context.attributes.metadata?.title
+                        ?? String(localized: LocalizedStringResource("alarm_fallback_title", table: "Localizable")),
+                    systemImage: iconName
+                )
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                Spacer()
+                Text(context.attributes.metadata?.vehicleName ?? "")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                    .lineLimit(1)
+            }
+
+            switch context.state.mode {
+            case .countdown(let countdown):
+                Text(timerInterval: countdown.startDate...countdown.fireDate, countsDown: true)
+                    .font(.system(size: 38, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundColor(.green)
+                HStack {
+                    Button(intent: PTPauseMotoAlarmIntent(alarmID: alarmID)) {
+                        Label(
+                            LocalizedStringResource("alarm_pause", table: "Localizable"),
+                            systemImage: "pause.circle"
+                        )
+                    }
+                    .tint(.orange)
+                    Button(intent: PTStopMotoAlarmIntent(alarmID: alarmID)) {
+                        Label(
+                            LocalizedStringResource("alarm_stop", table: "Localizable"),
+                            systemImage: "stop.circle"
+                        )
+                    }
+                    .tint(.red)
+                }
+            case .paused(let paused):
+                Text(String(format: "%02d:%02d", max(Int((paused.totalCountdownDuration - paused.previouslyElapsedDuration).rounded()), 0) / 60, max(Int((paused.totalCountdownDuration - paused.previouslyElapsedDuration).rounded()), 0) % 60))
+                    .font(.system(size: 38, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundColor(.orange)
+                HStack {
+                    Button(intent: PTResumeMotoAlarmIntent(alarmID: alarmID)) {
+                        Label(
+                            LocalizedStringResource("alarm_resume", table: "Localizable"),
+                            systemImage: "play.circle"
+                        )
+                    }
+                    .tint(.green)
+                    Button(intent: PTStopMotoAlarmIntent(alarmID: alarmID)) {
+                        Label(
+                            LocalizedStringResource("alarm_stop", table: "Localizable"),
+                            systemImage: "stop.circle"
+                        )
+                    }
+                    .tint(.red)
+                }
+            case .alert(let alert):
+                Text(String(format: "%02d:%02d", alert.time.hour, alert.time.minute))
+                    .font(.system(size: 34, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundColor(.red)
+                Button(intent: PTStopMotoAlarmIntent(alarmID: alarmID)) {
+                    Label(
+                        LocalizedStringResource("alarm_stop", table: "Localizable"),
+                        systemImage: "stop.circle"
+                    )
+                }
+                .tint(.red)
+            @unknown default:
+                Text(LocalizedStringResource("alarm_fallback_title", table: "Localizable"))
+                    .font(.headline)
+                    .foregroundColor(.gray)
+            }
+        }
+        .padding()
+    }
+
+    private var alarmID: UUID {
+        context.attributes.metadata?.alarmID ?? context.state.alarmID
+    }
+
+    private var iconName: String {
+        switch context.attributes.metadata?.kind {
+        case .departure:
+            return "flag.checkered"
+        case .maintenance:
+            return "wrench.and.screwdriver.fill"
+        case .parking:
+            return "parkingsign.circle.fill"
+        case .rideBreak:
+            return "cup.and.saucer.fill"
+        case .none:
+            return "motorcycle"
         }
     }
 }

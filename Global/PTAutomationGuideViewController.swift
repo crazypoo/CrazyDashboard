@@ -76,6 +76,20 @@ enum PTAutomationGuideCatalog {
             descriptionKey: "app_intent_find_fuel_description",
             contextKey: "automation_guide_intent_foreground",
             systemImageName: "fuelpump.fill"
+        ),
+        IntentItem(
+            id: "motorcycleTimer",
+            titleKey: "app_intent_timer_short_title",
+            descriptionKey: "app_intent_timer_description",
+            contextKey: "automation_guide_intent_background",
+            systemImageName: "timer"
+        ),
+        IntentItem(
+            id: "departureReminder",
+            titleKey: "app_intent_departure_short_title",
+            descriptionKey: "app_intent_departure_description",
+            contextKey: "automation_guide_intent_background",
+            systemImageName: "flag.checkered"
         )
     ]
 
@@ -130,6 +144,14 @@ enum PTAutomationGuideCatalog {
             noteKey: "automation_scheme_navigate_note",
             examples: ["xp400://navigate?destination=%E7%8F%A0%E6%B1%9F%E6%96%B0%E5%9F%8E"],
             systemImageName: "arrow.triangle.turn.up.right.diamond.fill"
+        ),
+        SchemeItem(
+            id: "openAlarms",
+            titleKey: "automation_scheme_open_alarms_title",
+            descriptionKey: "automation_scheme_open_alarms_description",
+            noteKey: "automation_scheme_open_alarms_note",
+            examples: ["xp400://openAlarms"],
+            systemImageName: "bell.badge.fill"
         )
     ]
 }

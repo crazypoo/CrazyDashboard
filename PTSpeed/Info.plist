@@ -20,6 +20,8 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>用于低速骑行辅助和车库测距</string>
+	<key>NSAlarmKitUsageDescription</key>
+	<string>用于设置出发、停车、骑行休息和保养提醒</string>
 	<key>NSMicrophoneInjectionUsageDescription</key>
 	<string>我要用Mic</string>
 	<key>QWeatherHost</key>

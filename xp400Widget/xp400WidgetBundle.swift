@@ -14,5 +14,8 @@ struct xp400WidgetBundle: WidgetBundle {
         XP400Widget()
         MotoNaviLiveActivity()
         MotoIntercomLiveActivity()
+        if #available(iOS 26.0, *) {
+            MotoAlarmLiveActivity()
+        }
     }
 }

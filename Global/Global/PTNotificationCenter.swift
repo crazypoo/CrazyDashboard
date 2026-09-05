@@ -14,6 +14,7 @@ import PooTools
 // 中文：类型化通知统一处理安全、保养和诊断提醒的去重。
 public enum PTAppNotificationKind: String, Codable, Sendable {
     case generic
+    case alarm
     case maintenance
     case diagnostic
     case antiTheft
@@ -72,6 +73,7 @@ public final class PTNotificationCenter: NSObject {
     private static let deliveryKey = "PTNotificationCenter.delivery.v1"
 
     public static let antiTheftCategoryIdentifier = "PT_NOTIFICATION_ANTI_THEFT"
+    public static let alarmCategoryIdentifier = "PT_NOTIFICATION_ALARM"
     public static let maintenanceCategoryIdentifier = "PT_NOTIFICATION_MAINTENANCE"
     public static let diagnosticCategoryIdentifier = "PT_NOTIFICATION_DIAGNOSTIC"
     public static let acknowledgeActionIdentifier = "PT_NOTIFICATION_ACKNOWLEDGE"
@@ -104,6 +106,12 @@ public final class PTNotificationCenter: NSObject {
                 actions: [acknowledge, snooze, open],
                 intentIdentifiers: [],
                 options: [.customDismissAction]
+            ),
+            UNNotificationCategory(
+                identifier: alarmCategoryIdentifier,
+                actions: [open],
+                intentIdentifiers: [],
+                options: []
             ),
             UNNotificationCategory(
                 identifier: maintenanceCategoryIdentifier,
@@ -203,6 +211,59 @@ public final class PTNotificationCenter: NSObject {
             completion?(result)
         }
         return .notDetermined
+    }
+
+    // EN: The async bridge lets new scheduling features reuse the existing permission and cooldown rules.
+    // ES: El puente asíncrono permite que las nuevas funciones reutilicen los permisos y las reglas de enfriamiento existentes.
+    // 中文：异步桥接让新调度功能继续复用现有权限和冷却规则。
+    public static func scheduleAsync(_ request: PTNotificationRequest) async -> PTNotificationDeliveryResult {
+        await withCheckedContinuation { continuation in
+            schedule(request) { result in
+                continuation.resume(returning: result)
+            }
+        }
+    }
+
+    // EN: Remove pending and delivered copies so cancelling an alarm is visible immediately.
+    // ES: Elimina las copias pendientes y entregadas para que cancelar una alarma sea inmediato.
+    // 中文：同时移除待处理和已投递副本，让取消提醒立即生效。
+    public static func cancel(identifier: String) {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [identifier])
+        center.removeDeliveredNotifications(withIdentifiers: [identifier])
+    }
+
+    // EN: Pending identifiers are used only for reconciliation; this method never schedules new work.
+    // ES: Los identificadores pendientes solo se usan para reconciliación; este método nunca programa trabajo nuevo.
+    // 中文：待处理标识符仅用于校准，不会通过该方法创建新的通知。
+    public static func pendingIdentifiers() async -> Set<String> {
+        await withCheckedContinuation { continuation in
+            UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+                continuation.resume(returning: Set(requests.map(\.identifier)))
+            }
+        }
+    }
+
+    // EN: Async permission access keeps AlarmKit fallback decisions off callback pyramids.
+    // ES: El acceso asíncrono a permisos evita pirámides de callbacks al decidir el respaldo de AlarmKit.
+    // 中文：异步权限访问避免 AlarmKit 回退判断出现回调嵌套。
+    public static func authorizationStatus() async -> UNAuthorizationStatus {
+        await withCheckedContinuation { continuation in
+            authorizationStatus { status in
+                continuation.resume(returning: status)
+            }
+        }
+    }
+
+    // EN: Permission prompts remain explicit while callers can await the final result.
+    // ES: Las solicitudes de permiso siguen siendo explícitas y los llamadores pueden esperar el resultado final.
+    // 中文：权限请求仍然只由用户操作触发，同时调用方可以等待最终结果。
+    public static func requestAuthorizationAsync() async -> (granted: Bool, errorDescription: String?) {
+        await withCheckedContinuation { continuation in
+            requestAuthorization { granted, error in
+                continuation.resume(returning: (granted, error?.localizedDescription))
+            }
+        }
     }
 
     public static func requestAuthorization(completion: ((Bool, Error?) -> Void)? = nil) {

@@ -23,6 +23,7 @@ public enum PTExternalAction: Equatable, Sendable {
     case confirmGasStationRoute
     case navigateTo(destination: String)
     case openSafety
+    case openAlarmCenter(id: UUID?)
     case unknown
 }
 
@@ -37,7 +38,7 @@ public enum PTRouteExecutionResult: String, Equatable, Sendable {
     case unavailable
     case rejected
 
-    public var succeeded: Bool {
+    public nonisolated var succeeded: Bool {
         switch self {
         case .completed, .started:
             return true
@@ -88,6 +89,15 @@ public final class PTRoutingManager: NSObject {
 
         case "opensafety":
             return .openSafety
+
+        case "openalarms":
+            guard let rawID = queryValue(named: "id", in: components) else {
+                return .openAlarmCenter(id: nil)
+            }
+            guard let id = UUID(uuidString: rawID) else {
+                return .unknown
+            }
+            return .openAlarmCenter(id: id)
 
         case "confirmgasstationroute":
             return .confirmGasStationRoute
@@ -253,6 +263,21 @@ public final class PTRoutingManager: NSObject {
                 return .completed
             }
             navigationController.pushViewController(PTRideSafetyViewController(), animated: true)
+            return .completed
+
+        case .openAlarmCenter(let id):
+            guard let navigationController = navigationController(in: scene) else {
+                return .unavailable
+            }
+            if let alarmController = navigationController.topViewController as? PTMotoAlarmCenterViewController {
+                alarmController.highlightedAlarmID = id
+                alarmController.refreshContent()
+                return .completed
+            }
+            navigationController.pushViewController(
+                PTMotoAlarmCenterViewController(highlightedAlarmID: id),
+                animated: true
+            )
             return .completed
 
         case .unknown:

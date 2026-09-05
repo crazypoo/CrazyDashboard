@@ -64,6 +64,27 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
         })
         return view
     }()
+
+    // EN: Open the explicit reminder center from the ride cockpit.
+    // ES: Abre el centro de recordatorios explícito desde el cockpit de conducción.
+    // 中文：从骑行中心打开主动式提醒中心。
+    lazy var alarmButton: PTBaseButton = {
+        let view = PTBaseButton(type: .custom)
+        view.setImage(UIImage(systemName: "bell.badge.fill"), for: .normal)
+        view.tintColor = .white
+        view.bounds = .init(
+            origin: .zero,
+            size: .init(
+                width: PTAppBaseConfig.share.navBarButtonSize,
+                height: PTAppBaseConfig.share.navBarButtonSize
+            )
+        )
+        view.accessibilityLabel = PTDashboardConfig.languageFunc(text: "alarm_center_title")
+        view.addActionHandlers { [weak self] _ in
+            self?.openAlarmCenter()
+        }
+        return view
+    }()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -115,7 +136,10 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         PTRideGroupSafetyCoordinator.shared.start()
-        setCustomRightButtons(buttons: [exportButton,centerButton], buttonSpacing: CGFloat.GlobalItemSpacing)
+        setCustomRightButtons(
+            buttons: [exportButton, centerButton, alarmButton],
+            buttonSpacing: CGFloat.GlobalItemSpacing
+        )
         refreshSummary()
     }
 
@@ -152,6 +176,13 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
     @objc private func openSafetyCenter() {
         let controller = PTRideSafetyViewController()
         safePushViewController(controller)
+    }
+
+    // EN: Alarm creation is a foreground user action and never starts from a telemetry update.
+    // ES: La creación de alarmas es una acción explícita en primer plano y nunca nace de una actualización de telemetría.
+    // 中文：提醒只能由前台用户主动创建，不会因遥测更新自动生成。
+    @objc private func openAlarmCenter() {
+        safePushViewController(PTMotoAlarmCenterViewController())
     }
 
     private func configureLabels() {

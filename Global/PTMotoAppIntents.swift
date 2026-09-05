@@ -261,6 +261,133 @@ struct PTFindFuelStationIntent: AppIntent {
     }
 }
 
+// EN: Alarm actions stay explicit and use the same coordinator as the alarm center.
+// ES: Las acciones de alarma siguen siendo explícitas y usan el mismo coordinador que el centro de alarmas.
+// 中文：闹钟操作必须由用户明确触发，并与提醒中心使用同一个协调器。
+struct PTOpenMotoAlarmIntent: LiveActivityIntent {
+    static let title = LocalizedStringResource("app_intent_alarm_open_title", table: "Localizable")
+    static let openAppWhenRun = true
+
+    @Parameter(title: LocalizedStringResource("app_intent_alarm_id_parameter", table: "Localizable"))
+    var alarmID: String
+
+    init(alarmID: UUID) {
+        self.alarmID = alarmID.uuidString
+    }
+
+    init() {
+        alarmID = ""
+    }
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        let id = UUID(uuidString: alarmID)
+        let result = await MainActor.run {
+            PTRoutingManager.shared.execute(action: .openAlarmCenter(id: id))
+        }
+        let key = result.succeeded ? "alarm_opened" : "alarm_open_unavailable"
+        let message = PTAppIntentResources.localized(key)
+        return .result(dialog: PTAppIntentResources.dialog(message))
+    }
+}
+
+enum PTMotoTimerIntentKind: String, AppEnum, Sendable {
+    case parking
+    case rideBreak
+
+    static let typeDisplayRepresentation = TypeDisplayRepresentation(
+        name: LocalizedStringResource("app_intent_timer_type", table: "Localizable")
+    )
+    static let caseDisplayRepresentations: [Self: DisplayRepresentation] = [
+        .parking: DisplayRepresentation(
+            title: LocalizedStringResource("app_intent_timer_parking", table: "Localizable")
+        ),
+        .rideBreak: DisplayRepresentation(
+            title: LocalizedStringResource("app_intent_timer_ride_break", table: "Localizable")
+        )
+    ]
+}
+
+struct PTStartRideTimerIntent: AppIntent {
+    static let title = LocalizedStringResource("app_intent_timer_title", table: "Localizable")
+    static let description = IntentDescription(
+        LocalizedStringResource("app_intent_timer_description", table: "Localizable")
+    )
+    static let openAppWhenRun = false
+
+    @Parameter(
+        title: LocalizedStringResource("app_intent_timer_type_parameter", table: "Localizable"),
+        default: PTMotoTimerIntentKind.rideBreak
+    )
+    var kind: PTMotoTimerIntentKind
+
+    @Parameter(
+        title: LocalizedStringResource("app_intent_timer_minutes_parameter", table: "Localizable"),
+        default: 90
+    )
+    var minutes: Int
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        do {
+            let record: PTMotoAlarmRecord
+            switch kind {
+            case .parking:
+                record = try await PTMotoAlarmCoordinator.shared.startParkingTimer(
+                    duration: TimeInterval(minutes * 60)
+                )
+            case .rideBreak:
+                record = try await PTMotoAlarmCoordinator.shared.startRideBreakTimer(
+                    duration: TimeInterval(minutes * 60)
+                )
+            }
+            let message = PTAppIntentResources.format(
+                "alarm_timer_started",
+                record.title,
+                minutes
+            )
+            return .result(dialog: PTAppIntentResources.dialog(message))
+        } catch {
+            let message = PTAppIntentResources.localized("alarm_schedule_failed")
+            return .result(dialog: PTAppIntentResources.dialog(message))
+        }
+    }
+}
+
+struct PTScheduleDepartureAlarmIntent: AppIntent {
+    static let title = LocalizedStringResource("app_intent_departure_title", table: "Localizable")
+    static let description = IntentDescription(
+        LocalizedStringResource("app_intent_departure_description", table: "Localizable")
+    )
+    static let openAppWhenRun = false
+
+    @Parameter(
+        title: LocalizedStringResource("app_intent_departure_time_parameter", table: "Localizable")
+    )
+    var date: Date
+
+    @Parameter(
+        title: LocalizedStringResource("app_intent_reminder_title_parameter", table: "Localizable"),
+        default: ""
+    )
+    var title: String
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        do {
+            let record = try await PTMotoAlarmCoordinator.shared.scheduleDeparture(
+                at: date,
+                title: title.isEmpty ? nil : title
+            )
+            let message = PTAppIntentResources.format(
+                "alarm_departure_scheduled",
+                PTAppIntentResources.formattedDate(record.fireDate)
+            )
+            return .result(dialog: PTAppIntentResources.dialog(message))
+        } catch {
+            let message = PTAppIntentResources.localized("alarm_schedule_failed")
+            return .result(dialog: PTAppIntentResources.dialog(message))
+        }
+    }
+}
+
 // EN: Keep the curated list short; all individual App Intents remain available in the Shortcuts editor.
 // ES: Mantén corta la lista seleccionada; todos los App Intents siguen disponibles en el editor de Atajos.
 // 中文：精选快捷指令列表保持精简；所有 App Intent 仍可在快捷指令编辑器中使用。
@@ -320,6 +447,24 @@ struct PTMotoAppShortcuts: AppShortcutsProvider {
             ],
             shortTitle: LocalizedStringResource("app_intent_find_fuel_title", table: "Localizable"),
             systemImageName: "fuelpump.fill"
+        )
+        AppShortcut(
+            intent: PTStartRideTimerIntent(),
+            phrases: [
+                "Start a motorcycle timer in \(.applicationName)",
+                "Set a ride break timer in \(.applicationName)"
+            ],
+            shortTitle: LocalizedStringResource("app_intent_timer_short_title", table: "Localizable"),
+            systemImageName: "timer"
+        )
+        AppShortcut(
+            intent: PTScheduleDepartureAlarmIntent(),
+            phrases: [
+                "Remind me when to leave on my motorcycle in \(.applicationName)",
+                "Schedule a motorcycle departure in \(.applicationName)"
+            ],
+            shortTitle: LocalizedStringResource("app_intent_departure_short_title", table: "Localizable"),
+            systemImageName: "flag.checkered"
         )
     }
 }

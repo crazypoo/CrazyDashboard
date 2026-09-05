@@ -12350,6 +12350,33 @@
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "必須提供非空目的地" } }
       }
     },
+    "automation_scheme_open_alarms_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open the reminder center" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hatırlatma merkezini aç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开提醒中心" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟提醒中心" } }
+      }
+    },
+    "automation_scheme_open_alarms_description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open the motorcycle reminder center. An optional id can highlight one reminder." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Motosiklet hatırlatma merkezini açar. İsteğe bağlı bir kimlik bir hatırlatıcıyı vurgulayabilir." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开摩托车提醒中心；可选的 id 可高亮某条提醒。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟摩托車提醒中心；可選的 id 可標示某則提醒。" } }
+      }
+    },
+    "automation_scheme_open_alarms_note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "xp400://openAlarms or xp400://openAlarms?id=<UUID>" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "xp400://openAlarms veya xp400://openAlarms?id=<UUID>" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "xp400://openAlarms 或 xp400://openAlarms?id=<UUID>" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "xp400://openAlarms 或 xp400://openAlarms?id=<UUID>" } }
+      }
+    },
     "garage_edit_vehicle_name" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -12807,6 +12834,618 @@
         "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sesi sürdür" } },
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "恢复音频" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "恢復音訊" } }
+      }
+    },
+    "alarm_center_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Alarm Center" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Alarm Merkezi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "提醒中心" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "提醒中心" } }
+      }
+    },
+    "alarm_capability_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Available reminder method" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kullanılabilir hatırlatma yöntemi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "可用提醒方式" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "可用提醒方式" } }
+      }
+    },
+    "alarm_capability_alarmkit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "System alarm is available" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sistem alarmı kullanılabilir" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "系统提醒可用" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "系統提醒可用" } }
+      }
+    },
+    "alarm_capability_notification" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Standard notification fallback is active" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Standart bildirim yedeği etkin" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "当前使用普通通知兼容模式" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "目前使用一般通知相容模式" } }
+      }
+    },
+    "alarm_capability_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reminder permission is unavailable" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hatırlatma izni kullanılamıyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "提醒权限不可用" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "提醒權限無法使用" } }
+      }
+    },
+    "alarm_request_permission" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Request permission" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "İzin iste" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "申请提醒权限" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "申請提醒權限" } }
+      }
+    },
+    "alarm_actions_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Create a reminder" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hatırlatıcı oluştur" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "创建提醒" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "建立提醒" } }
+      }
+    },
+    "alarm_actions_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reminders are scheduled only after you create them. Older iOS versions use standard notifications." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hatırlatıcılar yalnızca siz oluşturduktan sonra planlanır. Eski iOS sürümleri standart bildirimleri kullanır." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "提醒只会在你主动创建后安排；旧版 iOS 使用普通通知。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "提醒只會在你主動建立後安排；舊版 iOS 使用一般通知。" } }
+      }
+    },
+    "alarm_add_departure" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add departure" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Çıkış ekle" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "添加出发提醒" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "新增出發提醒" } }
+      }
+    },
+    "alarm_add_parking" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start parking timer" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Park zamanlayıcısını başlat" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开始停车计时" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開始停車計時" } }
+      }
+    },
+    "alarm_add_ride_break" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start rest timer" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Dinlenme zamanlayıcısını başlat" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开始休息计时" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開始休息計時" } }
+      }
+    },
+    "alarm_maintenance_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Maintenance" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bakım" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保养提醒" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "保養提醒" } }
+      }
+    },
+    "alarm_set_maintenance" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Set reminder" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hatırlatıcı ayarla" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "设置提醒" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "設定提醒" } }
+      }
+    },
+    "alarm_cancel_maintenance" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel reminder" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hatırlatıcıyı iptal et" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "取消提醒" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "取消提醒" } }
+      }
+    },
+    "alarm_no_due_date" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No due date" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Son tarih yok" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未设置日期" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "未設定日期" } }
+      }
+    },
+    "alarm_no_maintenance_records" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No maintenance records" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bakım kaydı yok" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂无保养记录" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "暫無保養記錄" } }
+      }
+    },
+    "alarm_scheduled_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Scheduled reminders" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Planlanmış hatırlatıcılar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已安排提醒" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已安排提醒" } }
+      }
+    },
+    "alarm_no_scheduled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No reminders are scheduled" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Planlanmış hatırlatıcı yok" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂无已安排提醒" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "暫無已安排提醒" } }
+      }
+    },
+    "alarm_delivery_alarmkit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "AlarmKit" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "AlarmKit" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "AlarmKit 系统提醒" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "AlarmKit 系統提醒" } }
+      }
+    },
+    "alarm_delivery_notification" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Notification" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bildirim" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "普通通知" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "一般通知" } }
+      }
+    },
+    "alarm_delivery_label" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delivery" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Teslimat" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "方式" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "方式" } }
+      }
+    },
+    "alarm_state_label" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "State" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Durum" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "状态" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "狀態" } }
+      }
+    },
+    "alarm_state_scheduled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Scheduled" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Planlandı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已安排" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已安排" } }
+      }
+    },
+    "alarm_state_countdown" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Counting down" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Geri sayım" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "倒计时中" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "倒數中" } }
+      }
+    },
+    "alarm_state_paused" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Paused" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Duraklatıldı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已暂停" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已暫停" } }
+      }
+    },
+    "alarm_state_alerting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Alerting" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Uyarı veriliyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "提醒中" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "提醒中" } }
+      }
+    },
+    "alarm_time_label" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Time" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Saat" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "时间" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "時間" } }
+      }
+    },
+    "alarm_cancel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "İptal" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "取消提醒" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "取消提醒" } }
+      }
+    },
+    "alarm_pause" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pause" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Duraklat" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂停" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "暫停" } }
+      }
+    },
+    "alarm_resume" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Resume" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürdür" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "继续" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "繼續" } }
+      }
+    },
+    "alarm_choose_time" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Choose time" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Saat seç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "选择时间" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇時間" } }
+      }
+    },
+    "alarm_departure_title_optional" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reminder title (optional)" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hatırlatıcı başlığı (isteğe bağlı)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "提醒标题（可选）" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "提醒標題（可選）" } }
+      }
+    },
+    "alarm_custom_minutes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Custom duration" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Özel süre" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "自定义时长" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "自訂時長" } }
+      }
+    },
+    "alarm_custom_minutes_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter minutes (parking: 1–1440; rest: 15–240)." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Dakika girin (park: 1–1440; dinlenme: 15–240)." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请输入分钟（停车：1–1440；休息：15–240）。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請輸入分鐘（停車：1–1440；休息：15–240）。" } }
+      }
+    },
+    "alarm_stop" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Stop" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Durdur" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "停止" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "停止" } }
+      }
+    },
+    "alarm_open" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Aç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟" } }
+      }
+    },
+    "alarm_paused" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reminder paused" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hatırlatıcı duraklatıldı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "提醒已暂停" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "提醒已暫停" } }
+      }
+    },
+    "alarm_departure_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Departure reminder" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Çıkış hatırlatıcısı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "出发提醒" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "出發提醒" } }
+      }
+    },
+    "alarm_parking_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Parking timer" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Park zamanlayıcısı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "停车计时" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "停車計時" } }
+      }
+    },
+    "alarm_ride_break_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ride break timer" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürüş molası zamanlayıcısı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "骑行休息计时" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "騎行休息計時" } }
+      }
+    },
+    "alarm_timer_started" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Started %@ for %d minutes" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "%@ %d dakika için başlatıldı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已启动 %@，时长 %d 分钟" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已啟動 %@，時長 %d 分鐘" } }
+      }
+    },
+    "alarm_departure_scheduled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Departure reminder scheduled for %@" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Çıkış hatırlatıcısı %@ için planlandı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "出发提醒已安排：%@" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "出發提醒已安排：%@" } }
+      }
+    },
+    "alarm_schedule_failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The reminder could not be scheduled." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hatırlatıcı planlanamadı." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "提醒安排失败。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "提醒安排失敗。" } }
+      }
+    },
+    "alarm_opened" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Alarm Center opened" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Alarm Merkezi açıldı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已打开提醒中心" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已開啟提醒中心" } }
+      }
+    },
+    "alarm_open_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Alarm Center is unavailable" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Alarm Merkezi kullanılamıyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "提醒中心暂不可用" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "提醒中心暫時無法使用" } }
+      }
+    },
+    "alarm_invalid_date" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Choose a time at least one minute from now." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Şimdiden en az bir dakika sonrası için bir saat seçin." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请选择至少在一分钟后的时间。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請選擇至少在一分鐘後的時間。" } }
+      }
+    },
+    "alarm_invalid_duration" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The timer duration is outside the supported range." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Zamanlayıcı süresi desteklenen aralığın dışında." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "计时长度超出支持范围。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "計時長度超出支援範圍。" } }
+      }
+    },
+    "alarm_not_authorized" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reminder permission was not granted." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hatırlatma izni verilmedi." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未获得提醒权限。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "未獲得提醒權限。" } }
+      }
+    },
+    "alarm_not_supported" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This reminder action is not supported here." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bu hatırlatma işlemi burada desteklenmiyor." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "当前不支持此提醒操作。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "目前不支援此提醒操作。" } }
+      }
+    },
+    "alarm_not_found" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The reminder no longer exists." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hatırlatıcı artık mevcut değil." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "提醒已不存在。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "提醒已不存在。" } }
+      }
+    },
+    "alarm_duration_minutes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d min" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "%d dk" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%d 分钟" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "%d 分鐘" } }
+      }
+    },
+    "alarm_fallback_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Motorcycle reminder" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Motosiklet hatırlatıcısı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "摩托车提醒" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "摩托車提醒" } }
+      }
+    },
+    "app_intent_alarm_open_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open motorcycle reminder" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Motosiklet hatırlatıcısını aç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开摩托车提醒" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟摩托車提醒" } }
+      }
+    },
+    "app_intent_alarm_id_parameter" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Alarm ID" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Alarm kimliği" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "提醒 ID" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "提醒 ID" } }
+      }
+    },
+    "app_intent_timer_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start a motorcycle timer" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Motosiklet zamanlayıcısı başlat" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开始摩托车计时" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開始摩托車計時" } }
+      }
+    },
+    "app_intent_timer_description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start a parking or ride break reminder." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Park veya sürüş molası hatırlatıcısı başlatın." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开始停车或骑行休息提醒。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開始停車或騎行休息提醒。" } }
+      }
+    },
+    "app_intent_timer_type_parameter" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Timer type" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Zamanlayıcı türü" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "计时类型" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "計時類型" } }
+      }
+    },
+    "app_intent_timer_minutes_parameter" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Minutes" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Dakika" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "分钟" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "分鐘" } }
+      }
+    },
+    "app_intent_timer_type" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Motorcycle timer" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Motosiklet zamanlayıcısı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "摩托车计时" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "摩托車計時" } }
+      }
+    },
+    "app_intent_timer_parking" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Parking timer" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Park zamanlayıcısı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "停车计时" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "停車計時" } }
+      }
+    },
+    "app_intent_timer_ride_break" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ride break timer" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürüş molası zamanlayıcısı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "骑行休息计时" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "騎行休息計時" } }
+      }
+    },
+    "app_intent_timer_short_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Motorcycle timer" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Motosiklet zamanlayıcısı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "摩托车计时" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "摩托車計時" } }
+      }
+    },
+    "app_intent_departure_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Schedule a ride departure reminder" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürüş çıkışı hatırlatıcısı planla" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "安排骑行出发提醒" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "安排騎行出發提醒" } }
+      }
+    },
+    "app_intent_departure_description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Schedule a reminder for a motorcycle departure." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Motosiklet çıkışı için hatırlatıcı planlayın." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "安排摩托车出发提醒。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "安排摩托車出發提醒。" } }
+      }
+    },
+    "app_intent_departure_time_parameter" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Departure time" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Çıkış zamanı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "出发时间" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "出發時間" } }
+      }
+    },
+    "app_intent_reminder_title_parameter" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Title" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Başlık" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "标题" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "標題" } }
+      }
+    },
+    "app_intent_departure_short_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Departure reminder" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Çıkış hatırlatıcısı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "出发提醒" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "出發提醒" } }
+      }
+    },
+    "garage_vehicle_default_name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Current motorcycle" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Mevcut motosiklet" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "当前摩托车" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "目前摩托車" } }
       }
     }
   },

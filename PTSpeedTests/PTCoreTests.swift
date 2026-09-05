@@ -185,6 +185,40 @@ final class PTCoreTests: XCTestCase {
         XCTAssertEqual(restored, source)
     }
 
+    // EN: Alarm records must preserve their delivery state and calculate countdown fire dates deterministically.
+    // ES: Los registros de alarma deben conservar su estado de entrega y calcular de forma determinista la fecha de disparo.
+    // 中文：提醒记录必须保留投递状态，并且能稳定计算倒计时触发时间。
+    func testMotoAlarmRecordCodableRoundTripAndTiming() throws {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let fixed = PTMotoAlarmRecord(
+            id: UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")!,
+            kind: .departure,
+            timing: .fixed(start.addingTimeInterval(3_600)),
+            title: "Leave for the ride",
+            vehicleID: UUID(uuidString: "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB"),
+            delivery: .notificationFallback
+        )
+        let restored = try JSONDecoder().decode(
+            PTMotoAlarmRecord.self,
+            from: JSONEncoder().encode(fixed)
+        )
+
+        XCTAssertEqual(restored, fixed)
+        XCTAssertEqual(restored.fireDate, start.addingTimeInterval(3_600))
+        XCTAssertFalse(restored.isCountdown)
+
+        let countdown = PTMotoAlarmRecord(
+            kind: .rideBreak,
+            timing: .countdown(startedAt: start, duration: 1_800),
+            title: "Take a break",
+            delivery: .alarmKit,
+            state: .countdown
+        )
+        XCTAssertEqual(countdown.fireDate, start.addingTimeInterval(1_800))
+        XCTAssertEqual(countdown.timing.duration, 1_800)
+        XCTAssertTrue(countdown.isCountdown)
+    }
+
     // EN: LiDAR sampling must separate the three regions and reject low-confidence depth values.
     // ES: El muestreo LiDAR debe separar las tres zonas y rechazar profundidades de baja confianza.
     // 中文：LiDAR 采样必须分离三个区域，并拒绝低置信度深度值。
@@ -728,6 +762,15 @@ final class PTCoreTests: XCTestCase {
             PTRoutingManager.parse(url: URL(string: "xp400://navigate?destination=%E7%8F%A0%E6%B1%9F%E6%96%B0%E5%9F%8E")!),
             .navigateTo(destination: "珠江新城")
         )
+        let alarmID = UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")!
+        XCTAssertEqual(
+            PTRoutingManager.parse(url: URL(string: "xp400://openAlarms")!),
+            .openAlarmCenter(id: nil)
+        )
+        XCTAssertEqual(
+            PTRoutingManager.parse(url: URL(string: "xp400://openAlarms?id=AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")!),
+            .openAlarmCenter(id: alarmID)
+        )
 
         XCTAssertEqual(
             PTRoutingManager.parse(url: URL(string: "xp400://antiTheft")!),
@@ -745,6 +788,10 @@ final class PTCoreTests: XCTestCase {
             PTRoutingManager.parse(url: URL(string: "xp400://navigate?destination=%20%20")!),
             .unknown
         )
+        XCTAssertEqual(
+            PTRoutingManager.parse(url: URL(string: "xp400://openAlarms?id=not-a-uuid")!),
+            .unknown
+        )
         XCTAssertNil(PTRoutingManager.parse(url: URL(string: "other://checkFuel")!))
     }
 
@@ -752,8 +799,8 @@ final class PTCoreTests: XCTestCase {
     // ES: Cada ejemplo de URL documentado debe seguir siendo aceptado por el analizador de producción.
     // 中文：说明页中的每个 URL 示例都必须继续被正式解析器接受。
     func testAutomationGuideCatalogMatchesExternalRoutes() throws {
-        XCTAssertEqual(PTAutomationGuideCatalog.intentItems.count, 6)
-        XCTAssertEqual(PTAutomationGuideCatalog.schemeItems.count, 6)
+        XCTAssertEqual(PTAutomationGuideCatalog.intentItems.count, 8)
+        XCTAssertEqual(PTAutomationGuideCatalog.schemeItems.count, 7)
 
         for item in PTAutomationGuideCatalog.schemeItems {
             for example in item.examples {

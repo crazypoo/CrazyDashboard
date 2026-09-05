@@ -91,6 +91,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         PTAppBaseConfig.share.navTitleTextColor = .white
         PTAppBaseConfig.share.navTitleFont = .appfont(size: 24,bold: true)
         appNotifiCenter()
+
+        // EN: Restore alarm records without requesting permission or creating a new alarm at launch.
+        // ES: Restaura los registros de alarmas sin solicitar permisos ni crear una alarma al iniciar.
+        // 中文：启动时只恢复提醒记录，不申请权限，也不创建新的提醒。
+        PTMotoAlarmCoordinator.shared.bootstrap()
         
         // EN: Configure one QWeather actor and inject it into every read-only weather service.
         // ES: Configura un solo actor de QWeather y lo inyecta en todos los servicios meteorológicos de solo lectura.
@@ -215,7 +220,23 @@ extension AppDelegate:UNUserNotificationCenterDelegate {
             case PTNotificationCenter.snoozeActionIdentifier:
                 PTAntiTheftManager.shared.snooze(for: 30 * 60)
             case PTNotificationCenter.openActionIdentifier:
-                _ = PTRoutingManager.shared.execute(action: .openSafety)
+                let notificationKind = response.notification.request.content.userInfo["pt_notification_kind"] as? String
+                if notificationKind == PTAppNotificationKind.alarm.rawValue {
+                    let alarmID = (response.notification.request.content.userInfo["pt_alarm_id"] as? String)
+                        .flatMap(UUID.init(uuidString:))
+                    _ = PTRoutingManager.shared.execute(action: .openAlarmCenter(id: alarmID))
+                } else {
+                    _ = PTRoutingManager.shared.execute(action: .openSafety)
+                }
+            // EN: Tapping an alarm notification body opens the same alarm center as its explicit action.
+            // ES: Tocar el cuerpo de una notificación de alarma abre el mismo centro que su acción explícita.
+            // 中文：直接点击提醒通知正文时，也进入与显式按钮相同的提醒中心。
+            case UNNotificationDefaultActionIdentifier:
+                let notificationKind = response.notification.request.content.userInfo["pt_notification_kind"] as? String
+                guard notificationKind == PTAppNotificationKind.alarm.rawValue else { break }
+                let alarmID = (response.notification.request.content.userInfo["pt_alarm_id"] as? String)
+                    .flatMap(UUID.init(uuidString:))
+                _ = PTRoutingManager.shared.execute(action: .openAlarmCenter(id: alarmID))
             default:
                 break
             }

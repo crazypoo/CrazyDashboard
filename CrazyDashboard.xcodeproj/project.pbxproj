@@ -144,6 +144,17 @@
 		600000010000000000000190 /* PTDashboardANCSProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000190 /* PTDashboardANCSProvider.swift */; };
 		600000010000000000000200 /* PTLiDARAssistViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000200 /* PTLiDARAssistViewController.swift */; };
 		600000010000000000000201 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000201 /* InfoPlist.xcstrings */; };
+		600000010000000000000210 /* PTMotoAlarmModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000210 /* PTMotoAlarmModels.swift */; };
+		600000010000000000000211 /* PTMotoAlarmModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000210 /* PTMotoAlarmModels.swift */; };
+		600000010000000000000212 /* PTMotoAlarmModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000210 /* PTMotoAlarmModels.swift */; };
+		600000010000000000000213 /* PTMotoAlarmCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000211 /* PTMotoAlarmCoordinator.swift */; };
+		600000010000000000000214 /* PTMotoAlarmCenterViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000212 /* PTMotoAlarmCenterViewController.swift */; };
+		600000010000000000000215 /* PTMotoAlarmControlIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000213 /* PTMotoAlarmControlIntents.swift */; };
+		600000010000000000000216 /* PTMotoAlarmControlIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000213 /* PTMotoAlarmControlIntents.swift */; };
+		600000010000000000000217 /* AlarmKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 600000020000000000000214 /* AlarmKit.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		600000010000000000000218 /* AlarmKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 600000020000000000000214 /* AlarmKit.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		600000010000000000000219 /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 600000020000000000000101 /* AppIntents.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		600000010000000000000220 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000093 /* Localizable.xcstrings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -349,6 +360,11 @@
 		600000020000000000000190 /* PTDashboardANCSProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashboardANCSProvider.swift; sourceTree = "<group>"; };
 		600000020000000000000200 /* PTLiDARAssistViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLiDARAssistViewController.swift; sourceTree = "<group>"; };
 		600000020000000000000201 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
+		600000020000000000000210 /* PTMotoAlarmModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoAlarmModels.swift; sourceTree = "<group>"; };
+		600000020000000000000211 /* PTMotoAlarmCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoAlarmCoordinator.swift; sourceTree = "<group>"; };
+		600000020000000000000212 /* PTMotoAlarmCenterViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoAlarmCenterViewController.swift; sourceTree = "<group>"; };
+		600000020000000000000213 /* PTMotoAlarmControlIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoAlarmControlIntents.swift; sourceTree = "<group>"; };
+		600000020000000000000214 /* AlarmKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AlarmKit.framework; path = System/Library/Frameworks/AlarmKit.framework; sourceTree = SDKROOT; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -385,6 +401,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				600000010000000000000219 /* AppIntents.framework in Frameworks */,
+				600000010000000000000218 /* AlarmKit.framework in Frameworks */,
 				55499E0C301AFCE800A1A2D9 /* SwiftUI.framework in Frameworks */,
 				55499E0A301AFCE800A1A2D9 /* WidgetKit.framework in Frameworks */,
 			);
@@ -404,6 +422,7 @@
 			files = (
 				600000010000000000000024 /* WatchConnectivity.framework in Frameworks */,
 				600000010000000000000101 /* AppIntents.framework in Frameworks */,
+				600000010000000000000217 /* AlarmKit.framework in Frameworks */,
 				5A200D40EF300920887AD052 /* Pods_PTSpeed.framework in Frameworks */,
 				55E61692301B45B50075F883 /* QWeatherSDK in Frameworks */,
 				5577E6762FD657F30004733F /* libz.tbd in Frameworks */,
@@ -460,6 +479,7 @@
 				55499E01301AFC2200A1A2D9 /* PTWidgetManager.swift */,
 				600000020000000000000020 /* PTWidgetSharedStatus.swift */,
 				600000020000000000000021 /* PTWatchConnectivityManager.swift */,
+				600000020000000000000213 /* PTMotoAlarmControlIntents.swift */,
 				600000020000000000000130 /* PTWatchRideAssistant.swift */,
 			);
 			path = Widget;
@@ -745,8 +765,11 @@
 				55986832301330E00049684D /* PTDataCollectedViewController.swift */,
 				600000020000000000000040 /* PTDataPersistenceActor.swift */,
 				5598667D301148290049684D /* PTDiagnosticManager.swift */,
+				600000020000000000000211 /* PTMotoAlarmCoordinator.swift */,
+				600000020000000000000212 /* PTMotoAlarmCenterViewController.swift */,
 				5598668030114A980049684D /* PTFuelRoutingManager.swift */,
 				55986674301144060049684D /* PTMaintenanceManager.swift */,
+				600000020000000000000210 /* PTMotoAlarmModels.swift */,
 				55FE2994300CBCB4000E741F /* PTMotoBaseTabbarController.swift */,
 				55901836300FE37100A77571 /* PTMotoBaseViewController.swift */,
 				55FDBCA73010CD6E00EE7FA5 /* PTMOTOParkingManager.swift */,
@@ -848,6 +871,7 @@
 				55499E09301AFCE800A1A2D9 /* WidgetKit.framework */,
 				55499E0B301AFCE800A1A2D9 /* SwiftUI.framework */,
 				600000020000000000000101 /* AppIntents.framework */,
+				600000020000000000000214 /* AlarmKit.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -1019,6 +1043,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				554112933021DC830059BFCF /* GlobalAssets.xcassets in Resources */,
+				600000010000000000000220 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1134,6 +1159,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				600000010000000000000211 /* PTMotoAlarmModels.swift in Sources */,
+				600000010000000000000216 /* PTMotoAlarmControlIntents.swift in Sources */,
 				600000010000000000000021 /* PTWidgetSharedStatus.swift in Sources */,
 				55499E1D301B14DD00A1A2D9 /* PTLiveActivityManager.swift in Sources */,
 			);
@@ -1143,6 +1170,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				600000010000000000000212 /* PTMotoAlarmModels.swift in Sources */,
 				600000010000000000000022 /* PTWidgetSharedStatus.swift in Sources */,
 				600000010000000000000131 /* PTWatchRideAssistant.swift in Sources */,
 			);
@@ -1154,7 +1182,11 @@
 			files = (
 				55F52C55303D4025007527C2 /* PTRideReviewAnalyzer.swift in Sources */,
 				600000010000000000000020 /* PTWidgetSharedStatus.swift in Sources */,
+				600000010000000000000210 /* PTMotoAlarmModels.swift in Sources */,
 				600000010000000000000023 /* PTWatchConnectivityManager.swift in Sources */,
+				600000010000000000000213 /* PTMotoAlarmCoordinator.swift in Sources */,
+				600000010000000000000214 /* PTMotoAlarmCenterViewController.swift in Sources */,
+				600000010000000000000215 /* PTMotoAlarmControlIntents.swift in Sources */,
 				55CA9E193024582300A3A677 /* PTOBDDataViewControllerCollection.swift in Sources */,
 				559866C23011A71E0049684D /* SpeechSynthesizer.swift in Sources */,
 				55FE2995300CBCB4000E741F /* PTMotoBaseTabbarController.swift in Sources */,

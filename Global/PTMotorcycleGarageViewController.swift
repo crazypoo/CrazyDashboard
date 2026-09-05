@@ -41,6 +41,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
     private let fuelProfileButton: UIButton
     private let maintenanceWarningButton: UIButton
     private let addMaintenanceButton: UIButton
+    private let alarmCenterButton: UIButton
     private let tireSuspensionButton: UIButton
     private let addRefuelButton: UIButton
     private let saveOBDButton: UIButton
@@ -58,6 +59,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         self.fuelProfileButton = Self.makeActionButton(titleKey: "garage_set_fuel_profile")
         self.maintenanceWarningButton = Self.makeActionButton(titleKey: "garage_set_maintenance_warning")
         self.addMaintenanceButton = Self.makeActionButton(titleKey: "garage_add_maintenance")
+        self.alarmCenterButton = Self.makeActionButton(titleKey: "alarm_center_title", color: .systemOrange)
         self.tireSuspensionButton = Self.makeActionButton(titleKey: "garage_edit_tire_suspension")
         self.addRefuelButton = Self.makeActionButton(titleKey: "garage_add_refuel")
         self.saveOBDButton = Self.makeActionButton(titleKey: "garage_save_obd_snapshot")
@@ -138,6 +140,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         fuelProfileButton.addTarget(self, action: #selector(showFuelProfileForm), for: .touchUpInside)
         maintenanceWarningButton.addTarget(self, action: #selector(showMaintenanceWarningForm), for: .touchUpInside)
         addMaintenanceButton.addTarget(self, action: #selector(showMaintenanceForm), for: .touchUpInside)
+        alarmCenterButton.addTarget(self, action: #selector(openAlarmCenter), for: .touchUpInside)
         tireSuspensionButton.addTarget(self, action: #selector(showTireSuspensionForm), for: .touchUpInside)
         addRefuelButton.addTarget(self, action: #selector(showRefuelForm), for: .touchUpInside)
         saveOBDButton.addTarget(self, action: #selector(saveCurrentOBDSnapshot), for: .touchUpInside)
@@ -164,7 +167,11 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         vehicleBody.axis = .vertical
         vehicleBody.spacing = 8
 
-        let maintenanceActions = makeButtonRow([maintenanceWarningButton, addMaintenanceButton])
+        let maintenanceActions = makeButtonRow([
+            maintenanceWarningButton,
+            addMaintenanceButton,
+            alarmCenterButton
+        ])
         let maintenanceBody = UIStackView(arrangedSubviews: [maintenanceStatusLabel, maintenanceRowsStack, maintenanceActions])
         maintenanceBody.axis = .vertical
         maintenanceBody.spacing = 10
@@ -617,6 +624,13 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
 
     @objc private func garageDashboardSyncDidChange() {
         refreshUI()
+    }
+
+    // EN: Keep alarm scheduling in its dedicated center so garage records remain the source of vehicle data.
+    // ES: Mantiene la programación en su centro dedicado para que los registros del garaje sigan siendo la fuente de datos.
+    // 中文：提醒安排统一进入独立中心，车库记录仍只负责车辆数据。
+    @objc private func openAlarmCenter() {
+        safePushViewController(PTMotoAlarmCenterViewController())
     }
 
     @objc private func showVehiclePicker() {
