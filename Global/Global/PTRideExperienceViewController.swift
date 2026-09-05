@@ -30,6 +30,7 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
     private let groupSafetyValueLabel = UILabel()
     private let blackBoxValueLabel = UILabel()
     private var blackBoxClipCount = 0
+    private var narrativeTask: Task<Void, Never>?
 
     private lazy var markBlackBoxButton: UIButton = {
         let button = UIButton(type: .system)
@@ -39,6 +40,34 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
         button.backgroundColor = PTDashboardConfig.shared.appMainColor
         button.layer.cornerRadius = 12
         button.addTarget(self, action: #selector(markBlackBoxEvent), for: .touchUpInside)
+        return button
+    }()
+
+    // EN: Narrative generation is user-triggered and remains a read-only presentation feature.
+    // ES: La generación narrativa la solicita el usuario y sigue siendo una función de presentación de solo lectura.
+    // 中文：骑行文字总结必须由用户主动触发，并且只用于只读展示。
+    private lazy var narrativeButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle(PTDashboardConfig.languageFunc(text: "ride_story_generate"), for: .normal)
+        button.setTitleColor(.white, for: .normal)
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        button.backgroundColor = PTDashboardConfig.shared.appMainColor
+        button.layer.cornerRadius = 12
+        button.addTarget(self, action: #selector(generateRideNarrative), for: .touchUpInside)
+        return button
+    }()
+
+    // EN: Translation is kept in the ride center so repair and group messages are easy to reach.
+    // ES: La traducción permanece en el centro de conducción para acceder fácilmente a mensajes de reparación y grupo.
+    // 中文：把翻译入口放在骑行中心，方便处理维修和车友沟通文本。
+    private lazy var translationButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle(PTDashboardConfig.languageFunc(text: "translation_open"), for: .normal)
+        button.setTitleColor(.white, for: .normal)
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        button.backgroundColor = UIColor.systemIndigo.withAlphaComponent(0.9)
+        button.layer.cornerRadius = 12
+        button.addTarget(self, action: #selector(openTranslation), for: .touchUpInside)
         return button
     }()
     
@@ -146,6 +175,9 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         PTRideGroupSafetyCoordinator.shared.stop()
+        narrativeTask?.cancel()
+        narrativeTask = nil
+        narrativeButton.isEnabled = true
     }
 
     override func handleMotorcycleConnect() {
@@ -245,6 +277,7 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
             title: PTDashboardConfig.languageFunc(text: "ride_story"),
             rows: [("", storyValueLabel)]
         ))
+        contentStack.addArrangedSubview(narrativeButton)
         contentStack.addArrangedSubview(makeSection(
             title: PTDashboardConfig.languageFunc(text: "ride_group_safety"),
             rows: [("", groupSafetyValueLabel)]
@@ -258,6 +291,7 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
             title: PTDashboardConfig.languageFunc(text: "ride_last_sync"),
             rows: [("", updatedValueLabel)]
         ))
+        contentStack.addArrangedSubview(translationButton)
     }
 
     private func makeSection(title: String, rows: [(String, UILabel)]) -> UIView {
@@ -434,6 +468,31 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
             ),
             elevation
         ].joined(separator: "\n")
+    }
+
+    // EN: Use aggregate trip facts only; this action never reads or writes BLE/OBD state.
+    // ES: Usa solo hechos agregados del viaje; esta acción nunca lee ni escribe el estado BLE/OBD.
+    // 中文：只传递骑行聚合数据，该操作不会读写 BLE/OBD 状态。
+    @objc private func generateRideNarrative() {
+        guard let report = PTTripManager.shared.tripHistory.first else {
+            showMessage(PTDashboardConfig.languageFunc(text: "ride_story_empty"))
+            return
+        }
+
+        narrativeTask?.cancel()
+        narrativeButton.isEnabled = false
+        narrativeTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let summary = PTRideStoryBuilder.make(from: report)
+            let narrative = await PTRideNarrativeService.shared.makeNarrative(for: summary)
+            guard !Task.isCancelled else { return }
+            self.narrativeButton.isEnabled = true
+            self.showMessage(narrative)
+        }
+    }
+
+    @objc private func openTranslation() {
+        safePushViewController(PTMotoTranslationViewController())
     }
 
     private func groupSafetyDescription(_ safety: PTRideGroupSafetySnapshot) -> String {

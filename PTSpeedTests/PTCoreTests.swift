@@ -177,12 +177,79 @@ final class PTCoreTests: XCTestCase {
             parkedLat: 31.2304,
             parkedLon: 121.4737,
             address: "上海外滩",
-            lastUpdateTime: Date(timeIntervalSince1970: 1_700_000_000)
+            lastUpdateTime: Date(timeIntervalSince1970: 1_700_000_000),
+            languageIdentifier: "fr"
         )
 
         let restored = PTWidgetSharedStatus(applicationContext: source.applicationContext)
 
         XCTAssertEqual(restored, source)
+    }
+
+    // EN: Receipt OCR remains an editable draft and parses European decimal separators safely.
+    // ES: El OCR del recibo sigue siendo un borrador editable y analiza de forma segura los decimales europeos.
+    // 中文：单据 OCR 始终是可编辑草稿，并且能安全解析欧洲小数分隔符。
+    func testReceiptDraftParsesEuropeanNumbersWithoutSaving() throws {
+        let draft = PTReceiptDraft.fromRecognizedText("""
+        Peugeot Service
+        Mileage: 9.998,5 km
+        Oil: 1,2 L
+        Total: 42,50 EUR
+        Date: 05.09.2026
+        """)
+
+        XCTAssertEqual(draft.odometerKm ?? 0, 9_998.5, accuracy: 0.001)
+        XCTAssertEqual(draft.liters ?? 0, 1.2, accuracy: 0.001)
+        XCTAssertEqual(draft.amount ?? 0, 42.5, accuracy: 0.001)
+        XCTAssertEqual(draft.currency, "EUR")
+        XCTAssertNotNil(draft.date)
+    }
+
+    // EN: Spotlight routes accept only local record identifiers and reject malformed destinations.
+    // ES: Las rutas de Spotlight solo aceptan identificadores locales y rechazan destinos malformados.
+    // 中文：Spotlight 路由只接受本地记录标识，并拒绝格式错误的目标。
+    func testSpotlightIdentifierRoundTripDoesNotContainPrivateTelemetry() throws {
+        let vehicleID = UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")!
+        let identifier = PTMotoSpotlightIdentifier.vehicle(vehicleID)
+
+        XCTAssertEqual(
+            PTMotoSpotlightIdentifier.destination(for: identifier),
+            .vehicle(vehicleID)
+        )
+        XCTAssertFalse(identifier.contains("VIN"))
+        XCTAssertFalse(identifier.contains("31.2304"))
+        XCTAssertNil(PTMotoSpotlightIdentifier.destination(for: "vehicle:not-a-uuid"))
+        XCTAssertNil(PTMotoSpotlightIdentifier.destination(for: "unknown:value"))
+    }
+
+    // EN: Narrative fallback is deterministic and consumes every format argument.
+    // ES: El respaldo narrativo es determinista y consume todos los argumentos de formato.
+    // 中文：骑行叙事回退结果是确定性的，并且会消费全部格式化参数。
+    @MainActor
+    func testRideNarrativeFallbackHasNoUnresolvedPlaceholders() {
+        let summary = PTRideStorySummary(
+            startTime: Date(timeIntervalSince1970: 1_700_000_000),
+            endTime: Date(timeIntervalSince1970: 1_700_001_800),
+            durationMinutes: 30,
+            distanceKm: 12.5,
+            averageSpeedKmh: 30,
+            maxSpeedKmh: 80,
+            maximumLeanAngle: 25,
+            elevationGainMeters: 10,
+            elevationLossMeters: 5,
+            idleTimeSeconds: 30,
+            best0To100Time: nil,
+            eventCount: 2,
+            offRoadEventCount: 0,
+            eventBreakdown: ["highLean": 2],
+            hasGPX: true
+        )
+
+        let narrative = PTRideNarrativeService.fallback(for: summary)
+
+        XCTAssertFalse(narrative.contains("%@"))
+        XCTAssertFalse(narrative.contains("%d"))
+        XCTAssertFalse(narrative.isEmpty)
     }
 
     // EN: Alarm records must preserve their delivery state and calculate countdown fire dates deterministically.

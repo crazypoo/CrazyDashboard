@@ -16,8 +16,14 @@ struct ContentView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 PTWatchVehicleStatusView(status: statusStore.status)
-                PTWatchReadinessView(readiness: statusStore.readiness)
-                PTWatchNavigationView(navigation: statusStore.navigation)
+                PTWatchReadinessView(
+                    readiness: statusStore.readiness,
+                    languageIdentifier: statusStore.status.languageIdentifier
+                )
+                PTWatchNavigationView(
+                    navigation: statusStore.navigation,
+                    languageIdentifier: statusStore.status.languageIdentifier
+                )
                 PTWatchParkingView(status: statusStore.status)
             }
             .padding(.horizontal, 4)
@@ -32,32 +38,37 @@ struct ContentView: View {
 // 中文：此卡片复用 iPhone 缓存的出发检查结果，并且在 Watch 上保持只读。
 private struct PTWatchReadinessView: View {
     let readiness: PTWatchReadinessStatus
+    let languageIdentifier: String?
+
+    private func localized(_ key: String) -> String {
+        PTWidgetLocalized.string(key, languageIdentifier: languageIdentifier)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             HStack(spacing: 5) {
                 Image(systemName: iconName)
                     .foregroundStyle(stateColor)
-                Text("ride_readiness")
+                Text(localized("ride_readiness"))
                     .font(.headline)
                     .foregroundStyle(.white)
                 Spacer(minLength: 4)
-                Text(stateTitle)
+                Text(localized(stateTitle))
                     .font(.caption)
                     .foregroundStyle(stateColor)
             }
 
             if readiness.updatedAt == .distantPast {
-                Text("ride_readiness_unavailable_hint")
+                Text(localized("ride_readiness_unavailable_hint"))
                     .font(.caption2)
                     .foregroundStyle(.gray)
             } else if readiness.issues.isEmpty {
-                Text("ride_readiness_ready_hint")
+                Text(localized("ride_readiness_ready_hint"))
                     .font(.caption2)
                     .foregroundStyle(.gray)
             } else {
                 ForEach(Array(readiness.issues.prefix(2)), id: \.rawValue) { issue in
-                    Label(issueTitle(for: issue), systemImage: "exclamationmark.circle")
+                    Label(localized(issueTitle(for: issue)), systemImage: "exclamationmark.circle")
                         .font(.caption2)
                         .foregroundStyle(.orange)
                         .lineLimit(1)
@@ -69,7 +80,7 @@ private struct PTWatchReadinessView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var stateTitle: LocalizedStringKey {
+    private var stateTitle: String {
         switch readiness.state {
         case .ready: return "ride_readiness_ready"
         case .attention: return "ride_readiness_attention"
@@ -93,7 +104,7 @@ private struct PTWatchReadinessView: View {
         }
     }
 
-    private func issueTitle(for issue: PTWatchReadinessIssue) -> LocalizedStringKey {
+    private func issueTitle(for issue: PTWatchReadinessIssue) -> String {
         switch issue {
         case .dashboardDisconnected: return "ride_readiness_issue_dashboard"
         case .obdDisconnected: return "ride_readiness_issue_obd"
@@ -111,13 +122,17 @@ private struct PTWatchVehicleStatusView: View {
     let status: PTWidgetSharedStatus
     private let mainColor = Color(red: 0.2, green: 0.6, blue: 1.0)
 
+    private func localized(_ key: String) -> String {
+        PTWidgetLocalized.string(key, languageIdentifier: status.languageIdentifier)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 HStack(spacing: 5) {
                     Image(systemName: status.isConnected ? "wave.3.right.circle.fill" : "wave.3.right.circle")
                         .foregroundStyle(status.isConnected ? .green : .gray)
-                    Text(connectionTitle)
+                    Text(localized(connectionTitle))
                         .font(.headline)
                         .foregroundStyle(status.isConnected ? .green : .gray)
                 }
@@ -126,7 +141,7 @@ private struct PTWatchVehicleStatusView: View {
 
                 Group {
                     if status.lastUpdateTime == .distantPast {
-                        Text("ride_not_available")
+                        Text(localized("ride_not_available"))
                     } else {
                         Text(status.lastUpdateTime, style: .time)
                     }
@@ -140,13 +155,13 @@ private struct PTWatchVehicleStatusView: View {
 
             HStack(spacing: 14) {
                 PTWatchMetricView(
-                    title: "watch_assistant_fuel_level",
+                    title: localized("watch_assistant_fuel_level"),
                     value: "\(status.fuelLevel)%",
                     systemImage: "fuelpump.fill",
                     color: mainColor
                 )
                 PTWatchMetricView(
-                    title: "casa_card_little_trip",
+                    title: localized("casa_card_little_trip"),
                     value: String(format: "%.1f km", status.tripKm),
                     systemImage: "flag.checkered",
                     color: mainColor
@@ -155,13 +170,13 @@ private struct PTWatchVehicleStatusView: View {
         }
     }
 
-    private var connectionTitle: LocalizedStringKey {
+    private var connectionTitle: String {
         status.isConnected ? "ride_connected" : "ride_disconnected"
     }
 }
 
 private struct PTWatchMetricView: View {
-    let title: LocalizedStringKey
+    let title: String
     let value: String
     let systemImage: String
     let color: Color
@@ -185,33 +200,38 @@ private struct PTWatchMetricView: View {
 
 private struct PTWatchNavigationView: View {
     let navigation: PTWatchRideAssistantState
+    let languageIdentifier: String?
     private let mainColor = Color(red: 0.2, green: 0.6, blue: 1.0)
+
+    private func localized(_ key: String) -> String {
+        PTWidgetLocalized.string(key, languageIdentifier: languageIdentifier)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 5) {
                 Image(systemName: navigation.maneuver.symbolName)
                     .foregroundStyle(mainColor)
-                Text("watch_assistant_title")
+                Text(localized("watch_assistant_title"))
                     .font(.headline)
                     .foregroundStyle(.white)
                 Spacer(minLength: 4)
-                Text(sourceTitle)
+                Text(localized(sourceTitle))
                     .font(.caption2)
                     .foregroundStyle(.gray)
             }
 
             if !navigation.status.isVisible {
-                Text("watch_assistant_no_navigation")
+                Text(localized("watch_assistant_no_navigation"))
                     .font(.footnote)
                     .foregroundStyle(.gray)
             } else if !navigation.isFresh {
-                Label("watch_assistant_stale", systemImage: "clock.badge.exclamationmark")
+                Label(localized("watch_assistant_stale"), systemImage: "clock.badge.exclamationmark")
                     .font(.footnote)
                     .foregroundStyle(.orange)
             } else {
                 HStack(spacing: 6) {
-                    Text(statusTitle)
+                    Text(localized(statusTitle))
                         .font(.caption)
                         .foregroundStyle(statusColor)
                     if navigation.totalSteps > 0 {
@@ -229,7 +249,7 @@ private struct PTWatchNavigationView: View {
                 }
 
                 if navigation.instruction.isEmpty {
-                    Text("watch_assistant_no_instruction")
+                    Text(localized("watch_assistant_no_instruction"))
                         .font(.headline)
                         .foregroundStyle(.white)
                 } else {
@@ -242,12 +262,12 @@ private struct PTWatchNavigationView: View {
 
                 HStack(spacing: 10) {
                     PTWatchDistanceView(
-                        title: "watch_assistant_distance_to_turn",
+                        title: localized("watch_assistant_distance_to_turn"),
                         meters: navigation.distanceToManeuverMeters,
                         color: mainColor
                     )
                     PTWatchDistanceView(
-                        title: "watch_assistant_remaining",
+                        title: localized("watch_assistant_remaining"),
                         meters: navigation.distanceToDestinationMeters,
                         color: .white
                     )
@@ -259,7 +279,7 @@ private struct PTWatchNavigationView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var sourceTitle: LocalizedStringKey {
+    private var sourceTitle: String {
         switch navigation.source {
         case .roadbook:
             return "roadbook_title"
@@ -270,7 +290,7 @@ private struct PTWatchNavigationView: View {
         }
     }
 
-    private var statusTitle: LocalizedStringKey {
+    private var statusTitle: String {
         switch navigation.status {
         case .active:
             return "roadbook_status_active"
@@ -304,7 +324,7 @@ private struct PTWatchNavigationView: View {
 }
 
 private struct PTWatchDistanceView: View {
-    let title: LocalizedStringKey
+    let title: String
     let meters: Double
     let color: Color
 
@@ -334,11 +354,15 @@ private struct PTWatchDistanceView: View {
 private struct PTWatchParkingView: View {
     let status: PTWidgetSharedStatus
 
+    private func localized(_ key: String) -> String {
+        PTWidgetLocalized.string(key, languageIdentifier: status.languageIdentifier)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             Divider().overlay(Color.gray.opacity(0.3))
 
-            Label("ride_parking", systemImage: "parkingsign.circle.fill")
+            Label(localized("ride_parking"), systemImage: "parkingsign.circle.fill")
                 .font(.caption)
                 .foregroundStyle(.gray)
                 .symbolRenderingMode(.hierarchical)
@@ -355,13 +379,13 @@ private struct PTWatchParkingView: View {
 
             if let mapURL = parkingMapURL {
                 Link(destination: mapURL) {
-                    Label("watch_assistant_find_motorcycle", systemImage: "map.fill")
+                    Label(localized("watch_assistant_find_motorcycle"), systemImage: "map.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.orange)
             } else {
-                Label("ride_no_parking", systemImage: "location.slash")
+                Label(localized("ride_no_parking"), systemImage: "location.slash")
                     .font(.caption)
                     .foregroundStyle(.gray)
             }

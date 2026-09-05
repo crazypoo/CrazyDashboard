@@ -229,7 +229,39 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
         tr.flag = Flag(countryCode: "TR")!.originalImage
         tr.voiceValue = "tr-TR"
 
-        return [cn,cn_tw,tr,en]
+        let fr = PTLanguageModel()
+        fr.name = "Français"
+        fr.keyName = "fr"
+        fr.localozableName = "fr"
+        fr.isSelected = PTMotoUserDefaultStruct.userSetLanguage == fr.keyName
+        fr.flag = Flag(countryCode: "FR")!.originalImage
+        fr.voiceValue = "fr-FR"
+
+        let de = PTLanguageModel()
+        de.name = "Deutsch"
+        de.keyName = "de"
+        de.localozableName = "de"
+        de.isSelected = PTMotoUserDefaultStruct.userSetLanguage == de.keyName
+        de.flag = Flag(countryCode: "DE")!.originalImage
+        de.voiceValue = "de-DE"
+
+        let es = PTLanguageModel()
+        es.name = "Español"
+        es.keyName = "es"
+        es.localozableName = "es"
+        es.isSelected = PTMotoUserDefaultStruct.userSetLanguage == es.keyName
+        es.flag = Flag(countryCode: "ES")!.originalImage
+        es.voiceValue = "es-ES"
+
+        let it = PTLanguageModel()
+        it.name = "Italiano"
+        it.keyName = "it"
+        it.localozableName = "it"
+        it.isSelected = PTMotoUserDefaultStruct.userSetLanguage == it.keyName
+        it.flag = Flag(countryCode: "IT")!.originalImage
+        it.voiceValue = "it-IT"
+
+        return [cn, cn_tw, en, tr, fr, de, es, it]
     }
     
     static func appIsInChinese() ->Bool {
@@ -248,6 +280,7 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
         UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "language_set_title"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: map, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
             PTMotoUserDefaultStruct.userSetLanguage = PTDashboardConfig.shared.lauguageModels[index].keyName
             PTLanguage.share.language = PTDashboardConfig.shared.lauguageModels[index].localozableName
+            PTWidgetDataManager.shared.updateLanguageIdentifier(PTLanguage.share.language)
         })
     }
     

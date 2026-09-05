@@ -21,6 +21,7 @@ public enum PTWidgetDataKeys {
     nonisolated public static let parkedLon = "widget_parkedLon"
     nonisolated public static let address = "widget_parkedAddress"
     nonisolated public static let lastUpdateTime = "widget_lastUpdateTime"
+    nonisolated public static let languageIdentifier = "widget_languageIdentifier"
 }
 
 public struct PTWidgetSharedStatus: Codable, Equatable, Sendable {
@@ -31,6 +32,10 @@ public struct PTWidgetSharedStatus: Codable, Equatable, Sendable {
     public let parkedLon: Double
     public let address: String
     public let lastUpdateTime: Date
+    /// EN: Optional for backward compatibility with snapshots written before app-language sync.
+    /// ES: Opcional para mantener la compatibilidad con instantáneas anteriores a la sincronización del idioma.
+    /// 中文：为兼容语言同步之前写入的快照，该字段必须允许缺失。
+    public let languageIdentifier: String?
 
     nonisolated public init(
         fuelLevel: Int,
@@ -39,7 +44,8 @@ public struct PTWidgetSharedStatus: Codable, Equatable, Sendable {
         parkedLat: Double,
         parkedLon: Double,
         address: String,
-        lastUpdateTime: Date
+        lastUpdateTime: Date,
+        languageIdentifier: String? = nil
     ) {
         self.fuelLevel = fuelLevel
         self.tripKm = tripKm
@@ -48,6 +54,7 @@ public struct PTWidgetSharedStatus: Codable, Equatable, Sendable {
         self.parkedLon = parkedLon
         self.address = address
         self.lastUpdateTime = lastUpdateTime
+        self.languageIdentifier = languageIdentifier
     }
 
     nonisolated public static let placeholder = PTWidgetSharedStatus(
@@ -56,8 +63,9 @@ public struct PTWidgetSharedStatus: Codable, Equatable, Sendable {
         isConnected: false,
         parkedLat: 0,
         parkedLon: 0,
-        address: "暂无停车位置记录",
-        lastUpdateTime: .distantPast
+        address: "",
+        lastUpdateTime: .distantPast,
+        languageIdentifier: nil
     )
 
     nonisolated public init?(applicationContext: [String: Any]) {
@@ -80,7 +88,8 @@ public struct PTWidgetSharedStatus: Codable, Equatable, Sendable {
             parkedLat: parkedLat,
             parkedLon: parkedLon,
             address: address,
-            lastUpdateTime: Date(timeIntervalSince1970: timestamp)
+            lastUpdateTime: Date(timeIntervalSince1970: timestamp),
+            languageIdentifier: applicationContext[PTWidgetDataKeys.languageIdentifier] as? String
         )
     }
 
@@ -97,7 +106,8 @@ public struct PTWidgetSharedStatus: Codable, Equatable, Sendable {
             parkedLat: defaults.double(forKey: PTWidgetDataKeys.parkedLat),
             parkedLon: defaults.double(forKey: PTWidgetDataKeys.parkedLon),
             address: defaults.string(forKey: PTWidgetDataKeys.address) ?? PTWidgetSharedStatus.placeholder.address,
-            lastUpdateTime: Date(timeIntervalSince1970: defaults.double(forKey: PTWidgetDataKeys.lastUpdateTime))
+            lastUpdateTime: Date(timeIntervalSince1970: defaults.double(forKey: PTWidgetDataKeys.lastUpdateTime)),
+            languageIdentifier: defaults.string(forKey: PTWidgetDataKeys.languageIdentifier)
         )
     }
 
@@ -113,10 +123,15 @@ public struct PTWidgetSharedStatus: Codable, Equatable, Sendable {
         defaults.set(parkedLon, forKey: PTWidgetDataKeys.parkedLon)
         defaults.set(address, forKey: PTWidgetDataKeys.address)
         defaults.set(lastUpdateTime.timeIntervalSince1970, forKey: PTWidgetDataKeys.lastUpdateTime)
+        if let languageIdentifier {
+            defaults.set(languageIdentifier, forKey: PTWidgetDataKeys.languageIdentifier)
+        } else {
+            defaults.removeObject(forKey: PTWidgetDataKeys.languageIdentifier)
+        }
     }
 
     nonisolated public var applicationContext: [String: Any] {
-        [
+        var values: [String: Any] = [
             PTWidgetDataKeys.fuelLevel: fuelLevel,
             PTWidgetDataKeys.tripKm: tripKm,
             PTWidgetDataKeys.isConnected: isConnected,
@@ -125,6 +140,10 @@ public struct PTWidgetSharedStatus: Codable, Equatable, Sendable {
             PTWidgetDataKeys.address: address,
             PTWidgetDataKeys.lastUpdateTime: lastUpdateTime.timeIntervalSince1970
         ]
+        if let languageIdentifier {
+            values[PTWidgetDataKeys.languageIdentifier] = languageIdentifier
+        }
+        return values
     }
 
     nonisolated private static func intValue(_ value: Any?) -> Int? {
@@ -143,5 +162,27 @@ public struct PTWidgetSharedStatus: Codable, Equatable, Sendable {
         if let value = value as? Bool { return value }
         if let value = value as? NSNumber { return value.boolValue }
         return nil
+    }
+}
+
+// EN: Resolve Widget and Watch copy independently from the selected iPhone locale.
+// ES: Resuelve el texto del Widget y del Watch independientemente del locale seleccionado en el iPhone.
+// 中文：让 Widget 和 Watch 根据 iPhone 选择的语言独立解析界面文案。
+public enum PTWidgetLocalized {
+    nonisolated public static func string(_ key: String, languageIdentifier: String?) -> String {
+        let identifier = languageIdentifier.flatMap { normalized($0) }
+        let locale = identifier.map(Locale.init(identifier:)) ?? .current
+        let value = String(
+            localized: String.LocalizationValue(key),
+            table: "Localizable",
+            bundle: .main,
+            locale: locale
+        )
+        return value == key ? key : value
+    }
+
+    nonisolated private static func normalized(_ identifier: String) -> String? {
+        let value = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
+        return value.isEmpty ? nil : value
     }
 }

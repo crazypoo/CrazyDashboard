@@ -8,6 +8,7 @@
 import UIKit
 import PooTools
 import SwifterSwift
+import CoreSpotlight
 
 @MainActor
 class SceneDelegate: PTWindowSceneDelegate {
@@ -27,6 +28,8 @@ class SceneDelegate: PTWindowSceneDelegate {
     // 中文：将冷启动路由排队，直到当前应用场景激活并真正拥有 UI。
     private var pendingExternalURLs: [URL] = []
     private var queuedExternalURLKeys = Set<String>()
+    private var pendingSpotlightIdentifiers: [String] = []
+    private var queuedSpotlightIdentifiers = Set<String>()
     
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
@@ -44,6 +47,7 @@ class SceneDelegate: PTWindowSceneDelegate {
         self.makeKeyAndVisible(in: scene, viewController: PTMotoBaseTabbarController(), tint: .white)
         PTLaunchAnimationPresenter.present(in: scene)
         connectionOptions.urlContexts.forEach { enqueueExternalURL($0.url) }
+        connectionOptions.userActivities.forEach { enqueueSpotlightIdentifier(from: $0) }
         
         PTGCDManager.shared.delayOnMain(time: 0.5) {
             // EN: Add the sniffer last so the compact developer control stays above the weather surface.
@@ -70,6 +74,7 @@ class SceneDelegate: PTWindowSceneDelegate {
         // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
         guard let windowScene = scene as? UIWindowScene else { return }
         drainPendingExternalURLs(in: windowScene)
+        drainPendingSpotlightIdentifiers(in: windowScene)
     }
 
     func sceneWillResignActive(_ scene: UIScene) {
@@ -118,6 +123,19 @@ class SceneDelegate: PTWindowSceneDelegate {
         }
     }
 
+    // EN: Spotlight launches are queued just like URL routes so cold starts cannot lose the selected record.
+    // ES: Los lanzamientos desde Spotlight se encolan igual que las rutas URL para no perder el registro seleccionado.
+    // 中文：Spotlight 启动与 URL 路由使用同样的队列，避免冷启动丢失选中的记录。
+    func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+        guard let windowScene = scene as? UIWindowScene,
+              let identifier = spotlightIdentifier(from: userActivity) else { return }
+        if windowScene.activationState == .foregroundActive {
+            routeSpotlightIdentifier(identifier, in: windowScene)
+        } else {
+            enqueueSpotlightIdentifier(identifier)
+        }
+    }
+
     // EN: Keep URL delivery scene-aware and avoid losing a route during a cold launch.
     // ES: Mantén la entrega de URL consciente de la escena y evita perder rutas durante un arranque en frío.
     // 中文：让 URL 投递绑定到具体场景，避免冷启动时丢失路由。
@@ -142,6 +160,61 @@ class SceneDelegate: PTWindowSceneDelegate {
         for url in urls {
             routeExternalURL(url, in: scene)
         }
+    }
+
+    private func enqueueSpotlightIdentifier(from userActivity: NSUserActivity) {
+        guard let identifier = spotlightIdentifier(from: userActivity) else { return }
+        enqueueSpotlightIdentifier(identifier)
+    }
+
+    private func spotlightIdentifier(from userActivity: NSUserActivity) -> String? {
+        guard userActivity.activityType == CSSearchableItemActionType,
+              let identifier = userActivity.userInfo?[CSSearchableItemActivityIdentifier] as? String,
+              !identifier.isEmpty else {
+            return nil
+        }
+        return identifier
+    }
+
+    private func enqueueSpotlightIdentifier(_ identifier: String) {
+        guard PTMotoSpotlightIdentifier.destination(for: identifier) != nil,
+              queuedSpotlightIdentifiers.insert(identifier).inserted else { return }
+        pendingSpotlightIdentifiers.append(identifier)
+    }
+
+    private func drainPendingSpotlightIdentifiers(in scene: UIWindowScene) {
+        guard scene.activationState == .foregroundActive,
+              !pendingSpotlightIdentifiers.isEmpty else { return }
+
+        PTSceneContext.rootViewController(in: scene)?.loadViewIfNeeded()
+        let identifiers = pendingSpotlightIdentifiers
+        pendingSpotlightIdentifiers.removeAll()
+        queuedSpotlightIdentifiers.removeAll()
+        for identifier in identifiers {
+            routeSpotlightIdentifier(identifier, in: scene)
+        }
+    }
+
+    private func routeSpotlightIdentifier(_ identifier: String, in scene: UIWindowScene) {
+        guard let destination = PTMotoSpotlightIdentifier.destination(for: identifier) else { return }
+        var components = URLComponents()
+        components.scheme = "xp400"
+        components.host = "action"
+
+        switch destination {
+        case .vehicle(let id):
+            components.path = "/opengarage"
+            components.queryItems = [URLQueryItem(name: "id", value: id.uuidString)]
+        case .roadbook(let id):
+            components.path = "/openroadbooks"
+            components.queryItems = [URLQueryItem(name: "id", value: id.uuidString)]
+        case .ride(let id):
+            components.path = "/openrides"
+            components.queryItems = [URLQueryItem(name: "id", value: id)]
+        }
+
+        guard let url = components.url else { return }
+        routeExternalURL(url, in: scene)
     }
 
     private func routeExternalURL(_ url: URL, in scene: UIWindowScene) {

@@ -22,6 +22,7 @@ struct MotoStatusEntry: TimelineEntry {
     let parkedLon: Double
     let address: String
     let lastUpdateTime: Date
+    let languageIdentifier: String?
 }
 
 // MARK: - 数据提供者
@@ -33,7 +34,7 @@ struct MotoWidgetProvider: TimelineProvider {
     let appGroupID = PTWidgetDataKeys.appGroupID
     
     func placeholder(in context: Context) -> MotoStatusEntry {
-        MotoStatusEntry(date: Date(), fuelLevel: 0, tripKm: 0, isConnected: false, parkedLat: 0, parkedLon: 0, address: "XXXX", lastUpdateTime: Date())
+        MotoStatusEntry(date: Date(), fuelLevel: 0, tripKm: 0, isConnected: false, parkedLat: 0, parkedLon: 0, address: "", lastUpdateTime: .distantPast, languageIdentifier: nil)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (MotoStatusEntry) -> ()) {
@@ -61,7 +62,8 @@ struct MotoWidgetProvider: TimelineProvider {
             parkedLat: status.parkedLat,
             parkedLon: status.parkedLon,
             address: status.address,
-            lastUpdateTime: status.lastUpdateTime
+            lastUpdateTime: status.lastUpdateTime,
+            languageIdentifier: status.languageIdentifier
         )
     }
 }
@@ -70,6 +72,13 @@ struct MotoWidgetProvider: TimelineProvider {
 struct MotoWidgetEntryView : View {
     var entry: MotoWidgetProvider.Entry
     let mainColor = Color(red: 0.2, green: 0.6, blue: 1.0)
+
+    // EN: Resolve visible Widget labels using the language selected in the companion app.
+    // ES: Resuelve las etiquetas visibles del Widget usando el idioma elegido en la app compañera.
+    // 中文：根据主 App 选择的语言解析 Widget 的可见文案。
+    private func localized(_ key: String) -> String {
+        PTWidgetLocalized.string(key, languageIdentifier: entry.languageIdentifier)
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -80,13 +89,13 @@ struct MotoWidgetEntryView : View {
                     Image(systemName: entry.isConnected ? "wave.3.right.circle.fill" : "wave.3.right.circle")
                         .foregroundColor(entry.isConnected ? .green : .gray)
                         .font(.title3)
-                    Text(entry.isConnected ? "机车已连接" : "机车已断开")
+                    Text(localized(entry.isConnected ? "ride_connected" : "ride_disconnected"))
                         .font(.headline)
                         .foregroundColor(entry.isConnected ? .green : .gray)
                 }
                 Spacer()
                 VStack(alignment: .trailing) {
-                    Text("同步时间")
+                    Text(localized("ride_last_sync"))
                         .font(.caption2)
                         .foregroundColor(.gray)
                     Text(entry.lastUpdateTime, style: .time)
@@ -105,7 +114,7 @@ struct MotoWidgetEntryView : View {
                     HStack {
                         Image(systemName: "fuelpump.fill")
                             .foregroundColor(mainColor)
-                        Text("当前油量")
+                        Text(localized("watch_assistant_fuel_level"))
                             .font(.subheadline)
                             .foregroundColor(.gray)
                     }
@@ -120,7 +129,7 @@ struct MotoWidgetEntryView : View {
                     HStack {
                         Image(systemName: "flag.checkered")
                             .foregroundColor(mainColor)
-                        Text("小计里程")
+                        Text(localized("casa_card_little_trip"))
                             .font(.subheadline)
                             .foregroundColor(.gray)
                     }
@@ -143,21 +152,30 @@ struct MotoWidgetEntryView : View {
                     Image(systemName: "parkingsign.circle.fill")
                         .foregroundColor(.orange)
                         .font(.title3)
-                    Text("最后停车位置")
+                    Text(localized("ride_parking"))
                         .font(.subheadline)
                         .foregroundColor(.gray)
                 }
                 
-                // 🌟 高德全称地址文字
-                Text(entry.address)
-                    .font(.body)
-                    .fontWeight(.medium)
-                    .foregroundColor(.white)
-                    .lineLimit(2) // 允许换行显示长地址
-                    .fixedSize(horizontal: false, vertical: true)
+                // EN: Avoid showing a hard-coded language when no parking record exists.
+                // ES: Evita mostrar un idioma fijo cuando no existe un registro de estacionamiento.
+                // 中文：没有停车记录时不显示硬编码语言的占位文本。
+                if entry.address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text(localized("ride_no_parking"))
+                        .font(.body)
+                        .foregroundColor(.gray)
+                } else {
+                    Text(entry.address)
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .foregroundColor(.white)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 
                 // 经纬度补充信息
-                if entry.parkedLat != 0.0 {
+                if entry.parkedLat.isFinite && entry.parkedLon.isFinite &&
+                    (abs(entry.parkedLat) > 0.000001 || abs(entry.parkedLon) > 0.000001) {
                     HStack {
                         Image(systemName: "location.fill")
                         Text(String(format: "Lat: %.5f  Lon: %.5f", entry.parkedLat, entry.parkedLon))

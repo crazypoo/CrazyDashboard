@@ -41,6 +41,8 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
     private let fuelProfileButton: UIButton
     private let maintenanceWarningButton: UIButton
     private let addMaintenanceButton: UIButton
+    private let scanReceiptButton: UIButton
+    private let addMaintenanceCalendarButton: UIButton
     private let alarmCenterButton: UIButton
     private let tireSuspensionButton: UIButton
     private let addRefuelButton: UIButton
@@ -59,6 +61,8 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         self.fuelProfileButton = Self.makeActionButton(titleKey: "garage_set_fuel_profile")
         self.maintenanceWarningButton = Self.makeActionButton(titleKey: "garage_set_maintenance_warning")
         self.addMaintenanceButton = Self.makeActionButton(titleKey: "garage_add_maintenance")
+        self.scanReceiptButton = Self.makeActionButton(titleKey: "garage_receipt_scan")
+        self.addMaintenanceCalendarButton = Self.makeActionButton(titleKey: "garage_add_to_calendar")
         self.alarmCenterButton = Self.makeActionButton(titleKey: "alarm_center_title", color: .systemOrange)
         self.tireSuspensionButton = Self.makeActionButton(titleKey: "garage_edit_tire_suspension")
         self.addRefuelButton = Self.makeActionButton(titleKey: "garage_add_refuel")
@@ -140,6 +144,8 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         fuelProfileButton.addTarget(self, action: #selector(showFuelProfileForm), for: .touchUpInside)
         maintenanceWarningButton.addTarget(self, action: #selector(showMaintenanceWarningForm), for: .touchUpInside)
         addMaintenanceButton.addTarget(self, action: #selector(showMaintenanceForm), for: .touchUpInside)
+        scanReceiptButton.addTarget(self, action: #selector(openReceiptScanner), for: .touchUpInside)
+        addMaintenanceCalendarButton.addTarget(self, action: #selector(addMaintenanceToCalendar), for: .touchUpInside)
         alarmCenterButton.addTarget(self, action: #selector(openAlarmCenter), for: .touchUpInside)
         tireSuspensionButton.addTarget(self, action: #selector(showTireSuspensionForm), for: .touchUpInside)
         addRefuelButton.addTarget(self, action: #selector(showRefuelForm), for: .touchUpInside)
@@ -167,12 +173,13 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         vehicleBody.axis = .vertical
         vehicleBody.spacing = 8
 
-        let maintenanceActions = makeButtonRow([
-            maintenanceWarningButton,
-            addMaintenanceButton,
-            alarmCenterButton
+        let maintenanceActionRows = UIStackView(arrangedSubviews: [
+            makeButtonRow([maintenanceWarningButton, addMaintenanceButton, scanReceiptButton]),
+            makeButtonRow([addMaintenanceCalendarButton, alarmCenterButton])
         ])
-        let maintenanceBody = UIStackView(arrangedSubviews: [maintenanceStatusLabel, maintenanceRowsStack, maintenanceActions])
+        maintenanceActionRows.axis = .vertical
+        maintenanceActionRows.spacing = 8
+        let maintenanceBody = UIStackView(arrangedSubviews: [maintenanceStatusLabel, maintenanceRowsStack, maintenanceActionRows])
         maintenanceBody.axis = .vertical
         maintenanceBody.spacing = 10
         let tireBody = UIStackView(arrangedSubviews: [tireSuspensionSummaryLabel, makeButtonRow([tireSuspensionButton, addRefuelButton]), refuelSummaryLabel])
@@ -631,6 +638,35 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
     // 中文：提醒安排统一进入独立中心，车库记录仍只负责车辆数据。
     @objc private func openAlarmCenter() {
         safePushViewController(PTMotoAlarmCenterViewController())
+    }
+
+    // EN: Receipt OCR creates an editable draft and never saves until the rider confirms it.
+    // ES: El OCR del recibo crea un borrador editable y nunca guarda hasta que el piloto lo confirma.
+    // 中文：单据 OCR 只创建可编辑草稿，必须由骑手确认后才保存。
+    @objc private func openReceiptScanner() {
+        safePushViewController(PTGarageReceiptScanViewController(store: store))
+    }
+
+    // EN: Calendar export is an explicit action for the next maintenance item only.
+    // ES: La exportación al calendario es una acción explícita y solo usa el próximo mantenimiento.
+    // 中文：日历导出必须由用户主动触发，并且只使用下一条保养记录。
+    @objc private func addMaintenanceToCalendar() {
+        guard let vehicle = store.currentVehicle else {
+            showMessage(localized("garage_no_vehicle"))
+            return
+        }
+        guard let record = vehicle.maintenanceRecords
+            .filter({ $0.dueDate != nil })
+            .sorted(by: { ($0.dueDate ?? .distantFuture) < ($1.dueDate ?? .distantFuture) })
+            .first else {
+            showMessage(localized("calendar_no_due_date"))
+            return
+        }
+        PTMotoCalendarManager.shared.presentMaintenanceReminder(
+            record: record,
+            vehicleName: vehicle.name,
+            from: self
+        )
     }
 
     @objc private func showVehiclePicker() {

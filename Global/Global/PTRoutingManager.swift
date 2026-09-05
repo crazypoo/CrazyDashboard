@@ -24,6 +24,9 @@ public enum PTExternalAction: Equatable, Sendable {
     case navigateTo(destination: String)
     case openSafety
     case openAlarmCenter(id: UUID?)
+    case openGarage(vehicleID: UUID?)
+    case openRoadbooks
+    case openRideHistory(id: String?)
     case unknown
 }
 
@@ -98,6 +101,21 @@ public final class PTRoutingManager: NSObject {
                 return .unknown
             }
             return .openAlarmCenter(id: id)
+
+        case "opengarage":
+            guard let rawID = queryValue(named: "id", in: components) else {
+                return .openGarage(vehicleID: nil)
+            }
+            guard let id = UUID(uuidString: rawID) else {
+                return .unknown
+            }
+            return .openGarage(vehicleID: id)
+
+        case "openroadbooks":
+            return .openRoadbooks
+
+        case "openrides":
+            return .openRideHistory(id: queryValue(named: "id", in: components))
 
         case "confirmgasstationroute":
             return .confirmGasStationRoute
@@ -278,6 +296,47 @@ public final class PTRoutingManager: NSObject {
                 PTMotoAlarmCenterViewController(highlightedAlarmID: id),
                 animated: true
             )
+            return .completed
+
+        case .openGarage(let vehicleID):
+            guard let tabbar = tabbarController(in: scene) else {
+                return .unavailable
+            }
+            tabbar.ptCustomBar.select(0)
+            guard let navigationController = tabbar.viewControllers?.first as? UINavigationController else {
+                return .unavailable
+            }
+            if let vehicleID {
+                guard PTMotorcycleGarageStore.shared.selectVehicle(id: vehicleID) else {
+                    return .unavailable
+                }
+            }
+            if navigationController.topViewController is PTMotorcycleGarageViewController {
+                return .completed
+            }
+            navigationController.pushViewController(PTMotorcycleGarageViewController(), animated: true)
+            return .completed
+
+        case .openRoadbooks:
+            guard let tabbar = tabbarController(in: scene),
+                  tabbar.viewControllers?.indices.contains(1) == true else {
+                return .unavailable
+            }
+            tabbar.ptCustomBar.select(1)
+            guard let navigationController = tabbar.viewControllers?[1] as? UINavigationController else {
+                return .unavailable
+            }
+            if navigationController.topViewController is PTRoadbookViewController {
+                return .completed
+            }
+            navigationController.pushViewController(PTRoadbookViewController(), animated: true)
+            return .completed
+
+        case .openRideHistory:
+            guard let tabbar = tabbarController(in: scene) else {
+                return .unavailable
+            }
+            tabbar.ptCustomBar.select(2)
             return .completed
 
         case .unknown:

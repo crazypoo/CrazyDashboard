@@ -45,17 +45,24 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     config: buglyConfig)
 
         if PTMotoUserDefaultStruct.appFirst {
+            // EN: Match the first supported app language against the system preference, including region variants.
+            // ES: Relaciona el primer idioma compatible con la preferencia del sistema, incluidas las variantes regionales.
+            // 中文：首次启动时根据系统首选语言匹配 App 支持的语言，并兼容地区变体。
             PTLanguage.share.language = PTLocale.en.rawValue
-            let currentPhoneLanguage = PTLanguage.defaultLanguage()
-            let keyName = PTLocale.en.rawValue
-            let localozableName = PTLocale.en.rawValue
-            
-            if let findModel = PTDashboardConfig.shared.lauguageModels.first(where: { $0.localozableName == currentPhoneLanguage }) {
+            let currentPhoneLanguage = Locale.preferredLanguages.first ?? PTLocale.en.rawValue
+            let preferredLanguageCode = Locale(identifier: currentPhoneLanguage).language.languageCode?.identifier
+            let findModel = PTDashboardConfig.shared.lauguageModels.first { model in
+                let modelLanguageCode = Locale(identifier: model.localozableName).language.languageCode?.identifier
+                return currentPhoneLanguage.caseInsensitiveCompare(model.localozableName) == .orderedSame
+                    || preferredLanguageCode == modelLanguageCode
+            }
+
+            if let findModel {
                 PTLanguage.share.language = findModel.localozableName
                 PTMotoUserDefaultStruct.userSetLanguage = findModel.keyName
             } else {
-                PTLanguage.share.language = localozableName
-                PTMotoUserDefaultStruct.userSetLanguage = keyName
+                PTLanguage.share.language = PTLocale.en.rawValue
+                PTMotoUserDefaultStruct.userSetLanguage = PTLocale.en.rawValue
             }
             
             PTMotoUserDefaultStruct.appFirst.toggle()
@@ -132,6 +139,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // ES: Inicia la observación del tablero al arrancar para que la sincronización no dependa de abrir una página.
         // 中文：应用启动时就开始监听仪表，自动同步不再依赖用户打开某个页面。
         _ = PTVehicleConnectivityCoordinator.shared.snapshot
+
+        // EN: Build the privacy-safe Spotlight index after the app's main stores are available.
+        // ES: Construye el índice de Spotlight respetuoso con la privacidad cuando los almacenes principales están disponibles.
+        // 中文：在主数据存储可用后建立保护隐私的 Spotlight 索引。
+        Task { @MainActor in
+            PTMotoSpotlightIndexer.shared.bootstrap()
+        }
         
         return true
     }

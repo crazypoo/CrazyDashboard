@@ -20,10 +20,14 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>用于低速骑行辅助和车库测距</string>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>用于将保养和路线提醒添加到日历</string>
 	<key>NSAlarmKitUsageDescription</key>
 	<string>用于设置出发、停车、骑行休息和保养提醒</string>
 	<key>NSMicrophoneInjectionUsageDescription</key>
 	<string>我要用Mic</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>用于选择维修或加油单据进行识别</string>
 	<key>QWeatherHost</key>
 	<string>$(QWEATHER_HOST)</string>
 	<key>QWeatherKeyID</key>

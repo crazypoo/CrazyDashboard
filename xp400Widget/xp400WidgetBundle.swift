@@ -17,5 +17,11 @@ struct xp400WidgetBundle: WidgetBundle {
         if #available(iOS 26.0, *) {
             MotoAlarmLiveActivity()
         }
+        if #available(iOS 18.0, *) {
+            PTMotoHUDControl()
+            PTMotoReadinessControl()
+            PTMotoParkingControl()
+            PTMotoAlarmsControl()
+        }
     }
 }

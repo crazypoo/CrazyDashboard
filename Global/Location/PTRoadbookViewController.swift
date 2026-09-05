@@ -259,6 +259,16 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
             self?.showWeatherRisk(for: roadbook)
         })
         alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "roadbook_add_to_calendar"),
+            style: .default
+        ) { [weak self] _ in
+            guard let self else { return }
+            PTMotoCalendarManager.shared.presentRoadbookReminder(
+                roadbook: roadbook,
+                from: self
+            )
+        })
+        alert.addAction(UIAlertAction(
             title: PTDashboardConfig.languageFunc(text: "roadbook_share"),
             style: .default
         ) { [weak self] _ in

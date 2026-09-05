@@ -155,6 +155,10 @@
 		600000010000000000000218 /* AlarmKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 600000020000000000000214 /* AlarmKit.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		600000010000000000000219 /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 600000020000000000000101 /* AppIntents.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		600000010000000000000220 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000093 /* Localizable.xcstrings */; };
+		600000010000000000000230 /* PTGarageReceiptScanViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000230 /* PTGarageReceiptScanViewController.swift */; };
+		600000010000000000000231 /* PTMotoNativeFeatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000231 /* PTMotoNativeFeatures.swift */; };
+		600000010000000000000232 /* PTRideNarrativeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000232 /* PTRideNarrativeService.swift */; };
+		600000010000000000000233 /* PTMotoTranslationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000233 /* PTMotoTranslationViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -365,6 +369,10 @@
 		600000020000000000000212 /* PTMotoAlarmCenterViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoAlarmCenterViewController.swift; sourceTree = "<group>"; };
 		600000020000000000000213 /* PTMotoAlarmControlIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoAlarmControlIntents.swift; sourceTree = "<group>"; };
 		600000020000000000000214 /* AlarmKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AlarmKit.framework; path = System/Library/Frameworks/AlarmKit.framework; sourceTree = SDKROOT; };
+		600000020000000000000230 /* PTGarageReceiptScanViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTGarageReceiptScanViewController.swift; sourceTree = "<group>"; };
+		600000020000000000000231 /* PTMotoNativeFeatures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoNativeFeatures.swift; sourceTree = "<group>"; };
+		600000020000000000000232 /* PTRideNarrativeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideNarrativeService.swift; sourceTree = "<group>"; };
+		600000020000000000000233 /* PTMotoTranslationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoTranslationViewController.swift; sourceTree = "<group>"; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -581,6 +589,10 @@
 				600000020000000000000141 /* PTMotorcycleGarageViewController.swift */,
 				600000020000000000000160 /* PTAutomationGuideViewController.swift */,
 				600000020000000000000162 /* AppShortcuts.xcstrings */,
+				600000020000000000000230 /* PTGarageReceiptScanViewController.swift */,
+				600000020000000000000231 /* PTMotoNativeFeatures.swift */,
+				600000020000000000000232 /* PTRideNarrativeService.swift */,
+				600000020000000000000233 /* PTMotoTranslationViewController.swift */,
 				5512F3DC302C8C8E001AFED4 /* Log */,
 				55CA9DF23024528A00A3A677 /* OBD */,
 				558789E2302420B500B94E91 /* Carplay */,
@@ -1017,6 +1029,10 @@
 				"zh-Hans",
 				tr,
 				"zh-Hant",
+				fr,
+				de,
+				es,
+				it,
 			);
 			mainGroup = 5577E5B42FD5C1DB0004733F;
 			minimizedProjectReferenceProxies = 1;
@@ -1292,6 +1308,10 @@
 				557D0054302ECDAE008BA492 /* PTPeugeotDashBoardViewController.swift in Sources */,
 				5577E6AC2FD662C20004733F /* PTMapView.swift in Sources */,
 				600000010000000000000100 /* PTMotoAppIntents.swift in Sources */,
+				600000010000000000000230 /* PTGarageReceiptScanViewController.swift in Sources */,
+				600000010000000000000231 /* PTMotoNativeFeatures.swift in Sources */,
+				600000010000000000000232 /* PTRideNarrativeService.swift in Sources */,
+				600000010000000000000233 /* PTMotoTranslationViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

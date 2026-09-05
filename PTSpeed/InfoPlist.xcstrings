@@ -1,209 +1,328 @@
 {
-  "sourceLanguage" : "zh-Hans",
-  "strings" : {
-    "CFBundleDisplayName" : {
-      "comment" : "Bundle display name",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "XP400RIDE"
+  "sourceLanguage": "zh-Hans",
+  "strings": {
+    "CFBundleDisplayName": {
+      "comment": "Bundle display name",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "new",
+            "value": "XP400RIDE"
           }
         }
       }
     },
-    "CFBundleName" : {
-      "comment" : "Bundle name",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "XP400Ride"
+    "CFBundleName": {
+      "comment": "Bundle name",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "new",
+            "value": "XP400Ride"
           }
         }
       }
     },
-    "NSAppleMusicUsageDescription" : {
-      "comment" : "Privacy - Media Library Usage Description",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "用于导航语音和音乐信息 / Para indicaciones de voz e información musical"
-          }
-        }
-      }
-    },
-    "NSBluetoothAlwaysUsageDescription" : {
-      "comment" : "Privacy - Bluetooth Always Usage Description",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "用于连接摩托车仪表并读取车辆数据 / Para conectar el cuadro de la moto y leer sus datos"
-          }
-        }
-      }
-    },
-    "NSCameraUsageDescription" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Used for low-speed riding assistance and garage measurements"
+    "NSAlarmKitUsageDescription": {
+      "comment": "Privacy - AlarmKit Usage Description",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used to schedule departure, parking, rest and maintenance reminders"
           }
         },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Düşük hız sürüş yardımı ve garaj ölçümleri için kullanılır"
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se usa para programar recordatorios de salida, aparcamiento, descanso y mantenimiento"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "用于低速骑行辅助和车库测距"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用于设置出发、停车、骑行休息和保养提醒"
           }
         },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "用於低速騎行輔助與車庫測距"
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用於設定出發、停車、騎行休息與保養提醒"
           }
         }
       }
     },
-    "NSAlarmKitUsageDescription" : {
-      "comment" : "Privacy - AlarmKit Usage Description",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Used to schedule departure, parking, rest and maintenance reminders"
+    "NSAppleMusicUsageDescription": {
+      "comment": "Privacy - Media Library Usage Description",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "new",
+            "value": "用于导航语音和音乐信息 / Para indicaciones de voz e información musical"
+          }
+        }
+      }
+    },
+    "NSBluetoothAlwaysUsageDescription": {
+      "comment": "Privacy - Bluetooth Always Usage Description",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "new",
+            "value": "用于连接摩托车仪表并读取车辆数据 / Para conectar el cuadro de la moto y leer sus datos"
+          }
+        }
+      }
+    },
+    "NSCalendarsWriteOnlyAccessUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used to add maintenance and route reminders to Calendar"
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se usa para programar recordatorios de salida, aparcamiento, descanso y mantenimiento"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用于将保养和路线提醒添加到日历"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "用于设置出发、停车、骑行休息和保养提醒"
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用於將保養與路線提醒加入行事曆"
           }
         },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "用於設定出發、停車、騎行休息與保養提醒"
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bakım ve rota hatırlatıcılarını Takvim’e eklemek için kullanılır"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utilisé pour ajouter les rappels d’entretien et d’itinéraire au Calendrier"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zum Hinzufügen von Wartungs- und Routenerinnerungen zum Kalender"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se usa para añadir recordatorios de mantenimiento y rutas al Calendario"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utilizzato per aggiungere promemoria di manutenzione e percorsi al Calendario"
           }
         }
       }
     },
-    "NSLocalNetworkUsageDescription" : {
-      "comment" : "Privacy - Local Network Usage Description",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "用于发现同组骑手并进行对讲 / Para descubrir a los pilotos del grupo y usar el intercomunicador"
+    "NSCameraUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used for low-speed riding assistance and garage measurements"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Düşük hız sürüş yardımı ve garaj ölçümleri için kullanılır"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用于低速骑行辅助和车库测距"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用於低速騎行輔助與車庫測距"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utilisé pour l’assistance à basse vitesse et les mesures du garage"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Für Fahrassistenz bei niedriger Geschwindigkeit und Garagenmessungen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se usa para la asistencia a baja velocidad y las mediciones del garaje"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utilizzato per l’assistenza a bassa velocità e le misurazioni del garage"
           }
         }
       }
     },
-    "NSLocationAlwaysAndWhenInUseUsageDescription" : {
-      "comment" : "Privacy - Location Always and When In Use Usage Description",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "用于记录骑行路线、停车位置和防盗状态 / Para registrar la ruta, el aparcamiento y el estado antirrobo"
+    "NSLocalNetworkUsageDescription": {
+      "comment": "Privacy - Local Network Usage Description",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "new",
+            "value": "用于发现同组骑手并进行对讲 / Para descubrir a los pilotos del grupo y usar el intercomunicador"
           }
         }
       }
     },
-    "NSLocationAlwaysUsageDescription" : {
-      "comment" : "Privacy - Location Always Usage Description",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "用于后台记录骑行路线和防盗状态 / Para registrar la ruta y el estado antirrobo en segundo plano"
+    "NSLocationAlwaysAndWhenInUseUsageDescription": {
+      "comment": "Privacy - Location Always and When In Use Usage Description",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "new",
+            "value": "用于记录骑行路线、停车位置和防盗状态 / Para registrar la ruta, el aparcamiento y el estado antirrobo"
           }
         }
       }
     },
-    "NSLocationWhenInUseUsageDescription" : {
-      "comment" : "Privacy - Location When In Use Usage Description",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "用于记录骑行路线和当前位置 / Para registrar la ruta y la ubicación actual"
+    "NSLocationAlwaysUsageDescription": {
+      "comment": "Privacy - Location Always Usage Description",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "new",
+            "value": "用于后台记录骑行路线和防盗状态 / Para registrar la ruta y el estado antirrobo en segundo plano"
           }
         }
       }
     },
-    "NSMicrophoneUsageDescription" : {
-      "comment" : "Privacy - Microphone Usage Description",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "用于摩托车组群语音对讲 / Para el intercomunicador de voz del grupo de motos"
+    "NSLocationWhenInUseUsageDescription": {
+      "comment": "Privacy - Location When In Use Usage Description",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "new",
+            "value": "用于记录骑行路线和当前位置 / Para registrar la ruta y la ubicación actual"
           }
         }
       }
     },
-    "NSMotionUsageDescription" : {
-      "comment" : "Privacy - Motion Usage Description",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "用于识别骑行姿态和加速度变化 / Para detectar la postura y los cambios de aceleración durante la ruta"
+    "NSMicrophoneUsageDescription": {
+      "comment": "Privacy - Microphone Usage Description",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "new",
+            "value": "用于摩托车组群语音对讲 / Para el intercomunicador de voz del grupo de motos"
           }
         }
       }
     },
-    "NSPhotoLibraryAddUsageDescription" : {
-      "comment" : "Privacy - Photo Library Additions Usage Description",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "用于保存骑行报告和截图 / Para guardar informes y capturas de la ruta"
+    "NSMotionUsageDescription": {
+      "comment": "Privacy - Motion Usage Description",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "new",
+            "value": "用于识别骑行姿态和加速度变化 / Para detectar la postura y los cambios de aceleración durante la ruta"
           }
         }
       }
     },
-    "NSPhotoLibraryUsageDescription" : {
-      "comment" : "Privacy - Photo Library Usage Description",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "用于选择骑手头像和分享图片 / Para elegir el avatar y compartir imágenes"
+    "NSPhotoLibraryAddUsageDescription": {
+      "comment": "Privacy - Photo Library Additions Usage Description",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "new",
+            "value": "用于保存骑行报告和截图 / Para guardar informes y capturas de la ruta"
+          }
+        }
+      }
+    },
+    "NSPhotoLibraryUsageDescription": {
+      "comment": "Privacy - Photo Library Usage Description",
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用于选择维修或加油单据进行识别"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used to choose a maintenance or refuelling receipt for recognition"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用於選擇維修或加油單據進行辨識"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bakım veya yakıt fişini tanımak için kullanılır"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utilisé pour choisir un reçu d’entretien ou de carburant à reconnaître"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zum Auswählen eines Wartungs- oder Tankbelegs zur Erkennung"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se usa para elegir un recibo de mantenimiento o combustible para reconocerlo"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utilizzato per scegliere una ricevuta di manutenzione o rifornimento da riconoscere"
           }
         }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

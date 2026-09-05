@@ -33,7 +33,8 @@ public class PTWidgetDataManager: NSObject {
             parkedLat: parkedLat,
             parkedLon: parkedLon,
             address: address,
-            lastUpdateTime: updateDate
+            lastUpdateTime: updateDate,
+            languageIdentifier: PTLanguage.share.language
         )
         status.write(to: defaults)
         let cloudFileName = iCloudFileName
@@ -74,5 +75,26 @@ public class PTWidgetDataManager: NSObject {
         
         WidgetCenter.shared.reloadTimelines(ofKind: "XP400Widget")
         PTNSLogConsole("📲 [Widget同步] 已将最新机车数据 (含高德地址) 推送到共享沙盒！")
+    }
+
+    // EN: Propagate a language-only change without pretending that vehicle telemetry was refreshed.
+    // ES: Propaga un cambio de idioma sin fingir que se ha actualizado la telemetría del vehículo.
+    // 中文：只同步语言变化，不把它伪装成车辆遥测数据刷新。
+    public func updateLanguageIdentifier(_ languageIdentifier: String) {
+        guard let defaults = sharedDefaults else { return }
+        let current = PTWidgetSharedStatus.read(from: defaults)
+        let status = PTWidgetSharedStatus(
+            fuelLevel: current.fuelLevel,
+            tripKm: current.tripKm,
+            isConnected: current.isConnected,
+            parkedLat: current.parkedLat,
+            parkedLon: current.parkedLon,
+            address: current.address,
+            lastUpdateTime: current.lastUpdateTime,
+            languageIdentifier: languageIdentifier
+        )
+        status.write(to: defaults)
+        PTWatchConnectivityManager.shared.update(status: status)
+        WidgetCenter.shared.reloadTimelines(ofKind: "XP400Widget")
     }
 }
