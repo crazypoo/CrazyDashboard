@@ -10,6 +10,7 @@
 import CoreLocation
 import UIKit
 import PooTools
+import SnapKit
 
 @MainActor
 final class PTRideSafetyViewController: PTMotoBaseViewController {
@@ -51,12 +52,13 @@ final class PTRideSafetyViewController: PTMotoBaseViewController {
         scrollView.showsVerticalScrollIndicator = false
 
         view.addSubview(scrollView)
+        scrollView.snp.makeConstraints { make in
+            make.left.right.equalToSuperview().inset(16)
+            make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total)
+            make.bottom.equalToSuperview().inset(16)
+        }
         scrollView.addSubview(stackView)
         NSLayoutConstraint.activate([
-            scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            scrollView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
-            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
-            scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
             stackView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
             stackView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
             stackView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),

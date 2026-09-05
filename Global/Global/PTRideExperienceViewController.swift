@@ -99,7 +99,7 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
     // 中文：从骑行中心打开主动式提醒中心。
     lazy var alarmButton: PTBaseButton = {
         let view = PTBaseButton(type: .custom)
-        view.setImage(UIImage(systemName: "bell.badge.fill"), for: .normal)
+        view.setImage(UIImage(.bell.badgeFill).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
         view.tintColor = .white
         view.bounds = .init(
             origin: .zero,
@@ -244,7 +244,9 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
         scrollView.alwaysBounceVertical = true
         scrollView.showsVerticalScrollIndicator = false
         scrollView.snp.makeConstraints { make in
-            make.edges.equalTo(view.safeAreaLayoutGuide).inset(16)
+            make.left.right.equalToSuperview().inset(16)
+            make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total)
+            make.bottom.equalToSuperview().inset(16)
         }
         contentStack.snp.makeConstraints { make in
             make.edges.equalToSuperview()
