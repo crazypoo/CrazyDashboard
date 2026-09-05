@@ -84,17 +84,16 @@ class PTMotoFuelInfoView:UIView {
     
     var viewModel:PTDashboardData1? {
         didSet {
-            var fuelValue = "0"
+            let unavailable = PTDashboardConfig.languageFunc(text: "ride_not_available")
+            var fuelValue = unavailable
             var fuelDouble:Double = 0
             if let viewModel = viewModel {
                 if viewModel.fuelLevelAvailability.isAvailable {
                     fuelValue = "\(viewModel.fuelLevelPct)"
                     fuelDouble = Double(viewModel.fuelLevelPct)
-                } else {
-                    fuelValue = PTDashboardConfig.languageFunc(text: "ride_not_available")
                 }
             }
-            fuelValueLabel.text = fuelValue == PTDashboardConfig.languageFunc(text: "ride_not_available")
+            fuelValueLabel.text = fuelValue == unavailable
                 ? fuelValue
                 : "\(fuelValue)%"
             

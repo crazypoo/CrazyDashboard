@@ -157,8 +157,15 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
             name: PTRideBlackBoxUpdated,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(focusPreferencesDidChange),
+            name: PTMotoFocusDisplayPreferences.didChangeNotification,
+            object: nil
+        )
         PTRideGroupSafetyCoordinator.shared.start()
         loadBlackBoxClips()
+        updateFocusDisplay()
         refreshSummary()
     }
 
@@ -169,6 +176,7 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
             buttons: [exportButton, centerButton, alarmButton],
             buttonSpacing: CGFloat.GlobalItemSpacing
         )
+        updateFocusDisplay()
         refreshSummary()
     }
 
@@ -200,6 +208,23 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
 
     @objc private func handleBlackBoxUpdate() {
         loadBlackBoxClips()
+    }
+
+    // EN: Keep the Focus mode local to the current ride cockpit without changing navigation.
+    // ES: Mantiene Focus dentro del cockpit actual sin cambiar la navegación.
+    // 中文：专注模式只调整当前骑行座舱，不切换页面。
+    @objc private func focusPreferencesDidChange() {
+        updateFocusDisplay()
+    }
+
+    // EN: Hide verbose narrative tools in the compact ride presentation; the safety summary remains available.
+    // ES: Oculta las herramientas narrativas extensas en la vista compacta; el resumen de seguridad sigue disponible.
+    // 中文：紧凑骑行界面隐藏长篇叙事工具，但保留安全摘要。
+    private func updateFocusDisplay() {
+        guard isViewLoaded else { return }
+        let compact = PTMotoFocusDisplayPreferences.isCompactDisplay
+        narrativeButton.isHidden = compact
+        translationButton.isHidden = compact
     }
 
     // EN: Keep the safety tools adjacent to the ride summary without coupling them to vehicle transport.

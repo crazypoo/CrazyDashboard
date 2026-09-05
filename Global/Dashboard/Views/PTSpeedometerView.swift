@@ -588,6 +588,22 @@ public class PTSpeedometerView: UIView {
         resetDisplayLink = CADisplayLink(target: self, selector: #selector(handleResetUpdate))
         resetDisplayLink?.add(to: .main, forMode: .common)
     }
+
+    // EN: Cancel every gauge animation and render a hard zero for a disconnected dashboard.
+    // ES: Cancela todas las animaciones del indicador y muestra cero al desconectar el tablero.
+    // 中文：仪表盘断开时取消所有动画并立即显示零值。
+    public func resetForDisconnectedState() {
+        sweepDisplayLink?.invalidate()
+        sweepDisplayLink = nil
+        sweepCompletion = nil
+        isStartupAnimating = false
+
+        resetDisplayLink?.invalidate()
+        resetDisplayLink = nil
+        resetStartSpeed = 0
+        stopRedlineFlashing()
+        _internalUpdateSpeed(0, animated: false)
+    }
     
     @objc private func handleResetUpdate() {
         let elapsed = CACurrentMediaTime() - resetStartTime

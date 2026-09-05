@@ -354,6 +354,12 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         setCustomRightButtons(buttons: [dashboardButton,motionDeviceButton,obdButton,bleConnectStatusLabel],buttonSpacing: CGFloat.GlobalItemSpacing)
         
         self.bleConnectStatusLabel.isSelected = PTDashboardConfig.shared.blueConnected
+        updateFocusDisplay()
+        if PTDashboardConfig.shared.blueConnected {
+            syncDashboardPresentationFromCache()
+        } else {
+            resetDashboardPresentation()
+        }
         if PTVehicleConnectivityCoordinator.shared.connectOBDIfAllowed() {
             obdButton.startLoading(indicatorColor: .white)
         }
@@ -380,6 +386,12 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         setupUI()
         
         NotificationCenter.default.addObserver(self, selector: #selector(dashBoardReload), name: MotorcycleDashBoardChange, object: nil)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(focusPreferencesDidChange),
+            name: PTMotoFocusDisplayPreferences.didChangeNotification,
+            object: nil
+        )
         
         if PTMotoUserDefaultStruct.MotoLinkedAPP,!PTDashboardConfig.shared.blueConnected {
             PTGCDManager.shared.delayOnMain(time: 3) {
@@ -404,6 +416,26 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         PTMotion.shared.addDelegate(self)
         NotificationCenter.default.addObserver(self, selector: #selector(appDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
     }
+
+    // EN: Apply the compact riding presentation whenever the system Focus filter changes.
+    // ES: Aplica la presentación compacta de conducción cuando cambia el filtro Focus del sistema.
+    // 中文：系统专注模式筛选条件变化时，刷新紧凑骑行界面。
+    @objc private func focusPreferencesDidChange() {
+        updateFocusDisplay()
+    }
+
+    // EN: Hide only secondary controls in Riding Focus; the dashboard, OBD and connection status remain visible.
+    // ES: Oculta solo los controles secundarios en Focus de conducción; el tablero, OBD y conexión siguen visibles.
+    // 中文：骑行专注模式只隐藏次要控件，仪表盘、OBD 和连接状态始终保留。
+    private func updateFocusDisplay() {
+        guard isViewLoaded else { return }
+        let compact = PTMotoFocusDisplayPreferences.isCompactDisplay
+        let buttons = compact
+            ? [dashboardButton, obdButton, bleConnectStatusLabel]
+            : [dashboardButton, motionDeviceButton, obdButton, bleConnectStatusLabel]
+        setCustomRightButtons(buttons: buttons, buttonSpacing: CGFloat.GlobalItemSpacing)
+        globeItem.isHidden = compact
+    }
     
     @objc private func appDidBecomeActive() {
         if PTVehicleConnectivityCoordinator.shared.connectOBDIfAllowed() {
@@ -426,17 +458,14 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
     
     override func handleMotorcycleDisconnect() {
         super.handleMotorcycleDisconnect()
-        PTGCDManager.shared.delayOnMain(time: 0.35) {
-            self.bleConnectStatusLabel.isSelected = PTDashboardConfig.shared.blueConnected
-            self.speedometer.resetToZeroWithAnimation()
-            self.speedometerReversed.resetToZeroWithAnimation()
-        }
+        resetDashboardPresentation()
     }
     
     override func handleMotorcycleData(data: Any?) {
         super.handleMotorcycleData(data: data)
         if let data1 = data as? PTDashboardData1 {
             DispatchQueue.main.async {
+                guard PTDashboardConfig.shared.blueConnected else { return }
                 // EN: Render unavailable trip and odometer values as unavailable instead of numeric zero.
                 // ES: Muestra como no disponibles los valores de viaje y odómetro no disponibles, en vez de cero.
                 // 中文：小计和总里程不可用时显示不可用，不显示数字零。
@@ -460,6 +489,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             }
         } else if let data2 = data as? PTDashboardData2 {
             DispatchQueue.main.async {
+                guard PTDashboardConfig.shared.blueConnected else { return }
                 // EN: Only label a decoded Data2 field when its source byte is available.
                 // ES: Solo etiqueta un campo Data2 decodificado cuando su byte de origen está disponible.
                 // 中文：只有 Data2 源字节有效时，才把解码字段作为真实值显示。
@@ -487,6 +517,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             }
         } else if let data3 = data as? PTDashboardData3 {
             DispatchQueue.main.async {
+                guard PTDashboardConfig.shared.blueConnected else { return }
                 // EN: Do not turn an unavailable maintenance distance or language into a false reading.
                 // ES: No conviertas una distancia de mantenimiento o idioma no disponible en una lectura falsa.
                 // 中文：保养距离或语言不可用时，不转换成虚假的有效读数。
@@ -515,6 +546,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         } else if let control = data as? PTDashboardControl,!PTMotoTelemetryManager.shared.isConnected {
             // 💡 车速和转速驱动的是 CoreAnimation 动画指针（PTSpeedometerView），本身不会闪烁，直接驱动即可
             DispatchQueue.main.async {
+                guard PTDashboardConfig.shared.blueConnected else { return }
                 if control.vehicleSpeedAvailability.isAvailable {
                     self.speedometer.updateSpeed(control.vehicleSpeedKmh)
                 } else {
@@ -631,6 +663,10 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         
         pt_observerLanguage {
             if self.vcDidLoad {
+                guard PTDashboardConfig.shared.blueConnected else {
+                    self.resetDashboardPresentation()
+                    return
+                }
                 let latestData1 = PTBluetoothServerManager.shared.latestData1
                 let latestData2 = PTBluetoothServerManager.shared.latestData2
                 let latestData3 = PTBluetoothServerManager.shared.latestData3
@@ -712,10 +748,112 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         distToMaintenancemodel.isValueAvailable = isAvailable
         return distToMaintenancemodel
     }
+
+    // EN: Clear live dashboard values without touching persisted garage history or parking data.
+    // ES: Limpia los valores vivos del tablero sin tocar el historial persistido del garaje ni el estacionamiento.
+    // 中文：清空仪表盘实时值，但不修改车库历史数据和停车数据。
+    private func resetDashboardPresentation() {
+        let reset = { [weak self] in
+            guard let self else { return }
+            let unavailable = PTDashboardConfig.languageFunc(text: "ride_not_available")
+            // EN: Make the disconnect barrier synchronous before queued telemetry closures can run.
+            // ES: Haz que la barrera de desconexión sea síncrona antes de ejecutar cierres de telemetría encolados.
+            // 中文：在排队的遥测闭包执行前，同步建立断连屏障。
+            PTDashboardConfig.shared.blueConnected = false
+            self.bleConnectStatusLabel.isSelected = false
+            self.obdButton.stopLoading()
+            self.voltageLabel.modelSet = self.modelvoltageSet(currentValue: 0, isAvailable: false)
+            self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(
+                max: PTDashboardConfig.shared.appShowMileage(PTMotorcycleGarageStore.shared.currentMaintenanceWarningDistanceKm),
+                current: 0,
+                isAvailable: false
+            )
+            self.fuelModelView.viewModel = nil
+            self.fuelModelView.fuelTripModel = nil
+            self.tripItem.configure(
+                systemIcon: UIImage(.point.topleftDownToPointBottomrightCurvepath),
+                iconColor: PTDashboardConfig.shared.appMainColor,
+                title: PTDashboardConfig.languageFunc(text: "casa_card_little_trip"),
+                value: unavailable
+            )
+            self.odoItem.configure(
+                systemIcon: UIImage(systemName: "speedometer")!,
+                iconColor: PTDashboardConfig.shared.appMainColor,
+                title: PTDashboardConfig.languageFunc(text: "casa_card_odo_trip"),
+                value: unavailable
+            )
+            self.engineItem.configure(
+                systemIcon: UIImage(.engine.combustion),
+                iconColor: PTDashboardConfig.shared.appMainColor,
+                title: PTDashboardConfig.languageFunc(text: "casa_card_engine"),
+                value: unavailable
+            )
+            self.temItem.configure(
+                systemIcon: UIImage(.thermometer),
+                iconColor: PTDashboardConfig.shared.appMainColor,
+                title: PTDashboardConfig.languageFunc(text: "casa_card_tem"),
+                value: unavailable
+            )
+            self.globeItem.configure(
+                systemIcon: UIImage(.globe),
+                iconColor: PTDashboardConfig.shared.appMainColor,
+                title: PTDashboardConfig.languageFunc(text: "casa_card_lan"),
+                value: unavailable
+            )
+            self.fuelModelView.dataProgress.barColor = PTDashboardConfig.shared.appMainColor
+            self.voltageLabel.dataProgress.barColor = PTDashboardConfig.shared.appMainColor
+            self.distToMaintenanceLabel.dataProgress.barColor = PTDashboardConfig.shared.appMainColor
+            self.speedometer.progressColor = PTDashboardConfig.shared.appMainColor
+            self.speedometer.needleColor = PTDashboardConfig.shared.appMainColor
+            self.speedometerReversed.progressColor = PTDashboardConfig.shared.appMainColor
+            self.speedometerReversed.needleColor = PTDashboardConfig.shared.appMainColor
+            self.lightControl.resetForDisconnectedState()
+
+            // EN: Keep OBD gauges alive if OBD is still the active source of live values.
+            // ES: Conserva los indicadores OBD si OBD sigue siendo la fuente activa de valores en vivo.
+            // 中文：如果 OBD 仍在线，保留 OBD 提供的实时仪表数据。
+            if !PTMotoTelemetryManager.shared.isConnected {
+                self.speedometer.resetForDisconnectedState()
+                self.speedometerReversed.resetForDisconnectedState()
+            }
+        }
+        if Thread.isMainThread {
+            reset()
+        } else {
+            DispatchQueue.main.async(execute: reset)
+        }
+    }
+
+    // EN: Replay only the current dashboard cache after returning to the screen.
+    // ES: Reproduce solo la caché actual del tablero al volver a la pantalla.
+    // 中文：返回页面时只回放当前仪表盘缓存，避免显示过期界面状态。
+    private func syncDashboardPresentationFromCache() {
+        guard PTDashboardConfig.shared.blueConnected else {
+            resetDashboardPresentation()
+            return
+        }
+        if let data1 = PTBluetoothServerManager.shared.latestData1 {
+            handleMotorcycleData(data: data1)
+        }
+        if let data2 = PTBluetoothServerManager.shared.latestData2 {
+            handleMotorcycleData(data: data2)
+        }
+        if let data3 = PTBluetoothServerManager.shared.latestData3 {
+            handleMotorcycleData(data: data3)
+        }
+        if let control = PTBluetoothServerManager.shared.latestControl,
+           !PTMotoTelemetryManager.shared.isConnected {
+            handleMotorcycleData(data: control)
+        }
+    }
             
     // MARK: - 状态回调
     @objc func dashBoardReload() {
         PTGCDManager.shared.runOnMain {
+            guard PTDashboardConfig.shared.blueConnected else {
+                self.resetDashboardPresentation()
+                return
+            }
             let data3 = PTBluetoothServerManager.shared.latestData3
             self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(
                 max: PTDashboardConfig.shared.appShowMileage(PTMotorcycleGarageStore.shared.currentMaintenanceWarningDistanceKm),
@@ -901,23 +1039,29 @@ extension PTMotoInfoViewController {
 
 extension PTMotoInfoViewController:PTMotoTelemetryDelegate {
     func telemetryManager(_ manager: PTMotoTelemetryManager, didChangeConnectionState isConnected: Bool) {
-        if isConnected {
-            PTCANRecorder.shared.start(name: "XP400_Menu_Test")
-        } else {
-            self.speedometer.resetToZeroWithAnimation()
-            self.speedometerReversed.resetToZeroWithAnimation()
+        PTGCDManager.shared.runOnMain {
+            // EN: CAN capture is an explicit developer action; connecting OBD must not start it implicitly.
+            // ES: La captura CAN es una acción explícita del desarrollador; conectar OBD no debe iniciarla implícitamente.
+            // 中文：CAN 抓包必须由开发者明确操作，连接 OBD 不再隐式启动抓包。
+            if !isConnected,
+               !PTDashboardConfig.shared.blueConnected {
+                self.speedometer.resetForDisconnectedState()
+                self.speedometerReversed.resetForDisconnectedState()
+            }
+            self.obdButton.isSelected = isConnected
+            self.obdButton.stopLoading()
         }
-        obdButton.isSelected = isConnected
-        obdButton.stopLoading()
     }
     
     func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) {
-        if let speed = measurements[OBDCommand.mode1(.speed).properties.command] as? Double {
-            self.speedometer.updateSpeed(speed)
-        }
-        if let rpm = measurements[OBDCommand.mode1(.rpm).properties.command] as? Double {
-            self.speedometerReversed.updateSpeed(CGFloat(rpm))
-            self.speedometerReversed.applyShiftLightLogic(currentRpm: Int(rpm))
+        PTGCDManager.shared.runOnMain {
+            if let speed = measurements[OBDCommand.mode1(.speed).properties.command] as? Double {
+                self.speedometer.updateSpeed(speed)
+            }
+            if let rpm = measurements[OBDCommand.mode1(.rpm).properties.command] as? Double {
+                self.speedometerReversed.updateSpeed(CGFloat(rpm))
+                self.speedometerReversed.applyShiftLightLogic(currentRpm: Int(rpm))
+            }
         }
     }
     

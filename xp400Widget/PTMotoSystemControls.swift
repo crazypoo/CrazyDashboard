@@ -12,14 +12,6 @@ import SwiftUI
 import WidgetKit
 
 #if os(iOS)
-@available(iOS 18.0, *)
-private enum PTMotoControlURLs {
-    nonisolated static let hud = URL(string: "xp400://action/openhud")!
-    nonisolated static let readiness = URL(string: "xp400://action/opensafety")!
-    nonisolated static let parking = URL(string: "xp400://action/opengarage")!
-    nonisolated static let alarms = URL(string: "xp400://action/openalarms")!
-}
-
 // EN: HUD control only opens the dashboard screen; it never starts Bluetooth or OBD work.
 // ES: El control HUD solo abre la pantalla del tablero; nunca inicia Bluetooth ni OBD.
 // 中文：HUD 控件只打开仪表页面，不启动蓝牙或 OBD 操作。
@@ -27,7 +19,7 @@ private enum PTMotoControlURLs {
 struct PTMotoHUDControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: "com.yd.PTSpeed.control.hud") {
-            ControlWidgetButton(action: OpenURLIntent(PTMotoControlURLs.hud)) {
+            ControlWidgetButton(action: PTMotoOpenDestinationIntent(target: .hud)) {
                 Label(
                     LocalizedStringResource("control_hud", table: "Localizable"),
                     systemImage: "speedometer"
@@ -44,7 +36,7 @@ struct PTMotoHUDControl: ControlWidget {
 struct PTMotoReadinessControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: "com.yd.PTSpeed.control.readiness") {
-            ControlWidgetButton(action: OpenURLIntent(PTMotoControlURLs.readiness)) {
+            ControlWidgetButton(action: PTMotoOpenDestinationIntent(target: .readiness)) {
                 Label(
                     LocalizedStringResource("control_readiness", table: "Localizable"),
                     systemImage: "checkmark.shield"
@@ -61,7 +53,7 @@ struct PTMotoReadinessControl: ControlWidget {
 struct PTMotoParkingControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: "com.yd.PTSpeed.control.parking") {
-            ControlWidgetButton(action: OpenURLIntent(PTMotoControlURLs.parking)) {
+            ControlWidgetButton(action: PTMotoOpenDestinationIntent(target: .parking)) {
                 Label(
                     LocalizedStringResource("control_parking", table: "Localizable"),
                     systemImage: "parkingsign.circle"
@@ -78,7 +70,7 @@ struct PTMotoParkingControl: ControlWidget {
 struct PTMotoAlarmsControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: "com.yd.PTSpeed.control.alarms") {
-            ControlWidgetButton(action: OpenURLIntent(PTMotoControlURLs.alarms)) {
+            ControlWidgetButton(action: PTMotoOpenDestinationIntent(target: .alarms)) {
                 Label(
                     LocalizedStringResource("control_alarms", table: "Localizable"),
                     systemImage: "bell.badge"

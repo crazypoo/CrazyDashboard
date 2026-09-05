@@ -317,7 +317,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     private lazy var roadbookButton: PTBaseButton = {
         let view = PTBaseButton(type: .system)
         view.setImage(
-            UIImage(systemName: "map.fill")?.withTintColor(.white, renderingMode: .alwaysOriginal),
+            UIImage(.map.fill).withTintColor(.white, renderingMode: .alwaysOriginal),
             for: .normal
         )
         view.bounds = .init(origin: .zero, size: .init(width: self.homeSize, height: self.homeSize))

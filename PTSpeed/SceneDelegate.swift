@@ -75,6 +75,7 @@ class SceneDelegate: PTWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
         drainPendingExternalURLs(in: windowScene)
         drainPendingSpotlightIdentifiers(in: windowScene)
+        drainPendingSystemRoute(in: windowScene)
     }
 
     func sceneWillResignActive(_ scene: UIScene) {
@@ -222,5 +223,31 @@ class SceneDelegate: PTWindowSceneDelegate {
         PTNSLogConsole(handled
                        ? "✅ 成功通过 URL Scheme 唤醒 App 并执行指令"
                        : "⚠️ URL Scheme 未执行或已被拒绝")
+    }
+
+    // EN: Consume one system-control destination only after the scene owns a ready root UI.
+    // ES: Consume un destino de control del sistema solo cuando la escena ya tiene una UI raíz lista.
+    // 中文：仅在场景拥有已准备好的根界面后，消费一次系统控件目标。
+    private func drainPendingSystemRoute(in scene: UIWindowScene) {
+        guard #available(iOS 18.0, *),
+              let destination = PTMotoSystemRouteRequest.consume() else { return }
+
+        PTSceneContext.rootViewController(in: scene)?.loadViewIfNeeded()
+        let action: PTExternalAction
+        switch destination {
+        case .hud:
+            action = .openHUD
+        case .readiness:
+            action = .openSafety
+        case .parking:
+            action = .openGarage(vehicleID: nil)
+        case .alarms:
+            action = .openAlarmCenter(id: nil)
+        }
+
+        let result = PTRoutingManager.shared.execute(action: action, in: scene)
+        PTNSLogConsole(result.succeeded
+                       ? "✅ 系统控件目标已打开"
+                       : "⚠️ 系统控件目标暂时不可用: \(result.rawValue)")
     }
 }

@@ -210,6 +210,11 @@ public final class PTMotoSpotlightIndexer: NSObject {
 
     private static let enabledKey = "pt_moto_spotlight_enabled"
     private let index = CSSearchableIndex.default()
+    // EN: Coalesce bursts of route updates and invalidate callbacks from an older indexing pass.
+    // ES: Agrupa los cambios rápidos de ruta e invalida las devoluciones de una indexación anterior.
+    // 中文：合并连续的路线更新，并使旧索引任务的回调失效。
+    private var reindexTask: Task<Void, Never>?
+    private var reindexGeneration = 0
 
     private override init() {
         super.init()
@@ -235,7 +240,7 @@ public final class PTMotoSpotlightIndexer: NSObject {
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(scheduleReindex),
-            name: PTRoadbookStateDidChange,
+            name: PTRoadbookLibraryDidChange,
             object: nil
         )
     }
@@ -243,6 +248,9 @@ public final class PTMotoSpotlightIndexer: NSObject {
     public var isEnabled: Bool {
         get { UserDefaults.standard.bool(forKey: Self.enabledKey) }
         set {
+            reindexGeneration &+= 1
+            reindexTask?.cancel()
+            reindexTask = nil
             UserDefaults.standard.set(newValue, forKey: Self.enabledKey)
             if newValue {
                 reindexAll()
@@ -257,28 +265,60 @@ public final class PTMotoSpotlightIndexer: NSObject {
         reindexAll()
         Task { @MainActor [weak self] in
             _ = try? await PTCustomRouteManager.shared.loadRoadbooks()
-            self?.reindexAll()
+            self?.scheduleReindex()
         }
     }
 
+    // EN: Delay indexing briefly so navigation heartbeats never trigger a full index rebuild.
+    // ES: Retrasa brevemente la indexación para que los latidos de navegación no reconstruyan todo el índice.
+    // 中文：短暂延迟索引，确保导航心跳不会触发整库重建。
     @objc public func scheduleReindex() {
         guard isEnabled else { return }
-        reindexAll()
+        reindexGeneration &+= 1
+        let generation = reindexGeneration
+        reindexTask?.cancel()
+        reindexTask = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: 250_000_000)
+            } catch {
+                return
+            }
+            guard !Task.isCancelled,
+                  let self,
+                  self.isEnabled,
+                  generation == self.reindexGeneration else { return }
+            self.reindexAll(generation: generation)
+        }
     }
 
     public func reindexAll() {
+        reindexGeneration &+= 1
+        reindexTask?.cancel()
+        reindexTask = nil
+        reindexAll(generation: reindexGeneration)
+    }
+
+    private func reindexAll(generation: Int) {
         guard isEnabled, CSSearchableIndex.isIndexingAvailable() else { return }
         let items = makeItems()
         let searchableIndex = index
-        searchableIndex.deleteSearchableItems(withDomainIdentifiers: [PTMotoSpotlightIdentifier.domain]) { error in
-            if let error {
-                PTNSLogConsole("⚠️ [Spotlight] 清理旧索引失败: \(error.localizedDescription)")
-                return
-            }
-            guard !items.isEmpty else { return }
-            searchableIndex.indexSearchableItems(items) { error in
-                if let error {
-                    PTNSLogConsole("⚠️ [Spotlight] 写入索引失败: \(error.localizedDescription)")
+        searchableIndex.deleteSearchableItems(withDomainIdentifiers: [PTMotoSpotlightIdentifier.domain]) { [weak self] error in
+            let errorDescription = error?.localizedDescription
+            Task { @MainActor [weak self] in
+                guard let self, self.isEnabled, generation == self.reindexGeneration else { return }
+                if let errorDescription {
+                    PTNSLogConsole("⚠️ [Spotlight] 清理旧索引失败: \(errorDescription)")
+                    return
+                }
+                guard !items.isEmpty else { return }
+                searchableIndex.indexSearchableItems(items) { [weak self] error in
+                    let errorDescription = error?.localizedDescription
+                    Task { @MainActor [weak self] in
+                        guard let self, self.isEnabled, generation == self.reindexGeneration else { return }
+                        if let errorDescription {
+                            PTNSLogConsole("⚠️ [Spotlight] 写入索引失败: \(errorDescription)")
+                        }
+                    }
                 }
             }
         }
@@ -286,9 +326,13 @@ public final class PTMotoSpotlightIndexer: NSObject {
 
     public func deleteAll() {
         guard CSSearchableIndex.isIndexingAvailable() else { return }
-        index.deleteSearchableItems(withDomainIdentifiers: [PTMotoSpotlightIdentifier.domain]) { error in
-            if let error {
-                PTNSLogConsole("⚠️ [Spotlight] 删除索引失败: \(error.localizedDescription)")
+        index.deleteSearchableItems(withDomainIdentifiers: [PTMotoSpotlightIdentifier.domain]) { [weak self] error in
+            let errorDescription = error?.localizedDescription
+            Task { @MainActor [weak self] in
+                guard let self, !self.isEnabled else { return }
+                if let errorDescription {
+                    PTNSLogConsole("⚠️ [Spotlight] 删除索引失败: \(errorDescription)")
+                }
             }
         }
     }

@@ -40289,6 +40289,175 @@
         }
       }
     },
+    "focus_riding_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fahrfokus" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Riding Focus" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Enfoque de conducción" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Concentration conduite" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Focus di guida" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürüş Odağı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "骑行专注" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "騎行專注" } }
+      }
+    },
+    "focus_riding_description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Reduziert die sekundären Bedienelemente während der Fahrt." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reduce secondary controls while riding." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Reduce los controles secundarios durante la conducción." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Réduit les commandes secondaires pendant la conduite." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Riduce i controlli secondari durante la guida." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürüş sırasında ikincil denetimleri azaltır." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "骑行时减少次要控件。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "騎行時減少次要控制項。" } }
+      }
+    },
+    "focus_riding_compact_parameter" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kompakte Anzeige" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Compact display" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Vista compacta" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Affichage compact" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Visualizzazione compatta" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kompakt görünüm" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "紧凑显示" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "緊湊顯示" } }
+      }
+    },
+    "system_destination_type" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "XP400-Ziel" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "XP400 destination" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Destino XP400" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Destination XP400" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Destinazione XP400" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "XP400 hedefi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "XP400 目标" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "XP400 目標" } }
+      }
+    },
+    "system_destination_hud" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Armaturenbrett" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dashboard" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Panel" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Tableau de bord" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Cruscotto" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gösterge paneli" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仪表盘" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "儀表板" } }
+      }
+    },
+    "system_destination_readiness" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fahrbereitschaft" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Readiness" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Preparación" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Préparation" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Prontezza" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hazırlık" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "出发准备" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "出發準備" } }
+      }
+    },
+    "system_destination_parking" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Parken" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Parking" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Aparcamiento" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Stationnement" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Parcheggio" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Park" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "停车" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "停車" } }
+      }
+    },
+    "system_destination_alarms" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Erinnerungen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Alerts" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Alertas" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Alertes" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Avvisi" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Uyarılar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "提醒" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "提醒" } }
+      }
+    },
+    "system_destination_parameter" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ziel" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Destination" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Destino" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Destination" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Destinazione" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hedef" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "目标页面" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "目標頁面" } }
+      }
+    },
+    "roadbook_look_around" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Look Around" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Look Around" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Look Around" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Look Around" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Look Around" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Look Around" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "环视" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "環視" } }
+      }
+    },
+    "roadbook_look_around_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Für diesen Ort ist keine Look-Around-Ansicht verfügbar." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Look Around is not available at this location." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Look Around no está disponible en esta ubicación." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Look Around n’est pas disponible à cet endroit." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Look Around non è disponibile in questa posizione." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bu konumda Look Around kullanılamıyor." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "此位置没有可用的环视画面。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "此位置沒有可用的環視畫面。" } }
+      }
+    },
+    "roadbook_look_around_loading" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Look-Around-Ansicht wird geladen…" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Loading Look Around…" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Cargando Look Around…" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Chargement de Look Around…" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Caricamento di Look Around…" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Look Around yükleniyor…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在加载环视…" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正在載入環視…" } }
+      }
+    },
+    "roadbook_look_around_waypoint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wegpunkt %lld" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Waypoint %lld" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Punto %lld" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Point %lld" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Punto %lld" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "%lld. yol noktası" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "路线点 %lld" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "路線點 %lld" } }
+      }
+    },
     "剩余" : {
 
     },

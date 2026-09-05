@@ -101,6 +101,21 @@ public class PTIndicatorPanel: PTDashboardBaseView {
         toggleGlow(for: tcsModeIcon, isOn: false, activeColor: .systemOrange)
         toggleGlow(for: backlightIcon, isOn: false, activeColor: .GoldColor)
     }
+
+    // EN: Reset every indicator when the dashboard session ends so no lamp remains stale.
+    // ES: Restablece todos los indicadores al terminar la sesión del tablero para no conservar luces obsoletas.
+    // 中文：仪表盘会话结束时重置所有指示灯，避免残留旧状态。
+    public func resetForDisconnectedState() {
+        let reset = { [weak self] in
+            guard let self else { return }
+            self.resetAllIndicators()
+        }
+        if Thread.isMainThread {
+            reset()
+        } else {
+            DispatchQueue.main.async(execute: reset)
+        }
+    }
     
     // MARK: - 暴露给外部的更新接口    
     func updateControl(control: PTDashboardControl) {
@@ -209,6 +224,11 @@ public class PTIndicatorPanel: PTDashboardBaseView {
 }
 
 extension PTIndicatorPanel:PTBLEDashboardDelegate {
+    func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool) {
+        guard !isConnected else { return }
+        resetForDisconnectedState()
+    }
+
     func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
         if let data2 = data as? PTDashboardData2 {
             DispatchQueue.main.async {

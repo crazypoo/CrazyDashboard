@@ -2580,6 +2580,31 @@ final class PTCoreTests: XCTestCase {
             reviewEvents: [event]
         )
     }
+
+    // EN: Focus preferences must round-trip without starting transport work or losing the previous value.
+    // ES: Las preferencias de Focus deben conservarse sin iniciar transporte ni perder el valor anterior.
+    // 中文：专注模式偏好必须能往返保存，且不能启动传输或丢失原值。
+    @available(iOS 17.0, *)
+    func testRidingFocusPreferenceRoundTrip() {
+        let previousValue = PTMotoFocusDisplayPreferences.isCompactDisplay
+        defer { PTMotoFocusDisplayPreferences.setCompactDisplay(previousValue) }
+
+        PTMotoFocusDisplayPreferences.setCompactDisplay(true)
+        XCTAssertTrue(PTMotoFocusDisplayPreferences.isCompactDisplay)
+
+        PTMotoFocusDisplayPreferences.setCompactDisplay(false)
+        XCTAssertFalse(PTMotoFocusDisplayPreferences.isCompactDisplay)
+    }
+
+    // EN: System-control routing is a one-shot hand-off, so a destination cannot be replayed accidentally.
+    // ES: El enrutamiento de controles del sistema es de un solo uso para evitar reproducciones accidentales.
+    // 中文：系统控件路由是一次性交接，避免目标页面被意外重复打开。
+    @available(iOS 18.0, *)
+    func testSystemRouteRequestIsOneShot() {
+        PTMotoSystemRouteRequest.enqueue(.parking)
+        XCTAssertEqual(PTMotoSystemRouteRequest.consume(), .parking)
+        XCTAssertNil(PTMotoSystemRouteRequest.consume())
+    }
 }
 
 // EN: The actor keeps fallback call-count assertions race-free under Swift concurrency.

@@ -15,6 +15,11 @@ import PooTools
 // 中文：活动 Roadbook 会话发生变化时发送此通知。
 public let PTRoadbookStateDidChange = NSNotification.Name("PTRoadbookStateDidChange")
 
+// EN: Posted when the persisted Roadbook library changes, not on every navigation tick.
+// ES: Se publica cuando cambia la biblioteca persistida de Roadbook, no en cada actualización de navegación.
+// 中文：持久化 Roadbook 库发生变化时发送，不随每次导航心跳发送。
+public let PTRoadbookLibraryDidChange = NSNotification.Name("PTRoadbookLibraryDidChange")
+
 // EN: The coordinate reference used by a persisted Roadbook.
 // ES: El sistema de referencia usado por un Roadbook persistido.
 // 中文：持久化 Roadbook 使用的坐标参考系。
@@ -396,6 +401,7 @@ public class PTCustomRouteManager: NSObject {
             PTNSLogConsole("⚠️ [Roadbook] 本地保存成功，但 iCloud 同步失败: \(cloudErrorDescription)")
         }
         roadbooks = candidateRoadbooks
+        NotificationCenter.default.post(name: PTRoadbookLibraryDidChange, object: self)
         publishSnapshot()
     }
 
@@ -461,6 +467,7 @@ public class PTCustomRouteManager: NSObject {
             PTNSLogConsole("⚠️ [Roadbook] 删除已写入本地，但 iCloud 同步失败: \(cloudErrorDescription)")
         }
         roadbooks = candidateRoadbooks
+        NotificationCenter.default.post(name: PTRoadbookLibraryDidChange, object: self)
 
         if let sourceFileName = deletedRoadbook.sourceFileName {
             let sourceResult = try? await PTDataPersistenceActor.shared.delete(

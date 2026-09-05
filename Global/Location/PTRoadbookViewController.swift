@@ -8,6 +8,7 @@
 //
 
 import UIKit
+import MapKit
 import UniformTypeIdentifiers
 import PooTools
 import SnapKit
@@ -15,10 +16,23 @@ import SafeSFSymbols
 
 @MainActor
 final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDelegate {
+    // EN: This key prevents a navigation heartbeat from rebuilding an unchanged list.
+    // ES: Esta clave evita reconstruir una lista sin cambios en cada latido de navegación.
+    // 中文：通过这个状态键避免每次导航心跳都重建未变化的列表。
+    private struct ListRenderState: Equatable {
+        let roadbookIDs: [UUID]
+        let roadbookNames: [String]
+        let activeRoadbookID: UUID?
+        let sessionState: PTRoadbookState
+        let isSessionActive: Bool
+    }
+
     private let manager = PTCustomRouteManager.shared
     private var roadbooks: [PTRoadbook] = []
+    private var renderedListState: ListRenderState?
     private var loadTask: Task<Void, Never>?
     private var weatherTask: Task<Void, Never>?
+    private var lookAroundRequest: MKLookAroundSceneRequest?
 
     public override func installListViewConstraints(_ listView: PTCollectionView) {
         listView.snp.makeConstraints { make in
@@ -78,6 +92,10 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
         return view
     }()
     
+    public override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
+        return .transparent
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         pt_Title = PTDashboardConfig.languageFunc(text: "roadbook_title")
@@ -86,6 +104,12 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
             self,
             selector: #selector(refreshVisibleState),
             name: PTRoadbookStateDidChange,
+            object: manager
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(refresh),
+            name: PTRoadbookLibraryDidChange,
             object: manager
         )
     }
@@ -100,10 +124,21 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
     deinit {
         loadTask?.cancel()
         weatherTask?.cancel()
+        lookAroundRequest?.cancel()
         NotificationCenter.default.removeObserver(self)
     }
 
-    func showDetail() {
+    func showDetail(force: Bool = false) {
+        let renderState = ListRenderState(
+            roadbookIDs: roadbooks.map(\.id),
+            roadbookNames: roadbooks.map(\.name),
+            activeRoadbookID: manager.activeRoadbook?.id,
+            sessionState: manager.state,
+            isSessionActive: manager.isSessionActive
+        )
+        guard force || renderedListState != renderState else { return }
+        renderedListState = renderState
+
         var mSections = [PTSection]()
         let permissionRows = roadbooks.map {
             let cellModel = PTFusionCellModel()
@@ -142,7 +177,7 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
             guard let self else { return }
             do {
                 self.roadbooks = try await self.manager.loadRoadbooks()
-                self.showDetail()
+                self.showDetail(force: true)
             } catch {
                 self.showError(error)
             }
@@ -175,7 +210,7 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
                     suggestedName: url.deletingPathExtension().lastPathComponent
                 )
                 self.roadbooks = try await self.manager.loadRoadbooks()
-                self.showDetail()
+                self.showDetail(force: true)
             } catch {
                 self.showError(error)
             }
@@ -252,6 +287,14 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
         ) { [weak self] _ in
             self?.showWaypoints(roadbook)
         })
+        if isLookAroundEligible(roadbook) {
+            alert.addAction(UIAlertAction(
+                title: PTDashboardConfig.languageFunc(text: "roadbook_look_around"),
+                style: .default
+            ) { [weak self] _ in
+                self?.showLookAroundPicker(for: roadbook)
+            })
+        }
         alert.addAction(UIAlertAction(
             title: PTDashboardConfig.languageFunc(text: "route_weather_risk"),
             style: .default
@@ -292,6 +335,104 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
             popover.sourceView = sourceView ?? view
             popover.sourceRect = sourceView?.bounds ?? view.bounds
         }
+        present(alert, animated: true)
+    }
+
+    // EN: Look Around is offered only for imported WGS84 GPX data so coordinates are never guessed.
+    // ES: Look Around solo se ofrece para GPX WGS84 importado, sin adivinar coordenadas.
+    // 中文：仅对导入的 WGS84 GPX 开放 Look Around，绝不猜测坐标系。
+    private func isLookAroundEligible(_ roadbook: PTRoadbook) -> Bool {
+        roadbook.coordinateSystem == .wgs84
+            && roadbook.sourceFileName?.lowercased().hasSuffix(".gpx") == true
+            && !roadbook.waypoints.isEmpty
+    }
+
+    // EN: Let the rider choose a bounded number of route points to preview.
+    // ES: Permite al piloto elegir un número limitado de puntos de la ruta para previsualizar.
+    // 中文：让骑手从有限数量的路线点中选择预览位置。
+    private func showLookAroundPicker(for roadbook: PTRoadbook) {
+        let alert = UIAlertController(
+            title: PTDashboardConfig.languageFunc(text: "roadbook_look_around"),
+            message: nil,
+            preferredStyle: .actionSheet
+        )
+        for (index, waypoint) in roadbook.waypoints.prefix(8).enumerated() {
+            let instruction = waypoint.instruction.trimmingCharacters(in: .whitespacesAndNewlines)
+            let title = instruction.isEmpty
+                ? PTDashboardConfig.language(key: "roadbook_look_around_waypoint", index + 1)
+                : "\(index + 1). \(instruction)"
+            alert.addAction(UIAlertAction(title: title, style: .default) { [weak self] _ in
+                self?.requestLookAround(at: waypoint.coordinate)
+            })
+        }
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "button_cancel"),
+            style: .cancel
+        ))
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = view
+            popover.sourceRect = CGRect(
+                x: view.bounds.midX,
+                y: view.bounds.midY,
+                width: 1,
+                height: 1
+            )
+        }
+        present(alert, animated: true)
+    }
+
+    // EN: Request a single panorama and release it when cancelled or completed.
+    // ES: Solicita una sola panorámica y la libera al cancelar o terminar.
+    // 中文：每次只请求一个全景场景，取消或完成后立即释放请求。
+    private func requestLookAround(at coordinate: CLLocationCoordinate2D) {
+        lookAroundRequest?.cancel()
+        let request = MKLookAroundSceneRequest(coordinate: coordinate)
+        lookAroundRequest = request
+
+        let loadingAlert = UIAlertController(
+            title: PTDashboardConfig.languageFunc(text: "roadbook_look_around"),
+            message: PTDashboardConfig.languageFunc(text: "roadbook_look_around_loading"),
+            preferredStyle: .alert
+        )
+        loadingAlert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "button_cancel"),
+            style: .cancel
+        ) { [weak self] _ in
+            self?.lookAroundRequest?.cancel()
+            self?.lookAroundRequest = nil
+        })
+        present(loadingAlert, animated: true)
+
+        request.getSceneWithCompletionHandler { [weak self, weak loadingAlert] scene, _ in
+            Task { @MainActor [weak self] in
+                guard let self, self.lookAroundRequest === request else { return }
+                self.lookAroundRequest = nil
+                loadingAlert?.dismiss(animated: true) {
+                    guard let scene else {
+                        self.showLookAroundUnavailable()
+                        return
+                    }
+                    let controller = MKLookAroundViewController(scene: scene)
+                    controller.showsRoadLabels = true
+                    self.present(controller, animated: true)
+                }
+            }
+        }
+    }
+
+    // EN: Coverage is optional; explain an unavailable panorama without treating it as a route error.
+    // ES: La cobertura es opcional; informa de una panorámica no disponible sin tratarlo como error de ruta.
+    // 中文：Look Around 覆盖范围不是必有，未覆盖时单独提示，不把它当作路线错误。
+    private func showLookAroundUnavailable() {
+        let alert = UIAlertController(
+            title: PTDashboardConfig.languageFunc(text: "roadbook_look_around"),
+            message: PTDashboardConfig.languageFunc(text: "roadbook_look_around_unavailable"),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "button_confirm"),
+            style: .default
+        ))
         present(alert, animated: true)
     }
 
@@ -528,7 +669,7 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
                 do {
                     try await self.manager.deleteRoadbook(id: roadbook.id)
                     self.roadbooks = try await self.manager.loadRoadbooks()
-                    self.showDetail()
+                    self.showDetail(force: true)
                 } catch {
                     self.showError(error)
                 }
