@@ -42,6 +42,7 @@ def shared_pods
   pod 'PooTools/PhotoPicker', :git => 'https://github.com/crazypoo/PTools.git'
   pod 'PooTools/CustomerLabel', :git => 'https://github.com/crazypoo/PTools.git'
   pod 'PooTools/MediaViewer', :git => 'https://github.com/crazypoo/PTools.git'
+  pod 'PooTools/Vision', :git => 'https://github.com/crazypoo/PTools.git'
 
   pod 'AMapSearch-NO-IDFA'
   pod 'AMapLocation-NO-IDFA'

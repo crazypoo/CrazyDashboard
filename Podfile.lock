@@ -140,6 +140,8 @@ PODS:
     - PooTools/Core
   - PooTools/Share (5.7.3):
     - PooTools/CustomerLabel
+  - PooTools/Vision (5.7.3):
+    - PooTools/Core
   - PooTools/WhatsNewsKit (5.7.3):
     - PooTools/Core
   - SafeSFSymbols (2.0.0)
@@ -209,6 +211,7 @@ DEPENDENCIES:
   - PooTools/NetWork (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/PhotoPicker (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/ProgressBar (from `https://github.com/crazypoo/PTools.git`)
+  - PooTools/Vision (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/WhatsNewsKit (from `https://github.com/crazypoo/PTools.git`)
 
 SPEC REPOS:
@@ -284,6 +287,6 @@ SPEC CHECKSUMS:
   SwiftDate: bbc26e26fc8c0c33fbee8c140c5e8a68293a148a
   SwifterSwift: 517fa61daf5b4c5e3ed13b9f35f4c26b310cfb97
 
-PODFILE CHECKSUM: acca73eb9b776045f7e613dfd8572bea3c10d139
+PODFILE CHECKSUM: 721c5e08f149938f9545a13a10fb03771135ba52
 
 COCOAPODS: 1.16.2

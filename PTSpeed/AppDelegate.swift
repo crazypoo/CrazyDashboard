@@ -97,6 +97,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         PTAppBaseConfig.share.viewControllerBackItemImage = UIImage(.chevron.compactLeft).withTintColor(.white, renderingMode: .alwaysOriginal)
         PTAppBaseConfig.share.navTitleTextColor = .white
         PTAppBaseConfig.share.navTitleFont = .appfont(size: 24,bold: true)
+        PTMediaLibUIConfig.share.selectLibTitleFont = .appfont(size: 15)
+        PTMediaLibUIConfig.share.selectLibSubTitleFont = .appfont(size: 12)
+        PTMediaLibUIConfig.share.albumCellTitleFont = .appfont(size: 18,bold: true)
+        PTMediaLibUIConfig.share.albumCellDescFont = .appfont(size: 14)
+        PTMediaLibUIConfig.share.selectedBorderColor = PTDashboardConfig.shared.appMainColor
+        PTMediaLibUIConfig.share.albumListNavName = PTDashboardConfig.languageFunc(text: "ALbum list")
         appNotifiCenter()
 
         // EN: Restore alarm records without requesting permission or creating a new alarm at launch.

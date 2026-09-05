@@ -164,13 +164,6 @@ class PTPTTViewController: PTMotoBaseViewController {
         view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers(handler: { _ in
             let share = PTMediaLibConfig.share
-            PTMediaLibUIConfig.share.selectedBorderColor = PTDashboardConfig.shared.appMainColor
-//            PTMediaLibUIConfig.share.backImage = UIImage(named: "nav_close_black")!
-//            PTMediaLibUIConfig.share.submitImage = UIImage(named: "cart_add_success")!
-//            PTMediaLibUIConfig.share.arrowDownImage = UIImage(named: "arrow_down_black")!
-//            PTMediaLibUIConfig.share.ablumListBackImage = UIImage(named: "nav_close_black")!
-//            PTMediaLibUIConfig.share.albumSelectedImage = UIImage(named: "cart_add_success")!
-            PTMediaLibUIConfig.share.albumListNavName = PTDashboardConfig.languageFunc(text: "ALbum list")
             share.allowTakePhotoInLibrary = false
             share.allowEditImage = false
             share.allowSelectImage = true
@@ -179,10 +172,6 @@ class PTPTTViewController: PTMotoBaseViewController {
             share.allowEditVideo = false
             share.maxSelectCount = 1
             share.allowEditImage = false
-            PTMediaLibUIConfig.share.selectLibTitleFont = .appfont(size: 15)
-            PTMediaLibUIConfig.share.selectLibSubTitleFont = .appfont(size: 12)
-            PTMediaLibUIConfig.share.albumCellTitleFont = .appfont(size: 18,bold: true)
-            PTMediaLibUIConfig.share.albumCellDescFont = .appfont(size: 14)
             let cam = PTCameraConfig()
             cam.allowTakePhoto = false
             cam.allowRecordVideo = false

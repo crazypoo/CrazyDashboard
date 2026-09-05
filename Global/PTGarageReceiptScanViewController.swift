@@ -333,10 +333,32 @@ final class PTGarageReceiptScanViewController: PTMotoBaseViewController, PHPicke
     }
 
     @objc private func choosePhoto() {
-        var configuration = PHPickerConfiguration(photoLibrary: .shared())
-        configuration.filter = .images
-        configuration.selectionLimit = 1
-        present(PHPickerViewController(configuration: configuration), animated: true)
+//        var configuration = PHPickerConfiguration(photoLibrary: .shared())
+//        configuration.filter = .images
+//        configuration.selectionLimit = 1
+//        present(PHPickerViewController(configuration: configuration), animated: true)
+        PTMediaLibConfig.share.allowTakePhotoInLibrary = false
+        PTMediaLibConfig.share.allowEditImage = false
+        PTMediaLibConfig.share.allowSelectImage = true
+        PTMediaLibConfig.share.allowSelectVideo = false
+        PTMediaLibConfig.share.allowSelectGif = false
+        PTMediaLibConfig.share.allowEditVideo = false
+        PTMediaLibConfig.share.maxSelectCount = 1
+        PTMediaLibConfig.share.allowEditImage = false
+        let cam = PTCameraConfig()
+        cam.allowTakePhoto = true
+        cam.allowRecordVideo = false
+        PTMediaLibConfig.share.cameraConfiguration = cam
+
+        let vc = PTMediaLibViewController()
+        vc.mediaLibShow()
+        vc.selectImageBlock = { result, isOriginal in
+            if !result.isEmpty,let firstImge = result.first?.image,let imageData = firstImge.jpegData(compressionQuality: 1) {
+                self.receive(imageData: imageData)
+            } else {
+                PTGCDManager.shared.runOnMain {}
+            }
+        }
     }
 
     @objc private func openCamera() {
