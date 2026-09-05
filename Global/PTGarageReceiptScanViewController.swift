@@ -157,26 +157,6 @@ public struct PTReceiptDraft: Equatable, Sendable {
     }
 }
 
-private enum PTReceiptOCR {
-    // EN: Vision runs from a detached task so OCR does not block UIKit layout or Bluetooth callbacks.
-    // ES: Vision se ejecuta en una tarea separada para no bloquear UIKit ni los callbacks Bluetooth.
-    // 中文：Vision 在独立任务中执行，不阻塞 UIKit 布局和蓝牙回调。
-    nonisolated static func recognize(data: Data) -> String {
-        guard let image = UIImage(data: data), let cgImage = image.cgImage else { return "" }
-        let request = VNRecognizeTextRequest()
-        request.recognitionLevel = .accurate
-        request.usesLanguageCorrection = true
-        request.recognitionLanguages = ["zh-Hans", "en-US", "fr-FR", "de-DE", "es-ES", "it-IT", "tr-TR"]
-        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-        do {
-            try handler.perform([request])
-        } catch {
-            return ""
-        }
-        return request.results?.compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n") ?? ""
-    }
-}
-
 // EN: A small UIKit editor keeps the import flow explicit and reversible.
 // ES: Un editor UIKit pequeño mantiene el flujo de importación explícito y reversible.
 // 中文：轻量 UIKit 编辑器让导入流程明确且可撤销。
@@ -196,8 +176,19 @@ final class PTGarageReceiptScanViewController: PTMotoBaseViewController, PHPicke
     private let currencyField = UITextField()
     private let dateField = UITextField()
     private let notesField = UITextView()
-    private var recognitionTask: Task<Void, Never>?
 
+    lazy var saveButton:PTBaseButton = {
+        let view = PTBaseButton(type: .custom)
+        view.titleLabel?.font = .appfont(size: 16)
+        view.setTitleColor(.white, for: .normal)
+        view.setTitle(localized("garage_receipt_save"), for: .normal)
+        view.addActionHandlers(handler: { _ in
+            self.saveDraft()
+        })
+        view.bounds = .init(origin: .zero, size: .init(width: view.sizeFor().width + 20, height: PTAppBaseConfig.share.navBarButtonSize))
+        return view
+    }()
+    
     init(store: PTMotorcycleGarageStore) {
         self.store = store
         super.init(nibName: nil, bundle: nil)
@@ -214,19 +205,17 @@ final class PTGarageReceiptScanViewController: PTMotoBaseViewController, PHPicke
         configureView()
         configureFields()
     }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        setCustomRightButtons(buttons: [saveButton])
+    }
 
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
-        recognitionTask?.cancel()
     }
 
     private func configureView() {
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            title: localized("garage_receipt_save"),
-            style: .done,
-            target: self,
-            action: #selector(saveDraft)
-        )
 
         let photoButton = makeButton(title: localized("garage_receipt_choose_photo"), action: #selector(choosePhoto))
         let cameraButton = makeButton(title: localized("garage_receipt_camera"), action: #selector(openCamera))
@@ -407,12 +396,8 @@ final class PTGarageReceiptScanViewController: PTMotoBaseViewController, PHPicke
         guard let image = UIImage(data: imageData) else { return }
         imageView.image = image
         statusLabel.text = localized("garage_receipt_recognizing")
-        recognitionTask?.cancel()
-        recognitionTask = Task { @MainActor [weak self] in
-            let text = await Task.detached(priority: .userInitiated) {
-                PTReceiptOCR.recognize(data: imageData)
-            }.value
-            guard let self, !Task.isCancelled else { return }
+        PTVision.share.findText(withImage: image,recognitionLanguages: ["zh-Hans", "en-US", "fr-FR", "de-DE", "es-ES", "it-IT", "tr-TR"]) { resultText, textObservations in
+            let text = textObservations.compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
             self.recognizedTextView.text = text
             let draft = PTReceiptDraft.fromRecognizedText(text)
             self.apply(draft: draft)
