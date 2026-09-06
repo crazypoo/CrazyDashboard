@@ -67,6 +67,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             
             PTMotoUserDefaultStruct.appFirst.toggle()
         }
+
+        // EN: Reapply the app-owned language on every launch so an older Build 48 selection
+        // is not overwritten by a stale third-party resolver value.
+        // ES: Reaplica el idioma elegido por la app en cada inicio para que una selección de Build 48
+        // no sea reemplazada por un valor antiguo del resolvedor externo.
+        // 中文：每次启动都重新应用 App 自己保存的语言，避免 Build48 的选择被第三方旧解析值覆盖。
+        let requestedLanguage = PTDashboardConfig.selectedLanguageIdentifier
+        PTLanguage.share.language = requestedLanguage
+        if PTLanguage.share.language != requestedLanguage {
+            PTNSLogConsole("⚠️ [语言] 语言 \(requestedLanguage) 未被资源解析，当前使用 \(PTLanguage.share.language)")
+        }
+        if let sharedDefaults = UserDefaults(suiteName: PTWidgetDataKeys.appGroupID),
+           sharedDefaults.object(forKey: PTWidgetDataKeys.lastUpdateTime) != nil {
+            PTWidgetDataManager.shared.updateLanguageIdentifier(requestedLanguage)
+        }
         
         AMapNaviManagerConfig.shared().updatePrivacyShow(AMapPrivacyShowStatus.didShow, privacyInfo: AMapPrivacyInfoStatus.didContain)
         AMapNaviManagerConfig.shared().updatePrivacyAgree(.didAgree)

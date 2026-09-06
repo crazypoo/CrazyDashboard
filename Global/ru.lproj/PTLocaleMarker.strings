@@ -1,0 +1,4 @@
+/* EN: Build 49 locale marker keeps Russian selectable without duplicating Localizable.xcstrings. */
+/* ES: El marcador de locale de Build 49 mantiene el ruso seleccionable sin duplicar Localizable.xcstrings. */
+/* 中文：Build49 语言标记确保俄语可选，同时避免与 Localizable.xcstrings 重复。 */
+"__pt_build49_locale_marker" = "";

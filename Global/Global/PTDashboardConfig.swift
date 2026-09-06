@@ -285,7 +285,7 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
     
     static func appIsInChinese() ->Bool {
         switch PTMotoUserDefaultStruct.userSetLanguage {
-        case "zh","tw":
+        case "zh", "tw", "zh-CN", "zh_CN", "zh-Hans", "zh_Hans", "zh-TW", "zh_TW", "zh-Hant", "zh_Hant":
             return true
         default:
             return false
@@ -297,10 +297,53 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
             return value.name
         }
         UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "language_set_title"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: map, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
-            PTMotoUserDefaultStruct.userSetLanguage = PTDashboardConfig.shared.lauguageModels[index].keyName
-            PTLanguage.share.language = PTDashboardConfig.shared.lauguageModels[index].localozableName
-            PTWidgetDataManager.shared.updateLanguageIdentifier(PTLanguage.share.language)
+            PTDashboardConfig.applyLanguageSelection(PTDashboardConfig.shared.lauguageModels[index])
         })
+    }
+
+    // EN: Keep the app-selected identifier independent from third-party resolution and normalize legacy Traditional Chinese values.
+    // ES: Mantén el identificador elegido por la app independiente de terceros y normaliza los valores antiguos del chino tradicional.
+    // 中文：让 App 选择的语言标识独立于第三方解析，并兼容旧版本保存的繁体中文标识。
+    class var selectedLanguageIdentifier: String {
+        switch PTMotoUserDefaultStruct.userSetLanguage {
+        case "zh", "zh-CN", "zh_CN", "zh-Hans", "zh_Hans":
+            return "zh-Hans"
+        case "tw", "zh-TW", "zh_TW", "zh-Hant", "zh_Hant":
+            return "zh-Hant"
+        default:
+            let value = PTMotoUserDefaultStruct.userSetLanguage.trimmingCharacters(in: .whitespacesAndNewlines)
+            return value.isEmpty ? "en" : value
+        }
+    }
+
+    // EN: Apply one language change to UIKit, Widget and Watch, including a notification
+    // when the external resolver keeps the same fallback locale.
+    // ES: Aplica un cambio de idioma a UIKit, Widget y Watch, incluida una notificación
+    // cuando el resolvedor externo conserva el mismo locale de respaldo.
+    // 中文：一次性同步 UIKit、Widget 和 Watch 的语言；即使第三方解析器保持回退语言，也主动通知界面刷新。
+    class func applyLanguageSelection(_ model: PTLanguageModel) {
+        let identifier = model.localozableName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !identifier.isEmpty else { return }
+        PTMotoUserDefaultStruct.userSetLanguage = model.keyName
+        PTLanguage.share.language = identifier
+
+        // EN: Always publish the app-owned change after persisting it. PooTools suppresses
+        // duplicate locale notifications, but existing controllers still need a refresh when
+        // the selected catalog has no entry for the current screen.
+        // ES: Publica siempre el cambio propio de la app después de guardarlo. PooTools suprime
+        // notificaciones duplicadas, pero los controladores necesitan refrescarse aunque el
+        // catálogo seleccionado todavía no tenga una entrada para la pantalla actual.
+        // 中文：保存后始终发布 App 自己的语言变更。PooTools 会抑制重复通知，但当前页面仍需
+        // 在所选目录暂时没有对应文案时刷新，避免日语或俄语看起来完全没有生效。
+        let notifyLanguageChange = {
+            NotificationCenter.default.post(name: LanguageDidChangedKey, object: nil)
+        }
+        if Thread.isMainThread {
+            notifyLanguageChange()
+        } else {
+            DispatchQueue.main.async(execute: notifyLanguageChange)
+        }
+        PTWidgetDataManager.shared.updateLanguageIdentifier(identifier)
     }
     
 }
@@ -311,10 +354,10 @@ extension PTDashboardConfig {
     /// ES: Resuelve una clave del String Catalog compilado usando el locale elegido por la app.
     /// 中文：使用 App 当前选择的语言，从编译后的 String Catalog 解析文案。
     class func languageFunc(text:String) ->String {
-        let value = text.localized(using: "Localizable", in: .main)
-        return value == text
-            ? PTWidgetLocalized.string(text, languageIdentifier: PTLanguage.share.language)
-            : value
+        PTWidgetLocalized.string(
+            text,
+            languageIdentifier: selectedLanguageIdentifier
+        )
     }
     
     static func language(key: String, _ args: CVarArg...) -> String {

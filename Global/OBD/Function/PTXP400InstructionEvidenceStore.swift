@@ -881,7 +881,7 @@ final class PTXP400EvidenceViewController: PTListViewController, UIDocumentPicke
     
     lazy var exportButton:PTBaseButton = {
         let view = PTBaseButton(type:.custom)
-        view.setImage(UIImage(.shared.withYou), for: .normal)
+        view.setImage(UIImage(.shared.withYou).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
         view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers(handler: { _ in
             self.exportAction()
@@ -891,7 +891,7 @@ final class PTXP400EvidenceViewController: PTListViewController, UIDocumentPicke
 
     lazy var clearButton:PTBaseButton = {
         let view = PTBaseButton(type:.custom)
-        view.setImage(UIImage(.xmark.circleFill), for: .normal)
+        view.setImage(UIImage(.xmark.circleFill).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
         view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers(handler: { _ in
             self.clearAction()
@@ -904,7 +904,7 @@ final class PTXP400EvidenceViewController: PTListViewController, UIDocumentPicke
     // 中文：导入入口只放在现有开发者证据页面，并且始终保持只读。
     lazy var importButton: PTBaseButton = {
         let view = PTBaseButton(type: .custom)
-        view.setImage(UIImage(.square.andArrowUp), for: .normal)
+        view.setImage(UIImage(.square.andArrowUp).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
         view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers { [weak self] _ in
             self?.importAction()

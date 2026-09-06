@@ -722,7 +722,7 @@ public final class PTLiDARCollisionManager: NSObject {
     private func runSession(mode: PTLiDARAssistMode) {
         currentMode = mode
         clearRuntimeState()
-        var configuration = ARWorldTrackingConfiguration()
+        let configuration = ARWorldTrackingConfiguration()
         if ARWorldTrackingConfiguration.supportsFrameSemantics(.smoothedSceneDepth) {
             configuration.frameSemantics = .smoothedSceneDepth
         } else {

@@ -8,7 +8,7 @@
 >
 > 发布方式：只维护现有 `PTSpeed` TestFlight 版本，不新增 Lab Scheme、App Target、Bundle ID 或第二发布渠道；当前没有 App Store 上架计划。
 >
-> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 为 Build 48，下一次 TestFlight 从 Build 49 开始。
+> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 已进入 Build 49；Build 48 保留为本轮语言问题的回归基线。
 >
 > 文件名中的 `V3` 仅为保留现有路径和链接，不代表需要修改 App 大版本号。
 >
@@ -46,7 +46,7 @@
 ### 版本与 Build 规则
 
 - [x] `PTSpeed`、Widget 和 Watch 的 `MARKETING_VERSION` 保持 `2.0.8`。
-- [x] 当前主 App、Widget、Watch 和 Tests Build 已统一为 `48`；下一次 TestFlight 使用 Build `49`。
+- [x] 当前主 App、Widget、Watch 和 Tests Build 已统一为 `49`；Build 48 作为本轮回归基线。
 - [x] 每次上传 TestFlight 只将 `CURRENT_PROJECT_VERSION` 加一：44、45、46……
 - [x] App、Widget、Watch 和 Tests 每次使用完全相同的 Build 号；Build 45 Debug/Release 目标构建和无签名 Archive 已按对应验收记录核验。
 - [x] Tests Target 已同步到主 App Build `45`，此后与主 App、Widget 和 Watch 一起递增。
@@ -1553,3 +1553,50 @@ OBD BLE / Wi-Fi / Mock
 - B48 的外围功能可按工作包独立撤回：移除车库资料按钮、行程照片按钮、SharePlay 入口、App Shortcut 条目或 Dev 固件文件预检，不改变基础连接、标准 OBD、导航、Widget、Watch 和 iCloud 旧路径。
 - 本 Build 不因 NFC、SharePlay、固件协议或真实车辆验证缺失而伪装为 `✅`；在外部证据完成前保持 `🟨`，固件实际写入保持拒绝状态。
 - 发布前必须重新运行三个核心文件哈希、iOS/Widget/Watch 独立构建、签名 Archive、XCTest、真机、真表、真实 NFC 标签和真实车辆验证；不能将 generic build 或 `build-for-testing` 当作 TestFlight/实车成功证明。
+
+## 30. Build 49 CAN 抓包证据链与日语/俄语切换修复（2026-09-06）
+
+本轮继续使用营销版本 `2.0.8`，主 App、Widget、Watch、Tests 的 Build 统一为 `49`。Build 49 的目标是把“官方 App 设置变化 → OBD/CAN Capture → 可复核报告”做成可控、可恢复的开发者证据链，同时修复 Build 48 中日语和俄语选择后仍被第三方语言解析器回退的问题。
+
+### 30.1 工作包与状态
+
+| 状态 | ID | 工作包 | 依赖 | 完成条件摘要 |
+| --- | --- | --- | --- | --- |
+| 🟨 | `B49-00` | Build、核心保护与基线 | 无 | Build 49 已写入工程；三个稳定核心文件保持零字节变化；真实设备/车辆基线待补 |
+| 🟨 | `B49-01` | CAN 原始解析契约 | B49-00 | 不再猜测两字符数据是否为 DLC；支持显式单字符 DLC、11/29-bit Header 和分隔 Extended Header；多适配器样本待补 |
+| 🟨 | `B49-02` | CAN 实验协调与恢复 | B49-01 | 通过既有 OBD 注入/独占通道配置 `ATD1`、`ATCAF0`、`ATCSM0`，统一暂停/恢复轮询和 Header；真实 ELM327 流控待补 |
+| 🟨 | `B49-03` | 日语/俄语运行时切换 | B49-00 | 添加可发现的 locale marker、选中语言独立存储、UIKit/Widget/Watch 同步和英语安全回退；真机全部页面校对待补 |
+| 🟨 | `B49-04` | 回归测试与发布门禁 | B49-01～B49-03 | 新增 DLC、分隔 Header、语言回退测试；主 App/Widget/Watch 构建和 XCTest 实际执行、签名 Archive 待补 |
+| ⛔ | `B49-05` | XP400 GT 实车 A/B 证据 | B49-02 | 需要真实官方 App、XP400 GT、已验证 ELM327 和稳定供电；没有证据时不晋级任何仪表写入指令 |
+
+### 30.2 CAN 解析和监听边界
+
+- `7E8 06 41 0C ...` 中的 `06` 按原始 Data byte 保留；只有 `ATD1` 输出的独立单字符 token（例如 `7E8 8 06 ...`）才记录为 DLC。
+- `18 DA F1 10 8 06 ...` 支持四个两字符 Header token 合并为 `18DAF110`；Header 数值必须符合 11-bit 或 29-bit 上限，非法帧直接丢弃且不触碰传输层。
+- Build 49 的实时实验使用 `ATD1`、`ATCAF0` 和 `ATCSM0`：保留 DLC、保留 PCI/填充原始字节、关闭自动格式化、关闭主动 ACK；不修改稳定 OBD/BLE 核心文件。
+- `PTCANExperimentCoordinator` 统一处理开发者门禁、当前 OBD transport、轮询取消、抓包开始/停止、适配器恢复和轮询恢复；准备失败与显式停止共用清理路径。
+- `ATDP`/`ATDPN` 只记录适配器协议证据，不把协议名称当作车型或 ECU 身份，不臆测 XP400 的 CAN ID、DID、Seed-Key 或写入 Payload。
+- 临时开发者页面不能把离线历史分析误认为实时监听；普通用户入口仍只浏览既有 Capture 文件。
+
+### 30.3 日语与俄语切换修复边界
+
+- PooTools 仍用于现有本地化能力，但通过 `PTLocaleMarker.strings` 让 `ja`、`ru` 出现在主 App、Widget 和 Watch 的运行时可用 locale 列表中，避免 `PTLanguage` 将其直接解析为中文默认语言。
+- `PTDashboardConfig.selectedLanguageIdentifier` 保留用户选择的独立标识：`zh → zh-Hans`、`tw → zh-Hant`，其他语言使用精确 BCP-47 标识。
+- 语言选择一次性同步 UIKit 通知、App Group Widget/Watch 状态和当前用户偏好；当第三方解析器没有产生变化通知时，App 主动补发一次刷新通知。
+- 日语/俄语尚未覆盖的 String Catalog key 统一回退英语，不回退源中文；已有日语/俄语回退文案继续优先使用。QWeather 初始化与回退链路不在本工作包范围内。
+
+### 30.4 自动验证与外部验证边界
+
+- [x] 三个稳定核心文件 SHA-256 已在本轮前记录，并在本轮代码修改后复核未发生变化。
+- [x] `PTCANRecorder` 覆盖原始首字节、显式 DLC、分隔 29-bit Header、非法 Header 和多帧 UDS 共存场景。
+- [x] 语言回退覆盖日语、俄语和新增 CAN Lab 失败文案；marker 资源已避免与 `Localizable.xcstrings` 同名冲突。
+- [x] 启动恢复会把持久化的 `userSetLanguage` 重新应用到 `PTLanguage`，修复 Build 48 已选择日语/俄语但重启后仍显示中文的升级场景。
+- [x] WatchOS 独立 Debug target build、iOS PTSpeed 工作区 Debug build 和 iOS `build-for-testing` 均通过；主 App、Widget、Watch 产品的版本均为 `2.0.8 (49)`，并实际包含 `ja.lproj` 与 `ru.lproj`。
+- [ ] XCTest 实际运行、iOS Release/Archive、签名 TestFlight、真机语言切换和真实 ELM327/XP400 Capture 待补。当前工程的 PTSpeed scheme 未提供与现有 iOS 27 Simulator 匹配的测试目的地；强制 arm64 Simulator 构建又被现有 Pods 的 `SwifterSwift.framework` 产物缺失阻断，因此没有修改工程架构设置来掩盖环境问题。
+- [ ] 必须分别验证 `ATD1`/`ATCAF0`/`ATCSM0` 在至少一个可靠 ELM327 上的实际回显格式；如果适配器不支持，回退到只读离线导入，不修改稳定核心。
+
+### 30.5 回滚边界
+
+- 若 Build 49 的实时 Capture 在某一 ELM327 上不兼容，只撤回 `PTCANExperimentCoordinator` 的实时入口和 monitor profile，保留旧 Capture 读取、解析、导出和历史分析。
+- 若某个 String Catalog 或 marker 资源影响现有语言，只撤回 Build 49 的 locale marker 与运行时解析出口；不删除已有十语言目录，也不改动 BLE/OBD 稳定核心。
+- 任何真实车辆未知状态均停止在观察/读取层；不得因 Build 49 的解析成功而开放固件写入、开机画面写入或未确认的仪表控制指令。

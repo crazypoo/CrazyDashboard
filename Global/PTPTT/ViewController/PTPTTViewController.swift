@@ -316,6 +316,10 @@ class PTPTTViewController: PTMotoBaseViewController {
                 self.updatePeerCount(self.connectFriend)
                 self.pttButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_push"), for: .normal)
                 self.resumeAudioButton.setTitle(PTDashboardConfig.languageFunc(text: "ptt_resume_audio"), for: .normal)
+                // EN: Rebuild state-dependent PTT titles too, so mode and power buttons do not keep the old locale.
+                // ES: Actualiza también los títulos dependientes del estado para que modo y encendido no conserven el locale anterior.
+                // 中文：同时刷新依赖状态的 PTT 文案，避免模式和电源按钮继续显示旧语言。
+                self.updateUIState()
             }
         }
         vcDidLoad = true

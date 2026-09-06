@@ -186,6 +186,30 @@ final class PTCoreTests: XCTestCase {
         XCTAssertEqual(restored, source)
     }
 
+    // EN: Traditional Chinese must resolve visible settings and garage copy without Simplified Chinese fallback.
+    // ES: El chino tradicional debe resolver los textos visibles de ajustes y garaje sin recurrir al chino simplificado.
+    // 中文：繁体中文必须解析设置和车库的可见文案，不能回退到简体中文。
+    func testTraditionalChineseLanguageRuntimeResolvesVisibleCopy() {
+        XCTAssertEqual(
+            PTWidgetLocalized.string("language_set_title", languageIdentifier: "zh-Hant"),
+            "語言設定"
+        )
+        XCTAssertEqual(
+            PTWidgetLocalized.string("garage_title", languageIdentifier: "zh-Hant"),
+            "車庫"
+        )
+        let maintenanceCopy = PTWidgetLocalized.string(
+            "garage_maintenance_remaining",
+            languageIdentifier: "zh-Hant"
+        )
+        XCTAssertNotEqual(maintenanceCopy, "仪表剩余")
+        XCTAssertTrue(maintenanceCopy.contains("餘"))
+        XCTAssertEqual(
+            PTWidgetLocalized.string("can_lab_capture_failed", languageIdentifier: "zh-Hant"),
+            "無法開始擷取"
+        )
+    }
+
     // EN: Receipt OCR remains an editable draft and parses European decimal separators safely.
     // ES: El OCR del recibo sigue siendo un borrador editable y analiza de forma segura los decimales europeos.
     // 中文：单据 OCR 始终是可编辑草稿，并且能安全解析欧洲小数分隔符。
@@ -1135,6 +1159,28 @@ final class PTCoreTests: XCTestCase {
         XCTAssertNotNil(PTOBDiagnosticAddress(tx: "18DAF110", rx: "18DAF118"))
     }
 
+    // EN: Japanese and Russian must resolve staged copy instead of falling back to source Chinese.
+    // ES: Japonés y ruso deben resolver el texto gradual en lugar de volver al chino de origen.
+    // 中文：日语和俄语必须解析分阶段文案，不能回退到源中文。
+    func testJapaneseAndRussianLocalizationFallback() {
+        XCTAssertEqual(
+            PTWidgetLocalized.string("garage_documents", languageIdentifier: "ja"),
+            "車両書類"
+        )
+        XCTAssertEqual(
+            PTWidgetLocalized.string("garage_documents", languageIdentifier: "ru"),
+            "Документы мотоцикла"
+        )
+        XCTAssertEqual(
+            PTWidgetLocalized.string("can_lab_capture_failed", languageIdentifier: "ja"),
+            "キャプチャを開始できませんでした"
+        )
+        XCTAssertEqual(
+            PTWidgetLocalized.string("can_lab_capture_failed", languageIdentifier: "ru"),
+            "Не удалось начать захват"
+        )
+    }
+
     func testUDSPositiveAndNegativeResponses() throws {
         let address = try XCTUnwrap(PTOBDiagnosticAddress(tx: "7A0", rx: "7A8"))
 
@@ -1155,7 +1201,7 @@ final class PTCoreTests: XCTestCase {
         XCTAssertEqual(negative.negativeResponseCode, "31")
     }
 
-    func testELM327DLCIsNotStoredAsPayload() {
+    func testELM327RawMonitorPreservesDataByteThatLooksLikeDLC() {
         let recorder = PTCANRecorder.shared
         recorder.cancel()
         recorder.maxInMemoryFrames = 16
@@ -1169,8 +1215,39 @@ final class PTCoreTests: XCTestCase {
 
         XCTAssertEqual(session?.frames.count, 1)
         XCTAssertEqual(session?.frames.first?.header, "7E8")
-        XCTAssertEqual(session?.frames.first?.dlc, 6)
-        XCTAssertEqual(session?.frames.first?.dataHex, "410C1AF80000")
+        XCTAssertNil(session?.frames.first?.dlc)
+        XCTAssertEqual(session?.frames.first?.dataHex, "06410C1AF8000000")
+    }
+
+    // EN: Explicit ELM327 DLC must be separated only when it is a one-digit token.
+    // ES: El DLC explícito de ELM327 solo debe separarse cuando sea un token de un dígito.
+    // 中文：只有一个十六进制字符的独立 token 才能被识别为显式 DLC。
+    func testELM327ExplicitDLCAndSeparatedExtendedHeader() {
+        let recorder = PTCANRecorder.shared
+        recorder.cancel()
+        recorder.maxInMemoryFrames = 16
+        recorder.start(
+            name: "OBD-CAN-Explicit-DLC-Test",
+            monitorProfile: .rawDLC
+        )
+        recorder.append(
+            rawLine: "7E8 8 06 41 00 BE 3E B8 13 00",
+            timestamp: 1_700_000_001
+        )
+        recorder.append(
+            rawLine: "18 DA F1 10 8 06 41 00 BE 3E B8 13 00",
+            timestamp: 1_700_000_002
+        )
+
+        let session = recorder.stop()
+
+        XCTAssertEqual(session?.frames.count, 2)
+        XCTAssertEqual(session?.frames[0].header, "7E8")
+        XCTAssertEqual(session?.frames[0].dlc, 8)
+        XCTAssertEqual(session?.frames[0].dataHex, "064100BE3EB81300")
+        XCTAssertEqual(session?.frames[1].header, "18DAF110")
+        XCTAssertEqual(session?.frames[1].dlc, 8)
+        XCTAssertEqual(session?.frames[1].dataHex, "064100BE3EB81300")
     }
 
     // EN: CAN header bounds and ISO-TP parsing must reject invalid frames without touching transport.
@@ -2623,13 +2700,26 @@ final class PTCoreTests: XCTestCase {
         XCTAssertTrue(report.printableStrings.contains("XP400"))
     }
 
-    // EN: The Build 48 language selector includes Japanese and Russian without dropping existing locales.
-    // ES: El selector de idiomas de Build 48 incluye japonés y ruso sin eliminar los locales existentes.
-    // 中文：Build48 语言选择器加入日语和俄语，同时保留已有语言。
+    // EN: The Build 49 language selector includes Japanese and Russian without dropping existing locales.
+    // ES: El selector de idiomas de Build 49 incluye japonés y ruso sin eliminar los locales existentes.
+    // 中文：Build49 语言选择器加入日语和俄语，同时保留已有语言。
     @MainActor
-    func testBuild48LanguageSelectorIncludesJapaneseAndRussian() {
+    func testBuild49LanguageSelectorIncludesJapaneseAndRussian() {
         let keys = Set(PTDashboardConfig.shared.lauguageModels.map(\.keyName))
         XCTAssertTrue(keys.isSuperset(of: ["zh", "tw", "en", "tr", "fr", "de", "es", "it", "ja", "ru"]))
+    }
+
+    // EN: Japanese and Russian must resolve visible app copy instead of returning the Chinese source text.
+    // ES: Japonés y ruso deben resolver textos visibles de la app y no devolver el texto fuente chino.
+    // 中文：日语和俄语必须解析出可见的 App 文案，不能继续返回中文源文案。
+    func testJapaneseAndRussianLanguageRuntimeResolvesVisibleCopy() {
+        let japanese = PTWidgetLocalized.string("language_set_title", languageIdentifier: "ja")
+        let russian = PTWidgetLocalized.string("language_set_title", languageIdentifier: "ru")
+
+        XCTAssertEqual(japanese, "言語設定")
+        XCTAssertEqual(russian, "Настройки языка")
+        XCTAssertNotEqual(japanese, "语言设置")
+        XCTAssertNotEqual(russian, "语言设置")
     }
 
     // EN: Garage attachments survive metadata reload and delete their private file together with the record.

@@ -34,7 +34,10 @@ public class PTWidgetDataManager: NSObject {
             parkedLon: parkedLon,
             address: address,
             lastUpdateTime: updateDate,
-            languageIdentifier: PTLanguage.share.language
+            // EN: Persist the app-owned identifier so Traditional Chinese is not replaced by a resolver fallback.
+            // ES: Persiste el identificador elegido por la app para que el chino tradicional no sea reemplazado por un fallback.
+            // 中文：保存 App 自己维护的语言标识，避免繁体中文被第三方解析器回退成其他语言。
+            languageIdentifier: PTDashboardConfig.selectedLanguageIdentifier
         )
         status.write(to: defaults)
         let cloudFileName = iCloudFileName

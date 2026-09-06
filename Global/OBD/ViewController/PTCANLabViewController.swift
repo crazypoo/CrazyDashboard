@@ -149,9 +149,17 @@ final class PTCANLabViewController: PTMotoBaseViewController {
         updateCaptureControls(isCapturing: true)
         captureTask = Task { @MainActor [weak self] in
             guard let self else { return }
-            await PTMotoTelemetryManager.shared.startPTCANExperiment(name: name)
+            let didStart = await PTMotoTelemetryManager.shared.startPTCANExperiment(name: name)
             guard !Task.isCancelled else { return }
-            statusLabel.text = localized("can_lab_capture_running")
+            if didStart {
+                statusLabel.text = localized("can_lab_capture_running")
+            } else {
+                let reason = PTCANExperimentCoordinator.shared.lastError
+                    ?? localized("can_lab_capture_failed")
+                statusLabel.text = "\(localized("can_lab_capture_failed")): \(reason)"
+                updateCaptureControls(isCapturing: false)
+                captureTask = nil
+            }
         }
     }
 

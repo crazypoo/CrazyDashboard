@@ -174,26 +174,80 @@ public struct PTWidgetSharedStatus: Codable, Equatable, Sendable {
 public enum PTWidgetLocalized {
     nonisolated public static func string(_ key: String, languageIdentifier: String?) -> String {
         let identifier = languageIdentifier.flatMap { normalized($0) }
+
+        // EN: Read the selected locale's concrete resource before Foundation can fall back to the source locale.
+        // ES: Lee primero el recurso concreto del locale elegido antes de que Foundation vuelva al locale de origen.
+        // 中文：先读取当前选择语言的具体资源，避免 Foundation 提前回退到源语言（尤其是繁体中文回退为简体中文）。
+        if let identifier,
+           let value = legacyValue(for: key, languageIdentifier: identifier) {
+            return value
+        }
+
+        // EN: Japanese, Russian and Traditional Chinese may have staged or missing Catalog entries, so use the app fallback map.
+        // ES: Japonés, ruso y chino tradicional pueden tener entradas de Catalog parciales, así que usan el mapa de respaldo de la app.
+        // 中文：日语、俄语和繁体中文可能存在分阶段或缺失的 Catalog 条目，因此使用 App 自己的回退映射。
+        if let identifier, identifier == "ja" || identifier == "ru" || identifier == "zh-Hant" {
+            if let value = PTLocalizationFallback.value(for: key, languageIdentifier: identifier) {
+                return value
+            }
+            return englishValue(for: key) ?? key
+        }
+
         let locale = identifier.map(Locale.init(identifier:)) ?? .current
-        let value = String(
+        let catalogValue = String(
             localized: String.LocalizationValue(key),
             table: "Localizable",
             bundle: .main,
             locale: locale
         )
-        if value != key { return value }
-        return PTLocalizationFallback.value(for: key, languageIdentifier: identifier) ?? key
+        if catalogValue != key { return catalogValue }
+        if let value = PTLocalizationFallback.value(for: key, languageIdentifier: identifier) {
+            return value
+        }
+        return englishValue(for: key) ?? key
     }
 
     nonisolated private static func normalized(_ identifier: String) -> String? {
-        let value = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
+        // EN: Accept underscore-style locale identifiers left by older builds.
+        // ES: Acepta identificadores de locale con guion bajo guardados por versiones anteriores.
+        // 中文：兼容旧版本保存的下划线格式语言标识。
+        let value = identifier
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "_", with: "-")
         return value.isEmpty ? nil : value
+    }
+
+    // EN: Read a concrete lproj first so runtime language switching does not depend
+    // on the device's system language or on Bundle.preferredLocalizations.
+    // ES: Lee primero el lproj concreto para que el cambio de idioma no dependa del
+    // idioma del sistema ni de Bundle.preferredLocalizations.
+    // 中文：优先读取明确的 lproj，避免运行时切换依赖系统语言或 preferredLocalizations。
+    nonisolated private static func legacyValue(for key: String, languageIdentifier: String) -> String? {
+        guard let path = Bundle.main.path(forResource: languageIdentifier, ofType: "lproj"),
+              let bundle = Bundle(path: path) else {
+            return nil
+        }
+        let value = bundle.localizedString(forKey: key, value: key, table: "Localizable")
+        return value == key ? nil : value
+    }
+
+    nonisolated private static func englishValue(for key: String) -> String? {
+        if let value = legacyValue(for: key, languageIdentifier: "en") {
+            return value
+        }
+        let value = String(
+            localized: String.LocalizationValue(key),
+            table: "Localizable",
+            bundle: .main,
+            locale: Locale(identifier: "en")
+        )
+        return value == key ? nil : value
     }
 }
 
-// EN: Build 48 fallback copy keeps new screens readable until every String Catalog locale is exported.
-// ES: El texto de respaldo de Build 48 mantiene legibles las pantallas nuevas hasta exportar todos los locales del catálogo.
-// 中文：在完整导出 String Catalog 各语言之前，Build48 回退文案保证新增页面仍然可读。
+// EN: Build 49 fallback copy keeps new screens readable while staged locale coverage is completed.
+// ES: El texto de respaldo de Build 49 mantiene legibles las pantallas nuevas mientras se completa la cobertura gradual de locales.
+// 中文：在分阶段补齐各语言目录期间，Build49 回退文案保证新增页面仍然可读。
 enum PTLocalizationFallback {
     nonisolated static func value(for key: String, languageIdentifier: String?) -> String? {
         let normalized = languageIdentifier?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -226,7 +280,8 @@ enum PTLocalizationFallback {
             "app_intent_garage_opened": "Motorcycle garage opened.",
             "app_intent_roadbooks_opened": "Roadbooks opened.",
             "dev_firmware_inspection_file": "Select firmware file",
-            "dev_firmware_inspection_failed": "Firmware file inspection failed."
+            "dev_firmware_inspection_failed": "Firmware file inspection failed.",
+            "can_lab_capture_failed": "Capture could not start"
         ],
         "zh": [
             "garage_documents": "车辆资料",
@@ -250,9 +305,84 @@ enum PTLocalizationFallback {
             "app_intent_garage_opened": "已打开摩托车车库。",
             "app_intent_roadbooks_opened": "已打开路线簿。",
             "dev_firmware_inspection_file": "选择固件文件",
-            "dev_firmware_inspection_failed": "固件文件检查失败。"
+            "dev_firmware_inspection_failed": "固件文件检查失败。",
+            "can_lab_capture_failed": "抓包启动失败"
         ],
         "ja": [
+            // EN: These high-traffic strings make a language change visible immediately on the existing screens.
+            // ES: Estas cadenas de uso frecuente hacen visible de inmediato el cambio en las pantallas actuales.
+            // 中文：这些高频文案确保在现有页面上切换语言后能立即看到变化。
+            "dashboard_color_set_title": "メーターパネルの色設定",
+            "button_cancel": "キャンセル",
+            "dashboard_set_title": "メーターパネルの距離単位",
+            "casa_card_lan": "メーターパネルの言語",
+            "language_set_title": "言語設定",
+            "ptt_restore_on_launch": "起動時にPTTを復元",
+            "dashboard_notification_title": "電話・メッセージ・通知",
+            "dashboard_notification_setup": "設定 / テスト",
+            "button_dis_connect": "Bluetooth接続を解除",
+            "button_confirm": "確認",
+            "garage_open": "ガレージを開く",
+            "automation_guide_open": "Siriと自動化のガイドを表示",
+            "set_success": "設定しました",
+            "set_bad": "設定に失敗しました",
+            "dashboard_config_sent": "メーターパネルへの指示を送信しました",
+            "dashboard_config_unconfirmed": "メーターパネルの確認を受信できませんでした",
+            "shortcuts_title": "Siriとショートカット",
+            "tab_navigation": "ナビゲーション",
+            "Data": "データ",
+            "PTT": "PTT",
+            "tab_setting": "設定",
+            "button_done": "完了",
+            "alert_title": "お知らせ",
+            "alert_loading": "読み込み中…",
+            "Delete": "削除",
+            "Connect option": "接続オプション",
+            "OBD": "OBD",
+            "OBD info": "OBD情報",
+            "obd_diagnostic_center": "読み取り専用診断センター",
+            "can_lab_title": "CANキャプチャラボ",
+            "obd_disconnect": "接続を解除",
+            "Motion device": "モーションデバイス",
+            "ride_center": "ライドコックピット",
+            "Dashboard": "ダッシュボード",
+            "connect_success": "接続しました",
+            "ride_not_available": "データなし",
+            "casa_card_little_trip": "小計距離",
+            "casa_card_odo_trip": "総走行距離",
+            "casa_card_engine": "エンジン状態",
+            "casa_card_tem": "温度",
+            "casa_batt": "電圧",
+            "casa_dist_to_maintenance": "メンテナンスまでの距離",
+            "ptt_resume_audio": "音声を再開",
+            "ptt_change_hand_free": "ハンズフリー音声モードに切替",
+            "ptt_in": "グループ通話に参加",
+            "Edit name": "名前を編集",
+            "ptt_ready_connect": "接続準備中…",
+            "ptt_push": "押して話す",
+            "ptt_change_ptt": "プッシュトゥトークに切替",
+            "ptt_hand_free_listening": "ハンズフリーモードで監視中…",
+            "ptt_release": "離して終了",
+            "ptt_out": "グループ通話を退出",
+            "ptt_ready_connect_count": "現在接続中のライダー: %d人",
+            "route_plan1": "渋滞を避ける",
+            "route_plan2": "有料道路を避ける",
+            "route_plan3": "高速道路を避ける",
+            "route_plan4": "高速道路を優先",
+            "search_placeholder": "住所を検索…",
+            "roadbook_normal_navigation_conflict": "通常のナビゲーションを開始する前に、現在のルートを終了してください。",
+            "garage_title": "バイクガレージ",
+            "garage_current_vehicle": "現在のバイク",
+            "garage_add_vehicle": "バイクを追加",
+            "garage_vehicle_name": "バイク名",
+            "garage_edit_vehicle_name": "バイク名を編集",
+            "garage_maintenance": "メンテナンス",
+            "garage_maintenance_title": "メンテナンス項目",
+            "garage_maintenance_remaining": "残りメンテナンス距離",
+            "garage_maintenance_status": "メンテナンス状態",
+            "garage_no_vehicle": "バイクが登録されていません",
+            "garage_no_live_data": "ライブデータなし",
+            "garage_sync_waiting": "車両データを同期しています…",
             "garage_documents": "車両書類",
             "garage_document_import": "書類を読み込む",
             "garage_document_scan": "書類をスキャン",
@@ -274,9 +404,84 @@ enum PTLocalizationFallback {
             "app_intent_garage_opened": "バイクガレージを開きました。",
             "app_intent_roadbooks_opened": "ルートブックを開きました。",
             "dev_firmware_inspection_file": "ファームウェアを選択",
-            "dev_firmware_inspection_failed": "ファームウェアの検査に失敗しました。"
+            "dev_firmware_inspection_failed": "ファームウェアの検査に失敗しました。",
+            "can_lab_capture_failed": "キャプチャを開始できませんでした"
         ],
         "ru": [
+            // EN: These high-traffic strings make a language change visible immediately on the existing screens.
+            // ES: Estas cadenas de uso frecuente hacen visible de inmediato el cambio en las pantallas actuales.
+            // 中文：这些高频文案确保在现有页面上切换语言后能立即看到变化。
+            "dashboard_color_set_title": "Цвет панели приборов",
+            "button_cancel": "Отмена",
+            "dashboard_set_title": "Единица расстояния на панели",
+            "casa_card_lan": "Язык панели приборов",
+            "language_set_title": "Настройки языка",
+            "ptt_restore_on_launch": "Восстанавливать PTT при запуске",
+            "dashboard_notification_title": "Звонки, сообщения и уведомления",
+            "dashboard_notification_setup": "Настроить / Проверить",
+            "button_dis_connect": "Отключить Bluetooth",
+            "button_confirm": "Подтвердить",
+            "garage_open": "Открыть гараж",
+            "automation_guide_open": "Открыть руководство Siri и автоматизаций",
+            "set_success": "Настройка выполнена",
+            "set_bad": "Не удалось применить настройку",
+            "dashboard_config_sent": "Команда панели приборов отправлена",
+            "dashboard_config_unconfirmed": "Подтверждение панели приборов не получено",
+            "shortcuts_title": "Siri и быстрые команды",
+            "tab_navigation": "Навигация",
+            "Data": "Данные",
+            "PTT": "PTT",
+            "tab_setting": "Настройки",
+            "button_done": "Готово",
+            "alert_title": "Уведомление",
+            "alert_loading": "Загрузка…",
+            "Delete": "Удалить",
+            "Connect option": "Вариант подключения",
+            "OBD": "OBD",
+            "OBD info": "Информация OBD",
+            "obd_diagnostic_center": "Центр диагностики только для чтения",
+            "can_lab_title": "Лаборатория захвата CAN",
+            "obd_disconnect": "Отключить",
+            "Motion device": "Датчик движения",
+            "ride_center": "Кабина поездки",
+            "Dashboard": "Панель приборов",
+            "connect_success": "Подключено",
+            "ride_not_available": "Нет данных",
+            "casa_card_little_trip": "Суточный пробег",
+            "casa_card_odo_trip": "Общий пробег",
+            "casa_card_engine": "Состояние двигателя",
+            "casa_card_tem": "Температура",
+            "casa_batt": "Напряжение",
+            "casa_dist_to_maintenance": "Пробег до обслуживания",
+            "ptt_resume_audio": "Возобновить звук",
+            "ptt_change_hand_free": "Переключить на громкую связь",
+            "ptt_in": "Войти в групповой интерком",
+            "Edit name": "Изменить имя",
+            "ptt_ready_connect": "Подготовка к подключению…",
+            "ptt_push": "Нажмите, чтобы говорить",
+            "ptt_change_ptt": "Переключить на режим PTT",
+            "ptt_hand_free_listening": "Прослушивание в режиме громкой связи…",
+            "ptt_release": "Отпустите для завершения",
+            "ptt_out": "Выйти из группового интеркома",
+            "ptt_ready_connect_count": "Сейчас подключено райдеров: %d",
+            "route_plan1": "Избегать пробок",
+            "route_plan2": "Избегать платных дорог",
+            "route_plan3": "Избегать автомагистралей",
+            "route_plan4": "Предпочитать автомагистрали",
+            "search_placeholder": "Поиск адреса…",
+            "roadbook_normal_navigation_conflict": "Завершите текущий маршрут перед запуском обычной навигации.",
+            "garage_title": "Гараж мотоцикла",
+            "garage_current_vehicle": "Текущий мотоцикл",
+            "garage_add_vehicle": "Добавить мотоцикл",
+            "garage_vehicle_name": "Название мотоцикла",
+            "garage_edit_vehicle_name": "Изменить название мотоцикла",
+            "garage_maintenance": "Обслуживание",
+            "garage_maintenance_title": "Обслуживание",
+            "garage_maintenance_remaining": "Пробег до обслуживания",
+            "garage_maintenance_status": "Состояние обслуживания",
+            "garage_no_vehicle": "Мотоцикл не добавлен",
+            "garage_no_live_data": "Нет оперативных данных",
+            "garage_sync_waiting": "Синхронизация данных мотоцикла…",
             "garage_documents": "Документы мотоцикла",
             "garage_document_import": "Импортировать документ",
             "garage_document_scan": "Сканировать документ",
@@ -295,7 +500,8 @@ enum PTLocalizationFallback {
             "app_intent_open_roadbooks_title": "Открыть маршруты",
             "app_intent_open_description": "Открывает рабочее пространство мотоцикла только для чтения.",
             "dev_firmware_inspection_file": "Выбрать файл прошивки",
-            "dev_firmware_inspection_failed": "Не удалось проверить файл прошивки."
+            "dev_firmware_inspection_failed": "Не удалось проверить файл прошивки.",
+            "can_lab_capture_failed": "Не удалось начать захват"
         ],
         "fr": [
             "garage_documents": "Documents du véhicule",
@@ -403,6 +609,81 @@ enum PTLocalizationFallback {
             "dev_firmware_inspection_failed": "Donanım yazılımı incelenemedi."
         ],
         "zh-Hant": [
+            // EN: Keep the visible settings and vehicle screens usable even when a new key is not yet in the compiled catalog.
+            // ES: Mantén utilizables las pantallas visibles de ajustes y vehículo aunque una clave nueva aún no esté en el catálogo compilado.
+            // 中文：即使新增 key 尚未进入编译后的 Catalog，也保证设置和车辆主要页面可用。
+            "dashboard_color_set_title": "儀表板顏色設定",
+            "button_cancel": "取消",
+            "dashboard_set_title": "儀表板的里程單位",
+            "casa_card_lan": "儀表板語言",
+            "language_set_title": "語言設定",
+            "ptt_restore_on_launch": "啟動時恢復 PTT",
+            "dashboard_notification_title": "電話、簡訊與通知",
+            "dashboard_notification_setup": "設定／測試",
+            "button_dis_connect": "解除 Bluetooth 連線",
+            "button_confirm": "確認",
+            "garage_open": "開啟車庫",
+            "automation_guide_open": "查看 Siri 與自動化指南",
+            "set_success": "設定成功",
+            "set_bad": "設定失敗",
+            "dashboard_config_sent": "儀表指令已傳送",
+            "dashboard_config_unconfirmed": "未收到儀表確認",
+            "shortcuts_title": "Siri 與捷徑",
+            "tab_navigation": "導航",
+            "Data": "資料",
+            "PTT": "PTT",
+            "tab_setting": "設定",
+            "button_done": "完成",
+            "alert_title": "提示",
+            "alert_loading": "載入中…",
+            "Delete": "刪除",
+            "Connect option": "連線選項",
+            "OBD": "OBD",
+            "OBD info": "OBD 資訊",
+            "obd_diagnostic_center": "唯讀診斷中心",
+            "can_lab_title": "CAN 擷取實驗室",
+            "obd_disconnect": "中斷連線",
+            "Motion device": "動作裝置",
+            "ride_center": "騎行駕駛艙",
+            "Dashboard": "儀表板",
+            "connect_success": "連線成功",
+            "ride_not_available": "沒有資料",
+            "casa_card_little_trip": "小計里程數",
+            "casa_card_odo_trip": "總里程數",
+            "casa_card_engine": "發動機狀態",
+            "casa_card_tem": "溫度",
+            "casa_batt": "電壓",
+            "casa_dist_to_maintenance": "距離保養里程",
+            "ptt_resume_audio": "恢復音訊",
+            "ptt_change_hand_free": "切換至免持語音模式",
+            "ptt_in": "加入群組通話",
+            "Edit name": "編輯名稱",
+            "ptt_ready_connect": "準備連線中…",
+            "ptt_push": "按住說話",
+            "ptt_change_ptt": "切換至 PTT 模式",
+            "ptt_hand_free_listening": "免持模式監聽中…",
+            "ptt_release": "放開以結束",
+            "ptt_out": "離開群組通話",
+            "ptt_ready_connect_count": "目前連線中的騎士：%d 人",
+            "route_plan1": "避開塞車",
+            "route_plan2": "避開收費道路",
+            "route_plan3": "避開高速公路",
+            "route_plan4": "優先使用高速公路",
+            "search_placeholder": "搜尋地址…",
+            "roadbook_normal_navigation_conflict": "開始一般導航前，請先結束目前的路線。",
+            "garage_title": "車庫",
+            "garage_current_vehicle": "目前摩托車",
+            "garage_add_vehicle": "新增摩托車",
+            "garage_vehicle_name": "摩托車名稱",
+            "garage_edit_vehicle_name": "編輯摩托車名稱",
+            "garage_maintenance": "保養",
+            "garage_maintenance_title": "保養項目",
+            "garage_maintenance_remaining": "剩餘保養里程",
+            "garage_maintenance_status": "保養狀態",
+            "garage_no_vehicle": "尚未新增摩托車",
+            "garage_no_live_data": "沒有即時資料",
+            "garage_sync_waiting": "正在同步車輛資料…",
+            "can_lab_capture_failed": "無法開始擷取",
             "garage_documents": "車輛資料",
             "garage_document_import": "匯入資料",
             "garage_document_scan": "掃描資料",

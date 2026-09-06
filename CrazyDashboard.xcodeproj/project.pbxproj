@@ -166,6 +166,9 @@
 		600000010000000000000261 /* PTRidePhotoGallery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000261 /* PTRidePhotoGallery.swift */; };
 		600000010000000000000262 /* PTRoadbookSharePlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000262 /* PTRoadbookSharePlay.swift */; };
 		600000010000000000000263 /* GroupActivities.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 600000020000000000000263 /* GroupActivities.framework */; };
+		600000010000000000000270 /* PTLocaleMarker.strings in Resources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000272 /* PTLocaleMarker.strings */; };
+		600000010000000000000271 /* PTLocaleMarker.strings in Resources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000272 /* PTLocaleMarker.strings */; };
+		600000010000000000000272 /* PTLocaleMarker.strings in Resources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000272 /* PTLocaleMarker.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -386,6 +389,8 @@
 		600000020000000000000261 /* PTRidePhotoGallery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRidePhotoGallery.swift; sourceTree = "<group>"; };
 		600000020000000000000262 /* PTRoadbookSharePlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRoadbookSharePlay.swift; sourceTree = "<group>"; };
 		600000020000000000000263 /* GroupActivities.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GroupActivities.framework; path = System/Library/Frameworks/GroupActivities.framework; sourceTree = SDKROOT; };
+		600000020000000000000270 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/PTLocaleMarker.strings; sourceTree = "<group>"; };
+		600000020000000000000271 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/PTLocaleMarker.strings; sourceTree = "<group>"; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -412,8 +417,6 @@
 		};
 		555DC840303820E3002B003B /* xp400watch Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "xp400watch Watch App";
 			sourceTree = "<group>";
 		};
@@ -565,6 +568,7 @@
 			children = (
 				600000020000000000000022 /* WatchConnectivity.framework */,
 				55F52C60303D4025007527C2 /* XCTest.framework */,
+				600000020000000000000263 /* GroupActivities.framework */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -630,6 +634,7 @@
 				55F503B9300FCA1E00C5D085 /* Global */,
 				55F503B5300FC99000C5D085 /* Model */,
 				600000020000000000000093 /* Localizable.xcstrings */,
+				600000020000000000000272 /* PTLocaleMarker.strings */,
 				55FE299F300CC1F1000E741F /* PTMotoInfoViewController.swift */,
 				55FE29A5300CC2E2000E741F /* PTMotoSettingViewController.swift */,
 				5577E6D02FD680730004733F /* PTTripStatsView.swift */,
@@ -637,16 +642,6 @@
 				55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */,
 			);
 			path = Global;
-			sourceTree = "<group>";
-		};
-		600000020000000000000264 /* Feature */ = {
-			isa = PBXGroup;
-			children = (
-				600000020000000000000260 /* PTGarageDocuments.swift */,
-				600000020000000000000261 /* PTRidePhotoGallery.swift */,
-				600000020000000000000262 /* PTRoadbookSharePlay.swift */,
-			);
-			path = Feature;
 			sourceTree = "<group>";
 		};
 		557D0043302EA1BD008BA492 /* Dashboard */ = {
@@ -895,6 +890,16 @@
 			path = Pods;
 			sourceTree = "<group>";
 		};
+		600000020000000000000264 /* Feature */ = {
+			isa = PBXGroup;
+			children = (
+				600000020000000000000260 /* PTGarageDocuments.swift */,
+				600000020000000000000261 /* PTRidePhotoGallery.swift */,
+				600000020000000000000262 /* PTRoadbookSharePlay.swift */,
+			);
+			path = Feature;
+			sourceTree = "<group>";
+		};
 		6000000B0000000000000080 /* PTSpeedUITests */ = {
 			isa = PBXGroup;
 			children = (
@@ -1091,6 +1096,7 @@
 			files = (
 				554112933021DC830059BFCF /* GlobalAssets.xcassets in Resources */,
 				600000010000000000000220 /* Localizable.xcstrings in Resources */,
+				600000010000000000000271 /* PTLocaleMarker.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1099,6 +1105,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				600000010000000000000132 /* Localizable.xcstrings in Resources */,
+				600000010000000000000272 /* PTLocaleMarker.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1113,6 +1120,7 @@
 				55F52C50303D4025007527C2 /* Main.storyboard in Resources */,
 				55F52C5B303D4025007527C2 /* PrivacyInfo.xcprivacy in Resources */,
 				600000010000000000000093 /* Localizable.xcstrings in Resources */,
+				600000010000000000000270 /* PTLocaleMarker.strings in Resources */,
 				600000010000000000000162 /* AppShortcuts.xcstrings in Resources */,
 				600000010000000000000201 /* InfoPlist.xcstrings in Resources */,
 			);
@@ -1143,9 +1151,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -1182,9 +1194,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -1408,6 +1424,15 @@
 			name = Main.storyboard;
 			sourceTree = "<group>";
 		};
+		600000020000000000000272 /* PTLocaleMarker.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				600000020000000000000270 /* ja */,
+				600000020000000000000271 /* ru */,
+			);
+			name = PTLocaleMarker.strings;
+			sourceTree = "<group>";
+		};
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
@@ -1418,7 +1443,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 48;
+				CURRENT_PROJECT_VERSION = 49;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -1451,7 +1476,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 48;
+				CURRENT_PROJECT_VERSION = 49;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -1484,7 +1509,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 48;
+				CURRENT_PROJECT_VERSION = 49;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1519,7 +1544,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 48;
+				CURRENT_PROJECT_VERSION = 49;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1680,13 +1705,15 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 48;
+				CURRENT_PROJECT_VERSION = 49;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = XP400RIDE;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "用于导航语音和音乐信息 / Para indicaciones de voz e información musical";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "用于连接摩托车仪表并读取车辆数据 / Para conectar el cuadro de la moto y leer sus datos";
+				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "用于将保养和路线提醒添加到日历";
+				INFOPLIST_KEY_NSCameraUsageDescription = "用于低速骑行辅助和车库测距";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "用于发现同组骑手并进行对讲 / Para descubrir a los pilotos del grupo y usar el intercomunicador";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "用于记录骑行路线、停车位置和防盗状态 / Para registrar la ruta, el aparcamiento y el estado antirrobo";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "用于后台记录骑行路线和防盗状态 / Para registrar la ruta y el estado antirrobo en segundo plano";
@@ -1694,7 +1721,7 @@
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "用于摩托车组群语音对讲 / Para el intercomunicador de voz del grupo de motos";
 				INFOPLIST_KEY_NSMotionUsageDescription = "用于识别骑行姿态和加速度变化 / Para detectar la postura y los cambios de aceleración durante la ruta";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "用于保存骑行报告和截图 / Para guardar informes y capturas de la ruta";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "用于选择骑手头像和分享图片 / Para elegir el avatar y compartir imágenes";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "用于选择维修或加油单据进行识别";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -1828,13 +1855,15 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 48;
+				CURRENT_PROJECT_VERSION = 49;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = XP400RIDE;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "用于导航语音和音乐信息 / Para indicaciones de voz e información musical";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "用于连接摩托车仪表并读取车辆数据 / Para conectar el cuadro de la moto y leer sus datos";
+				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "用于将保养和路线提醒添加到日历";
+				INFOPLIST_KEY_NSCameraUsageDescription = "用于低速骑行辅助和车库测距";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "用于发现同组骑手并进行对讲 / Para descubrir a los pilotos del grupo y usar el intercomunicador";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "用于记录骑行路线、停车位置和防盗状态 / Para registrar la ruta, el aparcamiento y el estado antirrobo";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "用于后台记录骑行路线和防盗状态 / Para registrar la ruta y el estado antirrobo en segundo plano";
@@ -1842,7 +1871,7 @@
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "用于摩托车组群语音对讲 / Para el intercomunicador de voz del grupo de motos";
 				INFOPLIST_KEY_NSMotionUsageDescription = "用于识别骑行姿态和加速度变化 / Para detectar la postura y los cambios de aceleración durante la ruta";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "用于保存骑行报告和截图 / Para guardar informes y capturas de la ruta";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "用于选择骑手头像和分享图片 / Para elegir el avatar y compartir imágenes";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "用于选择维修或加油单据进行识别";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -1973,7 +2002,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 48;
+				CURRENT_PROJECT_VERSION = 49;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -1997,7 +2026,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 48;
+				CURRENT_PROJECT_VERSION = 49;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -2020,7 +2049,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 48;
+				CURRENT_PROJECT_VERSION = 49;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -2037,7 +2066,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 48;
+				CURRENT_PROJECT_VERSION = 49;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;

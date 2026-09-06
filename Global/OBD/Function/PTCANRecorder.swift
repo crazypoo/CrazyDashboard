@@ -29,6 +29,28 @@ nonisolated public enum PTCANCaptureDirection: String, Codable, Sendable {
     case unknown
 }
 
+// EN: Describes the ELM327 monitor output contract used by one capture session.
+// ES: Describe el contrato de salida del monitor ELM327 usado por una captura.
+// 中文：描述一次抓包会话使用的 ELM327 监听输出格式。
+nonisolated public struct PTCANMonitorProfile: Codable, Equatable, Sendable {
+    public let displayDLC: Bool
+    public let autoFormatting: Bool
+    public let supportsSeparatedExtendedHeader: Bool
+
+    public init(
+        displayDLC: Bool = false,
+        autoFormatting: Bool = true,
+        supportsSeparatedExtendedHeader: Bool = true
+    ) {
+        self.displayDLC = displayDLC
+        self.autoFormatting = autoFormatting
+        self.supportsSeparatedExtendedHeader = supportsSeparatedExtendedHeader
+    }
+
+    public static let legacy = PTCANMonitorProfile()
+    public static let rawDLC = PTCANMonitorProfile(displayDLC: true, autoFormatting: false)
+}
+
 nonisolated public struct PTCANFrame: Codable, Hashable, Sendable {
     
     public let timestamp: TimeInterval
@@ -60,13 +82,14 @@ nonisolated public struct PTCANFrame: Codable, Hashable, Sendable {
 
 nonisolated public struct PTCANCaptureSession: Codable, Sendable {
 
-    public static let currentSchemaVersion = 3
+    public static let currentSchemaVersion = 4
     
     public let id: UUID
     public let name: String
     public let startedAt: Date
     public let endedAt: Date?
     public let filterHeader: String?
+    public let monitorProfile: PTCANMonitorProfile
     public let frames: [PTCANFrame]
     public let schemaVersion: Int
     public let events: [PTCANCaptureEvent]
@@ -80,6 +103,7 @@ nonisolated public struct PTCANCaptureSession: Codable, Sendable {
         case startedAt
         case endedAt
         case filterHeader
+        case monitorProfile
         case frames
         case schemaVersion
         case events
@@ -94,6 +118,7 @@ nonisolated public struct PTCANCaptureSession: Codable, Sendable {
         startedAt: Date,
         endedAt: Date?,
         filterHeader: String?,
+        monitorProfile: PTCANMonitorProfile = .legacy,
         frames: [PTCANFrame],
         schemaVersion: Int = PTCANCaptureSession.currentSchemaVersion,
         events: [PTCANCaptureEvent] = [],
@@ -106,6 +131,7 @@ nonisolated public struct PTCANCaptureSession: Codable, Sendable {
         self.startedAt = startedAt
         self.endedAt = endedAt
         self.filterHeader = filterHeader
+        self.monitorProfile = monitorProfile
         self.frames = frames
         self.schemaVersion = schemaVersion
         self.events = events
@@ -121,6 +147,7 @@ nonisolated public struct PTCANCaptureSession: Codable, Sendable {
         self.startedAt = try container.decode(Date.self, forKey: .startedAt)
         self.endedAt = try container.decodeIfPresent(Date.self, forKey: .endedAt)
         self.filterHeader = try container.decodeIfPresent(String.self, forKey: .filterHeader)
+        self.monitorProfile = try container.decodeIfPresent(PTCANMonitorProfile.self, forKey: .monitorProfile) ?? .legacy
         self.frames = try container.decode([PTCANFrame].self, forKey: .frames)
         self.schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
         self.events = try container.decodeIfPresent([PTCANCaptureEvent].self, forKey: .events) ?? []
@@ -684,6 +711,7 @@ public extension PTCANCaptureStore {
                 startedAt: session.startedAt,
                 endedAt: recoveredEndedAt,
                 filterHeader: session.filterHeader,
+                monitorProfile: session.monitorProfile,
                 frames: frames,
                 schemaVersion: session.schemaVersion,
                 events: session.events,
@@ -742,9 +770,10 @@ public extension PTCANCaptureStore {
                 .deletingPathExtension()
                 .lastPathComponent,
             startedAt: startedAt,
-            endedAt: endedAt,
-            filterHeader: nil,
-            frames: frames
+                endedAt: endedAt,
+                filterHeader: nil,
+                monitorProfile: .legacy,
+                frames: frames
         )
     }
 }
@@ -873,6 +902,7 @@ public final class PTCANRecorder: @unchecked Sendable {
     private var sessionID: UUID?
     private var sessionName: String = "XP400-Capture"
     private var filterHeader: String?
+    private var monitorProfile: PTCANMonitorProfile = .legacy
     private var sequence: Int = 0
     private var frames: [PTCANFrame] = []
     private var events: [PTCANCaptureEvent] = []
@@ -945,6 +975,7 @@ public extension PTCANRecorder {
     func start(
         name: String = "XP400-Capture",
         filterHeader: String? = nil,
+        monitorProfile: PTCANMonitorProfile = .legacy,
         clearPrevious: Bool = true
     ) -> Bool {
         
@@ -986,6 +1017,7 @@ public extension PTCANRecorder {
             : name
         self.filterHeader =
             normalizedFilter
+        self.monitorProfile = monitorProfile
         sequence = 0
         events.removeAll(keepingCapacity: true)
         totalFrameCount = 0
@@ -1004,6 +1036,7 @@ public extension PTCANRecorder {
             startedAt: startDate,
             endedAt: nil,
             filterHeader: normalizedFilter,
+            monitorProfile: monitorProfile,
             frames: [],
             events: []
         )
@@ -1064,9 +1097,16 @@ public extension PTCANRecorder {
             return
         }
         
+        let profile: PTCANMonitorProfile = {
+            lock.lock()
+            defer { lock.unlock() }
+            return monitorProfile
+        }()
+
         guard let parsed =
             Self.parseMonitorLine(
-                trimmed
+                trimmed,
+                profile: profile
             )
         else {
             /*
@@ -1156,6 +1196,7 @@ public extension PTCANRecorder {
                 startedAt: startedAt,
                 endedAt: endedAt,
                 filterHeader: filterHeader,
+                monitorProfile: monitorProfile,
                 frames: frames,
                 events: events,
                 totalFrameCount: totalFrameCount,
@@ -1171,6 +1212,7 @@ public extension PTCANRecorder {
         self.startedAt = nil
         self.sessionID = nil
         self.filterHeader = nil
+        self.monitorProfile = .legacy
         self.sequence = 0
         self.events.removeAll(keepingCapacity: true)
         self.totalFrameCount = 0
@@ -1258,6 +1300,7 @@ public extension PTCANRecorder {
         startedAt = nil
         sessionID = nil
         filterHeader = nil
+        monitorProfile = .legacy
         sequence = 0
         events.removeAll(keepingCapacity: true)
         totalFrameCount = 0
@@ -1299,6 +1342,7 @@ public extension PTCANRecorder {
             startedAt: startedAt,
             endedAt: nil,
             filterHeader: filterHeader,
+            monitorProfile: monitorProfile,
             frames: frames,
             events: events,
             totalFrameCount: totalFrameCount,
@@ -1321,11 +1365,12 @@ private extension PTCANRecorder {
     struct ParsedLine {
         let header: String
         let dataHex: String
-        let dlc: Int
+        let dlc: Int?
     }
     
-    static func parseMonitorLine(
-        _ line: String
+    nonisolated static func parseMonitorLine(
+        _ line: String,
+        profile: PTCANMonitorProfile = .legacy
     ) -> ParsedLine? {
         
         let parts = line
@@ -1341,69 +1386,61 @@ private extension PTCANRecorder {
         guard parts.count >= 2 else {
             return nil
         }
-        
-        let header =
-            parts[0].uppercased()
-        
-        guard isValidCANHeader(
-            header
-        ) else {
-            return nil
-        }
-        
-        let candidateBytes = Array(parts.dropFirst())
 
-        guard !candidateBytes.isEmpty,
-              candidateBytes.allSatisfy({ isHexByte($0) }) else {
-            return nil
-        }
+        let headerResult = parseHeader(
+            from: parts,
+            supportsSeparatedExtendedHeader: profile.supportsSeparatedExtendedHeader
+        )
+        guard let headerResult else { return nil }
 
-        let declaredDLC = Int(candidateBytes[0], radix: 16)
-        let likelyOBDServiceBytes = ["41", "49", "50", "62", "63", "7E", "7F"]
-        let startsWithKnownOBDService = candidateBytes.dropFirst().first.map {
-            likelyOBDServiceBytes.contains($0.uppercased())
-        } ?? false
-        let hasELMDLC = declaredDLC.map {
-            // EN: Accept exact ELM327 length and the common padded OBD response form.
-            // ES: Acepta la longitud ELM327 exacta y la forma OBD habitual con relleno.
-            // 中文：同时支持 ELM327 精确长度和常见 OBD 补零长度格式。
-            guard (0...8).contains($0),
-                  candidateBytes.count >= $0 + 1,
-                  candidateBytes.count <= 9 else {
-                return false
-            }
-            return candidateBytes.count == $0 + 1 || startsWithKnownOBDService
-        } ?? false
+        let candidateBytes = Array(parts.dropFirst(headerResult.consumedParts))
+        guard !candidateBytes.isEmpty || profile.displayDLC else { return nil }
 
-        let dataBytes: [String]
-        let dlc: Int
+        let hasExplicitDLC = candidateBytes.first.map(isHexNibble) == true
+        let declaredDLC = hasExplicitDLC
+            ? Int(candidateBytes[0], radix: 16)
+            : nil
+        let dataBytes = hasExplicitDLC
+            ? Array(candidateBytes.dropFirst())
+            : candidateBytes
 
-        if hasELMDLC, let declaredDLC {
-            let payload = Array(candidateBytes.dropFirst())
-            dataBytes = Array(payload.prefix(declaredDLC))
-            dlc = declaredDLC
-        } else {
-            dataBytes = candidateBytes
-            dlc = dataBytes.count
-        }
-        
-        guard !dataBytes.isEmpty else {
-            return nil
-        }
-        
-        let dataHex =
-            dataBytes
-                .joined()
-                .uppercased()
-        
+        guard dataBytes.allSatisfy({ isHexByte($0) }) else { return nil }
+        guard !dataBytes.isEmpty || declaredDLC == 0 else { return nil }
+        if profile.displayDLC && declaredDLC == nil { return nil }
+
         return ParsedLine(
-            header: header,
-            dataHex: dataHex,
-            dlc: dlc
+            header: headerResult.header,
+            dataHex: dataBytes.joined().uppercased(),
+            dlc: declaredDLC
         )
     }
+
+    struct ParsedHeader {
+        let header: String
+        let consumedParts: Int
+    }
+
+    nonisolated static func parseHeader(
+        from parts: [String],
+        supportsSeparatedExtendedHeader: Bool
+    ) -> ParsedHeader? {
+        let compactHeader = parts[0].uppercased()
+        if isValidCANHeader(compactHeader) {
+            return ParsedHeader(header: compactHeader, consumedParts: 1)
+        }
+
+        guard supportsSeparatedExtendedHeader,
+              parts.count >= 4,
+              parts.prefix(4).allSatisfy({ isHexByte($0) }) else {
+            return nil
+        }
+
+        let separatedHeader = parts.prefix(4).joined().uppercased()
+        guard isValidCANHeader(separatedHeader) else { return nil }
+        return ParsedHeader(header: separatedHeader, consumedParts: 4)
+    }
     
-    static func isValidCANHeader(
+    nonisolated static func isValidCANHeader(
         _ value: String
     ) -> Bool {
         
@@ -1417,9 +1454,9 @@ private extension PTCANRecorder {
         }
         
         /*
-         当前沿用你的协议判断：
-         3 位 = 11-bit CAN
-         8 位 = 29-bit CAN
+         EN: Keep the existing protocol boundary: three digits mean 11-bit CAN and eight digits mean 29-bit CAN.
+         ES: Mantén el límite de protocolo existente: tres dígitos significan CAN de 11 bits y ocho, CAN de 29 bits.
+         中文：当前沿用已有协议边界：3 位表示 11-bit CAN，8 位表示 29-bit CAN。
          */
         guard hex.count == 3 || hex.count == 8,
               let numericValue = UInt32(hex, radix: 16) else {
@@ -1433,7 +1470,7 @@ private extension PTCANRecorder {
         return numericValue <= maximum
     }
     
-    static func isHexByte(
+    nonisolated static func isHexByte(
         _ value: String
     ) -> Bool {
         
@@ -1446,8 +1483,14 @@ private extension PTCANRecorder {
                 .contains($0)
         }
     }
+
+    nonisolated static func isHexNibble(_ value: String) -> Bool {
+        value.count == 1 && value.allSatisfy {
+            "0123456789ABCDEFabcdef".contains($0)
+        }
+    }
     
-    static func normalizeHeader(
+    nonisolated static func normalizeHeader(
         _ header: String?
     ) -> String? {
         
@@ -2056,6 +2099,232 @@ public enum PTCANCaptureReplay {
     }
 }
 
+// MARK: - Live CAN Experiment Coordinator
+
+public enum PTCANExperimentState: String, Sendable {
+    case idle
+    case preparing
+    case recording
+    case stopping
+    case failed
+}
+
+public enum PTCANExperimentError: Error, LocalizedError, Sendable {
+    case developerGateDenied
+    case disconnected
+    case unsupportedProtocol
+    case missingTransport
+    case adapterRejected(String)
+    case alreadyRunning
+    case cancelled
+
+    public var errorDescription: String? {
+        switch self {
+        case .developerGateDenied:
+            return "开发者抓包门禁未开启 / La captura de desarrollador no está autorizada."
+        case .disconnected:
+            return "OBD 尚未连接 / El OBD no está conectado."
+        case .unsupportedProtocol:
+            return "当前适配器协议不是 CAN / El protocolo del adaptador no es CAN."
+        case .missingTransport:
+            return "找不到当前 OBD 传输通道 / No se encontró el transporte OBD actual."
+        case .adapterRejected(let response):
+            return "ELM327 拒绝抓包配置：\(response) / ELM327 rechazó la configuración: \(response)"
+        case .alreadyRunning:
+            return "CAN 抓包已经在运行 / La captura CAN ya está activa."
+        case .cancelled:
+            return "CAN 抓包已取消 / La captura CAN fue cancelada."
+        }
+    }
+}
+
+// EN: Owns the long-lived monitor session while reusing the existing transport managers.
+// ES: Posee la sesión de monitorización prolongada y reutiliza los gestores de transporte existentes.
+// 中文：负责长生命周期监听会话，但继续复用现有传输管理器。
+@MainActor
+public final class PTCANExperimentCoordinator {
+    public static let shared = PTCANExperimentCoordinator()
+
+    public private(set) var state: PTCANExperimentState = .idle
+    public private(set) var lastError: String?
+
+    private var connector: PTOBDTransportBase?
+    private var wasPolling = false
+
+    private init() {}
+
+    @discardableResult
+    public func start(
+        name: String = "XP400-Capture",
+        filterHeader: String? = nil
+    ) async -> Bool {
+        guard state == .idle || state == .failed else {
+            lastError = PTCANExperimentError.alreadyRunning.localizedDescription
+            return false
+        }
+        guard PTDeveloperSafetyGate.shared.authorize(.canCapture) else {
+            state = .failed
+            lastError = PTCANExperimentError.developerGateDenied.localizedDescription
+            return false
+        }
+        guard PTMotoTelemetryManager.shared.isConnected else {
+            state = .failed
+            lastError = PTCANExperimentError.disconnected.localizedDescription
+            return false
+        }
+        guard let transport = currentTransport() else {
+            state = .failed
+            lastError = PTCANExperimentError.missingTransport.localizedDescription
+            return false
+        }
+
+        state = .preparing
+        lastError = nil
+        connector = transport
+        wasPolling = PTMotoTelemetryManager.shared.telemetryPollingTask != nil
+        PTMotoTelemetryManager.shared.telemetryPollingTask?.cancel()
+        PTMotoTelemetryManager.shared.telemetryPollingTask = nil
+        try? await Task.sleep(nanoseconds: 150_000_000)
+        if Task.isCancelled {
+            _ = await cleanupSession()
+            return fail(PTCANExperimentError.cancelled.localizedDescription)
+        }
+
+        guard PTCANRecorder.shared.start(
+            name: name,
+            filterHeader: filterHeader,
+            monitorProfile: .rawDLC
+        ) else {
+            let message = PTCANRecorder.shared.lastStorageError ?? "CAN 抓包文件创建失败"
+            _ = await cleanupSession()
+            return fail(message)
+        }
+
+        do {
+            let protocolResponse = try await sendAdapterCommand("ATDP")
+            _ = try await sendAdapterCommand("ATDPN")
+            let isMock = PTVehicleConnectivityCoordinator.shared.snapshot.obd.transport == .obdMock
+            guard isMock || protocolResponse.uppercased().contains("CAN") else {
+                throw PTCANExperimentError.unsupportedProtocol
+            }
+
+            let setupCommands = [
+                "ATCRA",
+                "ATE0",
+                "ATH1",
+                "ATS1",
+                "ATD1",
+                "ATCAF0",
+                "ATCSM0",
+                "ATCFC0"
+            ]
+            for command in setupCommands {
+                try Task.checkCancellation()
+                let response = try await sendAdapterCommand(command)
+                guard !isAdapterError(response) else {
+                    throw PTCANExperimentError.adapterRejected("\(command): \(response)")
+                }
+            }
+
+            if let filterHeader {
+                let cleanHeader = filterHeader
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                    .uppercased()
+                let response = try await sendAdapterCommand("ATCRA\(cleanHeader)")
+                guard !isAdapterError(response) else {
+                    throw PTCANExperimentError.adapterRejected("ATCRA: \(response)")
+                }
+            }
+
+            try Task.checkCancellation()
+            transport.isSnifferMode = true
+            transport.writeRawData("ATMA")
+            state = .recording
+            PTOBDLogger.obd.ptLog("🚀 [CAN实验室] 已使用显式 DLC 和 CAF0 开始监听")
+            return true
+        } catch {
+            _ = await cleanupSession()
+            if error is CancellationError {
+                return fail(PTCANExperimentError.cancelled.localizedDescription)
+            }
+            return fail(error.localizedDescription)
+        }
+    }
+
+    @discardableResult
+    public func stop() async -> PTCANCaptureSession? {
+        guard state == .recording || state == .preparing else {
+            return PTCANRecorder.shared.stop()
+        }
+
+        state = .stopping
+        let session = await cleanupSession()
+        state = session == nil ? .failed : .idle
+        return session
+    }
+
+    private func currentTransport() -> PTOBDTransportBase? {
+        switch PTVehicleConnectivityCoordinator.shared.snapshot.obd.transport {
+        case .obdBluetooth:
+            return PTHiddenOBDConnector.shared
+        case .obdWiFi:
+            return PTWifiOBDConnector.shared
+        case .obdMock:
+            return PTMockOBDConnector.shared
+        default:
+            return nil
+        }
+    }
+
+    private func sendAdapterCommand(_ command: String) async throws -> String {
+        let response = await PTMotoTelemetryManager.shared.injectRawHexCommand(command, requiresPause: false)
+        if response.uppercased().contains("ERROR: NO_CONNECTION") {
+            throw PTCANExperimentError.disconnected
+        }
+        return response.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func isAdapterError(_ response: String) -> Bool {
+        let value = response.uppercased()
+        return value.contains("ERROR") || value.contains("UNABLE") || value.contains("?")
+    }
+
+    // EN: Restore the adapter and polling state on both explicit stop and every setup failure.
+    // ES: Restaura el adaptador y el sondeo tanto al detener explícitamente como tras cualquier fallo de preparación.
+    // 中文：无论显式停止还是准备失败，都统一恢复适配器和轮询状态。
+    private func cleanupSession() async -> PTCANCaptureSession? {
+        let activeTransport = connector
+        activeTransport?.writeRawData("")
+        try? await Task.sleep(nanoseconds: 350_000_000)
+        activeTransport?.isSnifferMode = false
+
+        if PTMotoTelemetryManager.shared.isConnected {
+            for command in ["ATD", "ATE0", "ATL0", "ATH1", "ATS0"] {
+                _ = try? await sendAdapterCommand(command)
+            }
+        }
+
+        let session = PTCANRecorder.shared.stop()
+        if wasPolling, PTMotoTelemetryManager.shared.isConnected {
+            let rawPIDs = PTHiddenOBDConnector.shared.collectedPIDResponses.isEmpty
+                ? PTWifiOBDConnector.shared.collectedPIDResponses
+                : PTHiddenOBDConnector.shared.collectedPIDResponses
+            PTMotoTelemetryManager.shared.startLightweightPolling(rawPIDs: rawPIDs)
+        }
+
+        connector = nil
+        wasPolling = false
+        return session
+    }
+
+    @discardableResult
+    private func fail(_ message: String) -> Bool {
+        state = .failed
+        lastError = message
+        return false
+    }
+}
+
 // MARK: - Existing PTMotoTelemetryManager Integration
 
 public extension PTMotoTelemetryManager {
@@ -2070,16 +2339,9 @@ public extension PTMotoTelemetryManager {
     func startPTCANExperiment(
         name: String = "XP400-Capture",
         filterHeader: String? = nil
-    ) async {
-        
-        guard PTCANRecorder.shared.start(
+    ) async -> Bool {
+        await PTCANExperimentCoordinator.shared.start(
             name: name,
-            filterHeader: filterHeader
-        ) else {
-            return
-        }
-        
-        await startCANSniperMode(
             filterHeader: filterHeader
         )
     }
@@ -2090,9 +2352,7 @@ public extension PTMotoTelemetryManager {
     func stopPTCANExperiment()
         async -> PTCANCaptureSession? {
         
-        await stopCANSniperMode()
-        
-        return PTCANRecorder.shared.stop()
+        return await PTCANExperimentCoordinator.shared.stop()
     }
 }
 
@@ -3189,6 +3449,7 @@ public extension PTCANRecorder {
             startedAt: startedAt ?? Date(),
             endedAt: nil,
             filterHeader: filterHeader,
+            monitorProfile: monitorProfile,
             frames: [],
             events: events,
             totalFrameCount: totalFrameCount,

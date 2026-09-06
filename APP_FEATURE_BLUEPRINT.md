@@ -4,9 +4,9 @@
 >
 > 快照日期：2026-09-06
 >
-> 仓库基线：当前工作区，Build 48 代码已接入；真实设备、车辆和完整发布验证仍待补
+> 仓库基线：当前工作区，Build 49 代码已接入；Build 48 作为日语/俄语切换回归基线，真实设备、车辆和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests `CURRENT_PROJECT_VERSION = 48`
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests `CURRENT_PROJECT_VERSION = 49`
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -342,6 +342,19 @@ Build 48 已接入以下外围能力。它们不改变 BLE/OBD 稳定核心；�
 | B48-07 | 🟨 | 只读 Roadbook SharePlay 路线快照 | Roadbook 操作菜单；最多 64 个路点，不同步车辆隐私和控制指令 |
 | B48-09 | 🟨 | 十语言资源、三平台目标构建与测试构建门禁 | 发布流程；真实设备和签名发布仍需验证 |
 
+### 7.5 Build 49 CAN 证据链与语言切换修复
+
+Build 49 保持普通用户功能和三个稳定核心不变，重点收口开发者 CAN 证据链与 Build 48 日语/俄语切换问题：
+
+| 工作包 | 状态 | 当前产品能力 | 入口与边界 |
+| --- | --- | --- | --- |
+| B49-01 | 🟨 | 原始 CAN Frame 保留首字节；显式 DLC、11/29-bit Header、分隔 Extended Header 可区分 | Dev CAN Capture；真实适配器回显待补 |
+| B49-02 | 🟨 | 统一暂停轮询、配置 ELM327 被动监听、停止后恢复 Header/轮询 | 既有 Dev 门禁；不修改 BLE/OBD 稳定核心 |
+| B49-03 | 🟨 | 日语/俄语可被运行时选择；缺失 key 安全回退英语；Widget/Watch 同步选择 | 设置 > 语言；真机完整页面校对待补 |
+| B49-04 | 🟨 | 新增 CAN DLC/Header/语言回退测试和 Build49 版本门禁 | 测试与发布流程；XCTest/签名发布待补 |
+
+Build 49 不宣称已经完成 XP400 GT 真实 ECU/CAN 证据，更不开放固件写入、开机画面写入或未知仪表指令。
+
 ## 8. 已退役功能
 
 当前没有需要登记的已退役功能。后续移除功能时，在下表保留原 ID、最后可用 Build、移除原因和替代路径。
@@ -403,3 +416,4 @@ Build 48 已接入以下外围能力。它们不改变 BLE/OBD 稳定核心；�
 | 2026-09-04 | 当前工作区 | SYS-013 新增 `PTDashboardANCSProvider`：复用现有 `CBPeripheralManager` 提供 App 自有 ANCS 风格测试通道，设置页可发送固定英文消息；系统电话/短信链路不变，服务注册、XP400 订阅和仪表显示仍待真机验证 |
 | 2026-09-05 | 当前工作区 Build 46 | RIDE-018 已接入前台 LiDAR 三区测距、低速车速门禁、置信度/中值平滑、报警驻留、车库冻结保存与 JSON/CSV 导出；PTT-009 已移除启动时 AudioSession 初始化，加入中断/媒体重置后的显式音频恢复；CallKit/PushKit 保留未来评估边界。主 App、Widget、Watch 与 Tests 目标构建通过，XCTest 实际执行、签名发布和真实设备/车辆验证待补 |
 | 2026-09-06 | 当前工作区 Build 48 | B48-01～B48-09 已完成外围代码接入：只读 OBD 取消/进度、十语言资源、Dev 固件文件预检、App Intents/Scheme NFC-ready、车库资料、行程照片和 Roadbook SharePlay；主 App、Widget、Watch generic build 与 Tests `build-for-testing` 通过，XCTest 实际执行、签名发布、真实 NFC/SharePlay/Watch/车辆验证待补；三个 BLE/OBD 核心文件零字节变化 |
+| 2026-09-06 | 当前工作区 Build 49 | B49-01～B49-04 已接入 CAN 原始解析/监听协调、适配器恢复、日语/俄语运行时 locale 修复和回归测试；启动时会重新应用 Build48 已保存的日语/俄语选择；iOS 工作区 Debug 构建与 `build-for-testing`、Widget/Watch 包资源检查通过，XCTest 实际运行、签名发布、真实语言/ELM327/XP400 验证待补；三个 BLE/OBD 核心文件零字节变化 |
