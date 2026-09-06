@@ -13,6 +13,11 @@ import PooTools
 
 @objcMembers
 public class PTIndicatorPanel: PTDashboardBaseView {
+
+    // EN: The owner can pause rendering while this reusable panel is off-screen.
+    // ES: El propietario puede pausar el renderizado cuando este panel reutilizable no está visible.
+    // 中文：页面不可见时，所属控制器可以暂停这个可复用面板的渲染。
+    public var isActive = true
     
     // MARK: - UI 组件 (指示灯图标)
     
@@ -230,22 +235,32 @@ extension PTIndicatorPanel:PTBLEDashboardDelegate {
     }
 
     func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
+        guard isActive else { return }
         if let data2 = data as? PTDashboardData2 {
-            DispatchQueue.main.async {
+            // EN: Recheck visibility on the main queue so queued telemetry cannot repaint a hidden panel.
+            // ES: Revisa la visibilidad en la cola principal para que la telemetría encolada no repinte un panel oculto.
+            // 中文：在主队列再次检查可见状态，避免排队的遥测回调重绘隐藏面板。
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.isActive else { return }
                 self.updateData2(data2: data2)
             }
         } else if let control = data as? PTDashboardControl {
             // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
-            DispatchQueue.main.async {
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.isActive else { return }
                 self.updateTCS(tcsShow: control.isTcsSystemReady.string)
                 self.updateControl(control: control)
             }
         } else if let abs = data as? PTAbsStatus {
-            DispatchQueue.main.async {
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.isActive else { return }
                 self.updateABS(abs: abs)
             }
         } else if let tcsShow = data as? String {
-            updateTCS(tcsShow: tcsShow)
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.isActive else { return }
+                self.updateTCS(tcsShow: tcsShow)
+            }
         }
     }
 }

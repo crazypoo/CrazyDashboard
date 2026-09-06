@@ -52,6 +52,7 @@ struct RouteCollectionViewInfo {
     var subTitle: String
     var isSelected:Bool
     var distance:Double
+    var durationSeconds: TimeInterval
 }
 
 class SelectableOverlay: MABaseOverlay {
@@ -81,7 +82,8 @@ class PreferenceView: UIView {
         
         buildPreferenceView()
         
-        pt_viewObserverLanguage {
+        pt_viewObserverLanguage { [weak self] in
+            guard let self else { return }
             self.avoidCongestion.setTitle(PTDashboardConfig.languageFunc(text: "route_plan1"), for: .normal)
             self.avoidCost.setTitle(PTDashboardConfig.languageFunc(text: "route_plan2"), for: .normal)
             self.avoidHighway.setTitle(PTDashboardConfig.languageFunc(text: "route_plan3"), for: .normal)
@@ -199,11 +201,13 @@ class PreferenceView: UIView {
 
 class PTMotoNavigationViewController: PTMotoBaseViewController {
 
-    static let shared = PTMotoNavigationViewController()
-    var startEmulatorNavi:Bool = false
     var currentRoadName:String = ""
 
+    private let navigationCoordinator = PTNavigationSessionCoordinator.shared
+
     private var blockObserverTokens: [NSObjectProtocol] = []
+    private var isNavigationViewVisible = false
+    private var navigationLocationLeaseHeld = false
 
     var routeIndicatorInfoArray = [RouteCollectionViewInfo]()
 
@@ -394,13 +398,26 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
             PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "roadbook_normal_navigation_conflict"))
             return
         }
-        PTDashboardConfig.shared.naving = true
-        if PTCarPlayManager.isCarPlayActive,PTDashboardConfig.shared.naving {
+        guard let selectedRoute = routeIndicatorInfoArray.first(where: { $0.isSelected }) else {
+            return
+        }
+
+        if PTCarPlayManager.isCarPlayActive {
             self.stopCarplyButton.isEnabled = true
             mapSet()
         } else {
             navReset()
         }
+        navigationCoordinator.setEmulatorNavigation(testButton.isSelected)
+        navigationCoordinator.selectRoute(
+            routeID: selectedRoute.routeID,
+            distanceMeters: selectedRoute.distance * 1_000,
+            duration: selectedRoute.durationSeconds
+        )
+        navigationCoordinator.start(
+            driveView: driveView,
+            estimatedDuration: selectedRoute.durationSeconds
+        )
         self.startNavigationTapped()
         self.driveView.isHidden = false
         self.routePlantList.isHidden = true
@@ -417,16 +434,6 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         }
         self.amapView.removeAnnotations(annotationsToRemove)
         self.amapView.removeOverlays(self.amapView.overlays)
-        if self.testButton.isSelected {
-            AMapNaviDriveManager.sharedInstance().startEmulatorNavi()
-        } else {
-            AMapNaviDriveManager.sharedInstance().startGPSNavi()
-        }
-        if let _ = self.routeIndicatorInfoArray.first(where: { $0.isSelected }) {
-            Task { @MainActor in
-                PTLiveActivityManager.shared.startNavigationActivity(destination: "目标地点", expectedArrival: Date())
-            }
-        }
         NotificationCenter.default.post(name: PTCarPlayStarNavNotification, object: nil)
         
     }
@@ -458,11 +465,11 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         let view = UIButton(type: .custom)
         view.setImage(baseImage.withTintColor(.lightGray, renderingMode: .alwaysOriginal), for: .normal)
         view.setImage(baseImage.withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal), for: .selected)
-        view.isSelected = PTMotoNavigationViewController.shared.startEmulatorNavi
+        view.isSelected = PTNavigationSessionCoordinator.shared.isEmulatorNavigation
         view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers(handler: { sender in
             sender.isSelected.toggle()
-            PTMotoNavigationViewController.shared.startEmulatorNavi = sender.isSelected
+            PTNavigationSessionCoordinator.shared.setEmulatorNavigation(sender.isSelected)
         })
         return view
     }()
@@ -525,10 +532,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         view.setImage(UIImage(.stop.circleFill), for: .normal)
         view.addActionHandlers(handler: { sender in
             NotificationCenter.default.post(name: PTCarPlayStopNavNotification, object: nil)
-            PTDashboardConfig.shared.naving = false
-            Task { @MainActor in
-                PTLiveActivityManager.shared.stopNavigationActivity()
-            }
+            PTNavigationSessionCoordinator.shared.stop(reason: "carPlay")
             PTGCDManager.shared.delayOnMain(time: 0.3, block: {
                 self.updateMapModeForCarPlayConnection(isActive: PTCarPlayManager.isCarPlayActive)
             })
@@ -556,18 +560,37 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     @MainActor deinit {
         blockObserverTokens.forEach { NotificationCenter.default.removeObserver($0) }
         NotificationCenter.default.removeObserver(self)
+        if navigationCoordinator.observer === self {
+            navigationCoordinator.observer = nil
+        }
         // EN: Release only this screen's location lease; other features may still be using the engine.
         // ES: Libera solo el arrendamiento de esta pantalla; otras funciones pueden seguir usando el motor.
         // 中文：只释放当前页面的定位租约，其他功能仍可继续使用定位引擎。
-        PTLocationUsageCoordinator.shared.release(.navigation)
+        if navigationLocationLeaseHeld {
+            PTLocationUsageCoordinator.shared.release(.navigation)
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        isNavigationViewVisible = true
+        navigationCoordinator.observer = self
+        if !navigationLocationLeaseHeld {
+            PTLocationUsageCoordinator.shared.acquire(.navigation)
+            navigationLocationLeaseHeld = true
+        }
         setCustomTitleView(searchBar)
         setCustomRightButtons(buttons: [testButton])
                 
         updateMapModeForCarPlayConnection(isActive: PTCarPlayManager.isCarPlayActive)
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        isNavigationViewVisible = false
+        if !navigationCoordinator.isSessionActive {
+            releaseNavigationLocationLease()
+        }
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -586,8 +609,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     }
     
     func mapSet() {
-        AMapNaviDriveManager.sharedInstance().delegate = nil
-        AMapNaviDriveManager.sharedInstance().removeDataRepresentative(driveView)
+        navigationCoordinator.detach(surface: .phone)
         amapView.removeFromSuperview()
         driveView.removeFromSuperview()
         view.addSubview(amapNormalView)
@@ -619,11 +641,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         if !PTDashboardConfig.shared.naving {
             self.startNavigationButton.isHidden = true
         }
-        AMapNaviDriveManager.sharedInstance().delegate = self
-        AMapNaviDriveManager.sharedInstance().allowsBackgroundLocationUpdates = true
-        AMapNaviDriveManager.sharedInstance().pausesLocationUpdatesAutomatically = false
-        AMapNaviDriveManager.sharedInstance().addDataRepresentative(driveView)
-        AMapNaviDriveManager.sharedInstance().addDataRepresentative(self)
+        navigationCoordinator.attach(surface: .phone, driveView: driveView)
     }
     
     override func viewDidLoad() {
@@ -632,12 +650,11 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         setupUI()
         //将driveView添加为导航数据的Representative，使其可以接收到导航诱导数据
         
-        pt_observerLanguage {
-            if self.vcDidLoad {
-                self.searchBar.searchPlaceholder = PTDashboardConfig.languageFunc(text: "search_placeholder")
-                self.amapView.mapLanguage = PTDashboardConfig.appIsInChinese() ? 0 : 1
-                self.amapView.mapType = .standardNight
-            }
+        pt_observerLanguage { [weak self] in
+            guard let self, self.vcDidLoad else { return }
+            self.searchBar.searchPlaceholder = PTDashboardConfig.languageFunc(text: "search_placeholder")
+            self.amapView.mapLanguage = PTDashboardConfig.appIsInChinese() ? 0 : 1
+            self.amapView.mapType = .standardNight
         }
         vcDidLoad = true
         
@@ -852,7 +869,6 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
         // EN: The navigation screen owns a lease instead of starting or stopping the shared engine directly.
         // ES: La pantalla de navegación posee un arrendamiento en lugar de controlar directamente el motor compartido.
         // 中文：导航页面通过租约使用共享定位引擎，不再直接启动或停止它。
-        PTLocationUsageCoordinator.shared.acquire(.navigation)
         NotificationCenter.default.addObserver(self, selector: #selector(handleLocationUpdate(_:)), name: PTLocationEngineDidUpdate, object: nil)
     }
         
@@ -957,6 +973,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     // MARK: - 路线规划与绘制
     private func planRoute(to destination: CLLocationCoordinate2D, title: String) {
         currentDestination = destination
+        navigationCoordinator.prepareRoute(to: destination, title: title)
         guard userCurrentLocation.latitude != 0, userCurrentLocation.longitude != 0 else {
             PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "alert_title"))
             return
@@ -1278,7 +1295,69 @@ extension PTMotoNavigationViewController:AMapSearchDelegate {
     }
 }
 
-extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
+extension PTMotoNavigationViewController: PTNavigationSessionObserver {
+    func navigationSessionDidCalculateRoutes(_ coordinator: PTNavigationSessionCoordinator) {
+        showNaviRoutes()
+    }
+
+    func navigationSession(_ coordinator: PTNavigationSessionCoordinator,
+                            didUpdate naviInfo: AMapNaviInfo,
+                            speedLimit: UInt8) {
+        currentRoadName = naviInfo.currentRoadName
+        currentSpeedLimit = speedLimit
+    }
+
+    func navigationSession(_ coordinator: PTNavigationSessionCoordinator,
+                            didFail error: Error) {
+        PTProgressHUD.show(text: error.localizedDescription)
+        finishNavigationPresentation()
+    }
+
+    func navigationSessionDidStop(_ coordinator: PTNavigationSessionCoordinator) {
+        finishNavigationPresentation()
+        if !isNavigationViewVisible {
+            releaseNavigationLocationLease()
+        }
+    }
+
+    // EN: Release the navigation lease only when this screen no longer owns a live session.
+    // ES: Libera el arrendamiento solo cuando esta pantalla ya no posee una sesión activa.
+    // 中文：只有当前页面不再拥有活动导航会话时，才释放导航定位租约。
+    private func releaseNavigationLocationLease() {
+        guard navigationLocationLeaseHeld else { return }
+        PTLocationUsageCoordinator.shared.release(.navigation)
+        navigationLocationLeaseHeld = false
+    }
+
+    private func finishNavigationPresentation() {
+        driveView.isHidden = true
+        startNavigationButton.isHidden = true
+        startNavigationButton.isEnabled = false
+        routePlantList.isHidden = true
+
+        let annotationsToRemove = amapView.annotations.filter { annotation in
+            if annotation is PTPeerAnnotation {
+                return false
+            }
+            if let _ = PTMOTOParkingManager.shared.getLastParkedLocation(),
+               let naviAnno = annotation as? NaviPointAnnotation,
+               naviAnno.naviPointType == .parking {
+                return false
+            }
+            return true
+        }
+        amapView.removeAnnotations(annotationsToRemove)
+        amapView.removeOverlays(amapView.overlays)
+        if muteButton.isSelected {
+            SpeechSynthesizer.Shared.stopSpeak()
+        }
+    }
+}
+
+// EN: Legacy route presentation helpers remain available; the live AMap delegate is the coordinator above.
+// ES: Los helpers heredados de presentación de rutas siguen disponibles; el delegado AMap activo es el coordinador.
+// 中文：旧路线展示辅助方法继续保留；实际高德代理由上面的协调器统一持有。
+extension PTMotoNavigationViewController {
     func showNaviRoutes() {
         
         guard let allRoutes = AMapNaviDriveManager.sharedInstance().naviRoutes else {
@@ -1306,7 +1385,14 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
             //更新CollectonView的信息
             let title = String(format: "Plant:%d", preferenceView.strategy(isMultiple: isMultipleRoutePlan).rawValue)
             let subtitle = String(format: "Distance:%dKm | Time:%@", aRoute.routeLength / 1000, aRoute.routeTime.timeString)
-            let info = RouteCollectionViewInfo(routeID: Int( truncating: aNumber), title: title, subTitle: subtitle,isSelected: false,distance: Double(aRoute.routeLength / 1000))
+            let info = RouteCollectionViewInfo(
+                routeID: Int(truncating: aNumber),
+                title: title,
+                subTitle: subtitle,
+                isSelected: false,
+                distance: Double(aRoute.routeLength / 1000),
+                durationSeconds: TimeInterval(max(0, aRoute.routeTime))
+            )
             routeIndicatorInfoArray.append(info)
         }
         
@@ -1329,6 +1415,13 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
         //在开始导航前进行路径选择
         if AMapNaviDriveManager.sharedInstance().selectNaviRoute(withRouteID: routeID) {
             selecteOverlayWithRouteID(routeID: routeID)
+            if let selectedRoute = routeIndicatorInfoArray.first(where: { $0.routeID == routeID }) {
+                navigationCoordinator.selectRoute(
+                    routeID: selectedRoute.routeID,
+                    distanceMeters: selectedRoute.distance * 1_000,
+                    duration: selectedRoute.durationSeconds
+                )
+            }
         } else {
             PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "alert_title"))
         }
@@ -1379,158 +1472,15 @@ extension PTMotoNavigationViewController:AMapNaviDriveManagerDelegate {
         }
     }
         
-    func driveManager(onArrivedDestination driveManager: AMapNaviDriveManager) {
-        self.driveViewCloseButtonClicked(self.driveView)
-    }
-    
-    func driveManagerDidEndEmulatorNavi(_ driveManager: AMapNaviDriveManager) {
-        self.driveViewCloseButtonClicked(self.driveView)
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, error: Error) {
-        let error = error as NSError
-        PTNSLogConsole("error:{%d - %@}", error.code, error.localizedDescription)
-        Task { @MainActor in
-            PTWatchConnectivityManager.shared.clearNavigation()
-        }
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, onCalculateRouteFailure error: Error) {
-        let error = error as NSError
-        PTNSLogConsole("CalculateRouteFailure:{%d - %@}", error.code, error.localizedDescription)
-        Task { @MainActor in
-            PTWatchConnectivityManager.shared.clearNavigation()
-        }
-    }
-
-//    func driveManager(onCalculateRouteSuccess driveManager: AMapNaviDriveManager) {
-//        //算路成功后显示路径
-//    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, postRouteNotification notifyData: AMapNaviRouteNotifyData) {
-        PTNSLogConsole(">>>>>>>>>>>>>>>>\(String(describing: notifyData.roadName))")
-    }
-            
-    func driveManager(_ manager: AMapNaviDriveManager?, onUpdateNaviSpeedLimitSection speed: Int) {
-        PTNSLogConsole(">>>>>>>>>>>>>>>>>>>>>>>>>>>>\(speed)")
-        self.currentSpeedLimit = UInt8(speed)
-    }
-    
-    func driveManagerIsNaviSoundPlaying(_ driveManager: AMapNaviDriveManager) -> Bool {
-        return SpeechSynthesizer.Shared.isSpeaking()
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, playNaviSound soundString: String, soundStringType: AMapNaviSoundType) {
-        if muteButton.isSelected {
-            SpeechSynthesizer.Shared.speak(soundString)
-        }
-    }
-            
-    func driveManager(_ driveManager: AMapNaviDriveManager, onCalculateRouteSuccessWith type: AMapNaviRoutePlanType) {
-        showNaviRoutes()
-        PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Rerouting...", title: "",nextManeuver: PTXP400BLEProtocol.returnToRouteManeuverCode)
-    }
-        
-    func driveManager(_ driveManager: AMapNaviDriveManager, update gpsSignalStrength: AMapNaviGPSSignalStrength) {
-        switch gpsSignalStrength {
-        case .smartPos:
-            break
-        default:
-            PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Searching GPS...", title: "",nextManeuver: PTXP400BLEProtocol.noValidActionManeuverCode)
-        }
-    }
 }
 
 extension PTMotoNavigationViewController : AMapNaviDriveViewDelegate {
         
     func driveViewCloseButtonClicked(_ driveView: AMapNaviDriveView) {
-        PTDashboardConfig.shared.naving = false
-        // EN: Clear the Watch prompt when normal navigation ends, while keeping vehicle and parking data.
-        // ES: Limpia el aviso del Watch cuando termina la navegación normal y conserva el vehículo y el estacionamiento.
-        // 中文：普通导航结束时清除 Watch 提示，同时保留车辆和停车数据。
-        Task { @MainActor in
-            PTWatchConnectivityManager.shared.clearNavigation()
-        }
-        //停止导航
-        AMapNaviDriveManager.sharedInstance().stopNavi()
-        AMapNaviDriveManager.sharedInstance().removeDataRepresentative(driveView)
-        self.driveView.isHidden = true
-        self.startNavigationButton.isHidden = true
-        self.startNavigationButton.isEnabled = false
-        let annotationsToRemove = self.amapView.annotations.filter { annotation in
-            if annotation is PTPeerAnnotation {
-                return false
-            }
-            if let _ = PTMOTOParkingManager.shared.getLastParkedLocation() {
-                if let naviAnno = annotation as? NaviPointAnnotation, naviAnno.naviPointType == .parking {
-                    return false
-                }
-            }
-            return true
-        }
-        self.amapView.removeAnnotations(annotationsToRemove)
-        self.amapView.removeOverlays(amapView.overlays)
-        //停止语音
-        if muteButton.isSelected {
-            SpeechSynthesizer.Shared.stopSpeak()
-        }
-        PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Yeah!!!!!!!!!!", title: "Navigation finished!!!!!!!!!!!!!!!!!!!!")
-        Task { @MainActor in
-            PTLiveActivityManager.shared.stopNavigationActivity()
-        }
+        navigationCoordinator.stop(reason: "driveViewClose")
     }
     
     func driveView(_ view: AMapNaviDriveView, didChangeTo state: AMapNaviDriveViewState) { }
-}
-
-extension PTMotoNavigationViewController:AMapNaviDriveDataRepresentable {
-         
-    func driveManager(_ driveManager: AMapNaviDriveManager, updateCruiseElecCameraInfos cameraInfos: [AMapNaviTrafficFacilityInfo]) {
-        if let firstCamera = cameraInfos.first {
-            // cameraSpeed 通常代表该路段限速，为 0 时表示无限速或未知
-            if firstCamera.limitSpeed > 0 {
-                self.currentSpeedLimit = UInt8(firstCamera.limitSpeed)
-            }
-        }
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, update cameraInfos: [AMapNaviCameraInfo]?) {
-        if let firstCamera = cameraInfos?.first {
-            // cameraSpeed 通常代表该路段限速，为 0 时表示无限速或未知
-            if firstCamera.cameraSpeed > 0 {
-                self.currentSpeedLimit = UInt8(firstCamera.cameraSpeed)
-            }
-        }
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, update naviInfo: AMapNaviInfo?) {
-        guard let naviInfo = naviInfo else {
-            return
-        }
-        currentRoadName = naviInfo.currentRoadName
-        PTMotoDashBoardNavFunction.sendNavDataToDashboard(naviInfo: naviInfo, currentSpeedLimit: self.currentSpeedLimit)
-
-        let maneuverCode = PTMotoDashBoardNavFunction.convertAMapIconToPTManeuver(iconType: naviInfo.iconType)
-        let nextRoadName = naviInfo.nextRoadName ?? ""
-        let currentRoadName = naviInfo.currentRoadName ?? ""
-        let distanceToManeuverMeters = Double(max(0, naviInfo.segmentRemainDistance))
-        let distanceToDestinationMeters = Double(max(0, naviInfo.routeRemainDistance))
-        Task { @MainActor in
-            PTWatchConnectivityManager.shared.updateTurnByTurnNavigation(
-                routeName: currentRoadName,
-                instruction: nextRoadName,
-                maneuverCode: maneuverCode,
-                distanceToManeuverMeters: distanceToManeuverMeters,
-                distanceToDestinationMeters: distanceToDestinationMeters
-            )
-        }
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, update naviLocation: AMapNaviLocation?) {
-        if PTMotoNavigationViewController.shared.startEmulatorNavi,let naviLocation = naviLocation {
-            PTLocationEngine.shared.amapEmulatorNavi(naviLocation: naviLocation,roadName: currentRoadName)
-        }
-    }
 }
 
 //MARK: MultipeerConnectivity

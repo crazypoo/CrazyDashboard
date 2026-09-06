@@ -2811,6 +2811,69 @@ final class PTCoreTests: XCTestCase {
         let snapshot = PTRoadbookShareSnapshot(roadbook: roadbook)
         XCTAssertEqual(snapshot.waypoints.count, 64)
     }
+
+    // EN: Navigation progress remains bounded and handles a zero-length route without NaN or division by zero.
+    // ES: El progreso de navegación permanece acotado y maneja una ruta de longitud cero sin NaN ni división por cero.
+    // 中文：导航进度始终在边界内，零长度路线也不会出现 NaN 或除零。
+    @MainActor
+    func testNavigationProgressIsSafeForLiveActivity() {
+        XCTAssertEqual(
+            PTNavigationSessionCoordinator.normalizedProgress(
+                remainingDistanceMeters: 500,
+                totalDistanceMeters: 1_000
+            ),
+            0.5,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(
+            PTNavigationSessionCoordinator.normalizedProgress(
+                remainingDistanceMeters: 3_000,
+                totalDistanceMeters: 1_000
+            ),
+            0,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(
+            PTNavigationSessionCoordinator.normalizedProgress(
+                remainingDistanceMeters: 0,
+                totalDistanceMeters: 0
+            ),
+            1,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(
+            PTNavigationSessionCoordinator.normalizedProgress(
+                remainingDistanceMeters: .nan,
+                totalDistanceMeters: 1_000
+            ),
+            0,
+            accuracy: 0.001
+        )
+    }
+
+    // EN: Disconnect state clears dashboard-only telemetry while preserving an active OBD source.
+    // ES: El estado de desconexión limpia la telemetría exclusiva del tablero y conserva una fuente OBD activa.
+    // 中文：断开状态会清理仅来自仪表盘的数据，同时保留仍在线的 OBD 数据源。
+    @MainActor
+    func testMotoInfoStateResetPreservesOBDValues() {
+        var state = PTMotoInfoViewState(
+            dashboardConnected: true,
+            obdConnected: true,
+            speedKmh: 42,
+            engineRpm: 2_800,
+            lastUpdateAt: Date(),
+            dataSource: "dashboard"
+        )
+
+        state.resetDashboard()
+
+        XCTAssertFalse(state.dashboardConnected)
+        XCTAssertTrue(state.obdConnected)
+        XCTAssertEqual(state.speedKmh ?? 0, 42, accuracy: 0.001)
+        XCTAssertEqual(state.engineRpm ?? 0, 2_800, accuracy: 0.001)
+        XCTAssertNil(state.lastUpdateAt)
+        XCTAssertTrue(state.dataSource.isEmpty)
+    }
 }
 
 // EN: The actor keeps fallback call-count assertions race-free under Swift concurrency.

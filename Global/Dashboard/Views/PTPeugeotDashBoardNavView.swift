@@ -72,11 +72,19 @@ class PTPeugeotDashBoardNavView: UIView {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        
-        AMapNaviDriveManager.sharedInstance().delegate = self
-        AMapNaviDriveManager.sharedInstance().allowsBackgroundLocationUpdates = true
-        AMapNaviDriveManager.sharedInstance().pausesLocationUpdatesAutomatically = false
-        AMapNaviDriveManager.sharedInstance().addDataRepresentative(self)
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleNavigationGuidance(_:)),
+            name: PTNavigationSessionCoordinator.guidanceDidUpdateNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleNavigationStateChange(_:)),
+            name: PTNavigationSessionCoordinator.stateDidChangeNotification,
+            object: nil
+        )
         
         addSubviews([navIcon,limitedSpeedLabel,finalIcon,routeDistanceLabel,arrivedTimeLabel,segmentRemainDistanceLabel,routeNameLabel])
         navIcon.snp.makeConstraints { make in
@@ -125,114 +133,56 @@ class PTPeugeotDashBoardNavView: UIView {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-}
 
-extension PTPeugeotDashBoardNavView:AMapNaviDriveManagerDelegate {
-    func driveManager(onArrivedDestination driveManager: AMapNaviDriveManager) {
-        navSuccess?()
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
-    
-    func driveManagerDidEndEmulatorNavi(_ driveManager: AMapNaviDriveManager) {
-        navSuccess?()
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, error: Error) {
-        let error = error as NSError
-        PTNSLogConsole("error:{%d - %@}", error.code, error.localizedDescription)
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, onCalculateRouteFailure error: Error) {
-        let error = error as NSError
-        PTNSLogConsole("CalculateRouteFailure:{%d - %@}", error.code, error.localizedDescription)
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, postRouteNotification notifyData: AMapNaviRouteNotifyData) {
-        PTNSLogConsole(">>>>>>>>>>>>>>>>\(String(describing: notifyData.roadName))")
-    }
-    
-    func driveManager(_ manager: AMapNaviDriveManager?, onUpdateNaviSpeedLimitSection speed: Int) {
-        PTNSLogConsole(">>>>>>>>>>>>>>>>>>>>>>>>>>>>\(speed)")
-        self.currentSpeedLimit = UInt8(speed)
-        limitedSpeedLabel.text = "\(speed)"
-    }
-    
-    func driveManagerIsNaviSoundPlaying(_ driveManager: AMapNaviDriveManager) -> Bool {
-        return SpeechSynthesizer.Shared.isSpeaking()
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, playNaviSound soundString: String, soundStringType: AMapNaviSoundType) {
-        if PTMotoUserDefaultStruct.NavMute {
-            SpeechSynthesizer.Shared.speak(soundString)
-        }
-    }
-            
-    func driveManager(_ driveManager: AMapNaviDriveManager, onCalculateRouteSuccessWith type: AMapNaviRoutePlanType) {
-        errorRouteNameSet(value: "Rerouting...")
-        PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Rerouting...", title: "",nextManeuver: PTXP400BLEProtocol.returnToRouteManeuverCode)
-    }
-        
-    func driveManager(_ driveManager: AMapNaviDriveManager, update gpsSignalStrength: AMapNaviGPSSignalStrength) {
-        switch gpsSignalStrength {
-        case .smartPos:
-            break
-        default:
-            errorRouteNameSet(value: "Searching GPS...")
-            PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Searching GPS...", title: "",nextManeuver: PTXP400BLEProtocol.noValidActionManeuverCode)
-        }
-    }
-}
 
-extension PTPeugeotDashBoardNavView:AMapNaviDriveDataRepresentable {
-         
-    func driveManager(_ driveManager: AMapNaviDriveManager, updateCruiseElecCameraInfos cameraInfos: [AMapNaviTrafficFacilityInfo]) {
-        if let firstCamera = cameraInfos.first {
-            // cameraSpeed 通常代表该路段限速，为 0 时表示无限速或未知
-            if firstCamera.limitSpeed > 0 {
-                self.limitedSpeedLabel.text = "\(firstCamera.limitSpeed)"
-                self.currentSpeedLimit = UInt8(firstCamera.limitSpeed)
-            } else {
-                self.limitedSpeedLabel.text = "--"
-            }
-        }
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, update cameraInfos: [AMapNaviCameraInfo]?) {
-        if let firstCamera = cameraInfos?.first {
-            // cameraSpeed 通常代表该路段限速，为 0 时表示无限速或未知
-            if firstCamera.cameraSpeed > 0 {
-                self.limitedSpeedLabel.text = "\(firstCamera.cameraSpeed)"
-                self.currentSpeedLimit = UInt8(firstCamera.cameraSpeed)
-            } else {
-                self.limitedSpeedLabel.text = "--"
-            }
-        }
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, update naviInfo: AMapNaviInfo?) {
-        guard let naviInfo = naviInfo else {
+    @objc private func handleNavigationGuidance(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let naviInfo = userInfo["naviInfo"] as? AMapNaviInfo else { return }
+        let speedLimit: UInt8
+        if let value = userInfo["speedLimit"] as? UInt8 {
+            speedLimit = value
+        } else if let value = userInfo["speedLimit"] as? NSNumber {
+            speedLimit = UInt8(clamping: value.intValue)
+        } else {
             return
         }
+        render(naviInfo: naviInfo, speedLimit: speedLimit)
+    }
+
+    @objc private func handleNavigationStateChange(_ notification: Notification) {
+        guard let state = notification.userInfo?["state"] as? PTNavigationSessionState else { return }
+        if case .arrived = state {
+            navSuccess?()
+        } else if case .idle = state {
+            navIcon.image = nil
+            routeNameLabel.text = nil
+            segmentRemainDistanceLabel.text = nil
+            routeDistanceLabel.text = "0 km"
+        }
+    }
+
+    private func render(naviInfo: AMapNaviInfo, speedLimit: UInt8) {
+        currentSpeedLimit = speedLimit
         currentRoadName = naviInfo.currentRoadName
-//        PTNSLogConsole("\(naviInfo)")
         let routeDistanceLeast = CGFloat(naviInfo.routeRemainDistance) / 1000
         routeDistanceLabel.text = String(format: "%.1f km", routeDistanceLeast)
-        let currentDate = Date()
-        let estimatedArrivalDate = currentDate.addingTimeInterval(TimeInterval(naviInfo.routeRemainTime))
+        let estimatedArrivalDate = Date().addingTimeInterval(TimeInterval(naviInfo.routeRemainTime))
         let formatter = DateFormatter()
+        formatter.locale = Locale.current
         formatter.dateFormat = "HH:mm"
         arrivedTimeLabel.text = formatter.string(from: estimatedArrivalDate)
         segmentRemainDistance(naviInfo: naviInfo)
         routeNameSet(naviInfo: naviInfo)
         navIcon.image = naviInfo.iconImage
-        PTMotoDashBoardNavFunction.sendNavDataToDashboard(naviInfo: naviInfo, currentSpeedLimit: self.currentSpeedLimit)
+        limitedSpeedLabel.text = speedLimit == 0 ? "--" : "\(speedLimit)"
     }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, update naviLocation: AMapNaviLocation?) {
-        if PTMotoNavigationViewController.shared.startEmulatorNavi,let naviLocation = naviLocation {
-            PTLocationEngine.shared.amapEmulatorNavi(naviLocation: naviLocation,roadName: currentRoadName)
-        }
-    }
-    
+}
+
+extension PTPeugeotDashBoardNavView {
+
     func segmentRemainDistance(naviInfo: AMapNaviInfo) {
         let segmentRemainDistance = CGFloat(naviInfo.segmentRemainDistance) / 1000
         let segmentRemainDistanceString = String(format: "%.1f", segmentRemainDistance)

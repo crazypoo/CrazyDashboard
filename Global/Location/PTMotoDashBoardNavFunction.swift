@@ -56,18 +56,6 @@ class PTMotoDashBoardNavFunction: NSObject {
     }
     
     static func sendNavDataToDashboard(naviInfo: AMapNaviInfo,currentSpeedLimit:UInt8) {
-        let remainDistanceMeters = Double(naviInfo.routeRemainDistance)
-        let remainingKm = remainDistanceMeters / 1000.0
-        let progress = (Double(naviInfo.travelRealPathLength) - Double(naviInfo.travelDrivedRealLength)) / Double(naviInfo.travelRealPathLength)
-        let eta = Date().addingTimeInterval(TimeInterval(naviInfo.routeRemainTime))
-        Task { @MainActor in
-            PTLiveActivityManager.shared.updateNavigationActivity(
-                progress: progress,
-                remainingKm: remainingKm,
-                expectedArrival: eta
-            )
-        }
-
         // EN: Build the dashboard navigation payload from the map callback.
         // ES: Construye la carga de navegación del tablero a partir del callback del mapa.
         // 中文：根据地图回调组装仪表盘导航数据。

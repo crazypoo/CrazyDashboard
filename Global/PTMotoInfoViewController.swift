@@ -17,6 +17,28 @@ fileprivate extension String {
     static let MOTOSECTION = "MOTOSECTION"
 }
 
+// EN: Small value state keeps rendering decisions separate from transport callbacks.
+// ES: Un estado de valor pequeño separa las decisiones de renderizado de los callbacks de transporte.
+// 中文：轻量值状态将渲染决策与传输回调分离。
+struct PTMotoInfoViewState: Equatable, Sendable {
+    var dashboardConnected = false
+    var obdConnected = false
+    var speedKmh: Double?
+    var engineRpm: Double?
+    var lastUpdateAt: Date?
+    var dataSource = ""
+
+    mutating func resetDashboard() {
+        dashboardConnected = false
+        lastUpdateAt = nil
+        dataSource = ""
+        if !obdConnected {
+            speedKmh = nil
+            engineRpm = nil
+        }
+    }
+}
+
 class PTMotoInfoViewController: PTMotoBaseViewController {
     
     fileprivate var instructionsModels:[PTInstructionsModel] = {
@@ -35,6 +57,55 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
     let headerHeight:CGFloat = 32
     
     var isFirstLoad:Bool = true
+    private var isViewVisible = false
+    private var infoState = PTMotoInfoViewState()
+
+    private lazy var telemetryScrollView: UIScrollView = {
+        let view = UIScrollView()
+        view.alwaysBounceVertical = true
+        view.showsVerticalScrollIndicator = false
+        view.contentInsetAdjustmentBehavior = .never
+        return view
+    }()
+
+    private lazy var telemetryContentView: UIView = {
+        let view = UIView()
+        view.backgroundColor = .clear
+        return view
+    }()
+
+    private lazy var vehicleTitleLabel: UILabel = {
+        let view = UILabel()
+        view.font = .appfont(size: 15, bold: true)
+        view.textColor = .white
+        view.adjustsFontForContentSizeCategory = true
+        view.accessibilityTraits = .header
+        return view
+    }()
+
+    private lazy var vehicleStatusLabel: UILabel = {
+        let view = UILabel()
+        view.font = .appfont(size: 11)
+        view.textColor = .lightGray
+        view.adjustsFontForContentSizeCategory = true
+        view.numberOfLines = 2
+        return view
+    }()
+
+    private lazy var vehicleSummaryView: UIView = {
+        let view = UIView()
+        view.backgroundColor = UIColor(white: 0.12, alpha: 1)
+        view.layer.cornerRadius = 12
+        view.addSubviews([vehicleTitleLabel, vehicleStatusLabel])
+        vehicleTitleLabel.snp.makeConstraints { make in
+            make.top.left.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
+        }
+        vehicleStatusLabel.snp.makeConstraints { make in
+            make.left.right.bottom.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
+            make.top.equalTo(vehicleTitleLabel.snp.bottom).offset(2)
+        }
+        return view
+    }()
     
     lazy var actionStack:UIStackView = {
         let stackView = UIStackView()
@@ -343,6 +414,8 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        isViewVisible = true
+        lightControl.isActive = true
         PTRotationManager.shared.rotationToPortrait()
         PTRotationManager.shared.isLockOrientationWhenDeviceOrientationDidChange = true
         PTMotoTelemetryManager.shared.addDelegate(self)
@@ -354,6 +427,9 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         setCustomRightButtons(buttons: [dashboardButton,motionDeviceButton,obdButton,bleConnectStatusLabel],buttonSpacing: CGFloat.GlobalItemSpacing)
         
         self.bleConnectStatusLabel.isSelected = PTDashboardConfig.shared.blueConnected
+        infoState.dashboardConnected = PTDashboardConfig.shared.blueConnected
+        infoState.obdConnected = PTMotoTelemetryManager.shared.isConnected
+        updateVehicleSummary()
         updateFocusDisplay()
         if PTDashboardConfig.shared.blueConnected {
             syncDashboardPresentationFromCache()
@@ -377,6 +453,8 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        isViewVisible = false
+        lightControl.isActive = false
         PTMotoTelemetryManager.shared.removeDelegate(self)
         PTMotoTelemetryManager.shared.onConnectionTimeout = nil
     }
@@ -415,6 +493,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         
         PTMotion.shared.addDelegate(self)
         NotificationCenter.default.addObserver(self, selector: #selector(appDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(garageDidChange), name: PTMotorcycleGarageStore.didChangeNotification, object: nil)
     }
 
     // EN: Apply the compact riding presentation whenever the system Focus filter changes.
@@ -442,9 +521,28 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             obdButton.startLoading(indicatorColor: .white)
         }
     }
+
+    @objc private func garageDidChange() {
+        updateVehicleSummary()
+    }
+
+    private func updateVehicleSummary() {
+        let vehicle = PTMotorcycleGarageStore.shared.currentVehicle
+        let name = vehicle?.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        vehicleTitleLabel.text = name?.isEmpty == false ? name : PTDashboardConfig.languageFunc(text: "garage_vehicle_name")
+        let dashboardState = PTDashboardConfig.shared.blueConnected
+            ? PTDashboardConfig.languageFunc(text: "connect_success")
+            : PTDashboardConfig.languageFunc(text: "ride_not_available")
+        let obdState = PTMotoTelemetryManager.shared.isConnected
+            ? PTDashboardConfig.languageFunc(text: "connect_success")
+            : PTDashboardConfig.languageFunc(text: "ride_not_available")
+        vehicleStatusLabel.text = "\(PTDashboardConfig.languageFunc(text: "casa_bluetooth_status")): \(dashboardState) · OBD: \(obdState)"
+    }
         
     @objc func handleAuthSuccess() {
         PTDashboardConfig.shared.blueConnected = true
+        infoState.dashboardConnected = true
+        updateVehicleSummary()
         PTMOTOParkingManager.shared.clearParkingSpot()
         PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "connect_success")) {
             PTGCDManager.shared.runOnMain {
@@ -458,14 +556,20 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
     
     override func handleMotorcycleDisconnect() {
         super.handleMotorcycleDisconnect()
+        infoState.resetDashboard()
+        updateVehicleSummary()
         resetDashboardPresentation()
     }
     
     override func handleMotorcycleData(data: Any?) {
         super.handleMotorcycleData(data: data)
+        guard isViewVisible else { return }
         if let data1 = data as? PTDashboardData1 {
             DispatchQueue.main.async {
-                guard PTDashboardConfig.shared.blueConnected else { return }
+                guard self.isViewVisible, PTDashboardConfig.shared.blueConnected else { return }
+                self.infoState.dashboardConnected = true
+                self.infoState.dataSource = "Dashboard"
+                self.infoState.lastUpdateAt = Date()
                 // EN: Render unavailable trip and odometer values as unavailable instead of numeric zero.
                 // ES: Muestra como no disponibles los valores de viaje y odómetro no disponibles, en vez de cero.
                 // 中文：小计和总里程不可用时显示不可用，不显示数字零。
@@ -489,7 +593,10 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             }
         } else if let data2 = data as? PTDashboardData2 {
             DispatchQueue.main.async {
-                guard PTDashboardConfig.shared.blueConnected else { return }
+                guard self.isViewVisible, PTDashboardConfig.shared.blueConnected else { return }
+                self.infoState.dashboardConnected = true
+                self.infoState.dataSource = "Dashboard"
+                self.infoState.lastUpdateAt = Date()
                 // EN: Only label a decoded Data2 field when its source byte is available.
                 // ES: Solo etiqueta un campo Data2 decodificado cuando su byte de origen está disponible.
                 // 中文：只有 Data2 源字节有效时，才把解码字段作为真实值显示。
@@ -517,7 +624,10 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             }
         } else if let data3 = data as? PTDashboardData3 {
             DispatchQueue.main.async {
-                guard PTDashboardConfig.shared.blueConnected else { return }
+                guard self.isViewVisible, PTDashboardConfig.shared.blueConnected else { return }
+                self.infoState.dashboardConnected = true
+                self.infoState.dataSource = "Dashboard"
+                self.infoState.lastUpdateAt = Date()
                 // EN: Do not turn an unavailable maintenance distance or language into a false reading.
                 // ES: No conviertas una distancia de mantenimiento o idioma no disponible en una lectura falsa.
                 // 中文：保养距离或语言不可用时，不转换成虚假的有效读数。
@@ -546,24 +656,39 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         } else if let control = data as? PTDashboardControl,!PTMotoTelemetryManager.shared.isConnected {
             // 💡 车速和转速驱动的是 CoreAnimation 动画指针（PTSpeedometerView），本身不会闪烁，直接驱动即可
             DispatchQueue.main.async {
-                guard PTDashboardConfig.shared.blueConnected else { return }
+                guard self.isViewVisible, PTDashboardConfig.shared.blueConnected else { return }
+                self.infoState.dashboardConnected = true
+                self.infoState.dataSource = "Dashboard"
+                self.infoState.lastUpdateAt = Date()
                 if control.vehicleSpeedAvailability.isAvailable {
-                    self.speedometer.updateSpeed(control.vehicleSpeedKmh)
+                    if self.infoState.speedKmh != control.vehicleSpeedKmh {
+                        self.infoState.speedKmh = control.vehicleSpeedKmh
+                        self.speedometer.updateSpeed(control.vehicleSpeedKmh)
+                    }
                 } else {
                     // EN: Reset the speed pointer when the dashboard reports an unavailable sample.
                     // ES: Restablece el indicador de velocidad cuando el tablero informa una muestra no disponible.
                     // 中文：仪表报告车速不可用时，重置车速指针。
-                    self.speedometer.updateSpeed(0)
+                    if self.infoState.speedKmh != 0 {
+                        self.infoState.speedKmh = 0
+                        self.speedometer.updateSpeed(0)
+                    }
                 }
                 if control.engineRpmAvailability.isAvailable {
-                    self.speedometerReversed.updateSpeed(CGFloat(control.engineRpm))
-                    self.speedometerReversed.applyShiftLightLogic(currentRpm: control.engineRpm)
+                    if self.infoState.engineRpm != Double(control.engineRpm) {
+                        self.infoState.engineRpm = Double(control.engineRpm)
+                        self.speedometerReversed.updateSpeed(CGFloat(control.engineRpm))
+                        self.speedometerReversed.applyShiftLightLogic(currentRpm: control.engineRpm)
+                    }
                 } else {
                     // EN: Reset the RPM pointer and shift light for an unavailable sample.
                     // ES: Restablece el indicador de RPM y la luz de cambio para una muestra no disponible.
                     // 中文：转速不可用时，重置转速指针和换挡灯。
-                    self.speedometerReversed.updateSpeed(0)
-                    self.speedometerReversed.applyShiftLightLogic(currentRpm: 0)
+                    if self.infoState.engineRpm != 0 {
+                        self.infoState.engineRpm = 0
+                        self.speedometerReversed.updateSpeed(0)
+                        self.speedometerReversed.applyShiftLightLogic(currentRpm: 0)
+                    }
                 }
             }
         }
@@ -572,12 +697,40 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
     // MARK: - 界面布局
     private func setupUI() {
         view.backgroundColor = .black
-        
-        view.addSubviews([actionStack,speedometer,speedometerReversed,lightControl,fuelModelView,tripItem,odoItem,engineItem,temItem,globeItem])
+
+        view.addSubview(telemetryScrollView)
+        telemetryScrollView.snp.makeConstraints { make in
+            make.left.right.bottom.equalToSuperview()
+            make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total)
+        }
+        telemetryScrollView.addSubview(telemetryContentView)
+        telemetryContentView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+            make.width.equalTo(telemetryScrollView.snp.width)
+        }
+        telemetryContentView.addSubviews([
+            vehicleSummaryView,
+            actionStack,
+            speedometer,
+            speedometerReversed,
+            lightControl,
+            fuelModelView,
+            tripItem,
+            odoItem,
+            engineItem,
+            temItem,
+            globeItem
+        ])
+
+        vehicleSummaryView.snp.makeConstraints { make in
+            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.top.equalToSuperview().offset(CGFloat.GlobalItemSpacing)
+            make.height.greaterThanOrEqualTo(58)
+        }
         actionStack.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.height.equalTo(54)
-            make.top.equalToSuperview().inset(CGFloat.GlobalItemSpacing + CGFloat.kNavBarHeight_Total)
+            make.top.equalTo(vehicleSummaryView.snp.bottom).offset(CGFloat.GlobalItemSpacing)
         }
         
         actionStack.addArrangedSubview(voltageLabel)
@@ -595,7 +748,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         speedometer.snp.makeConstraints { make in
             make.top.equalTo(self.actionStack.snp.bottom).offset(CGFloat.GlobalItemSpacing)
             make.left.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
-            make.right.equalTo(self.view.snp.centerX).offset(-(CGFloat.GlobalItemSpacing / 2))
+            make.right.equalTo(self.telemetryContentView.snp.centerX).offset(-(CGFloat.GlobalItemSpacing / 2))
             make.height.equalTo(self.speedometer.snp.width)
         }
         speedometer.layoutIfNeeded()
@@ -604,7 +757,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         speedometerReversed.snp.makeConstraints { make in
             make.top.height.equalTo(self.speedometer)
             make.right.equalToSuperview().inset(CGFloat.GlobalItemSpacing)
-            make.left.equalTo(self.view.snp.centerX).offset(CGFloat.GlobalItemSpacing / 2)
+            make.left.equalTo(self.telemetryContentView.snp.centerX).offset(CGFloat.GlobalItemSpacing / 2)
         }
         speedometerReversed.layoutIfNeeded()
         speedometerReversed.viewCorner(radius: speedometerReversed.bounds.size.height / 2)
@@ -625,14 +778,14 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         tripItem.snp.makeConstraints { make in
             make.left.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.height.equalTo(60)
-            make.right.equalTo(self.view.snp.centerX).offset(-(CGFloat.GlobalItemSpacing / 2))
+            make.right.equalTo(self.telemetryContentView.snp.centerX).offset(-(CGFloat.GlobalItemSpacing / 2))
             make.top.equalTo(self.fuelModelView.snp.bottom)
         }
         
         odoItem.snp.makeConstraints { make in
             make.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.height.equalTo(self.tripItem)
-            make.left.equalTo(self.view.snp.centerX).offset((CGFloat.GlobalItemSpacing / 2))
+            make.left.equalTo(self.telemetryContentView.snp.centerX).offset((CGFloat.GlobalItemSpacing / 2))
             make.top.equalTo(self.tripItem)
         }
         
@@ -650,6 +803,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         globeItem.snp.makeConstraints { make in
             make.height.left.right.equalTo(self.tripItem)
             make.top.equalTo(self.temItem.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.bottom.equalToSuperview().inset(CGFloat.GlobalItemSpacing * 2)
         }
             
         if isFirstLoad {
@@ -661,12 +815,12 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             }
         }
         
-        pt_observerLanguage {
-            if self.vcDidLoad {
-                guard PTDashboardConfig.shared.blueConnected else {
-                    self.resetDashboardPresentation()
-                    return
-                }
+        pt_observerLanguage { [weak self] in
+            guard let self, self.vcDidLoad else { return }
+            guard PTDashboardConfig.shared.blueConnected else {
+                self.resetDashboardPresentation()
+                return
+            }
                 let latestData1 = PTBluetoothServerManager.shared.latestData1
                 let latestData2 = PTBluetoothServerManager.shared.latestData2
                 let latestData3 = PTBluetoothServerManager.shared.latestData3
@@ -718,7 +872,6 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                                            value: latestData3?.languageAvailability.isAvailable == true
                                                 ? latestData3?.languageType.getTypeName() ?? PTConfigLanguage.english.getTypeName()
                                                 : unavailable)
-            }
         }
         
         setupDeveloperGesture()
@@ -760,7 +913,9 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
             // ES: Haz que la barrera de desconexión sea síncrona antes de ejecutar cierres de telemetría encolados.
             // 中文：在排队的遥测闭包执行前，同步建立断连屏障。
             PTDashboardConfig.shared.blueConnected = false
+            self.infoState.resetDashboard()
             self.bleConnectStatusLabel.isSelected = false
+            self.updateVehicleSummary()
             self.obdButton.stopLoading()
             self.voltageLabel.modelSet = self.modelvoltageSet(currentValue: 0, isAvailable: false)
             self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(
@@ -1040,6 +1195,9 @@ extension PTMotoInfoViewController {
 extension PTMotoInfoViewController:PTMotoTelemetryDelegate {
     func telemetryManager(_ manager: PTMotoTelemetryManager, didChangeConnectionState isConnected: Bool) {
         PTGCDManager.shared.runOnMain {
+            guard self.isViewVisible else { return }
+            self.infoState.obdConnected = isConnected
+            self.updateVehicleSummary()
             // EN: CAN capture is an explicit developer action; connecting OBD must not start it implicitly.
             // ES: La captura CAN es una acción explícita del desarrollador; conectar OBD no debe iniciarla implícitamente.
             // 中文：CAN 抓包必须由开发者明确操作，连接 OBD 不再隐式启动抓包。
@@ -1055,10 +1213,15 @@ extension PTMotoInfoViewController:PTMotoTelemetryDelegate {
     
     func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) {
         PTGCDManager.shared.runOnMain {
+            guard self.isViewVisible else { return }
             if let speed = measurements[OBDCommand.mode1(.speed).properties.command] as? Double {
+                self.infoState.speedKmh = speed
+                self.infoState.dataSource = "OBD"
+                self.infoState.lastUpdateAt = Date()
                 self.speedometer.updateSpeed(speed)
             }
             if let rpm = measurements[OBDCommand.mode1(.rpm).properties.command] as? Double {
+                self.infoState.engineRpm = rpm
                 self.speedometerReversed.updateSpeed(CGFloat(rpm))
                 self.speedometerReversed.applyShiftLightLogic(currentRpm: Int(rpm))
             }

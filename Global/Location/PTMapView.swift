@@ -70,6 +70,12 @@ class PTMapView: UIView, MAMapViewDelegate {
         NotificationCenter.default.addObserver(self, selector: #selector(handlePeerLocationUpdate(_:)), name: PTPeerLocationDidUpdateNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handlePeerLeave(_:)), name: PTPeerDidLeaveNetworkNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handlePeerAvatarUpdate(_:)), name: PTPeerAvatarDidUpdateNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleNavigationStateChange(_:)),
+            name: PTNavigationSessionCoordinator.stateDidChangeNotification,
+            object: nil
+        )
         
         PTGCDManager.shared.delayOnMain(time: 0.55) {
             let flag = AMapLocationDataAvailableForCoordinate(PTLocationEngine.shared.lastLocation?.coordinate ?? .init(latitude: 0, longitude: 0))
@@ -97,8 +103,7 @@ class PTMapView: UIView, MAMapViewDelegate {
     }
     
     func setNormalMapView() {
-        AMapNaviDriveManager.sharedInstance().delegate = nil
-        AMapNaviDriveManager.sharedInstance().removeDataRepresentative(driveView)
+        PTNavigationSessionCoordinator.shared.detach(surface: .carPlay)
         self.carPlayMapView.removeFromSuperview()
         self.driveView.removeFromSuperview()
         self.addSubview(self.mapView)
@@ -120,6 +125,7 @@ class PTMapView: UIView, MAMapViewDelegate {
         self.driveView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
+        driveView.isHidden = !PTNavigationSessionCoordinator.shared.isSessionActive
         self.setupNavDelegate()
     }
     
@@ -128,12 +134,7 @@ class PTMapView: UIView, MAMapViewDelegate {
     }
     
     func setupNavDelegate() {
-        AMapNaviDriveManager.sharedInstance().delegate = self
-        AMapNaviDriveManager.sharedInstance().allowsBackgroundLocationUpdates = true
-        AMapNaviDriveManager.sharedInstance().pausesLocationUpdatesAutomatically = false
-        //将driveView添加为导航数据的Representative，使其可以接收到导航诱导数据
-        AMapNaviDriveManager.sharedInstance().addDataRepresentative(driveView)
-        AMapNaviDriveManager.sharedInstance().addDataRepresentative(self)
+        PTNavigationSessionCoordinator.shared.attach(surface: .carPlay, driveView: driveView)
     }
     
     // MARK: - 边缘羽化渐变特效
@@ -156,6 +157,21 @@ class PTMapView: UIView, MAMapViewDelegate {
         
         // 将这个渐变层作为当前 View 的蒙版
         self.layer.mask = gradientMaskLayer
+    }
+
+    // EN: CarPlay presentation follows the shared navigation session state instead of owning an AMap delegate.
+    // ES: La presentación de CarPlay sigue el estado compartido en lugar de poseer un delegado de AMap.
+    // 中文：CarPlay 导航层跟随统一会话状态显示，不再自行持有高德代理。
+    @objc private func handleNavigationStateChange(_ notification: Notification) {
+        guard let state = notification.userInfo?["state"] as? PTNavigationSessionState else { return }
+        switch state {
+        case .navigating, .rerouting:
+            driveView.isHidden = false
+        case .idle, .arrived, .failed:
+            driveView.isHidden = true
+        case .calculating, .routeReady:
+            break
+        }
     }
 
     // MARK: - MKMapViewDelegate
@@ -198,122 +214,14 @@ class PTMapView: UIView, MAMapViewDelegate {
     }
 }
 
-extension PTMapView:AMapNaviDriveManagerDelegate {
-    func driveManager(_ driveManager: AMapNaviDriveManager, didStartNavi naviMode: AMapNaviMode) {
-        self.driveView.isHidden = false
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, didStopNavi isStopped: Bool) {
-        self.driveView.isHidden = isStopped
-    }
-        
-    func driveManager(onArrivedDestination driveManager: AMapNaviDriveManager) {
-        self.driveViewCloseButtonClicked(self.driveView)
-    }
-    
-    func driveManagerDidEndEmulatorNavi(_ driveManager: AMapNaviDriveManager) {
-        self.driveViewCloseButtonClicked(self.driveView)
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, error: Error) {
-        let error = error as NSError
-        PTNSLogConsole("error:{%d - %@}", error.code, error.localizedDescription)
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, onCalculateRouteFailure error: Error) {
-        let error = error as NSError
-        PTNSLogConsole("CalculateRouteFailure:{%d - %@}", error.code, error.localizedDescription)
-    }
-
-    func driveManager(onCalculateRouteSuccess driveManager: AMapNaviDriveManager) {
-        //算路成功后显示路径
-//        showNaviRoutes()
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, postRouteNotification notifyData: AMapNaviRouteNotifyData) {
-        PTNSLogConsole(">>>>>>>>>>>>>>>>\(String(describing: notifyData.roadName))")
-    }
-            
-    func driveManager(_ manager: AMapNaviDriveManager?, onUpdateNaviSpeedLimitSection speed: Int) {
-        PTNSLogConsole(">>>>>>>>>>>>>>>>>>>>>>>>>>>>\(speed)")
-        self.currentSpeedLimit = UInt8(speed)
-    }
-    
-    func driveManagerIsNaviSoundPlaying(_ driveManager: AMapNaviDriveManager) -> Bool {
-        return SpeechSynthesizer.Shared.isSpeaking()
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, playNaviSound soundString: String, soundStringType: AMapNaviSoundType) {
-        if !PTMotoUserDefaultStruct.NavMute {
-            SpeechSynthesizer.Shared.speak(soundString)
-        }
-    }
-            
-    func driveManager(_ driveManager: AMapNaviDriveManager, onCalculateRouteSuccessWith type: AMapNaviRoutePlanType) {
-        PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Rerouting...", title: "",nextManeuver: PTXP400BLEProtocol.returnToRouteManeuverCode)
-    }
-        
-    func driveManager(_ driveManager: AMapNaviDriveManager, update gpsSignalStrength: AMapNaviGPSSignalStrength) {
-        switch gpsSignalStrength {
-        case .smartPos:
-            break
-        default:
-            PTBluetoothServerManager.shared.sendWelcomeMessage(next: "Searching GPS...", title: "",nextManeuver: PTXP400BLEProtocol.noValidActionManeuverCode)
-        }
-    }
-}
-
 extension PTMapView : AMapNaviDriveViewDelegate {
         
     func driveViewCloseButtonClicked(_ driveView: AMapNaviDriveView) {
-        //停止导航
-        AMapNaviDriveManager.sharedInstance().stopNavi()
-        AMapNaviDriveManager.sharedInstance().removeDataRepresentative(driveView)
+        PTNavigationSessionCoordinator.shared.stop(reason: "carPlayDriveViewClose")
         self.driveView.isHidden = true
-        PTDashboardConfig.shared.naving = false
-        Task { @MainActor in
-            PTLiveActivityManager.shared.stopNavigationActivity()
-        }
     }
     
     func driveView(_ view: AMapNaviDriveView, didChangeTo state: AMapNaviDriveViewState) { }
-}
-
-extension PTMapView:AMapNaviDriveDataRepresentable {
-         
-    func driveManager(_ driveManager: AMapNaviDriveManager, updateCruiseElecCameraInfos cameraInfos: [AMapNaviTrafficFacilityInfo]) {
-        if let firstCamera = cameraInfos.first {
-            // cameraSpeed 通常代表该路段限速，为 0 时表示无限速或未知
-            if firstCamera.limitSpeed > 0 {
-                self.currentSpeedLimit = UInt8(firstCamera.limitSpeed)
-            }
-        }
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, update cameraInfos: [AMapNaviCameraInfo]?) {
-        if let firstCamera = cameraInfos?.first {
-            // cameraSpeed 通常代表该路段限速，为 0 时表示无限速或未知
-            if firstCamera.cameraSpeed > 0 {
-                self.currentSpeedLimit = UInt8(firstCamera.cameraSpeed)
-            }
-        }
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, update naviInfo: AMapNaviInfo?) {
-        guard let naviInfo = naviInfo else {
-            return
-        }
-//        PTNSLogConsole("\(naviInfo)")
-        self.driveView.isHidden = false
-        self.currentRoadName = naviInfo.currentRoadName
-        PTMotoDashBoardNavFunction.sendNavDataToDashboard(naviInfo: naviInfo, currentSpeedLimit: self.currentSpeedLimit)
-    }
-    
-    func driveManager(_ driveManager: AMapNaviDriveManager, update naviLocation: AMapNaviLocation?) {
-        if PTMotoNavigationViewController.shared.startEmulatorNavi,let naviLocation = naviLocation {
-            PTLocationEngine.shared.amapEmulatorNavi(naviLocation: naviLocation,roadName: currentRoadName)
-        }
-    }
 }
 
 //MARK: MultipeerConnectivity

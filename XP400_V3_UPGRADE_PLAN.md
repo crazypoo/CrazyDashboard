@@ -1600,3 +1600,42 @@ OBD BLE / Wi-Fi / Mock
 - 若 Build 49 的实时 Capture 在某一 ELM327 上不兼容，只撤回 `PTCANExperimentCoordinator` 的实时入口和 monitor profile，保留旧 Capture 读取、解析、导出和历史分析。
 - 若某个 String Catalog 或 marker 资源影响现有语言，只撤回 Build 49 的 locale marker 与运行时解析出口；不删除已有十语言目录，也不改动 BLE/OBD 稳定核心。
 - 任何真实车辆未知状态均停止在观察/读取层；不得因 Build 49 的解析成功而开放固件写入、开机画面写入或未确认的仪表控制指令。
+
+## 31. Build 50 导航会话与仪表首页重构实施记录（2026-09-07）
+
+Build 50 继续使用营销版本 `2.0.8`，将 PTSpeed、Widget、Watch 和测试目标的 Build 统一为 `50`。本轮只重构外围协调和界面生命周期，不修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift` 或 `PTOBDCommand.swift`。
+
+### 31.1 工作包与状态
+
+| 状态 | ID | 工作包 | 结果 |
+| --- | --- | --- | --- |
+| ✅ | `B50-00` | 版本、核心保护与基线 | Build 50 已写入工程；稳定 BLE/OBD 核心未修改；iOS Debug generic build 已通过，签名发布与真机/真车基线待补 |
+| ✅ | `B50-01` | 导航会话协调 | 新增 `PTNavigationSessionCoordinator`，统一 AMap 代理、DataRepresentative、路线状态、手机/CarPlay 表面、Live Activity、Watch 和仪表盘输出；旧页面不再持有 AMap 全局代理，仅保留视图/业务辅助方法 |
+| ✅ | `B50-02` | 导航结束与失败清理 | 用户停止、到达、模拟导航结束、错误和算路失败共用资源清理边界；清理 `naving`、Live Activity、Watch、仪表代表和定位租约，避免活动残留 |
+| ✅ | `B50-03` | 仪表首页重构 | `PTMotoInfoViewController` 增加可滚动自适应内容容器、当前车辆摘要、仪表/OBD 状态值模型、断连重置和可见性门禁；保留双圆仪表和既有连接调用 |
+| ✅ | `B50-04` | 导航视图显示同步 | `PTPeugeotDashBoardNavView` 改为消费协调器通知；同一份高德回调只发送一次 BLE 导航数据，限速通知兼容 `UInt8`/`NSNumber` |
+| 🟨 | `B50-05` | 回归测试与发布门禁 | 新增导航进度边界和首页断连状态测试；iOS Debug generic build 与 `build-for-testing` 均通过，XCTest 实际执行、签名发布和真机/真车验证待补 |
+
+### 31.2 关键实现边界
+
+- `PTNavigationSessionCoordinator.shared` 是 AMap `delegate` 和自定义数据代表的唯一持有者；`PTMotoNavigationViewController`、`PTMapView` 与 `PTPeugeotDashBoardNavView` 不再抢占全局代理。
+- Live Activity 的目的地使用实际路线标题，预计到达时间使用选中路线时长；进度由 `normalizedProgress` 计算，路线总长度为零时不除零、不产生 NaN。
+- `PTMotoInfoViewController` 仅在页面可见时渲染高频 Data1/Data2/Data3；离开页面时停用指示灯渲染和 OBD delegate，断开仪表时只清空实时仪表值，不删除车库持久化数据。
+- 导航输出仍复用现有 `PTMotoDashBoardNavFunction` 和 `PTBluetoothServerManager`，没有新增 BLE 传输、OBD 轮询或第二套 Live Activity 通道。
+- 现有 CarPlay/Watch/Live Activity 行为仍需用真实设备验证；本轮不把 generic build、语法检查或 `build-for-testing` 当作实车成功证明。
+
+### 31.3 自动验证与外部验证边界
+
+- [x] `xcrun swiftc -parse` 已检查本轮修改的 Swift 文件和 `PTCoreTests.swift`。
+- [x] `xcodebuild -showBuildSettings` 已确认 PTSpeed `CURRENT_PROJECT_VERSION = 50`、营销版本 `2.0.8`、iOS 17.0 部署目标。
+- [x] `git diff --check` 已通过；三个受保护核心文件没有出现在变更列表中。
+- [x] 新增导航进度安全边界和首页断连状态测试；`build-for-testing` 已确认测试目标可以编译。
+- [ ] XCTest 实际执行：当前 Xcode 27 的 PTSpeed scheme 不接受已安装的 iOS 27 Simulator destination，需在匹配的 iOS Simulator runtime 或实体设备上执行。
+- [x] PTSpeed iOS Debug 工作区构建已通过；构建过程中仅保留现有依赖头文件、LiDAR Swift 6、旧 API 和脚本阶段 warning。
+- [ ] Widget/Watch 独立目标、Release/Archive、签名 TestFlight、真实 CarPlay、Apple Watch、实车导航和 BLE 断连矩阵待补。
+
+### 31.4 回滚边界
+
+- 若导航协调器在某个 AMap SDK 版本上出现兼容问题，只回退 `PTNavigationSessionCoordinator` 的接线和 Build 50 的 UI 状态层，恢复旧页面代理实现；不回退 BLE/OBD 核心。
+- 若首页滚动布局影响小屏设备，只回退滚动容器和车辆摘要布局，保留断连状态清理与导航进度边界修复。
+- 在真实设备验证完成前，Build 50 保持 `🟨`，不得把构建检查描述为 TestFlight、CarPlay、Watch 或 XP400 实车通过。
