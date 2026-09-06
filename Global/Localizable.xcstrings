@@ -40472,6 +40472,336 @@
     },
     "预计抵达" : {
 
+    },
+    "garage_documents" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fahrzeugdokumente" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Vehicle documents" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Documentos de la moto" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Documents du véhicule" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Documenti della moto" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "車両書類" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Документы мотоцикла" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Motosiklet belgeleri" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "车辆资料" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "車輛資料" } }
+      }
+    },
+    "garage_document_import" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Dokument importieren" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import document" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Importar documento" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Importer un document" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Importa documento" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "書類を読み込む" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Импортировать документ" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Belge içe aktar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导入资料" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "匯入資料" } }
+      }
+    },
+    "garage_document_scan" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Dokument scannen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Scan document" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Escanear documento" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Scanner un document" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Scansiona documento" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "書類をスキャン" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Сканировать документ" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Belge tara" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "扫描资料" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "掃描資料" } }
+      }
+    },
+    "garage_document_empty" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Noch keine Dokumente" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No documents yet" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Aún no hay documentos" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Aucun document" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Nessun documento" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "車両書類はありません" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Документов пока нет" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Henüz belge yok" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂无车辆资料" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "尚無車輛資料" } }
+      }
+    },
+    "garage_document_share" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Teilen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Compartir" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Partager" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Condividi" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Поделиться" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Paylaş" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "分享" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "分享" } }
+      }
+    },
+    "garage_document_delete" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Löschen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Eliminar" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Supprimer" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Elimina" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "削除" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Удалить" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sil" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "删除" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "刪除" } }
+      }
+    },
+    "garage_document_failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Dokument konnte nicht gespeichert werden." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Document could not be saved." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "No se pudo guardar el documento." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Impossible d’enregistrer le document." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Impossibile salvare il documento." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "書類を保存できませんでした。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Не удалось сохранить документ." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Belge kaydedilemedi." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "资料保存失败。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "資料儲存失敗。" } }
+      }
+    },
+    "ride_replay_photos" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fahrtfotos" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ride photos" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Fotos de la ruta" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Photos de trajet" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Foto del viaggio" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "走行写真" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Фотографии поездки" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürüş fotoğrafları" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "骑行照片" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "騎行照片" } }
+      }
+    },
+    "ride_photo_add" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fotos hinzufügen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add photos" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Añadir fotos" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ajouter des photos" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Aggiungi foto" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "写真を追加" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Добавить фото" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Fotoğraf ekle" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "添加照片" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "加入照片" } }
+      }
+    },
+    "ride_photo_empty" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Noch keine Fahrtfotos" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No ride photos yet" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Aún no hay fotos de la ruta" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Aucune photo de trajet" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Nessuna foto del viaggio" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "走行写真はありません" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Фотографий поездки пока нет" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Henüz sürüş fotoğrafı yok" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂无骑行照片" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "尚無騎行照片" } }
+      }
+    },
+    "ride_photo_failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Foto konnte nicht gespeichert werden." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Photo could not be saved." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "No se pudo guardar la foto." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Impossible d’enregistrer la photo." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Impossibile salvare la foto." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "写真を保存できませんでした。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Не удалось сохранить фото." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Fotoğraf kaydedilemedi." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "照片保存失败。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "照片儲存失敗。" } }
+      }
+    },
+    "roadbook_shareplay" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Roadbook mit SharePlay teilen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share Roadbook with SharePlay" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Compartir Roadbook con SharePlay" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Partager le Roadbook avec SharePlay" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Condividi Roadbook con SharePlay" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "SharePlayでルートを共有" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Поделиться маршрутом через SharePlay" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Roadbook'u SharePlay ile paylaş" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "使用 SharePlay 分享路线" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "使用 SharePlay 分享路線" } }
+      }
+    },
+    "roadbook_shareplay_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "SharePlay ist derzeit nicht verfügbar." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "SharePlay is not available right now." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "SharePlay no está disponible ahora." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "SharePlay est indisponible." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "SharePlay non è disponibile." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "現在SharePlayを利用できません。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "SharePlay сейчас недоступен." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "SharePlay şu anda kullanılamıyor." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "SharePlay 当前不可用。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "SharePlay 目前無法使用。" } }
+      }
+    },
+    "app_intent_open_readiness_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fahrtcheck öffnen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open ride readiness" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Abrir revisión de salida" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ouvrir la vérification de départ" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Apri controllo partenza" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "出発チェックを開く" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Открыть проверку поездки" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürüş kontrolünü aç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开出发检查" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟出發檢查" } }
+      }
+    },
+    "app_intent_open_garage_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Motorradgarage öffnen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open motorcycle garage" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Abrir garaje de motos" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ouvrir le garage moto" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Apri garage moto" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "バイクガレージを開く" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Открыть гараж мотоциклов" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Motosiklet garajını aç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开摩托车车库" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟摩托車車庫" } }
+      }
+    },
+    "app_intent_open_roadbooks_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Roadbooks öffnen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open Roadbooks" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Abrir Roadbooks" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ouvrir les Roadbooks" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Apri Roadbook" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ルートブックを開く" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Открыть маршруты" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Roadbook'ları aç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开路线簿" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟路線簿" } }
+      }
+    },
+    "app_intent_open_description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Schreibgeschützten Motorradbereich öffnen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open a read-only motorcycle workspace." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Abrir el espacio de moto en modo lectura." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ouvrir l’espace moto en lecture seule." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Apri lo spazio moto in sola lettura." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み取り専用のバイクワークスペースを開きます。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Открывает рабочее пространство мотоцикла только для чтения." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Salt okunur motosiklet çalışma alanını açar." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开只读摩托车工作区。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟唯讀摩托車工作區。" } }
+      }
+    },
+    "app_intent_readiness_opened" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fahrtcheck geöffnet." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ride readiness opened." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Revisión de salida abierta." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Vérification de départ ouverte." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Controllo partenza aperto." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "出発チェックを開きました。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Проверка поездки открыта." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürüş kontrolü açıldı." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已打开出发检查。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已開啟出發檢查。" } }
+      }
+    },
+    "app_intent_garage_opened" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Motorradgarage geöffnet." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Motorcycle garage opened." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Garaje de motos abierto." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Garage moto ouvert." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Garage moto aperto." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "バイクガレージを開きました。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Гараж мотоциклов открыт." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Motosiklet garajı açıldı." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已打开摩托车车库。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已開啟摩托車車庫。" } }
+      }
+    },
+    "app_intent_roadbooks_opened" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Roadbooks geöffnet." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Roadbooks opened." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Roadbooks abiertos." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Roadbooks ouverts." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Roadbook aperti." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ルートブックを開きました。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Маршруты открыты." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Roadbook'lar açıldı." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已打开路线簿。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已開啟路線簿。" } }
+      }
+    },
+    "dev_firmware_inspection_file" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Firmware-Datei auswählen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Select firmware file" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Elegir archivo de firmware" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Choisir le firmware" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Scegli firmware" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ファームウェアを選択" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Выбрать файл прошивки" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Donanım yazılımı seç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "选择固件文件" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇韌體檔案" } }
+      }
+    },
+    "dev_firmware_inspection_failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Firmware-Prüfung fehlgeschlagen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Firmware file inspection failed." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Falló la inspección del firmware." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Échec de l’inspection du firmware." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Ispezione firmware non riuscita." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ファームウェアの検査に失敗しました。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Не удалось проверить файл прошивки." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Donanım yazılımı incelenemedi." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "固件文件检查失败。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "韌體檔案檢查失敗。" } }
+      }
     }
   },
   "version" : "1.0"

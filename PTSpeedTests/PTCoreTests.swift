@@ -2605,6 +2605,122 @@ final class PTCoreTests: XCTestCase {
         XCTAssertEqual(PTMotoSystemRouteRequest.consume(), .parking)
         XCTAssertNil(PTMotoSystemRouteRequest.consume())
     }
+
+    // EN: Firmware inspection is bounded, deterministic and stores only safe metadata.
+    // ES: La inspección del firmware está limitada, es determinista y solo guarda metadatos seguros.
+    // 中文：固件检查有大小边界、结果确定，并且只保存安全元数据。
+    func testFirmwareInspectionProducesBoundedMetadata() throws {
+        let payload = Data([0x7F, 0x45, 0x4C, 0x46]) + Data("XP400\0BOOT\0".utf8)
+        let report = try PTFirmwareArtifactInspector.inspect(
+            data: payload,
+            fileName: "cluster.bin"
+        )
+
+        XCTAssertEqual(report.format, .elf)
+        XCTAssertEqual(report.byteCount, payload.count)
+        XCTAssertEqual(report.headerHex, "7F 45 4C 46 58 50 34 30 30 00 42 4F 4F 54 00")
+        XCTAssertEqual(report.sha256Hex.count, 64)
+        XCTAssertTrue(report.printableStrings.contains("XP400"))
+    }
+
+    // EN: The Build 48 language selector includes Japanese and Russian without dropping existing locales.
+    // ES: El selector de idiomas de Build 48 incluye japonés y ruso sin eliminar los locales existentes.
+    // 中文：Build48 语言选择器加入日语和俄语，同时保留已有语言。
+    @MainActor
+    func testBuild48LanguageSelectorIncludesJapaneseAndRussian() {
+        let keys = Set(PTDashboardConfig.shared.lauguageModels.map(\.keyName))
+        XCTAssertTrue(keys.isSuperset(of: ["zh", "tw", "en", "tr", "fr", "de", "es", "it", "ja", "ru"]))
+    }
+
+    // EN: Garage attachments survive metadata reload and delete their private file together with the record.
+    // ES: Los adjuntos del garaje sobreviven a la recarga de metadatos y eliminan el archivo privado junto con el registro.
+    // 中文：车库资料重新加载元数据后仍存在，删除记录时也会删除对应私有文件。
+    @MainActor
+    func testGarageAttachmentStoreRoundTrip() throws {
+        let suiteName = "PTCoreTests.garage.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PTGarageTests-\(UUID().uuidString)", isDirectory: true)
+        defer {
+            try? FileManager.default.removeItem(at: directory)
+            defaults.removePersistentDomain(forName: suiteName)
+        }
+
+        let vehicleID = UUID()
+        let store = PTGarageAttachmentStore(
+            userDefaults: defaults,
+            storageDirectory: directory
+        )
+        let attachment = try store.importData(
+            Data("manual".utf8),
+            fileName: "../manual.pdf",
+            vehicleID: vehicleID,
+            typeIdentifier: "com.adobe.pdf"
+        )
+        XCTAssertEqual(store.attachments(for: vehicleID).count, 1)
+        let fileURL = try XCTUnwrap(store.fileURL(for: attachment))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: fileURL.path))
+
+        let restoredStore = PTGarageAttachmentStore(
+            userDefaults: defaults,
+            storageDirectory: directory
+        )
+        XCTAssertEqual(restoredStore.attachments(for: vehicleID), [attachment])
+        try restoredStore.delete(attachment)
+        XCTAssertNil(restoredStore.fileURL(for: attachment))
+    }
+
+    // EN: Ride photo records use the same bounded private-storage contract as the gallery UI.
+    // ES: Los registros de fotos usan el mismo contrato limitado de almacenamiento privado que la galería.
+    // 中文：骑行照片记录与图库 UI 使用相同的有界私有存储契约。
+    @MainActor
+    func testRidePhotoAttachmentStoreRoundTrip() throws {
+        let suiteName = "PTCoreTests.photos.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PTRidePhotoTests-\(UUID().uuidString)", isDirectory: true)
+        defer {
+            try? FileManager.default.removeItem(at: directory)
+            defaults.removePersistentDomain(forName: suiteName)
+        }
+
+        let store = PTRidePhotoAttachmentStore(
+            userDefaults: defaults,
+            storageDirectory: directory
+        )
+        let attachment = try store.add(
+            data: Data([0xFF, 0xD8, 0xFF, 0xD9]),
+            fileName: "ride.jpg",
+            tripID: "trip-48"
+        )
+        XCTAssertEqual(store.attachments(for: "trip-48"), [attachment])
+
+        let restoredStore = PTRidePhotoAttachmentStore(
+            userDefaults: defaults,
+            storageDirectory: directory
+        )
+        XCTAssertEqual(restoredStore.attachments(for: "trip-48"), [attachment])
+        try restoredStore.delete(attachment)
+        XCTAssertNil(restoredStore.fileURL(for: attachment))
+    }
+
+    // EN: SharePlay snapshots cap the waypoint payload before it reaches GroupActivities.
+    // ES: Las instantáneas de SharePlay limitan los puntos antes de enviarlos a GroupActivities.
+    // 中文：SharePlay 快照在进入 GroupActivities 前限制路点数量。
+    @available(iOS 17.0, *)
+    func testRoadbookShareSnapshotIsBounded() {
+        let waypoints = (0..<70).map {
+            PTCruiseWaypoint(
+                latitude: 31.0 + Double($0) * 0.001,
+                longitude: 121.0 + Double($0) * 0.001,
+                instruction: "WP\($0)",
+                maneuverCode: PTManeuverMap.straight
+            )
+        }
+        let roadbook = PTRoadbook(name: "Build 48", waypoints: waypoints)
+        let snapshot = PTRoadbookShareSnapshot(roadbook: roadbook)
+        XCTAssertEqual(snapshot.waypoints.count, 64)
+    }
 }
 
 // EN: The actor keeps fallback call-count assertions race-free under Swift concurrency.

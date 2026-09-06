@@ -10,10 +10,11 @@ import Foundation
 import PooTools
 import SnapKit
 import SwifterSwift
+import UniformTypeIdentifiers
 
 /// ECU 原始数据嗅探器视图 (开发者模式专属)
 @MainActor
-public class PTECUSnifferOverlay: PTDashboardBaseView {
+public class PTECUSnifferOverlay: PTDashboardBaseView, UIDocumentPickerDelegate {
 
     // EN: The developer surface can be collapsed without ending the foreground safety session.
     // ES: La superficie de desarrollador puede minimizarse sin terminar la sesión de seguridad en primer plano.
@@ -592,36 +593,88 @@ public class PTECUSnifferOverlay: PTDashboardBaseView {
     }
 
     private func runFirmwarePreflight() {
-        guard let address = PTOBDDiagnosticAddress(tx: "7E0", rx: "7E8") else { return }
-        let request = PTFirmwareUpgradeRequest(
-            targetAddress: address,
-            firmwareIdentifier: "dev-placeholder",
-            byteCount: 0,
-            sha256Hex: ""
+        guard let presenter = PTUtils.getCurrentVC() else { return }
+        let picker = UIDocumentPickerViewController(
+            forOpeningContentTypes: [.data, .item],
+            asCopy: true
         )
-        let state = PTFirmwareUpgradeStateMachine.shared.prepare(
-            request: request,
-            checklist: .empty
-        )
-        appendDeveloperLog(
-            "🧪 Firmware preflight: \(state.rawValue); blockers=\(PTFirmwareUpgradeStateMachine.shared.blockers.joined(separator: ","))"
-        )
-        let blockers = PTFirmwareUpgradeStateMachine.shared.blockers
-        let blockerText = blockers.isEmpty ? "-" : blockers.joined(separator: ", ")
-        let resultAlert = UIAlertController(
+        picker.view.accessibilityLabel = PTDashboardConfig.languageFunc(text: "dev_firmware_inspection_file")
+        picker.delegate = self
+        picker.allowsMultipleSelection = false
+        presenter.present(picker, animated: true)
+    }
+
+    // EN: Selecting a file runs an offline inspection and never starts a write session.
+    // ES: Seleccionar un archivo ejecuta una inspección offline y nunca inicia una sesión de escritura.
+    // 中文：选择文件只执行离线预检，绝不会启动写入会话。
+    public func documentPicker(_ controller: UIDocumentPickerViewController,
+                               didPickDocumentsAt urls: [URL]) {
+        guard let url = urls.first else { return }
+        inspectFirmwareFile(at: url)
+    }
+
+    private func inspectFirmwareFile(at url: URL) {
+        let didAccess = url.startAccessingSecurityScopedResource()
+        Task { @MainActor [weak self] in
+            defer {
+                if didAccess { url.stopAccessingSecurityScopedResource() }
+            }
+            do {
+                let data = try await Task.detached(priority: .utility) {
+                    try Data(contentsOf: url, options: .mappedIfSafe)
+                }.value
+                let report = try PTFirmwareArtifactInspector.inspect(
+                    data: data,
+                    fileName: url.lastPathComponent
+                )
+                guard let self else { return }
+                let address = PTMotorcycleGarageStore.shared.currentVehicle?.preferredDiagnosticAddress
+                    ?? PTOBDDiagnosticAddress(tx: "7E0", rx: "7E8")!
+                let request = PTFirmwareUpgradeRequest(
+                    targetAddress: address,
+                    firmwareIdentifier: report.sha256Hex,
+                    firmwareData: data
+                )
+                let state = PTFirmwareUpgradeStateMachine.shared.prepare(
+                    request: request,
+                    checklist: .empty
+                )
+                let blockers = PTFirmwareUpgradeStateMachine.shared.blockers
+                let blockerText = blockers.isEmpty ? "-" : blockers.joined(separator: ", ")
+                self.appendDeveloperLog(
+                    "🧪 Firmware inspection: \(report.fileName), \(report.byteCount) bytes, \(report.format.rawValue), sha256=\(report.sha256Hex); state=\(state.rawValue); blockers=\(blockerText)"
+                )
+                self.presentFirmwareInspectionResult(report: report, state: state, blockers: blockerText)
+            } catch {
+                self?.appendDeveloperLog("⚠️ Firmware inspection failed: \(error.localizedDescription)")
+                self?.presentFirmwareInspectionError(error)
+            }
+        }
+    }
+
+    private func presentFirmwareInspectionResult(
+        report: PTFirmwareInspectionReport,
+        state: PTFirmwareUpgradeState,
+        blockers: String
+    ) {
+        let message = "\(report.byteCount) bytes\n\(report.format.rawValue)\nSHA-256: \(report.sha256Hex)\n状态: \(state.rawValue)\n阻断: \(blockers)\n\n仅完成文件预检，未发送任何字节。"
+        let alert = UIAlertController(
             title: PTDashboardConfig.languageFunc(text: "dev_firmware_preflight"),
-            message: String(
-                format: PTDashboardConfig.languageFunc(text: "dev_firmware_preflight_result"),
-                state.rawValue,
-                blockerText
-            ),
+            message: message,
             preferredStyle: .alert
         )
-        resultAlert.addAction(UIAlertAction(
-            title: PTDashboardConfig.languageFunc(text: "button_confirm"),
-            style: .default
-        ))
-        PTUtils.getCurrentVC()?.present(resultAlert, animated: true)
+        alert.addAction(UIAlertAction(title: PTDashboardConfig.languageFunc(text: "button_confirm"), style: .default))
+        PTUtils.getCurrentVC()?.present(alert, animated: true)
+    }
+
+    private func presentFirmwareInspectionError(_ error: Error) {
+        let alert = UIAlertController(
+            title: PTDashboardConfig.languageFunc(text: "dev_firmware_inspection_failed"),
+            message: error.localizedDescription,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: PTDashboardConfig.languageFunc(text: "button_confirm"), style: .default))
+        PTUtils.getCurrentVC()?.present(alert, animated: true)
     }
     
     @objc private func toggleFilter() {

@@ -261,7 +261,26 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
         it.flag = Flag(countryCode: "IT")!.originalImage
         it.voiceValue = "it-IT"
 
-        return [cn, cn_tw, en, tr, fr, de, es, it]
+        // EN: Japanese and Russian complete the ten-language app selector without changing the BLE protocol.
+        // ES: Japonés y ruso completan el selector de diez idiomas sin cambiar el protocolo BLE.
+        // 中文：加入日语和俄语，补全十语言选择器，不改变 BLE 协议。
+        let ja = PTLanguageModel()
+        ja.name = "日本語"
+        ja.keyName = "ja"
+        ja.localozableName = "ja"
+        ja.isSelected = PTMotoUserDefaultStruct.userSetLanguage == ja.keyName
+        ja.flag = Flag(countryCode: "JP")!.originalImage
+        ja.voiceValue = "ja-JP"
+
+        let ru = PTLanguageModel()
+        ru.name = "Русский"
+        ru.keyName = "ru"
+        ru.localozableName = "ru"
+        ru.isSelected = PTMotoUserDefaultStruct.userSetLanguage == ru.keyName
+        ru.flag = Flag(countryCode: "RU")!.originalImage
+        ru.voiceValue = "ru-RU"
+
+        return [cn, cn_tw, en, tr, fr, de, es, it, ja, ru]
     }
     
     static func appIsInChinese() ->Bool {
@@ -292,14 +311,17 @@ extension PTDashboardConfig {
     /// ES: Resuelve una clave del String Catalog compilado usando el locale elegido por la app.
     /// 中文：使用 App 当前选择的语言，从编译后的 String Catalog 解析文案。
     class func languageFunc(text:String) ->String {
-        text.localized(using: "Localizable", in: .main)
+        let value = text.localized(using: "Localizable", in: .main)
+        return value == text
+            ? PTWidgetLocalized.string(text, languageIdentifier: PTLanguage.share.language)
+            : value
     }
     
     static func language(key: String, _ args: CVarArg...) -> String {
         // EN: Format the collected arguments directly; optional parameters after a variadic parameter can box the array as one value.
         // ES: Formatear directamente los argumentos reunidos; los parámetros opcionales después de un variádico pueden empaquetar el array como un solo valor.
         // 中文：直接格式化收集到的参数；可变参数后面的可选参数可能会把整个数组错误地装箱成一个值。
-        let localizedText = key.localized(using: "Localizable", in: .main)
+        let localizedText = languageFunc(text: key)
         guard !args.isEmpty else { return localizedText }
         return String(format: localizedText,
                       locale: PTLanguage.share.locale,

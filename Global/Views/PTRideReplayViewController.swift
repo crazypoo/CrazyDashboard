@@ -50,6 +50,7 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
     private let playButton = UIButton(type: .system)
     private let previousButton = UIButton(type: .system)
     private let nextButton = UIButton(type: .system)
+    private let photosButton = UIButton(type: .system)
     private let eventsTitleLabel = UILabel()
     private let eventsTableView = UITableView(frame: .zero, style: .insetGrouped)
     private let activityIndicator = UIActivityIndicatorView(style: .medium)
@@ -113,6 +114,8 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
         configureControlButton(previousButton, title: "⏮", action: #selector(previousSample))
         configureControlButton(playButton, title: "▶︎", action: #selector(togglePlayback))
         configureControlButton(nextButton, title: "⏭", action: #selector(nextSample))
+        configureControlButton(photosButton, title: "📷", action: #selector(openRidePhotos))
+        photosButton.accessibilityLabel = PTDashboardConfig.languageFunc(text: "ride_replay_photos")
         playButton.accessibilityIdentifier = "rideReplayPlayPause"
 
         eventsTableView.dataSource = self
@@ -157,7 +160,7 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
         view.addSubview(timeLabel)
         view.addSubview(progressSlider)
 
-        let controls = UIStackView(arrangedSubviews: [previousButton, playButton, nextButton])
+        let controls = UIStackView(arrangedSubviews: [previousButton, playButton, nextButton, photosButton])
         controls.axis = .horizontal
         controls.distribution = .fillEqually
         controls.spacing = 8
@@ -226,6 +229,16 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
         stack.spacing = 4
         stack.alignment = .fill
         return stack
+    }
+
+    // EN: Photos are attached to the stable trip ID and never alter replay telemetry.
+    // ES: Las fotos se vinculan al ID estable del viaje y nunca alteran la telemetría reproducida.
+    // 中文：照片绑定稳定的行程 ID，不会修改回放遥测数据。
+    @objc private func openRidePhotos() {
+        navigationController?.pushViewController(
+            PTRidePhotoGalleryViewController(tripID: report.id),
+            animated: true
+        )
     }
 
     private func emptyEventsView() -> UIView {

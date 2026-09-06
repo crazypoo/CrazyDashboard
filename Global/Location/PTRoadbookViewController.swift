@@ -317,6 +317,15 @@ final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDele
         ) { [weak self] _ in
             self?.share(roadbook)
         })
+        if #available(iOS 17.0, *) {
+            alert.addAction(UIAlertAction(
+                title: PTDashboardConfig.languageFunc(text: "roadbook_shareplay"),
+                style: .default
+            ) { [weak self] _ in
+                guard let self else { return }
+                PTSharePlayRoadbookManager.shared.share(roadbook: roadbook, from: self)
+            })
+        }
 
         if !active {
             alert.addAction(UIAlertAction(

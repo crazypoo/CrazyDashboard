@@ -2,7 +2,9 @@
 //  PTUDSDiagnosticService.swift
 //  PTSpeed
 //
-//  Read-only UDS/ECU diagnostics built on top of the stable OBD transport.
+//  EN: Read-only UDS/ECU diagnostics built on top of the stable OBD transport.
+//  ES: Diagnóstico UDS/ECU de solo lectura construido sobre el transporte OBD estable.
+//  中文：基于稳定 OBD 传输层的只读 UDS/ECU 诊断。
 //
 
 import Foundation
@@ -225,6 +227,22 @@ nonisolated public struct PTOBDFullVehicleDumpReport: Codable, Sendable {
     }
 }
 
+// EN: The result box keeps the throwing value outside the transport closure without sharing mutable state.
+// ES: La caja de resultados mantiene el valor arrojable fuera del cierre de transporte sin compartir estado mutable.
+// 中文：结果盒子把可抛出结果放在传输闭包之外，避免共享可变状态。
+private actor PTOBDResultBox<Value: Sendable> {
+    private var result: Result<Value, Error>?
+
+    func resolve(_ result: Result<Value, Error>) {
+        guard self.result == nil else { return }
+        self.result = result
+    }
+
+    func resolved() -> Result<Value, Error>? {
+        result
+    }
+}
+
 // EN: The actor serializes advanced reads while the stable telemetry manager remains the only transport owner.
 // ES: El actor serializa las lecturas avanzadas mientras el gestor de telemetría estable sigue siendo el único dueño del transporte.
 // 中文：该 actor 串行化高级只读任务，稳定遥测管理器仍然是唯一的传输层所有者。
@@ -232,39 +250,88 @@ public actor PTAdvancedOBDCoordinator {
     public static let shared = PTAdvancedOBDCoordinator()
 
     private var isExecuting = false
-    private var waiters: [CheckedContinuation<Void, Never>] = []
+    private struct Waiter {
+        let id: UUID
+        let continuation: CheckedContinuation<Void, Error>
+    }
+
+    private var waiters: [Waiter] = []
+    private var nextOperationID: UInt64 = 0
+    private var cancelledOperationIDs: Set<UInt64> = []
 
     private init() {}
 
     // EN: Waiters are queued before suspension so actor reentrancy cannot overlap two exclusive bus operations.
     // ES: Las esperas se encolan antes de suspenderse para que la reentrancia del actor no solape dos operaciones exclusivas.
     // 中文：在挂起前先排队，避免 actor 重入导致两个总线独占任务重叠。
-    private func acquire() async {
+    private func acquire() async throws {
+        try Task.checkCancellation()
         guard isExecuting else {
             isExecuting = true
             return
         }
 
-        await withCheckedContinuation { continuation in
-            waiters.append(continuation)
+        let waiterID = UUID()
+        try await withTaskCancellationHandler(operation: {
+            try await withCheckedThrowingContinuation { continuation in
+                waiters.append(Waiter(id: waiterID, continuation: continuation))
+            }
+        }, onCancel: {
+            Task { await self.cancelWaiter(waiterID) }
+        })
+    }
+
+    private func cancelWaiter(_ id: UUID) {
+        guard let index = waiters.firstIndex(where: { $0.id == id }) else { return }
+        let waiter = waiters.remove(at: index)
+        waiter.continuation.resume(throwing: PTOBDDiagnosticError.cancelled)
+    }
+
+    private func beginOperation() -> UInt64 {
+        nextOperationID &+= 1
+        return nextOperationID
+    }
+
+    private func cancelOperation(_ id: UInt64) {
+        cancelledOperationIDs.insert(id)
+    }
+
+    private func isOperationCancelled(_ id: UInt64) -> Bool {
+        cancelledOperationIDs.contains(id)
+    }
+
+    private func finishOperation(_ id: UInt64) {
+        cancelledOperationIDs.remove(id)
+    }
+
+    private func resumeNextWaiter() {
+        while !waiters.isEmpty {
+            let waiter = waiters.removeFirst()
+            if Task.isCancelled {
+                waiter.continuation.resume(throwing: PTOBDDiagnosticError.cancelled)
+            } else {
+                waiter.continuation.resume()
+                return
+            }
         }
+        isExecuting = false
     }
 
     private func release() {
         if waiters.isEmpty {
             isExecuting = false
         } else {
-            waiters.removeFirst().resume()
+            resumeNextWaiter()
         }
     }
 
     /// EN: Executes one read-only operation while the existing telemetry polling task is suspended by the stable manager.
     /// ES: Ejecuta una operación de solo lectura mientras el gestor estable suspende el sondeo de telemetría.
     /// 中文：在稳定管理器暂停遥测轮询期间执行一个只读任务。
-    public func executeReadOnly<T>(
+    public func executeReadOnly<T: Sendable>(
         _ operation: @escaping @Sendable () async throws -> T
     ) async throws -> T {
-        await acquire()
+        try await acquire()
         defer { release() }
 
         guard await PTMotoTelemetryManager.shared.isConnected else {
@@ -272,17 +339,40 @@ public actor PTAdvancedOBDCoordinator {
         }
         try Task.checkCancellation()
 
-        return try await withCheckedThrowingContinuation { continuation in
-            Task {
-                await PTMotoTelemetryManager.shared.performExclusiveTask {
-                    do {
-                        continuation.resume(returning: try await operation())
-                    } catch {
-                        continuation.resume(throwing: error)
+        let operationID = beginOperation()
+        defer { finishOperation(operationID) }
+
+        let resultBox = PTOBDResultBox<T>()
+        let value = try await withTaskCancellationHandler(operation: {
+            try Task.checkCancellation()
+            await PTMotoTelemetryManager.shared.performExclusiveTask {
+                if self.isOperationCancelled(operationID) || Task.isCancelled {
+                    await resultBox.resolve(.failure(PTOBDDiagnosticError.cancelled))
+                    return
+                }
+
+                do {
+                    let result = try await operation()
+                    if self.isOperationCancelled(operationID) || Task.isCancelled {
+                        await resultBox.resolve(.failure(PTOBDDiagnosticError.cancelled))
+                    } else {
+                        await resultBox.resolve(.success(result))
                     }
+                } catch {
+                    await resultBox.resolve(.failure(error))
                 }
             }
-        }
+
+            guard let result = await resultBox.resolved() else {
+                throw PTOBDDiagnosticError.noData
+            }
+            return try result.get()
+        }, onCancel: {
+            Task { await self.cancelOperation(operationID) }
+        })
+
+        try Task.checkCancellation()
+        return value
     }
 }
 
@@ -348,10 +438,10 @@ nonisolated public final class PTUDSReadService {
             throw PTOBDDiagnosticError.batchLimitExceeded
         }
 
-        let responses = try await PTAdvancedOBDCoordinator.shared.executeReadOnly {
+        return try await PTAdvancedOBDCoordinator.shared.executeReadOnly {
             let batchStartedAt = Date()
-            var responses: [(String, String)] = []
-            responses.reserveCapacity(normalizedDIDs.count)
+            var results: [PTOBDIDReadResult] = []
+            results.reserveCapacity(normalizedDIDs.count)
 
             for (index, did) in normalizedDIDs.enumerated() {
                 try Task.checkCancellation()
@@ -371,7 +461,17 @@ nonisolated public final class PTUDSReadService {
                     throw PTOBDDiagnosticError.timeout
                 }
 
-                responses.append((did, response))
+                let decodedText = await MainActor.run {
+                    PTMultiFrameParser.parseLongString(response: response)
+                }
+                let result = Self.makeDIDResult(
+                    address: address,
+                    did: did,
+                    response: response,
+                    decodedText: decodedText
+                )
+                results.append(result)
+                await progress?(index + 1, normalizedDIDs.count, result)
 
                 if policy.interRequestDelayNanoseconds > 0,
                    index + 1 < normalizedDIDs.count {
@@ -379,27 +479,8 @@ nonisolated public final class PTUDSReadService {
                 }
             }
 
-            return responses
+            return results
         }
-
-        var results: [PTOBDIDReadResult] = []
-        results.reserveCapacity(responses.count)
-        for (index, item) in responses.enumerated() {
-            try Task.checkCancellation()
-            let decodedText = await MainActor.run {
-                PTMultiFrameParser.parseLongString(response: item.1)
-            }
-            let result = Self.makeDIDResult(
-                address: address,
-                did: item.0,
-                response: item.1,
-                decodedText: decodedText
-            )
-            results.append(result)
-            await progress?(index + 1, normalizedDIDs.count, result)
-        }
-
-        return results
     }
 
     public func readVIN(

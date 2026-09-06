@@ -16,12 +16,15 @@ import PooTools
 // 中文：让 App Intent 文案独立于 UIKit，保证后台状态操作保持轻量。
 private enum PTAppIntentResources {
     nonisolated static func localized(_ key: String) -> String {
-        String(
+        let value = String(
             localized: String.LocalizationValue(key),
             table: "Localizable",
             bundle: .main,
             locale: PTLanguage.share.locale
         )
+        return value == key
+            ? PTWidgetLocalized.string(key, languageIdentifier: PTLanguage.share.language)
+            : value
     }
 
     nonisolated static func format(_ key: String, _ arguments: CVarArg...) -> String {
@@ -197,6 +200,78 @@ struct PTOpenHUDIntent: AppIntent {
         let message = PTAppIntentResources.routeMessage(
             result: result,
             startedKey: "app_intent_hud_opened",
+            unavailableKey: "ride_not_available"
+        )
+        return .result(dialog: PTAppIntentResources.dialog(message))
+    }
+}
+
+// EN: These entry points open existing read-only destinations and do not initiate BLE or OBD work.
+// ES: Estas entradas abren destinos existentes de solo lectura y no inician trabajo BLE ni OBD.
+// 中文：这些入口只打开现有只读页面，不会启动 BLE 或 OBD 操作。
+struct PTOpenReadinessIntent: AppIntent {
+    static let title = LocalizedStringResource("app_intent_open_readiness_title", table: "Localizable")
+    static let description = IntentDescription(
+        LocalizedStringResource("app_intent_open_description", table: "Localizable")
+    )
+    static let openAppWhenRun = true
+
+    @available(iOS 26.0, *)
+    static let supportedModes: IntentModes = [.foreground(.immediate)]
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        let result = await MainActor.run {
+            PTRoutingManager.shared.execute(action: .openSafety)
+        }
+        let message = PTAppIntentResources.routeMessage(
+            result: result,
+            startedKey: "app_intent_readiness_opened",
+            unavailableKey: "ride_not_available"
+        )
+        return .result(dialog: PTAppIntentResources.dialog(message))
+    }
+}
+
+struct PTOpenGarageIntent: AppIntent {
+    static let title = LocalizedStringResource("app_intent_open_garage_title", table: "Localizable")
+    static let description = IntentDescription(
+        LocalizedStringResource("app_intent_open_description", table: "Localizable")
+    )
+    static let openAppWhenRun = true
+
+    @available(iOS 26.0, *)
+    static let supportedModes: IntentModes = [.foreground(.immediate)]
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        let result = await MainActor.run {
+            PTRoutingManager.shared.execute(action: .openGarage(vehicleID: nil))
+        }
+        let message = PTAppIntentResources.routeMessage(
+            result: result,
+            startedKey: "app_intent_garage_opened",
+            unavailableKey: "ride_not_available"
+        )
+        return .result(dialog: PTAppIntentResources.dialog(message))
+    }
+}
+
+struct PTOpenRoadbooksIntent: AppIntent {
+    static let title = LocalizedStringResource("app_intent_open_roadbooks_title", table: "Localizable")
+    static let description = IntentDescription(
+        LocalizedStringResource("app_intent_open_description", table: "Localizable")
+    )
+    static let openAppWhenRun = true
+
+    @available(iOS 26.0, *)
+    static let supportedModes: IntentModes = [.foreground(.immediate)]
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        let result = await MainActor.run {
+            PTRoutingManager.shared.execute(action: .openRoadbooks)
+        }
+        let message = PTAppIntentResources.routeMessage(
+            result: result,
+            startedKey: "app_intent_roadbooks_opened",
             unavailableKey: "ride_not_available"
         )
         return .result(dialog: PTAppIntentResources.dialog(message))
@@ -431,6 +506,33 @@ struct PTMotoAppShortcuts: AppShortcutsProvider {
             systemImageName: "rectangle.inset.filled"
         )
         AppShortcut(
+            intent: PTOpenReadinessIntent(),
+            phrases: [
+                "Open my ride readiness in \(.applicationName)",
+                "Show my pre-ride check in \(.applicationName)"
+            ],
+            shortTitle: LocalizedStringResource("app_intent_open_readiness_title", table: "Localizable"),
+            systemImageName: "checklist"
+        )
+        AppShortcut(
+            intent: PTOpenGarageIntent(),
+            phrases: [
+                "Open my motorcycle garage in \(.applicationName)",
+                "Show my bikes in \(.applicationName)"
+            ],
+            shortTitle: LocalizedStringResource("app_intent_open_garage_title", table: "Localizable"),
+            systemImageName: "garage.open"
+        )
+        AppShortcut(
+            intent: PTOpenRoadbooksIntent(),
+            phrases: [
+                "Open my Roadbooks in \(.applicationName)",
+                "Show my motorcycle routes in \(.applicationName)"
+            ],
+            shortTitle: LocalizedStringResource("app_intent_open_roadbooks_title", table: "Localizable"),
+            systemImageName: "map"
+        )
+        AppShortcut(
             intent: PTNavigateToDestinationIntent(),
             phrases: [
                 "Navigate with \(.applicationName)",
@@ -447,15 +549,6 @@ struct PTMotoAppShortcuts: AppShortcutsProvider {
             ],
             shortTitle: LocalizedStringResource("app_intent_find_fuel_title", table: "Localizable"),
             systemImageName: "fuelpump.fill"
-        )
-        AppShortcut(
-            intent: PTStartRideTimerIntent(),
-            phrases: [
-                "Start a motorcycle timer in \(.applicationName)",
-                "Set a ride break timer in \(.applicationName)"
-            ],
-            shortTitle: LocalizedStringResource("app_intent_timer_short_title", table: "Localizable"),
-            systemImageName: "timer"
         )
         AppShortcut(
             intent: PTScheduleDepartureAlarmIntent(),

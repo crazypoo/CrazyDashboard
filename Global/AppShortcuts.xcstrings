@@ -425,6 +425,48 @@
         }
       }
     },
+    "Open my motorcycle garage in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Open my motorcycle garage in ${applicationName}",
+              "Show my bikes in ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Open my ride readiness in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Open my ride readiness in ${applicationName}",
+              "Show my pre-ride check in ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Open my Roadbooks in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Open my Roadbooks in ${applicationName}",
+              "Show my motorcycle routes in ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
     "Open the riding HUD in ${applicationName}" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -594,20 +636,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在 ${applicationName} 中開始摩托車路線"
-          }
-        }
-      }
-    },
-    "Start a motorcycle timer in ${applicationName}" : {
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringSet" : {
-            "state" : "new",
-            "values" : [
-              "Start a motorcycle timer in ${applicationName}",
-              "Set a ride break timer in ${applicationName}"
-            ]
           }
         }
       }

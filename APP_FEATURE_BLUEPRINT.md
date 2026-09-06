@@ -2,11 +2,11 @@
 
 > 本文件是项目功能、入口、平台覆盖和完成状态的唯一事实源（Single Source of Truth）。
 >
-> 快照日期：2026-09-05
+> 快照日期：2026-09-06
 >
-> 仓库基线：当前工作区，Build 46 代码已接入；真实设备、车辆和完整发布验证仍待补
+> 仓库基线：当前工作区，Build 48 代码已接入；真实设备、车辆和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests `CURRENT_PROJECT_VERSION = 46`
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests `CURRENT_PROJECT_VERSION = 48`
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -327,6 +327,21 @@ OBD BLE / Wi-Fi / Mock
 
 Build 46 不改变 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift` 或 `PTOBDCommand.swift`，也不改变 QWeather 初始化和现有 Watch、Widget、iCloud 数据通道。
 
+### 7.4 Build 48 原生能力与资料功能
+
+Build 48 已接入以下外围能力。它们不改变 BLE/OBD 稳定核心；尚未经过真机、真车、真实 NFC/SharePlay 或签名 TestFlight 验收的能力保持 `🟨`。
+
+| 工作包 | 状态 | 当前产品能力 | 入口与边界 |
+| --- | --- | --- | --- |
+| B48-01 | 🟨 | 只读 UDS/ECU 批量 DID、取消、进度和结构化响应报告 | 诊断中心/Dev；只读，复用现有 OBD 传输 |
+| B48-02/B48-08 | 🟨 | Widget、Watch 和新增页面共用状态/本地化出口；新增日语、俄语 | 设置语言；共十种 locale，仍需人工语言校对 |
+| B48-03 | 🧪 | Dev 固件文件格式、大小、SHA-256 和元数据预检 | 既有 Dev 浮层；不会发送任何固件字节 |
+| B48-04 | 🟨 | 出发检查、车库、Roadbook App Intent/Shortcuts；已有 Scheme 可作为 NFC 标签目标 | Siri/快捷指令/自动化说明页；NFC 实体标签和冷启动待验证 |
+| B48-05 | 🟨 | 按车辆保存维修手册、保险/登记资料和扫描 PDF | 车库 > 车辆资料；本机私有文件，不并入 iCloud 档案 |
+| B48-06 | 🟨 | 行程照片选择、压缩、预览和删除 | 行程回放 > 照片；PHPicker 选择权限，本机私有文件 |
+| B48-07 | 🟨 | 只读 Roadbook SharePlay 路线快照 | Roadbook 操作菜单；最多 64 个路点，不同步车辆隐私和控制指令 |
+| B48-09 | 🟨 | 十语言资源、三平台目标构建与测试构建门禁 | 发布流程；真实设备和签名发布仍需验证 |
+
 ## 8. 已退役功能
 
 当前没有需要登记的已退役功能。后续移除功能时，在下表保留原 ID、最后可用 Build、移除原因和替代路径。
@@ -387,3 +402,4 @@ Build 46 不改变 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift` 或
 | 2026-09-04 | `8c51ee8` / Build 45 | Build 45 已完成 RIDE-014～RIDE-017、NAV-014、SYS-014、SYS-015、DEV-013 的外围代码接入：出发检查、轮胎/悬挂档案、加油与续航校准、综合路线风险、Watch 摘要、保养费用闭环、BLE 证据导入和多车库 iCloud；当前统一标记为部分完成，实施证据和验证缺口见升级计划第 27 节 |
 | 2026-09-04 | 当前工作区 | SYS-013 新增 `PTDashboardANCSProvider`：复用现有 `CBPeripheralManager` 提供 App 自有 ANCS 风格测试通道，设置页可发送固定英文消息；系统电话/短信链路不变，服务注册、XP400 订阅和仪表显示仍待真机验证 |
 | 2026-09-05 | 当前工作区 Build 46 | RIDE-018 已接入前台 LiDAR 三区测距、低速车速门禁、置信度/中值平滑、报警驻留、车库冻结保存与 JSON/CSV 导出；PTT-009 已移除启动时 AudioSession 初始化，加入中断/媒体重置后的显式音频恢复；CallKit/PushKit 保留未来评估边界。主 App、Widget、Watch 与 Tests 目标构建通过，XCTest 实际执行、签名发布和真实设备/车辆验证待补 |
+| 2026-09-06 | 当前工作区 Build 48 | B48-01～B48-09 已完成外围代码接入：只读 OBD 取消/进度、十语言资源、Dev 固件文件预检、App Intents/Scheme NFC-ready、车库资料、行程照片和 Roadbook SharePlay；主 App、Widget、Watch generic build 与 Tests `build-for-testing` 通过，XCTest 实际执行、签名发布、真实 NFC/SharePlay/Watch/车辆验证待补；三个 BLE/OBD 核心文件零字节变化 |

@@ -8,7 +8,7 @@
 >
 > 发布方式：只维护现有 `PTSpeed` TestFlight 版本，不新增 Lab Scheme、App Target、Bundle ID 或第二发布渠道；当前没有 App Store 上架计划。
 >
-> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 为 Build 46，下一次 TestFlight 从 Build 47 开始。
+> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 为 Build 48，下一次 TestFlight 从 Build 49 开始。
 >
 > 文件名中的 `V3` 仅为保留现有路径和链接，不代表需要修改 App 大版本号。
 >
@@ -46,7 +46,7 @@
 ### 版本与 Build 规则
 
 - [x] `PTSpeed`、Widget 和 Watch 的 `MARKETING_VERSION` 保持 `2.0.8`。
-- [x] 当前主 App、Widget、Watch 和 Tests Build 已统一为 `46`；下一次 TestFlight 使用 Build `47`。
+- [x] 当前主 App、Widget、Watch 和 Tests Build 已统一为 `48`；下一次 TestFlight 使用 Build `49`。
 - [x] 每次上传 TestFlight 只将 `CURRENT_PROJECT_VERSION` 加一：44、45、46……
 - [x] App、Widget、Watch 和 Tests 每次使用完全相同的 Build 号；Build 45 Debug/Release 目标构建和无签名 Archive 已按对应验收记录核验。
 - [x] Tests Target 已同步到主 App Build `45`，此后与主 App、Widget 和 Watch 一起递增。
@@ -1511,3 +1511,45 @@ OBD BLE / Wi-Fi / Mock
 - PTT 回滚只涉及音频生命周期标记、显式恢复 UI 和本轮新增本地化 key；不回退 PTT 的组网、音频传输和 Live Activity 核心数据结构。
 - Build 46 不因 CallKit/PushKit 缺失而阻塞普通 TestFlight；在没有后端和真实系统通话需求前，保持未实现状态。
 - 发布前必须再次验证三个核心文件 SHA-256 与第 2 节一致，并补充 Widget/Watch 串行构建、签名 Archive、XCTest 执行和真实设备/车辆证据；在这些证据完成前 B46 工作包保持 `🟨`。
+
+## 29. Build 48 稳定性、原生能力与可验证功能实施记录（2026-09-06）
+
+### 29.1 工作包与实施结果
+
+| 状态 | ID | 内容 | 结果 |
+|---|---|---|---|
+| ✅ | `B48-00` | 基线、版本和核心保护 | 保持营销版本 `2.0.8`；主 App、Widget、Watch、Tests 统一为 Build `48`；三个受保护核心文件零字节变化 |
+| 🟨 | `B48-01` | 只读 OBD/UDS 取消、进度和报告 | 新增 `PTAdvancedOBDCoordinator` 的排队、取消和独占门禁；DID 批量读取返回结构化结果并报告 `62`/`7F` 状态；真实 ECU 超时、取消和断连矩阵待补 |
+| 🟨 | `B48-02` | 配置/语言一致性 | 共享 Widget/Watch 状态模型继续作为统一字段出口；新增日语、俄语并补齐新增能力的十语言 String Catalog；旧系统资源和真实切换界面仍待人工检查 |
+| 🟨 | `B48-03` | 固件文件安全预检 | Dev 浮层可选择文件并生成大小、格式、SHA-256、头部和有限可打印字符串报告；状态机仍拒绝发送固件字节，Bootloader/CRC/ACK/恢复协议未确认 |
+| 🟨 | `B48-04` | NFC-ready Scheme 与 App Intents | 新增出发检查、车库、Roadbook 只读 App Intent/Shortcuts；NFC 复用现有 `xp400://` 路由作为外部标签入口，不添加第二套传输或车辆指令；真实 NFC 标签和冷启动验证待补 |
+| 🟨 | `B48-05` | 车库车辆资料 | 新增按车辆隔离的本地资料/扫描 PDF 导入、大小限制、分享和删除；二进制资料不进入现有 iCloud 档案同步；文件恢复和真实扫描设备待补 |
+| 🟨 | `B48-06` | 行程照片 | 新增 PHPicker 选择、缩略图压缩、按稳定行程 ID 保存、预览、分享入口和数量/大小边界；照片默认留在本机，真实大图、权限和长行程性能待补 |
+| 🟨 | `B48-07` | Roadbook SharePlay | 新增有界、只读 Roadbook `GroupActivity`，只传路线快照，不传 BLE/OBD/隐私凭据；真实配对 FaceTime/SharePlay 会话和异常退出待补 |
+| 🟨 | `B48-08` | 日语与俄语 | `PTDashboardConfig` 增加 `ja`/`ru`，String Catalog 和新增页面回退文案覆盖 `zh-Hans`、`zh-Hant`、`en`、`tr`、`fr`、`de`、`es`、`it`、`ja`、`ru`；系统语言切换和语音内容待人工校验 |
+| 🟨 | `B48-09` | 测试、工程和发布门禁 | 主 App、Widget、Watch 目标构建及 Tests `build-for-testing` 通过；XCTest Simulator destination 与当前工程平台不匹配，签名 Archive、TestFlight 和真实设备/车辆验证待补 |
+
+### 29.2 关键实现边界
+
+- `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift` 和 `PTOBDCommand.swift` 没有修改；OBD 高级能力只复用现有 `performExclusiveTask`、`fetchProprietaryData` 和既有解析能力，不复制第二套传输层或轮询引擎。
+- OBD 协调器在独占任务外排队，取消的等待者不会占用总线；正在执行的读取会在稳定传输返回后检查取消状态。真实底层阻塞时间仍必须用实车和适配器验证。
+- 固件功能仅允许开发者从既有 Dev 浮层选择并检查本地文件。即使通过元数据检查，`attemptExecution` 仍返回 `protocolNotValidated`，不会调用写入接口，也不会向仪表发送字节。
+- App Intent 只打开已有只读页面。NFC 方案只复用已有 URL Scheme；本 Build 不宣称已经完成后台 NFC 自动打开，也不新增 CoreBluetooth、OBD 或 NFC 写入协议。
+- 车辆资料和照片保存在 App 私有 Application Support 目录，并使用 UserDefaults 保存有界元数据；iCloud 车辆档案、Widget/Watch 状态和现有核心连接通道保持不变。
+- SharePlay 仅同步最多 64 个路点的 Roadbook 快照，接收后仍由当前页面决定是否展示；不把 VIN、实时位置、原始 BLE 帧或控制指令放进 Group Session。
+
+### 29.3 自动验证与外部验证边界
+
+- [x] `PTFirmwareArtifactInspector` 的空文件、大小限制、格式识别、SHA-256 和有限字符串提取路径已接入测试。
+- [x] 十语言选择器、车库资料/行程照片本地存储往返、Roadbook 路点上限和既有诊断/安全回归测试已加入 `PTSpeedTests/PTCoreTests.swift`。
+- [x] String Catalog 已通过 JSON 语法校验；新增 22 个 key 均覆盖十个 locale。
+- [x] `PTSpeed`、`xp400WidgetExtension`、`xp400watch Watch App` generic target build 通过；`PTSpeed` `build-for-testing` 通过。
+- [x] `git diff --check`、工程/entitlement/plist 静态校验已完成，三个核心文件 Git diff 为空且 SHA-256 与第 2 节一致。
+- [ ] XCTest 尚未在当前 Simulator destination 执行；当前失败发生在测试目标与工程仅支持的物理 iOS destination 不匹配阶段，不代表 Build48 测试断言失败。
+- [ ] 未完成签名 Archive、TestFlight 安装、真实 Apple Watch、NFC 标签、SharePlay、多语言人工校对、真实 ECU/OBD、固件协议和长时间骑行验证。
+
+### 29.4 回滚与发布规则
+
+- B48 的外围功能可按工作包独立撤回：移除车库资料按钮、行程照片按钮、SharePlay 入口、App Shortcut 条目或 Dev 固件文件预检，不改变基础连接、标准 OBD、导航、Widget、Watch 和 iCloud 旧路径。
+- 本 Build 不因 NFC、SharePlay、固件协议或真实车辆验证缺失而伪装为 `✅`；在外部证据完成前保持 `🟨`，固件实际写入保持拒绝状态。
+- 发布前必须重新运行三个核心文件哈希、iOS/Widget/Watch 独立构建、签名 Archive、XCTest、真机、真表、真实 NFC 标签和真实车辆验证；不能将 generic build 或 `build-for-testing` 当作 TestFlight/实车成功证明。
