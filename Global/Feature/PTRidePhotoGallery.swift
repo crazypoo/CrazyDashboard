@@ -12,6 +12,8 @@ import PhotosUI
 import UIKit
 import UniformTypeIdentifiers
 import PooTools
+import SafeSFSymbols
+import SnapKit
 
 nonisolated public struct PTRidePhotoAttachment: Codable, Equatable, Identifiable, Sendable {
     public let id: UUID
@@ -241,6 +243,17 @@ final class PTRidePhotoGalleryViewController: PTMotoBaseViewController,
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
     private let emptyStateLabel = UILabel()
 
+    lazy var addAction:PTBaseButton = {
+        let view = PTBaseButton(type: .custom)
+        view.setImage(UIImage(.plus.circleFill), for: .normal)
+        view.addActionHandlers { sender in
+            self.addPhotos()
+        }
+        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.accessibilityLabel = PTDashboardConfig.languageFunc(text: "ride_photo_add")
+        return view
+    }()
+    
     init(tripID: String, store: PTRidePhotoAttachmentStore? = nil) {
         self.tripID = tripID
         self.store = store ?? PTRidePhotoAttachmentStore.shared
@@ -250,7 +263,7 @@ final class PTRidePhotoGalleryViewController: PTMotoBaseViewController,
     required init?(coder: NSCoder) {
         nil
     }
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         pt_Title = PTDashboardConfig.languageFunc(text: "ride_replay_photos")
@@ -267,15 +280,10 @@ final class PTRidePhotoGalleryViewController: PTMotoBaseViewController,
         emptyStateLabel.accessibilityIdentifier = "ridePhotos.emptyState"
         tableView.backgroundView = emptyStateLabel
         view.addSubview(tableView)
-        tableView.frame = view.bounds
-        tableView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            barButtonSystemItem: .add,
-            target: self,
-            action: #selector(addPhotos)
-        )
-        navigationItem.rightBarButtonItem?.accessibilityLabel =
-            PTDashboardConfig.languageFunc(text: "ride_photo_add")
+        tableView.snp.makeConstraints { make in
+            make.left.right.bottom.equalToSuperview()
+            make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total)
+        }
         updateEmptyState()
     }
 
@@ -283,6 +291,7 @@ final class PTRidePhotoGalleryViewController: PTMotoBaseViewController,
         super.viewWillAppear(animated)
         tableView.reloadData()
         updateEmptyState()
+        setCustomRightButtons(buttons: [addAction])
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -299,7 +308,7 @@ final class PTRidePhotoGalleryViewController: PTMotoBaseViewController,
         content.secondaryText = Self.byteText(attachment.byteCount)
         content.textProperties.color = .white
         content.secondaryTextProperties.color = .systemGray
-        content.image = UIImage(systemName: "photo.fill")
+        content.image = UIImage(.photo.fill)
         content.imageProperties.tintColor = PTDashboardConfig.shared.appMainColor
         cell.contentConfiguration = content
         cell.backgroundColor = .clear
