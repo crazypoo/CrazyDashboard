@@ -177,27 +177,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         return view
     }()
     
-    lazy var disconnect:UIButton = {
-        let view = UIButton(type: .custom)
-        view.titleLabel?.font = .appfont(size: 16)
-        view.setTitleColor(.white, for: .normal)
-        view.setTitle(PTDashboardConfig.languageFunc(text: "button_dis_connect"), for: .normal)
-        view.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
-        view.addActionHandlers { sender in
-            if PTDashboardConfig.shared.blueConnected {
-                UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "button_dis_connect") + "?",okBtns: [PTDashboardConfig.languageFunc(text: "button_confirm")],cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
-                    PTVehicleConnectivityCoordinator.shared.disconnectDashboard()
-                })
-            } else {
-                let vc = PTBLEConnectViewController()
-                let nav = PTBaseNavControl(rootViewController: vc)
-                nav.modalPresentationStyle = .fullScreen
-                self.navigationController?.present(nav, animated: true)
-            }
-        }
-        return view
-    }()
-
     private lazy var garageButton: UIButton = {
         let view = UIButton(type: .system)
         view.titleLabel?.font = .appfont(size: 16)
@@ -297,7 +276,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                                         pttRestoreTitle, pttRestoreSwitch,
                                         dashboardNotificationTitle, dashboardNotificationButton])
         
-        view.addSubviews([garageButton, shortCut, shortcutsButton, disconnect, socialStackView, versionLabel])
+        view.addSubviews([garageButton, shortCut, shortcutsButton, socialStackView, versionLabel])
         
         setupSocialButtons()
                 
@@ -389,13 +368,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             make.centerX.equalToSuperview()
             make.height.equalTo(40)
         }
-        
-        disconnect.snp.makeConstraints { make in
-            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            make.height.equalTo(44)
-            make.bottom.equalTo(socialStackView.snp.top).offset(-30)
-        }
-        
+                
         updateShortcutGuide()
         shortcutsButton.setTitle(PTDashboardConfig.languageFunc(text: "automation_guide_open"), for: .normal)
                 
@@ -404,7 +377,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         dashBoardLanguageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashboardNotificationButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         garageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
-        disconnect.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         
         DispatchQueue.main.async {
             self.dashBoardColorButton.viewCorner(radius: 4)
@@ -412,7 +384,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             self.dashBoardLanguageButton.viewCorner(radius: 4)
             self.dashboardNotificationButton.viewCorner(radius: 4)
             self.garageButton.viewCorner(radius: 4)
-            self.disconnect.viewCorner(radius: 4)
         }
 
         pt_observerLanguage {
@@ -423,7 +394,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 self.pttRestoreTitle.text = PTDashboardConfig.languageFunc(text: "ptt_restore_on_launch")
                 self.dashboardNotificationTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_notification_title")
                 self.dashboardNotificationButton.setTitle(PTDashboardConfig.languageFunc(text: "dashboard_notification_setup"), for: .normal)
-                self.disconnect.setTitle(PTDashboardConfig.languageFunc(text: "button_dis_connect"), for: .normal)
                 self.garageButton.setTitle(PTDashboardConfig.languageFunc(text: "garage_open"), for: .normal)
                 self.updateShortcutGuide()
                 self.shortcutsButton.setTitle(PTDashboardConfig.languageFunc(text: "automation_guide_open"), for: .normal)
@@ -812,7 +782,6 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                         
             self.garageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
             self.dashboardNotificationButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
-            self.disconnect.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         }
     }
 }

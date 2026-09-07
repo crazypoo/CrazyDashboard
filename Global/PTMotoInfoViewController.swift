@@ -203,6 +203,10 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                         }
                     })
                 }
+            } else {
+                UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "button_dis_connect") + "?",okBtns: [PTDashboardConfig.languageFunc(text: "button_confirm")],cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
+                    PTVehicleConnectivityCoordinator.shared.disconnectDashboard()
+                })
             }
         }
         view.isSelected = false
