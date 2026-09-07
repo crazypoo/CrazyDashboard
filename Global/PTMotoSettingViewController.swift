@@ -176,6 +176,21 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         }
         return view
     }()
+
+    // EN: Online lyrics are opt-in because song metadata is sent to the third-party matcher.
+    // ES: Las letras en línea requieren consentimiento porque se envían metadatos al servicio externo.
+    // 中文：在线歌词需要用户同意，因为歌曲元数据会发送给第三方匹配服务。
+    private lazy var lyricsOnlineTitle: UILabel = {
+        baseTitle(value: PTDashboardConfig.languageFunc(text: "lyrics_online_toggle"))
+    }()
+
+    private lazy var lyricsOnlineSwitch: UISwitch = {
+        let view = UISwitch()
+        view.isOn = PTLyricsSettings.onlineLookupEnabled
+        view.onTintColor = PTDashboardConfig.shared.appMainColor
+        view.addTarget(self, action: #selector(lyricsOnlineSwitchChanged(_:)), for: .valueChanged)
+        return view
+    }()
     
     private lazy var garageButton: UIButton = {
         let view = UIButton(type: .system)
@@ -274,7 +289,8 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                                         dashUniTitle, dashBoardUniButton,
                                         dashLanguageTitle, dashBoardLanguageButton,
                                         pttRestoreTitle, pttRestoreSwitch,
-                                        dashboardNotificationTitle, dashboardNotificationButton])
+                                        dashboardNotificationTitle, dashboardNotificationButton,
+                                        lyricsOnlineTitle, lyricsOnlineSwitch])
         
         view.addSubviews([garageButton, shortCut, shortcutsButton, socialStackView, versionLabel])
         
@@ -338,6 +354,16 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             make.top.equalTo(pttRestoreSwitch.snp.bottom).offset(20)
             make.height.equalTo(34)
             make.width.greaterThanOrEqualTo(110)
+        }
+
+        lyricsOnlineTitle.snp.makeConstraints { make in
+            make.left.equalToSuperview().inset(16)
+            make.right.lessThanOrEqualTo(lyricsOnlineSwitch.snp.left).offset(-12)
+            make.centerY.equalTo(lyricsOnlineSwitch)
+        }
+        lyricsOnlineSwitch.snp.makeConstraints { make in
+            make.right.equalToSuperview().inset(16)
+            make.top.equalTo(dashboardNotificationButton.snp.bottom).offset(20)
             make.bottom.equalToSuperview().inset(16)
         }
         
@@ -394,6 +420,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 self.pttRestoreTitle.text = PTDashboardConfig.languageFunc(text: "ptt_restore_on_launch")
                 self.dashboardNotificationTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_notification_title")
                 self.dashboardNotificationButton.setTitle(PTDashboardConfig.languageFunc(text: "dashboard_notification_setup"), for: .normal)
+                self.lyricsOnlineTitle.text = PTDashboardConfig.languageFunc(text: "lyrics_online_toggle")
                 self.garageButton.setTitle(PTDashboardConfig.languageFunc(text: "garage_open"), for: .normal)
                 self.updateShortcutGuide()
                 self.shortcutsButton.setTitle(PTDashboardConfig.languageFunc(text: "automation_guide_open"), for: .normal)
@@ -440,6 +467,43 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         // ES: Guardamos la opción; se evalúa en el siguiente lanzamiento del proceso.
         // 中文：保存用户选择，并在下一次进程启动时读取该开关。
         PTMotoUserDefaultStruct.PTTLaunchAutoRestoreEnabled = sender.isOn
+    }
+
+    @objc private func lyricsOnlineSwitchChanged(_ sender: UISwitch) {
+        if sender.isOn, !PTLyricsSettings.consentPrompted {
+            sender.setOn(false, animated: true)
+
+            // EN: Ask once before sending song metadata to the optional online matcher.
+            // ES: Pregunta una vez antes de enviar metadatos de canciones al buscador opcional.
+            // 中文：在向可选在线匹配服务发送歌曲元数据前，先进行一次明确确认。
+            let alert = UIAlertController(
+                title: PTDashboardConfig.languageFunc(text: "lyrics_online_title"),
+                message: PTDashboardConfig.languageFunc(text: "lyrics_online_consent"),
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(
+                title: PTDashboardConfig.languageFunc(text: "button_cancel"),
+                style: .cancel
+            ) { _ in
+                PTLyricsSettings.setOnlineLookupEnabled(false)
+            })
+            alert.addAction(UIAlertAction(
+                title: PTDashboardConfig.languageFunc(text: "lyrics_online_enable"),
+                style: .default
+            ) { [weak self] _ in
+                PTLyricsSettings.setOnlineLookupEnabled(true)
+                self?.lyricsOnlineSwitch.setOn(true, animated: true)
+            })
+            present(alert, animated: true)
+            return
+        }
+
+        PTLyricsSettings.setOnlineLookupEnabled(sender.isOn)
+        if !sender.isOn {
+            Task {
+                await PTLyricsService.shared.clearCache()
+            }
+        }
     }
 
     func baseTitle(value:String) -> UILabel {
@@ -777,7 +841,9 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             self.dashLanguageTitle.textColor = PTDashboardConfig.shared.appMainColor
             self.pttRestoreTitle.textColor = PTDashboardConfig.shared.appMainColor
             self.dashboardNotificationTitle.textColor = PTDashboardConfig.shared.appMainColor
+            self.lyricsOnlineTitle.textColor = PTDashboardConfig.shared.appMainColor
             self.pttRestoreSwitch.onTintColor = PTDashboardConfig.shared.appMainColor
+            self.lyricsOnlineSwitch.onTintColor = PTDashboardConfig.shared.appMainColor
             self.garageButton.setTitle(PTDashboardConfig.languageFunc(text: "garage_open"), for: .normal)
                         
             self.garageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)

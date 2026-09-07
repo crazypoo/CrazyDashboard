@@ -24448,37 +24448,37 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Not play"
+            "value" : "Keine Wiedergabe"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Not play"
+            "value" : "Not playing"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "no jugar"
+            "value" : "No hay reproducción"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ne pas jouer"
+            "value" : "Aucune lecture"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Non giocare"
+            "value" : "Nessuna riproduzione"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Oynama"
+            "value" : "Çalma yok"
           }
         },
         "zh-Hans" : {
@@ -24491,6 +24491,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "暫無播放"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再生なし"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет воспроизведения"
           }
         }
       }
@@ -24507,13 +24519,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unknows artist"
+            "value" : "Unknown artist"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unknows artist"
+            "value" : "Artista desconocido"
           }
         },
         "fr" : {
@@ -24525,7 +24537,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unknows artist"
+            "value" : "Artista sconosciuto"
           }
         },
         "tr" : {
@@ -24544,6 +24556,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "未知歌手"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不明なアーティスト"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Неизвестный исполнитель"
           }
         }
       }
@@ -24572,13 +24596,13 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unknown song"
+            "value" : "Chanson inconnue"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unknown song"
+            "value" : "Canzone sconosciuta"
           }
         },
         "tr" : {
@@ -24597,6 +24621,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "未知歌曲"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不明な曲"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Неизвестная песня"
           }
         }
       }
@@ -40771,6 +40807,261 @@
         "tr" : { "stringUnit" : { "state" : "translated", "value" : "Roadbook'lar açıldı." } },
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已打开路线簿。" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已開啟路線簿。" } }
+      }
+    },
+    "lyrics_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Liedtexte" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lyrics" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Letras" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Paroles" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Testi" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "歌詞" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Тексты песен" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Şarkı sözleri" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "歌词" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "歌詞" } }
+      }
+    },
+    "lyrics_loading" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Liedtexte werden geladen …" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Loading lyrics…" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Cargando letras…" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Chargement des paroles…" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Caricamento dei testi…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "歌詞を読み込み中…" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Загрузка текста песни…" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Şarkı sözleri yükleniyor…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在加载歌词…" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正在載入歌詞…" } }
+      }
+    },
+    "lyrics_not_found" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Keine Liedtexte gefunden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lyrics not found" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "No se encontraron letras" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Paroles introuvables" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Testi non trovati" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "歌詞が見つかりません" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Текст песни не найден" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Şarkı sözü bulunamadı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未找到歌词" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "找不到歌詞" } }
+      }
+    },
+    "lyrics_no_match" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Keine passenden Liedtexte gefunden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No matching lyrics" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "No se encontraron letras coincidentes" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Aucune parole correspondante" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Nessun testo corrispondente" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "一致する歌詞がありません" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Подходящий текст не найден" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Eşleşen şarkı sözü bulunamadı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未找到匹配歌词" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "找不到符合的歌詞" } }
+      }
+    },
+    "lyrics_online_disabled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Online-Suche nach Liedtexten ist deaktiviert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Online lyrics lookup is disabled" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "La búsqueda de letras en línea está desactivada" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "La recherche de paroles en ligne est désactivée" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "La ricerca online dei testi è disattivata" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オンライン歌詞検索は無効です" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Онлайн-поиск текстов отключён" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Çevrim içi şarkı sözü araması kapalı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在线歌词匹配未启用" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "尚未啟用線上歌詞比對" } }
+      }
+    },
+    "lyrics_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Liedtexte sind vorübergehend nicht verfügbar" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lyrics are temporarily unavailable" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Las letras no están disponibles temporalmente" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Les paroles sont temporairement indisponibles" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "I testi non sono temporaneamente disponibili" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "歌詞を一時的に利用できません" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Текст песни временно недоступен" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Şarkı sözleri geçici olarak kullanılamıyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "歌词暂时不可用" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "歌詞暫時無法使用" } }
+      }
+    },
+    "lyrics_permission_denied" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zugriff auf die Mediathek wurde nicht erlaubt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Music library permission is required" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Se necesita permiso para la biblioteca musical" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "L’autorisation de la bibliothèque musicale est requise" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "È necessaria l’autorizzazione alla libreria musicale" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ミュージックライブラリの許可が必要です" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Требуется доступ к медиатеке" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Müzik arşivi izni gerekli" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未获得音乐资料库权限" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "未取得音樂資料庫權限" } }
+      }
+    },
+    "lyrics_available_parked" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Liedtexte verfügbar – im Stand ansehen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lyrics available — view while parked" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Letras disponibles; consulta mientras estás aparcado" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Paroles disponibles — à consulter à l’arrêt" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Testi disponibili — visualizzali da fermo" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "歌詞を表示できます。停車中に確認してください" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Текст доступен — просмотр только на стоянке" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Şarkı sözleri hazır — park halindeyken görüntüleyin" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "歌词可用，请停车后查看" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "歌詞可用，請停車後查看" } }
+      }
+    },
+    "lyrics_waiting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Warte auf die Liedtextsynchronisierung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Waiting for lyric sync" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Esperando la sincronización" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Synchronisation des paroles en attente" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "In attesa della sincronizzazione" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "歌詞の同期を待っています" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Ожидание синхронизации текста" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Şarkı sözü eşzamanlaması bekleniyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "等待歌词同步" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "等待歌詞同步" } }
+      }
+    },
+    "lyrics_instrumental" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Instrumental" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Instrumental" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Instrumental" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Instrumental" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Strumentale" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "インストゥルメンタル" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Инструментальная композиция" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Enstrümantal" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "纯音乐" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "純音樂" } }
+      }
+    },
+    "lyrics_park_before_viewing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bitte anhalten, um vollständige Liedtexte anzusehen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Park before viewing full lyrics" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Aparca antes de ver las letras completas" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Garez-vous avant de consulter les paroles complètes" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Parcheggia prima di visualizzare il testo completo" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "完全な歌詞は停車してから確認してください" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Остановитесь перед просмотром полного текста" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Tam şarkı sözlerini görmek için park edin" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请停车后查看完整歌词" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請停車後查看完整歌詞" } }
+      }
+    },
+    "lyrics_online_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Online-Liedtextsuche" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Online lyrics lookup" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Búsqueda de letras en línea" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Recherche de paroles en ligne" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Ricerca online dei testi" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オンライン歌詞検索" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Онлайн-поиск текста" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Çevrim içi şarkı sözü araması" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在线歌词匹配" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "線上歌詞比對" } }
+      }
+    },
+    "lyrics_online_consent" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Titel, Interpret, Album und Dauer werden zur Suche nach Liedtexten an LRCLIB gesendet." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Song title, artist, album, and duration will be sent to LRCLIB to match lyrics." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "El título, artista, álbum y duración se enviarán a LRCLIB para buscar las letras." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Le titre, l’artiste, l’album et la durée seront envoyés à LRCLIB pour trouver les paroles." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Titolo, artista, album e durata saranno inviati a LRCLIB per trovare il testo." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "歌詞を照合するため、曲名、アーティスト、アルバム、再生時間をLRCLIBに送信します。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Название, исполнитель, альбом и длительность будут отправлены в LRCLIB для поиска текста." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Şarkı sözlerini eşleştirmek için parça adı, sanatçı, albüm ve süre LRCLIB’ye gönderilir." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "将歌曲标题、歌手、专辑和时长发送至 LRCLIB 进行歌词匹配。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "將歌曲標題、歌手、專輯與時長傳送至 LRCLIB 進行歌詞比對。" } }
+      }
+    },
+    "lyrics_online_enable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Onlinesuche aktivieren" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enable online lookup" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Activar búsqueda en línea" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Activer la recherche en ligne" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Abilita ricerca online" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オンライン検索を有効にする" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Включить онлайн-поиск" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Çevrim içi aramayı etkinleştir" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "启用在线匹配" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "啟用線上比對" } }
+      }
+    },
+    "lyrics_source_lrclib" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Quelle: LRCLIB" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lyrics source: LRCLIB" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Fuente de letras: LRCLIB" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Source des paroles : LRCLIB" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Fonte del testo: LRCLIB" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "歌詞の提供元：LRCLIB" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Источник текста: LRCLIB" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Şarkı sözü kaynağı: LRCLIB" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "歌词来源：LRCLIB" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "歌詞來源：LRCLIB" } }
+      }
+    },
+    "lyrics_source_embedded" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Quelle: Eingebettete Liedtexte" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lyrics source: Embedded" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Fuente de letras: incrustadas" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Source des paroles : intégrées" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Fonte del testo: incorporato" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "歌詞の提供元：埋め込み" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Источник текста: встроенный" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Şarkı sözü kaynağı: gömülü" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "歌词来源：歌曲内嵌" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "歌詞來源：歌曲內嵌" } }
+      }
+    },
+    "lyrics_online_toggle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Online-Liedtextsuche" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Online lyrics lookup" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Búsqueda de letras en línea" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Recherche de paroles en ligne" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Ricerca online dei testi" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オンライン歌詞検索" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Онлайн-поиск текста" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Çevrim içi şarkı sözü araması" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在线歌词匹配" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "線上歌詞比對" } }
       }
     },
     "dev_firmware_inspection_file" : {

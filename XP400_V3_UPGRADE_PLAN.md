@@ -8,7 +8,7 @@
 >
 > 发布方式：只维护现有 `PTSpeed` TestFlight 版本，不新增 Lab Scheme、App Target、Bundle ID 或第二发布渠道；当前没有 App Store 上架计划。
 >
-> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 已进入 Build 49；Build 48 保留为本轮语言问题的回归基线。
+> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 已进入 Build 52；Build 48 保留为本轮语言问题的回归基线。
 >
 > 文件名中的 `V3` 仅为保留现有路径和链接，不代表需要修改 App 大版本号。
 >
@@ -1683,3 +1683,45 @@ Build 51 继续使用营销版本 `2.0.8`，主 App、Widget、Watch 和测试�
 - 若被动采集导致日志或磁盘开销异常，只移除 `PTVehicleConnectivityCoordinator` 的生命周期接线和 Evidence 页面自动摘要；保留 `PTOBDLogger` 的旧 API 及既有 BLE/OBD 行为。
 - 若某个适配器的日志 marker 与当前解析契约不一致，只调整 `PTProtocolDiscoveryRecorder` 的 marker/分类器，不修改稳定传输、认证、分片、轮询或响应拼接逻辑。
 - 未知 BLE/OBD 数据始终停留在观察证据层；Build 51 不因采集到新样本而自动执行未知指令、写入仪表、刷写固件或修改开机画面。
+
+## 33. Build 52 Apple Music 歌词与安全展示实施记录（2026-09-07）
+
+Build 52 继续使用营销版本 `2.0.8`，主 App、Widget、Watch 和测试目标的 Build 统一为 `52`。本轮为现有 Now Playing 增加“本地歌词优先、用户同意后在线回退、停车只读完整歌词”的外围能力；不修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift` 或 `PTOBDCommand.swift`，也不把歌词数据写入车辆、iCloud、Widget、Watch、Live Activity 或 PTT。
+
+### 33.1 工作包与状态
+
+| 状态 | ID | 工作包 | 结果 |
+| --- | --- | --- | --- |
+| ✅ | `B52-00` | Build、工程接入与核心保护 | 工程 Build 已统一为 `52`，新增歌词服务和只读页面；主 App 嵌入构建与独立 Watch 目标构建均通过 |
+| ✅ | `B52-01` | 歌曲快照与歌词解析 | 新增可跨并发传递的歌曲快照、LRC/纯文本解析、偏移量、多时间戳、元数据过滤和去重 |
+| 🟨 | `B52-02` | Now Playing 本地歌词 | 优先读取 `MPMediaItem.lyrics`；切歌取消异步任务，视图离屏停止媒体观察，显示当前同步行；Apple Music 权限和真机播放状态待验证 |
+| 🟨 | `B52-03` | LRCLIB 可选回退 | 首次使用请求同意，HTTPS `/api/get`/`/api/search` 严格匹配歌名、歌手、专辑和时长；缓存、负缓存、大小限制和限流处理已接入 |
+| 🟨 | `B52-04` | 停车完整歌词页 | 车辆/行程/导航活动存在时，仅在速度不超过 2 km/h 且定位新鲜时打开；行驶开始、切歌或速度数据过期自动退出 |
+| 🟨 | `B52-05` | 设置、翻译、测试与发布门禁 | 设置页提供在线歌词开关，新增十语言文案和解析单元测试；XCTest 实际运行、签名发布、真实 Apple Music/网络/安全场景待补 |
+
+### 33.2 数据与隐私边界
+
+- `PTNowPlayingTrackSnapshot` 只保存当前歌曲的标题、歌手、专辑、时长、媒体 ID 和系统提供的内嵌歌词；LRCLIB 请求只发送匹配所需的歌曲元数据，不发送 VIN、坐标、BLE/OBD 数据或用户账号信息。
+- 在线回退默认关闭，用户可在设置中关闭；关闭后清理内存缓存和负缓存，后续只尝试本地内嵌歌词。
+- `PTLyricsService` 是 actor，URLSession 使用临时配置，响应最大 512 KiB，内存缓存最多 20 首，未命中缓存最多保留 10 分钟；不保存歌词到磁盘、iCloud 或共享状态。
+- 不调用私有 MusicKit 歌词接口、不抓取 Apple Music 页面、不绕过版权或 DRM；没有歌词时显示明确空状态，不伪造歌词来源。
+
+### 33.3 UI 与安全边界
+
+- `PTNowPlayingView` 只显示最多两行当前歌词；完整歌词由 `PTLyricsViewController` 展示，歌词来源和空状态可见。
+- 完整歌词页沿用深色媒体页面风格，只读显示；当车辆、行程或导航处于活动状态时要求新鲜定位与低速状态，不能把过期/缺失速度当作停车。
+- 设置页的在线歌词开关只控制第三方匹配请求，不影响本地 `MPMediaItem.lyrics`；用户首次从 Now Playing 请求在线歌词时先弹出同意提示。
+
+### 33.4 自动验证与外部验证边界
+
+- [x] String Catalog 和 InfoPlist Catalog 通过 JSON 语法校验；歌词新增文案覆盖十个 locale，并补齐日语/俄语媒体空状态。
+- [x] 新增 LRC 偏移、多时间戳、元数据过滤和纯文本回退测试；`PTSpeedTests/PTCoreTests.swift` 只依赖纯数据解析。
+- [x] 三个受保护核心文件没有出现在 Git 变更列表；营销版本仍为 `2.0.8`。
+- [x] PTSpeed、Widget、Watch 独立目标与 Tests `build-for-testing` 已用 CocoaPods 工作区完成 Debug/generic 构建验证；Release/Archive 和签名 TestFlight 仍待验证。当前 scheme 的目标配置不提供可用 iOS Simulator destination，因此 XCTest 实际运行仍待真机或调整测试目标配置。
+- [ ] 仍需在真实 iPhone/Apple Music 上验证内嵌歌词权限、切歌和后台；在线网络失败、限流、无匹配、长歌词和隐私提示；车辆连接、导航、行程进行中误触与自动退出。
+
+### 33.5 回滚边界
+
+- 若歌词服务影响 Now Playing 性能，只移除 `PTLyricsService` 的异步加载和在线入口，保留原有媒体控制、封面、进度和电量显示。
+- 若完整歌词安全门禁在某种车辆/定位源上误判，只调整 `PTDashBoardBaseBoardViewController` 的展示门禁和退出策略，不触碰 BLE、OBD、导航传输或 Live Activity。
+- 若 LRCLIB 服务不可用，关闭在线开关即可；本地内嵌歌词和现有媒体功能不受影响。

@@ -99,11 +99,24 @@ public class PTNowPlayingView: UIView {
     private let artworkImageView = UIImageView()
     private let titleLabel = PTMarqueeLabel()
     private let artistLabel = PTMarqueeLabel()
+    private let lyricLabel = UILabel()
     private let timeLabel = UILabel()
     private let musicPlayer = MPMusicPlayerController.systemMusicPlayer
     private var progressTimer: Timer?
+    private var lyricsTask: Task<Void, Never>?
+    private var isObservingPlayback = false
     private let trackLayer = CAShapeLayer()
     private let progressLayer = CAShapeLayer()
+
+    // EN: These callbacks keep presentation and safety policy in the dashboard controller.
+    // ES: Estos callbacks mantienen la presentación y la política de seguridad en el controlador del tablero.
+    // 中文：这些回调让页面展示和安全策略继续由 Dashboard 控制器负责。
+    public var onLyricsTap: (() -> Void)?
+    public var onOnlineLyricsConsentRequired: (() -> Void)?
+    private(set) var currentTrackSnapshot: PTNowPlayingTrackSnapshot?
+    private(set) var currentLyricsDocument: PTLyricsDocument?
+    private(set) var lyricsState: PTLyricsDisplayState = .idle
+    var currentArtwork: UIImage? { artworkImageView.image }
 
     private lazy var batteryLevel = {
         let view = PTActionLayoutButton()
@@ -129,9 +142,9 @@ public class PTNowPlayingView: UIView {
     }
     
     deinit {
-        // 记得结束监听并移除通知
-        musicPlayer.endGeneratingPlaybackNotifications()
+        deactivatePlaybackObservers()
         NotificationCenter.default.removeObserver(self)
+        lyricsTask?.cancel()
         stopTimer()
     }
     
@@ -153,6 +166,10 @@ public class PTNowPlayingView: UIView {
         let swipeRight = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipeRight))
         swipeRight.direction = .right
         self.addGestureRecognizer(swipeRight)
+
+        let lyricsTap = UITapGestureRecognizer(target: self, action: #selector(handleLyricsTap))
+        lyricLabel.isUserInteractionEnabled = true
+        lyricLabel.addGestureRecognizer(lyricsTap)
     }
     
     // MARK: - 音乐控制逻辑
@@ -234,12 +251,19 @@ public class PTNowPlayingView: UIView {
         artistLabel.font = .appfont(size: 14)
         artistLabel.text = "--"
 
+        lyricLabel.textColor = PTDashboardConfig.shared.appMainColor
+        lyricLabel.textAlignment = .center
+        lyricLabel.font = .appfont(size: 11, bold: true)
+        lyricLabel.numberOfLines = 2
+        lyricLabel.adjustsFontForContentSizeCategory = true
+        lyricLabel.isHidden = true
+
         timeLabel.textColor = .lightGray
         timeLabel.textAlignment = .center
         timeLabel.font = .appfont(size: 12, bold: true) // 稍微加粗，与电池字体形成呼应
         timeLabel.text = "-00:00"
 
-        addSubviews([artworkImageView, titleLabel, artistLabel, timeLabel, batteryLevel])
+        addSubviews([artworkImageView, titleLabel, artistLabel, lyricLabel, timeLabel, batteryLevel])
 
         // 🌟 核心排版优化：完美的中心十字布局
 
@@ -263,6 +287,12 @@ public class PTNowPlayingView: UIView {
             make.height.equalTo(18)
         }
 
+        lyricLabel.snp.makeConstraints { make in
+            make.top.equalTo(artistLabel.snp.bottom).offset(3)
+            make.left.right.equalToSuperview().inset(28)
+            make.bottom.lessThanOrEqualToSuperview().inset(8)
+        }
+
         // 4. 电量与时间：分居封面左右两侧，垂直居中
         batteryLevel.snp.makeConstraints { make in
             make.centerY.equalToSuperview()
@@ -280,8 +310,6 @@ public class PTNowPlayingView: UIView {
     }
     
     private func setupNotifications() {
-        // 开启系统播放通知
-        musicPlayer.beginGeneratingPlaybackNotifications()
         UIDevice.current.isBatteryMonitoringEnabled = true
         // 监听电量百分比变化 (通常是每掉 1% 触发一次)
         NotificationCenter.default.addObserver(self,
@@ -294,20 +322,54 @@ public class PTNowPlayingView: UIView {
                                                selector: #selector(updateBatteryInfo),
                                                name: UIDevice.batteryStateDidChangeNotification,
                                                object: nil)
-        // 监听切歌事件
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(updateNowPlayingInfo),
-                                               name: .MPMusicPlayerControllerNowPlayingItemDidChange,
-                                               object: musicPlayer)
-        
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(playbackStateDidChange),
-                                               name: .MPMusicPlayerControllerPlaybackStateDidChange,
-                                               object: musicPlayer)
-        // 首次初始化时手动拉取一次
-        updateNowPlayingInfo()
-        playbackStateDidChange()
         updateBatteryInfo() // 🌟 初始化时获取一次电池状态
+    }
+
+    public override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window == nil {
+            deactivatePlaybackObservers()
+            stopTimer()
+            lyricsTask?.cancel()
+        } else {
+            activatePlaybackObservers()
+            updateNowPlayingInfo()
+            playbackStateDidChange()
+        }
+    }
+
+    private func activatePlaybackObservers() {
+        guard !isObservingPlayback else { return }
+        isObservingPlayback = true
+        musicPlayer.beginGeneratingPlaybackNotifications()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(updateNowPlayingInfo),
+            name: .MPMusicPlayerControllerNowPlayingItemDidChange,
+            object: musicPlayer
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(playbackStateDidChange),
+            name: .MPMusicPlayerControllerPlaybackStateDidChange,
+            object: musicPlayer
+        )
+    }
+
+    private func deactivatePlaybackObservers() {
+        guard isObservingPlayback else { return }
+        isObservingPlayback = false
+        NotificationCenter.default.removeObserver(
+            self,
+            name: .MPMusicPlayerControllerNowPlayingItemDidChange,
+            object: musicPlayer
+        )
+        NotificationCenter.default.removeObserver(
+            self,
+            name: .MPMusicPlayerControllerPlaybackStateDidChange,
+            object: musicPlayer
+        )
+        musicPlayer.endGeneratingPlaybackNotifications()
     }
     
     @objc private func updateBatteryInfo() {
@@ -352,24 +414,135 @@ public class PTNowPlayingView: UIView {
     }
 
     @objc private func updateNowPlayingInfo() {
-        // 必须切回主线程更新 UI
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
-            if let item = self.musicPlayer.nowPlayingItem {
-                self.titleLabel.text = item.title ?? PTDashboardConfig.languageFunc(text: "music_unknow_music")
-                self.artistLabel.text = item.artist ?? PTDashboardConfig.languageFunc(text: "music_unknow_artist")
-                // 提取专辑封面图片
-                self.fetchArtwork(for: item)
-                self.updateProgress()
-            } else {
-                self.titleLabel.text = PTDashboardConfig.languageFunc(text: "music_not_play")
-                self.artistLabel.text = "--"
-                self.artworkImageView.image = nil
-                self.progressLayer.strokeEnd = 0
-                self.timeLabel.text = "-00:00" // 修改这里：归零状态
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in
+                self?.updateNowPlayingInfo()
+            }
+            return
+        }
+
+        guard let item = musicPlayer.nowPlayingItem else {
+            lyricsTask?.cancel()
+            currentTrackSnapshot = nil
+            currentLyricsDocument = nil
+            lyricsState = .idle
+            titleLabel.text = PTDashboardConfig.languageFunc(text: "music_not_play")
+            artistLabel.text = "--"
+            lyricLabel.text = nil
+            lyricLabel.isHidden = true
+            artworkImageView.image = nil
+            progressLayer.strokeEnd = 0
+            timeLabel.text = "-00:00" // 修改这里：归零状态
+            return
+        }
+
+        let title = item.title ?? PTDashboardConfig.languageFunc(text: "music_unknow_music")
+        let artist = item.artist ?? PTDashboardConfig.languageFunc(text: "music_unknow_artist")
+        let album = item.albumTitle ?? ""
+        let snapshot = PTNowPlayingTrackSnapshot(
+            id: "\(item.persistentID)-\(title)-\(artist)-\(album)-\(item.playbackDuration)",
+            title: title,
+            artist: artist,
+            album: album,
+            duration: item.playbackDuration,
+            embeddedLyrics: item.lyrics
+        )
+        let trackChanged = currentTrackSnapshot?.id != snapshot.id
+        currentTrackSnapshot = snapshot
+        titleLabel.text = title
+        artistLabel.text = artist
+        lyricLabel.isHidden = false
+        fetchArtwork(for: item)
+        updateProgress()
+        if trackChanged {
+            loadLyrics(for: snapshot)
+        }
+    }
+
+    private func loadLyrics(for snapshot: PTNowPlayingTrackSnapshot) {
+        lyricsTask?.cancel()
+        currentLyricsDocument = nil
+        lyricsState = .loading
+        lyricLabel.text = PTDashboardConfig.languageFunc(text: "lyrics_loading")
+
+        let allowOnlineLookup = PTLyricsSettings.onlineLookupEnabled
+        lyricsTask = Task { @MainActor [weak self] in
+            do {
+                let document = try await PTLyricsService.shared.lyrics(
+                    for: snapshot,
+                    allowOnlineLookup: allowOnlineLookup
+                )
+                guard let self, !Task.isCancelled, self.currentTrackSnapshot?.id == snapshot.id else { return }
+                self.currentLyricsDocument = document
+                if let document {
+                    self.lyricsState = document.isInstrumental ? .instrumental : .available
+                    self.updateLyricsLine()
+                } else {
+                    self.lyricsState = allowOnlineLookup ? .noMatch : .onlineLookupDisabled
+                    self.lyricLabel.text = PTDashboardConfig.languageFunc(
+                        text: allowOnlineLookup ? "lyrics_not_found" : "lyrics_online_disabled"
+                    )
+                }
+            } catch {
+                guard let self, !Task.isCancelled, self.currentTrackSnapshot?.id == snapshot.id else { return }
+                self.lyricsState = .failed
+                self.lyricLabel.text = PTDashboardConfig.languageFunc(text: "lyrics_unavailable")
             }
         }
+    }
+
+    public func reloadLyrics() {
+        guard let snapshot = currentTrackSnapshot else { return }
+
+        switch MPMediaLibrary.authorizationStatus() {
+        case .notDetermined:
+            MPMediaLibrary.requestAuthorization { [weak self] status in
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    guard status == .authorized else {
+                        self.lyricsState = .permissionDenied
+                        self.lyricLabel.text = PTDashboardConfig.languageFunc(text: "lyrics_permission_denied")
+                        return
+                    }
+                    self.loadLyrics(for: snapshot)
+                }
+            }
+        case .authorized:
+            loadLyrics(for: snapshot)
+        default:
+            lyricsState = .permissionDenied
+            lyricLabel.text = PTDashboardConfig.languageFunc(text: "lyrics_permission_denied")
+        }
+    }
+
+    @objc private func handleLyricsTap() {
+        guard currentTrackSnapshot != nil else { return }
+        if currentLyricsDocument == nil && !PTLyricsSettings.onlineLookupEnabled {
+            onOnlineLyricsConsentRequired?()
+            return
+        }
+        if currentLyricsDocument == nil && lyricsState == .onlineLookupDisabled {
+            reloadLyrics()
+            return
+        }
+        onLyricsTap?()
+    }
+
+    private func updateLyricsLine() {
+        guard let document = currentLyricsDocument else { return }
+        if document.isInstrumental {
+            lyricLabel.text = PTDashboardConfig.languageFunc(text: "lyrics_instrumental")
+            return
+        }
+        guard document.isSynced else {
+            lyricLabel.text = PTDashboardConfig.languageFunc(text: "lyrics_available_parked")
+            return
+        }
+        let currentTime = max(0, musicPlayer.currentPlaybackTime)
+        lyricLabel.text = document.lines.last {
+            guard let startTime = $0.startTime else { return false }
+            return startTime <= currentTime
+        }?.text ?? PTDashboardConfig.languageFunc(text: "lyrics_waiting")
     }
     
     // MARK: - 增强版封面获取器
@@ -425,10 +598,14 @@ public class PTNowPlayingView: UIView {
     // MARK: - 进度条与时间计算核心逻辑
         
     private func startTimer() {
+        guard window != nil else { return }
         stopTimer() // 防止重复创建
         // 每 0.5 秒刷新一次进度条，保证流畅度
-        progressTimer = Timer.scheduledTimer(timeInterval: 0.5, target: self, selector: #selector(updateProgress), userInfo: nil, repeats: true)
-        RunLoop.main.add(progressTimer!, forMode: .common)
+        let timer = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in
+            self?.updateProgress()
+        }
+        progressTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
     }
     
     private func stopTimer() {
@@ -446,12 +623,10 @@ public class PTNowPlayingView: UIView {
         let progress = CGFloat(currentPlaybackTime / duration)
         let remainingTime = duration - currentPlaybackTime
         
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            // 更新 CAShapeLayer 的进度，系统自带极其平滑的过渡动画！
-            self.progressLayer.strokeEnd = progress
-            self.timeLabel.text = "-\(self.formatTime(remainingTime))"
-        }
+        // 更新 CAShapeLayer 的进度，系统自带极其平滑的过渡动画！
+        progressLayer.strokeEnd = min(1, max(0, progress))
+        timeLabel.text = "-\(formatTime(remainingTime))"
+        updateLyricsLine()
     }
     
     // MARK: - 辅助方法：将秒数格式化为 分:秒

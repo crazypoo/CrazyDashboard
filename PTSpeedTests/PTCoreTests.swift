@@ -2874,6 +2874,43 @@ final class PTCoreTests: XCTestCase {
         XCTAssertNil(state.lastUpdateAt)
         XCTAssertTrue(state.dataSource.isEmpty)
     }
+
+    // EN: LRC parsing must preserve multiple timestamps, apply offsets, and ignore metadata tags.
+    // ES: El análisis LRC debe conservar varias marcas de tiempo, aplicar desplazamientos e ignorar metadatos.
+    // 中文：LRC 解析必须保留多个时间戳、应用偏移量，并忽略元数据标签。
+    func testLyricsParserSupportsLRCOffsetAndMultipleTimestamps() {
+        let lyrics = """
+        [offset:-100]
+        [00:01.50][00:02.50]Hello
+        [ar:Artist]
+        [00:03.00]World
+        """
+
+        let lines = PTLyricsParser.parseSynced(lyrics)
+
+        XCTAssertEqual(lines?.count, 3)
+        XCTAssertEqual(lines?[0].text, "Hello")
+        XCTAssertEqual(lines?[0].startTime ?? -1, 1.4, accuracy: 0.001)
+        XCTAssertEqual(lines?[1].startTime ?? -1, 2.4, accuracy: 0.001)
+        XCTAssertEqual(lines?[2].text, "World")
+        XCTAssertEqual(lines?[2].startTime ?? -1, 2.9, accuracy: 0.001)
+    }
+
+    // EN: Plain lyrics must remain readable when a source has no valid LRC timestamps.
+    // ES: Las letras simples deben seguir siendo legibles cuando la fuente no tiene marcas LRC válidas.
+    // 中文：来源没有有效 LRC 时间戳时，纯文本歌词仍必须可读。
+    func testLyricsParserFallsBackToPlainText() {
+        let text = "line one\n\nline two"
+
+        XCTAssertNil(PTLyricsParser.parseSynced(text))
+        XCTAssertEqual(
+            PTLyricsParser.parsePlain(text),
+            [
+                PTLyricLine(startTime: nil, text: "line one"),
+                PTLyricLine(startTime: nil, text: "line two")
+            ]
+        )
+    }
 }
 
 // EN: The actor keeps fallback call-count assertions race-free under Swift concurrency.

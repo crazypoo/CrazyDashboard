@@ -2,11 +2,11 @@
 
 > 本文件是项目功能、入口、平台覆盖和完成状态的唯一事实源（Single Source of Truth）。
 >
-> 快照日期：2026-09-06
+> 快照日期：2026-09-07
 >
-> 仓库基线：当前工作区，Build 49 代码已接入；Build 48 作为日语/俄语切换回归基线，真实设备、车辆和完整发布验证仍待补
+> 仓库基线：当前工作区，Build 52 代码已接入；Build 48 作为日语/俄语切换回归基线，真实设备、车辆和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests `CURRENT_PROJECT_VERSION = 49`
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests `CURRENT_PROJECT_VERSION = 52`
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -155,7 +155,7 @@ OBD BLE / Wi-Fi / Mock
 | DASH-004 | ✅ | Peugeot 风格仪表 | 模拟 XP400 风格的 LED / 数字仪表展示 |
 | DASH-005 | 🟨 | 动态骑行组件 | 倾角、俯仰、G 值、颠簸等组件已存在，需实车校准与异常值治理 |
 | DASH-006 | 🟨 | 摔车与碰撞预警 | 已有运动阈值和警告链路；不能替代专业救援设备，需道路误报验证 |
-| DASH-007 | 🟨 | 媒体与设备状态 | Now Playing、手机电量等辅助信息已有接入，需后台权限与空状态验证 |
+| DASH-007 | 🟨 | 媒体与设备状态 | Now Playing、手机电量和本地歌词已有接入；歌词支持用户选择的 LRCLIB 在线回退，需真机 Apple Music、权限、网络和骑行安全验证 |
 | DASH-008 | ✅ | 仪表颜色配置 | 用户可以调整支持的仪表主题或颜色 |
 | DASH-009 | ✅ | 公英制单位 | 支持速度、距离等单位切换 |
 | DASH-010 | ✅ | 仪表语言 | 仪表文案跟随当前 App 支持语言 |
@@ -355,6 +355,21 @@ Build 49 保持普通用户功能和三个稳定核心不变，重点收口开�
 
 Build 49 不宣称已经完成 XP400 GT 真实 ECU/CAN 证据，更不开放固件写入、开机画面写入或未知仪表指令。
 
+### 7.6 Build 52 Apple Music 歌词与安全展示
+
+Build 52 继续保持营销版本 `2.0.8`，只递增工程 Build。歌词能力只接入 `PTSpeed` 主 App，不把歌词内容写入 iCloud、Widget、Watch、Live Activity、PTT 或车辆通信链路。
+
+| 工作包 | 状态 | 当前产品能力 | 入口与边界 |
+| --- | --- | --- | --- |
+| B52-00 | ✅ | Build 52、工程接入和稳定核心保护 | 三个 BLE/OBD 核心文件不变；主 App、嵌入 Watch App 和独立 Watch 目标构建通过 |
+| B52-01 | ✅ | 共享歌曲快照、LRC/纯文本解析、时间戳偏移和重复时间戳处理 | 主 App 本地纯数据服务；不新增第三方 SDK |
+| B52-02 | 🟨 | Now Playing 内嵌歌词优先、切歌取消、后台停止观察和当前行显示 | 仅消费 `MPMediaItem.lyrics`；系统媒体权限与真机播放状态待验证 |
+| B52-03 | 🟨 | 用户同意后通过 HTTPS 调用 LRCLIB，并严格校验歌名、歌手、专辑和时长 | 设置页可关闭；内存缓存和负缓存有界；不上传 VIN、坐标或车辆数据 |
+| B52-04 | 🟨 | 停车时可打开只读完整歌词页，行驶/速度数据不新鲜时自动拒绝或退出 | 不提供骑行中滚动歌词、地图、车辆控制或后台联网歌词 |
+| B52-05 | 🟨 | 十语言文案、单元测试、编译与发布检查 | 真实 iPhone/Apple Music、网络异常、权限和 Watch/Widget 回归待补 |
+
+Build 52 不使用私有 MusicKit 歌词接口、不抓取 Apple Music 页面、不绕过版权或 DRM；在线歌词仅是用户明确开启后的可选匹配服务。
+
 ## 8. 已退役功能
 
 当前没有需要登记的已退役功能。后续移除功能时，在下表保留原 ID、最后可用 Build、移除原因和替代路径。
@@ -418,3 +433,4 @@ Build 49 不宣称已经完成 XP400 GT 真实 ECU/CAN 证据，更不开放固�
 | 2026-09-06 | 当前工作区 Build 48 | B48-01～B48-09 已完成外围代码接入：只读 OBD 取消/进度、十语言资源、Dev 固件文件预检、App Intents/Scheme NFC-ready、车库资料、行程照片和 Roadbook SharePlay；主 App、Widget、Watch generic build 与 Tests `build-for-testing` 通过，XCTest 实际执行、签名发布、真实 NFC/SharePlay/Watch/车辆验证待补；三个 BLE/OBD 核心文件零字节变化 |
 | 2026-09-06 | 当前工作区 Build 49 | B49-01～B49-04 已接入 CAN 原始解析/监听协调、适配器恢复、日语/俄语运行时 locale 修复和回归测试；启动时会重新应用 Build48 已保存的日语/俄语选择；iOS 工作区 Debug 构建与 `build-for-testing`、Widget/Watch 包资源检查通过，XCTest 实际运行、签名发布、真实语言/ELM327/XP400 验证待补；三个 BLE/OBD 核心文件零字节变化 |
 | 2026-09-07 | 当前工作区 Build 50 | B50-00～B50-04 已实施：新增统一导航会话协调器，收口 AMap 代理、手机/CarPlay 导航表面、Live Activity、Watch 和仪表导航输出；PTMotoInfoViewController 增加可滚动自适应仪表首页、车辆摘要、可见性门禁和断连重置；新增导航进度与首页状态测试。PTSpeed iOS Debug generic build 已通过；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；XCTest 实际执行、签名发布、真机/真车验证待补 |
+| 2026-09-07 | 当前工作区 Build 52 | B52-00～B52-05 已接入：Now Playing 内嵌歌词优先、用户同意后的 LRCLIB 回退、LRC/纯文本解析、骑行安全门禁、只读完整歌词页、设置开关、十语言资源和解析测试；主 App Debug generic build、独立 Watch target build 与 Tests `build-for-testing` 通过；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；XCTest 实际运行受当前 scheme/目标仅支持真机配置限制，签名发布、真实 Apple Music/网络/骑行验证待补 |

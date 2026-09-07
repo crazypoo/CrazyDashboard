@@ -39,6 +39,12 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
 
     lazy var dashBoard:PTDashBoardView = {
         let view = PTDashBoardView()
+        view.musicNowPlaying.onLyricsTap = { [weak self] in
+            self?.presentLyricsIfAllowed()
+        }
+        view.musicNowPlaying.onOnlineLyricsConsentRequired = { [weak self] in
+            self?.requestOnlineLyricsConsent()
+        }
         return view
     }()
     
@@ -110,7 +116,97 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
             self.dashBoard.mapView.setupNavView()
         }
     }
-    
+
+    private func requestOnlineLyricsConsent() {
+        let alert = UIAlertController(
+            title: PTDashboardConfig.languageFunc(text: "lyrics_online_title"),
+            message: PTDashboardConfig.languageFunc(text: "lyrics_online_consent"),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "button_cancel"),
+            style: .cancel
+        ) { _ in
+            PTLyricsSettings.setOnlineLookupEnabled(false)
+        })
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "lyrics_online_enable"),
+            style: .default
+        ) { [weak self] _ in
+            PTLyricsSettings.setOnlineLookupEnabled(true)
+            self?.dashBoard.musicNowPlaying.reloadLyrics()
+        })
+        present(alert, animated: true)
+    }
+
+    private func presentLyricsIfAllowed() {
+        guard let snapshot = dashBoard.musicNowPlaying.currentTrackSnapshot else {
+            presentLyricsMessage(key: "lyrics_no_match")
+            return
+        }
+        guard let document = dashBoard.musicNowPlaying.currentLyricsDocument else {
+            let messageKey: String
+            switch dashBoard.musicNowPlaying.lyricsState {
+            case .loading: messageKey = "lyrics_loading"
+            case .permissionDenied: messageKey = "lyrics_permission_denied"
+            case .onlineLookupDisabled: messageKey = "lyrics_online_disabled"
+            case .failed: messageKey = "lyrics_unavailable"
+            default: messageKey = "lyrics_no_match"
+            }
+            presentLyricsMessage(key: messageKey)
+            return
+        }
+        guard canPresentFullLyrics() else {
+            presentLyricsMessage(key: "lyrics_park_before_viewing")
+            return
+        }
+        guard presentedViewController == nil else { return }
+
+        let lyricsViewController = PTLyricsViewController(
+            snapshot: snapshot,
+            document: document,
+            artwork: dashBoard.musicNowPlaying.currentArtwork
+        )
+        lyricsViewController.isFullLyricsAllowed = { [weak self] in
+            self?.canPresentFullLyrics() ?? false
+        }
+        present(lyricsViewController, animated: true)
+    }
+
+    private func presentLyricsMessage(key: String) {
+        let alert = UIAlertController(
+            title: PTDashboardConfig.languageFunc(text: "lyrics_title"),
+            message: PTDashboardConfig.languageFunc(text: key),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "button_confirm"),
+            style: .default
+        ))
+        present(alert, animated: true)
+    }
+
+    private func canPresentFullLyrics() -> Bool {
+        let motionSpeed = PTMotion.shared.currentSpeedKmh
+        guard motionSpeed.isFinite, motionSpeed >= 0, motionSpeed <= 2 else { return false }
+
+        let vehicleSnapshot = PTVehicleConnectivityCoordinator.shared.snapshot
+        let hasActiveRideContext = vehicleSnapshot.isDashboardConnected ||
+            vehicleSnapshot.isOBDConnected ||
+            PTTripManager.shared.isRecordingRide ||
+            PTNavigationSessionCoordinator.shared.isSessionActive
+        guard hasActiveRideContext else { return true }
+
+        guard PTLocationEngine.shared.isTracking,
+              let location = PTLocationEngine.shared.lastLocation else {
+            return false
+        }
+        let age = Date().timeIntervalSince(location.timestamp)
+        guard age >= 0, age <= 5 else { return false }
+        guard location.speed.isFinite, location.speed >= 0 else { return false }
+        return location.speed * 3.6 <= 2
+    }
+
     override func viewControllerOrientation(_ orientationMask: UIInterfaceOrientationMask) {
         super.viewControllerOrientation(orientationMask)
         
