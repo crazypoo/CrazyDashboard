@@ -192,6 +192,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
     private var dashboardLiveBuffer = PTDashboardLiveBuffer()
     private var dashboardFlushTask: Task<Void, Never>?
     private var dashboardIdentityTask: Task<Void, Never>?
+    private var protocolCaptureLifecycleTask: Task<Void, Never>?
     private var dashboardSessionToken = UUID()
     private var dashboardSessionActive = false
     private var dashboardIdentityResolved = false
@@ -209,6 +210,12 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         super.init()
         PTBluetoothServerManager.shared.addDelegate(self)
         PTMotoTelemetryManager.shared.addDelegate(self)
+        // English: Install passive log observers once; they never start a transport operation.
+        // Español: Instala una sola vez los observadores pasivos; nunca inician una operación de transporte.
+        // 中文：只安装一次被动日志观察者，它们绝不会启动传输操作。
+        Task {
+            await PTProtocolDiscoveryRecorder.shared.installObservers()
+        }
         backgroundObserver = NotificationCenter.default.addObserver(
             forName: UIApplication.didEnterBackgroundNotification,
             object: nil,
@@ -220,6 +227,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
             }
         }
         synchronizeInitialState()
+        syncProtocolCaptureLifecycle(for: snapshot)
     }
 
     isolated deinit {
@@ -227,6 +235,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         obdAttemptTask?.cancel()
         dashboardFlushTask?.cancel()
         dashboardIdentityTask?.cancel()
+        protocolCaptureLifecycleTask?.cancel()
         if let backgroundObserver {
             NotificationCenter.default.removeObserver(backgroundObserver)
         }
@@ -564,6 +573,70 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
             userInfo: ["snapshot": next]
         )
         syncWidgetConnectionProjection()
+        syncProtocolCaptureLifecycle(for: next)
+    }
+
+    // English: Start and finish passive evidence with the existing link state; ATMA remains a separate developer action.
+    // Español: Inicia y finaliza la evidencia pasiva con el estado existente; ATMA sigue siendo una acción de desarrollador separada.
+    // 中文：让被动证据跟随现有连接状态启停，ATMA 继续保持独立的开发者操作。
+    private func syncProtocolCaptureLifecycle(for next: PTVehicleSnapshot) {
+        switch next.dashboard.state {
+        case .connected:
+            let transport = next.dashboard.transport?.rawValue ?? "dashboardBluetooth"
+            let source: PTProtocolDiscoverySource = next.dashboard.transport == .dashboardMock ? .mock : .real
+            let vehicleID = dashboardGarageVehicleID ?? PTMotorcycleGarageStore.shared.selectedVehicleID
+            enqueueProtocolCaptureOperation {
+                await PTProtocolDiscoveryRecorder.shared.startDashboardSession(
+                    transport: transport,
+                    source: source,
+                    vehicleID: vehicleID
+                )
+            }
+        case .disconnected, .failed:
+            enqueueProtocolCaptureOperation {
+                await PTProtocolDiscoveryRecorder.shared.finishDashboardSession(
+                    reason: next.dashboard.errorMessage ?? next.dashboard.state.rawValue
+                )
+            }
+        case .idle, .connecting:
+            break
+        }
+
+        switch next.obd.state {
+        case .connecting, .connected:
+            let transport = next.obd.transport?.rawValue ?? "obd"
+            let source: PTProtocolDiscoverySource = next.obd.transport == .obdMock ? .mock : .real
+            let vehicleID = PTMotorcycleGarageStore.shared.selectedVehicleID
+            enqueueProtocolCaptureOperation {
+                await PTProtocolDiscoveryRecorder.shared.startOBDSession(
+                    transport: transport,
+                    source: source,
+                    vehicleID: vehicleID
+                )
+            }
+        case .disconnected, .failed:
+            enqueueProtocolCaptureOperation {
+                await PTProtocolDiscoveryRecorder.shared.finishOBDSession(
+                    reason: next.obd.errorMessage ?? next.obd.state.rawValue
+                )
+            }
+        case .idle:
+            break
+        }
+    }
+
+    // EN: Serialize lifecycle commands so a fast connect/disconnect cannot finish a session before it starts.
+    // ES: Serializa los comandos de ciclo de vida para que una conexión/desconexión rápida no cierre antes de iniciar.
+    // 中文：串行化生命周期命令，避免快速连接/断开时出现先结束后开始的会话竞态。
+    private func enqueueProtocolCaptureOperation(
+        _ operation: @escaping @Sendable () async -> Void
+    ) {
+        let previous = protocolCaptureLifecycleTask
+        protocolCaptureLifecycleTask = Task { @MainActor in
+            _ = await previous?.result
+            guard !Task.isCancelled else { return }
+            await operation()
+        }
     }
 
     private func syncWidgetConnectionProjection() {

@@ -853,6 +853,7 @@ private extension PTXP400BLEEvidenceStore {
 @MainActor
 final class PTXP400EvidenceViewController: PTListViewController, UIDocumentPickerDelegate {
     private let cellIdentifier = "PTXP400EvidenceCell"
+    private var automaticSummaries: [PTProtocolDiscoverySessionSummary] = []
 
     public override func installListViewConstraints(_ listView: PTCollectionView) {
         listView.snp.makeConstraints { make in
@@ -924,6 +925,18 @@ final class PTXP400EvidenceViewController: PTListViewController, UIDocumentPicke
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setCustomRightButtons(buttons: [clearButton, exportButton, importButton], buttonSpacing: CGFloat.GlobalItemSpacing)
+        refreshAutomaticEvidence()
+    }
+
+    // EN: Refresh only when the developer evidence page is visible; passive recording never drives the UI.
+    // ES: Actualiza solo cuando la página de evidencia del desarrollador está visible; la captura pasiva nunca dirige la UI.
+    // 中文：只在开发者证据页面显示时刷新，被动采集绝不驱动界面。
+    private func refreshAutomaticEvidence() {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            self.automaticSummaries = await PTProtocolDiscoveryRecorder.shared.sessionSummaries(limit: 20)
+            self.showDetail()
+        }
     }
 
     func showDetail() {
@@ -957,6 +970,21 @@ final class PTXP400EvidenceViewController: PTListViewController, UIDocumentPicke
         if !bleRows.isEmpty {
             mSections.append(PTSection(rows: bleRows))
         }
+
+        let automaticRows = automaticSummaries.map { summary in
+            let cellModel = PTFusionCellModel()
+            let channel = summary.channel == .dashboardBLE ? "BLE" : "OBD"
+            cellModel.name = "AUTO · \(channel) · \(summary.source.rawValue) · \(summary.id.uuidString.prefix(8))"
+            cellModel.content = "\(summary.eventCount) events · \(summary.candidateCount) candidates · \(summary.anomalyCount) anomalies · \(summary.transport)"
+            cellModel.nameColor = .white
+            cellModel.contentTextColor = .white
+            let row = PTRows(ID: PTFusionCell.ID, dataModel: cellModel)
+            row.cellClass = PTFusionCell.self
+            return row
+        }
+        if !automaticRows.isEmpty {
+            mSections.append(PTSection(rows: automaticRows))
+        }
         
         listView.layoutIfNeeded()
         listView.showCollectionDetail(collectionData: mSections)
@@ -981,6 +1009,23 @@ final class PTXP400EvidenceViewController: PTListViewController, UIDocumentPicke
             self?.share { try PTXP400InstructionEvidenceStore.shared.exportURL(format: .csv) }
         })
         alert.addAction(UIAlertAction(
+            title: "Passive JSONL",
+            style: .default
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                do {
+                    guard let url = try await PTProtocolDiscoveryRecorder.shared.exportURL() else {
+                        self.showExportError(message: "No completed passive protocol sessions are available.")
+                        return
+                    }
+                    self.presentShare(url: url)
+                } catch {
+                    self.showExportError(message: error.localizedDescription)
+                }
+            }
+        })
+        alert.addAction(UIAlertAction(
             title: PTDashboardConfig.languageFunc(text: "button_cancel"),
             style: .cancel
         ))
@@ -1002,7 +1047,11 @@ final class PTXP400EvidenceViewController: PTListViewController, UIDocumentPicke
             style: .destructive
         ) { [weak self] _ in
             PTXP400InstructionEvidenceStore.shared.clear()
-            self?.showDetail()
+            Task { @MainActor [weak self] in
+                await PTProtocolDiscoveryRecorder.shared.clearCompletedSessions()
+                self?.automaticSummaries.removeAll(keepingCapacity: true)
+                self?.showDetail()
+            }
         })
         alert.addAction(UIAlertAction(title: PTDashboardConfig.languageFunc(text: "button_cancel"), style: .cancel))
         present(alert, animated: true)
@@ -1066,16 +1115,31 @@ final class PTXP400EvidenceViewController: PTListViewController, UIDocumentPicke
 
     private func share(_ makeURL: () throws -> URL) {
         do {
-            let activity = UIActivityViewController(activityItems: [try makeURL()], applicationActivities: nil)
-            if let popover = activity.popoverPresentationController {
-                popover.sourceView = view
-                popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
-            }
-            present(activity, animated: true)
+            presentShare(url: try makeURL())
         } catch {
-            let alert = UIAlertController(title: PTDashboardConfig.languageFunc(text: "alert_title"), message: error.localizedDescription, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: PTDashboardConfig.languageFunc(text: "button_confirm"), style: .default))
-            present(alert, animated: true)
+            showExportError(message: error.localizedDescription)
         }
+    }
+
+    // EN: Keep sharing on the main actor and reuse the same iPhone/iPad popover rules for every evidence format.
+    // ES: Mantén el uso compartido en el actor principal y reutiliza las mismas reglas de popover para cada formato.
+    // 中文：所有证据格式都在主线程分享，并复用 iPhone/iPad 的弹出层规则。
+    private func presentShare(url: URL) {
+        let activity = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        if let popover = activity.popoverPresentationController {
+            popover.sourceView = view
+            popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
+        }
+        present(activity, animated: true)
+    }
+
+    private func showExportError(message: String) {
+        let alert = UIAlertController(
+            title: PTDashboardConfig.languageFunc(text: "alert_title"),
+            message: message,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: PTDashboardConfig.languageFunc(text: "button_confirm"), style: .default))
+        present(alert, animated: true)
     }
 }

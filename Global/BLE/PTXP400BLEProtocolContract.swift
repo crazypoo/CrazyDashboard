@@ -12,7 +12,7 @@ import Foundation
 /// EN: Pure protocol facts and validators shared by navigation adapters and tests.
 /// ES: Hechos y validadores puros del protocolo compartidos por adaptadores y pruebas.
 /// 中文：供导航适配层和测试复用的纯协议事实与校验器。
-public enum PTXP400BLEProtocol {
+nonisolated public enum PTXP400BLEProtocol {
     public static let preamble: UInt8 = 0x16
     public static let terminator: UInt8 = 0x00
     public static let maxTIOChunkLength = 20

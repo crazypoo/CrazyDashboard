@@ -1639,3 +1639,47 @@ Build 50 继续使用营销版本 `2.0.8`，将 PTSpeed、Widget、Watch 和测�
 - 若导航协调器在某个 AMap SDK 版本上出现兼容问题，只回退 `PTNavigationSessionCoordinator` 的接线和 Build 50 的 UI 状态层，恢复旧页面代理实现；不回退 BLE/OBD 核心。
 - 若首页滚动布局影响小屏设备，只回退滚动容器和车辆摘要布局，保留断连状态清理与导航进度边界修复。
 - 在真实设备验证完成前，Build 50 保持 `🟨`，不得把构建检查描述为 TestFlight、CarPlay、Watch 或 XP400 实车通过。
+
+## 32. Build 51 被动协议发现与自动证据采集实施记录（2026-09-07）
+
+Build 51 继续使用营销版本 `2.0.8`，主 App、Widget、Watch 和测试目标的 Build 统一为 `51`。本轮把“连接后自动观察 BLE/OBD → 只保存未知或异常证据 → 开发者查看/导出”接到既有日志和连接协调器上；不启动新的抓包指令、不自动进入 `ATMA`，也不修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift` 或 `PTOBDCommand.swift`。
+
+### 32.1 工作包与状态
+
+| 状态 | ID | 工作包 | 结果 |
+| --- | --- | --- | --- |
+| ✅ | `B51-00` | Build、核心保护与工程接入 | 工程 Build 统一为 `51`；新增被动采集源文件并加入 PTSpeed；三个稳定核心文件未修改 |
+| ✅ | `B51-01` | 日志观察与并发安全 | `PTOBDLogger` 增加带时间戳/单调时钟的只读 Observer；文件打开、写入和关闭串行化；旧 `onLogUpdated` API 保持兼容 |
+| ✅ | `B51-02` | 连接生命周期自动采集 | `PTVehicleConnectivityCoordinator` 在仪表连接和 OBD 连接/初始化阶段创建对应会话，断开/失败后封存；生命周期操作串行排队，避免快速连接/断开竞态 |
+| ✅ | `B51-03` | 未知协议分类与有界存储 | BLE 按既有协议契约识别已知帧、未知 ID、长度异常和未映射位；OBD 识别已知命令、正响应、`7F` 否定响应、无数据、超时和未解析响应；JSONL、元数据和索引保存于 Application Support，单会话事件和历史会话均有上限 |
+| ✅ | `B51-04` | 开发者证据查看与导出 | 既有 OBD Evidence 页面显示自动会话摘要，可导出合并 JSONL；清理按钮同时清理自动证据和旧只读证据 |
+| 🟨 | `B51-05` | 回归测试与真实设备门禁 | PTSpeed workspace Debug generic build 已通过；XCTest 实际运行、签名 Archive、TestFlight、真实 ELM327、XP400 实车和长时间骑行验证待补 |
+
+### 32.2 自动采集边界
+
+- BLE 自动采集只监听 `PTOBDLogger.moto` 已有的原始入站帧和发送帧。已确认的连接帧、车辆状态帧和导航/配置包不重复写入；未知帧 ID、未映射字节/位、长度异常和非法包封装保留首个样本及少量对数重复样本。
+- OBD 自动采集监听 `PTOBDLogger.obd` 已有的初始化命令、异步命令、响应、超时和断连标记。它不调用 `sendOBDCommandAsync`，不暂停轮询，也不替换既有响应拼接器。
+- 现有开发者 `PTCANExperimentCoordinator` 的 `ATMA` 仍是显式 Dev 操作；Build 51 的普通连接采集不会为了“抓包”自动改变 ELM327 的协议、Header、过滤器或轮询状态。
+- OBD `VIN/F190` 和 `62F190` 响应在自动证据中做摘要化脱敏；完整历史文本日志仍沿用现有权限和开发者导出边界，不把隐私数据放进 Widget、Watch 或普通 UI。
+- Mock、真实和回放会话通过 `source` 字段区分；会话摘要关联当前连接类型和车库车辆 ID（如果当时可用），不会把蓝牙 UUID 或原始凭据当作车辆名称。
+
+### 32.3 文件与并发设计
+
+- 新增 `Global/Log/PTProtocolDiscoveryRecorder.swift`，由 `actor` 独占内存状态、文件句柄、JSONL 写入和历史索引；每个通道最多一个活动会话，单会话最多 `50,000` 条证据事件，历史最多 `50` 个会话。
+- `PTOBDLogger` 的 Observer 是附加能力，不改变原有日志回调和传输路径；文件 I/O 继续走 utility 队列，观察事件只把不可变值类型交给采集 Actor。
+- 被动证据文件包含 `schemaVersion`、会话元数据、方向、来源、分类、原始值摘要、单调时钟和关联命令，便于后续对照官方 App 的 A/B 操作并保持时间顺序。
+- 已知高频数据不会让内存数组无限增长；重复未知事件使用首个、10 次、100 次和 1,000 次样本点，超过单会话上限的事件计入 `droppedEventCount`。
+
+### 32.4 自动验证与外部验证边界
+
+- [x] 新文件、日志观察器、连接生命周期接线和开发者 Evidence 页面通过 `swiftc -parse`、工程 plist 校验和 `git diff --check`。
+- [x] PTSpeed workspace Debug generic build 已通过，并实际编译 `PTProtocolDiscoveryRecorder.swift`；当前仅有既有第三方依赖/旧 API warning。
+- [x] 受保护的 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift` 和 `PTOBDCommand.swift` 在本轮没有变更。
+- [ ] 当前没有把通用构建当作真机、TestFlight 或实车成功证明；必须在匹配的实体 iPhone、可靠 ELM327、XP400 GT 和稳定供电条件下检查采集完整性、脱敏结果、断连封存和文件导出。
+- [ ] 仍需补充 XCTest 对 BLE 帧分类、OBD `7F`/正响应解析、JSONL 崩溃恢复、上限淘汰和快速连接/断开竞态的可重复验证；若测试目标受当前 Simulator/Pods 环境阻断，应单独记录环境阻断，不修改核心通信代码掩盖问题。
+
+### 32.5 回滚边界
+
+- 若被动采集导致日志或磁盘开销异常，只移除 `PTVehicleConnectivityCoordinator` 的生命周期接线和 Evidence 页面自动摘要；保留 `PTOBDLogger` 的旧 API 及既有 BLE/OBD 行为。
+- 若某个适配器的日志 marker 与当前解析契约不一致，只调整 `PTProtocolDiscoveryRecorder` 的 marker/分类器，不修改稳定传输、认证、分片、轮询或响应拼接逻辑。
+- 未知 BLE/OBD 数据始终停留在观察证据层；Build 51 不因采集到新样本而自动执行未知指令、写入仪表、刷写固件或修改开机画面。
