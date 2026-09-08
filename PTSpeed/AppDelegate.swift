@@ -44,6 +44,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     developmentDevice: debugDevice,
                     config: buglyConfig)
 
+        // EN: Register aggregate performance diagnostics once without collecting vehicle payloads.
+        // ES: Registra una vez el diagnóstico agregado de rendimiento sin recopilar cargas del vehículo.
+        // 中文：只注册一次聚合性能诊断，不收集车辆报文内容。
+        PTPerformanceMonitor.shared.start()
+
         if PTMotoUserDefaultStruct.appFirst {
             // EN: Match the first supported app language against the system preference, including region variants.
             // ES: Relaciona el primer idioma compatible con la preferencia del sistema, incluidas las variantes regionales.
@@ -150,11 +155,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         } else {
             PTLiveActivityManager.shared.reconcileIntercomActivitiesAtLaunch()
         }
-
-        // EN: Install the optional app-owned ANCS-shaped channel before the dashboard connection can start.
-        // ES: Instala el canal opcional con forma ANCS antes de que pueda comenzar la conexión con el tablero.
-        // 中文：在仪表连接可能开始前安装可选的 App 自有 ANCS 风格通道。
-        PTDashboardANCSProvider.shared.install()
 
         // EN: Start dashboard observation at app launch so garage sync never depends on opening a page.
         // ES: Inicia la observación del tablero al arrancar para que la sincronización no dependa de abrir una página.

@@ -173,8 +173,12 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
     public static let shared = PTVehicleConnectivityCoordinator()
     public static let snapshotDidChange = Notification.Name("PTVehicleConnectivityCoordinator.snapshotDidChange")
     public static let dashboardGarageSyncDidChange = Notification.Name("PTVehicleConnectivityCoordinator.dashboardGarageSyncDidChange")
+    public static let telemetryDidChange = Notification.Name("PTVehicleConnectivityCoordinator.telemetryDidChange")
 
     public private(set) var snapshot: PTVehicleSnapshot = .initial
+    public private(set) var telemetrySnapshot: PTVehicleTelemetrySnapshot = .empty
+    public private(set) var wheelSpeedConsistency = PTWheelSpeedConsistencyResult(state: .unavailable)
+    public private(set) var batteryHealthSummary = PTBatteryHealthSummary()
     public private(set) var dashboardConnectionIdentity: PTDashboardConnectionIdentity?
     public private(set) var dashboardGarageVehicleID: UUID?
     public private(set) var dashboardLiveSnapshot: PTGarageDashboardSnapshot?
@@ -201,6 +205,11 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
     private var dashboardDidPersistInitialSample = false
     private var dashboardLastPersistedAt: Date?
     private var backgroundObserver: NSObjectProtocol?
+    private var telemetryEngine = PTVehicleTelemetryFusionEngine()
+    private var wheelSpeedTracker = PTWheelSpeedConsistencyTracker()
+    private var batteryObservations: [PTBatteryObservation] = []
+    private var telemetryNotificationTask: Task<Void, Never>?
+    private var pendingTelemetryNotification: PTVehicleTelemetrySnapshot?
 
     private var dashboardSnapshotSource: PTGarageDashboardSource {
         snapshot.dashboard.transport == .dashboardMock ? .mock : .dashboard
@@ -227,6 +236,26 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
             }
         }
         synchronizeInitialState()
+        // EN: Re-project values only when the stable manager still reports a live dashboard connection.
+        // ES: Vuelve a proyectar valores solo cuando el gestor estable aún informa una conexión activa.
+        // 中文：只有稳定管理器仍报告仪表真实连接时，才重新投影缓存数值。
+        if snapshot.dashboard.state == .connected {
+            if let latestData1 = PTBluetoothServerManager.shared.latestData1 {
+                receiveDashboardData(latestData1)
+            }
+            if let latestData2 = PTBluetoothServerManager.shared.latestData2 {
+                receiveDashboardData(latestData2)
+            }
+            if let latestData3 = PTBluetoothServerManager.shared.latestData3 {
+                receiveDashboardData(latestData3)
+            }
+            if let latestControl = PTBluetoothServerManager.shared.latestControl {
+                receiveDashboardData(latestControl)
+            }
+            if let latestAbsStatus = PTBluetoothServerManager.shared.latestAbsStatus {
+                receiveDashboardData(latestAbsStatus)
+            }
+        }
         syncProtocolCaptureLifecycle(for: snapshot)
     }
 
@@ -239,6 +268,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         if let backgroundObserver {
             NotificationCenter.default.removeObserver(backgroundObserver)
         }
+        telemetryNotificationTask?.cancel()
         PTBluetoothServerManager.shared.removeDelegate(self)
         PTMotoTelemetryManager.shared.removeDelegate(self)
     }
@@ -574,6 +604,218 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         )
         syncWidgetConnectionProjection()
         syncProtocolCaptureLifecycle(for: next)
+    }
+
+    private var dashboardTelemetrySource: PTVehicleTelemetrySource {
+        snapshot.dashboard.transport == .dashboardMock ? .dashboardMock : .dashboardBluetooth
+    }
+
+    private var obdTelemetrySource: PTVehicleTelemetrySource {
+        switch snapshot.obd.transport {
+        case .obdMock:
+            return .obdMock
+        case .obdWiFi:
+            return .obdWiFi
+        default:
+            return .obdBluetooth
+        }
+    }
+
+    // EN: Keep the value current immediately, but coalesce notifications so high-rate frames do not redraw every screen.
+    // ES: Mantiene el valor actualizado de inmediato, pero agrupa las notificaciones para no redibujar cada pantalla por cada trama.
+    // 中文：数值立即更新，同时合并通知，避免高频帧让所有界面逐帧重绘。
+    private func publishTelemetryChange() {
+        let next = telemetryEngine.snapshot
+        telemetrySnapshot = next
+        pendingTelemetryNotification = next
+        guard telemetryNotificationTask == nil else { return }
+
+        telemetryNotificationTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            guard let self else { return }
+            guard !Task.isCancelled else {
+                self.telemetryNotificationTask = nil
+                return
+            }
+            guard let pending = self.pendingTelemetryNotification else {
+                self.telemetryNotificationTask = nil
+                return
+            }
+            self.pendingTelemetryNotification = nil
+            NotificationCenter.default.post(
+                name: Self.telemetryDidChange,
+                object: self,
+                userInfo: ["telemetry": pending]
+            )
+            self.telemetryNotificationTask = nil
+        }
+    }
+
+    private func updateWheelSpeedConsistency(at date: Date) {
+        let current = telemetryEngine.snapshot
+        wheelSpeedConsistency = wheelSpeedTracker.update(
+            rear: current.dashboardSpeedKmh,
+            front: current.frontWheelSpeedKmh,
+            at: date
+        )
+    }
+
+    private func recordBatteryObservation(
+        voltage: Double,
+        engineStatus: Int,
+        source: PTVehicleTelemetrySource,
+        at date: Date
+    ) {
+        guard voltage.isFinite, (6...20).contains(voltage) else { return }
+        batteryObservations.append(
+            PTBatteryObservation(
+                voltage: voltage,
+                engineStatus: engineStatus,
+                source: source,
+                capturedAt: date
+            )
+        )
+        if batteryObservations.count > 120 {
+            batteryObservations.removeFirst(batteryObservations.count - 120)
+        }
+        batteryHealthSummary = PTBatteryHealthAnalyzer.summarize(
+            observations: batteryObservations,
+            capturedAt: date
+        )
+    }
+
+    // EN: Decode only the already-published dashboard value types; no BLE parsing is duplicated here.
+    // ES: Decodifica solo los tipos de valores ya publicados por el tablero; aquí no se duplica el análisis BLE.
+    // 中文：这里只消费仪表已经发布的值类型，不重复实现 BLE 解析。
+    private func ingestDashboardTelemetry(_ data: Any?, at date: Date) -> PTVehicleDashboardSample? {
+        let source = dashboardTelemetrySource
+        var garageSample: PTVehicleDashboardSample?
+        var didUpdate = false
+
+        if let data1 = data as? PTDashboardData1 {
+            if data1.fuelLevelAvailability.isAvailable {
+                telemetryEngine.updateFuel(data1.fuelLevelPct, source: source, at: date)
+                didUpdate = true
+            }
+            if data1.tripAvailability.isAvailable {
+                telemetryEngine.updateTrip(data1.tripKm, source: source, at: date)
+                didUpdate = true
+            }
+            if data1.odometerAvailability.isAvailable {
+                telemetryEngine.updateOdometer(data1.odoKm, source: source, at: date)
+                garageSample = .odometer(data1.odoKm)
+                didUpdate = true
+            }
+        } else if let data2 = data as? PTDashboardData2 {
+            if data2.engineAvailability.isAvailable {
+                telemetryEngine.updateEngineStatus(data2.engineStatus, source: source, at: date)
+                telemetryEngine.updateKickstand(data2.isKickstandDown, source: source, at: date)
+                didUpdate = true
+            }
+            if data2.batteryAvailability.isAvailable {
+                telemetryEngine.updateBatteryVoltage(data2.batteryVolt, source: source, at: date)
+                recordBatteryObservation(
+                    voltage: data2.batteryVolt,
+                    engineStatus: data2.engineStatus,
+                    source: source,
+                    at: date
+                )
+                didUpdate = true
+            }
+            if data2.maintenanceAvailability.isAvailable {
+                telemetryEngine.updateMaintenanceFlag(data2.maintenance, source: source, at: date)
+                garageSample = .maintenanceFlag(data2.maintenance)
+                didUpdate = true
+            }
+        } else if let data3 = data as? PTDashboardData3 {
+            if data3.autonomyAvailability.isAvailable {
+                telemetryEngine.updateRange(data3.autonomyKm, source: source, at: date)
+                didUpdate = true
+            }
+            if data3.maintenanceDistanceAvailability.isAvailable {
+                telemetryEngine.updateMaintenanceDistance(
+                    data3.distToMaintenance,
+                    source: source,
+                    at: date
+                )
+                garageSample = .maintenanceDistance(data3.distToMaintenance)
+                didUpdate = true
+            }
+        } else if let control = data as? PTDashboardControl {
+            if control.vehicleSpeedAvailability.isAvailable {
+                telemetryEngine.updateDashboardSpeed(
+                    control.vehicleSpeedKmh,
+                    source: source,
+                    at: date
+                )
+                didUpdate = true
+            }
+            if control.engineRpmAvailability.isAvailable {
+                telemetryEngine.updateRPM(control.engineRpm, source: source, at: date)
+                didUpdate = true
+            }
+            telemetryEngine.updateIndicators(
+                left: control.isLeftTurnOn,
+                right: control.isRightTurnOn,
+                hazard: control.isHazardOn,
+                source: source,
+                at: date
+            )
+            updateWheelSpeedConsistency(at: date)
+            didUpdate = true
+        } else if let absStatus = data as? PTAbsStatus {
+            if absStatus.frontWheelSpeedAvailability.isAvailable {
+                telemetryEngine.updateFrontWheelSpeed(
+                    absStatus.frontWheelSpeedKmh,
+                    source: source,
+                    at: date
+                )
+                didUpdate = true
+            }
+            if absStatus.statusAvailability.isAvailable {
+                telemetryEngine.updateABS(lightOn: absStatus.isAbsLightOn, source: source, at: date)
+                didUpdate = true
+            }
+            updateWheelSpeedConsistency(at: date)
+        }
+
+        if didUpdate {
+            publishTelemetryChange()
+        }
+        return garageSample
+    }
+
+    private func receiveOBDMeasurements(_ measurements: [String: Any]) {
+        guard snapshot.obd.state == .connecting || snapshot.obd.state == .connected else {
+            return
+        }
+        let source = obdTelemetrySource
+        let now = Date()
+        var didUpdate = false
+
+        if let speed = Self.doubleValue(
+            measurements[OBDCommand.mode1(.speed).properties.command]
+        ) {
+            telemetryEngine.updateOBDSpeed(speed, source: source, at: now)
+            didUpdate = true
+        }
+        if let rpm = Self.doubleValue(
+            measurements[OBDCommand.mode1(.rpm).properties.command]
+        ) {
+            telemetryEngine.updateRPM(Int(rpm.rounded()), source: source, at: now)
+            didUpdate = true
+        }
+        if didUpdate {
+            publishTelemetryChange()
+        }
+    }
+
+    private static func doubleValue(_ value: Any?) -> Double? {
+        if let value = value as? Double { return value }
+        if let value = value as? Int { return Double(value) }
+        if let value = value as? NSNumber { return value.doubleValue }
+        if let value = value as? String { return Double(value.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        return nil
     }
 
     // English: Start and finish passive evidence with the existing link state; ATMA remains a separate developer action.
@@ -983,6 +1225,10 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
             finalizeDashboardDisconnect(
                 transport: snapshot.dashboard.transport ?? .dashboardBluetooth
             )
+            telemetryEngine.clearDashboard()
+            wheelSpeedTracker = PTWheelSpeedConsistencyTracker()
+            wheelSpeedConsistency = PTWheelSpeedConsistencyResult(state: .unavailable)
+            publishTelemetryChange()
         }
     }
 
@@ -1014,6 +1260,10 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         obdAttemptTask?.cancel()
         obdAttemptTask = nil
         updateOBDState(isConnected ? .connected : .disconnected)
+        if !isConnected {
+            telemetryEngine.clearOBD()
+            publishTelemetryChange()
+        }
     }
 }
 
@@ -1034,22 +1284,14 @@ extension PTVehicleConnectivityCoordinator: PTBLEDashboardDelegate {
     // ES: Convierte los datos del tablero solo en el actor principal, donde está aislada la disponibilidad.
     // 中文：仅在主 actor 中转换仪表数据，因为可用性元数据属于主 actor 隔离状态。
     private func receiveDashboardData(_ data: Any?) {
-        let sample: PTVehicleDashboardSample?
-        if let data1 = data as? PTDashboardData1,
-           data1.odometerAvailability.isAvailable {
-            sample = .odometer(data1.odoKm)
-        } else if let data2 = data as? PTDashboardData2,
-                  data2.maintenanceAvailability.isAvailable {
-            sample = .maintenanceFlag(data2.maintenance)
-        } else if let data3 = data as? PTDashboardData3,
-                  data3.maintenanceDistanceAvailability.isAvailable {
-            sample = .maintenanceDistance(data3.distToMaintenance)
-        } else {
-            sample = nil
+        guard snapshot.dashboard.state == .connecting || snapshot.dashboard.state == .connected else {
+            return
         }
+        let sample = ingestDashboardTelemetry(data, at: Date())
 
-        guard let sample else { return }
-        receiveDashboardSample(sample)
+        if let sample {
+            receiveDashboardSample(sample)
+        }
     }
 
     nonisolated func dashboardManager(
@@ -1066,6 +1308,15 @@ extension PTVehicleConnectivityCoordinator: PTMotoTelemetryDelegate {
     public nonisolated func telemetryManager(_ manager: PTMotoTelemetryManager, didChangeConnectionState isConnected: Bool) {
         Task { @MainActor [weak self] in
             self?.receiveOBDConnection(isConnected)
+        }
+    }
+
+    public nonisolated func telemetryManager(
+        _ manager: PTMotoTelemetryManager,
+        didUpdateMeasurements measurements: [String: Any]
+    ) {
+        Task { @MainActor [weak self] in
+            self?.receiveOBDMeasurements(measurements)
         }
     }
 }

@@ -362,11 +362,13 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
     }
 
     private func refreshSummary() {
+        let connectivity = PTVehicleConnectivityCoordinator.shared
         let dashboardManager = PTBluetoothServerManager.shared
         let widgetStatus = PTWidgetSharedStatus.read(
             from: UserDefaults(suiteName: PTWidgetDataKeys.appGroupID)
         )
-        let vehicle = PTVehicleConnectivityCoordinator.shared.snapshot
+        let vehicle = connectivity.snapshot
+        let telemetry = connectivity.telemetrySnapshot
         let isDashboardConnected = vehicle.isDashboardConnected
         let warningDistanceKm = Int(PTMotorcycleGarageStore.shared.currentMaintenanceWarningDistanceKm.rounded())
         let liveData1 = dashboardManager.latestData1
@@ -386,29 +388,29 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
         let profile = PTMotorcycleGarageStore.shared.currentVehicle
         let summary = PTRideExperienceSummary(
             vehicle: vehicle,
-            fuelLevelPercent: liveData1.flatMap {
+            fuelLevelPercent: telemetry.fuelPercent?.value ?? liveData1.flatMap {
                 $0.fuelLevelAvailability.isAvailable ? $0.fuelLevelPct : nil
             } ?? widgetStatus.fuelLevel,
-            tripKm: liveData1.flatMap {
+            tripKm: telemetry.tripKm?.value ?? liveData1.flatMap {
                 $0.tripAvailability.isAvailable ? $0.tripKm : nil
             } ?? widgetStatus.tripKm,
-            odometerKm: liveData1.flatMap {
+            odometerKm: telemetry.odometerKm?.value ?? liveData1.flatMap {
                 $0.odometerAvailability.isAvailable ? $0.odoKm : nil
             },
             averageConsumptionLitersPer100Km: rangeConsumption,
-            dashboardAutonomyKm: liveData3.flatMap {
+            dashboardAutonomyKm: telemetry.rangeKm?.value ?? liveData3.flatMap {
                 $0.autonomyAvailability.isAvailable ? $0.autonomyKm : nil
             },
-            batteryVoltage: liveData2.flatMap {
+            batteryVoltage: telemetry.batteryVoltage?.value ?? liveData2.flatMap {
                 $0.batteryAvailability.isAvailable ? $0.batteryVolt : nil
             },
             outsideTemperatureCelsius: liveData2.flatMap {
                 $0.outsideTemperatureAvailability.isAvailable ? $0.outsideTempC : nil
             },
-            maintenanceDistanceKm: isDashboardConnected ? liveData3.flatMap {
+            maintenanceDistanceKm: isDashboardConnected ? telemetry.maintenanceDistanceKm?.value ?? liveData3.flatMap {
                 $0.maintenanceDistanceAvailability.isAvailable ? $0.distToMaintenance : nil
             } : nil,
-            maintenanceFlag: isDashboardConnected ? liveData2.flatMap {
+            maintenanceFlag: isDashboardConnected ? telemetry.maintenanceFlag?.value ?? liveData2.flatMap {
                 $0.maintenanceAvailability.isAvailable ? $0.maintenance : nil
             } : nil,
             maintenanceWarningDistanceKm: warningDistanceKm,
@@ -419,7 +421,10 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
             tankCapacityLiters: profile?.tankCapacityLiters,
             reserveFuelPercent: profile?.reserveFuelPercent,
             rangeConsumptionSource: rangeSource,
-            updatedAt: max(vehicle.updatedAt, widgetStatus.lastUpdateTime)
+            updatedAt: max(
+                max(vehicle.updatedAt, widgetStatus.lastUpdateTime),
+                telemetry.updatedAt
+            )
         )
         let readiness = PTRideReadinessEvaluator.evaluate(
             vehicleName: profile?.name ?? "XP400 GT",

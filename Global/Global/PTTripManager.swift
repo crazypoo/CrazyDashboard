@@ -319,6 +319,13 @@ public class PTTripManager: NSObject {
     private var currentLivePressure: Double = 0.0 // 🌟 新增：当前气压缓存
     private var currentLiveSpeed: Double = 0.0 // 🌟 新增：当前车速缓存
     private var currentLiveRpm: Int = 0        // 🌟 新增：当前转速缓存
+
+    // EN: Keep the in-memory ride window bounded; older reports remain unchanged on disk.
+    // ES: Mantiene limitada la ventana de viaje en memoria; los informes antiguos no cambian en disco.
+    // 中文：限制行程内存窗口；磁盘中的历史报告格式保持不变。
+    private let maxTelemetrySampleCount = 43_200
+    private var telemetrySamplingStride = 1
+    private var telemetrySampleCounter = 0
     
     // 🌟 轨迹数组
     private var leanTraceArray: [Double] = []
@@ -344,7 +351,9 @@ public class PTTripManager: NSObject {
     // 🌟 新增 (ADV越野)：实时状态快照
     private var currentLiveSlipRatio: Double = 0.0
     private var currentTractionLevelName: String = "抓地力良好"
-    private var lastFrontSpeed: Double = 0.0
+    private var latestRearSpeedSample: PTTelemetrySample<Double>?
+    private var latestFrontSpeedSample: PTTelemetrySample<Double>?
+    private var wheelSpeedConsistencyTracker = PTWheelSpeedConsistencyTracker()
     
     // 🌟 新增 (ADV越野)：统计与轨迹缓存
     private var maxSlipRatio: Double = 0.0
@@ -740,6 +749,8 @@ public class PTTripManager: NSObject {
         routeArray.removeAll()
         speedTraceArray.removeAll() // 🌟 清空
         rpmTraceArray.removeAll()   // 🌟 清空
+        telemetrySamplingStride = 1
+        telemetrySampleCounter = 0
 
         minSpeed = 999.0
         idleTime = 0.0
@@ -749,7 +760,9 @@ public class PTTripManager: NSObject {
 
         maxSlipRatio = 0.0
         currentLiveSlipRatio = 0.0
-        lastFrontSpeed = 0.0
+        latestRearSpeedSample = nil
+        latestFrontSpeedSample = nil
+        wheelSpeedConsistencyTracker = PTWheelSpeedConsistencyTracker()
         currentTractionLevelName = "抓地力良好"
         slipRatioTraceArray.removeAll()
         offRoadEventsArray.removeAll()
@@ -764,19 +777,7 @@ public class PTTripManager: NSObject {
         // 🚨 启动遥测定时器 (1Hz 采样率)
         telemetryTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self = self, self.isRiding else { return }
-            // 从倾角管理器中直接抓拍当前的平滑角度
-            self.leanTraceArray.append(self.currentLiveRoll)
-            self.pitchTraceArray.append(self.currentLivePitch)
-            self.gForceXTraceArray.append(self.currentLiveGForceX)
-            self.gForceYTraceArray.append(self.currentLiveGForceY)
-            self.gForceZTraceArray.append(self.currentLiveGForceZ)
-            self.altitudeTraceArray.append(self.currentLiveAltitude)
-            self.pressureTraceArray.append(self.currentLivePressure)
-            
-            self.speedTraceArray.append(self.currentLiveSpeed)
-            self.rpmTraceArray.append(self.currentLiveRpm)
-            
-            self.slipRatioTraceArray.append(self.currentLiveSlipRatio)
+            self.appendTelemetrySample()
             self.broadcastLiveStats()
         }
             
@@ -823,6 +824,7 @@ public class PTTripManager: NSObject {
             slipRatio: self.currentLiveSlipRatio
         )
         self.routeArray.append(point)
+        trimRouteSamplesIfNeeded()
         checkpointBlackBoxIfNeeded()
     }
         
@@ -1097,6 +1099,53 @@ public class PTTripManager: NSObject {
         }
         return accumulatedGpsDistance
     }
+
+    // EN: Sample all parallel traces together and compact by two when the active ride exceeds the memory budget.
+    // ES: Muestrea todas las trazas paralelas juntas y reduce a la mitad cuando el viaje supera el presupuesto de memoria.
+    // 中文：所有并行轨迹一起采样，超过内存预算时成对压缩，保证各数组长度一致。
+    private func appendTelemetrySample() {
+        telemetrySampleCounter += 1
+        guard telemetrySampleCounter.isMultiple(of: telemetrySamplingStride) else { return }
+
+        leanTraceArray.append(currentLiveRoll)
+        pitchTraceArray.append(currentLivePitch)
+        gForceXTraceArray.append(currentLiveGForceX)
+        gForceYTraceArray.append(currentLiveGForceY)
+        gForceZTraceArray.append(currentLiveGForceZ)
+        altitudeTraceArray.append(currentLiveAltitude)
+        pressureTraceArray.append(currentLivePressure)
+        speedTraceArray.append(currentLiveSpeed)
+        rpmTraceArray.append(currentLiveRpm)
+        slipRatioTraceArray.append(currentLiveSlipRatio)
+
+        guard leanTraceArray.count > maxTelemetrySampleCount else { return }
+
+        func compact<T>(_ values: [T]) -> [T] {
+            values.enumerated().compactMap { index, value in
+                index.isMultiple(of: 2) ? value : nil
+            }
+        }
+
+        leanTraceArray = compact(leanTraceArray)
+        pitchTraceArray = compact(pitchTraceArray)
+        gForceXTraceArray = compact(gForceXTraceArray)
+        gForceYTraceArray = compact(gForceYTraceArray)
+        gForceZTraceArray = compact(gForceZTraceArray)
+        altitudeTraceArray = compact(altitudeTraceArray)
+        pressureTraceArray = compact(pressureTraceArray)
+        speedTraceArray = compact(speedTraceArray)
+        rpmTraceArray = compact(rpmTraceArray)
+        slipRatioTraceArray = compact(slipRatioTraceArray)
+        telemetrySamplingStride = min(telemetrySamplingStride * 2, maxTelemetrySampleCount)
+        telemetrySampleCounter = 0
+    }
+
+    private func trimRouteSamplesIfNeeded() {
+        guard routeArray.count > maxTelemetrySampleCount else { return }
+        routeArray = routeArray.enumerated().compactMap { index, point in
+            index.isMultiple(of: 2) ? point : nil
+        }
+    }
 }
 
 //MARK: No Connect ble
@@ -1139,35 +1188,62 @@ extension PTTripManager {
 
 //MARK: - ADV 打滑率与事件引擎
 extension PTTripManager {
-        
-    // 🌟 需在原有的 processSpeedMetrics 中被调用：当你更新了 currentLiveSpeed (后轮速) 后，触发计算
-    // 请确保在 handleControlData 结尾处，调用了 processSpeedMetrics 之后，加上 calculateSlipRatio()
-    
-    private func calculateSlipRatio() {
-        guard lastFrontSpeed > 2.0 || currentLiveSpeed > 2.0 else {
-            self.currentLiveSlipRatio = 0.0
-            self.currentTractionLevelName = "抓地力良好"
-            return
-        }
-        
-        let baseSpeed = max(lastFrontSpeed, 1.0)
-        let speedDiff = currentLiveSpeed - lastFrontSpeed
-        let ratio = (speedDiff / baseSpeed) * 100.0
-        let clampedRatio = min(max(ratio, -50.0), 200.0)
-        
-        self.currentLiveSlipRatio = clampedRatio
-        
-        // 更新极值
-        if clampedRatio > maxSlipRatio { maxSlipRatio = clampedRatio }
-        
-        // 判定级别并触发事件
-        if clampedRatio >= 35.0 {
-            self.currentTractionLevelName = "严重打滑/脱困"
-            recordOffRoadEvent(ratio: clampedRatio)
-        } else if clampedRatio >= 10.0 {
-            self.currentTractionLevelName = "非铺装路面(碎石)"
-        } else {
-            self.currentTractionLevelName = "抓地力良好"
+    private func updateRearWheelSpeed(
+        _ value: Double,
+        source: PTVehicleTelemetrySource,
+        timestamp: Date
+    ) {
+        guard value.isFinite, value >= 0 else { return }
+        latestRearSpeedSample = PTTelemetrySample(
+            value: value,
+            source: source,
+            capturedAt: timestamp
+        )
+        evaluateWheelSpeedConsistency(at: timestamp)
+    }
+
+    private func updateFrontWheelSpeed(
+        _ value: Double,
+        source: PTVehicleTelemetrySource,
+        timestamp: Date
+    ) {
+        guard value.isFinite, value >= 0 else { return }
+        latestFrontSpeedSample = PTTelemetrySample(
+            value: value,
+            source: source,
+            capturedAt: timestamp
+        )
+        evaluateWheelSpeedConsistency(at: timestamp)
+    }
+
+    // EN: Report only time-aligned wheel-speed mismatch; do not infer road type or traction control intervention.
+    // ES: Informa solo diferencias de velocidad de rueda alineadas en el tiempo; no infiere el tipo de camino ni la intervención del control de tracción.
+    // 中文：只报告时间对齐后的轮速差异，不推断路面类型或 TCS 介入。
+    private func evaluateWheelSpeedConsistency(at timestamp: Date) {
+        let result = wheelSpeedConsistencyTracker.update(
+            rear: latestRearSpeedSample,
+            front: latestFrontSpeedSample,
+            at: timestamp
+        )
+        let signedRatio = result.rearMinusFrontKmh / max(
+            max(latestRearSpeedSample?.value ?? 0, latestFrontSpeedSample?.value ?? 0),
+            1
+        ) * 100
+        let clampedRatio = min(max(signedRatio, -50), 200)
+
+        switch result.state {
+        case .mismatch:
+            currentLiveSlipRatio = clampedRatio
+            maxSlipRatio = max(maxSlipRatio, abs(clampedRatio))
+            currentTractionLevelName = PTDashboardConfig.languageFunc(text: "ride_readiness_attention")
+            recordOffRoadEvent(ratio: abs(clampedRatio))
+        case .normal:
+            currentLiveSlipRatio = clampedRatio
+            maxSlipRatio = max(maxSlipRatio, abs(clampedRatio))
+            currentTractionLevelName = PTDashboardConfig.languageFunc(text: "ride_readiness_ready")
+        case .unavailable:
+            currentLiveSlipRatio = 0
+            currentTractionLevelName = PTDashboardConfig.languageFunc(text: "ride_readiness_unavailable")
         }
     }
     
@@ -1182,11 +1258,11 @@ extension PTTripManager {
             latitude: loc.coordinate.latitude,
             longitude: loc.coordinate.longitude,
             slipRatio: ratio,
-            info: "极限脱困"
+            info: PTDashboardConfig.languageFunc(text: "ride_readiness_attention")
         )
         self.offRoadEventsArray.append(event)
         self.lastOffRoadEventTime = now
-        PTNSLogConsole("⚠️ [ADV 遥测] 在坐标 (\(loc.coordinate.latitude), \(loc.coordinate.longitude)) 处记录到一次越野脱困事件！")
+        PTNSLogConsole("⚠️ [ADV 遥测] 在坐标 (\(loc.coordinate.latitude), \(loc.coordinate.longitude)) 处记录到一次轮速差异事件！")
     }
 }
 
@@ -1316,12 +1392,27 @@ extension PTTripManager:PTBLEDashboardDelegate {
             // ES: Alimenta las métricas solo con una velocidad BLE disponible.
             // 中文：只有 BLE 车速有效时，才写入骑行分析。
             if control.vehicleSpeedAvailability.isAvailable {
-                processSpeedMetrics(speedKmh: control.vehicleSpeedKmh, timestamp: Date())
+                let timestamp = Date()
+                let source: PTVehicleTelemetrySource = manager.dashboardConnectionIdentity?.isUsable == true
+                    ? .dashboardBluetooth
+                    : .unknown
+                processSpeedMetrics(speedKmh: control.vehicleSpeedKmh, timestamp: timestamp)
+                updateRearWheelSpeed(
+                    control.vehicleSpeedKmh,
+                    source: source,
+                    timestamp: timestamp
+                )
             }
         } else if isRiding, let absStatus = data as? PTAbsStatus {
             if absStatus.frontWheelSpeedAvailability.isAvailable {
-                self.lastFrontSpeed = absStatus.frontWheelSpeedKmh
-                calculateSlipRatio()
+                let source: PTVehicleTelemetrySource = manager.dashboardConnectionIdentity?.isUsable == true
+                    ? .dashboardBluetooth
+                    : .unknown
+                updateFrontWheelSpeed(
+                    absStatus.frontWheelSpeedKmh,
+                    source: source,
+                    timestamp: Date()
+                )
             }
         }
     }

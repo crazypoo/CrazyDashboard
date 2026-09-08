@@ -354,8 +354,10 @@ public class PTLocalIntercomManager: NSObject {
     
     public func currentMyAvatar() -> UIImage {
         guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            // 如果沙盒异常，直接兜底返回 Assets 里的默认头像 (请确保 Assets 中存在 "default_user_avatar" 图片)
-            return UIImage(named: "placeholder")!
+            // EN: A missing documents directory must never crash the PTT screen while loading an avatar.
+            // ES: La falta del directorio de documentos nunca debe bloquear la pantalla PTT al cargar un avatar.
+            // 中文：文档目录异常时加载头像也绝不能让 PTT 界面崩溃。
+            return UIImage(named: "placeholder") ?? UIImage(systemName: "person.crop.circle.fill") ?? UIImage()
         }
         
         let fileURL = documentsDirectory.appendingPathComponent(myAvatarFileName)
@@ -366,8 +368,10 @@ public class PTLocalIntercomManager: NSObject {
             return savedImage
         }
         
-        // 否则，返回 Assets 里的默认头像
-        return UIImage(named: "placeholder")!
+        // EN: Use a system symbol if the optional placeholder asset is absent.
+        // ES: Usa un símbolo del sistema si falta el recurso opcional de marcador.
+        // 中文：如果可选占位资源不存在，则使用系统图标兜底。
+        return UIImage(named: "placeholder") ?? UIImage(systemName: "person.crop.circle.fill") ?? UIImage()
     }
 
     private var processedMessageIDs: [String: Date] = [:]
@@ -1197,7 +1201,7 @@ public class PTLocalIntercomManager: NSObject {
             peerStates.append(state)
         }
         
-        let microphonePermission = AVAudioSession.sharedInstance().recordPermission
+        let microphonePermission = AVAudioApplication.shared.recordPermission
         let microphoneAvailable = !isMicrophoneUnavailable && microphonePermission == .granted
         let liveActivityPeers = PTLiveActivityEligibility.shouldDisplayPTT(
             isRunning: isRunning,
@@ -1389,6 +1393,16 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
     }
     
     public func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
+        // EN: Multipeer callbacks may arrive on a private queue; serialize session validation and state mutation on main.
+        // ES: Los callbacks de Multipeer pueden llegar en una cola privada; serializa la validación y el estado en main.
+        // 中文：Multipeer 回调可能来自私有队列；统一在主线程校验会话并修改状态。
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.isRunning, session === self.session else { return }
+            self.processReceivedData(data, fromPeer: peerID, session: session)
+        }
+    }
+
+    private func processReceivedData(_ data: Data, fromPeer peerID: MCPeerID, session: MCSession) {
         if let text = String(data: data, encoding: .utf8) {
             if text.hasPrefix("PING:") {
                 let pongText = text.replacingOccurrences(of: "PING:", with: "PONG:")
@@ -1518,7 +1532,7 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
 
     public func browser(_ browser: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {
         DispatchQueue.main.async { [weak self] in
-            guard let self, browser === self.browser else { return }
+            guard let self, self.isRunning, browser === self.browser else { return }
             self.connectingPeers.remove(peerID)
         }
     }
@@ -1528,13 +1542,22 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
         guard error == nil,
               let url = localURL,
               resourceName == "AVATAR_IMAGE" else { return }
-        
-        do {
-            // 从临时路径读取收到的图片数据
-            let imageData = try Data(contentsOf: url)
-            if let receivedImage = UIImage(data: imageData) {
+
+        // EN: Decode and persist the small avatar off the main queue, then commit state only for the active session.
+        // ES: Decodifica y guarda el avatar pequeño fuera de main, y confirma el estado solo para la sesión activa.
+        // 中文：头像读取和持久化放到后台队列，只有当前会话仍有效时才提交状态。
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            guard let self,
+                  let imageData = try? Data(contentsOf: url),
+                  let receivedImage = UIImage(data: imageData) else {
+                PTNSLogConsole("❌ [头像传输] 读取接收到的文件失败")
+                return
+            }
+
+            DispatchQueue.main.async {
+                guard self.isRunning, session === self.session else { return }
                 PTNSLogConsole("🖼️ [头像传输] 成功接收到队友 \(peerID.displayName) 的头像！")
-                
+
                 let savedFileName = self.savePeerAvatarToAppGroup(image: receivedImage, peerID: peerID)
                 self.withStateLock {
                     self.peerAvatars[peerID] = receivedImage
@@ -1543,20 +1566,18 @@ extension PTLocalIntercomManager: MCSessionDelegate, MCNearbyServiceAdvertiserDe
                     }
                 }
                 self.globalStatusChangeSet()
-                // 🌟 发送全局通知，把照片扔给外部 UI 进行刷新
-                DispatchQueue.main.async {
-                    NotificationCenter.default.post(
-                        name: PTPeerAvatarDidUpdateNotification,
-                        object: nil,
-                        userInfo: [
-                            "peerID": peerID,
-                            "avatarImage": receivedImage
-                        ]
-                    )
-                }
+                // EN: Refresh consumers on main after the active-session check.
+                // ES: Actualiza los consumidores en main después de comprobar la sesión activa.
+                // 中文：校验当前会话后，在主线程通知界面刷新。
+                NotificationCenter.default.post(
+                    name: PTPeerAvatarDidUpdateNotification,
+                    object: nil,
+                    userInfo: [
+                        "peerID": peerID,
+                        "avatarImage": receivedImage
+                    ]
+                )
             }
-        } catch {
-            PTNSLogConsole("❌ [头像传输] 读取接收到的文件失败: \(error)")
         }
     }
 }

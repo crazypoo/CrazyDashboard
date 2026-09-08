@@ -50,11 +50,26 @@ class SceneDelegate: PTWindowSceneDelegate {
         connectionOptions.userActivities.forEach { enqueueSpotlightIdentifier(from: $0) }
         
         PTGCDManager.shared.delayOnMain(time: 0.5) {
-            // EN: Add the sniffer last so the compact developer control stays above the weather surface.
-            // ES: Añade el sniffer al final para que su control compacto quede encima de la superficie meteorológica.
-            // 中文：最后添加嗅探器，确保紧凑开发者按钮位于天气界面之上。
-            AppWindows?.addSubviews([self.weatherOverlay, self.snifferOverlay])
+            // EN: Weather is a passive surface; the developer sniffer is attached only after explicit opt-in.
+            // ES: El clima es una superficie pasiva; el sniffer solo se adjunta tras una activación explícita.
+            // 中文：天气层是被动界面；开发者嗅探器只有用户明确开启后才加入窗口。
+            AppWindows?.addSubviews([self.weatherOverlay])
             PTLaunchAnimationPresenter.bringToFrontIfVisible(in: scene)
+        }
+    }
+
+    // EN: Lazily attach the developer surface so launch never starts its timer or obscures normal controls.
+    // ES: Adjunta la superficie de desarrollador bajo demanda para que el arranque no inicie su temporizador ni tape los controles.
+    // 中文：按需挂载开发者层，避免启动时开启定时器或遮挡普通操作。
+    func showDeveloperSniffer() {
+        let overlay = snifferOverlay
+        overlay.frame = AppWindows?.bounds ?? overlay.frame
+        if overlay.superview == nil {
+            AppWindows?.addSubview(overlay)
+        }
+        overlay.showSniffer()
+        if let windowScene = AppWindows?.windowScene {
+            PTLaunchAnimationPresenter.bringToFrontIfVisible(in: windowScene)
         }
     }
 

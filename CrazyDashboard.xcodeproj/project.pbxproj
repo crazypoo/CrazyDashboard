@@ -173,6 +173,8 @@
 		600000010000000000000290 /* PTProtocolDiscoveryRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000290 /* PTProtocolDiscoveryRecorder.swift */; };
 		600000010000000000000300 /* PTLyricsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000300 /* PTLyricsService.swift */; };
 		600000010000000000000301 /* PTLyricsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000301 /* PTLyricsViewController.swift */; };
+		600000010000000000000310 /* PTVehicleTelemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000310 /* PTVehicleTelemetry.swift */; };
+		600000010000000000000311 /* PTPerformanceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000311 /* PTPerformanceMonitor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -399,6 +401,8 @@
 		600000020000000000000290 /* PTProtocolDiscoveryRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTProtocolDiscoveryRecorder.swift; sourceTree = "<group>"; };
 		600000020000000000000300 /* PTLyricsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLyricsService.swift; sourceTree = "<group>"; };
 		600000020000000000000301 /* PTLyricsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLyricsViewController.swift; sourceTree = "<group>"; };
+		600000020000000000000310 /* PTVehicleTelemetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleTelemetry.swift; sourceTree = "<group>"; };
+		600000020000000000000311 /* PTPerformanceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPerformanceMonitor.swift; sourceTree = "<group>"; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -835,6 +839,8 @@
 				600000020000000000000091 /* PTRideStory.swift */,
 				5598668330114DF00049684D /* PTRoutingManager.swift */,
 				5598663E301138A30049684D /* PTTripManager.swift */,
+				600000020000000000000310 /* PTVehicleTelemetry.swift */,
+				600000020000000000000311 /* PTPerformanceMonitor.swift */,
 				600000020000000000000030 /* PTVehicleConnectivityCoordinator.swift */,
 				559866C13011A71E0049684D /* SpeechSynthesizer.swift */,
 			);
@@ -1297,6 +1303,8 @@
 				5598683A301348FC0049684D /* PTNotificationCenter.swift in Sources */,
 				55986640301138A30049684D /* PTTripManager.swift in Sources */,
 				600000010000000000000040 /* PTDataPersistenceActor.swift in Sources */,
+				600000010000000000000310 /* PTVehicleTelemetry.swift in Sources */,
+				600000010000000000000311 /* PTPerformanceMonitor.swift in Sources */,
 				600000010000000000000140 /* PTMotorcycleGarage.swift in Sources */,
 				600000010000000000000141 /* PTMotorcycleGarageViewController.swift in Sources */,
 				600000010000000000000151 /* PTRideSafetyFeatures.swift in Sources */,
@@ -1459,7 +1467,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 52;
+				CURRENT_PROJECT_VERSION = 53;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -1492,7 +1500,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 52;
+				CURRENT_PROJECT_VERSION = 53;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -1525,7 +1533,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 52;
+				CURRENT_PROJECT_VERSION = 53;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1560,7 +1568,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 52;
+				CURRENT_PROJECT_VERSION = 53;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1721,7 +1729,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 52;
+				CURRENT_PROJECT_VERSION = 53;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -1871,7 +1879,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 52;
+				CURRENT_PROJECT_VERSION = 53;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -2018,7 +2026,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 52;
+				CURRENT_PROJECT_VERSION = 53;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -2042,7 +2050,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 52;
+				CURRENT_PROJECT_VERSION = 53;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -2065,7 +2073,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 52;
+				CURRENT_PROJECT_VERSION = 53;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -2082,7 +2090,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 52;
+				CURRENT_PROJECT_VERSION = 53;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;

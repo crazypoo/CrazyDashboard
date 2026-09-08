@@ -1061,7 +1061,7 @@ extension PTMotoInfoViewController {
             // 调用嗅探器的纯动画展示方法
             if !PTMotoUserDefaultStruct.BleTestDataGet {
                 if let scene = PTWindowSceneDelegate.sceneDelegate() as? SceneDelegate {
-                    scene.snifferOverlay.showSniffer()
+                    scene.showDeveloperSniffer()
                     PTMotoUserDefaultStruct.BleTestDataGet = true
                 }
             }

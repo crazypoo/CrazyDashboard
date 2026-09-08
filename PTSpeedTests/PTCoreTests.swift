@@ -2911,6 +2911,85 @@ final class PTCoreTests: XCTestCase {
             ]
         )
     }
+
+    // EN: Telemetry fusion must update one field without erasing independent values.
+    // ES: La fusión de telemetría debe actualizar un campo sin borrar valores independientes.
+    // 中文：遥测融合更新单个字段时，不能擦除其他独立数值。
+    func testVehicleTelemetryFusionRetainsIndependentFields() {
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        var engine = PTVehicleTelemetryFusionEngine()
+        engine.updateFuel(80, source: .dashboardBluetooth, at: date)
+        engine.updateDashboardSpeed(42, source: .dashboardBluetooth, at: date)
+        engine.updateOBDSpeed(41, source: .obdBluetooth, at: date)
+        engine.updateRPM(4_000, source: .dashboardBluetooth, at: date)
+        engine.updateRPM(4_100, source: .obdBluetooth, at: date.addingTimeInterval(0.1))
+        engine.updateMaintenanceFlag(0, source: .dashboardBluetooth, at: date)
+
+        XCTAssertEqual(engine.snapshot.fuelPercent?.value, 80)
+        XCTAssertEqual(engine.snapshot.dashboardSpeedKmh?.value ?? 0, 42, accuracy: 0.001)
+        XCTAssertEqual(engine.snapshot.obdSpeedKmh?.value ?? 0, 41, accuracy: 0.001)
+
+        engine.clearDashboard()
+        XCTAssertEqual(engine.snapshot.engineRPM?.value, 4_100)
+        XCTAssertEqual(engine.snapshot.maintenanceFlag?.value, nil)
+
+        engine.clearOBD()
+        XCTAssertNil(engine.snapshot.engineRPM)
+    }
+
+    // EN: Wheel mismatch requires persistence and rejects Mock data from safety conclusions.
+    // ES: La diferencia de ruedas necesita persistencia y rechaza datos simulados para conclusiones de seguridad.
+    // 中文：轮速差异必须持续出现才成立，并且不能用 Mock 数据得出安全结论。
+    func testWheelSpeedConsistencyRequiresThreeRealSamples() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        var tracker = PTWheelSpeedConsistencyTracker()
+
+        for offset in 0..<2 {
+            let timestamp = start.addingTimeInterval(Double(offset) * 0.2)
+            let rear = PTTelemetrySample(value: 40.0, source: PTVehicleTelemetrySource.dashboardBluetooth, capturedAt: timestamp)
+            let front = PTTelemetrySample(value: 20.0, source: PTVehicleTelemetrySource.dashboardBluetooth, capturedAt: timestamp)
+            XCTAssertNotEqual(tracker.update(rear: rear, front: front, at: timestamp).state, .mismatch)
+        }
+
+        let finalTimestamp = start.addingTimeInterval(0.4)
+        let finalRear = PTTelemetrySample(value: 40.0, source: PTVehicleTelemetrySource.dashboardBluetooth, capturedAt: finalTimestamp)
+        let finalFront = PTTelemetrySample(value: 20.0, source: PTVehicleTelemetrySource.dashboardBluetooth, capturedAt: finalTimestamp)
+        XCTAssertEqual(tracker.update(rear: finalRear, front: finalFront, at: finalTimestamp).state, .mismatch)
+
+        var mockTracker = PTWheelSpeedConsistencyTracker()
+        let mockRear = PTTelemetrySample(value: 40.0, source: PTVehicleTelemetrySource.dashboardMock, capturedAt: start)
+        let mockFront = PTTelemetrySample(value: 20.0, source: PTVehicleTelemetrySource.dashboardMock, capturedAt: start)
+        XCTAssertEqual(mockTracker.update(rear: mockRear, front: mockFront, at: start).state, .unavailable)
+
+        var unresolvedTracker = PTWheelSpeedConsistencyTracker()
+        let unresolvedRear = PTTelemetrySample(value: 40.0, source: .unknown, capturedAt: start)
+        let unresolvedFront = PTTelemetrySample(value: 20.0, source: .unknown, capturedAt: start)
+        XCTAssertEqual(
+            unresolvedTracker.update(rear: unresolvedRear, front: unresolvedFront, at: start).state,
+            .unavailable
+        )
+    }
+
+    // EN: Battery health summaries include real observations only and expose phase coverage.
+    // ES: Los resúmenes de batería solo incluyen observaciones reales y muestran la cobertura de fases.
+    // 中文：电瓶摘要只统计真实观测，并暴露各发动机阶段的覆盖情况。
+    func testBatteryHealthSummaryIgnoresMockObservations() {
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        let observations = [
+            PTBatteryObservation(voltage: 12.6, engineStatus: 0, source: .dashboardBluetooth, capturedAt: date),
+            PTBatteryObservation(voltage: 10.8, engineStatus: 1, source: .dashboardBluetooth, capturedAt: date),
+            PTBatteryObservation(voltage: 14.1, engineStatus: 2, source: .dashboardBluetooth, capturedAt: date),
+            PTBatteryObservation(voltage: 1.0, engineStatus: 2, source: .dashboardMock, capturedAt: date)
+        ]
+
+        let summary = PTBatteryHealthAnalyzer.summarize(observations: observations, capturedAt: date)
+
+        XCTAssertEqual(summary.observationCount, 3)
+        XCTAssertEqual(summary.restingMedianVoltage ?? 0, 12.6, accuracy: 0.001)
+        XCTAssertEqual(summary.crankingMinimumVoltage ?? 0, 10.8, accuracy: 0.001)
+        XCTAssertEqual(summary.runningMedianVoltage ?? 0, 14.1, accuracy: 0.001)
+        XCTAssertEqual(summary.confidence, 0.25, accuracy: 0.001)
+    }
 }
 
 // EN: The actor keeps fallback call-count assertions race-free under Swift concurrency.

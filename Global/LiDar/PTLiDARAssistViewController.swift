@@ -38,9 +38,12 @@ final class PTLiDARAssistViewController: PTMotoBaseViewController {
     private var obdSpeedTimer: Timer?
     private var lastHapticAt = Date.distantPast
 
-    init(mode: PTLiDARAssistMode = .mountedLowSpeed, manager: PTLiDARCollisionManager = .shared) {
+    // EN: Resolve the MainActor singleton inside the initializer instead of a default argument.
+    // ES: Resuelve el singleton del MainActor dentro del inicializador y no en un argumento predeterminado.
+    // 中文：在初始化器内部解析 MainActor 单例，不在默认参数中访问它。
+    init(mode: PTLiDARAssistMode = .mountedLowSpeed, manager: PTLiDARCollisionManager? = nil) {
         self.initialMode = mode
-        self.lidarManager = manager
+        self.lidarManager = manager ?? PTLiDARCollisionManager.shared
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -64,12 +67,17 @@ final class PTLiDARAssistViewController: PTMotoBaseViewController {
         lidarManager.delegate = self
         obdSpeedTimer?.invalidate()
         obdSpeedTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            let obdManager = PTMotoTelemetryManager.shared
-            guard obdManager.isConnected else { return }
-            self.lidarManager.updateSpeedSample(
-                PTLiDARSpeedSample(speedKmh: max(0, obdManager.currentSpeed), source: .obd)
-            )
+            // EN: Hop back to MainActor before touching the shared LiDAR coordinator.
+            // ES: Vuelve al MainActor antes de tocar el coordinador LiDAR compartido.
+            // 中文：触碰共享 LiDAR 协调器前切回 MainActor。
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let obdManager = PTMotoTelemetryManager.shared
+                guard obdManager.isConnected else { return }
+                self.lidarManager.updateSpeedSample(
+                    PTLiDARSpeedSample(speedKmh: max(0, obdManager.currentSpeed), source: .obd)
+                )
+            }
         }
     }
 

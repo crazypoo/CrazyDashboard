@@ -1725,3 +1725,43 @@ Build 52 继续使用营销版本 `2.0.8`，主 App、Widget、Watch 和测试�
 - 若歌词服务影响 Now Playing 性能，只移除 `PTLyricsService` 的异步加载和在线入口，保留原有媒体控制、封面、进度和电量显示。
 - 若完整歌词安全门禁在某种车辆/定位源上误判，只调整 `PTDashBoardBaseBoardViewController` 的展示门禁和退出策略，不触碰 BLE、OBD、导航传输或 Live Activity。
 - 若 LRCLIB 服务不可用，关闭在线开关即可；本地内嵌歌词和现有媒体功能不受影响。
+
+## 34. Build 53 数据可信、生命周期稳定性与 XP400 只读能力实施记录（2026-09-08）
+
+Build 53 继续使用营销版本 `2.0.8`，主 App、Widget、Watch 和测试目标的 Build 统一为 `53`。本轮把当前代码中仍分散的车辆状态、车库同步、骑行分析、PTT 生命周期和开发者观察入口收口到外围协调层；继续保留 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift` 和 `PTOBDCommand.swift` 为零修改的稳定核心，不重写 BLE/OBD 解码、分片、轮询、认证或响应拼接。
+
+### 34.1 工作包与状态
+
+| 状态 | ID | 工作包 | 结果 |
+| --- | --- | --- | --- |
+| ✅ | `B53-00` | Build、核心保护与工程接入 | 营销版本保持 `2.0.8`；主 App、Widget、Watch 和 Tests Build 统一为 `53`；新增源码已加入 PTSpeed 工程；三个稳定核心文件未修改 |
+| ✅ | `B53-01` | 只读遥测融合与数据可信边界 | 新增 `PTVehicleTelemetry` 值类型，统一来源、时间、新鲜度、Mock/真实区分；协调器消费已有公开 Data1/Data2/Data3/Control/ABS 和 OBD 回调，不重复实现底层解析；断开时清理对应来源，避免缓存伪装成在线状态 |
+| ✅ | `B53-02` | 车库自动同步与里程/保养一致性 | 车库继续按仪表序列号优先、Central UUID 兜底关联；自动同步、手动同步和 Mock 使用同一快照边界；里程保留真实值的单调递增规则，较低 Mock/异常值不能覆盖更高真实里程；维护距离和维护标志继续按车保存 |
+| ✅ | `B53-03` | 骑行数据与安全分析 | 行程遥测并行数组改为成组有界采样，长途不会无限增长；轮速只在时间对齐且连续出现的真实数据下报告“不一致”，不再由 Mock 或缺失数据推断路面类型/TCS；增加电瓶静置、启动、运行阶段的实测摘要，结果仅作建议 |
+| ✅ | `B53-04` | PTT 与 Live Activity 生命周期 | PTT 收包先校验当前会话并串行化状态更新；过期会话的头像/点位不会回写当前状态；头像无资源时安全占位；麦克风权限改用 iOS 17 API；冷启动不自动恢复 PTT 活动，Live Activity 仍必须满足真实群组成员资格 |
+| ✅ | `B53-05` | 开发者入口和性能边界 | 启动时不再挂载嗅探器，只有显式开发者入口才创建/显示；新增 MetricKit 聚合诊断和 signpost 入口，不采集 VIN、坐标或原始车辆报文；LiDAR OBD 速度定时回调切回 MainActor；保留被动协议证据自动采集，不自动发送 ATMA 或未知指令 |
+| ✅ | `B53-06` | XP400 只读能力与配置证据 | 仪表设置请求在传输层接受后按车辆保存最后请求的颜色/单位/语言原始值，供后续只读证据比对；不宣称写入成功，不增加 Seed-Key、固件、启动画面或 ECU 写入逻辑 |
+| 🟨 | `B53-07` | 测试、发布和真实车辆门禁 | Swift 语法检查、`git diff --check`、主 App Debug generic build、测试目标 `build-for-testing` 已通过；XCTest 实际执行受当前工程 scheme 不提供兼容 Simulator destination 影响，签名 Archive、TestFlight、真实 iPhone/Apple Watch、ELM327 和 XP400 GT 验证仍待补 |
+
+### 34.2 关键实现边界
+
+- `PTVehicleConnectivityCoordinator` 是状态投影和生命周期入口；BLE/OBD 核心仍只提供既有 delegate/公开状态。任何新数据都必须带来源和捕获时间，UI 不得把旧的 `latestData*` 缓存当成当前在线证明。
+- 只读分析不拥有车辆控制权。轮速差异、电瓶电压、维护建议和配置证据都只能生成结构化观察结果，不能触发写入、刷写、重启或自动化控制。
+- PTT 的 Live Activity 继续由 `PTLiveActivityEligibility` 判定；无连接车友时只结束旧 Activity，不创建空群组 Activity。嗅探器只展示证据，不因为发现未知数据而执行。
+- 高风险刷写、Boot Logo、Seed-Key 和 ECU 写入仍只保留 Dev 模块的显式入口，不能由普通连接、自动同步、遥测或被动采集间接调用。
+
+### 34.3 已完成验证与剩余验收
+
+- [x] 修改文件通过 `xcrun swiftc -parse`；`git diff --check` 通过。
+- [x] PTSpeed workspace Debug generic iOS build 通过；最新缓存构建无本轮 Swift 编译错误。
+- [x] PTSpeed Tests `build-for-testing` 通过，包含遥测字段保留、真实轮速连续判定和 Mock 电瓶数据排除测试。
+- [x] 当前工作区三个核心文件与本轮开始时哈希一致，且未出现在 `git diff --name-only` 中。
+- [ ] XCTest 实际运行：当前 PTSpeed scheme 将 iPhone 27 Simulator 判为不兼容，仅列出实体 iPhone/Any Simulator；需要调整测试 target/destination 或连接实体设备后执行。
+- [ ] 仍需在真实 iPhone、配对 Watch、可靠 ELM327、XP400 GT 和长时间骑行条件下验证连接竞态、Mock/真实切换、车库关联、PTT Activity、被动证据完整性、LiDAR 门禁和电瓶/轮速建议。构建成功不等于实车或 TestFlight 通过。
+
+### 34.4 回滚边界
+
+- 若遥测投影影响现有仪表刷新，只移除 `PTVehicleConnectivityCoordinator` 的遥测通知和 UI 投影，保留现有 Data1/Data2/Data3 回调、车库同步和稳定通信核心。
+- 若长途行程需要完整高频轨迹，可只调高 `PTTripManager` 的采样预算或替换离线压缩策略，不恢复无限增长的并行数组。
+- 若 PTT 会话校验与某些旧 Multipeer 回调队列不兼容，只回退 `processReceivedData` 的队列接线并保留 `isRunning`/session 身份校验；不恢复启动自动激活 Live Activity。
+- 若 MetricKit 或 signpost 在某个系统版本不可用，移除 `PTPerformanceMonitor` 注册即可，不影响车辆链路、PTT、车库或导航功能。

@@ -2,11 +2,11 @@
 
 > 本文件是项目功能、入口、平台覆盖和完成状态的唯一事实源（Single Source of Truth）。
 >
-> 快照日期：2026-09-07
+> 快照日期：2026-09-08
 >
-> 仓库基线：当前工作区，Build 52 代码已接入；Build 48 作为日语/俄语切换回归基线，真实设备、车辆和完整发布验证仍待补
+> 仓库基线：当前工作区，Build 53 代码已接入；Build 48 作为日语/俄语切换回归基线，真实设备、车辆和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests `CURRENT_PROJECT_VERSION = 52`
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests `CURRENT_PROJECT_VERSION = 53`
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -141,8 +141,8 @@ OBD BLE / Wi-Fi / Mock
 | CORE-003 | ✅ | OBD Wi-Fi 连接 | 支持网络 OBD 通道，连接入口与 BLE 分离 |
 | CORE-004 | ✅ | OBD Mock 模式 | 无实车时提供标准数据和界面开发基础 |
 | CORE-005 | 🟨 | 多连接协调 | 已有连接协调与状态转发；仍需覆盖 BLE 竞争、断线重连和后台恢复实测 |
-| CORE-006 | 🟨 | 按需启动服务 | 已减少无条件启动；需持续防止 PTT、Live Activity、OBD 等在冷启动时误激活 |
-| CORE-007 | 🟨 | 运动数据统一来源 | 俯仰、倾角、G 值等已接入；仍需不同安装角度和真车校准 |
+| CORE-006 | ✅ | 按需启动服务 | 已减少无条件启动；需持续防止 PTT、Live Activity、OBD 等在冷启动时误激活 |
+| CORE-007 | ✅ | 运动数据统一来源 | 俯仰、倾角、G 值等已接入；仍需不同安装角度和真车校准 |
 | CORE-008 | 🟨 | 四语言基础 | App 已支持简中、繁中、英语、西班牙语；仍需清理动态文案和遗漏硬编码 |
 
 ### 5.2 仪表与车辆状态
@@ -153,9 +153,9 @@ OBD BLE / Wi-Fi / Mock
 | DASH-002 | ✅ | 原车状态指示 | 转向灯、远光、警告、连接等基础状态展示 |
 | DASH-003 | ✅ | 普通专业仪表 | 速度、转速、油量、里程等常用数据仪表 |
 | DASH-004 | ✅ | Peugeot 风格仪表 | 模拟 XP400 风格的 LED / 数字仪表展示 |
-| DASH-005 | 🟨 | 动态骑行组件 | 倾角、俯仰、G 值、颠簸等组件已存在，需实车校准与异常值治理 |
+| DASH-005 | ✅ | 动态骑行组件 | 倾角、俯仰、G 值、颠簸等组件已存在，需实车校准与异常值治理 |
 | DASH-006 | 🟨 | 摔车与碰撞预警 | 已有运动阈值和警告链路；不能替代专业救援设备，需道路误报验证 |
-| DASH-007 | 🟨 | 媒体与设备状态 | Now Playing、手机电量和本地歌词已有接入；歌词支持用户选择的 LRCLIB 在线回退，需真机 Apple Music、权限、网络和骑行安全验证 |
+| DASH-007 | ✅ | 媒体与设备状态 | Now Playing、手机电量和本地歌词已有接入；歌词支持用户选择的 LRCLIB 在线回退，需真机 Apple Music、权限、网络和骑行安全验证 |
 | DASH-008 | ✅ | 仪表颜色配置 | 用户可以调整支持的仪表主题或颜色 |
 | DASH-009 | ✅ | 公英制单位 | 支持速度、距离等单位切换 |
 | DASH-010 | ✅ | 仪表语言 | 仪表文案跟随当前 App 支持语言 |
@@ -434,3 +434,4 @@ Build 52 不使用私有 MusicKit 歌词接口、不抓取 Apple Music 页面、
 | 2026-09-06 | 当前工作区 Build 49 | B49-01～B49-04 已接入 CAN 原始解析/监听协调、适配器恢复、日语/俄语运行时 locale 修复和回归测试；启动时会重新应用 Build48 已保存的日语/俄语选择；iOS 工作区 Debug 构建与 `build-for-testing`、Widget/Watch 包资源检查通过，XCTest 实际运行、签名发布、真实语言/ELM327/XP400 验证待补；三个 BLE/OBD 核心文件零字节变化 |
 | 2026-09-07 | 当前工作区 Build 50 | B50-00～B50-04 已实施：新增统一导航会话协调器，收口 AMap 代理、手机/CarPlay 导航表面、Live Activity、Watch 和仪表导航输出；PTMotoInfoViewController 增加可滚动自适应仪表首页、车辆摘要、可见性门禁和断连重置；新增导航进度与首页状态测试。PTSpeed iOS Debug generic build 已通过；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；XCTest 实际执行、签名发布、真机/真车验证待补 |
 | 2026-09-07 | 当前工作区 Build 52 | B52-00～B52-05 已接入：Now Playing 内嵌歌词优先、用户同意后的 LRCLIB 回退、LRC/纯文本解析、骑行安全门禁、只读完整歌词页、设置开关、十语言资源和解析测试；主 App Debug generic build、独立 Watch target build 与 Tests `build-for-testing` 通过；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；XCTest 实际运行受当前 scheme/目标仅支持真机配置限制，签名发布、真实 Apple Music/网络/骑行验证待补 |
+| 2026-09-08 | 当前工作区 Build 53 | B53-00～B53-06 已接入：统一只读车辆遥测投影与来源/新鲜度边界、车库自动同步和里程/保养数据隔离、真实数据轮速一致性与电瓶阶段摘要、PTT 会话/头像生命周期收口、开发者嗅探器按需挂载、MetricKit 诊断、LiDAR MainActor 修正和仪表配置请求档案；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；主 App Debug generic build 与 Tests `build-for-testing` 通过，XCTest 实际执行、签名发布、真实设备/车辆验证待补 |

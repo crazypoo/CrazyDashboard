@@ -529,6 +529,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         pendingDashboardConfiguration = nil
         dashboardConfigurationTimeout?.cancel()
         dashboardConfigurationTimeout = nil
+        saveDashboardConfigurationProfile(pending.expectation)
         PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "set_success"))
         globalChangeDashBoardData()
     }
@@ -554,6 +555,10 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
 
             pending.isSent = true
             self.pendingDashboardConfiguration = pending
+            // EN: Save the requested values only after the transport accepted the command.
+            // ES: Guarda los valores solicitados solo después de que el transporte acepte el comando.
+            // 中文：只有传输层接受指令后，才保存本次请求的配置值。
+            self.saveDashboardConfigurationProfile(expectation)
             PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "dashboard_config_sent"))
             let timeout = DispatchWorkItem { [weak self] in
                 guard let self, self.pendingDashboardConfiguration?.token == requestToken else { return }
@@ -564,6 +569,20 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             self.dashboardConfigurationTimeout = timeout
             DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: timeout)
         }
+    }
+
+    // EN: Keep a per-vehicle last-requested profile for diagnostics and later Data3 comparison.
+    // ES: Conserva por vehículo el último perfil solicitado para diagnóstico y comparación posterior con Data3.
+    // 中文：按车辆保存最后请求的配置，供诊断和后续 Data3 对比使用。
+    private func saveDashboardConfigurationProfile(_ expectation: PTDashboardConfigurationExpectation) {
+        PTDashboardConfigurationProfileStore.shared.save(
+            PTDashboardConfigurationProfile(
+                colorRawValue: expectation.color.rawValue,
+                unitRawValue: expectation.unit.rawValue,
+                languageRawValue: expectation.language.rawValue
+            ),
+            for: PTMotorcycleGarageStore.shared.selectedVehicleID
+        )
     }
 
     // EN: Clear the pending request and its timeout as one lifecycle operation.
