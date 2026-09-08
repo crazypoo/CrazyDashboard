@@ -276,6 +276,96 @@ final class PTCoreTests: XCTestCase {
         XCTAssertFalse(narrative.isEmpty)
     }
 
+    // EN: Ride analysis must derive trustworthy facts from the persisted report and omit private route data when shared.
+    // ES: El análisis debe derivar datos fiables del informe persistido y omitir la ruta privada al compartirlo.
+    // 中文：骑行分析必须从已保存报告计算可信事实，分享时不能包含私有路线数据。
+    func testRideAnalysisCalculatesFactsAndRedactsRouteData() throws {
+        let report = makeTripReport(start: Date(timeIntervalSince1970: 1_700_000_000))
+        let snapshot = PTRideAnalysisBuilder.make(report: report, comparisonPool: [report])
+
+        XCTAssertEqual(snapshot.durationSeconds, 1_800, accuracy: 0.001)
+        XCTAssertEqual(snapshot.movingTimeSeconds, 1_770, accuracy: 0.001)
+        XCTAssertEqual(snapshot.idleRatio, 1.0 / 60.0, accuracy: 0.0001)
+        XCTAssertEqual(snapshot.distanceKm, 12.5, accuracy: 0.001)
+        XCTAssertEqual(snapshot.maxLeanLeftDegrees, 25, accuracy: 0.001)
+        XCTAssertEqual(snapshot.maxLeanRightDegrees, 20, accuracy: 0.001)
+        XCTAssertEqual(snapshot.maxLeanDifferenceDegrees, 5, accuracy: 0.001)
+        XCTAssertEqual(snapshot.maxBrakingG, 0.5, accuracy: 0.001)
+        XCTAssertEqual(snapshot.averageRpm ?? 0, 3_000, accuracy: 0.001)
+        XCTAssertEqual(snapshot.altitudeGainMeters, 10, accuracy: 0.001)
+        XCTAssertEqual(snapshot.altitudeLossMeters, 5, accuracy: 0.001)
+        XCTAssertEqual(snapshot.eventCount, 1)
+        XCTAssertEqual(snapshot.events.first?.titleKey, "ride_replay_event_high_lean")
+
+        let encoded = try JSONEncoder().encode(snapshot)
+        let json = try XCTUnwrap(String(data: encoded, encoding: .utf8))
+        XCTAssertFalse(json.contains("31.2304"))
+        XCTAssertFalse(json.contains("vehicleID"))
+        XCTAssertFalse(json.contains("gpxFileName"))
+    }
+
+    // EN: Comparisons use only the same motorcycle's previous ten valid rides and stay hidden until three exist.
+    // ES: Las comparaciones usan solo las diez rutas válidas anteriores de la misma moto y permanecen ocultas hasta tener tres.
+    // 中文：对比只使用同一辆车最近十次有效骑行，不足三次时隐藏对比结果。
+    func testRideAnalysisComparesSameVehicleHistoryOnly() {
+        let vehicleID = UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")!
+        let base = Date(timeIntervalSince1970: 1_700_000_000)
+        let history = (0..<3).map { index in
+            makeTripReport(
+                start: base.addingTimeInterval(TimeInterval(index * 3_600)),
+                distanceKm: Double(10 + index),
+                vehicleID: vehicleID,
+                id: "history-\(index)"
+            )
+        }
+        let unrelated = makeTripReport(
+            start: base.addingTimeInterval(1_000),
+            distanceKm: 99,
+            vehicleID: UUID(),
+            id: "unrelated"
+        )
+        let current = makeTripReport(
+            start: base.addingTimeInterval(14_400),
+            distanceKm: 20,
+            vehicleID: vehicleID,
+            id: "current"
+        )
+
+        let snapshot = PTRideAnalysisBuilder.make(
+            report: current,
+            comparisonPool: [current, unrelated] + history
+        )
+
+        XCTAssertEqual(snapshot.comparisons.count, 6)
+        XCTAssertTrue(snapshot.comparisons.allSatisfy { $0.sampleCount == 3 })
+        XCTAssertEqual(
+            snapshot.comparisons.first(where: { $0.metricKey == PTRideAnalysisMetricKey.distance })?.historicalAverage ?? 0,
+            11,
+            accuracy: 0.001
+        )
+
+        let insufficient = PTRideAnalysisBuilder.make(
+            report: current,
+            comparisonPool: [current] + history.prefix(2)
+        )
+        XCTAssertTrue(insufficient.comparisons.isEmpty)
+    }
+
+    // EN: Chart downsampling must be bounded, aligned and preserve finite extrema from every trace.
+    // ES: El muestreo de gráficos debe estar limitado, alineado y conservar los extremos finitos de cada traza.
+    // 中文：图表降采样必须有上限、保持对齐，并保留每条轨迹的有限极值。
+    func testRideAnalysisDownsamplerPreservesExtremaWithinLimit() {
+        let first = (0..<2_000).map { Double($0) }
+        let second = (0..<2_000).map { index in index == 1_234 ? -50.0 : 0.0 }
+        let indices = PTRideAnalysisDownsampler.commonIndices(for: [first, second], maximumCount: 600)
+
+        XCTAssertLessThanOrEqual(indices.count, 600)
+        XCTAssertEqual(indices.first, 0)
+        XCTAssertEqual(indices.last, 1_999)
+        XCTAssertTrue(indices.contains(1_234))
+        XCTAssertTrue(PTRideAnalysisDownsampler.values(first, at: indices, referenceCount: 2_000).count <= 600)
+    }
+
     // EN: Alarm records must preserve their delivery state and calculate countdown fire dates deterministically.
     // ES: Los registros de alarma deben conservar su estado de entrega y calcular de forma determinista la fecha de disparo.
     // 中文：提醒记录必须保留投递状态，并且能稳定计算倒计时触发时间。
@@ -2605,7 +2695,9 @@ final class PTCoreTests: XCTestCase {
     private func makeTripReport(
         start: Date,
         distanceKm: Double = 12.5,
-        avgConsumption: Double = 4.5
+        avgConsumption: Double = 4.5,
+        vehicleID: UUID? = nil,
+        id: String = UUID().uuidString
     ) -> PTTripReport {
         let event = PTRideReviewEvent(
             type: .highLean,
@@ -2617,6 +2709,8 @@ final class PTCoreTests: XCTestCase {
             severity: 1.2
         )
         return PTTripReport(
+            id: id,
+            vehicleID: vehicleID,
             startTime: start,
             endTime: start.addingTimeInterval(1_800),
             durationMinutes: 30,

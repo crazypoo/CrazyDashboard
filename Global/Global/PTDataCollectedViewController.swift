@@ -34,107 +34,109 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
         let view = PTCollectionView(viewConfig: collectionConfig)
         view.registerClassCells(classs: [PTTripDataCell.ID:PTTripDataCell.self])
         view.customerLayout = { sectionIndex,section in
-            let itemHeight:CGFloat = 380//PTTripDataCell.lineMaxHeight * PTTripDataCell.lineCount + (PTTripDataCell.lineCount - 1) * PTTripDataCell.textLineSpacing + PTTripDataCell.ChartHeight * 8 + CGFloat.GlobalItemSpacing * 11
+            let itemHeight:CGFloat = 220
             return UICollectionView.girdCollectionLayout(data: section.rows, itemHeight: itemHeight,cellRowCount: 1,originalX: PTAppBaseConfig.share.defaultViewSpace,cellTrailingSpace: CGFloat.GlobalItemSpacing)
         }
         view.indexPathSwipe = { sModel,indexPath in
             return false
         }
-        view.swipeRightHandler = { collectionView,sectionModel,indexPath in
+        view.swipeRightHandler = { [weak self] collectionView,sectionModel,indexPath in
             let deleteAction = PTSwipeAction(name: PTDashboardConfig.languageFunc(text: "Delete"),image: nil, nameColor:.white,nameFont:.appfont(size: 14), backgroundColor: .systemRed) { sender in
-                UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "Delete") + "?",okBtns: [PTDashboardConfig.languageFunc(text: "button_confirm")],cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
-                    let ready = PTTripManager.shared.tripHistory[indexPath.row]
-                    if let findIndex = PTTripManager.shared.tripHistory.firstIndex(where: { $0.startTime == ready.startTime }),let findRow = self.detailCollection.getRow(at: indexPath) {
-                        self.detailCollection.deleteRows([findRow], from: 0)
-                        PTTripManager.shared.deleteTrip(ready)
-                    }
-                })
+                self?.requestDeleteTrip(at: indexPath)
             }
             return [deleteAction]
         }
-        view.cellInCollection = { collectionView,sectionModel,indexPath in
-            if let itemRow = sectionModel.rows?[indexPath.row] {
-                let getCell = collectionView.dequeueReusableCell(withReuseIdentifier: itemRow.ID, for: indexPath)
-                if let cell = getCell as? PTTripDataCell {
-                    let report = PTTripManager.shared.tripHistory[indexPath.row]
-                    cell.cellModel = report
-                    cell.trashAction = {
-                        PTGCDManager.shared.runOnMain {
-                            UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "Delete") + "?",okBtns: [PTDashboardConfig.languageFunc(text: "button_confirm")],cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), moreBtn:  { index, title in
-                                let ready = PTTripManager.shared.tripHistory[indexPath.row]
-                                if let findIndex = PTTripManager.shared.tripHistory.firstIndex(where: { $0.startTime == ready.startTime }),let findRow = self.detailCollection.getRow(at: indexPath) {
-                                    self.detailCollection.deleteRows([findRow], from: 0)
-                                    PTTripManager.shared.deleteTrip(ready)
-                                }
-                            })
-                        }
-                    }
-                    // 处理 GPX 导出交互
-                    cell.gpxExportAction = { [weak self = self] (gpxFileName, senderView) in
-                        guard let self = self else { return }
-                        PTiCloudFileManager.shared.fetchCloudFileIfNeeded(fileName: gpxFileName) { localURL in
-                            if let url = localURL {
-                                let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-                                if let popover = activityVC.popoverPresentationController {
-                                    popover.sourceView = senderView
-                                    popover.sourceRect = senderView.bounds
-                                }
-                                self.present(activityVC, animated: true, completion: nil)
-                            }
-                        }
-                    }
-                    
-                    // 处理地图图片丢失时的静默重绘 (非常关键)
-                    cell.requestMapSnapshotAction = { [weak self = self] gpxFileName in
-                        guard let self,
-                              self.snapshotRequestsInFlight.insert(gpxFileName).inserted else {
-                            return
-                        }
+        view.cellInCollection = { [weak self] collectionView, sectionModel, indexPath in
+            guard let owner = self,
+                  let itemRow = sectionModel.rows?[indexPath.row],
+                  PTTripManager.shared.tripHistory.indices.contains(indexPath.row) else {
+                return nil
+            }
+            let getCell = collectionView.dequeueReusableCell(withReuseIdentifier: itemRow.ID, for: indexPath)
+            guard let cell = getCell as? PTTripDataCell else { return nil }
 
-                        PTiCloudFileManager.shared.fetchCloudFileIfNeeded(fileName: gpxFileName) { localGpxURL in
-                            guard let localGpxURL else {
-                                self.snapshotRequestsInFlight.remove(gpxFileName)
-                                return
-                            }
-
-                            // EN: Parse the route away from the main thread before creating the map snapshot.
-                            // ES: Analizamos la ruta fuera del hilo principal antes de crear la instantánea del mapa.
-                            // 中文：先在后台解析轨迹，再回主线程创建地图快照。
-                            DispatchQueue.global(qos: .utility).async {
-                                let coordinates = PTGPXParser().parse(fileURL: localGpxURL)
-                                DispatchQueue.main.async {
-                                    PTRouteSnapshotManager.shared.generateAndSaveSnapshot(coordinates: coordinates, gpxFileName: gpxFileName) { newURL in
-                                        self.snapshotRequestsInFlight.remove(gpxFileName)
-                                        guard newURL != nil,
-                                              let currentIndex = PTTripManager.shared.tripHistory.firstIndex(where: { $0.gpxFileName == gpxFileName }) else {
-                                            return
-                                        }
-
-                                        let currentIndexPath = IndexPath(row: currentIndex, section: 0)
-                                        let rows = self.detailCollection.getRows(at: [currentIndexPath])
-                                        if !rows.isEmpty {
-                                            self.detailCollection.reloadRows(rows, in: currentIndexPath.section)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    // EN: Open the synchronized offline replay when the route thumbnail is tapped.
-                    // ES: Abre la reproducción offline sincronizada al tocar la miniatura de la ruta.
-                    // 中文：点击路线缩略图时打开同步的离线回放页面。
-                    let owner = self
-                    cell.mapImageTapAction = { [weak owner, report] in
-                        guard let owner else { return }
-                        Task { @MainActor in
-                            owner.presentReplay(for: report)
-                        }
-                    }
-                    return cell
+            let report = PTTripManager.shared.tripHistory[indexPath.row]
+            cell.cellModel = report
+            cell.trashAction = { [weak owner] in
+                Task { @MainActor [weak owner] in
+                    owner?.requestDeleteTrip(at: indexPath)
                 }
             }
-            return nil
+
+            // 处理 GPX 导出交互
+            cell.gpxExportAction = { [weak owner] (gpxFileName, senderView) in
+                PTiCloudFileManager.shared.fetchCloudFileIfNeeded(fileName: gpxFileName) { localURL in
+                    if let url = localURL {
+                        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+                        if let popover = activityVC.popoverPresentationController {
+                            popover.sourceView = senderView
+                            popover.sourceRect = senderView.bounds
+                        }
+                        owner?.present(activityVC, animated: true, completion: nil)
+                    }
+                }
+            }
+
+            // 处理地图图片丢失时的静默重绘 (非常关键)
+            cell.requestMapSnapshotAction = { [weak owner] gpxFileName in
+                guard let owner,
+                      owner.snapshotRequestsInFlight.insert(gpxFileName).inserted else {
+                    return
+                }
+
+                PTiCloudFileManager.shared.fetchCloudFileIfNeeded(fileName: gpxFileName) { localGpxURL in
+                    guard let localGpxURL else {
+                        owner.snapshotRequestsInFlight.remove(gpxFileName)
+                        return
+                    }
+
+                    // EN: Parse the route away from the main thread before creating the map snapshot.
+                    // ES: Analizamos la ruta fuera del hilo principal antes de crear la instantánea del mapa.
+                    // 中文：先在后台解析轨迹，再回主线程创建地图快照。
+                    DispatchQueue.global(qos: .utility).async {
+                        let coordinates = PTGPXParser().parse(fileURL: localGpxURL)
+                        DispatchQueue.main.async {
+                            PTRouteSnapshotManager.shared.generateAndSaveSnapshot(coordinates: coordinates, gpxFileName: gpxFileName) { newURL in
+                                owner.snapshotRequestsInFlight.remove(gpxFileName)
+                                guard newURL != nil,
+                                      let currentIndex = PTTripManager.shared.tripHistory.firstIndex(where: { $0.gpxFileName == gpxFileName }) else {
+                                    return
+                                }
+
+                                let currentIndexPath = IndexPath(row: currentIndex, section: 0)
+                                let rows = owner.detailCollection.getRows(at: [currentIndexPath])
+                                if !rows.isEmpty {
+                                    owner.detailCollection.reloadRows(rows, in: currentIndexPath.section)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // EN: Open the synchronized offline replay when the route thumbnail is tapped.
+            // ES: Abre la reproducción offline sincronizada al tocar la miniatura de la ruta.
+            // 中文：点击路线缩略图时打开同步的离线回放页面。
+            cell.mapImageTapAction = { [weak owner, report] in
+                guard let owner else { return }
+                Task { @MainActor in
+                    owner.presentReplay(for: report)
+                }
+            }
+            return cell
+        }
+        // EN: Open the stable report snapshot when the summary card is selected.
+        // ES: Abre la instantánea estable del informe al seleccionar la tarjeta de resumen.
+        // 中文：选中摘要卡片时打开稳定的行程报告快照。
+        view.collectionDidSelect = { [weak self] _, _, indexPath in
+            guard let self,
+                  PTTripManager.shared.tripHistory.indices.contains(indexPath.row) else {
+                return
+            }
+            let reports = PTTripManager.shared.tripHistory
+            let report = reports[indexPath.row]
+            let analysis = PTRideAnalysisViewController(report: report, comparisonPool: reports)
+            self.navigationController?.pushViewController(analysis, animated: true)
         }
         return view
     }()
@@ -187,6 +189,34 @@ class PTDataCollectedViewController: PTMotoBaseViewController {
         let sectionTrip = PTSection(rows: rowsTrip)
         sections.append(sectionTrip)
         detailCollection.showCollectionDetail(collectionData: sections,finishTask: finishTask)
+    }
+
+    // EN: Confirm deletion by stable report ID so equal timestamps and reused index paths cannot remove the wrong ride.
+    // ES: Confirma el borrado mediante el ID estable para que fechas iguales y celdas reutilizadas no eliminen otra ruta.
+    // 中文：使用稳定报告 ID 确认删除，避免相同时间戳或复用索引误删其他骑行记录。
+    private func requestDeleteTrip(at indexPath: IndexPath) {
+        guard PTTripManager.shared.tripHistory.indices.contains(indexPath.row) else { return }
+        let reportID = PTTripManager.shared.tripHistory[indexPath.row].id
+        UIAlertController.base_alertVC(
+            title: PTDashboardConfig.languageFunc(text: "Delete") + "?",
+            okBtns: [PTDashboardConfig.languageFunc(text: "button_confirm")],
+            cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"),
+            moreBtn: { [weak self] _, _ in
+                guard let self,
+                      let currentIndex = PTTripManager.shared.tripHistory.firstIndex(where: { $0.id == reportID }) else {
+                    return
+                }
+                let currentIndexPath = IndexPath(row: currentIndex, section: indexPath.section)
+                let row = self.detailCollection.getRow(at: currentIndexPath)
+                guard let report = PTTripManager.shared.tripHistory.first(where: { $0.id == reportID }) else {
+                    return
+                }
+                PTTripManager.shared.deleteTrip(report)
+                if let row {
+                    self.detailCollection.deleteRows([row], from: currentIndexPath.section)
+                }
+            }
+        )
     }
 
     override func handleMotorcycleDisconnect() {

@@ -41963,6 +41963,1266 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "固件文件检查失败。" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "韌體檔案檢查失敗。" } }
       }
+    },
+    "ride_analysis_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fahranalyse" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ride analysis" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Análisis de ruta" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Analyse de la route" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Analisi del viaggio" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ライド分析" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Анализ поездки" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürüş analizi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "骑行分析" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "騎行分析" } }
+      }
+    },
+    "ride_analysis_loading" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Analyse wird geladen…" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Loading ride analysis…" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Cargando el análisis…" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Chargement de l’analyse…" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Caricamento dell’analisi…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ライド分析を読み込み中…" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Загрузка анализа поездки…" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürüş analizi yükleniyor…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在加载骑行分析…" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正在載入騎行分析…" } }
+      }
+    },
+    "ride_analysis_overview" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Übersicht" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Overview" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Resumen" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Vue d’ensemble" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Panoramica" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "概要" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Обзор" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Genel bakış" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "行程概览" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "行程概覽" } }
+      }
+    },
+    "ride_analysis_performance" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Leistung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Performance" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Rendimiento" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Performances" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Prestazioni" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パフォーマンス" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Показатели" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Performans" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "性能表现" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "性能表現" } }
+      }
+    },
+    "ride_analysis_dynamics" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fahrzeugdynamik" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Vehicle dynamics" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Dinámica del vehículo" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Dynamique du véhicule" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Dinamica del veicolo" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "車両ダイナミクス" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Динамика мотоцикла" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Araç dinamiği" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "车辆动态" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "車輛動態" } }
+      }
+    },
+    "ride_analysis_terrain" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gelände und Umwelt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Terrain & environment" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Terreno y entorno" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Terrain et environnement" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Terreno e ambiente" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "地形と環境" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Рельеф и окружение" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Arazi ve ortam" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "地形与环境" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "地形與環境" } }
+      }
+    },
+    "ride_analysis_traction" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Traktion" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Traction" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Tracción" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Adhérence" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Trazione" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "トラクション" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Сцепление" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Çekiş" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "抓地表现" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "抓地表現" } }
+      }
+    },
+    "ride_analysis_charts" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Telemetrie-Diagramme" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Telemetry charts" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Gráficos de telemetría" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Graphiques de télémétrie" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Grafici telemetrici" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "テレメトリーチャート" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Графики телеметрии" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Telemetri grafikleri" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "遥测图表" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "遙測圖表" } }
+      }
+    },
+    "ride_analysis_chart_speed_engine" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Geschwindigkeit und Motor" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Speed & engine" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Velocidad y motor" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Vitesse et moteur" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Velocità e motore" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "速度とエンジン" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Скорость и двигатель" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hız ve motor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "速度与发动机" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "速度與引擎" } }
+      }
+    },
+    "ride_analysis_chart_dynamics" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Dynamik" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dynamics" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Dinámica" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Dynamique" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Dinamica" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ダイナミクス" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Динамика" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Dinamik" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "动态" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "動態" } }
+      }
+    },
+    "ride_analysis_chart_environment" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Umwelt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Environment" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Entorno" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Environnement" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Ambiente" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "環境" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Окружение" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ortam" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "环境" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "環境" } }
+      }
+    },
+    "ride_analysis_chart_traction" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Traktion" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Traction" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Tracción" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Adhérence" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Trazione" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "トラクション" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Сцепление" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Çekiş" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "抓地表现" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "抓地表現" } }
+      }
+    },
+    "ride_analysis_distance" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Strecke" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Distance" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Distancia" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Distance" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Distanza" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "距離" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Расстояние" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Mesafe" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "行驶距离" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "行駛距離" } }
+      }
+    },
+    "ride_analysis_duration" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Dauer" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Duration" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Duración" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Durée" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Durata" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "時間" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Длительность" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Süre" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "骑行时长" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "騎行時長" } }
+      }
+    },
+    "ride_analysis_moving_time" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fahrzeit" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Moving time" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Tiempo en marcha" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Temps en mouvement" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Tempo in movimento" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "走行時間" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Время в движении" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hareket süresi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "行驶时间" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "行駛時間" } }
+      }
+    },
+    "ride_analysis_idle_ratio" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Leerlaufanteil" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Idle ratio" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Proporción al ralentí" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Part au ralenti" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Percentuale al minimo" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アイドリング比率" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Доля холостого хода" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Rölanti oranı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "怠速占比" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "怠速佔比" } }
+      }
+    },
+    "ride_analysis_start_odometer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Startkilometerstand" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start odometer" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Odómetro inicial" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Compteur au départ" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Contachilometri iniziale" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "開始時オドメーター" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Одометр в начале" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Başlangıç kilometresi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "起始里程" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "起始里程" } }
+      }
+    },
+    "ride_analysis_end_odometer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Endkilometerstand" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "End odometer" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Odómetro final" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Compteur à l’arrivée" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Contachilometri finale" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "終了時オドメーター" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Одометр в конце" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bitiş kilometresi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "结束里程" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "結束里程" } }
+      }
+    },
+    "ride_analysis_distance_source" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Distanzquelle" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Distance source" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Fuente de distancia" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Source de distance" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Fonte della distanza" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "距離のソース" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Источник расстояния" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Mesafe kaynağı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "距离来源" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "距離來源" } }
+      }
+    },
+    "ride_analysis_source_odometer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fahrzeug- odometer" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Odometer" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Odómetro" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Compteur" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Contachilometri" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オドメーター" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Одометр" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kilometre sayacı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仪表里程" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "儀表里程" } }
+      }
+    },
+    "ride_analysis_source_gps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "GPS" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "GPS" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "GPS" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "GPS" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "GPS" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "GPS" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "GPS" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "GPS" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "GPS" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "GPS" } }
+      }
+    },
+    "ride_analysis_event_count" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ereignisse" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Events" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Eventos" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Événements" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Eventi" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "イベント" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "События" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Olaylar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "事件数量" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "事件數量" } }
+      }
+    },
+    "ride_analysis_average_speed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Durchschnittsgeschwindigkeit" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Average speed" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Velocidad media" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Vitesse moyenne" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Velocità media" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "平均速度" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Средняя скорость" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ortalama hız" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "平均速度" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "平均速度" } }
+      }
+    },
+    "ride_analysis_dashboard_max_speed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Maximale Geschwindigkeit" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dashboard max speed" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Velocidad máxima del cuadro" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Vitesse maximale du tableau" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Velocità massima del quadro" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メーター最高速度" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Макс. скорость панели" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gösterge azami hızı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "表显最高速度" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "表顯最高速度" } }
+      }
+    },
+    "ride_analysis_gps_min_speed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "GPS-Minimalgeschwindigkeit" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "GPS min speed" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Velocidad GPS mínima" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Vitesse GPS minimale" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Velocità GPS minima" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "GPS最低速度" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Мин. скорость GPS" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "GPS minimum hız" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "GPS 最低速度" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "GPS 最低速度" } }
+      }
+    },
+    "ride_analysis_gps_max_speed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "GPS-Maximalgeschwindigkeit" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "GPS max speed" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Velocidad GPS máxima" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Vitesse GPS maximale" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Velocità GPS massima" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "GPS最高速度" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Макс. скорость GPS" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "GPS azami hız" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "GPS 最高速度" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "GPS 最高速度" } }
+      }
+    },
+    "ride_analysis_average_rpm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Durchschnittliche Drehzahl" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Average RPM" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "RPM medio" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Régime moyen" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "RPM medio" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "平均回転数" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Средние обороты" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ortalama RPM" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "平均转速" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "平均轉速" } }
+      }
+    },
+    "ride_analysis_max_rpm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Maximale Drehzahl" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Max RPM" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "RPM máximo" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Régime maximal" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "RPM massimo" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最大回転数" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Макс. обороты" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Azami RPM" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "最大转速" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "最大轉速" } }
+      }
+    },
+    "ride_analysis_consumption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Verbrauch" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Fuel consumption" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Consumo" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Consommation" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Consumo" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "燃費" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Расход топлива" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yakıt tüketimi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "平均油耗" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "平均油耗" } }
+      }
+    },
+    "ride_analysis_zero_to_hundred" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "0–100-Zeit" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "0–100 time" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Tiempo 0–100" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Temps 0–100" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Tempo 0–100" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "0–100タイム" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Время 0–100" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "0–100 süresi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "0–100 加速时间" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "0–100 加速時間" } }
+      }
+    },
+    "ride_analysis_left_lean" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Max. Neigung links" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Max left lean" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Inclinación máxima izquierda" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Inclinaison max. à gauche" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Inclinazione max. a sinistra" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "左最大バンク角" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Макс. наклон влево" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Maks. sol yatış" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "左侧最大倾角" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "左側最大傾角" } }
+      }
+    },
+    "ride_analysis_right_lean" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Max. Neigung rechts" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Max right lean" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Inclinación máxima derecha" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Inclinaison max. à droite" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Inclinazione max. a destra" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "右最大バンク角" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Макс. наклон вправо" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Maks. sağ yatış" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "右侧最大倾角" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "右側最大傾角" } }
+      }
+    },
+    "ride_analysis_max_lean" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Max. Neigung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Max lean" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Inclinación máxima" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Inclinaison maximale" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Inclinazione massima" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最大バンク角" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Макс. наклон" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Maks. yatış" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "最大倾角" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "最大傾角" } }
+      }
+    },
+    "ride_analysis_lean_difference" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Neigungsdifferenz" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lean difference" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Diferencia de inclinación" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Écart d’inclinaison" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Differenza di inclinazione" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "バンク角差" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Разница наклона" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yatış farkı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "左右倾角差" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "左右傾角差" } }
+      }
+    },
+    "ride_analysis_acceleration_g" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Beschleunigung G" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Acceleration G" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "G de aceleración" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "G d’accélération" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "G di accelerazione" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "加速G" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "G ускорения" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "İvmelenme G" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "加速 G" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "加速 G" } }
+      }
+    },
+    "ride_analysis_braking_g" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Brems-G" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Braking G" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "G de frenado" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "G de freinage" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "G di frenata" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "制動G" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "G торможения" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Fren G" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "制动 G" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "制動 G" } }
+      }
+    },
+    "ride_analysis_cornering_g" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kurven-G" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cornering G" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "G en curva" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "G en virage" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "G in curva" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "旋回G" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "G в повороте" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Viraj G" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "过弯 G" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "過彎 G" } }
+      }
+    },
+    "ride_analysis_bump_g" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Stoß-G" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Bump G" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "G de bache" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "G de choc" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "G di urto" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "衝撃G" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "G удара" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Darbe G" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "颠簸 G" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "顛簸 G" } }
+      }
+    },
+    "ride_analysis_pitch" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Neigung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pitch" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Inclinación longitudinal" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Tangage" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Beccheggio" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ピッチ" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Тангаж" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Eğim" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "俯仰" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "俯仰" } }
+      }
+    },
+    "ride_analysis_altitude_gain" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Höhengewinn" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Elevation gain" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Desnivel positivo" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Dénivelé positif" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Dislivello positivo" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "累積上昇" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Набор высоты" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Tırmanış" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "累计爬升" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "累計爬升" } }
+      }
+    },
+    "ride_analysis_altitude_loss" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Höhenverlust" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Elevation loss" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Desnivel negativo" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Dénivelé négatif" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Dislivello negativo" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "累積下降" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Потеря высоты" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "İniş" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "累计下降" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "累計下降" } }
+      }
+    },
+    "ride_analysis_altitude_range" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Höhenbereich" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Altitude range" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Rango de altitud" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Plage d’altitude" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Intervallo di altitudine" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "高度範囲" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Диапазон высоты" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Rakım aralığı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "海拔范围" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "海拔範圍" } }
+      }
+    },
+    "ride_analysis_pressure_range" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Druckbereich" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pressure range" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Rango de presión" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Plage de pression" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Intervallo di pressione" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "気圧範囲" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Диапазон давления" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Basınç aralığı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "气压范围" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "氣壓範圍" } }
+      }
+    },
+    "ride_analysis_gpx" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "GPX-Track" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "GPX track" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Pista GPX" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Trace GPX" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Traccia GPX" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "GPXトラック" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Трек GPX" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "GPX izi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "GPX 轨迹" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "GPX 軌跡" } }
+      }
+    },
+    "ride_analysis_available" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Verfügbar" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Available" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Disponible" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Disponible" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Disponibile" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "利用可能" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Доступно" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kullanılabilir" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "可用" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "可用" } }
+      }
+    },
+    "ride_analysis_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nicht verfügbar" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unavailable" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "No disponible" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Indisponible" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Non disponibile" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "利用不可" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Недоступно" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kullanılamıyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂无数据" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "暫無資料" } }
+      }
+    },
+    "ride_analysis_common_samples" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gemeinsame Samples" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Common samples" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Muestras comunes" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Échantillons communs" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Campioni comuni" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "共通サンプル" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Общие образцы" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ortak örnekler" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "公共样本数" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "公共樣本數" } }
+      }
+    },
+    "ride_analysis_max_slip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Max. Schlupf" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Max slip ratio" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Deslizamiento máximo" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Glissement max." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Slittamento massimo" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最大スリップ率" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Макс. пробуксовка" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Azami kayma oranı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "最大打滑率" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "最大打滑率" } }
+      }
+    },
+    "ride_analysis_heavy_slip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Starker Schlupf" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Heavy slip events" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Eventos de deslizamiento fuerte" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Événements de fort glissement" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Eventi di slittamento intenso" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "重大なスリップ" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Сильные пробуксовки" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ağır kayma olayları" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "严重打滑次数" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "嚴重打滑次數" } }
+      }
+    },
+    "ride_analysis_offroad_events" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Offroad-Ereignisse" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Off-road events" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Eventos fuera de carretera" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Événements hors route" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Eventi fuoristrada" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オフロードイベント" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Внедорожные события" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Arazi olayları" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "越野事件" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "越野事件" } }
+      }
+    },
+    "ride_analysis_event_rate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ereignisse pro 100 km" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Events per 100 km" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Eventos por 100 km" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Événements par 100 km" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Eventi per 100 km" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "100 kmあたりのイベント" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "События на 100 км" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "100 km başına olay" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每 100 km 事件数" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "每 100 km 事件數" } }
+      }
+    },
+    "ride_analysis_events" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ereignisverlauf" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Event timeline" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Línea temporal de eventos" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Chronologie des événements" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Sequenza degli eventi" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "イベントタイムライン" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Хронология событий" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Olay zaman çizelgesi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "事件时间线" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "事件時間軸" } }
+      }
+    },
+    "ride_analysis_no_events" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Keine aufgezeichneten Ereignisse" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No recorded events" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "No hay eventos registrados" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Aucun événement enregistré" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Nessun evento registrato" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "記録されたイベントはありません" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Нет записанных событий" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kayıtlı olay yok" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂无记录事件" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "暫無記錄事件" } }
+      }
+    },
+    "ride_analysis_event_open_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Tippen, um die Wiedergabe an diesem Zeitpunkt zu öffnen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Opens replay at this event" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Abre la reproducción en este evento" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ouvre la relecture à cet événement" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Apre la riproduzione su questo evento" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このイベント位置から再生を開きます" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Открывает воспроизведение с этого события" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Olay anında oynatmayı açar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开回放并定位到此事件" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟回放並定位到此事件" } }
+      }
+    },
+    "ride_analysis_event_speed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Geschwindigkeit" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Speed" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Velocidad" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Vitesse" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Velocità" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "速度" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Скорость" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hız" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "速度" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "速度" } }
+      }
+    },
+    "ride_analysis_event_peak" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Spitzenwert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Peak" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Pico" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Pic" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Picco" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ピーク" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Пик" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Tepe değer" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "峰值" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "峰值" } }
+      }
+    },
+    "ride_analysis_history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Vergleich mit früheren Fahrten" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Recent same-bike rides" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Rutas recientes de la misma moto" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Trajets récents de la même moto" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Viaggi recenti della stessa moto" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "同じ車両の最近の走行" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Последние поездки на этом мотоцикле" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Aynı motosikletin son sürüşleri" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "同车近期对比" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "同車近期比較" } }
+      }
+    },
+    "ride_analysis_recent_average" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Letzter Durchschnitt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Recent average" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Media reciente" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Moyenne récente" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Media recente" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最近の平均" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Среднее за недавние поездки" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Son ortalama" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "近期均值" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "近期均值" } }
+      }
+    },
+    "ride_analysis_history_no_vehicle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Diese Fahrt ist keinem Fahrzeug zugeordnet." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This ride is not linked to a motorcycle." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Esta ruta no está vinculada a una moto." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ce trajet n’est lié à aucune moto." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Questo viaggio non è associato a una moto." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "この走行は車両に紐付いていません。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Эта поездка не привязана к мотоциклу." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bu sürüş bir motosiklete bağlı değil." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "这次骑行未绑定摩托车。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "這次騎行未綁定機車。" } }
+      }
+    },
+    "ride_analysis_history_insufficient" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mindestens drei gültige frühere Fahrten werden für den Vergleich benötigt." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "At least three valid earlier rides are needed for a comparison." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Se necesitan al menos tres rutas anteriores válidas para comparar." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Au moins trois trajets antérieurs valides sont nécessaires." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Servono almeno tre viaggi precedenti validi per il confronto." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "比較には有効な過去の走行が3件以上必要です。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Для сравнения нужны как минимум три предыдущие поездки." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Karşılaştırma için en az üç geçerli eski sürüş gerekir." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "至少需要 3 次有效历史骑行才能进行对比。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "至少需要 3 次有效歷史騎行才能比較。" } }
+      }
+    },
+    "ride_analysis_unassigned_vehicle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nicht zugeordnetes Fahrzeug" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unassigned motorcycle" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Moto sin asignar" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Moto non attribuée" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Moto non assegnata" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "未割り当ての車両" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Неназначенный мотоцикл" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Atanmamış motosiklet" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未绑定摩托车" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "未綁定機車" } }
+      }
+    },
+    "ride_analysis_data_quality" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Datenqualität" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Data quality" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Calidad de datos" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Qualité des données" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Qualità dei dati" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "データ品質" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Качество данных" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Veri kalitesi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "数据质量" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "資料品質" } }
+      }
+    },
+    "ride_analysis_schema" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Berichtsversion" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Report schema" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Esquema del informe" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Schéma du rapport" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Schema del report" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レポートスキーマ" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Схема отчёта" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Rapor şeması" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "报告版本" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "報告版本" } }
+      }
+    },
+    "ride_analysis_samples" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Samples" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Samples" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Muestras" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Échantillons" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Campioni" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "サンプル" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Образцы" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Örnekler" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "样本" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "樣本" } }
+      }
+    },
+    "ride_analysis_timeline_estimated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Die Diagramme zeigen den geschätzten Fahrtverlauf; die genaue Zeitachse ist im GPX-Replay verfügbar." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Charts use an estimated ride-progress timeline; exact timestamps are available in GPX replay." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Los gráficos usan una línea temporal estimada; las marcas exactas están en la reproducción GPX." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Les graphiques utilisent une progression estimée ; les horaires exacts sont disponibles dans la relecture GPX." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "I grafici usano una timeline stimata; i timestamp esatti sono disponibili nella riproduzione GPX." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "グラフは推定された走行進行を表示します。正確な時刻はGPX再生で確認できます。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Графики используют примерную шкалу поездки; точное время доступно в воспроизведении GPX." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Grafikler tahmini sürüş ilerlemesini kullanır; kesin zamanlar GPX oynatmada bulunur." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "图表使用估算的行程进度时间轴；精确时间可在 GPX 回放中查看。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "圖表使用估算的行程進度時間軸；精確時間可在 GPX 回放中查看。" } }
+      }
+    },
+    "ride_analysis_warning_trace_length" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Einige Telemetrieserien haben unterschiedliche Längen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Some telemetry traces have different lengths." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Algunas trazas de telemetría tienen longitudes distintas." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Certaines traces de télémétrie ont des longueurs différentes." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Alcune tracce telemetriche hanno lunghezze diverse." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "一部のテレメトリートレースの長さが異なります。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Некоторые телеметрические трассы имеют разную длину." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bazı telemetri izlerinin uzunlukları farklı." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "部分遥测轨迹长度不一致。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "部分遙測軌跡長度不一致。" } }
+      }
+    },
+    "ride_analysis_warning_missing_gpx" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Für diese Fahrt ist keine GPX-Route verfügbar." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No GPX route is available for this ride." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "No hay una ruta GPX disponible para esta ruta." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Aucune trace GPX n’est disponible pour ce trajet." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Nessuna traccia GPX disponibile per questo viaggio." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "この走行にはGPXルートがありません。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Для этой поездки нет маршрута GPX." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bu sürüş için GPX rotası yok." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "这次骑行没有可用的 GPX 路线。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "這次騎行沒有可用的 GPX 路線。" } }
+      }
+    },
+    "ride_analysis_warning_unbound_vehicle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Diese Fahrt ist keinem Fahrzeugprofil zugeordnet." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This ride is not linked to a vehicle profile." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Esta ruta no está vinculada a un perfil de vehículo." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ce trajet n’est lié à aucun profil de véhicule." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Questo viaggio non è associato a un profilo del veicolo." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "この走行は車両プロファイルに紐付いていません。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Эта поездка не связана с профилем мотоцикла." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bu sürüş bir araç profiline bağlı değil." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "这次骑行未绑定车辆档案。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "這次騎行未綁定車輛檔案。" } }
+      }
+    },
+    "ride_analysis_no_data" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Keine Daten" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No chart data" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin datos de gráfico" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Aucune donnée graphique" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Nessun dato grafico" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "グラフデータなし" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Нет данных графика" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Grafik verisi yok" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂无图表数据" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "暫無圖表資料" } }
+      }
+    },
+    "ride_analysis_replay" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wiedergabe" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Replay route" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Reproducir ruta" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Relire la route" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Riproduci percorso" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ルートを再生" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Воспроизвести маршрут" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Rotayı oynat" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "路线回放" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "路線回放" } }
+      }
+    },
+    "ride_analysis_share_card" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Karte teilen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share card" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Compartir tarjeta" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Partager la carte" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Condividi scheda" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "カードを共有" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Поделиться карточкой" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kartı paylaş" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "分享摘要卡" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "分享摘要卡" } }
+      }
+    },
+    "ride_analysis_share_json" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "JSON teilen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share JSON" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Compartir JSON" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Partager le JSON" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Condividi JSON" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "JSONを共有" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Поделиться JSON" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "JSON paylaş" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "分享 JSON" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "分享 JSON" } }
+      }
+    },
+    "ride_analysis_share_redacted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Geteilte Karte enthält keine Route, Koordinaten oder Fahrzeugkennung." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shared card excludes route, coordinates and vehicle identifiers." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "La tarjeta compartida no incluye ruta, coordenadas ni identificadores del vehículo." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "La carte partagée exclut la route, les coordonnées et les identifiants du véhicule." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "La scheda condivisa non include percorso, coordinate o identificativi del veicolo." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有カードにはルート、座標、車両識別子を含めません。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Общая карточка не содержит маршрут, координаты и идентификаторы мотоцикла." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Paylaşılan kart rota, koordinat ve araç kimliklerini içermez." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "分享卡不包含路线、坐标或车辆标识。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "分享卡不包含路線、座標或車輛識別。" } }
+      }
+    },
+    "ride_analysis_speed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Geschwindigkeit" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Speed" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Velocidad" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Vitesse" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Velocità" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "速度" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Скорость" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hız" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "速度" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "速度" } }
+      }
+    },
+    "ride_analysis_rpm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Drehzahl" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "RPM" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "RPM" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Régime" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "RPM" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "回転数" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Обороты" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "RPM" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "转速" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "轉速" } }
+      }
+    },
+    "ride_analysis_lean" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Neigungswinkel" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lean angle" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Inclinación" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Inclinaison" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Inclinazione" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "バンク角" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Наклон" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yatış açısı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "倾角" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "傾角" } }
+      }
+    },
+    "ride_analysis_g_force" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "G-Kraft" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "G force" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Fuerza G" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Force G" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Forza G" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Gフォース" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "G-сила" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "G kuvveti" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "G 值" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "G 值" } }
+      }
+    },
+    "ride_analysis_g_force_x" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "G-Kraft X" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "G force X" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Fuerza G X" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Force G X" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Forza G X" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Gフォース X" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "G-сила X" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "G kuvveti X" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "G 值 X" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "G 值 X" } }
+      }
+    },
+    "ride_analysis_g_force_y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "G-Kraft Y" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "G force Y" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Fuerza G Y" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Force G Y" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Forza G Y" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Gフォース Y" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "G-сила Y" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "G kuvveti Y" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "G 值 Y" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "G 值 Y" } }
+      }
+    },
+    "ride_analysis_g_force_z" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "G-Kraft Z" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "G force Z" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Fuerza G Z" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Force G Z" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Forza G Z" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Gフォース Z" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "G-сила Z" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "G kuvveti Z" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "G 值 Z" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "G 值 Z" } }
+      }
+    },
+    "ride_analysis_altitude" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Höhe" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Altitude" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Altitud" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Altitude" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Altitudine" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "高度" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Высота" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Rakım" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "海拔" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "海拔" } }
+      }
+    },
+    "ride_analysis_pressure" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Luftdruck" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pressure" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Presión" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Pression" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Pressione" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "気圧" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Давление" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Basınç" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "气压" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "氣壓" } }
+      }
+    },
+    "ride_analysis_slip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Schlupf" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Slip ratio" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Deslizamiento" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Glissement" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Slittamento" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "スリップ率" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Пробуксовка" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kayma oranı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打滑率" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "打滑率" } }
+      }
+    },
+    "ride_analysis_review_prefix" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Review: " } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Review: " } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Revisión: " } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Revue : " } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Revisione: " } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レビュー: " } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Обзор: " } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "İnceleme: " } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "复盘：" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "複盤：" } }
+      }
     }
   },
   "version" : "1.0"

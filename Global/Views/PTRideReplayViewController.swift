@@ -18,6 +18,7 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
                                          UITableViewDataSource,
                                          UITableViewDelegate {
     private let report: PTTripReport
+    private let initialTimestamp: Date?
     private var session: PTRideReplaySession?
     private var player: PTRideReplayPlayer?
     private var loadTask: Task<Void, Never>?
@@ -55,8 +56,9 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
     private let eventsTableView = UITableView(frame: .zero, style: .insetGrouped)
     private let activityIndicator = UIActivityIndicatorView(style: .medium)
 
-    init(report: PTTripReport) {
+    init(report: PTTripReport, initialTimestamp: Date? = nil) {
         self.report = report
+        self.initialTimestamp = initialTimestamp
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -310,7 +312,15 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
         eventsTableView.reloadData()
         eventsTableView.backgroundView = session.events.isEmpty ? emptyEventsView() : nil
         activityIndicator.stopAnimating()
-        render(sample: player.currentSample, elapsed: 0, progress: 0, isPlaying: false)
+        // EN: Event links open the same replay at the selected event timestamp.
+        // ES: Los enlaces de eventos abren la misma reproducción en la marca de tiempo seleccionada.
+        // 中文：事件链接会在选定的事件时间点打开同一个回放页面。
+        if let initialTimestamp {
+            let elapsed = initialTimestamp.timeIntervalSince(session.startTime)
+            player.seek(progress: session.progress(for: elapsed))
+        } else {
+            render(sample: player.currentSample, elapsed: 0, progress: 0, isPlaying: false)
+        }
     }
 
     private func configureMap(for session: PTRideReplaySession) {

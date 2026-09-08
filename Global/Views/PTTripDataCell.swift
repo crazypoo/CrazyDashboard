@@ -23,7 +23,6 @@ class PTTripDataCell: PTBaseSwipeCell {
     private var thumbnailTask: Task<Void, Never>?
     private var thumbnailRequestID = UUID()
     
-    static let ChartHeight: CGFloat = 160
     static let MapHeight: CGFloat = 140
     
     // MARK: - 🪝 事件回调 (Closures) 彻底解耦
@@ -104,34 +103,6 @@ class PTTripDataCell: PTBaseSwipeCell {
         return view
     }()
     
-    // 横向分页滑动的图表容器
-    private lazy var chartsScrollView: UIScrollView = {
-        let scroll = UIScrollView()
-        scroll.isPagingEnabled = true
-        scroll.showsHorizontalScrollIndicator = false
-        scroll.bounces = true
-        scroll.clipsToBounds = false
-        return scroll
-    }()
-    
-    private lazy var chartsHStack: UIStackView = {
-        let stack = UIStackView()
-        stack.axis = .horizontal
-        stack.spacing = 0 // 保证分页对齐
-        stack.distribution = .fillEqually
-        return stack
-    }()
-    
-    // 图表实例
-    lazy var speedChart = PTNativeTelemetryChartView()
-    lazy var rpmChart = PTNativeTelemetryChartView()
-    lazy var leanAngleChart = PTNativeTelemetryChartView()
-    lazy var gChart = PTNativeTelemetryChartView()
-    lazy var pChart = PTNativeTelemetryChartView()
-    lazy var altitudeChart = PTNativeTelemetryChartView()
-    lazy var pressureChart = PTNativeTelemetryChartView()
-    lazy var slipRatioChart = PTNativeTelemetryChartView()
-    
     // MARK: - 🔄 数据绑定
     var cellModel: PTTripReport! {
         didSet {
@@ -168,14 +139,8 @@ class PTTripDataCell: PTBaseSwipeCell {
             statsGridStackView,
             thumbnailImageView,
             gpxButton,
-            trashButton,
-            chartsScrollView
+            trashButton
         ])
-                
-        // 组装横向滚动图表
-        chartsScrollView.addSubview(chartsHStack)
-        let allCharts = [speedChart, rpmChart, leanAngleChart, gChart, pChart, altitudeChart, pressureChart, slipRatioChart]
-        allCharts.forEach { chartsHStack.addArrangedSubview($0) }
     }
     
     private func setupConstraints() {
@@ -216,27 +181,11 @@ class PTTripDataCell: PTBaseSwipeCell {
             make.right.equalTo(thumbnailImageView.snp.left).offset(-margin)
         }
         
-        // 滑动图表区域 (下方)
-        chartsScrollView.snp.makeConstraints { make in
-            // 智能避让：在地图或统计数据的下方
-            make.top.greaterThanOrEqualTo(statsGridStackView.snp.bottom).offset(margin)
-            make.top.greaterThanOrEqualTo(thumbnailImageView.snp.bottom).offset(margin)
-            make.left.right.bottom.equalToSuperview().inset(margin)
-            make.height.equalTo(PTTripDataCell.ChartHeight)
-        }
-        
-        // 图表内部约束 (核心：保证分页大小与 ScrollView 视口一致)
-        chartsHStack.snp.makeConstraints { make in
-            make.edges.equalTo(chartsScrollView.contentLayoutGuide)
-            make.height.equalTo(chartsScrollView.frameLayoutGuide)
-        }
-        
-        // 保证每个图表的宽度恰好等于 ScrollView 的宽度（实现完美 Paging）
-        let allCharts = [speedChart, rpmChart, leanAngleChart, gChart, pChart, altitudeChart, pressureChart, slipRatioChart]
-        allCharts.forEach { chart in
-            chart.snp.makeConstraints { make in
-                make.width.equalTo(chartsScrollView.frameLayoutGuide.snp.width)
-            }
+        // EN: The list card is a compact summary; detailed charts live on the pushed analysis screen.
+        // ES: La tarjeta es un resumen compacto; los gráficos detallados viven en la pantalla de análisis.
+        // 中文：列表卡片只保留紧凑摘要，详细图表统一放到下一级分析页面。
+        statsGridStackView.snp.makeConstraints { make in
+            make.bottom.equalToSuperview().inset(margin)
         }
     }
     
@@ -246,16 +195,13 @@ class PTTripDataCell: PTBaseSwipeCell {
         let startTime = cellModel.startTime.convertTo(region: .local).toFormat("MM-dd HH:mm")
         let endTime = cellModel.endTime.convertTo(region: .local).toFormat("HH:mm")
         timeTitleLabel.text = "🏁 \(startTime) -> \(endTime)"
-        let reviewTitles = cellModel.reviewEvents.prefix(3).map { $0.type.title }
+        let reviewTitles = cellModel.reviewEvents.prefix(3).map { localizedReviewTitle(for: $0.type) }
         reviewSummaryLabel.text = reviewTitles.isEmpty
-            ? "复盘：暂无明显事件"
-            : "复盘：" + reviewTitles.joined(separator: " · ")
+            ? PTDashboardConfig.languageFunc(text: "ride_analysis_no_events")
+            : "\(PTDashboardConfig.languageFunc(text: "ride_analysis_review_prefix"))" + reviewTitles.joined(separator: " · ")
         
         // 更新数据网格
         updateStatsGrid()
-        
-        // 绑定图表数据
-        bindChartData()
         
         // 处理地图图片 (极致的防御性加载)
         loadThumbnailImage()
@@ -294,6 +240,24 @@ class PTTripDataCell: PTBaseSwipeCell {
         statsGridStackView.addArrangedSubview(row2)
         statsGridStackView.addArrangedSubview(row3)
     }
+
+    // EN: Keep the compact list summary localized while the detailed analyzer owns the full event presentation.
+    // ES: Mantiene localizado el resumen compacto; el analizador detallado presenta todos los eventos.
+    // 中文：列表摘要保持本地化，完整事件展示由详情分析页负责。
+    private func localizedReviewTitle(for type: PTRideReviewEventType) -> String {
+        switch type {
+        case .hardBraking:
+            return PTDashboardConfig.languageFunc(text: "ride_replay_event_hard_braking")
+        case .hardAcceleration:
+            return PTDashboardConfig.languageFunc(text: "ride_replay_event_hard_acceleration")
+        case .heavyBump:
+            return PTDashboardConfig.languageFunc(text: "ride_replay_event_heavy_bump")
+        case .highLean:
+            return PTDashboardConfig.languageFunc(text: "ride_replay_event_high_lean")
+        case .suspectedSlip:
+            return PTDashboardConfig.languageFunc(text: "ride_replay_event_suspected_slip")
+        }
+    }
     
     // 构建单个数据块：[图标 值] \n [单位]
     private func createStatItem(icon: UIImage, value: String, unit: String) -> UIView {
@@ -331,21 +295,6 @@ class PTTripDataCell: PTBaseSwipeCell {
         }
         
         return container
-    }
-    
-    private func bindChartData() {
-        speedChart.bindData(lines: [PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "Speed"), color: .systemRed, data: cellModel.speedTrace)])
-        rpmChart.bindData(lines: [PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "RPM"), color: .systemGreen, data: cellModel.rpmTrace.map { Double($0) })])
-        leanAngleChart.bindData(lines: [PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "lean_angle_title"), color: .systemRed, data: cellModel.leanAngleTrace)])
-        gChart.bindData(lines: [
-            PTChartLineModel(name: "G:X", color: .systemRed, data: cellModel.gForceXTrace),
-            PTChartLineModel(name: "G:Y", color: .systemGreen, data: cellModel.gForceYTrace),
-            PTChartLineModel(name: "G:Z", color: .systemBlue, data: cellModel.gForceZTrace)
-        ])
-        pChart.bindData(lines: [PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "vechicle_pitch"), color: .systemRed, data: cellModel.pitchTrace)])
-        altitudeChart.bindData(lines: [PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "elevation_title"), color: .systemRed, data: cellModel.relativeAltitudeTrace)])
-        pressureChart.bindData(lines: [PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "hpa_title"), color: .systemRed, data: cellModel.pressureTrace)])
-        slipRatioChart.bindData(lines: [PTChartLineModel(name: PTDashboardConfig.languageFunc(text: "Slip Ratio"), color: .systemRed, data: cellModel.slipRatioTrace)])
     }
     
     private func loadThumbnailImage() {
