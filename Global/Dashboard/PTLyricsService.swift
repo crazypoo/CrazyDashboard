@@ -430,7 +430,7 @@ public actor PTLyricsService {
         from responses: [LRCLIBResponse],
         snapshot: PTNowPlayingTrackSnapshot
     ) -> LRCLIBResponse? {
-        let matches = responses.filter { matches($0, snapshot: snapshot) }
+        let matches = responses.filter { self.matches($0, snapshot: snapshot) }
         guard !matches.isEmpty else { return nil }
         guard matches.count > 1 else { return matches[0] }
 
