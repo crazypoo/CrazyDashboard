@@ -12,7 +12,7 @@ import Foundation
 // EN: A source label makes every displayed value auditable and prevents Mock data from looking real.
 // ES: La fuente hace auditable cada valor y evita que los datos simulados parezcan reales.
 // 中文：来源标签让每个数值都可追溯，并防止 Mock 数据伪装成真实数据。
-public enum PTVehicleTelemetrySource: String, Codable, Equatable, Sendable {
+public nonisolated enum PTVehicleTelemetrySource: String, Codable, Equatable, Sendable {
     case unknown
     case dashboardBluetooth
     case dashboardMock
@@ -63,7 +63,7 @@ public enum PTVehicleTelemetrySource: String, Codable, Equatable, Sendable {
     }
 }
 
-public enum PTTelemetryFreshness: String, Codable, Equatable, Sendable {
+public nonisolated enum PTTelemetryFreshness: String, Codable, Equatable, Sendable {
     case fresh
     case stale
     case missing
@@ -72,7 +72,7 @@ public enum PTTelemetryFreshness: String, Codable, Equatable, Sendable {
 // EN: Samples are immutable so they can safely cross actor and queue boundaries.
 // ES: Las muestras son inmutables para cruzar de forma segura actores y colas.
 // 中文：采样值不可变，因此可以安全地跨越 actor 和队列边界。
-public struct PTTelemetrySample<Value: Sendable>: Sendable {
+public nonisolated struct PTTelemetrySample<Value: Sendable>: Sendable {
     public let value: Value
     public let source: PTVehicleTelemetrySource
     public let capturedAt: Date
@@ -96,7 +96,7 @@ public struct PTTelemetrySample<Value: Sendable>: Sendable {
 // EN: This snapshot is a projection, not a second transport cache; the coordinator owns its lifetime.
 // ES: Esta instantánea es una proyección, no otra caché de transporte; el coordinador controla su ciclo de vida.
 // 中文：该快照只是投影，不是第二套传输缓存；它的生命周期由协调器负责。
-public struct PTVehicleTelemetrySnapshot: Sendable {
+public nonisolated struct PTVehicleTelemetrySnapshot: Sendable {
     public let dashboardSpeedKmh: PTTelemetrySample<Double>?
     public let obdSpeedKmh: PTTelemetrySample<Double>?
     public let frontWheelSpeedKmh: PTTelemetrySample<Double>?
@@ -184,7 +184,7 @@ public struct PTVehicleTelemetrySnapshot: Sendable {
 // EN: This small mutable engine is owned by the MainActor coordinator and has no transport side effects.
 // ES: Este pequeño motor mutable pertenece al coordinador MainActor y no tiene efectos de transporte.
 // 中文：这个小型可变引擎由 MainActor 协调器持有，不产生任何传输副作用。
-public struct PTVehicleTelemetryFusionEngine: Sendable {
+public nonisolated struct PTVehicleTelemetryFusionEngine: Sendable {
     private var current = PTVehicleTelemetrySnapshot.empty
 
     public init() {}
@@ -282,7 +282,7 @@ public struct PTVehicleTelemetryFusionEngine: Sendable {
     }
 }
 
-private extension PTVehicleTelemetrySnapshot {
+private nonisolated extension PTVehicleTelemetrySnapshot {
     func replacing(
         dashboardSpeedKmh: PTTelemetrySample<Double>? = nil,
         obdSpeedKmh: PTTelemetrySample<Double>? = nil,
@@ -372,13 +372,13 @@ private extension PTVehicleTelemetrySnapshot {
     }
 }
 
-public enum PTWheelSpeedConsistencyState: String, Codable, Equatable, Sendable {
+public nonisolated enum PTWheelSpeedConsistencyState: String, Codable, Equatable, Sendable {
     case unavailable
     case normal
     case mismatch
 }
 
-public struct PTWheelSpeedConsistencyResult: Equatable, Sendable {
+public nonisolated struct PTWheelSpeedConsistencyResult: Codable, Equatable, Sendable {
     public let state: PTWheelSpeedConsistencyState
     public let absoluteRatio: Double
     public let rearMinusFrontKmh: Double
@@ -400,7 +400,7 @@ public struct PTWheelSpeedConsistencyResult: Equatable, Sendable {
 // EN: The tracker deliberately reports wheel-speed mismatch, never road type or traction intervention.
 // ES: El rastreador informa solo de una diferencia de velocidad, nunca del tipo de carretera ni de una intervención de tracción.
 // 中文：该跟踪器只报告轮速不一致，绝不推断路面类型或 TCS 介入。
-public struct PTWheelSpeedConsistencyTracker: Sendable {
+public nonisolated struct PTWheelSpeedConsistencyTracker: Sendable {
     public private(set) var state: PTWheelSpeedConsistencyState = .unavailable
     private var highCount = 0
     private var clearCount = 0
@@ -451,7 +451,7 @@ public struct PTWheelSpeedConsistencyTracker: Sendable {
     }
 }
 
-public enum PTEnginePhase: String, Codable, Equatable, Sendable {
+public nonisolated enum PTEnginePhase: String, Codable, Equatable, Sendable {
     case resting
     case cranking
     case running
@@ -459,7 +459,7 @@ public enum PTEnginePhase: String, Codable, Equatable, Sendable {
     case unavailable
 }
 
-public struct PTBatteryObservation: Codable, Equatable, Sendable {
+public nonisolated struct PTBatteryObservation: Codable, Equatable, Sendable {
     public let voltage: Double
     public let engineStatus: Int
     public let source: PTVehicleTelemetrySource
@@ -488,7 +488,7 @@ public struct PTBatteryObservation: Codable, Equatable, Sendable {
     }
 }
 
-public struct PTBatteryHealthSummary: Codable, Equatable, Sendable {
+public nonisolated struct PTBatteryHealthSummary: Codable, Equatable, Sendable {
     public let capturedAt: Date
     public let restingMedianVoltage: Double?
     public let crankingMinimumVoltage: Double?
@@ -513,10 +513,301 @@ public struct PTBatteryHealthSummary: Codable, Equatable, Sendable {
     }
 }
 
+// EN: The reminder trackers are pure state machines; callers decide how to present a reminder.
+// ES: Los rastreadores de avisos son máquinas de estado puras; el llamador decide cómo mostrar el aviso.
+// 中文：提醒跟踪器是纯状态机，由调用方决定如何展示提醒。
+public nonisolated struct PTTurnSignalReminderTracker: Sendable {
+    public private(set) var activeSince: Date?
+    public private(set) var distanceMeters: Double
+    public private(set) var didNotify: Bool
+
+    private var lastSampleAt: Date?
+
+    public init() {
+        activeSince = nil
+        distanceMeters = 0
+        didNotify = false
+        lastSampleAt = nil
+    }
+
+    @discardableResult
+    public mutating func update(
+        isActive: Bool,
+        isHazard: Bool,
+        speedKmh: Double?,
+        source: PTVehicleTelemetrySource,
+        at date: Date = Date()
+    ) -> Bool {
+        guard source.isVerifiedReal else {
+            reset()
+            return false
+        }
+
+        guard isActive, !isHazard else {
+            reset()
+            return false
+        }
+
+        if activeSince == nil {
+            activeSince = date
+            lastSampleAt = date
+        }
+
+        let interval = min(max(date.timeIntervalSince(lastSampleAt ?? date), 0), 2)
+        if let speedKmh, speedKmh.isFinite, speedKmh >= 0 {
+            distanceMeters += speedKmh / 3.6 * interval
+        }
+        lastSampleAt = date
+
+        guard !didNotify,
+              let activeSince,
+              let speedKmh,
+              speedKmh.isFinite,
+              speedKmh > 15,
+              date.timeIntervalSince(activeSince) >= 30,
+              distanceMeters >= 300 else {
+            return false
+        }
+
+        didNotify = true
+        return true
+    }
+
+    public mutating func reset() {
+        activeSince = nil
+        distanceMeters = 0
+        didNotify = false
+        lastSampleAt = nil
+    }
+}
+
+// EN: ABS reminders require motion and a three-second persistence window to avoid startup self-test noise.
+// ES: Los avisos del ABS requieren movimiento y tres segundos de persistencia para evitar el autodiagnóstico inicial.
+// 中文：ABS 提醒必须满足行驶条件并持续三秒，避免上电自检造成误报。
+public nonisolated struct PTABSWarningTracker: Sendable {
+    public private(set) var abnormalSince: Date?
+    public private(set) var didNotify: Bool
+
+    public init() {
+        abnormalSince = nil
+        didNotify = false
+    }
+
+    @discardableResult
+    public mutating func update(
+        isAbnormal: Bool,
+        speedKmh: Double?,
+        source: PTVehicleTelemetrySource,
+        at date: Date = Date()
+    ) -> Bool {
+        guard source.isVerifiedReal,
+              isAbnormal,
+              let speedKmh,
+              speedKmh.isFinite,
+              speedKmh > 10 else {
+            reset()
+            return false
+        }
+
+        if abnormalSince == nil {
+            abnormalSince = date
+        }
+
+        guard !didNotify,
+              let abnormalSince,
+              date.timeIntervalSince(abnormalSince) >= 3 else {
+            return false
+        }
+
+        didNotify = true
+        return true
+    }
+
+    public mutating func reset() {
+        abnormalSince = nil
+        didNotify = false
+    }
+}
+
+public nonisolated struct PTBatteryDailySummary: Codable, Equatable, Identifiable, Sendable {
+    public let id: String
+    public let day: String
+    public let capturedAt: Date
+    public let summary: PTBatteryHealthSummary
+
+    public init(
+        day: String,
+        capturedAt: Date,
+        summary: PTBatteryHealthSummary
+    ) {
+        self.day = day
+        self.capturedAt = capturedAt
+        self.summary = summary
+        self.id = day
+    }
+}
+
+// EN: Store only one bounded daily summary per vehicle; mock observations never enter this history.
+// ES: Guarda un resumen diario acotado por vehículo; las observaciones simuladas nunca entran en este historial.
+// 中文：每辆车只保存有界的每日摘要，Mock 观测永远不会进入该历史。
+@MainActor
+public final class PTBatteryHealthHistoryStore {
+    public static let shared = PTBatteryHealthHistoryStore()
+    public static let maximumDailySummaryCount = 365
+
+    private let defaults: UserDefaults
+    private let keyPrefix = "PTBatteryHealthHistory."
+
+    public init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    public func summaries(for vehicleID: UUID?) -> [PTBatteryDailySummary] {
+        guard let vehicleID,
+              let data = defaults.data(forKey: keyPrefix + vehicleID.uuidString),
+              let values = try? JSONDecoder().decode([PTBatteryDailySummary].self, from: data) else {
+            return []
+        }
+        return Array(values.sorted { $0.capturedAt > $1.capturedAt }.prefix(Self.maximumDailySummaryCount))
+    }
+
+    @discardableResult
+    public func record(
+        summary: PTBatteryHealthSummary,
+        for vehicleID: UUID?,
+        at date: Date = Date()
+    ) -> Bool {
+        guard let vehicleID, summary.observationCount > 0 else { return false }
+
+        let day = Self.dayKey(for: date)
+        var values = summaries(for: vehicleID)
+        let item = PTBatteryDailySummary(day: day, capturedAt: date, summary: summary)
+
+        if let index = values.firstIndex(where: { $0.day == day }) {
+            guard values[index].capturedAt < date ||
+                    values[index].summary.observationCount < summary.observationCount else {
+                return false
+            }
+            values[index] = item
+        } else {
+            values.insert(item, at: 0)
+        }
+
+        values = Array(values.sorted { $0.capturedAt > $1.capturedAt }.prefix(Self.maximumDailySummaryCount))
+        guard let data = try? JSONEncoder().encode(values) else { return false }
+        defaults.set(data, forKey: keyPrefix + vehicleID.uuidString)
+        return true
+    }
+
+    public func clear(for vehicleID: UUID?) {
+        guard let vehicleID else { return }
+        defaults.removeObject(forKey: keyPrefix + vehicleID.uuidString)
+    }
+
+    private static func dayKey(for date: Date) -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
+        let components = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(
+            format: "%04ld-%02ld-%02ld",
+            components.year ?? 0,
+            components.month ?? 0,
+            components.day ?? 0
+        )
+    }
+}
+
+public nonisolated enum PTVehicleConnectionQuality: String, Codable, Equatable, Sendable {
+    case unknown
+    case degraded
+    case good
+}
+
+// EN: Connection quality is a conservative count of fresh real samples, not a radio signal-strength claim.
+// ES: La calidad es un recuento conservador de muestras reales recientes, no una afirmación sobre la señal de radio.
+// 中文：连接质量只保守统计新鲜真实样本，不冒充无线信号强度指标。
+public nonisolated enum PTVehicleConnectionQualityEvaluator {
+    public static func evaluate(
+        snapshot: PTVehicleTelemetrySnapshot,
+        at date: Date = Date()
+    ) -> PTVehicleConnectionQuality {
+        let availability: [Bool] = [
+            snapshot.dashboardSpeedKmh.map { $0.source.isVerifiedReal && $0.isFresh(at: date, maximumAge: 2) } ?? false,
+            snapshot.frontWheelSpeedKmh.map { $0.source.isVerifiedReal && $0.isFresh(at: date, maximumAge: 2) } ?? false,
+            snapshot.engineRPM.map { $0.source.isVerifiedReal && $0.isFresh(at: date, maximumAge: 2) } ?? false,
+            snapshot.fuelPercent.map { $0.source.isVerifiedReal && $0.isFresh(at: date, maximumAge: 2) } ?? false,
+            snapshot.batteryVoltage.map { $0.source.isVerifiedReal && $0.isFresh(at: date, maximumAge: 2) } ?? false,
+            snapshot.engineStatus.map { $0.source.isVerifiedReal && $0.isFresh(at: date, maximumAge: 2) } ?? false,
+            snapshot.leftTurnOn.map { $0.source.isVerifiedReal && $0.isFresh(at: date, maximumAge: 2) } ?? false,
+            snapshot.rightTurnOn.map { $0.source.isVerifiedReal && $0.isFresh(at: date, maximumAge: 2) } ?? false,
+            snapshot.absLightOn.map { $0.source.isVerifiedReal && $0.isFresh(at: date, maximumAge: 2) } ?? false
+        ]
+
+        let sampleCount = [
+            snapshot.dashboardSpeedKmh != nil,
+            snapshot.frontWheelSpeedKmh != nil,
+            snapshot.engineRPM != nil,
+            snapshot.fuelPercent != nil,
+            snapshot.batteryVoltage != nil,
+            snapshot.engineStatus != nil,
+            snapshot.leftTurnOn != nil,
+            snapshot.rightTurnOn != nil,
+            snapshot.absLightOn != nil
+        ].filter { $0 }.count
+
+        guard sampleCount > 0 else { return .unknown }
+
+        let freshRealCount = availability.filter { $0 }.count
+
+        switch freshRealCount {
+        case 0: return .unknown
+        case 1...2: return .degraded
+        default: return .good
+        }
+    }
+}
+
+public nonisolated enum PTReadOnlyEvidenceState: String, Codable, Equatable, Sendable {
+    case unavailable
+    case observed
+    case confirmed
+}
+
+// EN: Fingerprints describe what was read and never imply that a bootloader or calibration write is safe.
+// ES: Las huellas describen lo leído y nunca implican que sea segura una escritura del bootloader o la calibración.
+// 中文：指纹只描述已读取内容，绝不表示 Bootloader 或 Calibration 写入是安全的。
+public nonisolated struct PTECUReadOnlyFingerprint: Codable, Equatable, Sendable {
+    public let ecuVersion: String?
+    public let cvn: String?
+    public let protocolName: String?
+    public let confirmedDIDs: [String]
+    public let bootloaderEvidence: PTReadOnlyEvidenceState
+    public let calibrationEvidence: PTReadOnlyEvidenceState
+    public let capturedAt: Date
+
+    public init(
+        ecuVersion: String? = nil,
+        cvn: String? = nil,
+        protocolName: String? = nil,
+        confirmedDIDs: [String] = [],
+        bootloaderEvidence: PTReadOnlyEvidenceState = .unavailable,
+        calibrationEvidence: PTReadOnlyEvidenceState = .unavailable,
+        capturedAt: Date = Date()
+    ) {
+        self.ecuVersion = ecuVersion
+        self.cvn = cvn
+        self.protocolName = protocolName
+        self.confirmedDIDs = Array(Set(confirmedDIDs.map { $0.uppercased() })).sorted()
+        self.bootloaderEvidence = bootloaderEvidence
+        self.calibrationEvidence = calibrationEvidence
+        self.capturedAt = capturedAt
+    }
+}
+
 // EN: Battery analysis is advisory; it exposes measured medians instead of pretending to diagnose a battery brand.
 // ES: El análisis de batería es orientativo; muestra medianas medidas y no pretende diagnosticar una marca concreta.
 // 中文：电瓶分析仅作参考，展示实测中位数，不冒充对具体电瓶品牌的诊断。
-public enum PTBatteryHealthAnalyzer {
+public nonisolated enum PTBatteryHealthAnalyzer {
     public static func summarize(
         observations: [PTBatteryObservation],
         capturedAt: Date = Date()
@@ -554,7 +845,7 @@ public enum PTBatteryHealthAnalyzer {
 // EN: These records are intentionally raw-value based so they do not depend on the protected BLE file's internal enums.
 // ES: Estos registros usan valores crudos y no dependen de los enums internos del archivo BLE protegido.
 // 中文：这些记录使用原始值，避免依赖受保护 BLE 文件中的内部枚举。
-public struct PTDashboardConfigurationProfile: Codable, Equatable, Sendable {
+public nonisolated struct PTDashboardConfigurationProfile: Codable, Equatable, Sendable {
     public let colorRawValue: UInt8
     public let unitRawValue: UInt8
     public let languageRawValue: UInt8
@@ -619,5 +910,43 @@ public struct PTMountCalibration: Codable, Equatable, Sendable {
         self.pitchOffset = pitchOffset
         self.yawOffset = yawOffset
         self.updatedAt = updatedAt
+    }
+}
+
+// EN: Mount calibration is keyed by the selected motorcycle so one phone mount never changes another profile.
+// ES: La calibración se guarda por motocicleta seleccionada para que un soporte no cambie otro perfil.
+// 中文：支架校准按当前摩托车保存，避免一辆车的安装角度影响另一辆车。
+@MainActor
+public final class PTMountCalibrationStore {
+    public static let shared = PTMountCalibrationStore()
+
+    private let defaults: UserDefaults
+    private let keyPrefix = "PTMountCalibration."
+
+    public init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    public func calibration(for vehicleID: UUID?) -> PTMountCalibration? {
+        guard let vehicleID,
+              let data = defaults.data(forKey: keyPrefix + vehicleID.uuidString) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(PTMountCalibration.self, from: data)
+    }
+
+    @discardableResult
+    public func save(_ calibration: PTMountCalibration, for vehicleID: UUID?) -> Bool {
+        guard let vehicleID,
+              let data = try? JSONEncoder().encode(calibration) else {
+            return false
+        }
+        defaults.set(data, forKey: keyPrefix + vehicleID.uuidString)
+        return true
+    }
+
+    public func remove(for vehicleID: UUID?) {
+        guard let vehicleID else { return }
+        defaults.removeObject(forKey: keyPrefix + vehicleID.uuidString)
     }
 }

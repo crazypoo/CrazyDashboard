@@ -456,6 +456,13 @@ nonisolated public struct PTGarageDiagnosticReport: Codable, Equatable, Identifi
     public let mode6Results: [String]?
     public let freezeFrame: [String]?
     public let failureReasons: [String]?
+    // EN: These optional fields extend the health report without breaking older garage records.
+    // ES: Estos campos opcionales amplían el informe sin romper los registros antiguos del garaje.
+    // 中文：这些可选字段扩展健康报告，同时兼容旧车库记录。
+    public let batteryHealthSummary: PTBatteryHealthSummary?
+    public let wheelSpeedConsistency: PTWheelSpeedConsistencyResult?
+    public let connectionQuality: PTVehicleConnectionQuality?
+    public let ecuFingerprint: PTECUReadOnlyFingerprint?
 
     nonisolated public init(
         id: UUID = UUID(),
@@ -470,7 +477,11 @@ nonisolated public struct PTGarageDiagnosticReport: Codable, Equatable, Identifi
         confirmedDTCs: [String]? = nil,
         mode6Results: [String]? = nil,
         freezeFrame: [String]? = nil,
-        failureReasons: [String]? = nil
+        failureReasons: [String]? = nil,
+        batteryHealthSummary: PTBatteryHealthSummary? = nil,
+        wheelSpeedConsistency: PTWheelSpeedConsistencyResult? = nil,
+        connectionQuality: PTVehicleConnectionQuality? = nil,
+        ecuFingerprint: PTECUReadOnlyFingerprint? = nil
     ) {
         self.id = id
         self.capturedAt = capturedAt
@@ -485,6 +496,10 @@ nonisolated public struct PTGarageDiagnosticReport: Codable, Equatable, Identifi
         self.mode6Results = mode6Results
         self.freezeFrame = freezeFrame
         self.failureReasons = failureReasons
+        self.batteryHealthSummary = batteryHealthSummary
+        self.wheelSpeedConsistency = wheelSpeedConsistency
+        self.connectionQuality = connectionQuality
+        self.ecuFingerprint = ecuFingerprint
     }
 
     nonisolated public init(
@@ -517,6 +532,42 @@ nonisolated public struct PTGarageDiagnosticReport: Codable, Equatable, Identifi
 
     public var failedDIDCount: Int {
         didResults.count - successfulDIDCount
+    }
+
+    // EN: Export redaction removes VIN-bearing fields while retaining diagnostic structure and status.
+    // ES: La redacción de exportación elimina campos con VIN y conserva la estructura y el estado del diagnóstico.
+    // 中文：导出脱敏会移除包含 VIN 的字段，但保留诊断结构和状态。
+    public func redactedForExport() -> PTGarageDiagnosticReport {
+        let redactedDIDs = didResults.map { record in
+            let isVIN = record.did.uppercased() == "F190"
+            return PTGarageDIDRecord(
+                did: record.did,
+                rawResponse: isVIN ? "<redacted>" : record.rawResponse,
+                payloadHex: isVIN ? "<redacted>" : record.payloadHex,
+                decodedText: isVIN ? "<redacted>" : record.decodedText,
+                status: record.status,
+                negativeResponseCode: record.negativeResponseCode
+            )
+        }
+        return PTGarageDiagnosticReport(
+            id: id,
+            capturedAt: capturedAt,
+            vin: "<redacted>",
+            ecuVersion: ecuVersion,
+            cvn: cvn,
+            protocolName: protocolName,
+            adapterName: adapterName,
+            supportedCommandCount: supportedCommandCount,
+            didResults: redactedDIDs,
+            confirmedDTCs: confirmedDTCs,
+            mode6Results: mode6Results,
+            freezeFrame: freezeFrame,
+            failureReasons: failureReasons,
+            batteryHealthSummary: batteryHealthSummary,
+            wheelSpeedConsistency: wheelSpeedConsistency,
+            connectionQuality: connectionQuality,
+            ecuFingerprint: ecuFingerprint
+        )
     }
 }
 
@@ -1781,6 +1832,65 @@ public final class PTMotorcycleGarageStore {
         touchVehicle(at: index)
         persist()
         return true
+    }
+
+    // EN: Export only the latest read-only report and redact vehicle identity before sharing it.
+    // ES: Exporta solo el último informe de solo lectura y redacta la identidad antes de compartirlo.
+    // 中文：只导出最新的只读报告，并在分享前脱敏车辆身份。
+    public func exportLatestDiagnosticReportURL(
+        format: PTRideSafetyExportFormat
+    ) throws -> URL? {
+        guard let report = currentVehicle?.diagnosticReports.first else { return nil }
+        let exportReport = report.redactedForExport()
+        let fileName = "xp400-diagnostic-\(Int(Date().timeIntervalSince1970)).\(format.fileExtension)"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+
+        if format == .json {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            try encoder.encode(exportReport).write(to: url, options: .atomic)
+            return url
+        }
+
+        let csvField: (String) -> String = {
+            "\"\($0.replacingOccurrences(of: "\"", with: "\"\""))\""
+        }
+        var rows = ["section,field,value"]
+        func append(_ section: String, _ field: String, _ value: String?) {
+            guard let value, !value.isEmpty else { return }
+            rows.append([section, field, value].map(csvField).joined(separator: ","))
+        }
+
+        append("report", "id", exportReport.id.uuidString)
+        append("report", "capturedAt", ISO8601DateFormatter().string(from: exportReport.capturedAt))
+        append("report", "vin", exportReport.vin)
+        append("report", "ecuVersion", exportReport.ecuVersion)
+        append("report", "cvn", exportReport.cvn)
+        append("report", "protocolName", exportReport.protocolName)
+        append("report", "adapterName", exportReport.adapterName)
+        append("report", "supportedCommandCount", String(exportReport.supportedCommandCount))
+        append("report", "connectionQuality", exportReport.connectionQuality?.rawValue)
+        if let battery = exportReport.batteryHealthSummary {
+            append("battery", "restingMedianVoltage", battery.restingMedianVoltage.map { String($0) })
+            append("battery", "crankingMinimumVoltage", battery.crankingMinimumVoltage.map { String($0) })
+            append("battery", "runningMedianVoltage", battery.runningMedianVoltage.map { String($0) })
+            append("battery", "confidence", String(battery.confidence))
+            append("battery", "observationCount", String(battery.observationCount))
+        }
+        if let wheels = exportReport.wheelSpeedConsistency {
+            append("wheelSpeed", "state", wheels.state.rawValue)
+            append("wheelSpeed", "absoluteRatio", String(wheels.absoluteRatio))
+            append("wheelSpeed", "rearMinusFrontKmh", String(wheels.rearMinusFrontKmh))
+        }
+        exportReport.didResults.forEach { result in
+            append("did", "\(result.did).status", result.status)
+            append("did", "\(result.did).rawResponse", result.rawResponse)
+            append("did", "\(result.did).payloadHex", result.payloadHex)
+            append("did", "\(result.did).decodedText", result.decodedText)
+            append("did", "\(result.did).negativeResponseCode", result.negativeResponseCode)
+        }
+        try Data(rows.joined(separator: "\n").utf8).write(to: url, options: .atomic)
+        return url
     }
 
     /// EN: Save only the currently connected adapter's read-only identity and DID evidence.

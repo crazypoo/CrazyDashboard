@@ -17,6 +17,7 @@ import DeviceKit
 import Bugly
 import SafeSFSymbols
 import QWeatherSDK
+import TipKit
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -48,6 +49,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // ES: Registra una vez el diagnóstico agregado de rendimiento sin recopilar cargas del vehículo.
         // 中文：只注册一次聚合性能诊断，不收集车辆报文内容。
         PTPerformanceMonitor.shared.start()
+
+        // EN: Configure TipKit once so contextual hints can be dismissed and remembered by the system.
+        // ES: Configura TipKit una vez para que el sistema pueda recordar las sugerencias descartadas.
+        // 中文：只配置一次 TipKit，让系统记录用户已关闭的上下文提示。
+        if #available(iOS 17.0, *) {
+            do {
+                try Tips.configure()
+            } catch {
+                PTNSLogConsole("⚠️ [TipKit] 配置失败，继续运行主流程: (error.localizedDescription)")
+            }
+        }
 
         if PTMotoUserDefaultStruct.appFirst {
             // EN: Match the first supported app language against the system preference, including region variants.

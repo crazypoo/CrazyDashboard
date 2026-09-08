@@ -8,7 +8,7 @@
 >
 > 发布方式：只维护现有 `PTSpeed` TestFlight 版本，不新增 Lab Scheme、App Target、Bundle ID 或第二发布渠道；当前没有 App Store 上架计划。
 >
-> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 已进入 Build 52；Build 48 保留为本轮语言问题的回归基线。
+> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 已进入 Build 55；Build 48 保留为本轮语言问题的回归基线。
 >
 > 文件名中的 `V3` 仅为保留现有路径和链接，不代表需要修改 App 大版本号。
 >
@@ -46,10 +46,10 @@
 ### 版本与 Build 规则
 
 - [x] `PTSpeed`、Widget 和 Watch 的 `MARKETING_VERSION` 保持 `2.0.8`。
-- [x] 当前主 App、Widget、Watch 和 Tests Build 已统一为 `49`；Build 48 作为本轮回归基线。
+- [x] 当前主 App、Widget、Watch 和 Tests Build 已统一为 `55`；Build 48 作为本轮回归基线。
 - [x] 每次上传 TestFlight 只将 `CURRENT_PROJECT_VERSION` 加一：44、45、46……
 - [x] App、Widget、Watch 和 Tests 每次使用完全相同的 Build 号；Build 45 Debug/Release 目标构建和无签名 Archive 已按对应验收记录核验。
-- [x] Tests Target 已同步到主 App Build `45`，此后与主 App、Widget 和 Watch 一起递增。
+- [x] Tests Target 已同步到主 App Build `55`，此后与主 App、Widget 和 Watch 一起递增。
 - [ ] 不允许脚本、Archive 或 CI 自动修改 `MARKETING_VERSION`。
 - [ ] 设置页和诊断报告显示格式统一为 `2.0.8 (Build N)`。
 - [ ] 不把 Build 号加入仪表 BLE 认证、握手、广播或配置数据。
@@ -1765,3 +1765,64 @@ Build 53 继续使用营销版本 `2.0.8`，主 App、Widget、Watch 和测试�
 - 若长途行程需要完整高频轨迹，可只调高 `PTTripManager` 的采样预算或替换离线压缩策略，不恢复无限增长的并行数组。
 - 若 PTT 会话校验与某些旧 Multipeer 回调队列不兼容，只回退 `processReceivedData` 的队列接线并保留 `isRunning`/session 身份校验；不恢复启动自动激活 Live Activity。
 - 若 MetricKit 或 signpost 在某个系统版本不可用，移除 `PTPerformanceMonitor` 注册即可，不影响车辆链路、PTT、车库或导航功能。
+
+## 35. Build 54 骑手健康与安全能力实施记录（2026-09-08）
+
+Build 54 的能力与 Build 55 一起在营销版本 `2.0.8 (Build 55)` 交付。实现位于稳定 BLE/OBD 核心之外，所有自动判断都要求真实、当前且有时间戳的遥测；Mock 仅用于界面演示，不进入电瓶历史或真实安全提醒。
+
+### 35.1 工作包与状态
+
+| 状态 | ID | 实施结果 | 外部验收 |
+| --- | --- | --- | --- |
+| 🟨 | `B54-01` | 电瓶静置/启动/运行阶段摘要；按车辆保存每日摘要，最多 365 天 | 真实 Data2 电压、长时间静置和真车阈值待验证 |
+| 🟨 | `B54-02` | 转向灯遗忘提醒与 ABS 异常驻留提醒；包含速度、持续时间、真实来源、去重和断开重置 | 真实仪表状态、通知权限和误报率待验证 |
+| 🟨 | `B54-03` | 安全中心提供手机支架静止 3 秒校准，按车辆保存横滚/俯仰/偏航零点 | 不同 iPhone 安装方向、车辆振动和道路场景待验证 |
+| 🟨 | `B54-04` | 仪表颜色/单位/语言写入增加真实仪表、低速、连续静止 3 秒、用户确认和 5 秒 Data3 回读门禁 | 真实仪表回读和失败恢复待验证；不支持 Mock 写入 |
+| 🟨 | `B54-05` | 诊断中心合并电瓶、轮速一致性、连接质量、DTC、Mode 6、DID、Freeze Frame 和只读 ECU 指纹，并支持脱敏 JSON/CSV 导出 | 真实 OBD 节点、DID 和报告内容待验证 |
+| 🟨 | `B54-06` | TipKit 接入首次绑定、支架校准和仪表配置三个上下文提示 | 首次展示、关闭状态和不同系统版本待验证 |
+
+### 35.2 保护边界
+
+- 不修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift` 或 `PTOBDCommand.swift`；不新增传输层、响应拼接器、轮询引擎或认证逻辑。
+- 普通设置页面不开放固件、Logo、Seed-Key、ECU 写入或重启；真实仪表配置仍复用现有发送入口，并且只有 Data3 回读与目标值一致才报告成功。
+- 电瓶历史、轮速分析和安全提醒都只消费 `PTVehicleConnectivityCoordinator` 的真实遥测投影；断开或来源失效时清理瞬时状态，不把缓存当作在线车辆状态。
+
+### 35.3 已完成验证与剩余验收
+
+- [x] 新增 Swift 值类型、测试用例、十语言资源、车库诊断报告字段和 TipKit 工程接入。
+- [x] Swift 文件语法检查、String Catalog JSON 检查、工程文件校验和 `git diff --check` 通过。
+- [x] PTSpeed Debug generic iOS build 已通过；Tests 的 `build-for-testing` 仍需最终回合复核。
+- [ ] XCTest 实际执行、签名 Archive、TestFlight、真实 iPhone/Watch、XP400 GT 和长途骑行验证仍待完成；generic build 不能替代这些验证。
+
+## 36. Build 55 XP400 协议证据实验室实施记录（2026-09-08）
+
+Build 55 使用 `2.0.8 (Build 55)`。本轮把“官方设置变化 → BLE/OBD/CAN 观察 → 可复核证据”接入现有 Dev 入口，只记录证据，不把候选数据自动提升为可执行指令。
+
+### 36.1 工作包与状态
+
+| 状态 | ID | 实施结果 | 外部验收 |
+| --- | --- | --- | --- |
+| 🧪 | `B55-01` | CAN Lab 增加颜色、单位和五种已验证仪表语言的 A→B→A 实验向导，自动记录基线、操作时间、Data3 当前值和 CAN 前后窗口摘要 | 需用官方 App 在真实 XP400 GT 上逐项重复 |
+| 🧪 | `B55-02` | 以 40/25/20/15 规则评分；达到 80 分只进入候选；JSON/CSV 可导出；未知字段和 Bit 只记录 | 需人工核对三次操作、反向变化和 Data3 回读 |
+| 🧪 | `B55-03` | 关联同一车辆时间相近的 BLE/OBD 被动会话，展示通道、车辆匿名标识和会话范围；导出脱敏 | 需不同适配器、连接并发和时间偏差实测 |
+| 🧪 | `B55-04` | 诊断中心记录 ECU/仪表只读指纹、软件版本、协议、已确认 DID 目录，以及 Bootloader/Calibration 只读状态 | 需真实 ECU/DID 覆盖；当前不代表协议已确认 |
+
+### 36.2 固件与写入策略
+
+- A/B/A 实验不发送新的设置命令；开发者须通过已验证的官方 App 完成可逆变化，再在 PTSpeed 中标记时间点。
+- 候选评分永远不会自动生成或执行写入命令。固件、启动画面、语言扩展、Seed-Key 和 ECU 写入仍停留在 readiness/证据状态。
+- 在没有真实 Bootloader、备份、CRC、ACK、断点恢复、稳定供电和台架回滚证据前，不从 Dev 界面开放实际刷写；本轮只读指纹和证据导出不改变车辆。
+- VIN、坐标、身份信息和 F190 原始值在诊断/实验导出中脱敏；不把未知 BLE/OBD 字段发送到车辆。
+
+### 36.3 已完成验证与剩余验收
+
+- [x] A/B/A 模型、窗口分析、评分规则、会话关联、只读指纹和 JSON/CSV 导出已接入现有工程。
+- [x] 候选阈值测试、语法检查、String Catalog 检查、工程校验和 `git diff --check` 已通过。
+- [x] 主 App Build 55 工程配置已写入；营销版本保持 `2.0.8`；三个稳定 BLE/OBD 核心文件零字节变化。
+- [ ] XCTest 实际执行、签名发布、真实 iPhone/ELM327/XP400 GT、官方设置 A/B/A 重复性和人工协议审查仍待完成。
+
+### 36.4 回滚边界
+
+- 若提醒或校准影响骑行界面，只移除对应外围投影、通知和安全中心入口，不触碰 BLE/OBD 稳定核心。
+- 若协议证据实验影响 CAN Lab，只移除 A/B/A 向导、自动关联和候选导出，保留原有被动 Capture、解析和历史文件。
+- 若只读指纹字段与某车型不匹配，降级为 `unavailable/observed`，禁止将观察结果标记为 confirmed，也不开放任何写入路径。

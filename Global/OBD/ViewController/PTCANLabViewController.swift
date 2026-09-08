@@ -25,11 +25,16 @@ final class PTCANLabViewController: PTMotoBaseViewController {
     private let startButton = UIButton(type: .system)
     private let stopButton = UIButton(type: .system)
     private let markButton = UIButton(type: .system)
+    private let experimentButton = UIButton(type: .system)
     private var files: [URL] = []
     private var comparisonFiles: [URL] = []
     private var captureTask: Task<Void, Never>?
     private var analysisTask: Task<Void, Never>?
     private var safetyObserver: NSObjectProtocol?
+    private var experimentSetting: PTProtocolExperimentSetting?
+    private var experimentLanguageTarget: PTConfigLanguage?
+    private var experimentMarkers: [PTProtocolExperimentMarker] = []
+    private var experimentStartedAt: Date?
 
     lazy var reloadButton:PTBaseButton = {
         let view = PTBaseButton(type:.custom)
@@ -85,7 +90,7 @@ final class PTCANLabViewController: PTMotoBaseViewController {
         view.addSubview(tableView)
 
         if mode == .developerCapture {
-            tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 126, right: 0)
+            tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 170, right: 0)
         }
         NSLayoutConstraint.activate([
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -104,13 +109,15 @@ final class PTCANLabViewController: PTMotoBaseViewController {
         configure(button: startButton, title: localized("can_lab_capture_start"), color: .systemGreen)
         configure(button: stopButton, title: localized("can_lab_capture_stop"), color: .systemRed)
         configure(button: markButton, title: localized("can_lab_capture_mark"), color: .systemOrange)
+        configure(button: experimentButton, title: localized("can_lab_experiment"), color: .systemBlue)
         startButton.addTarget(self, action: #selector(startCapture), for: .touchUpInside)
         stopButton.addTarget(self, action: #selector(stopCapture), for: .touchUpInside)
         markButton.addTarget(self, action: #selector(markCaptureEvent), for: .touchUpInside)
+        experimentButton.addTarget(self, action: #selector(startExperiment), for: .touchUpInside)
         stopButton.isEnabled = false
         markButton.isEnabled = false
 
-        let stack = UIStackView(arrangedSubviews: [statusLabel, startButton, stopButton, markButton])
+        let stack = UIStackView(arrangedSubviews: [statusLabel, startButton, stopButton, markButton, experimentButton])
         stack.axis = .vertical
         stack.spacing = 8
         stack.translatesAutoresizingMaskIntoConstraints = false
@@ -122,7 +129,8 @@ final class PTCANLabViewController: PTMotoBaseViewController {
             stack.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -8),
             startButton.heightAnchor.constraint(equalToConstant: 36),
             stopButton.heightAnchor.constraint(equalToConstant: 36),
-            markButton.heightAnchor.constraint(equalToConstant: 36)
+            markButton.heightAnchor.constraint(equalToConstant: 36),
+            experimentButton.heightAnchor.constraint(equalToConstant: 36)
         ])
     }
 
@@ -172,6 +180,7 @@ final class PTCANLabViewController: PTMotoBaseViewController {
     // 中文：停止活动抓包，并在安全门禁撤销时保留停止原因。
     private func stopActiveCapture(statusKey: String?) {
         guard mode == .developerCapture, captureTask != nil else { return }
+        resetExperiment()
         captureTask?.cancel()
         captureTask = nil
         Task { @MainActor [weak self] in
@@ -221,13 +230,177 @@ final class PTCANLabViewController: PTMotoBaseViewController {
         }
     }
 
+    // EN: Guide the developer through a reversible A/B/A experiment without sending any new command.
+    // ES: Guía al desarrollador por un experimento reversible A/B/A sin enviar ningún comando nuevo.
+    // 中文：引导开发者完成可逆的 A/B/A 实验，但不发送任何新指令。
+    @objc private func startExperiment() {
+        guard mode == .developerCapture, captureTask != nil else {
+            statusLabel.text = localized("can_lab_experiment_requires_capture")
+            return
+        }
+
+        let alert = UIAlertController(
+            title: localized("can_lab_experiment"),
+            message: localized("can_lab_experiment_hint"),
+            preferredStyle: .actionSheet
+        )
+        [PTProtocolExperimentSetting.color, .unit].forEach { setting in
+            alert.addAction(UIAlertAction(
+                title: localized("can_lab_experiment_setting_\(setting.rawValue)"),
+                style: .default
+            ) { [weak self] _ in
+                self?.beginExperiment(setting: setting, targetLanguage: nil)
+            })
+        }
+        PTConfigLanguage.allCases.forEach { language in
+            alert.addAction(UIAlertAction(
+                title: "\(localized("can_lab_experiment_setting_language")) · \(language.getTypeName())",
+                style: .default
+            ) { [weak self] _ in
+                self?.beginExperiment(setting: .language, targetLanguage: language)
+            })
+        }
+        alert.addAction(UIAlertAction(title: localized("button_cancel"), style: .cancel))
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = experimentButton
+            popover.sourceRect = experimentButton.bounds
+        }
+        present(alert, animated: true)
+    }
+
+    private func beginExperiment(
+        setting: PTProtocolExperimentSetting,
+        targetLanguage: PTConfigLanguage?
+    ) {
+        experimentSetting = setting
+        experimentLanguageTarget = targetLanguage
+        experimentMarkers.removeAll(keepingCapacity: true)
+        experimentStartedAt = Date()
+        // EN: Capture the baseline automatically so the first marker cannot be forgotten.
+        // ES: Captura la línea base automáticamente para que no se olvide la primera marca.
+        // 中文：自动记录基线，避免用户忘记第一个标记。
+        recordExperimentMarker(setting: setting, phase: .baseline)
+    }
+
+    private func presentExperimentStep() {
+        guard let setting = experimentSetting,
+              experimentMarkers.count < 4 else {
+            finishExperiment()
+            return
+        }
+
+        let phases: [PTProtocolExperimentPhase] = [.baseline, .firstA, .b, .secondA]
+        let phase = phases[experimentMarkers.count]
+        let alert = UIAlertController(
+            title: localized("can_lab_experiment_step_\(phase.rawValue)"),
+            message: localized("can_lab_experiment_step_hint"),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: localized("can_lab_experiment_mark"), style: .default) { [weak self] _ in
+            self?.recordExperimentMarker(setting: setting, phase: phase)
+        })
+        alert.addAction(UIAlertAction(title: localized("button_cancel"), style: .cancel) { [weak self] _ in
+            self?.resetExperiment()
+        })
+        present(alert, animated: true)
+    }
+
+    private func recordExperimentMarker(
+        setting: PTProtocolExperimentSetting,
+        phase: PTProtocolExperimentPhase
+    ) {
+        guard captureTask != nil else {
+            resetExperiment()
+            return
+        }
+
+        let data3 = PTBluetoothServerManager.shared.latestData3
+        let value: Int?
+        let canReadSetting: Bool = {
+            guard let data3 else { return false }
+            switch setting {
+            case .color, .unit:
+                return data3.configurationAvailability.isAvailable
+            case .language:
+                return data3.languageAvailability.isAvailable
+            }
+        }()
+        if let data3, canReadSetting {
+            switch setting {
+            case .color: value = Int(data3.dashboardColor.rawValue)
+            case .unit: value = Int(data3.unitType.rawValue)
+            case .language: value = Int(data3.languageType.rawValue)
+            }
+        } else {
+            value = nil
+        }
+
+        _ = PTCANRecorder.shared.markEvent("experiment-\(setting.rawValue)-\(phase.rawValue)")
+        experimentMarkers.append(
+            PTProtocolExperimentMarker(
+                phase: phase,
+                value: value,
+                data3Confirmed: value != nil,
+                captureFileName: PTCANRecorder.shared.currentFileURL?.lastPathComponent
+            )
+        )
+        if experimentMarkers.count == 4 {
+            finishExperiment()
+        } else {
+            presentExperimentStep()
+        }
+    }
+
+    private func finishExperiment() {
+        guard let setting = experimentSetting,
+              let startedAt = experimentStartedAt else {
+            resetExperiment()
+            return
+        }
+        let windowEvidence: [PTProtocolExperimentWindowEvidence]? = {
+            guard let session = PTCANRecorder.shared.snapshot() else { return nil }
+            return experimentMarkers.map { marker in
+                let analysis = PTCANEventAnalyzer.analyze(
+                    session: session,
+                    eventTimestamp: marker.capturedAt.timeIntervalSince1970
+                )
+                return PTProtocolExperimentWindowEvidence(
+                    phase: marker.phase,
+                    capturedAt: marker.capturedAt,
+                    frameCount: analysis.frames.count,
+                    changedHeaderCount: analysis.interestingIDs.count,
+                    candidateHeaders: analysis.interestingHeaders
+                )
+            }
+        }()
+        let report = PTProtocolExperimentReport(
+            setting: setting,
+            startedAt: startedAt,
+            markers: experimentMarkers,
+            windowEvidence: windowEvidence,
+            targetLanguageRawValue: experimentLanguageTarget.map { Int($0.rawValue) }
+        )
+        PTProtocolExperimentStore.shared.save(report)
+        statusLabel.text = "\(localized("can_lab_experiment_result")) · \(report.candidateScore)/100"
+        resetExperiment()
+    }
+
+    private func resetExperiment() {
+        experimentSetting = nil
+        experimentLanguageTarget = nil
+        experimentMarkers.removeAll(keepingCapacity: true)
+        experimentStartedAt = nil
+    }
+
     private func updateCaptureControls(isCapturing: Bool) {
         startButton.isEnabled = !isCapturing
         stopButton.isEnabled = isCapturing
         markButton.isEnabled = isCapturing
+        experimentButton.isEnabled = isCapturing
         startButton.alpha = isCapturing ? 0.45 : 1
         stopButton.alpha = isCapturing ? 1 : 0.45
         markButton.alpha = isCapturing ? 1 : 0.45
+        experimentButton.alpha = isCapturing ? 1 : 0.45
     }
 
     private func presentActions(for fileURL: URL) {

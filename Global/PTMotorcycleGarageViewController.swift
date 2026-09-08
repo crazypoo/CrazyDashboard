@@ -49,6 +49,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
     private let addRefuelButton: UIButton
     private let saveOBDButton: UIButton
     private let addPartButton: UIButton
+    private var bindingTipViewController: UIViewController?
 
     init(store: PTMotorcycleGarageStore? = nil) {
         self.store = store ?? PTMotorcycleGarageStore.shared
@@ -176,6 +177,20 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         ])
         vehicleBody.axis = .vertical
         vehicleBody.spacing = 8
+
+        // EN: Show the first-binding hint only before a garage vehicle exists.
+        // ES: Muestra la sugerencia de primera vinculación solo antes de que exista un vehículo.
+        // 中文：只有在车库还没有车辆时显示首次绑定提示。
+        if #available(iOS 17.0, *), store.currentVehicle == nil {
+            let tipViewController = PTTipKitHintFactory.makeViewController(PTVehicleBindingTip())
+            addChild(tipViewController)
+            tipViewController.view.setContentHuggingPriority(.required, for: .vertical)
+            tipViewController.view.setContentCompressionResistancePriority(.required, for: .vertical)
+            tipViewController.view.heightAnchor.constraint(greaterThanOrEqualToConstant: 72).isActive = true
+            vehicleBody.addArrangedSubview(tipViewController.view)
+            tipViewController.didMove(toParent: self)
+            bindingTipViewController = tipViewController
+        }
 
         let maintenanceActionRows = UIStackView(arrangedSubviews: [
             makeButtonRow([maintenanceWarningButton, addMaintenanceButton, scanReceiptButton]),

@@ -45,6 +45,11 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
     // ES: Cancela el tiempo de espera de cinco segundos cuando la solicitud termina antes.
     // 中文：配置提前完成时取消 5 秒确认超时任务。
     private var dashboardConfigurationTimeout: DispatchWorkItem?
+    private var dashboardConfigurationSafetyTimer: Timer?
+    private var dashboardConfigurationSafetyStableSince: Date?
+    private var dashboardConfigurationSafetyDeadline: Date?
+    private var pendingDashboardConfigurationCandidate: PTDashboardConfigurationExpectation?
+    private var dashboardConfigurationTipViewController: UIViewController?
 
     lazy var appLogo:UIImageView = {
         let view = UIImageView()
@@ -78,7 +83,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 let colorCase = PTConfigColor.allCases[index]
                 let uniConfig = PTBluetoothServerManager.shared.latestData3?.unitType ?? .metric
                 let language = PTBluetoothServerManager.shared.latestData3?.languageType ?? .english
-                self.sendDashboardConfiguration(color: colorCase, unit: uniConfig, language: language)
+                self.requestDashboardConfiguration(color: colorCase, unit: uniConfig, language: language)
             })
         })
         return view
@@ -107,7 +112,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 let colorType:PTConfigColor = PTBluetoothServerManager.shared.latestData3?.dashboardColor ?? .blue
                 let uniConfig = PTConfigUnit.allCases[index]
                 let language = PTBluetoothServerManager.shared.latestData3?.languageType ?? .english
-                self.sendDashboardConfiguration(color: colorType, unit: uniConfig, language: language)
+                self.requestDashboardConfiguration(color: colorType, unit: uniConfig, language: language)
             })
         })
         return view
@@ -135,7 +140,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 let colorType:PTConfigColor = PTBluetoothServerManager.shared.latestData3?.dashboardColor ?? .blue
                 let uniConfig = PTBluetoothServerManager.shared.latestData3?.unitType ?? .metric
                 let language = PTConfigLanguage.allCases[index]
-                self.sendDashboardConfiguration(color: colorType, unit: uniConfig, language: language)
+                self.requestDashboardConfiguration(color: colorType, unit: uniConfig, language: language)
             })
         })
         return view
@@ -295,6 +300,20 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         view.addSubviews([garageButton, shortCut, shortcutsButton, socialStackView, versionLabel])
         
         setupSocialButtons()
+
+        // EN: Keep the configuration confirmation hint close to the dashboard controls.
+        // ES: Mantén la sugerencia de confirmación cerca de los controles del tablero.
+        // 中文：将配置确认提示放在仪表控制项附近。
+        if #available(iOS 17.0, *) {
+            let tipViewController = PTTipKitHintFactory.makeViewController(PTDashboardConfigurationTip())
+            addChild(tipViewController)
+            view.addSubview(tipViewController.view)
+            tipViewController.view.setContentHuggingPriority(.required, for: .vertical)
+            tipViewController.view.setContentCompressionResistancePriority(.required, for: .vertical)
+            tipViewController.view.heightAnchor.constraint(greaterThanOrEqualToConstant: 72).isActive = true
+            tipViewController.didMove(toParent: self)
+            dashboardConfigurationTipViewController = tipViewController
+        }
                 
         settingsContainer.snp.makeConstraints { make in
             make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing)
@@ -368,9 +387,20 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         }
         
         garageButton.snp.makeConstraints { make in
-            make.top.equalTo(settingsContainer.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            if let tipView = dashboardConfigurationTipViewController?.view {
+                make.top.equalTo(tipView.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            } else {
+                make.top.equalTo(settingsContainer.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            }
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.height.equalTo(44)
+        }
+
+        if let tipView = dashboardConfigurationTipViewController?.view {
+            tipView.snp.makeConstraints { make in
+                make.top.equalTo(settingsContainer.snp.bottom).offset(8)
+                make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            }
         }
 
         shortCut.snp.makeConstraints { make in
@@ -534,6 +564,110 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         globalChangeDashBoardData()
     }
 
+    // EN: Ask for confirmation before the stationary safety check and any write attempt.
+    // ES: Solicita confirmación antes de comprobar que la moto está parada y de intentar escribir.
+    // 中文：在静止安全检查和任何写入尝试前先请求用户确认。
+    private func requestDashboardConfiguration(color: PTConfigColor, unit: PTConfigUnit, language: PTConfigLanguage) {
+        let alert = UIAlertController(
+            title: PTDashboardConfig.languageFunc(text: "dashboard_config_safety_title"),
+            message: PTDashboardConfig.languageFunc(text: "dashboard_config_safety_message"),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "dashboard_config_confirm"),
+            style: .default
+        ) { [weak self] _ in
+            self?.startDashboardConfigurationSafetyCheck(
+                expectation: PTDashboardConfigurationExpectation(color: color, unit: unit, language: language)
+            )
+        })
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "button_cancel"),
+            style: .cancel
+        ))
+        present(alert, animated: true)
+    }
+
+    // EN: Require a fresh real-dashboard speed below 1 km/h for three continuous seconds.
+    // ES: Exige una velocidad fresca del tablero real inferior a 1 km/h durante tres segundos continuos.
+    // 中文：要求真实仪表的新鲜速度连续三秒低于 1 km/h。
+    private func startDashboardConfigurationSafetyCheck(expectation: PTDashboardConfigurationExpectation) {
+        cancelDashboardConfigurationWait()
+
+        let vehicleSnapshot = PTVehicleConnectivityCoordinator.shared.snapshot
+        guard vehicleSnapshot.dashboard.state == .connected,
+              vehicleSnapshot.dashboard.transport == .dashboardBluetooth else {
+            PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "dashboard_config_safety_real_only"))
+            return
+        }
+
+        pendingDashboardConfigurationCandidate = expectation
+        dashboardConfigurationSafetyStableSince = nil
+        dashboardConfigurationSafetyDeadline = Date().addingTimeInterval(10)
+        PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: "dashboard_config_safety_checking"))
+
+        let timer = Timer(timeInterval: 0.2, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.evaluateDashboardConfigurationSafety()
+            }
+        }
+        dashboardConfigurationSafetyTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
+        evaluateDashboardConfigurationSafety()
+    }
+
+    private func evaluateDashboardConfigurationSafety() {
+        guard let expectation = pendingDashboardConfigurationCandidate else { return }
+        guard Date() <= (dashboardConfigurationSafetyDeadline ?? .distantPast) else {
+            finishDashboardConfigurationSafety(
+                messageKey: "dashboard_config_safety_timeout"
+            )
+            return
+        }
+
+        let vehicleSnapshot = PTVehicleConnectivityCoordinator.shared.snapshot
+        guard vehicleSnapshot.dashboard.state == .connected,
+              vehicleSnapshot.dashboard.transport == .dashboardBluetooth else {
+            finishDashboardConfigurationSafety(messageKey: "dashboard_config_safety_real_only")
+            return
+        }
+
+        guard let speedSample = PTVehicleConnectivityCoordinator.shared.telemetrySnapshot.dashboardSpeedKmh,
+              speedSample.source == .dashboardBluetooth,
+              speedSample.isFresh(maximumAge: 2) else {
+            dashboardConfigurationSafetyStableSince = nil
+            return
+        }
+
+        guard speedSample.value < 1 else {
+            dashboardConfigurationSafetyStableSince = nil
+            return
+        }
+
+        dashboardConfigurationSafetyStableSince = dashboardConfigurationSafetyStableSince ?? Date()
+        guard Date().timeIntervalSince(dashboardConfigurationSafetyStableSince ?? Date()) >= 3 else { return }
+
+        dashboardConfigurationSafetyTimer?.invalidate()
+        dashboardConfigurationSafetyTimer = nil
+        dashboardConfigurationSafetyStableSince = nil
+        dashboardConfigurationSafetyDeadline = nil
+        pendingDashboardConfigurationCandidate = nil
+        sendDashboardConfiguration(
+            color: expectation.color,
+            unit: expectation.unit,
+            language: expectation.language
+        )
+    }
+
+    private func finishDashboardConfigurationSafety(messageKey: String) {
+        dashboardConfigurationSafetyTimer?.invalidate()
+        dashboardConfigurationSafetyTimer = nil
+        dashboardConfigurationSafetyStableSince = nil
+        dashboardConfigurationSafetyDeadline = nil
+        pendingDashboardConfigurationCandidate = nil
+        PTProgressHUD.show(text: PTDashboardConfig.languageFunc(text: messageKey))
+    }
+
     // EN: Show transport success immediately, then wait up to five seconds for the dashboard echo.
     // ES: Muestra el envío inmediato y espera hasta cinco segundos el eco del tablero.
     // 中文：传输成功后立即显示已发送，并等待仪表最多 5 秒回读确认。
@@ -592,6 +726,11 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         pendingDashboardConfiguration = nil
         dashboardConfigurationTimeout?.cancel()
         dashboardConfigurationTimeout = nil
+        dashboardConfigurationSafetyTimer?.invalidate()
+        dashboardConfigurationSafetyTimer = nil
+        dashboardConfigurationSafetyStableSince = nil
+        dashboardConfigurationSafetyDeadline = nil
+        pendingDashboardConfigurationCandidate = nil
     }
 
     // EN: Present the supported Siri and Shortcuts actions without exposing raw test URLs in the production settings page.

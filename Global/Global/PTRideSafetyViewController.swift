@@ -8,6 +8,7 @@
 //
 
 import CoreLocation
+import CoreMotion
 import UIKit
 import PooTools
 import SnapKit
@@ -16,6 +17,11 @@ import SnapKit
 final class PTRideSafetyViewController: PTMotoBaseViewController {
     private let scrollView = UIScrollView()
     private let stackView = UIStackView()
+    private let motionManager = CMMotionManager()
+    private var calibrationSamples: [(roll: Double, pitch: Double, yaw: Double)] = []
+    private var calibrationWorkItem: DispatchWorkItem?
+    private var isCalibratingMount = false
+    private var mountTipViewController: UIViewController?
 
     lazy var export : PTBaseButton = {
         let view = PTBaseButton(type: .custom)
@@ -73,6 +79,12 @@ final class PTRideSafetyViewController: PTMotoBaseViewController {
     private func reloadContent() {
         PTSecurityEventTimelineStore.shared.purgeExpired()
         PTRideSharedPointStore.shared.purgeExpired()
+        if let mountTipViewController {
+            mountTipViewController.willMove(toParent: nil)
+            mountTipViewController.view.removeFromSuperview()
+            mountTipViewController.removeFromParent()
+            self.mountTipViewController = nil
+        }
         stackView.arrangedSubviews.forEach {
             stackView.removeArrangedSubview($0)
             $0.removeFromSuperview()
@@ -136,6 +148,44 @@ final class PTRideSafetyViewController: PTMotoBaseViewController {
             body: PTDashboardConfig.languageFunc(text: "lidar_mounted_hint"),
             buttons: [lidarButton]
         ))
+
+        let vehicleID = PTMotorcycleGarageStore.shared.selectedVehicleID
+        let calibration = PTMountCalibrationStore.shared.calibration(for: vehicleID)
+        let calibrationBody: String
+        if let calibration {
+            calibrationBody = "\(PTDashboardConfig.languageFunc(text: "ride_mount_calibration_hint"))\n"
+                + String(format: "R %.2f° · P %.2f° · Y %.2f°", calibration.rollOffset, calibration.pitchOffset, calibration.yawOffset)
+        } else {
+            calibrationBody = PTDashboardConfig.languageFunc(text: "ride_mount_calibration_hint")
+        }
+        let calibrationButton = makeButton(
+            title: PTDashboardConfig.languageFunc(
+                text: isCalibratingMount ? "ride_mount_calibration_running" : "ride_mount_calibration_start"
+            ),
+            color: isCalibratingMount ? .systemGray : PTDashboardConfig.shared.appMainColor
+        ) { [weak self] in
+            self?.startMountCalibration()
+        }
+        calibrationButton.isEnabled = !isCalibratingMount
+        stackView.addArrangedSubview(makeCard(
+            title: PTDashboardConfig.languageFunc(text: "ride_mount_calibration"),
+            body: calibrationBody,
+            buttons: [calibrationButton]
+        ))
+
+        // EN: Let TipKit teach the calibration workflow without adding a permanent instruction page.
+        // ES: Deja que TipKit explique la calibración sin añadir una página de instrucciones permanente.
+        // 中文：使用 TipKit 引导校准流程，不增加永久说明页面。
+        if #available(iOS 17.0, *) {
+            let tipViewController = PTTipKitHintFactory.makeViewController(PTMountCalibrationTip())
+            addChild(tipViewController)
+            tipViewController.view.setContentHuggingPriority(.required, for: .vertical)
+            tipViewController.view.setContentCompressionResistancePriority(.required, for: .vertical)
+            tipViewController.view.heightAnchor.constraint(greaterThanOrEqualToConstant: 72).isActive = true
+            stackView.addArrangedSubview(tipViewController.view)
+            tipViewController.didMove(toParent: self)
+            mountTipViewController = tipViewController
+        }
 
         let antiTheftSnapshot = PTAntiTheftManager.shared.snapshot
         let antiTheftButton = makeButton(
@@ -367,5 +417,71 @@ final class PTRideSafetyViewController: PTMotoBaseViewController {
         let alert = UIAlertController(title: PTDashboardConfig.languageFunc(text: "alert_title"), message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: PTDashboardConfig.languageFunc(text: "button_confirm"), style: .default))
         present(alert, animated: true)
+    }
+
+    // EN: Capture three seconds of device motion while parked and save the mean mount orientation per vehicle.
+    // ES: Captura tres segundos de movimiento con la moto aparcada y guarda la orientación media por vehículo.
+    // 中文：停车静止采集三秒设备姿态，并按车辆保存支架平均方向。
+    private func startMountCalibration() {
+        guard let vehicleID = PTMotorcycleGarageStore.shared.selectedVehicleID else {
+            showMessage(PTDashboardConfig.languageFunc(text: "ride_mount_calibration_no_vehicle"))
+            return
+        }
+        guard motionManager.isDeviceMotionAvailable else {
+            showMessage(PTDashboardConfig.languageFunc(text: "ride_mount_calibration_unavailable"))
+            return
+        }
+
+        calibrationWorkItem?.cancel()
+        motionManager.stopDeviceMotionUpdates()
+        calibrationSamples.removeAll(keepingCapacity: true)
+        isCalibratingMount = true
+        reloadContent()
+
+        motionManager.deviceMotionUpdateInterval = 0.05
+        motionManager.startDeviceMotionUpdates(using: .xArbitraryZVertical, to: OperationQueue.main) { [weak self] motion, _ in
+            guard let self, let motion else { return }
+            self.calibrationSamples.append((
+                roll: motion.attitude.roll,
+                pitch: motion.attitude.pitch,
+                yaw: motion.attitude.yaw
+            ))
+        }
+
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.finishMountCalibration(for: vehicleID)
+        }
+        calibrationWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: workItem)
+    }
+
+    private func finishMountCalibration(for vehicleID: UUID) {
+        defer {
+            motionManager.stopDeviceMotionUpdates()
+            calibrationWorkItem = nil
+            isCalibratingMount = false
+        }
+
+        guard calibrationSamples.count >= 10 else {
+            reloadContent()
+            showMessage(PTDashboardConfig.languageFunc(text: "ride_mount_calibration_unavailable"))
+            return
+        }
+
+        let count = Double(calibrationSamples.count)
+        let calibration = PTMountCalibration(
+            rollOffset: calibrationSamples.reduce(0) { $0 + $1.roll } / count,
+            pitchOffset: calibrationSamples.reduce(0) { $0 + $1.pitch } / count,
+            yawOffset: calibrationSamples.reduce(0) { $0 + $1.yaw } / count
+        )
+        _ = PTMountCalibrationStore.shared.save(calibration, for: vehicleID)
+        calibrationSamples.removeAll(keepingCapacity: true)
+        reloadContent()
+        showMessage(PTDashboardConfig.languageFunc(text: "ride_mount_calibration_saved"))
+    }
+
+    @MainActor deinit {
+        calibrationWorkItem?.cancel()
+        motionManager.stopDeviceMotionUpdates()
     }
 }

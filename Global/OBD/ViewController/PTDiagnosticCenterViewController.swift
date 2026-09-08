@@ -21,6 +21,7 @@ final class PTDiagnosticCenterViewController: PTMotoBaseViewController {
     private let progressView = UIProgressView(progressViewStyle: .default)
     private let runButton = UIButton(type: .system)
     private let cancelButton = UIButton(type: .system)
+    private let exportButton = UIButton(type: .system)
 
     private var diagnosticTask: Task<Void, Never>?
 
@@ -68,6 +69,8 @@ final class PTDiagnosticCenterViewController: PTMotoBaseViewController {
         runButton.addTarget(self, action: #selector(runDiagnostic), for: .touchUpInside)
         configureButton(cancelButton, title: localized("button_cancel"), color: .systemOrange)
         cancelButton.addTarget(self, action: #selector(cancelDiagnostic), for: .touchUpInside)
+        configureButton(exportButton, title: localized("can_lab_share"), color: .systemBlue)
+        exportButton.addTarget(self, action: #selector(exportLatestReport), for: .touchUpInside)
 
         view.addSubview(scrollView)
         scrollView.addSubview(contentStack)
@@ -75,6 +78,7 @@ final class PTDiagnosticCenterViewController: PTMotoBaseViewController {
         contentStack.addArrangedSubview(reportTextView)
         contentStack.addArrangedSubview(runButton)
         contentStack.addArrangedSubview(cancelButton)
+        contentStack.addArrangedSubview(exportButton)
 
         NSLayoutConstraint.activate([
             scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
@@ -88,7 +92,8 @@ final class PTDiagnosticCenterViewController: PTMotoBaseViewController {
             contentStack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
             reportTextView.heightAnchor.constraint(greaterThanOrEqualToConstant: 300),
             runButton.heightAnchor.constraint(equalToConstant: 44),
-            cancelButton.heightAnchor.constraint(equalToConstant: 44)
+            cancelButton.heightAnchor.constraint(equalToConstant: 44),
+            exportButton.heightAnchor.constraint(equalToConstant: 44)
         ])
     }
 
@@ -167,6 +172,10 @@ final class PTDiagnosticCenterViewController: PTMotoBaseViewController {
                     title: localized("obd_diagnostic_dids"),
                     lines: didLines.isEmpty ? [localized("obd_diagnostic_no_data")] : didLines
                 )
+                _ = PTXP400InstructionEvidenceStore.shared.record(
+                    results: didResults,
+                    source: "diagnostic-center"
+                )
                 progressView.progress = 0.7
 
                 try Task.checkCancellation()
@@ -188,6 +197,28 @@ final class PTDiagnosticCenterViewController: PTMotoBaseViewController {
                 progressView.progress = 0.85
 
                 let info = PTMotoTelemetryManager.shared.obdInfo
+                let telemetry = PTVehicleConnectivityCoordinator.shared.telemetrySnapshot
+                let battery = PTVehicleConnectivityCoordinator.shared.batteryHealthSummary
+                let wheel = PTVehicleConnectivityCoordinator.shared.wheelSpeedConsistency
+                let connectionQuality = PTVehicleConnectionQualityEvaluator.evaluate(snapshot: telemetry)
+                let healthLines = makeHealthLines(
+                    battery: battery.observationCount > 0 ? battery : nil,
+                    wheel: wheel.state == .unavailable ? nil : wheel,
+                    connectionQuality: connectionQuality
+                )
+                appendSection(title: localized("obd_diagnostic_health"), lines: healthLines)
+                let fingerprint = PTECUReadOnlyFingerprint(
+                    ecuVersion: info.ecuVersion.isEmpty ? nil : info.ecuVersion,
+                    cvn: info.cvn.isEmpty ? nil : info.cvn,
+                    protocolName: info.atdpName.description.isEmpty ? nil : info.atdpName.description,
+                    confirmedDIDs: didResults
+                        .filter { $0.status == .success }
+                        .map(\.did)
+                )
+                appendSection(
+                    title: localized("obd_diagnostic_fingerprint"),
+                    lines: makeFingerprintLines(fingerprint)
+                )
                 let report = PTGarageDiagnosticReport(
                     vin: info.vin,
                     ecuVersion: info.ecuVersion,
@@ -199,7 +230,11 @@ final class PTDiagnosticCenterViewController: PTMotoBaseViewController {
                     confirmedDTCs: dtcLines,
                     mode6Results: mode6Lines,
                     freezeFrame: freezeFrameLines.isEmpty ? nil : freezeFrameLines,
-                    failureReasons: failureReasons.isEmpty ? nil : failureReasons
+                    failureReasons: failureReasons.isEmpty ? nil : failureReasons,
+                    batteryHealthSummary: battery.observationCount > 0 ? battery : nil,
+                    wheelSpeedConsistency: wheel.state == .unavailable ? nil : wheel,
+                    connectionQuality: connectionQuality,
+                    ecuFingerprint: fingerprint
                 )
                 if PTMotorcycleGarageStore.shared.addDiagnosticReport(report) {
                     appendReport(localized("obd_diagnostic_saved"))
@@ -240,6 +275,46 @@ final class PTDiagnosticCenterViewController: PTMotoBaseViewController {
         diagnosticTask?.cancel()
     }
 
+    @objc private func exportLatestReport() {
+        let alert = UIAlertController(
+            title: localized("can_lab_share"),
+            message: nil,
+            preferredStyle: .actionSheet
+        )
+        alert.addAction(UIAlertAction(title: "JSON", style: .default) { [weak self] _ in
+            self?.shareLatestReport(format: .json)
+        })
+        alert.addAction(UIAlertAction(title: "CSV", style: .default) { [weak self] _ in
+            self?.shareLatestReport(format: .csv)
+        })
+        alert.addAction(UIAlertAction(title: localized("button_cancel"), style: .cancel))
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = exportButton
+            popover.sourceRect = exportButton.bounds
+        }
+        present(alert, animated: true)
+    }
+
+    // EN: Offer both structured JSON and spreadsheet-friendly CSV for the latest redacted report.
+    // ES: Ofrece JSON estructurado y CSV compatible con hojas de cálculo para el último informe anonimizado.
+    // 中文：为最新的脱敏报告提供结构化 JSON 和便于表格处理的 CSV 两种导出格式。
+    private func shareLatestReport(format: PTRideSafetyExportFormat) {
+        do {
+            guard let url = try PTMotorcycleGarageStore.shared.exportLatestDiagnosticReportURL(format: format) else {
+                appendReport(localized("obd_diagnostic_no_data"))
+                return
+            }
+            let activity = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+            if let popover = activity.popoverPresentationController {
+                popover.sourceView = exportButton
+                popover.sourceRect = exportButton.bounds
+            }
+            present(activity, animated: true)
+        } catch {
+            appendReport("❌ \(error.localizedDescription)")
+        }
+    }
+
     private func updateControls(isRunning: Bool) {
         runButton.isEnabled = !isRunning
         cancelButton.isEnabled = isRunning
@@ -258,6 +333,58 @@ final class PTDiagnosticCenterViewController: PTMotoBaseViewController {
             reportTextView.text += "\n" + text
         }
         reportTextView.scrollRangeToVisible(NSRange(location: max(reportTextView.text.count - 1, 0), length: 1))
+    }
+
+    private func makeHealthLines(
+        battery: PTBatteryHealthSummary?,
+        wheel: PTWheelSpeedConsistencyResult?,
+        connectionQuality: PTVehicleConnectionQuality
+    ) -> [String] {
+        var lines = [
+            "\(localized("obd_diagnostic_connection")): \(localized("obd_diagnostic_connection_\(connectionQuality.rawValue)"))"
+        ]
+        if let battery {
+            if let resting = battery.restingMedianVoltage {
+                lines.append("\(localized("obd_diagnostic_battery_resting")): \(String(format: "%.2f V", resting))")
+            }
+            if let cranking = battery.crankingMinimumVoltage {
+                lines.append("\(localized("obd_diagnostic_battery_cranking_min")): \(String(format: "%.2f V", cranking))")
+            }
+            if let running = battery.runningMedianVoltage {
+                lines.append("\(localized("obd_diagnostic_battery_running")): \(String(format: "%.2f V", running))")
+            }
+            lines.append("\(localized("obd_diagnostic_battery_confidence")): \(String(format: "%.0f%%", battery.confidence * 100))")
+        } else {
+            lines.append("\(localized("obd_diagnostic_battery")): \(localized("obd_diagnostic_no_data"))")
+        }
+        if let wheel {
+            lines.append(
+                "\(localized("obd_diagnostic_wheel_speed")): "
+                    + "\(localized("obd_diagnostic_wheel_\(wheel.state.rawValue)")) · "
+                    + "\(String(format: "%.1f%%", wheel.absoluteRatio * 100))"
+            )
+        } else {
+            lines.append("\(localized("obd_diagnostic_wheel_speed")): \(localized("obd_diagnostic_no_data"))")
+        }
+        return lines
+    }
+
+    // EN: Fingerprint output is read-only and deliberately excludes VIN and raw security material.
+    // ES: La huella es de solo lectura y excluye deliberadamente el VIN y el material de seguridad sin procesar.
+    // 中文：指纹输出只读，并刻意排除 VIN 与原始安全材料。
+    private func makeFingerprintLines(_ fingerprint: PTECUReadOnlyFingerprint) -> [String] {
+        let noData = localized("obd_diagnostic_no_data")
+        let dids = fingerprint.confirmedDIDs.isEmpty
+            ? noData
+            : fingerprint.confirmedDIDs.joined(separator: ", ")
+        return [
+            "\(localized("obd_diagnostic_ecu_version")): \(fingerprint.ecuVersion ?? noData)",
+            "\(localized("obd_diagnostic_cvn")): \(fingerprint.cvn ?? noData)",
+            "\(localized("obd_diagnostic_protocol")): \(fingerprint.protocolName ?? noData)",
+            "\(localized("obd_diagnostic_confirmed_dids")): \(dids)",
+            "\(localized("obd_diagnostic_bootloader")): \(localized("obd_diagnostic_read_only"))",
+            "\(localized("obd_diagnostic_calibration")): \(localized("obd_diagnostic_read_only"))"
+        ]
     }
 
     private func formatDTCs(_ values: [String: [PTTroubleCode]]) -> [String] {

@@ -208,6 +208,10 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
     private var telemetryEngine = PTVehicleTelemetryFusionEngine()
     private var wheelSpeedTracker = PTWheelSpeedConsistencyTracker()
     private var batteryObservations: [PTBatteryObservation] = []
+    private var batteryHistoryLastRecordedAt: Date?
+    private var batteryHistoryVehicleID: UUID?
+    private var turnSignalReminderTracker = PTTurnSignalReminderTracker()
+    private var absWarningTracker = PTABSWarningTracker()
     private var telemetryNotificationTask: Task<Void, Never>?
     private var pendingTelemetryNotification: PTVehicleTelemetrySnapshot?
 
@@ -357,7 +361,12 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         dashboardAttemptTask?.cancel()
         dashboardAttemptTask = nil
         PTBluetoothServerManager.shared.stopMockDashboardData()
-        updateDashboardState(.disconnected, transport: .dashboardMock)
+        finalizeDashboardDisconnect(transport: .dashboardMock)
+        telemetryEngine.clearDashboard()
+        wheelSpeedTracker = PTWheelSpeedConsistencyTracker()
+        wheelSpeedConsistency = PTWheelSpeedConsistencyResult(state: .unavailable)
+        resetDashboardDerivedState()
+        publishTelemetryChange()
     }
 
     // EN: Route dashboard disconnects through the coordinator so every consumer sees one state transition.
@@ -666,7 +675,9 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         source: PTVehicleTelemetrySource,
         at date: Date
     ) {
-        guard voltage.isFinite, (6...20).contains(voltage) else { return }
+        guard source.isVerifiedReal,
+              voltage.isFinite,
+              (6...20).contains(voltage) else { return }
         batteryObservations.append(
             PTBatteryObservation(
                 voltage: voltage,
@@ -682,6 +693,96 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
             observations: batteryObservations,
             capturedAt: date
         )
+
+        // EN: Persist at most once per minute and only after the real dashboard is bound to a vehicle.
+        // ES: Guarda como máximo una vez por minuto y solo después de asociar el tablero real a un vehículo.
+        // 中文：最多每分钟保存一次，并且只有真实仪表已绑定车辆后才写入每日摘要。
+        guard let vehicleID = dashboardGarageVehicleID else { return }
+        let changedVehicle = batteryHistoryVehicleID != vehicleID
+        let enoughTimePassed = date.timeIntervalSince(batteryHistoryLastRecordedAt ?? .distantPast) >= 60
+        guard changedVehicle || enoughTimePassed else { return }
+        if PTBatteryHealthHistoryStore.shared.record(
+            summary: batteryHealthSummary,
+            for: vehicleID,
+            at: date
+        ) {
+            batteryHistoryLastRecordedAt = date
+            batteryHistoryVehicleID = vehicleID
+        }
+    }
+
+    private func evaluateTurnSignalReminder(_ control: PTDashboardControl, at date: Date) {
+        guard snapshot.dashboard.state == .connected else { return }
+        let speed = control.vehicleSpeedAvailability.isAvailable ? control.vehicleSpeedKmh : nil
+        guard turnSignalReminderTracker.update(
+            isActive: control.isLeftTurnOn || control.isRightTurnOn,
+            isHazard: control.isHazardOn,
+            speedKmh: speed,
+            source: dashboardTelemetrySource,
+            at: date
+        ) else {
+            return
+        }
+
+        let suffix = dashboardGarageVehicleID?.uuidString ?? "dashboard"
+        let request = PTNotificationRequest(
+            kind: .diagnostic,
+            title: PTDashboardConfig.languageFunc(text: "notification_turn_signal_title"),
+            body: PTDashboardConfig.languageFunc(text: "notification_turn_signal_body"),
+            identifier: "pt.notification.safety.turn-signal",
+            deduplicationKey: "turn-signal-\(suffix)",
+            cooldown: 30 * 60,
+            interruptionLevel: .timeSensitive,
+            categoryIdentifier: PTNotificationCenter.diagnosticCategoryIdentifier,
+            userInfo: ["pt_notification_kind": PTAppNotificationKind.diagnostic.rawValue]
+        )
+        PTNotificationCenter.schedule(request)
+    }
+
+    private func evaluateABSWarning(_ status: PTAbsStatus, at date: Date) {
+        guard snapshot.dashboard.state == .connected,
+              status.statusAvailability.isAvailable,
+              let speedSample = telemetryEngine.snapshot.dashboardSpeedKmh,
+              speedSample.source.isVerifiedReal,
+              speedSample.isFresh(at: date, maximumAge: 2) else {
+            absWarningTracker.reset()
+            return
+        }
+
+        guard absWarningTracker.update(
+            isAbnormal: status.isAbsLightOn,
+            speedKmh: speedSample.value,
+            source: speedSample.source,
+            at: date
+        ) else {
+            return
+        }
+
+        let suffix = dashboardGarageVehicleID?.uuidString ?? "dashboard"
+        let request = PTNotificationRequest(
+            kind: .diagnostic,
+            title: PTDashboardConfig.languageFunc(text: "notification_abs_title"),
+            body: PTDashboardConfig.languageFunc(text: "notification_abs_body"),
+            identifier: "pt.notification.safety.abs",
+            deduplicationKey: "abs-\(suffix)",
+            cooldown: 30 * 60,
+            interruptionLevel: .timeSensitive,
+            categoryIdentifier: PTNotificationCenter.diagnosticCategoryIdentifier,
+            userInfo: ["pt_notification_kind": PTAppNotificationKind.diagnostic.rawValue]
+        )
+        PTNotificationCenter.schedule(request)
+    }
+
+    // EN: Reset derived safety state whenever the dashboard session ends; persisted daily summaries remain intact.
+    // ES: Reinicia el estado de seguridad derivado al terminar la sesión; los resúmenes diarios guardados permanecen.
+    // 中文：仪表会话结束时重置派生安全状态，但保留已经保存的每日摘要。
+    private func resetDashboardDerivedState() {
+        batteryObservations.removeAll(keepingCapacity: true)
+        batteryHealthSummary = PTBatteryHealthSummary()
+        batteryHistoryLastRecordedAt = nil
+        batteryHistoryVehicleID = nil
+        turnSignalReminderTracker.reset()
+        absWarningTracker.reset()
     }
 
     // EN: Decode only the already-published dashboard value types; no BLE parsing is duplicated here.
@@ -761,6 +862,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
                 source: source,
                 at: date
             )
+            evaluateTurnSignalReminder(control, at: date)
             updateWheelSpeedConsistency(at: date)
             didUpdate = true
         } else if let absStatus = data as? PTAbsStatus {
@@ -774,6 +876,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
             }
             if absStatus.statusAvailability.isAvailable {
                 telemetryEngine.updateABS(lightOn: absStatus.isAbsLightOn, source: source, at: date)
+                evaluateABSWarning(absStatus, at: date)
                 didUpdate = true
             }
             updateWheelSpeedConsistency(at: date)
@@ -925,6 +1028,8 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         dashboardPendingCandidateVehicleID = nil
         dashboardDidPersistInitialSample = false
         dashboardLastPersistedAt = nil
+        batteryHistoryLastRecordedAt = nil
+        batteryHistoryVehicleID = nil
 
         if snapshot.dashboard.transport == .dashboardMock {
             // EN: A local mock has no hardware identity, so it is safely scoped to the selected motorcycle.
@@ -1187,7 +1292,13 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
             try? await Task.sleep(nanoseconds: 15_000_000_000)
             guard let self, !Task.isCancelled, self.dashboardAttemptInFlight else { return }
             self.dashboardAttemptInFlight = false
+            self.finalizeDashboardDisconnect(transport: self.snapshot.dashboard.transport ?? .dashboardBluetooth)
+            self.telemetryEngine.clearDashboard()
+            self.wheelSpeedTracker = PTWheelSpeedConsistencyTracker()
+            self.wheelSpeedConsistency = PTWheelSpeedConsistencyResult(state: .unavailable)
+            self.resetDashboardDerivedState()
             self.updateDashboardState(.failed, errorMessage: "Dashboard connection timed out")
+            self.publishTelemetryChange()
         }
     }
 
@@ -1228,6 +1339,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
             telemetryEngine.clearDashboard()
             wheelSpeedTracker = PTWheelSpeedConsistencyTracker()
             wheelSpeedConsistency = PTWheelSpeedConsistencyResult(state: .unavailable)
+            resetDashboardDerivedState()
             publishTelemetryChange()
         }
     }
@@ -1238,6 +1350,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
     private func finalizeDashboardDisconnect(transport: PTVehicleTransport) {
         let wasConnected = snapshot.dashboard.state == .connected
         endDashboardGarageSession()
+        resetDashboardDerivedState()
         updateDashboardState(.disconnected, transport: transport)
 
         // EN: Only a real connected-to-disconnected transition may save parking and finalize the widget snapshot.

@@ -4,9 +4,9 @@
 >
 > 快照日期：2026-09-08
 >
-> 仓库基线：当前工作区，Build 53 代码已接入；Build 48 作为日语/俄语切换回归基线，真实设备、车辆和完整发布验证仍待补
+> 仓库基线：当前工作区，Build 54–55 代码已接入；Build 48 作为日语/俄语切换回归基线，真实设备、车辆和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests `CURRENT_PROJECT_VERSION = 53`
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests `CURRENT_PROJECT_VERSION = 55`
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -370,6 +370,25 @@ Build 52 继续保持营销版本 `2.0.8`，只递增工程 Build。歌词能力
 
 Build 52 不使用私有 MusicKit 歌词接口、不抓取 Apple Music 页面、不绕过版权或 DRM；在线歌词仅是用户明确开启后的可选匹配服务。
 
+### 7.7 Build 54–55 骑手健康与 XP400 协议证据
+
+Build 54–55 继续保持营销版本 `2.0.8`，只递增工程 Build。新增能力均在稳定 BLE/OBD 核心之外运行：普通骑行能力只消费 `PTVehicleConnectivityCoordinator` 的真实遥测投影；协议实验和固件相关内容继续限制在现有 Dev 入口。
+
+| 工作包 | 状态 | 当前产品能力 | 入口与边界 |
+| --- | --- | --- | --- |
+| B54-01 | 🟨 | 12V 电瓶静置/启动/运行阶段摘要及每车 365 天有界历史；Mock 只演示、不入库 | 车库/诊断报告；真实 Data2、长时间耗电和真车阈值待验证 |
+| B54-02 | 🟨 | 转向灯遗忘提醒和 ABS 异常驻留提醒，均有真实来源、速度、持续时间、去重和断开重置门槛 | 系统通知；真实仪表状态和误报率待验证 |
+| B54-03 | 🟨 | 按车辆保存手机支架三秒静止校准的横滚/俯仰/偏航零点 | 安全中心；需要真实 iPhone、安装方向和道路验证 |
+| B54-04 | 🟨 | 仪表颜色/单位/语言配置增加真实仪表、实时低速三秒、用户确认和 Data3 回读确认 | 设置页；只允许已验证的 EN/FR/DE/ES/IT，不改变核心发送实现 |
+| B54-05 | 🟨 | 诊断中心合并电瓶、轮速一致性、连接质量、DTC、Mode 6、DID、Freeze Frame 和只读 ECU 指纹，并支持脱敏报告导出 | 只读诊断中心；OBD 检测仍须用户主动启动 |
+| B54-06 | 🟨 | TipKit 上下文提示覆盖首次绑定、支架校准和仪表配置确认 | 车库/安全中心/设置；由系统记录用户关闭状态 |
+| B55-01 | 🧪 | 官方颜色、单位和五种已验证仪表语言的 A→B→A 实验向导，自动记录基线、时间点、Data3 读取和 CAN 前后窗口 | Dev CAN Lab；不自动发送设置，不自动生成协议命令 |
+| B55-02 | 🧪 | 按 40/25/20/15 规则评分，达到 80 分只进入候选；窗口摘要和 JSON/CSV 报告可导出 | Dev Evidence；候选必须人工复核，未知字段只记录 |
+| B55-03 | 🧪 | 关联同一车辆时间相近的 BLE/OBD 被动会话，展示通道和会话范围；导出不包含 VIN/坐标 | Dev Evidence；不新增抓包传输层 |
+| B55-04 | 🧪 | 只读 ECU/仪表指纹、软件版本、协议、已确认 DID 目录；Bootloader/Calibration 仅登记只读状态 | Dev/诊断报告；不开放固件、Logo、语言写入 |
+
+Build 54–55 不修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift` 或 `PTOBDCommand.swift`，不把未知观察结果自动提升为可执行命令，也不改变 QWeather 现有链路。
+
 ## 8. 已退役功能
 
 当前没有需要登记的已退役功能。后续移除功能时，在下表保留原 ID、最后可用 Build、移除原因和替代路径。
@@ -435,3 +454,4 @@ Build 52 不使用私有 MusicKit 歌词接口、不抓取 Apple Music 页面、
 | 2026-09-07 | 当前工作区 Build 50 | B50-00～B50-04 已实施：新增统一导航会话协调器，收口 AMap 代理、手机/CarPlay 导航表面、Live Activity、Watch 和仪表导航输出；PTMotoInfoViewController 增加可滚动自适应仪表首页、车辆摘要、可见性门禁和断连重置；新增导航进度与首页状态测试。PTSpeed iOS Debug generic build 已通过；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；XCTest 实际执行、签名发布、真机/真车验证待补 |
 | 2026-09-07 | 当前工作区 Build 52 | B52-00～B52-05 已接入：Now Playing 内嵌歌词优先、用户同意后的 LRCLIB 回退、LRC/纯文本解析、骑行安全门禁、只读完整歌词页、设置开关、十语言资源和解析测试；主 App Debug generic build、独立 Watch target build 与 Tests `build-for-testing` 通过；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；XCTest 实际运行受当前 scheme/目标仅支持真机配置限制，签名发布、真实 Apple Music/网络/骑行验证待补 |
 | 2026-09-08 | 当前工作区 Build 53 | B53-00～B53-06 已接入：统一只读车辆遥测投影与来源/新鲜度边界、车库自动同步和里程/保养数据隔离、真实数据轮速一致性与电瓶阶段摘要、PTT 会话/头像生命周期收口、开发者嗅探器按需挂载、MetricKit 诊断、LiDAR MainActor 修正和仪表配置请求档案；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；主 App Debug generic build 与 Tests `build-for-testing` 通过，XCTest 实际执行、签名发布、真实设备/车辆验证待补 |
+| 2026-09-08 | 当前工作区 Build 55 | B54-01～B54-06 与 B55-01～B55-04 已接入：电瓶趋势、转向灯/ABS 安全提醒、支架校准、仪表配置安全门禁、统一诊断健康报告、TipKit 上下文提示、A/B/A 协议证据向导、窗口评分、BLE/OBD 会话关联和只读 ECU 指纹；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；主 App Debug generic build 已通过，XCTest 实际执行、签名发布、真实设备/车辆和 Dev 实验仍待补 |

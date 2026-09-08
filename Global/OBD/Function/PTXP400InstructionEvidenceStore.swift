@@ -854,6 +854,7 @@ private extension PTXP400BLEEvidenceStore {
 final class PTXP400EvidenceViewController: PTListViewController, UIDocumentPickerDelegate {
     private let cellIdentifier = "PTXP400EvidenceCell"
     private var automaticSummaries: [PTProtocolDiscoverySessionSummary] = []
+    private var automaticCorrelations: [PTProtocolEvidenceCorrelation] = []
 
     public override func installListViewConstraints(_ listView: PTCollectionView) {
         listView.snp.makeConstraints { make in
@@ -935,6 +936,7 @@ final class PTXP400EvidenceViewController: PTListViewController, UIDocumentPicke
         Task { @MainActor [weak self] in
             guard let self else { return }
             self.automaticSummaries = await PTProtocolDiscoveryRecorder.shared.sessionSummaries(limit: 20)
+            self.automaticCorrelations = await PTProtocolDiscoveryRecorder.shared.correlatedSessions(limit: 20)
             self.showDetail()
         }
     }
@@ -985,6 +987,21 @@ final class PTXP400EvidenceViewController: PTListViewController, UIDocumentPicke
         if !automaticRows.isEmpty {
             mSections.append(PTSection(rows: automaticRows))
         }
+
+        let correlationRows = automaticCorrelations.map { correlation in
+            let cellModel = PTFusionCellModel()
+            let channels = correlation.channels.map { $0.rawValue }.joined(separator: "+")
+            cellModel.name = "CORRELATION · \(channels) · \(correlation.vehicleID.uuidString.prefix(8))"
+            cellModel.content = "\(correlation.sessionIDs.count) sessions · \(correlation.startedAt.formatted(date: .abbreviated, time: .shortened))"
+            cellModel.nameColor = .white
+            cellModel.contentTextColor = .white
+            let row = PTRows(ID: PTFusionCell.ID, dataModel: cellModel)
+            row.cellClass = PTFusionCell.self
+            return row
+        }
+        if !correlationRows.isEmpty {
+            mSections.append(PTSection(rows: correlationRows))
+        }
         
         listView.layoutIfNeeded()
         listView.showCollectionDetail(collectionData: mSections)
@@ -1023,6 +1040,34 @@ final class PTXP400EvidenceViewController: PTListViewController, UIDocumentPicke
                 } catch {
                     self.showExportError(message: error.localizedDescription)
                 }
+            }
+        })
+        alert.addAction(UIAlertAction(
+            title: "A/B/A JSON",
+            style: .default
+        ) { [weak self] _ in
+            do {
+                guard let url = try PTProtocolExperimentStore.shared.exportURL() else {
+                    self?.showExportError(message: "No protocol experiment reports are available.")
+                    return
+                }
+                self?.presentShare(url: url)
+            } catch {
+                self?.showExportError(message: error.localizedDescription)
+            }
+        })
+        alert.addAction(UIAlertAction(
+            title: "A/B/A CSV",
+            style: .default
+        ) { [weak self] _ in
+            do {
+                guard let url = try PTProtocolExperimentStore.shared.exportCSVURL() else {
+                    self?.showExportError(message: "No protocol experiment reports are available.")
+                    return
+                }
+                self?.presentShare(url: url)
+            } catch {
+                self?.showExportError(message: error.localizedDescription)
             }
         })
         alert.addAction(UIAlertAction(

@@ -41064,6 +41064,876 @@
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "線上歌詞比對" } }
       }
     },
+    "notification_turn_signal_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Blinker-Erinnerung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Turn signal reminder" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Recordatorio de intermitente" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Rappel de clignotant" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Promemoria freccia" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ウインカーのお知らせ" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Напоминание о поворотнике" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sinyal hatırlatması" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "转向灯提醒" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "方向燈提醒" } }
+      }
+    },
+    "notification_turn_signal_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bitte den Blinker ausschalten." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Please turn off the signal." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Apaga el intermitente, por favor." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Veuillez couper le clignotant." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Disattiva la freccia." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ウインカーを消してください。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Пожалуйста, выключите поворотник." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Lütfen sinyali kapatın." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请关闭转向灯。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請關閉方向燈。" } }
+      }
+    },
+    "notification_abs_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "ABS-Warnung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "ABS warning" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Aviso del ABS" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Alerte ABS" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Avviso ABS" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ABS 警告" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Предупреждение ABS" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "ABS uyarısı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "ABS 状态提醒" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "ABS 狀態提醒" } }
+      }
+    },
+    "notification_abs_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "ABS bleibt während der Fahrt auffällig. Bitte sicher anhalten und prüfen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "ABS remains abnormal while riding. Stop safely and inspect it." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "El ABS sigue anómalo durante la marcha. Detente con seguridad y revísalo." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "L’ABS reste anormal en roulant. Arrêtez-vous prudemment et vérifiez-le." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "L’ABS resta anomalo durante la marcia. Fermati in sicurezza e controllalo." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "走行中もABSの異常が続いています。安全に停車して確認してください。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Во время движения ABS остаётся неисправным. Безопасно остановитесь и проверьте систему." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürüş sırasında ABS anormal kalıyor. Güvenli şekilde durup kontrol edin." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "行驶中 ABS 仍处于异常状态，请安全停车检查。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "行駛中 ABS 仍處於異常狀態，請安全停車檢查。" } }
+      }
+    },
+    "ride_mount_calibration" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Halterung kalibrieren" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mount calibration" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Calibración del soporte" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Étalonnage du support" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Calibrazione del supporto" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "マウントの調整" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Калибровка держателя" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Telefon yuvası kalibrasyonu" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "手机支架校准" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "手機支架校準" } }
+      }
+    },
+    "ride_mount_calibration_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Motorrad drei Sekunden ruhig abstellen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep the motorcycle still for three seconds." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Mantén la moto inmóvil durante tres segundos." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Gardez la moto immobile pendant trois secondes." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Tieni la moto ferma per tre secondi." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "バイクを3秒間静止させてください。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Остановите мотоцикл и удерживайте его неподвижно три секунды." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Motosikleti üç saniye sabit tutun." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请让摩托车保持静止三秒。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請讓摩托車保持靜止三秒。" } }
+      }
+    },
+    "ride_mount_calibration_start" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kalibrierung starten" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start calibration" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Iniciar calibración" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Démarrer l’étalonnage" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Avvia calibrazione" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "調整を開始" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Начать калибровку" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kalibrasyonu başlat" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开始校准" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開始校準" } }
+      }
+    },
+    "ride_mount_calibration_running" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kalibrierung läuft …" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Calibrating …" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Calibrando …" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Étalonnage en cours…" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Calibrazione in corso…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "調整中…" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Калибровка…" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kalibre ediliyor…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "校准中…" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "校準中…" } }
+      }
+    },
+    "ride_mount_calibration_saved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Halterungskalibrierung gespeichert." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mount calibration saved." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Calibración del soporte guardada." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Étalonnage du support enregistré." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Calibrazione del supporto salvata." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "マウントの調整を保存しました。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Калибровка держателя сохранена." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yuva kalibrasyonu kaydedildi." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "支架校准已保存。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "支架校準已儲存。" } }
+      }
+    },
+    "ride_mount_calibration_no_vehicle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wähle zuerst ein Motorrad aus." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Select a motorcycle first." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Selecciona primero una moto." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Sélectionnez d’abord une moto." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Seleziona prima una moto." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "先にバイクを選択してください。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Сначала выберите мотоцикл." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Önce bir motosiklet seçin." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请先选择一辆摩托车。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請先選擇一輛摩托車。" } }
+      }
+    },
+    "ride_mount_calibration_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bewegungssensor ist nicht verfügbar oder lieferte zu wenige Werte." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Motion data is unavailable or insufficient." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Los datos de movimiento no están disponibles o son insuficientes." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Les données de mouvement sont indisponibles ou insuffisantes." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Dati di movimento non disponibili o insufficienti." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "モーションデータを利用できないか、データが不足しています。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Данные движения недоступны или недостаточны." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Hareket verileri kullanılamıyor veya yetersiz." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "运动数据不可用或采样不足。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "運動資料不可用或取樣不足。" } }
+      }
+    },
+    "obd_diagnostic_health" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gesundheit" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Health" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Salud" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "État de santé" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Stato di salute" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "車両状態" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Состояние" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sağlık" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "车辆健康" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "車輛健康" } }
+      }
+    },
+    "obd_diagnostic_connection" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Verbindung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Connection" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Conexión" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Connexion" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Connessione" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "接続" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Подключение" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bağlantı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "连接" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "連線" } }
+      }
+    },
+    "obd_diagnostic_connection_unknown" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Unbekannt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unknown" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Desconocida" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Inconnue" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Sconosciuta" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "不明" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Неизвестно" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bilinmiyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未知" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "未知" } }
+      }
+    },
+    "obd_diagnostic_connection_degraded" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Eingeschränkt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Limited" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Degradada" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Dégradée" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Ridotta" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "低下" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Ограничено" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sınırlı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "较弱" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "受限" } }
+      }
+    },
+    "obd_diagnostic_connection_good" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gut" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Good" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Buena" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Bonne" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Buona" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "良好" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Хорошее" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "İyi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "良好" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "良好" } }
+      }
+    },
+    "obd_diagnostic_battery" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Batterie" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Battery" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Batería" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Batterie" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Batteria" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "バッテリー" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Аккумулятор" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Akü" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "电瓶" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "電瓶" } }
+      }
+    },
+    "obd_diagnostic_battery_resting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ruhespannung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Battery resting" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Reposo de batería" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Batterie au repos" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Batteria a riposo" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "静止時バッテリー" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Напряжение покоя" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Akü dinlenme" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "电瓶静置" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "電瓶靜置" } }
+      }
+    },
+    "obd_diagnostic_battery_cranking_min" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Niedrigste Startspannung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Battery cranking minimum" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Mínimo al arrancar" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Minimum au démarrage" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Minimo all'avviamento" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "始動時最低値" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Минимум при запуске" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Marş minimumu" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "电瓶启动最低" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "電瓶啟動最低" } }
+      }
+    },
+    "obd_diagnostic_battery_running" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ladespannung während des Betriebs" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Battery running" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Batería en marcha" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Batterie en fonctionnement" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Batteria in marcia" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "走行中バッテリー" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Напряжение при работе" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Çalışma aküsü" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "电瓶运行" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "電瓶運行" } }
+      }
+    },
+    "obd_diagnostic_battery_confidence" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Batterie-Vertrauen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Battery confidence" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Confianza de batería" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Confiance de la batterie" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Affidabilità batteria" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "バッテリー信頼度" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Достоверность аккумулятора" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Akü güveni" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "电瓶可信度" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "電瓶可信度" } }
+      }
+    },
+    "obd_diagnostic_wheel_speed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Raddrehzahl" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Wheel speed" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Velocidad de rueda" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Vitesse de roue" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Velocità ruota" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "車輪速度" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Скорость колёс" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Tekerlek hızı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "轮速" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "輪速" } }
+      }
+    },
+    "obd_diagnostic_wheel_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nicht verfügbar" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unavailable" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "No disponible" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Indisponible" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Non disponibile" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "利用不可" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Недоступно" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kullanılamıyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "不可用" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "不可用" } }
+      }
+    },
+    "obd_diagnostic_wheel_normal" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Normal" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Normal" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Normal" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Normale" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Normale" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "正常" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Норма" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Normal" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正常" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正常" } }
+      }
+    },
+    "obd_diagnostic_wheel_mismatch" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Abweichung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mismatch" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Diferencia" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Écart" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Differenza" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "不一致" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Несоответствие" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Uyumsuzluk" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "不一致" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "不一致" } }
+      }
+    },
+    "can_lab_experiment" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "A/B/A-Experiment" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "A/B/A experiment" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Experimento A/B/A" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Expérience A/B/A" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Esperimento A/B/A" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "A/B/A 実験" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Эксперимент A/B/A" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "A/B/A deneyi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "A/B/A 实验" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "A/B/A 實驗" } }
+      }
+    },
+    "can_lab_experiment_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Starte die Aufnahme und markiere Basiswert, A, B und A erneut. Die App sendet keine neuen Befehle." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start capture, then mark baseline, A, B and A again. The app sends no new command." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Inicia la captura y marca base, A, B y A otra vez. La app no envía comandos nuevos." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Démarrez la capture puis marquez base, A, B et A. Aucun nouveau ordre n’est envoyé." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Avvia la cattura e marca base, A, B e di nuovo A. L’app non invia nuovi comandi." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "キャプチャを開始し、基準値、A、B、再びAの順に記録します。新しいコマンドは送信しません。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Запустите запись и отметьте базу, A, B и снова A. Новые команды не отправляются." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kaydı başlatıp temel, A, B ve tekrar A değerlerini işaretleyin. Yeni komut gönderilmez." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开始抓包，然后依次标记基线、A、B、再次 A。App 不会发送新指令。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開始擷取，然後依序標記基線、A、B、再次 A。App 不會傳送新指令。" } }
+      }
+    },
+    "can_lab_experiment_mark" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Diesen Schritt markieren" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mark this step" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Marcar este paso" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Marquer cette étape" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Segna questo passaggio" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "この手順を記録" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Отметить шаг" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bu adımı işaretle" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "标记此步骤" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "標記此步驟" } }
+      }
+    },
+    "can_lab_experiment_requires_capture" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Starte zuerst eine CAN-Aufnahme." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start a CAN capture first." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Inicia primero una captura CAN." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Démarrez d’abord une capture CAN." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Avvia prima una cattura CAN." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "先にCANキャプチャを開始してください。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Сначала запустите захват CAN." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Önce bir CAN yakalaması başlatın." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请先开始 CAN 抓包。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請先開始 CAN 擷取。" } }
+      }
+    },
+    "can_lab_experiment_result" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Experiment gespeichert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Experiment saved" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Experimento guardado" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Expérience enregistrée" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Esperimento salvato" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "実験を保存しました" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Эксперимент сохранён" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Deney kaydedildi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "实验已保存" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "實驗已儲存" } }
+      }
+    },
+    "can_lab_experiment_setting_color" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Instrumentenfarbe" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dashboard color" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Color del tablero" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Couleur du tableau de bord" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Colore del cruscotto" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メーターの色" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Цвет панели" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gösterge rengi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仪表颜色" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "儀表顏色" } }
+      }
+    },
+    "can_lab_experiment_setting_unit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Entfernungseinheit" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Distance unit" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Unidad de distancia" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Unité de distance" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Unità di distanza" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "距離単位" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Единица расстояния" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Mesafe birimi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "距离单位" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "距離單位" } }
+      }
+    },
+    "can_lab_experiment_setting_language" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Instrumentensprache" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dashboard language" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Idioma del tablero" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Langue du tableau de bord" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Lingua del cruscotto" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メーターの言語" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Язык панели" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gösterge dili" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仪表语言" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "儀表語言" } }
+      }
+    },
+    "can_lab_experiment_step_baseline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Schritt 1 · Basiswert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Step 1 · Baseline" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Paso 1 · Base" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Étape 1 · Base" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Passo 1 · Base" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "手順1・基準値" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Шаг 1 · База" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Adım 1 · Temel" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "步骤 1 · 基线" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "步驟 1 · 基線" } }
+      }
+    },
+    "can_lab_experiment_step_firstA" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Schritt 2 · A" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Step 2 · A" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Paso 2 · A" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Étape 2 · A" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Passo 2 · A" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "手順2・A" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Шаг 2 · A" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Adım 2 · A" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "步骤 2 · A" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "步驟 2 · A" } }
+      }
+    },
+    "can_lab_experiment_step_b" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Schritt 3 · B" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Step 3 · B" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Paso 3 · B" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Étape 3 · B" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Passo 3 · B" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "手順3・B" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Шаг 3 · B" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Adım 3 · B" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "步骤 3 · B" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "步驟 3 · B" } }
+      }
+    },
+    "can_lab_experiment_step_secondA" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Schritt 4 · A erneut" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Step 4 · A again" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Paso 4 · A otra vez" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Étape 4 · A à nouveau" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Passo 4 · A di nuovo" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "手順4・再びA" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Шаг 4 · Снова A" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Adım 4 · Tekrar A" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "步骤 4 · 再次 A" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "步驟 4 · 再次 A" } }
+      }
+    },
+    "can_lab_experiment_step_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Führe die gewählte offizielle Einstellung aus und markiere danach den aktuellen Data3-Wert." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Perform the selected official setting, then mark the current Data3 value." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Realiza el ajuste oficial seleccionado y marca después el valor Data3 actual." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Effectuez le réglage officiel choisi, puis marquez la valeur Data3 actuelle." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Esegui l’impostazione ufficiale scelta, poi segna il valore Data3 corrente." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "公式アプリで設定を変更した後、現在のData3値を記録してください。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Выполните выбранную настройку в официальном приложении и отметьте текущее значение Data3." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Seçilen resmi ayarı uygulayın, ardından güncel Data3 değerini işaretleyin." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "执行所选官方设置，然后标记当前 Data3 值。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "執行所選官方設定，然後標記目前 Data3 值。" } }
+      }
+    },
+    "dashboard_config_confirm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fortfahren" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Continuar" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Continuer" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Continua" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "続ける" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Продолжить" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Devam et" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "继续" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "繼續" } }
+      }
+    },
+    "dashboard_config_safety_checking" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Es wird geprüft, ob das Motorrad steht …" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Checking that the motorcycle is stationary…" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Comprobando que la motocicleta está detenida…" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Vérification de l’immobilité de la moto…" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Verifica che la moto sia ferma…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "車両が停止していることを確認中…" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Проверка неподвижности мотоцикла…" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Motosikletin sabit olduğu kontrol ediliyor…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在确认摩托车处于静止状态…" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正在確認機車處於靜止狀態…" } }
+      }
+    },
+    "dashboard_config_safety_message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nur bei stehendem Motorrad fortfahren. Die App wartet auf eine aktuelle Dashboard-Geschwindigkeit unter 1 km/h für 3 Sekunden und sendet dann die Einstellung." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue only while the real motorcycle is stationary. The app waits for a fresh dashboard speed below 1 km/h for 3 seconds, then sends the setting." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Continúa solo con la motocicleta real detenida. La app esperará una velocidad fresca del tablero inferior a 1 km/h durante 3 segundos y después enviará el ajuste." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Continuez uniquement lorsque la moto réelle est à l’arrêt. L’app attend une vitesse fraîche du tableau de bord inférieure à 1 km/h pendant 3 secondes, puis envoie le réglage." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Continua solo con la moto reale ferma. L’app attende una velocità aggiornata del cruscotto inferiore a 1 km/h per 3 secondi, poi invia l’impostazione." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "実車が停止しているときだけ続行してください。アプリはメーターの最新速度が3秒間1 km/h未満になるまで待ってから設定を送信します。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Продолжайте только когда реальный мотоцикл стоит. Приложение дождётся свежего значения скорости панели ниже 1 км/ч в течение 3 секунд и затем отправит настройку." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yalnızca gerçek motosiklet dururken devam edin. Uygulama, gösterge hızının 3 saniye boyunca 1 km/sa altında olmasını bekler ve ardından ayarı gönderir." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仅在真实摩托车静止时继续。App 会等待仪表新鲜速度连续 3 秒低于 1 km/h，然后发送设置。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "僅在真實機車靜止時繼續。App 會等待儀表最新速度連續 3 秒低於 1 km/h，然後傳送設定。" } }
+      }
+    },
+    "dashboard_config_safety_real_only" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Verbinde zuerst ein echtes Dashboard." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Connect to a real dashboard before changing settings." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Conecta un tablero real antes de cambiar los ajustes." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Connectez un tableau de bord réel avant de modifier les réglages." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Collega un cruscotto reale prima di modificare le impostazioni." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "設定を変更する前に実車のメーターへ接続してください。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Перед изменением настроек подключите реальную панель." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ayarları değiştirmeden önce gerçek bir göstergeye bağlanın." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请先连接真实仪表，再修改设置。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請先連線真實儀表，再修改設定。" } }
+      }
+    },
+    "dashboard_config_safety_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Dashboard-Einstellung bestätigen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirm dashboard setting" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Confirmar ajuste del tablero" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Confirmer le réglage du tableau de bord" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Conferma impostazione cruscotto" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メーター設定を確認" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Подтвердите настройку панели" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Gösterge ayarını onayla" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "确认仪表设置" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "確認儀表設定" } }
+      }
+    },
+    "dashboard_config_safety_timeout" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Keine stabile Standgeschwindigkeit empfangen. Die Einstellung wurde nicht gesendet." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No stable stationary speed was received. The setting was not sent." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "No se recibió una velocidad estable con la moto detenida. No se envió el ajuste." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Aucune vitesse stable à l’arrêt n’a été reçue. Le réglage n’a pas été envoyé." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Non è stata ricevuta una velocità stabile da moto ferma. L’impostazione non è stata inviata." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "停止状態の安定した速度を受信できませんでした。設定は送信されませんでした。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Не получено стабильное значение скорости при остановке. Настройка не отправлена." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sabit durma hızı alınamadı. Ayar gönderilmedi." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未收到稳定的静止速度，设置未发送。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "未收到穩定的靜止速度，設定未傳送。" } }
+      }
+    },
+    "tip_dashboard_configuration_message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Änderungen nur im Stand bestätigen. Die Rückmeldung des Dashboards entscheidet über den Erfolg." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirm changes only while parked. The dashboard echo decides whether the setting succeeded." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Confirma los cambios solo estando detenido. El eco del tablero determina si el ajuste tuvo éxito." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Confirmez les changements uniquement à l’arrêt. Le retour du tableau de bord détermine la réussite." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Conferma le modifiche solo da fermo. L’eco del cruscotto determina l’esito." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "停車中のみ変更を確認してください。設定の成否はメーターの応答で判断します。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Подтверждайте изменения только на стоянке. Успех определяется ответом панели." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Değişiklikleri yalnızca park halindeyken onaylayın. Başarıyı gösterge geri bildirimi belirler." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仅在停车时确认修改，是否成功以仪表回传为准。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "僅在停車時確認修改，是否成功以儀表回傳為準。" } }
+      }
+    },
+    "tip_dashboard_configuration_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Dashboard sicher konfigurieren" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Configure the dashboard safely" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Configura el tablero de forma segura" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Configurer le tableau de bord en sécurité" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Configura il cruscotto in sicurezza" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "安全にメーターを設定" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Безопасная настройка панели" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Göstergeyi güvenle yapılandırın" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "安全配置仪表" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "安全設定儀表" } }
+      }
+    },
+    "tip_mount_calibration_message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Stelle das Motorrad ab und halte das iPhone drei Sekunden ruhig. Der Nullpunkt wird pro Fahrzeug gespeichert." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Park the motorcycle and hold the iPhone still for three seconds. The zero point is saved per vehicle." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Aparca la motocicleta y mantén el iPhone quieto durante tres segundos. El cero se guarda por vehículo." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Garez la moto et gardez l’iPhone immobile pendant trois secondes. Le zéro est enregistré par véhicule." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Parcheggia la moto e tieni fermo l’iPhone per tre secondi. Lo zero viene salvato per veicolo." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "車両を停車させ、iPhoneを3秒間静止してください。ゼロ点は車両ごとに保存されます。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Остановите мотоцикл и держите iPhone неподвижно 3 секунды. Нулевая точка сохраняется для каждого мотоцикла." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Motosikleti park edin ve iPhone’u üç saniye sabit tutun. Sıfır noktası araç başına kaydedilir." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请停车并将 iPhone 保持静止 3 秒，零点会按车辆保存。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請停車並將 iPhone 保持靜止 3 秒，零點會按車輛儲存。" } }
+      }
+    },
+    "tip_mount_calibration_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Halterung kalibrieren" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Calibrate the phone mount" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Calibra el soporte del teléfono" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Calibrer le support du téléphone" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Calibra il supporto del telefono" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "スマホホルダーを調整" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Калибровка держателя телефона" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Telefon tutucuyu kalibre edin" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "校准手机支架" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "校準手機支架" } }
+      }
+    },
+    "tip_vehicle_binding_message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Verbinde zuerst das echte Dashboard. Der Fahrzeugname und die Identität werden anschließend im Garage gespeichert." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Connect the real dashboard first. The vehicle name and identity are then saved in the garage." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Conecta primero el tablero real. Después, el nombre y la identidad se guardan en el garaje." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Connectez d’abord le tableau de bord réel. Le nom et l’identité du véhicule seront ensuite enregistrés dans le garage." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Collega prima il cruscotto reale. Nome e identità del veicolo verranno poi salvati nel garage." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "まず実車のメーターに接続してください。その後、車両名と識別情報がガレージに保存されます。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Сначала подключите реальную панель. Затем имя и идентификатор мотоцикла сохраняются в гараже." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Önce gerçek göstergeye bağlanın. Araç adı ve kimliği daha sonra garaja kaydedilir." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请先连接真实仪表，随后车辆名称和身份会保存到车库。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請先連線真實儀表，之後車輛名稱和身分會儲存到車庫。" } }
+      }
+    },
+    "tip_vehicle_binding_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Erstes Fahrzeug verbinden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Connect your first motorcycle" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Conecta tu primera motocicleta" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Connecter votre première moto" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Collega la prima moto" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最初の車両を接続" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Подключите первый мотоцикл" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "İlk motosikletinizi bağlayın" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "连接第一辆摩托车" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "連線第一輛機車" } }
+      }
+    },
+    "obd_diagnostic_bootloader" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bootloader" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Bootloader" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Bootloader" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Bootloader" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Bootloader" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ブートローダー" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Загрузчик" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Önyükleyici" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "Bootloader" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "Bootloader" } }
+      }
+    },
+    "obd_diagnostic_calibration" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kalibrierung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Calibration" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Calibración" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Calibration" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Calibrazione" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "キャリブレーション" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Калибровка" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kalibrasyon" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "校准" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "校準" } }
+      }
+    },
+    "obd_diagnostic_confirmed_dids" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bestätigte DIDs" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirmed DIDs" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "DID confirmados" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "DID confirmés" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "DID confermati" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "確認済みDID" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Подтверждённые DID" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Doğrulanan DID’ler" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已确认 DID" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已確認 DID" } }
+      }
+    },
+    "obd_diagnostic_cvn" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "CVN" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "CVN" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "CVN" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "CVN" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "CVN" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "CVN" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "CVN" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "CVN" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "CVN" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "CVN" } }
+      }
+    },
+    "obd_diagnostic_ecu_version" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "ECU-Version" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "ECU version" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Versión de ECU" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Version ECU" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Versione ECU" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ECUバージョン" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Версия ECU" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "ECU sürümü" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "ECU 版本" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "ECU 版本" } }
+      }
+    },
+    "obd_diagnostic_fingerprint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "ECU-/Cluster-Fingerabdruck" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "ECU/cluster fingerprint" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Huella de ECU/cuadro" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Empreinte ECU/cluster" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Impronta ECU/quadro" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ECU/メーター指紋" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Отпечаток ECU/панели" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "ECU/gösterge parmak izi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "ECU/仪表指纹" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "ECU/儀表指紋" } }
+      }
+    },
+    "obd_diagnostic_protocol" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Protokoll" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Protocol" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Protocolo" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Protocole" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Protocollo" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロトコル" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Протокол" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Protokol" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "协议" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "協定" } }
+      }
+    },
+    "obd_diagnostic_read_only" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nur Lesen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Read-only" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Solo lectura" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Lecture seule" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Sola lettura" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み取り専用" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Только чтение" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Salt okunur" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "只读" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "唯讀" } }
+      }
+    },
     "dev_firmware_inspection_file" : {
       "extractionState" : "manual",
       "localizations" : {

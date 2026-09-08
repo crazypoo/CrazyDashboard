@@ -2990,6 +2990,203 @@ final class PTCoreTests: XCTestCase {
         XCTAssertEqual(summary.runningMedianVoltage ?? 0, 14.1, accuracy: 0.001)
         XCTAssertEqual(summary.confidence, 0.25, accuracy: 0.001)
     }
+
+    // EN: Turn-signal reminders require all real riding thresholds, notify once, and reset when the signal is off.
+    // ES: Los avisos de intermitente requieren todos los umbrales reales, avisan una vez y se reinician al apagarlo.
+    // 中文：转向灯提醒必须满足真实行驶门槛，只提醒一次，并在关闭转向灯后重置。
+    func testTurnSignalReminderRequiresRealRidingThresholdsAndResets() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        var tracker = PTTurnSignalReminderTracker()
+
+        XCTAssertFalse(
+            tracker.update(
+                isActive: true,
+                isHazard: false,
+                speedKmh: 36,
+                source: .dashboardMock,
+                at: start
+            )
+        )
+
+        XCTAssertFalse(
+            tracker.update(
+                isActive: true,
+                isHazard: false,
+                speedKmh: 36,
+                source: .dashboardBluetooth,
+                at: start
+            )
+        )
+        XCTAssertFalse(
+            tracker.update(
+                isActive: true,
+                isHazard: false,
+                speedKmh: 36,
+                source: .dashboardBluetooth,
+                at: start.addingTimeInterval(29)
+            )
+        )
+        XCTAssertTrue(
+            tracker.update(
+                isActive: true,
+                isHazard: false,
+                speedKmh: 36,
+                source: .dashboardBluetooth,
+                at: start.addingTimeInterval(30)
+            )
+        )
+        XCTAssertFalse(
+            tracker.update(
+                isActive: true,
+                isHazard: false,
+                speedKmh: 36,
+                source: .dashboardBluetooth,
+                at: start.addingTimeInterval(32)
+            )
+        )
+
+        XCTAssertFalse(
+            tracker.update(
+                isActive: false,
+                isHazard: false,
+                speedKmh: 0,
+                source: .dashboardBluetooth,
+                at: start.addingTimeInterval(33)
+            )
+        )
+        XCTAssertFalse(tracker.didNotify)
+        XCTAssertEqual(tracker.distanceMeters, 0, accuracy: 0.001)
+    }
+
+    // EN: ABS warnings require real motion and three seconds of persistence, then become one-shot until recovery.
+    // ES: Los avisos ABS requieren movimiento real durante tres segundos y luego son únicos hasta recuperarse.
+    // 中文：ABS 提醒必须真实行驶并持续三秒，触发后直到恢复前只提醒一次。
+    func testABSWarningRequiresPersistenceAndResetsAfterRecovery() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        var tracker = PTABSWarningTracker()
+
+        XCTAssertFalse(
+            tracker.update(
+                isAbnormal: true,
+                speedKmh: 20,
+                source: .dashboardMock,
+                at: start
+            )
+        )
+        XCTAssertFalse(
+            tracker.update(
+                isAbnormal: true,
+                speedKmh: 20,
+                source: .dashboardBluetooth,
+                at: start
+            )
+        )
+        XCTAssertFalse(
+            tracker.update(
+                isAbnormal: true,
+                speedKmh: 20,
+                source: .dashboardBluetooth,
+                at: start.addingTimeInterval(2.9)
+            )
+        )
+        XCTAssertTrue(
+            tracker.update(
+                isAbnormal: true,
+                speedKmh: 20,
+                source: .dashboardBluetooth,
+                at: start.addingTimeInterval(3)
+            )
+        )
+        XCTAssertFalse(
+            tracker.update(
+                isAbnormal: true,
+                speedKmh: 20,
+                source: .dashboardBluetooth,
+                at: start.addingTimeInterval(4)
+            )
+        )
+
+        XCTAssertFalse(
+            tracker.update(
+                isAbnormal: false,
+                speedKmh: 20,
+                source: .dashboardBluetooth,
+                at: start.addingTimeInterval(5)
+            )
+        )
+        XCTAssertFalse(tracker.didNotify)
+    }
+
+    // EN: A/B/A evidence reaches candidate status only after repeatable changes and Data3 confirmation.
+    // ES: La evidencia A/B/A solo es candidata tras cambios repetibles y confirmación de Data3.
+    // 中文：A/B/A 证据只有在变化可重复且获得 Data3 确认后才进入候选状态。
+    func testProtocolExperimentScoringNeverAutoPromotes() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let strong = PTProtocolExperimentReport(
+            setting: .color,
+            startedAt: start,
+            endedAt: start.addingTimeInterval(20),
+            markers: [
+                PTProtocolExperimentMarker(phase: .baseline, capturedAt: start, value: 1, data3Confirmed: false),
+                PTProtocolExperimentMarker(phase: .firstA, capturedAt: start.addingTimeInterval(5), value: 1, data3Confirmed: true),
+                PTProtocolExperimentMarker(phase: .b, capturedAt: start.addingTimeInterval(10), value: 2, data3Confirmed: true),
+                PTProtocolExperimentMarker(phase: .secondA, capturedAt: start.addingTimeInterval(15), value: 1, data3Confirmed: false)
+            ]
+        )
+        XCTAssertEqual(strong.candidateScore, 100)
+        XCTAssertEqual(strong.candidateStatus, .candidate)
+
+        let weak = PTProtocolExperimentReport(
+            setting: .language,
+            startedAt: start,
+            endedAt: start.addingTimeInterval(20),
+            markers: [
+                PTProtocolExperimentMarker(phase: .baseline, capturedAt: start, value: nil, data3Confirmed: false),
+                PTProtocolExperimentMarker(phase: .firstA, capturedAt: start.addingTimeInterval(5), value: 1, data3Confirmed: false),
+                PTProtocolExperimentMarker(phase: .b, capturedAt: start.addingTimeInterval(10), value: 2, data3Confirmed: false),
+                PTProtocolExperimentMarker(phase: .secondA, capturedAt: start.addingTimeInterval(15), value: 3, data3Confirmed: false)
+            ],
+            targetLanguageRawValue: Int(PTConfigLanguage.french.rawValue)
+        )
+        XCTAssertEqual(weak.candidateScore, 40)
+        XCTAssertEqual(weak.candidateStatus, PTProtocolExperimentCandidateStatus.insufficient)
+        XCTAssertEqual(weak.targetLanguageRawValue, Int(PTConfigLanguage.french.rawValue))
+    }
+
+    // EN: Battery history is bounded to one summary per UTC day and stays isolated per vehicle.
+    // ES: El historial de batería se limita a un resumen por día UTC y permanece aislado por vehículo.
+    // 中文：电瓶历史按 UTC 每天一条摘要并按车辆隔离，且始终保持有界。
+    @MainActor
+    func testBatteryHealthHistoryIsDailyBoundedAndVehicleOwned() throws {
+        let suiteName = "PTBatteryHealthHistoryTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let store = PTBatteryHealthHistoryStore(defaults: defaults)
+        let firstVehicleID = UUID()
+        let secondVehicleID = UUID()
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let summary = PTBatteryHealthSummary(
+            capturedAt: start,
+            restingMedianVoltage: 12.6,
+            observationCount: 1
+        )
+
+        XCTAssertTrue(store.record(summary: summary, for: firstVehicleID, at: start))
+        XCTAssertFalse(store.record(summary: summary, for: firstVehicleID, at: start.addingTimeInterval(60)))
+        for day in 1...366 {
+            XCTAssertTrue(
+                store.record(
+                    summary: summary,
+                    for: firstVehicleID,
+                    at: start.addingTimeInterval(Double(day) * 86_400)
+                )
+            )
+        }
+
+        XCTAssertEqual(store.summaries(for: firstVehicleID).count, PTBatteryHealthHistoryStore.maximumDailySummaryCount)
+        XCTAssertTrue(store.summaries(for: secondVehicleID).isEmpty)
+    }
 }
 
 // EN: The actor keeps fallback call-count assertions race-free under Swift concurrency.

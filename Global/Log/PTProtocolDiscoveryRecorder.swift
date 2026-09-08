@@ -155,6 +155,241 @@ nonisolated private struct PTProtocolDiscoveryMetadata: Codable {
     let reason: String?
 }
 
+public nonisolated enum PTProtocolExperimentSetting: String, Codable, CaseIterable, Sendable {
+    case color
+    case unit
+    case language
+}
+
+public nonisolated enum PTProtocolExperimentPhase: String, Codable, Sendable {
+    case baseline
+    case firstA
+    case b
+    case secondA
+}
+
+public nonisolated enum PTProtocolExperimentCandidateStatus: String, Codable, Sendable {
+    case insufficient
+    case candidate
+}
+
+// EN: A marker contains only a setting value and timing metadata; it never stores VIN or vehicle identity.
+// ES: Una marca solo contiene el valor y el tiempo de la opción; nunca guarda VIN ni identidad del vehículo.
+// 中文：标记只保存设置值和时间信息，绝不保存 VIN 或车辆身份。
+public nonisolated struct PTProtocolExperimentMarker: Codable, Equatable, Sendable {
+    public let phase: PTProtocolExperimentPhase
+    public let capturedAt: Date
+    public let value: Int?
+    public let data3Confirmed: Bool
+    public let captureFileName: String?
+
+    public init(
+        phase: PTProtocolExperimentPhase,
+        capturedAt: Date = Date(),
+        value: Int?,
+        data3Confirmed: Bool,
+        captureFileName: String? = nil
+    ) {
+        self.phase = phase
+        self.capturedAt = capturedAt
+        self.value = value
+        self.data3Confirmed = data3Confirmed
+        self.captureFileName = captureFileName
+    }
+}
+
+// EN: Each marker keeps a small CAN window summary so evidence can be reviewed without exporting raw vehicle identity.
+// ES: Cada marca conserva un pequeño resumen de ventana CAN para revisar la evidencia sin exportar la identidad del vehículo.
+// 中文：每个标记保存一个小型 CAN 窗口摘要，便于复核证据且不导出车辆身份。
+public nonisolated struct PTProtocolExperimentWindowEvidence: Codable, Equatable, Sendable {
+    public let phase: PTProtocolExperimentPhase
+    public let capturedAt: Date
+    public let frameCount: Int
+    public let changedHeaderCount: Int
+    public let candidateHeaders: [String]
+
+    public init(
+        phase: PTProtocolExperimentPhase,
+        capturedAt: Date,
+        frameCount: Int,
+        changedHeaderCount: Int,
+        candidateHeaders: [String]
+    ) {
+        self.phase = phase
+        self.capturedAt = capturedAt
+        self.frameCount = max(0, frameCount)
+        self.changedHeaderCount = max(0, changedHeaderCount)
+        self.candidateHeaders = Array(candidateHeaders.prefix(10))
+    }
+}
+
+public nonisolated struct PTProtocolExperimentReport: Codable, Equatable, Identifiable, Sendable {
+    public let id: UUID
+    public let setting: PTProtocolExperimentSetting
+    public let startedAt: Date
+    public let endedAt: Date
+    public let markers: [PTProtocolExperimentMarker]
+    public let operationHitCount: Int
+    public let reverseChangeConsistent: Bool
+    public let stableBaseline: Bool
+    public let data3ConfirmationCount: Int
+    public let candidateScore: Int
+    public let candidateStatus: PTProtocolExperimentCandidateStatus
+    public let windowEvidence: [PTProtocolExperimentWindowEvidence]?
+    public let targetLanguageRawValue: Int?
+
+    public init(
+        id: UUID = UUID(),
+        setting: PTProtocolExperimentSetting,
+        startedAt: Date,
+        endedAt: Date = Date(),
+        markers: [PTProtocolExperimentMarker],
+        windowEvidence: [PTProtocolExperimentWindowEvidence]? = nil,
+        targetLanguageRawValue: Int? = nil
+    ) {
+        self.id = id
+        self.setting = setting
+        self.startedAt = startedAt
+        self.endedAt = endedAt
+        self.markers = markers
+
+        let operations = markers.filter {
+            $0.phase != .baseline && $0.value != nil
+        }
+        self.operationHitCount = min(3, operations.count)
+
+        let firstA = markers.first(where: { $0.phase == .firstA })?.value
+        let b = markers.first(where: { $0.phase == .b })?.value
+        let secondA = markers.first(where: { $0.phase == .secondA })?.value
+        self.reverseChangeConsistent = firstA != nil && b != nil && secondA != nil
+            && firstA == secondA && firstA != b
+        self.stableBaseline = markers.first(where: { $0.phase == .baseline })?.value != nil
+        self.data3ConfirmationCount = markers.filter(\.data3Confirmed).count
+        self.windowEvidence = windowEvidence
+
+        var score = 0
+        if operationHitCount == 3 { score += 40 }
+        if reverseChangeConsistent { score += 25 }
+        if stableBaseline { score += 20 }
+        if data3ConfirmationCount > 0 { score += 15 }
+        self.candidateScore = score
+        self.candidateStatus = score >= 80 ? .candidate : .insufficient
+        self.targetLanguageRawValue = targetLanguageRawValue
+    }
+}
+
+// EN: Experiment reports stay bounded and are safe to share because they contain no personal vehicle identifiers.
+// ES: Los informes de experimentos tienen un límite y se pueden compartir porque no contienen identificadores personales.
+// 中文：实验报告数量有上限，并且不含车辆个人标识，因此可以安全分享。
+@MainActor
+public final class PTProtocolExperimentStore {
+    public static let shared = PTProtocolExperimentStore()
+    public static let storageKey = "PTProtocolExperimentReports.v1"
+    public static let maximumReportCount = 30
+
+    private let defaults: UserDefaults
+    public private(set) var reports: [PTProtocolExperimentReport]
+
+    public init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        let decoded = defaults.data(forKey: Self.storageKey)
+            .flatMap { try? JSONDecoder().decode([PTProtocolExperimentReport].self, from: $0) }
+            ?? []
+        reports = Array(decoded.sorted { $0.endedAt > $1.endedAt }.prefix(Self.maximumReportCount))
+    }
+
+    public func save(_ report: PTProtocolExperimentReport) {
+        reports.removeAll { $0.id == report.id }
+        reports.insert(report, at: 0)
+        reports = Array(reports.prefix(Self.maximumReportCount))
+        persist()
+    }
+
+    public func clear() {
+        reports.removeAll(keepingCapacity: true)
+        persist()
+    }
+
+    public func exportURL() throws -> URL? {
+        guard !reports.isEmpty else { return nil }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "xp400-protocol-experiments-\(Int(Date().timeIntervalSince1970)).json"
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        try encoder.encode(reports).write(to: url, options: .atomic)
+        return url
+    }
+
+    public func exportCSVURL() throws -> URL? {
+        guard !reports.isEmpty else { return nil }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "xp400-protocol-experiments-\(Int(Date().timeIntervalSince1970)).csv"
+        )
+        let formatter = ISO8601DateFormatter()
+        var rows = ["id,setting,targetLanguageRawValue,startedAt,endedAt,operationHitCount,reverseChangeConsistent,stableBaseline,data3ConfirmationCount,candidateScore,candidateStatus,windowEvidenceCount,candidateHeaders"]
+        rows.append(contentsOf: reports.map { report in
+            var candidateHeaders: [String] = []
+            for evidence in report.windowEvidence ?? [] {
+                for header in evidence.candidateHeaders where !candidateHeaders.contains(header) {
+                    candidateHeaders.append(header)
+                }
+            }
+            return [
+                report.id.uuidString,
+                report.setting.rawValue,
+                report.targetLanguageRawValue.map(String.init) ?? "",
+                formatter.string(from: report.startedAt),
+                formatter.string(from: report.endedAt),
+                String(report.operationHitCount),
+                String(report.reverseChangeConsistent),
+                String(report.stableBaseline),
+                String(report.data3ConfirmationCount),
+                String(report.candidateScore),
+                report.candidateStatus.rawValue,
+                String(report.windowEvidence?.count ?? 0),
+                candidateHeaders.joined(separator: ";")
+            ].map(Self.csvField).joined(separator: ",")
+        })
+        try Data(rows.joined(separator: "\n").utf8).write(to: url, options: .atomic)
+        return url
+    }
+
+    private func persist() {
+        guard let data = try? JSONEncoder().encode(reports) else { return }
+        defaults.set(data, forKey: Self.storageKey)
+    }
+
+    private static func csvField(_ value: String) -> String {
+        "\"\(value.replacingOccurrences(of: "\"", with: "\"\""))\""
+    }
+}
+
+public nonisolated struct PTProtocolEvidenceCorrelation: Codable, Equatable, Identifiable, Sendable {
+    public let id: UUID
+    public let vehicleID: UUID
+    public let sessionIDs: [UUID]
+    public let channels: [PTProtocolDiscoveryChannel]
+    public let startedAt: Date
+    public let endedAt: Date
+
+    public init(
+        id: UUID = UUID(),
+        vehicleID: UUID,
+        sessionIDs: [UUID],
+        channels: [PTProtocolDiscoveryChannel],
+        startedAt: Date,
+        endedAt: Date
+    ) {
+        self.id = id
+        self.vehicleID = vehicleID
+        self.sessionIDs = sessionIDs
+        self.channels = channels
+        self.startedAt = startedAt
+        self.endedAt = endedAt
+    }
+}
+
 // English: The actor owns only evidence state and file I/O; all vehicle transport remains in existing managers.
 // Español: El actor solo posee el estado de evidencia y el I/O; el transporte sigue en los gestores existentes.
 // 中文：Actor 只负责证据状态和文件 I/O，车辆传输继续由现有管理器负责。
@@ -267,6 +502,56 @@ public actor PTProtocolDiscoveryRecorder {
 
     public func sessionSummaries(limit: Int = 20) -> [PTProtocolDiscoverySessionSummary] {
         Array(summaries.prefix(max(0, limit)))
+    }
+
+    // EN: Correlate only completed BLE/OBD sessions for the same garage vehicle and nearby time window.
+    // ES: Correlaciona solo sesiones BLE/OBD terminadas del mismo vehículo y con una ventana temporal cercana.
+    // 中文：只关联同一车库车辆且时间接近的已完成 BLE/OBD 会话。
+    public func correlatedSessions(limit: Int = 20) -> [PTProtocolEvidenceCorrelation] {
+        var correlations: [PTProtocolEvidenceCorrelation] = []
+        let completed = summaries
+            .filter { $0.endedAt != nil && $0.vehicleID != nil }
+            .sorted { $0.startedAt < $1.startedAt }
+
+        for summary in completed {
+            guard let vehicleID = summary.vehicleID,
+                  let endedAt = summary.endedAt else { continue }
+            if let index = correlations.firstIndex(where: { correlation in
+                guard correlation.vehicleID == vehicleID else { return false }
+                return summary.startedAt <= correlation.endedAt.addingTimeInterval(10)
+                    && endedAt >= correlation.startedAt.addingTimeInterval(-10)
+            }) {
+                let current = correlations[index]
+                var sessionIDs = current.sessionIDs
+                if !sessionIDs.contains(summary.id) {
+                    sessionIDs.append(summary.id)
+                }
+                var channels = current.channels
+                if !channels.contains(summary.channel) {
+                    channels.append(summary.channel)
+                }
+                correlations[index] = PTProtocolEvidenceCorrelation(
+                    id: current.id,
+                    vehicleID: vehicleID,
+                    sessionIDs: sessionIDs,
+                    channels: channels,
+                    startedAt: min(current.startedAt, summary.startedAt),
+                    endedAt: max(current.endedAt, endedAt)
+                )
+            } else {
+                correlations.append(
+                    PTProtocolEvidenceCorrelation(
+                        vehicleID: vehicleID,
+                        sessionIDs: [summary.id],
+                        channels: [summary.channel],
+                        startedAt: summary.startedAt,
+                        endedAt: endedAt
+                    )
+                )
+            }
+        }
+
+        return Array(correlations.reversed().prefix(max(0, limit)))
     }
 
     public func latestFileURL() -> URL? {
