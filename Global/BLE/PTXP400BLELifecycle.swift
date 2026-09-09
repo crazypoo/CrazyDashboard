@@ -12,7 +12,7 @@ import Foundation
 /// EN: Timeout phases are shared by diagnostics, UI status, and the watchdog.
 /// ES: Las fases de tiempo de espera se comparten entre diagnóstico, estado de UI y watchdog.
 /// 中文：超时阶段由诊断、界面状态和 watchdog 统一使用。
-public enum PTXP400BLETimeoutPhase: String, Codable, CaseIterable, Sendable {
+nonisolated public enum PTXP400BLETimeoutPhase: String, Codable, CaseIterable, Sendable {
     case serviceConfiguration
     case advertisingStartup
     case centralSubscription
@@ -25,7 +25,7 @@ public enum PTXP400BLETimeoutPhase: String, Codable, CaseIterable, Sendable {
 /// EN: Failures stay value-typed so stale callbacks can be compared and ignored safely.
 /// ES: Los fallos permanecen como valores para comparar y descartar callbacks obsoletos de forma segura.
 /// 中文：失败原因使用值类型，便于安全比较并忽略过期回调。
-public enum PTXP400BLEFailure: Equatable, Codable, Sendable {
+nonisolated public enum PTXP400BLEFailure: Equatable, Codable, Sendable {
     case timeout(PTXP400BLETimeoutPhase)
     case serviceConfiguration
     case bluetoothUnavailable
@@ -36,7 +36,7 @@ public enum PTXP400BLEFailure: Equatable, Codable, Sendable {
 /// EN: One explicit state replaces the invalid combinations of several lifecycle booleans.
 /// ES: Un estado explícito reemplaza las combinaciones inválidas de varios booleanos del ciclo de vida.
 /// 中文：使用一个显式状态替代多个生命周期布尔值可能形成的非法组合。
-public enum PTXP400BLELifecycleState: Equatable, Codable, Sendable {
+nonisolated public enum PTXP400BLELifecycleState: Equatable, Codable, Sendable {
     case idle
     case bluetoothUnavailable
     case configuringService
@@ -66,7 +66,7 @@ public enum PTXP400BLELifecycleState: Equatable, Codable, Sendable {
 /// EN: Events describe facts observed by the compatibility coordinator, not commands sent to the vehicle.
 /// ES: Los eventos describen hechos observados por el coordinador de compatibilidad, no comandos enviados al vehículo.
 /// 中文：事件表示兼容协调层观察到的事实，不表示向车辆发送指令。
-public enum PTXP400BLELifecycleEvent: Equatable, Sendable {
+nonisolated public enum PTXP400BLELifecycleEvent: Equatable, Sendable {
     case startRequested
     case serviceConfigurationStarted
     case serviceConfigured
@@ -88,7 +88,7 @@ public enum PTXP400BLELifecycleEvent: Equatable, Sendable {
 /// EN: A deterministic reducer makes lifecycle transitions testable without a vehicle or CoreBluetooth.
 /// ES: Un reductor determinista permite probar las transiciones sin vehículo ni CoreBluetooth.
 /// 中文：确定性的状态归约器让生命周期转换无需车辆或 CoreBluetooth 即可测试。
-public struct PTXP400BLELifecycleMachine: Sendable {
+nonisolated public struct PTXP400BLELifecycleMachine: Sendable {
     public private(set) var state: PTXP400BLELifecycleState
 
     public init(state: PTXP400BLELifecycleState = .idle) {

@@ -570,6 +570,23 @@ public class PTECUSnifferOverlay: PTDashboardBaseView, UIDocumentPickerDelegate 
                 presenter.present(PTBaseNavControl(rootViewController: controller), animated: true)
             }
         })
+        // EN: Keep the app-owned ANCS-shaped provider inside the explicit developer surface.
+        // ES: Mantiene el proveedor ANCS propio de la app dentro de la superficie explícita de desarrollador.
+        // 中文：将 App 自有的 ANCS 风格 Provider 仅放在明确的开发者界面中。
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "dashboard_notification_send_custom_ancs"),
+            style: .default
+        ) { [weak self] _ in
+            self?.sendExperimentalANCSNotification()
+        })
+        if PTXP400ANCSCoordinator.shared.isExperimentalProviderInstalled {
+            alert.addAction(UIAlertAction(
+                title: PTDashboardConfig.languageFunc(text: "dashboard_notification_stop_custom_ancs"),
+                style: .destructive
+            ) { [weak self] _ in
+                self?.stopExperimentalANCSProvider()
+            })
+        }
         alert.addAction(UIAlertAction(
             title: PTDashboardConfig.languageFunc(text: "dev_firmware_preflight"),
             style: .default
@@ -590,6 +607,31 @@ public class PTECUSnifferOverlay: PTDashboardBaseView, UIDocumentPickerDelegate 
             )
         }
         presenter.present(alert, animated: true)
+    }
+
+    // EN: The result reports only local queue acceptance; it never claims that XP400 displayed the message.
+    // ES: El resultado solo informa de la aceptación en la cola local; nunca afirma que XP400 mostró el mensaje.
+    // 中文：结果只表示本地队列已接收，不宣称 XP400 已经显示消息。
+    private func sendExperimentalANCSNotification() {
+        let result = PTXP400ANCSCoordinator.shared.sendExperimentalTest()
+        let message: String
+        switch result {
+        case .queued:
+            message = PTDashboardConfig.languageFunc(text: "dashboard_notification_custom_ancs_queued")
+        case .waitingForDashboard:
+            message = PTDashboardConfig.languageFunc(text: "dashboard_notification_custom_ancs_waiting")
+        case .unavailable:
+            message = PTDashboardConfig.languageFunc(text: "dashboard_notification_custom_ancs_unavailable")
+        }
+        appendDeveloperLog("📬 \(message)")
+    }
+
+    // EN: Restore the stable delegate immediately after the experimental interoperability check.
+    // ES: Restaura el delegado estable inmediatamente después de la comprobación experimental.
+    // 中文：实验互操作检查完成后立即恢复稳定委托。
+    private func stopExperimentalANCSProvider() {
+        PTXP400ANCSCoordinator.shared.stopExperimentalProvider()
+        appendDeveloperLog("✅ Experimental ANCS provider stopped; stable BLE delegate restored.")
     }
 
     private func runFirmwarePreflight() {

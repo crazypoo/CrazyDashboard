@@ -12,7 +12,7 @@ import Foundation
 /// EN: Timeout values are centralized so protocol timing is not scattered as magic numbers.
 /// ES: Los tiempos se centralizan para no dispersar números mágicos por el protocolo.
 /// 中文：集中管理超时数值，避免协议代码散落 magic number。
-public struct PTXP400BLETimeouts: Equatable, Sendable {
+nonisolated public struct PTXP400BLETimeouts: Equatable, Sendable {
     public let serviceConfiguration: TimeInterval
     public let advertisingStartup: TimeInterval
     public let centralSubscription: TimeInterval
@@ -39,7 +39,7 @@ public struct PTXP400BLETimeouts: Equatable, Sendable {
         self.sessionIdle = Self.validated(sessionIdle)
     }
 
-    public static let standard = PTXP400BLETimeouts()
+    nonisolated public static let standard = PTXP400BLETimeouts()
 
     public func interval(for phase: PTXP400BLETimeoutPhase) -> TimeInterval {
         switch phase {

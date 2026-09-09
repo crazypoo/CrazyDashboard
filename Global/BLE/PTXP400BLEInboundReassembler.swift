@@ -12,7 +12,7 @@ import Foundation
 /// EN: The logical packet shape expected by each authentication or data phase.
 /// ES: La forma lógica de paquete esperada por cada fase de autenticación o datos.
 /// 中文：每个认证或数据阶段所期待的逻辑数据包类型。
-public enum PTXP400BLEInboundPhase: Equatable, Sendable {
+nonisolated public enum PTXP400BLEInboundPhase: Equatable, Sendable {
     case keyConfiguration
     case authenticationResponse
     case randomChallenge
@@ -23,11 +23,11 @@ public enum PTXP400BLEInboundPhase: Equatable, Sendable {
 /// EN: A small state-aware assembler for writes that may be split, merged, duplicated, or malformed.
 /// ES: Un ensamblador pequeño y consciente del estado para escrituras divididas, combinadas, duplicadas o malformadas.
 /// 中文：一个按状态识别分片、合并、重复和非法写入的小型重组器。
-public struct PTXP400BLEInboundReassembler: Sendable {
+nonisolated public struct PTXP400BLEInboundReassembler: Sendable {
     /// EN: The caller should continue draining after `.dropped`; `.waiting` means more bytes are required.
     /// ES: El llamador debe seguir drenando después de `.dropped`; `.waiting` significa que faltan bytes.
     /// 中文：调用方收到 `.dropped` 后应继续排空，`.waiting` 表示还需要更多字节。
-    public enum Result: Equatable, Sendable {
+    nonisolated public enum Result: Equatable, Sendable {
         case frame(Data)
         case dropped
         case waiting

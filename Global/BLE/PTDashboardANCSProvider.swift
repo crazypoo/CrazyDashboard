@@ -2,9 +2,9 @@
 //  PTDashboardANCSProvider.swift
 //  CrazyDashboard
 //
-//  EN: Provides an Android-compatible ANCS-shaped channel for PTSpeed-owned alerts.
-//  ES: Proporciona un canal con forma ANCS compatible con Android para avisos propios de PTSpeed.
-//  中文：为 PTSpeed 自有提醒提供兼容安卓实现的 ANCS 风格通道。
+//  EN: Provides an experimental ANCS-shaped channel for protocol research only.
+//  ES: Proporciona un canal experimental con forma ANCS solo para investigar el protocolo.
+//  中文：仅为协议研究提供实验性的 ANCS 风格通道。
 //
 
 import CoreBluetooth
@@ -20,11 +20,12 @@ public enum PTDashboardANCSDeliveryResult: Equatable, Sendable {
     case unavailable
 }
 
-/// EN: Publishes the ANCS-shaped GATT service through the existing peripheral manager.
-/// ES: Publica el servicio GATT con forma ANCS mediante el gestor periférico existente.
-/// 中文：通过现有外设管理器发布 ANCS 风格的 GATT 服务。
+/// EN: Publishes an experimental ANCS-shaped GATT service through the existing peripheral manager.
+/// ES: Publica un servicio GATT experimental con forma ANCS mediante el gestor periférico existente.
+/// 中文：通过现有外设管理器发布实验性的 ANCS 风格 GATT 服务。
 public final class PTDashboardANCSProvider: NSObject {
     public static let shared = PTDashboardANCSProvider()
+    public static let isExperimental = true
 
     public static let serviceUUID = CBUUID(string: "7905F431-B5CE-4E99-A40F-4B1E122D00D0")
     public static let notificationSourceUUID = CBUUID(string: "9FBF120D-6301-42D9-8C58-25E699A21DBD")
@@ -48,7 +49,7 @@ public final class PTDashboardANCSProvider: NSObject {
 
     private var peripheralManager: CBPeripheralManager?
     private var delegateBridge: PTDashboardPeripheralDelegateBridge?
-    private var isInstalled = false
+    public private(set) var isInstalled = false
     private var serviceAddInFlight = false
     private var servicePublished = false
 
@@ -73,17 +74,18 @@ public final class PTDashboardANCSProvider: NSObject {
     /// EN: Install one delegate bridge so the protected BLE manager keeps receiving every existing callback.
     /// ES: Instala un único puente de delegado para que el gestor BLE protegido siga recibiendo todos sus callbacks.
     /// 中文：安装唯一的委托桥接，确保受保护的 BLE 管理器继续收到全部既有回调。
-    public func install() {
-        guard !isInstalled else { return }
+    @discardableResult
+    public func install() -> Bool {
+        guard !isInstalled else { return true }
 
         let manager = PTBluetoothServerManager.shared
         guard let peripheral = manager.peripheralManager else {
             log("无法安装：现有 CBPeripheralManager 尚未创建")
-            return
+            return false
         }
         guard let originalDelegate = peripheral.delegate as? PTBluetoothServerManager else {
             log("无法安装：现有 CBPeripheralManager 委托不是 PTBluetoothServerManager")
-            return
+            return false
         }
 
         peripheralManager = peripheral
@@ -99,6 +101,35 @@ public final class PTDashboardANCSProvider: NSObject {
             scheduleServicePublication()
         }
         log("已安装自有 ANCS 风格通道桥接，系统电话和短信 ANCS 路径保持不变")
+        return true
+    }
+
+    /// EN: Remove the experimental service and restore the original stable delegate when possible.
+    /// ES: Elimina el servicio experimental y restaura el delegado estable original cuando es posible.
+    /// 中文：尽可能移除实验服务并恢复原有稳定委托。
+    public func uninstall() {
+        guard isInstalled else { return }
+
+        let manager = peripheralManager
+        let service = ancsService
+        if let manager {
+            if let service, manager.state == .poweredOn {
+                manager.remove(service)
+            }
+            delegateBridge?.restoreDelegate(on: manager)
+        }
+
+        clearSession()
+        peripheralManager = nil
+        delegateBridge = nil
+        ancsService = nil
+        notificationSource = nil
+        controlPoint = nil
+        dataSource = nil
+        serviceAddInFlight = false
+        servicePublished = false
+        isInstalled = false
+        log("已移除实验 ANCS 风格通道并恢复稳定外设委托")
     }
 
     public var isReadyForSending: Bool {
@@ -260,7 +291,14 @@ public final class PTDashboardANCSProvider: NSObject {
         guard characteristic.uuid == Self.notificationSourceUUID
                 || characteristic.uuid == Self.dataSourceUUID else { return }
 
-        clearSession()
+        if characteristic.uuid == Self.notificationSourceUUID {
+            isNotificationSourceSubscribed = false
+        } else {
+            isDataSourceSubscribed = false
+        }
+        if !isNotificationSourceSubscribed && !isDataSourceSubscribed {
+            clearSession()
+        }
         log("仪表盘取消订阅 ANCS 特征：\(characteristic.uuid.uuidString)")
     }
 
@@ -487,6 +525,14 @@ private final class PTDashboardPeripheralDelegateBridge: NSObject, CBPeripheralM
         self.originalDelegate = originalDelegate
         self.provider = provider
         super.init()
+    }
+
+    /// EN: Restore only if this bridge is still the active delegate; never overwrite a later owner.
+    /// ES: Restaura solo si este puente sigue siendo el delegado activo; nunca sobrescribe a otro propietario.
+    /// 中文：仅当当前委托仍是本桥接时恢复，绝不覆盖后来接管的委托。
+    func restoreDelegate(on peripheral: CBPeripheralManager) {
+        guard peripheral.delegate === self else { return }
+        peripheral.delegate = originalDelegate
     }
 
     func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {

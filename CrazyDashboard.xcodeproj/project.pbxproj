@@ -187,6 +187,9 @@
 		600000010000000000000352 /* PTOBDCommandClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000352 /* PTOBDCommandClassifier.swift */; };
 		600000010000000000000353 /* PTXP400P1Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000353 /* PTXP400P1Tests.swift */; };
 		600000010000000000000354 /* PTOBDCompatibilityGateway.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000354 /* PTOBDCompatibilityGateway.swift */; };
+		600000010000000000000360 /* PTXP400BLEReliability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000360 /* PTXP400BLEReliability.swift */; };
+		600000010000000000000361 /* PTXP400P2Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000361 /* PTXP400P2Tests.swift */; };
+		600000010000000000000362 /* PTXP400P3Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000362 /* PTXP400P3Tests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -427,6 +430,9 @@
 		600000020000000000000352 /* PTOBDCommandClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDCommandClassifier.swift; sourceTree = "<group>"; };
 		600000020000000000000353 /* PTXP400P1Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400P1Tests.swift; sourceTree = "<group>"; };
 		600000020000000000000354 /* PTOBDCompatibilityGateway.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDCompatibilityGateway.swift; sourceTree = "<group>"; };
+		600000020000000000000360 /* PTXP400BLEReliability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400BLEReliability.swift; sourceTree = "<group>"; };
+		600000020000000000000361 /* PTXP400P2Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400P2Tests.swift; sourceTree = "<group>"; };
+		600000020000000000000362 /* PTXP400P3Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400P3Tests.swift; sourceTree = "<group>"; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -770,6 +776,7 @@
 				600000020000000000000171 /* PTXP400BLEInboundReassembler.swift */,
 				600000020000000000000340 /* PTXP400BLELifecycle.swift */,
 				600000020000000000000341 /* PTXP400BLEPhaseWatchdog.swift */,
+				600000020000000000000360 /* PTXP400BLEReliability.swift */,
 				55FE2A5C300DF42A000E741F /* PTBLEConnectViewController.swift */,
 			);
 			path = BLE;
@@ -918,6 +925,8 @@
 				600000020000000000000342 /* PTXP400BLEP0Fixtures.swift */,
 				600000020000000000000343 /* PTXP400BLEP0Tests.swift */,
 				600000020000000000000353 /* PTXP400P1Tests.swift */,
+				600000020000000000000361 /* PTXP400P2Tests.swift */,
+				600000020000000000000362 /* PTXP400P3Tests.swift */,
 			);
 			path = PTSpeedTests;
 			sourceTree = "<group>";
@@ -1359,6 +1368,7 @@
 				600000010000000000000351 /* PTOBDBusLease.swift in Sources */,
 				600000010000000000000352 /* PTOBDCommandClassifier.swift in Sources */,
 				600000010000000000000354 /* PTOBDCompatibilityGateway.swift in Sources */,
+				600000010000000000000360 /* PTXP400BLEReliability.swift in Sources */,
 				55499CFA3019D83800A1A2D9 /* PTDashboardBaseView.swift in Sources */,
 				557D0056302ED2A9008BA492 /* PTPeugeotLEDDashBoard.swift in Sources */,
 				5590187230107A1C00A77571 /* PTRoutePlantCell.swift in Sources */,
@@ -1431,6 +1441,8 @@
 				600000010000000000000342 /* PTXP400BLEP0Fixtures.swift in Sources */,
 				600000010000000000000343 /* PTXP400BLEP0Tests.swift in Sources */,
 				600000010000000000000353 /* PTXP400P1Tests.swift in Sources */,
+				600000010000000000000361 /* PTXP400P2Tests.swift in Sources */,
+				600000010000000000000362 /* PTXP400P3Tests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

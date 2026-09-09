@@ -2576,16 +2576,16 @@ Transport facade / compatibility facade
 
 # 64. 第三阶段：P2 BLE Reliability
 
-- [ ] Phase timeout
-- [ ] Session token
-- [ ] CoreBluetooth State Restoration
-- [ ] dynamic transport maximum
-- [ ] send queue stall detector
-- [ ] advertisement profile
-- [ ] official local name parity
-- [ ] malformed write response
-- [ ] metrics
-- [ ] trace export
+- [x] Phase timeout（当前接入 central subscription；其余阶段等待稳定核心 Hook）
+- [x] Session token
+- [ ] CoreBluetooth State Restoration（稳定核心当前未暴露 restoration identifier / willRestoreState）
+- [x] dynamic transport maximum（外围策略已完成；实际发送分片等待稳定核心 Hook）
+- [x] send queue stall detector（纯检测器已完成；实际队列 Hook 等待稳定核心开放）
+- [x] advertisement profile（FEFB Service UUID 边界已固化）
+- [ ] official local name parity（等待 Android 或实车广播证据）
+- [x] malformed write response（Credits 校验器已完成；实际 GATT Hook 等待稳定核心开放）
+- [x] metrics
+- [x] trace export
 
 ### 完成条件
 
@@ -2602,17 +2602,94 @@ updateValue backpressure
 App 被系统回收
 ```
 
+## P2 实施记录（2026-09-09）
+
+本轮遵循“稳定核心不改”的边界，`PTBluetoothManager.swift`、
+`PTHiddenOBDConnector.swift` 和 `PTOBDCommand.swift` 均未修改。已完成的是可以在外围安全接入、不会复制第二套 BLE 传输层的可靠性能力：
+
+- [x] Session Token：为每次真实或 Mock 仪表连接尝试分配新的 UUID 和 generation，超时任务及延迟回调不会跨越连接代次。
+- [x] Phase Timeout：继续使用现有集中式 watchdog，并为当前可观测的 central subscription 阶段接入 Token 校验、超时收口和广播停止。
+- [x] Expected Reconnect：保留用户连接意图，支持蓝牙开关、点火恢复和稳定外设回调后的自动接受重连；用户主动断开、Mock 停止和超时会清除意图。
+- [x] Background / Foreground Reconcile：应用回到前台时重新校正稳定外设生命周期；后台先完成已有车库快照 flush。
+- [x] Late Callback Guard：忽略无连接意图的成功回调，以及用户主动断开或超时后的迟到断开回调。
+- [x] Metrics：新增有界、隐私安全的 BLE 生命周期指标，不保存 VIN、坐标或原始 Payload。
+- [x] Trace Export：支持导出可靠性 JSON；协议证据导出继续复用已有 `PTProtocolDiscoveryRecorder`，不重复保存原始抓包。
+- [x] Dynamic Transport Policy：新增纯策略，按 `maximumUpdateValueLength` 与已确认的 20 字节协议上限选择安全分片长度。
+- [x] Send Queue Stall Detector：新增纯状态检测器，可识别 `updateValue` 背压后持续无进度的队列阻塞。
+- [x] Malformed Write Validator：复用现有 Credits 校验边界，统一识别缺失、长度错误、非法值和余额溢出。
+- [x] Advertisement Profile：固化 FEFB Service UUID 匹配边界；在没有 Android 或实车证据前不猜测官方 Local Name。
+- [x] Swift 6 Isolation：P2 纯值类型及其依赖的既有 P0 生命周期类型明确为 `nonisolated`，避免默认 actor 隔离警告升级。
+- [x] Tests：增加 Session Token、传输上限、Credits、广播 Profile、队列停滞和有界指标导出测试；P2 测试已纳入工程测试 Target。
+
+### 受稳定核心边界限制的延期项
+
+以下内容已经准备了外围策略或记录入口，但不能在不修改冻结核心的情况下声称已经接入真实传输：
+
+- [ ] CoreBluetooth State Restoration：当前核心没有 restoration identifier，也没有 `willRestoreState` 入口。
+- [ ] 实际动态分片：核心的 `CBPeripheral.maximumUpdateValueLength` 和固定发送分片位于私有实现中，本轮未复制或绕过发送队列。
+- [ ] 实际发送队列停滞监控：核心的 queue、`isSending` 和 `sendCredits` 未暴露可靠性回调；当前只交付纯检测器。
+- [ ] 实际 GATT malformed write 埋点：外围校验器已完成，但核心响应/写入路径仍未开放统一事件 Hook。
+- [ ] Official Local Name parity：尚无可信 Android 广播或实车抓包证据，因此只提供可配置 Profile，不写入猜测名称。
+- [ ] 完整阶段超时：当前只把 central subscription 接入稳定回调；认证、连接帧和发送队列阶段需核心提供明确阶段事件后再接入。
+- [ ] App 被系统回收后的 CoreBluetooth 系统恢复：当前仅保留已有 App 级恢复入口，未冒充系统 State Restoration。
+- [ ] 实车/XCTest 验证：本机当前 Scheme 没有可用的兼容模拟器目标，需在真实配对设备或兼容 CI 目的地完成。
+
+### P2 验证结果
+
+- `swiftc -parse`：P2 新文件、协调器和相关 P0 文件通过语法检查。
+- `git diff --check`：通过。
+- 冻结核心差异检查：三个冻结核心文件无差异。
+- 无签名 iOS `build-for-testing`：通过，P2 源码与测试 Bundle 均被编译。
+- XCTest 实际执行和 XP400 真车验证：本轮未执行，不能替代上述编译结论。
+
 ---
 
 # 65. 第四阶段：P3 ANCS
 
-- [ ] 明确 system ANCS 正式路径
-- [ ] 自定义 provider 标 Experimental
-- [ ] 清除 stale helper
-- [ ] 测试 Call / SMS / App Notification
-- [ ] 测试 Action 支持边界
-- [ ] 权限失败不影响 TIO Connection
-- [ ] ANCS 失败不影响 Navigation
+- [x] 明确 system ANCS 正式路径
+- [x] 自定义 provider 标 Experimental
+- [ ] 清除 stale helper（位于冻结的 `PTBluetoothManager.swift`，保留待核心解冻后删除）
+- [x] 测试 Call / SMS / App Notification（验证矩阵和真机操作指引已完成，真实设备测试待执行）
+- [x] 测试 Action 支持边界（系统托管，不提供 App 动作桥接）
+- [x] 权限失败不影响 TIO Connection
+- [x] ANCS 失败不影响 Navigation
+
+## P3 实施记录（2026-09-09）
+
+本阶段将 iOS 系统通知和 App 自有 ANCS 风格 GATT 通道彻底分开。正常车辆连接、导航和系统通知不再依赖实验 Provider；`PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift` 和 `PTOBDCommand.swift` 继续保持未修改。
+
+### 已完成
+
+- [x] 系统路径统一由 `PTXP400ANCSCoordinator.scheduleSystemNotification` 转发到已有 `PTNotificationCenter`，继续使用 `UNUserNotificationCenter` 权限、分类、去重和冷却规则。
+- [x] 设置页只保留系统通知权限、本地 iPhone 测试和 XP400 真机验证指引；本地测试结果只表示 iOS 通知中心已接受，不宣称仪表已显示。
+- [x] `PTDashboardANCSProvider` 明确标记为 Experimental，增加安装成功结果和可逆 `uninstall()`；卸载时移除实验服务并尽可能恢复稳定 `CBPeripheralManager` 委托。
+- [x] 自有 Provider 测试入口移动到开发者工具，不再出现在普通通知设置流程中；发送结果明确区分 queued、waiting 和 unavailable。
+- [x] 修复实验 Provider 单特征取消订阅时误清除另一特征状态的问题；只有两个 ANCS 特征都取消订阅后才清理整个会话。
+- [x] 新增 `PTXP400ANCSNotificationSource` 和 `PTXP400ANCSVerificationCase`，固定覆盖电话、短信和第三方 App 通知三类真实来源。
+- [x] 明确 Action 边界：电话/短信/第三方通知的操作由 iOS、配对关系和仪表固件系统托管，PTSpeed 不伪造动作回调或声称可以控制系统通知。
+- [x] 新增 `PTXP400P3Tests`，覆盖三类通知验证矩阵、系统路径标识、Experimental 标识和 ANCS UUID 契约。
+- [x] 新增停止实验 Provider 的开发者入口，便于实车验证完成后恢复稳定 BLE 委托。
+
+### 可靠性与隔离边界
+
+- 系统通知权限为 `denied`、`notDetermined` 或本地通知提交失败时，只返回 `PTNotificationDeliveryResult`，不会调用 BLE Provider，也不会改变 TIO 连接状态。
+- 实验 Provider 的 GATT 注册失败、订阅缺失、队列满或卸载，只影响实验通道；正常导航仍通过既有导航发送链路运行。
+- `PTDashboardANCSProvider` 复用现有外设管理器只是实验兼容路径，不等同于 iOS 向 App 暴露系统 ANCS 消费者 API。
+
+### 保留延期
+
+- [ ] `PTBluetoothManager.sendCustomAlertToDashboard(...)` 仍位于冻结核心中，当前没有业务调用且内部不执行真实发送；待核心允许修改时删除，避免与统一 Coordinator 形成第二入口。
+- [ ] Call、SMS、第三方 App 通知及仪表动作仍需真实配对 XP400、锁屏/专注模式和不同通知设置下逐项验证；单元测试不替代实车结论。
+- [ ] 系统 ANCS 是否显示某个具体第三方 App 的内容由 iOS、App 通知权限、Focus、锁屏预览和仪表固件决定，PTSpeed 不把本地测试结果升级为硬件兼容性结论。
+
+### P3 验证结果
+
+- `swiftc -parse`：Coordinator、Provider、设置页、开发者入口和 P3 测试通过。
+- `Localizable.xcstrings`：JSON 解析通过。
+- `git diff --check`：通过。
+- 无签名 iOS `build-for-testing`：通过，P3 源码与测试 Bundle 均被编译。
+- 构建仍出现既有第三方静态库对象文件警告，但没有 P3 编译错误。
+- XCTest 实际执行、真实电话/短信/第三方通知和 XP400 真机验证：本轮未执行。
 
 ---
 

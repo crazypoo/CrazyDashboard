@@ -11984,49 +11984,102 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Send direct ANCS test"
+            "value" : "Experimenteller ANCS-Test (Entwickler)"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Send direct ANCS test"
+            "value" : "Experimental ANCS test (Developer)"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Send direct ANCS test"
+            "value" : "Prueba ANCS experimental (desarrollador)"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Send direct ANCS test"
+            "value" : "Test ANCS expérimental (développeur)"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Send direct ANCS test"
+            "value" : "Test ANCS sperimentale (sviluppatore)"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Doğrudan ANCS testi gönder"
+            "value" : "Deneysel ANCS testi (geliştirici)"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "发送直接 ANCS 测试"
+            "value" : "实验性 ANCS 测试（开发者）"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "傳送直接 ANCS 測試"
+            "value" : "實驗性 ANCS 測試（開發者）"
+          }
+        }
+      }
+    },
+    "dashboard_notification_stop_custom_ancs" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Experimentellen ANCS-Provider stoppen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop experimental ANCS provider"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detener el proveedor ANCS experimental"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrêter le fournisseur ANCS expérimental"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferma il provider ANCS sperimentale"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deneysel ANCS sağlayıcısını durdur"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "停止实验性 ANCS Provider"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "停止實驗性 ANCS Provider"
           }
         }
       }
