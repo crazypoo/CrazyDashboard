@@ -20,16 +20,14 @@ public class PTCarPlayManager: NSObject {
     
     /// 全局判断：当前设备是否已经成功连上 CarPlay 并激活了对应的 Scene
     public static var isCarPlayActive: Bool {
-        // 获取所有已连接的场景
-        let connectedScenes = UIApplication.shared.connectedScenes
-        
-        // 查找是否存在角色为 CarPlay 模板的场景
-        let carPlayScene = connectedScenes.first { scene in
-            scene.session.role == .carTemplateApplication
+        // EN: A connected CarPlay scene is not necessarily rendering yet; use its activation state.
+        // ES: Una escena de CarPlay conectada todavía puede no estar renderizando; usamos su estado de activación.
+        // 中文：CarPlay 场景已连接不代表已经开始渲染，必须同时检查它的激活状态。
+        UIApplication.shared.connectedScenes.contains { scene in
+            guard scene.session.role == .carTemplateApplication else { return false }
+            return scene.activationState == .foregroundActive ||
+                scene.activationState == .foregroundInactive
         }
-        
-        // 如果找到了，说明 CarPlay 正在运行中
-        return carPlayScene != nil
     }
 }
 

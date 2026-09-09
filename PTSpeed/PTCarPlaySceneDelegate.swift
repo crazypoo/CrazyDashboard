@@ -14,11 +14,13 @@ import SwifterSwift
 let CarPlayDidDisconnectNotification = NSNotification.Name("CarPlayDidDisconnectNotification")
 let CarPlayDidConnectNotification = NSNotification.Name("CarPlayDidConnectNotification")
 
-class PTCarPlaySceneDelegate: UIResponder,CPTemplateApplicationSceneDelegate,CPInterfaceControllerDelegate {
+@MainActor
+final class PTCarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate, CPInterfaceControllerDelegate {
     var interfaceController: CPInterfaceController?
     var carWindow: CPWindow?
 
     let dashboardVC = PTCarPlayContainerViewController()
+    private var carPlayBackObserver: NSObjectProtocol?
     
     // 当插上数据线，CarPlay 启动时调用
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
@@ -37,20 +39,28 @@ class PTCarPlaySceneDelegate: UIResponder,CPTemplateApplicationSceneDelegate,CPI
         
         window.rootViewController = dashboardVC
         window.makeKeyAndVisible()
+        dashboardVC.loadViewIfNeeded()
 
         let rootTemplate = createMainMenuTemplate()
         interfaceController.setRootTemplate(rootTemplate, animated: true, completion: nil)
-        NotificationCenter.default.post(name: PTCarPlayDidBecomeActiveNotification, object: nil)
         
         NotificationCenter.default.post(
             name: CarPlayDidConnectNotification,
             object: nil
         )
         
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(handleCarPlayBack),
-                                               name: NSNotification.Name("PTCarPlayNavigateBack"),
-                                               object: nil)
+        if carPlayBackObserver == nil {
+            // EN: Register once because a CarPlay scene can reconnect without recreating its delegate.
+            // ES: Registramos una sola vez porque una escena de CarPlay puede reconectarse sin recrear su delegado.
+            // 中文：CarPlay 场景可能重连但不重建代理，因此返回通知只注册一次。
+            carPlayBackObserver = NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("PTCarPlayNavigateBack"),
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.handleCarPlayBack()
+            }
+        }
     }
     
     private func createMainMenuTemplate() -> CPGridTemplate {
@@ -82,10 +92,43 @@ class PTCarPlaySceneDelegate: UIResponder,CPTemplateApplicationSceneDelegate,CPI
         PTNSLogConsole("🚗 [CarPlay] 收到返回指令，正在退回上一级模板...")
         
         // 1. 让 CarPlay 系统的管家弹出模板 (返回主菜单)
-        self.interfaceController?.popTemplate(animated: true, completion: { [weak self] _, _ in
+        self.interfaceController?.popTemplate(animated: true, completion: { [weak self] finished, error in
+            guard finished, error == nil else {
+                PTNSLogConsole("⚠️ [CarPlay] 返回模板未完成，保留当前界面。")
+                return
+            }
             // 2. 动画结束后，同步清空底层的 UIViewController
             self?.dashboardVC.clearChildVC()
         })
+    }
+
+    // EN: Attach the view controller before the transition and flush it again after CarPlay presents the template.
+    // ES: Adjuntamos el controlador antes de la transición y volvemos a forzar su diseño después de presentar la plantilla.
+    // 中文：在模板切换前挂载控制器，并在 CarPlay 完成展示后再次刷新布局。
+    private func presentCarPlayScreen(template: CPTemplate,
+                                      viewController: UIViewController,
+                                      afterPresentation: (() -> Void)? = nil) {
+        guard let interfaceController else {
+            PTNSLogConsole("⚠️ [CarPlay] 当前没有可用的 interfaceController。")
+            return
+        }
+
+        dashboardVC.switchTo(viewController: viewController)
+        dashboardVC.prepareCurrentChildForDisplay()
+
+        interfaceController.pushTemplate(template, animated: true) { [weak self] finished, error in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                guard finished, error == nil else {
+                    PTNSLogConsole("⚠️ [CarPlay] 模板展示失败，清理未完成的界面。")
+                    self.dashboardVC.clearChildVC()
+                    return
+                }
+
+                self.dashboardVC.prepareCurrentChildForDisplay()
+                afterPresentation?()
+            }
+        }
     }
 
     // MARK: - 2. 界面跳转逻辑
@@ -99,8 +142,7 @@ class PTCarPlaySceneDelegate: UIResponder,CPTemplateApplicationSceneDelegate,CPI
         templateA.mapButtons = [changeThemeButton]
         
         let aVC = PTPeugeotDashBoardViewController()
-        self.dashboardVC.switchTo(viewController: aVC)
-        self.interfaceController?.pushTemplate(templateA, animated: true) { finish, error in }
+        presentCarPlayScreen(template: templateA, viewController: aVC)
     }
 
 
@@ -115,11 +157,8 @@ class PTCarPlaySceneDelegate: UIResponder,CPTemplateApplicationSceneDelegate,CPI
         templateA.mapButtons = [changeThemeButton]
         
         let aVC = ViewController()
-        self.dashboardVC.switchTo(viewController: aVC)
-        self.interfaceController?.pushTemplate(templateA, animated: true) { finish, error in
-            PTGCDManager.shared.delayOnMain(time: 0.35) {
-                aVC.navStart()
-            }
+        presentCarPlayScreen(template: templateA, viewController: aVC) {
+            aVC.navStart()
         }
     }
     
@@ -134,8 +173,7 @@ class PTCarPlaySceneDelegate: UIResponder,CPTemplateApplicationSceneDelegate,CPI
         templateB.mapButtons = [changeThemeButton]
 
         let bVC = PTOBDDataCarViewController()
-        self.dashboardVC.switchTo(viewController: bVC)
-        self.interfaceController?.pushTemplate(templateB, animated: true, completion: nil)
+        presentCarPlayScreen(template: templateB, viewController: bVC)
     }
 
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene, didDisconnectInterfaceController interfaceController: CPInterfaceController) {
@@ -157,10 +195,20 @@ class PTCarPlaySceneDelegate: UIResponder,CPTemplateApplicationSceneDelegate,CPI
     }
 
     func sceneDidBecomeActive(_ scene: UIScene) {
+        // EN: The scene callback is the reliable point at which CarPlay can be considered active.
+        // ES: El callback de la escena es el punto fiable para considerar activo CarPlay.
+        // 中文：以场景激活回调作为 CarPlay 真正可渲染的可靠时机。
+        dashboardVC.prepareCurrentChildForDisplay()
         NotificationCenter.default.post(name: PTCarPlayDidBecomeActiveNotification, object: nil)
     }
 
     func sceneDidEnterBackground(_ scene: UIScene) {
         NotificationCenter.default.post(name: PTCarPlayDidEnterBackgroundNotification, object: nil)
+    }
+
+    deinit {
+        if let carPlayBackObserver {
+            NotificationCenter.default.removeObserver(carPlayBackObserver)
+        }
     }
 }

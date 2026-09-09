@@ -15,7 +15,8 @@ import AMapNaviKit
 public let PTAppEnterBackgroundNotification = NSNotification.Name("PTAppEnterBackgroundNotification")
 public let PTCarVCShowedNotification = NSNotification.Name("PTCarVCShowedNotification")
 
-class ViewController: UIViewController {
+@MainActor
+final class ViewController: UIViewController {
     
     var currentSpeedLimit:UInt8 = 0
 
@@ -28,7 +29,7 @@ class ViewController: UIViewController {
         
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        self.view.layoutIfNeeded()
+        prepareForCarPlayDisplay()
         
         NotificationCenter.default.post(name: PTCarVCShowedNotification, object: nil)
         
@@ -77,6 +78,16 @@ class ViewController: UIViewController {
                 self?.updateMapModeForCarPlayConnection(isActive: false)
             }
         })
+
+        blockObserverTokens.append(NotificationCenter.default.addObserver(forName: PTCarPlayDidBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                // EN: Re-layout after CarPlay activation so the child view renders without waking the phone.
+                // ES: Rehacemos el diseño después de activar CarPlay para renderizar sin despertar el teléfono.
+                // 中文：CarPlay 激活后重新布局，确保不唤醒手机也能完成首帧渲染。
+                self?.prepareForCarPlayDisplay()
+                self?.navStart()
+            }
+        })
         
         NotificationCenter.default.addObserver(self, selector: #selector(carplayStopNav), name: PTCarPlayStopNavNotification, object: nil)
         
@@ -107,6 +118,18 @@ class ViewController: UIViewController {
             self.updateMapModeForCarPlayConnection(isActive: PTCarPlayManager.isCarPlayActive)
         }
     }
+
+    // EN: Flush the complete CarPlay view hierarchy after it is inserted dynamically.
+    // ES: Forzamos el diseño de toda la jerarquía de CarPlay después de insertarla dinámicamente.
+    // 中文：动态插入 CarPlay 控制器后，强制完成整棵视图树的布局。
+    func prepareForCarPlayDisplay() {
+        loadViewIfNeeded()
+        view.setNeedsLayout()
+        view.layoutIfNeeded()
+        dashBoard.setNeedsLayout()
+        dashBoard.layoutIfNeeded()
+        dashBoard.mapView.prepareForCarPlayDisplay()
+    }
     
     @objc private func swallowTap() {
         // 这里什么都不需要做！
@@ -130,5 +153,6 @@ class ViewController: UIViewController {
         } else {
             self.dashBoard.mapView.setNormalMapView()
         }
+        prepareForCarPlayDisplay()
     }
 }

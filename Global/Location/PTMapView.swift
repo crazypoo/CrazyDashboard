@@ -78,11 +78,8 @@ class PTMapView: UIView, MAMapViewDelegate {
         )
         
         PTGCDManager.shared.delayOnMain(time: 0.55) {
-            let flag = AMapLocationDataAvailableForCoordinate(PTLocationEngine.shared.lastLocation?.coordinate ?? .init(latitude: 0, longitude: 0))
-            self.mapView.mapLanguage = flag ? 0 : 1
-            self.mapView.mapType = .standardNight
-            self.carPlayMapView.mapLanguage = flag ? 0 : 1
-            self.carPlayMapView.mapType = .standardNight
+            self.configureMapAppearance(self.mapView)
+            self.configureMapAppearance(self.carPlayMapView)
         }
     }
     
@@ -107,9 +104,11 @@ class PTMapView: UIView, MAMapViewDelegate {
         self.carPlayMapView.removeFromSuperview()
         self.driveView.removeFromSuperview()
         self.addSubview(self.mapView)
-        self.mapView.snp.makeConstraints { make in
+        self.mapView.snp.remakeConstraints { make in
             make.edges.equalToSuperview()
         }
+        configureMapAppearance(mapView)
+        prepareForCarPlayDisplay()
     }
     
     func setupNavView() {
@@ -119,14 +118,40 @@ class PTMapView: UIView, MAMapViewDelegate {
         addSubviews([carPlayMapView, driveView])
         carPlayMapView.delegate = self
         driveView.delegate = self
-        self.carPlayMapView.snp.makeConstraints { make in
+        self.carPlayMapView.snp.remakeConstraints { make in
             make.edges.equalToSuperview()
         }
-        self.driveView.snp.makeConstraints { make in
+        self.driveView.snp.remakeConstraints { make in
             make.edges.equalToSuperview()
         }
         driveView.isHidden = !PTNavigationSessionCoordinator.shared.isSessionActive
         self.setupNavDelegate()
+        configureMapAppearance(carPlayMapView)
+        prepareForCarPlayDisplay()
+    }
+
+    // EN: Force the active map and navigation views through their first layout pass on CarPlay.
+    // ES: Forzamos el primer diseño del mapa y la navegación activos en CarPlay.
+    // 中文：强制当前地图和导航视图在 CarPlay 上完成首轮布局。
+    func prepareForCarPlayDisplay() {
+        setNeedsLayout()
+        layoutIfNeeded()
+
+        subviews.forEach { subview in
+            subview.setNeedsLayout()
+            subview.layoutIfNeeded()
+        }
+    }
+
+    // EN: Apply map language and appearance immediately; the delayed pass remains a late-location fallback.
+    // ES: Aplicamos idioma y apariencia inmediatamente; el pase diferido queda como respaldo para la ubicación tardía.
+    // 中文：立即应用地图语言和外观，延迟任务仅作为定位信息稍后到达时的兜底。
+    private func configureMapAppearance(_ map: MAMapView) {
+        let hasLocationData = AMapLocationDataAvailableForCoordinate(
+            PTLocationEngine.shared.lastLocation?.coordinate ?? .init(latitude: 0, longitude: 0)
+        )
+        map.mapLanguage = hasLocationData ? 0 : 1
+        map.mapType = .standardNight
     }
     
     private func setupUI() {
