@@ -741,16 +741,9 @@ private extension PTProtocolDiscoveryRecorder {
         }
 
         let result = Self.classifyDashboard(data, direction: direction)
-        guard result.classification != .known else { return }
-
         let key = result.fingerprint
         let occurrence = (session.fingerprintCounts[key, default: 0] + 1)
         session.fingerprintCounts[key] = occurrence
-
-        // ponytail: keep the first sample and logarithmic repeats; a full packet stream remains in the legacy text log.
-        guard occurrence == 1 || occurrence == 10 || occurrence == 100 || occurrence == 1_000 else {
-            return
-        }
 
         let event = PTProtocolDiscoveryEvent(
             sessionID: session.summary.id,
@@ -764,6 +757,9 @@ private extension PTProtocolDiscoveryRecorder {
             fingerprint: key,
             note: "occurrence=\(occurrence); \(result.note)"
         )
+        // EN: P0 captures keep every parsed BLE frame, including known frames, until the bounded session limit is reached.
+        // ES: Las capturas P0 conservan cada trama BLE analizada, incluidas las conocidas, hasta el límite acotado de la sesión.
+        // 中文：P0 抓包在会话有界上限内保留每一帧已解析 BLE 数据，包括已知帧。
         writeEvent(event, to: &session)
     }
 

@@ -172,10 +172,15 @@ public struct PTVehicleSnapshot: Codable, Equatable, Sendable {
 public final class PTVehicleConnectivityCoordinator: NSObject {
     public static let shared = PTVehicleConnectivityCoordinator()
     public static let snapshotDidChange = Notification.Name("PTVehicleConnectivityCoordinator.snapshotDidChange")
+    public static let dashboardBLEStateDidChange = Notification.Name("PTVehicleConnectivityCoordinator.dashboardBLEStateDidChange")
     public static let dashboardGarageSyncDidChange = Notification.Name("PTVehicleConnectivityCoordinator.dashboardGarageSyncDidChange")
     public static let telemetryDidChange = Notification.Name("PTVehicleConnectivityCoordinator.telemetryDidChange")
 
     public private(set) var snapshot: PTVehicleSnapshot = .initial
+    // EN: This is a compatibility projection of the protected BLE core, not a second transport state machine.
+    // ES: Esta es una proyección compatible del núcleo BLE protegido, no una segunda máquina de transporte.
+    // 中文：这是受保护 BLE 核心的兼容状态投影，不是第二套传输状态机。
+    public private(set) var dashboardBLEState: PTXP400BLELifecycleState = .idle
     public private(set) var telemetrySnapshot: PTVehicleTelemetrySnapshot = .empty
     public private(set) var wheelSpeedConsistency = PTWheelSpeedConsistencyResult(state: .unavailable)
     public private(set) var batteryHealthSummary = PTBatteryHealthSummary()
@@ -185,12 +190,18 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
 
     private let widgetAppGroupID = PTWidgetDataKeys.appGroupID
     private let dashboardAutoSyncInterval: TimeInterval = 60
+    private var dashboardBLELifecycle = PTXP400BLELifecycleMachine()
+    // EN: Preserve the legacy 15-second connection contract through the centralized phase configuration.
+    // ES: Conserva el contrato heredado de 15 segundos mediante la configuración de fase centralizada.
+    // 中文：通过集中式阶段配置保留原有 15 秒连接失败语义。
+    private let dashboardBLEWatchdog = PTXP400BLEPhaseWatchdog(
+        timeouts: PTXP400BLETimeouts(centralSubscription: 15)
+    )
     private var dashboardAttemptInFlight = false
     private var obdAttemptInFlight = false
     private var obdRetryRequired = false
     private var ignoreNextOBDDisconnect = false
     private var dashboardObserversActivated = false
-    private var dashboardAttemptTask: Task<Void, Never>?
     private var obdAttemptTask: Task<Void, Never>?
     private var pendingDashboardIdentity: PTDashboardConnectionIdentity?
     private var dashboardLiveBuffer = PTDashboardLiveBuffer()
@@ -264,7 +275,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
     }
 
     isolated deinit {
-        dashboardAttemptTask?.cancel()
+        dashboardBLEWatchdog.cancel()
         obdAttemptTask?.cancel()
         dashboardFlushTask?.cancel()
         dashboardIdentityTask?.cancel()
@@ -280,6 +291,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
     @discardableResult
     public func connectDashboardIfNeeded() -> Bool {
         if PTDashboardConfig.shared.blueConnected {
+            markDashboardBLEReady()
             updateDashboardState(.connected, transport: .dashboardBluetooth)
             return false
         }
@@ -287,6 +299,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         guard !dashboardAttemptInFlight else { return false }
 
         dashboardAttemptInFlight = true
+        transitionDashboardBLE(.startRequested)
         updateDashboardState(.connecting, transport: .dashboardBluetooth)
         startDashboardWatchdog()
         PTBluetoothServerManager.shared.startBaseStationAndScan()
@@ -306,6 +319,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         }
 
         dashboardAttemptInFlight = true
+        transitionDashboardBLE(.startRequested)
         updateDashboardState(.connecting, transport: .dashboardMock)
         startDashboardWatchdog()
         PTBluetoothServerManager.shared.startMockDashboardData()
@@ -337,8 +351,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
                 updateDashboardState(.idle, transport: nil)
             case .connecting:
                 dashboardAttemptInFlight = false
-                dashboardAttemptTask?.cancel()
-                dashboardAttemptTask = nil
+                dashboardBLEWatchdog.cancel()
             default:
                 break
             }
@@ -358,8 +371,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
 
     public func stopMockDashboard() {
         dashboardAttemptInFlight = false
-        dashboardAttemptTask?.cancel()
-        dashboardAttemptTask = nil
+        dashboardBLEWatchdog.cancel()
         PTBluetoothServerManager.shared.stopMockDashboardData()
         finalizeDashboardDisconnect(transport: .dashboardMock)
         telemetryEngine.clearDashboard()
@@ -375,8 +387,8 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
     public func disconnectDashboard() {
         let transport = snapshot.dashboard.transport ?? .dashboardBluetooth
         dashboardAttemptInFlight = false
-        dashboardAttemptTask?.cancel()
-        dashboardAttemptTask = nil
+        transitionDashboardBLE(.disconnectRequested)
+        dashboardBLEWatchdog.cancel()
 
         if transport == .dashboardMock {
             PTBluetoothServerManager.shared.stopMockDashboardData()
@@ -538,8 +550,12 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         dashboardConnectionIdentity = pendingDashboardIdentity
 
         if dashboardState == .connected {
+            markDashboardBLEReady()
             activateDashboardObserversIfNeeded()
             beginDashboardGarageSession()
+        } else {
+            dashboardBLELifecycle = PTXP400BLELifecycleMachine()
+            dashboardBLEState = dashboardBLELifecycle.state
         }
     }
 
@@ -926,7 +942,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
     // 中文：让被动证据跟随现有连接状态启停，ATMA 继续保持独立的开发者操作。
     private func syncProtocolCaptureLifecycle(for next: PTVehicleSnapshot) {
         switch next.dashboard.state {
-        case .connected:
+        case .connecting, .connected:
             let transport = next.dashboard.transport?.rawValue ?? "dashboardBluetooth"
             let source: PTProtocolDiscoverySource = next.dashboard.transport == .dashboardMock ? .mock : .real
             let vehicleID = dashboardGarageVehicleID ?? PTMotorcycleGarageStore.shared.selectedVehicleID
@@ -943,7 +959,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
                     reason: next.dashboard.errorMessage ?? next.dashboard.state.rawValue
                 )
             }
-        case .idle, .connecting:
+        case .idle:
             break
         }
 
@@ -1287,19 +1303,22 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
     }
 
     private func startDashboardWatchdog() {
-        dashboardAttemptTask?.cancel()
-        dashboardAttemptTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: 15_000_000_000)
-            guard let self, !Task.isCancelled, self.dashboardAttemptInFlight else { return }
-            self.dashboardAttemptInFlight = false
-            self.finalizeDashboardDisconnect(transport: self.snapshot.dashboard.transport ?? .dashboardBluetooth)
-            self.telemetryEngine.clearDashboard()
-            self.wheelSpeedTracker = PTWheelSpeedConsistencyTracker()
-            self.wheelSpeedConsistency = PTWheelSpeedConsistencyResult(state: .unavailable)
-            self.resetDashboardDerivedState()
-            self.updateDashboardState(.failed, errorMessage: "Dashboard connection timed out")
-            self.publishTelemetryChange()
-        }
+        dashboardBLEWatchdog.arm(
+            .centralSubscription,
+            handler: { [weak self] phase in
+                guard let self, self.dashboardAttemptInFlight else { return }
+                self.dashboardAttemptInFlight = false
+                self.transitionDashboardBLE(.timeout(phase))
+                self.finalizeDashboardDisconnect(transport: self.snapshot.dashboard.transport ?? .dashboardBluetooth)
+                self.telemetryEngine.clearDashboard()
+                self.wheelSpeedTracker = PTWheelSpeedConsistencyTracker()
+                self.wheelSpeedConsistency = PTWheelSpeedConsistencyResult(state: .unavailable)
+                self.resetDashboardDerivedState()
+                self.updateDashboardState(.failed, errorMessage: "Dashboard connection timed out")
+                self.transitionDashboardBLE(.failure(.timeout(phase)))
+                self.publishTelemetryChange()
+            }
+        )
     }
 
     private func startOBDWatchdog() {
@@ -1323,16 +1342,27 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
     }
 
     private func receiveDashboardConnection(_ isConnected: Bool) {
+        // EN: Ignore a delayed positive callback after a timed-out attempt; it must not resurrect a failed snapshot.
+        // ES: Ignora un callback positivo retrasado después de un intento agotado; no debe resucitar una instantánea fallida.
+        // 中文：忽略超时尝试之后延迟到达的成功回调，不能让失败快照被错误恢复成已连接。
+        if isConnected,
+           !dashboardAttemptInFlight,
+           snapshot.dashboard.state != .connecting {
+            PTOBDLogger.moto.ptLog("⚠️ [仪表生命周期] 忽略过期的连接成功回调")
+            return
+        }
+
         dashboardAttemptInFlight = false
-        dashboardAttemptTask?.cancel()
-        dashboardAttemptTask = nil
+        dashboardBLEWatchdog.cancel()
         if isConnected {
+            markDashboardBLEReady()
             updateDashboardState(
                 .connected,
                 transport: snapshot.dashboard.transport ?? .dashboardBluetooth
             )
             beginDashboardGarageSession()
         } else {
+            transitionDashboardBLE(.disconnectRequested)
             finalizeDashboardDisconnect(
                 transport: snapshot.dashboard.transport ?? .dashboardBluetooth
             )
@@ -1349,9 +1379,11 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
     // 中文：所有断开路径共用一次状态转换，避免手动操作与代理回调重复保存或漏掉最终快照。
     private func finalizeDashboardDisconnect(transport: PTVehicleTransport) {
         let wasConnected = snapshot.dashboard.state == .connected
+        transitionDashboardBLE(.disconnectRequested)
         endDashboardGarageSession()
         resetDashboardDerivedState()
         updateDashboardState(.disconnected, transport: transport)
+        transitionDashboardBLE(.disconnected)
 
         // EN: Only a real connected-to-disconnected transition may save parking and finalize the widget snapshot.
         // ES: Solo una transición real de conectado a desconectado puede guardar el estacionamiento y cerrar el snapshot del widget.
@@ -1360,6 +1392,38 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
             PTLocationEngine.shared.forceUpdateWidgetOnDisconnect()
             PTMOTOParkingManager.shared.saveCurrentLocationAsParkingSpot()
         }
+    }
+
+    // EN: The stable manager reports one final authenticated callback, so the projection advances through the observed phases atomically.
+    // ES: El gestor estable informa un único callback autenticado final, por lo que la proyección avanza por las fases observadas de forma atómica.
+    // 中文：稳定管理器只回调最终的认证成功事件，因此状态投影一次性经过已观察到的阶段。
+    private func markDashboardBLEReady() {
+        let observedEvents: [PTXP400BLELifecycleEvent] = [
+            .serviceConfigurationStarted,
+            .serviceConfigured,
+            .advertisingStarted,
+            .centralConnected,
+            .subscriptionsWaiting,
+            .subscriptionsReady,
+            .authenticationStarted,
+            .authenticationSucceeded
+        ]
+        observedEvents.forEach { transitionDashboardBLE($0) }
+    }
+
+    // EN: Every transition is value-based and published only when the explicit state changes.
+    // ES: Cada transición se basa en valores y solo se publica cuando cambia el estado explícito.
+    // 中文：每次转换都基于值比较，仅在显式状态变化时发布通知。
+    private func transitionDashboardBLE(_ event: PTXP400BLELifecycleEvent) {
+        let previous = dashboardBLELifecycle.state
+        let next = dashboardBLELifecycle.handle(event)
+        guard previous != next else { return }
+        dashboardBLEState = next
+        NotificationCenter.default.post(
+            name: Self.dashboardBLEStateDidChange,
+            object: self,
+            userInfo: ["state": next]
+        )
     }
 
     private func receiveOBDConnection(_ isConnected: Bool) {
