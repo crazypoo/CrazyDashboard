@@ -3162,3 +3162,52 @@ firmware package download
 工程级验证已完成，但当前命令使用的是通用 iOS 构建目的地，因此只证明源码和测试 bundle 可编译；尚未替代 XCTest 实际执行、真实 XP400 BLE 连接或实车 CAN 验收。
 
 本机虽有 iOS 27 模拟器，但当前 `PTSpeed` Scheme 没有提供与该模拟器匹配的可运行目的地，实际 XCTest 因 destination 不匹配而未执行；这不影响 `build-for-testing` 的编译结论。
+
+---
+
+# P1 实施记录（2026-09-09）
+
+本阶段按“先建立外围协调边界、绝不复制稳定核心协议逻辑”的原则完成了可安全落地的 P1 项目。以下状态以当前仓库代码和最新 `build-for-testing` 结果为准。
+
+## 已完成
+
+- [x] 新增 `PTOBDBusLease` actor：FIFO 排队、任务取消、等待超时、连接代次和失效令牌检查。
+- [x] 新增 `PTOBDCompatibilityGateway`：在不触碰稳定 OBD transport 的前提下，为高级诊断和裸指令建立统一的应用侧协调入口。
+- [x] `PTAdvancedOBDCoordinator` 接入共享租约：普通 DID 读取使用 `diagnosticRead`，开发者探测使用 `developerWrite`，并保持旧诊断 API 兼容。
+- [x] 普通 UDS 读取增加已确认 DID 白名单；未确认 DID、内存读取和节点扫描必须经过开发者门禁。
+- [x] 新增 `PTOBDCommandClassifier`：区分 passive、readOnly、stateChanging、write、programming 和 unknown；`04`、`08`、`10`、`11`、`27`、`31`、`3E` 等不再误当成普通读取。
+- [x] 裸 OBD 指令增加空值、十六进制格式和最大长度检查；写入、刷写、未知指令默认拒绝，只有明确的开发者操作上下文可以继续。
+- [x] `PTCANExperimentCoordinator` 接入 `sniffer` 租约；抓包准备、录制、停止、适配器恢复和轮询恢复保持在同一协调流程内。适配器清理先于轮询恢复，失败路径也会释放租约。
+- [x] CAN 抓包的 `ATMA` 被限制在开发者抓包操作上下文；恢复指令使用独立的安全恢复上下文。
+- [x] 断开 OBD、连接超时和连接状态变为非 connected 时使 OBD 租约代次失效，排队诊断不会跨连接继续执行。
+- [x] 新增 `PTXP400ANCSCoordinator`：系统通知路径和实验兼容 Provider 分开；正常连接流程不会自动安装自有 ANCS Provider，设置页测试仍保持兼容。
+- [x] 新增 `PTXP400P1Tests`：覆盖租约串行化、取消、超时、断开失效、风险分类和普通读取白名单。
+- [x] P1 新文件已加入 `PTSpeed` 主 App 和 `PTSpeedTests` 测试 target；最新无签名 iOS `build-for-testing` 通过。
+
+## 明确延期与边界
+
+- [ ] CoreBluetooth State Restoration 尚未接入 `PTBluetoothManager.swift`。当前稳定核心没有 restoration identifier 和 `willRestoreState` 入口；在冻结核心不可修改的约束下，本阶段只能完成生命周期模型和 watchdog，不能宣称已经实现系统级进程恢复。
+- [ ] `PTBluetoothManager` 按 Session、Authenticator、Credits、SendQueue、Parser、NavigationScheduler 拆分延期。该拆分必须先有真实 XP400 BLE Trace，并完成行为等价回归后再做。
+- [ ] 尚不能宣称实现了物理层面的“全局 OBD 互斥”。稳定 OBD manager 内部的 polling、heartbeat、`fetchProprietaryData`、部分 raw API 和 `ATMA` 流式写入仍没有可传递租约令牌的核心接口；当前租约是应用侧兼容协调边界，不是对冻结 transport 的强制硬锁。
+- [ ] 将所有历史的 `injectRawHexCommand`、heartbeat、DTC、Mode 8、proprietary data 和 sniffer 入口完全迁移到风险网关，延期到允许增加稳定核心 drain/ownership hook 后处理，避免复制第二套响应和轮询引擎。
+- [ ] 官方 advertising manufacturer data 与 Android 行为对齐仍需 Android 抓包证据；当前不猜测字段、不写入生产逻辑。
+- [ ] 真实 XP400、真实 ELM327 CAN baseline、ANCS 实车结果和 XCTest 实际执行仍待设备条件。当前机器的 iOS 27 模拟器与 `PTSpeed` scheme 不兼容，因此本轮只完成源码解析和测试 bundle 编译，没有把它们表述为运行时验收。
+
+## 稳定核心保护
+
+本次 P1 没有修改以下文件：
+
+- `Global/BLE/PTBluetoothManager.swift`
+- `Global/OBD/Function/PTHiddenOBDConnector.swift`
+- `Global/OBD/Function/PTOBDCommand.swift`
+
+它们继续作为 BLE、ELM327、分片、轮询和标准 PID 的稳定底层；P1 的新增代码只通过既有公开能力和外围兼容门面接入。
+
+## 本轮验证
+
+- `xcrun swiftc -parse`：通过。
+- `git diff --check`：通过。
+- 冻结核心文件差异检查：通过，结果为空。
+- 无签名 iOS `build-for-testing`：通过，主 App 和 `PTSpeedTests` 均编译了 P1 新文件。
+- 实际 XCTest：未执行；当前 `PTSpeed` scheme 没有与本机 iOS 27 模拟器匹配的可运行目的地。
+- 构建仍有既有 Xcode Beta、Pods 和第三方静态库警告；本阶段未将其误判为 P1 源码错误。

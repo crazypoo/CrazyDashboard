@@ -513,6 +513,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         ignoreNextOBDDisconnect = false
         obdAttemptTask?.cancel()
         obdAttemptTask = nil
+        invalidateOBDBusLease()
         PTMotoTelemetryManager.shared.disconnect()
         updateOBDState(.disconnected)
     }
@@ -524,6 +525,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         obdRetryRequired = true
         obdAttemptTask?.cancel()
         obdAttemptTask = nil
+        invalidateOBDBusLease()
         updateOBDState(.failed, errorMessage: "OBD connection timed out")
     }
 
@@ -1438,8 +1440,18 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         obdAttemptTask = nil
         updateOBDState(isConnected ? .connected : .disconnected)
         if !isConnected {
+            invalidateOBDBusLease()
             telemetryEngine.clearOBD()
             publishTelemetryChange()
+        }
+    }
+
+    // EN: Revoke OBD leases as soon as the link disappears; queued diagnostics must not cross connection generations.
+    // ES: Revoca las concesiones OBD al desaparecer el enlace; ningún diagnóstico en cola cruza generaciones.
+    // 中文：链路消失时立即撤销 OBD 租约，排队诊断不能跨越连接代次。
+    private func invalidateOBDBusLease() {
+        Task {
+            await PTOBDCompatibilityGateway.shared.invalidateForDisconnect()
         }
     }
 }

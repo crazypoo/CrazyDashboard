@@ -13,6 +13,8 @@ nonisolated public enum PTOBDDiagnosticError: Error, Equatable, Sendable {
     case disconnected
     case invalidAddress
     case invalidDID
+    case readNotAllowed
+    case developerAccessDenied
     case invalidMemoryAddress
     case invalidReadSize
     case batchLimitExceeded
@@ -32,6 +34,10 @@ extension PTOBDDiagnosticError: LocalizedError {
             return "The ECU address is invalid."
         case .invalidDID:
             return "The DID must be four hexadecimal characters."
+        case .readNotAllowed:
+            return "This DID is not part of the confirmed read-only catalog."
+        case .developerAccessDenied:
+            return "The developer diagnostic gate is not enabled."
         case .invalidMemoryAddress:
             return "The memory address must be eight hexadecimal characters."
         case .invalidReadSize:
@@ -50,6 +56,14 @@ extension PTOBDDiagnosticError: LocalizedError {
             return "The diagnostic operation was cancelled."
         }
     }
+}
+
+// EN: Ordinary reads use the confirmed catalog; developer reads require an explicit gate and evidence context.
+// ES: Las lecturas ordinarias usan el catálogo confirmado; las lecturas de desarrollador requieren una puerta explícita.
+// 中文：普通读取使用已确认目录，开发者读取必须经过显式门禁和证据上下文。
+nonisolated public enum PTOBDReadAccess: Sendable {
+    case ordinary
+    case developer
 }
 
 /// EN: Bounds for one read-only DID batch; they prevent accidental long bus occupation.
@@ -243,87 +257,13 @@ private actor PTOBDResultBox<Value: Sendable> {
     }
 }
 
-// EN: The actor serializes advanced reads while the stable telemetry manager remains the only transport owner.
-// ES: El actor serializa las lecturas avanzadas mientras el gestor de telemetría estable sigue siendo el único dueño del transporte.
-// 中文：该 actor 串行化高级只读任务，稳定遥测管理器仍然是唯一的传输层所有者。
+// EN: The compatibility actor delegates serialization to the single shared OBD bus lease.
+// ES: El actor de compatibilidad delega la serialización a la única concesión compartida del bus OBD.
+// 中文：兼容 actor 将串行化委托给统一的 OBD 总线租约。
 public actor PTAdvancedOBDCoordinator {
     public static let shared = PTAdvancedOBDCoordinator()
 
-    private var isExecuting = false
-    private struct Waiter {
-        let id: UUID
-        let continuation: CheckedContinuation<Void, Error>
-    }
-
-    private var waiters: [Waiter] = []
-    private var nextOperationID: UInt64 = 0
-    private var cancelledOperationIDs: Set<UInt64> = []
-
     private init() {}
-
-    // EN: Waiters are queued before suspension so actor reentrancy cannot overlap two exclusive bus operations.
-    // ES: Las esperas se encolan antes de suspenderse para que la reentrancia del actor no solape dos operaciones exclusivas.
-    // 中文：在挂起前先排队，避免 actor 重入导致两个总线独占任务重叠。
-    private func acquire() async throws {
-        try Task.checkCancellation()
-        guard isExecuting else {
-            isExecuting = true
-            return
-        }
-
-        let waiterID = UUID()
-        try await withTaskCancellationHandler(operation: {
-            try await withCheckedThrowingContinuation { continuation in
-                waiters.append(Waiter(id: waiterID, continuation: continuation))
-            }
-        }, onCancel: {
-            Task { await self.cancelWaiter(waiterID) }
-        })
-    }
-
-    private func cancelWaiter(_ id: UUID) {
-        guard let index = waiters.firstIndex(where: { $0.id == id }) else { return }
-        let waiter = waiters.remove(at: index)
-        waiter.continuation.resume(throwing: PTOBDDiagnosticError.cancelled)
-    }
-
-    private func beginOperation() -> UInt64 {
-        nextOperationID &+= 1
-        return nextOperationID
-    }
-
-    private func cancelOperation(_ id: UInt64) {
-        cancelledOperationIDs.insert(id)
-    }
-
-    private func isOperationCancelled(_ id: UInt64) -> Bool {
-        cancelledOperationIDs.contains(id)
-    }
-
-    private func finishOperation(_ id: UInt64) {
-        cancelledOperationIDs.remove(id)
-    }
-
-    private func resumeNextWaiter() {
-        while !waiters.isEmpty {
-            let waiter = waiters.removeFirst()
-            if Task.isCancelled {
-                waiter.continuation.resume(throwing: PTOBDDiagnosticError.cancelled)
-            } else {
-                waiter.continuation.resume()
-                return
-            }
-        }
-        isExecuting = false
-    }
-
-    private func release() {
-        if waiters.isEmpty {
-            isExecuting = false
-        } else {
-            resumeNextWaiter()
-        }
-    }
 
     /// EN: Executes one read-only operation while the existing telemetry polling task is suspended by the stable manager.
     /// ES: Ejecuta una operación de solo lectura mientras el gestor estable suspende el sondeo de telemetría.
@@ -331,48 +271,65 @@ public actor PTAdvancedOBDCoordinator {
     public func executeReadOnly<T: Sendable>(
         _ operation: @escaping @Sendable () async throws -> T
     ) async throws -> T {
-        try await acquire()
-        defer { release() }
+        try await executeOnBus(kind: .diagnosticRead, operation: operation)
+    }
 
-        guard await PTMotoTelemetryManager.shared.isConnected else {
-            throw PTOBDDiagnosticError.disconnected
+    // EN: State-changing diagnostic discovery gets its own lease kind and gate decision.
+    // ES: El descubrimiento diagnóstico que cambia el estado usa su propio tipo de concesión y decisión de puerta.
+    // 中文：会改变诊断状态的探测使用独立租约类型和门禁决策。
+    public func executeDeveloper<T: Sendable>(
+        operation: PTDeveloperSafetyOperation,
+        _ work: @escaping @Sendable () async throws -> T
+    ) async throws -> T {
+        let allowed = await MainActor.run {
+            PTDeveloperSafetyGate.shared.authorize(operation)
         }
-        try Task.checkCancellation()
+        guard allowed else {
+            throw PTOBDDiagnosticError.developerAccessDenied
+        }
+        return try await executeOnBus(kind: .developerWrite, operation: work)
+    }
 
-        let operationID = beginOperation()
-        defer { finishOperation(operationID) }
-
-        let resultBox = PTOBDResultBox<T>()
-        let value = try await withTaskCancellationHandler(operation: {
-            try Task.checkCancellation()
-            await PTMotoTelemetryManager.shared.performExclusiveTask {
-                if self.isOperationCancelled(operationID) || Task.isCancelled {
-                    await resultBox.resolve(.failure(PTOBDDiagnosticError.cancelled))
-                    return
+    private func executeOnBus<T: Sendable>(
+        kind: PTOBDBusLeaseKind,
+        operation: @escaping @Sendable () async throws -> T
+    ) async throws -> T {
+        do {
+            return try await PTOBDCompatibilityGateway.shared.withLease(kind: kind) {
+                guard await PTMotoTelemetryManager.shared.isConnected else {
+                    throw PTOBDDiagnosticError.disconnected
                 }
+                try Task.checkCancellation()
 
-                do {
-                    let result = try await operation()
-                    if self.isOperationCancelled(operationID) || Task.isCancelled {
-                        await resultBox.resolve(.failure(PTOBDDiagnosticError.cancelled))
-                    } else {
-                        await resultBox.resolve(.success(result))
+                let resultBox = PTOBDResultBox<T>()
+                await PTMotoTelemetryManager.shared.performExclusiveTask {
+                    do {
+                        let result = try await operation()
+                        if Task.isCancelled {
+                            await resultBox.resolve(.failure(PTOBDDiagnosticError.cancelled))
+                        } else {
+                            await resultBox.resolve(.success(result))
+                        }
+                    } catch {
+                        await resultBox.resolve(.failure(error))
                     }
-                } catch {
-                    await resultBox.resolve(.failure(error))
                 }
-            }
 
-            guard let result = await resultBox.resolved() else {
-                throw PTOBDDiagnosticError.noData
+                guard let result = await resultBox.resolved() else {
+                    throw PTOBDDiagnosticError.noData
+                }
+                return try result.get()
             }
-            return try result.get()
-        }, onCancel: {
-            Task { await self.cancelOperation(operationID) }
-        })
-
-        try Task.checkCancellation()
-        return value
+        } catch let error as PTOBDBusLeaseError {
+            switch error {
+            case .timedOut:
+                throw PTOBDDiagnosticError.timeout
+            case .disconnected:
+                throw PTOBDDiagnosticError.disconnected
+            case .cancelled, .invalidToken:
+                throw PTOBDDiagnosticError.cancelled
+            }
+        }
     }
 }
 
@@ -395,11 +352,13 @@ nonisolated public final class PTUDSReadService {
 
     public func readDID(
         address: PTOBDDiagnosticAddress,
-        did: String
+        did: String,
+        access: PTOBDReadAccess = .ordinary
     ) async throws -> PTOBDIDReadResult {
         let did = try Self.normalizeDID(did)
+        try await validateReadAccess(for: [did], access: access)
 
-        let response = try await PTAdvancedOBDCoordinator.shared.executeReadOnly {
+        let response = try await executeDIDRead(access: access) {
             await PTMotoTelemetryManager.shared.fetchProprietaryData(
                 header: address.tx,
                 receiveAddress: address.rx,
@@ -422,6 +381,7 @@ nonisolated public final class PTUDSReadService {
         address: PTOBDDiagnosticAddress,
         dids: [String],
         policy: PTOBDReadBatchPolicy = .standard,
+        access: PTOBDReadAccess = .ordinary,
         progress: (@MainActor @Sendable (Int, Int, PTOBDIDReadResult) -> Void)? = nil
     ) async throws -> [PTOBDIDReadResult] {
         let normalizedDIDs = try dids.map(Self.normalizeDID)
@@ -438,7 +398,9 @@ nonisolated public final class PTUDSReadService {
             throw PTOBDDiagnosticError.batchLimitExceeded
         }
 
-        return try await PTAdvancedOBDCoordinator.shared.executeReadOnly {
+        try await validateReadAccess(for: normalizedDIDs, access: access)
+
+        return try await executeDIDRead(access: access) {
             let batchStartedAt = Date()
             var results: [PTOBDIDReadResult] = []
             results.reserveCapacity(normalizedDIDs.count)
@@ -560,7 +522,7 @@ nonisolated public final class PTUDSReadService {
 
         let addresses = Array(range)
 
-        return try await PTAdvancedOBDCoordinator.shared.executeReadOnly {
+        return try await PTAdvancedOBDCoordinator.shared.executeDeveloper(operation: .didFuzz) {
             var nodes: [PTOBDECUNode] = []
 
             for (index, value) in addresses.enumerated() {
@@ -600,7 +562,7 @@ nonisolated public final class PTUDSReadService {
     ) async throws -> [PTOBDECUNode] {
         let addresses = Array(0xA0...0xDF)
 
-        return try await PTAdvancedOBDCoordinator.shared.executeReadOnly {
+        return try await PTAdvancedOBDCoordinator.shared.executeDeveloper(operation: .didFuzz) {
             var nodes: [PTOBDECUNode] = []
 
             for (index, offset) in addresses.enumerated() {
@@ -646,7 +608,7 @@ nonisolated public final class PTUDSReadService {
 
         let command = "2324\(normalizedAddress)\(String(format: "%04X", readSize))"
 
-        return try await PTAdvancedOBDCoordinator.shared.executeReadOnly {
+        return try await PTAdvancedOBDCoordinator.shared.executeDeveloper(operation: .memoryRead) {
             let response = await PTMotoTelemetryManager.shared.fetchProprietaryData(
                 header: address.tx,
                 receiveAddress: address.rx,
@@ -682,6 +644,46 @@ nonisolated public final class PTUDSReadService {
 }
 
 private extension PTUDSReadService {
+    // EN: Ordinary and developer DID reads use distinct lease classes while sharing one transport closure.
+    // ES: Las lecturas DID ordinarias y de desarrollador usan concesiones distintas y comparten un solo cierre de transporte.
+    // 中文：普通 DID 读取与开发者 DID 读取使用不同租约等级，但复用同一个传输闭包。
+    func executeDIDRead<Value: Sendable>(
+        access: PTOBDReadAccess,
+        operation: @escaping @Sendable () async throws -> Value
+    ) async throws -> Value {
+        switch access {
+        case .ordinary:
+            return try await PTAdvancedOBDCoordinator.shared.executeReadOnly(operation)
+        case .developer:
+            return try await PTAdvancedOBDCoordinator.shared.executeDeveloper(
+                operation: .didFuzz,
+                operation
+            )
+        }
+    }
+
+    // EN: Enforce the read boundary at the service itself so a future UI cannot bypass the catalog accidentally.
+    // ES: Impone el límite de lectura en el propio servicio para que una UI futura no salte el catálogo por accidente.
+    // 中文：在服务层本身执行读取边界，避免未来 UI 意外绕过目录限制。
+    func validateReadAccess(
+        for dids: [String],
+        access: PTOBDReadAccess
+    ) async throws {
+        switch access {
+        case .ordinary:
+            guard dids.allSatisfy({ PTOBDCommandClassifier.confirmedReadDIDs().contains($0) }) else {
+                throw PTOBDDiagnosticError.readNotAllowed
+            }
+        case .developer:
+            let allowed = await MainActor.run {
+                PTDeveloperSafetyGate.shared.authorize(.didFuzz)
+            }
+            guard allowed else {
+                throw PTOBDDiagnosticError.developerAccessDenied
+            }
+        }
+    }
+
     nonisolated static func normalizeDID(_ value: String) throws -> String {
         let did = value
             .trimmingCharacters(in: .whitespacesAndNewlines)

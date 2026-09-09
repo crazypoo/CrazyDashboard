@@ -935,8 +935,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
     // ES: Envía un contenido inglés fijo mediante el canal GATT propio con forma ANCS.
     // 中文：通过 App 自有 ANCS 风格 GATT 通道发送固定英文内容。
     private func sendCustomANCSNotificationTest() {
-        PTDashboardANCSProvider.shared.install()
-        let result = PTDashboardANCSProvider.shared.sendTestNotification()
+        let result = PTXP400ANCSCoordinator.shared.sendExperimentalTest()
         let message: String
         switch result {
         case .queued:

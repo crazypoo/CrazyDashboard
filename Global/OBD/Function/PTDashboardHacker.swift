@@ -75,10 +75,6 @@ public extension PTDashboardHacker {
     /// 扫描 CAN 总线上的所有诊断节点，寻找存活的 ECU
     /// - Returns: 存活 ECU 的发送报头数组 (如 ["7E0", "7A0"])
     func scanAllActiveECUNodes() async -> [String] {
-        guard authorizeDeveloperOperation(.didFuzz) else {
-            return []
-        }
-
         PTOBDLogger.obd.ptLog("🌍 [全域雷达] 启动 11-bit CAN 总线地毯式扫描 (0x700 - 0x7DF)...")
 
         do {
@@ -99,10 +95,6 @@ public extension PTDashboardHacker {
     /// 🚀 扫描总线上所有的 ECU 节点，寻找可能是仪表盘的地址
     @discardableResult
     func scanForDashboardAddress(progress: (@MainActor @Sendable (Int, Int) -> Void)? = nil) async -> [PTOBDECUNode] {
-        guard authorizeDeveloperOperation(.didFuzz) else {
-            return []
-        }
-
         do {
             let nodes = try await PTUDSReadService.shared.scanDashboardNodes(progress: progress)
             PTOBDLogger.obd.ptLog("🏁 [仪表盘探查] 找到 \(nodes.count) 个候选节点")
@@ -142,14 +134,14 @@ public extension PTDashboardHacker {
             PTOBDReadOnlyCatalog.confirmedDIDs.contains($0)
         }
         let policy: PTOBDReadBatchPolicy
+        let access: PTOBDReadAccess
 
         if isConfirmedReadOnly {
             policy = .standard
+            access = .ordinary
         } else {
-            guard authorizeDeveloperOperation(.didFuzz) else {
-                return []
-            }
             policy = .developer
+            access = .developer
         }
 
         do {
@@ -157,6 +149,7 @@ public extension PTDashboardHacker {
                 address: address,
                 dids: targetDIDs,
                 policy: policy,
+                access: access,
                 progress: { index, total, result in
                     progress?(index, total, result)
                     PTOBDLogger.obd.ptLog(
@@ -271,6 +264,7 @@ public extension PTDashboardHacker {
                 address: address,
                 dids: dids,
                 policy: policy,
+                access: .developer,
                 progress: progress
             )
 
@@ -343,7 +337,8 @@ public extension PTDashboardHacker {
                 let results = try await PTUDSReadService.shared.readDIDs(
                     address: address,
                     dids: dids,
-                    policy: .developer
+                    policy: .developer,
+                    access: .developer
                 )
                 nodeReports.append(PTOBDNodeDumpReport(address: address, results: results))
             } catch {
@@ -411,10 +406,6 @@ public extension PTDashboardHacker {
         memoryAddress: String,
         readSize: UInt16
     ) async -> PTOBDRawReadResult? {
-        guard authorizeDeveloperOperation(.memoryRead) else {
-            return nil
-        }
-
         guard let address = PTOBDDiagnosticAddress(tx: dashboardTx, rx: dashboardRx) else {
             PTOBDLogger.obd.ptLog("❌ [内存读取] 地址格式无效")
             return nil

@@ -2150,6 +2150,7 @@ public final class PTCANExperimentCoordinator {
 
     private var connector: PTOBDTransportBase?
     private var wasPolling = false
+    private var busLease: PTOBDBusLeaseToken?
 
     private init() {}
 
@@ -2176,6 +2177,20 @@ public final class PTCANExperimentCoordinator {
             state = .failed
             lastError = PTCANExperimentError.missingTransport.localizedDescription
             return false
+        }
+
+        do {
+            let lease = try await PTOBDBusLease.shared.acquire(kind: .sniffer)
+            if Task.isCancelled {
+                await PTOBDBusLease.shared.release(lease)
+                return fail(PTCANExperimentError.cancelled.localizedDescription)
+            }
+            busLease = lease
+        } catch {
+            let message = (Task.isCancelled || error is PTOBDBusLeaseError)
+                ? PTCANExperimentError.cancelled.localizedDescription
+                : error.localizedDescription
+            return fail(message)
         }
 
         state = .preparing
@@ -2276,8 +2291,16 @@ public final class PTCANExperimentCoordinator {
         }
     }
 
-    private func sendAdapterCommand(_ command: String) async throws -> String {
-        let response = await PTMotoTelemetryManager.shared.injectRawHexCommand(command, requiresPause: false)
+    private func sendAdapterCommand(
+        _ command: String,
+        context: PTOBDCommandExecutionContext = .developer(.canCapture)
+    ) async throws -> String {
+        let response = try await PTOBDCommandGateway.shared.execute(
+            command,
+            requiresPause: false,
+            context: context,
+            leaseToken: busLease
+        )
         if response.uppercased().contains("ERROR: NO_CONNECTION") {
             throw PTCANExperimentError.disconnected
         }
@@ -2300,7 +2323,7 @@ public final class PTCANExperimentCoordinator {
 
         if PTMotoTelemetryManager.shared.isConnected {
             for command in ["ATD", "ATE0", "ATL0", "ATH1", "ATS0"] {
-                _ = try? await sendAdapterCommand(command)
+                _ = try? await sendAdapterCommand(command, context: .recovery)
             }
         }
 
@@ -2314,6 +2337,10 @@ public final class PTCANExperimentCoordinator {
 
         connector = nil
         wasPolling = false
+        if let busLease {
+            self.busLease = nil
+            await PTOBDBusLease.shared.release(busLease)
+        }
         return session
     }
 
