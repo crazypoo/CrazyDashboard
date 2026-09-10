@@ -1627,6 +1627,18 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
 }
 
 extension PTVehicleConnectivityCoordinator: PTBLEDashboardDelegate {
+    // EN: Consume real CoreBluetooth facts; the coordinator remains the only lifecycle reducer.
+    // ES: Consume hechos reales de CoreBluetooth; el coordinador sigue siendo el único reductor del ciclo de vida.
+    // 中文：消费 CoreBluetooth 的真实事实；生命周期仍只由协调器统一归约。
+    nonisolated func dashboardManager(
+        _ manager: PTBluetoothServerManager,
+        didObserveLifecycleEvent event: PTXP400BLELifecycleEvent
+    ) {
+        Task { @MainActor [weak self] in
+            self?.transitionDashboardBLE(event)
+        }
+    }
+
     nonisolated func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool) {
         Task { @MainActor [weak self] in
             self?.receiveDashboardConnection(isConnected)

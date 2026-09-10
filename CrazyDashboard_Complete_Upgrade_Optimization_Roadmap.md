@@ -2526,12 +2526,12 @@ Transport facade / compatibility facade
 
 先做：
 
-- [ ] 为 Auth 建 Fixture
-- [ ] 为 TIO Credits 建 Fixture
-- [ ] 为 Navigation Frame 建 Fixture
-- [ ] 为 Data1/2/3 建 Fixture
-- [ ] 为 ABS 建 Fixture
-- [ ] 为 Reassembler 建 Unit Tests
+- [x] 为 Auth 建 Fixture
+- [x] 为 TIO Credits 建 Fixture
+- [x] 为 Navigation Frame 建 Fixture
+- [x] 为 Data1/2/3 建 Fixture
+- [x] 为 ABS 建 Fixture
+- [x] 为 Reassembler 建 Unit Tests
 - [ ] 记录一个当前可成功连接 XP400 的完整 BLE Trace
 - [ ] 记录一份正常 CAN baseline
 
@@ -3223,9 +3223,24 @@ firmware package download
 - [ ] 记录一个当前可成功连接 XP400 的完整 BLE Trace：需要使用真实配对的 XP400 实车完成一次连接并导出文件，代码已准备好自动采集。
 - [ ] 记录一份正常 CAN baseline：需要使用真实 ELM327/车辆完成一次 `ATMA` 基线抓包，不能用模拟数据代替实车证据。
 
+## P0 核心落地补强（2026-09-11）
+
+本次根据“暂时解除 `PTBluetoothManager` 冻结”的授权，把稳定管理器接入 P0 证据边界；没有重写认证、Credits、分片队列、重组器或 Data1/2/3/ABS 解码：
+
+- [x] `PTBluetoothServerManager` 上报真实 CoreBluetooth 事实事件：蓝牙可用性、服务配置、广播、Central 订阅、认证开始/成功和断开。
+- [x] `PTVehicleConnectivityCoordinator` 消费上述事实事件，并继续作为唯一的 `PTXP400BLELifecycleMachine` 状态归约入口，避免在 BLE Manager 内复制第二套生命周期状态机。
+- [x] GATT UUID、帧头/帧尾、已知帧 ID 和 20 字节 TIO 分片上限统一引用 `PTXP400BLEProtocolContract`，新增回归测试防止协议常量漂移。
+- [x] 使用 `CrazyDashboard.xcworkspace` 完成无签名 Debug 主 App、Widget、Watch App 构建。
+- [x] 使用同一工作区完成 P0 测试 bundle 的 `build-for-testing` 编译检查。
+
+本次仍未把硬件证据标记为完成：
+
+- [ ] 完整 XP400 BLE Trace：必须在真实配对仪表盘上完成一次从广播、订阅、四阶段认证到 Data1/2/3/ABS 回传的连接，并导出被动证据文件。
+- [ ] 正常 CAN baseline：必须使用真实 ELM327 与车辆完成一次 `ATMA`，记录协议、过滤器、帧频率和结束恢复结果。
+
 ## P0 边界与延期项
 
-`PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift` 和 `PTOBDCommand.swift` 继续保持未修改。它们仍是已经验证过的稳定传输/协议核心；本次只在外围加入可测试的状态与超时组件，并未把认证、Credits、分片、队列或解码逻辑复制成第二套实现。
+`PTHiddenOBDConnector.swift` 和 `PTOBDCommand.swift` 继续保持未修改。`PTBluetoothManager.swift` 本次只增加事实事件上报，并把既有 GATT/帧常量绑定到已测试协议契约；认证、Credits、分片、队列、重组器和解码逻辑仍保持原实现，也没有复制第二套传输实现。
 
 完整的 `PTBluetoothManager` 文件搬迁（Facade、Session、Authenticator、Credits、SendQueue、Parser、NavigationScheduler）留到后续阶段，在完成真实 BLE Trace 对照和回归后再进行，避免在没有实车证据时改变核心行为。
 

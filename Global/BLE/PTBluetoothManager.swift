@@ -29,7 +29,7 @@ public enum PTBacklightMode: UInt8 {
     case led0 = 0x02  // 二进制 10
     case led2 = 0x03  // 二进制 11
     case unknown = 0xFF
-    
+
     public var description: String {
         switch self {
         case .auto: return "Auto"//"自动 (Auto)"
@@ -658,11 +658,14 @@ class PTScooterAuth {
 // MARK: - 2. 协议封装器
 class PTFrameBuilder {
     // 封包常量
-    static let PREAMBLE: UInt8 = 0x16
-    static let END_OF_FRAME: UInt8 = 0x00
-    
-    static let ID_NAVIGATION: UInt8 = 1
-    static let ID_CONFIGURATION: UInt8 = 7
+    // EN: Keep frame constants tied to the tested XP400 protocol contract.
+    // ES: Mantén las constantes de trama vinculadas al contrato de protocolo probado del XP400.
+    // 中文：让帧常量统一绑定到已经测试的 XP400 协议契约。
+    static let PREAMBLE: UInt8 = PTXP400BLEProtocol.preamble
+    static let END_OF_FRAME: UInt8 = PTXP400BLEProtocol.terminator
+
+    static let ID_NAVIGATION: UInt8 = PTXP400BLEProtocol.navigationFrameID
+    static let ID_CONFIGURATION: UInt8 = PTXP400BLEProtocol.configurationFrameID
     static let ID_DISCONNECT: UInt8 = 8
     
     // 通用封包方法：[16] + [ID] + [2字节长度] + [Payload] + [00]
@@ -870,6 +873,10 @@ protocol PTBLEDashboardDelegate: AnyObject {
     func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool)
     func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?)
     func dashboardManager(_ manager: PTBluetoothServerManager, unknownData data: String)
+    // EN: Report observed CoreBluetooth lifecycle facts without owning the reducer here.
+    // ES: Informa hechos observados de CoreBluetooth sin poseer aquí el reductor.
+    // 中文：上报 CoreBluetooth 实际观察到的生命周期事实，但不在此处持有状态归约器。
+    func dashboardManager(_ manager: PTBluetoothServerManager, didObserveLifecycleEvent event: PTXP400BLELifecycleEvent)
     func dashboardManager(
         _ manager: PTBluetoothServerManager,
         didUpdateConnectionIdentity identity: PTDashboardConnectionIdentity?
@@ -880,6 +887,7 @@ extension PTBLEDashboardDelegate {
     func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool) {}
     func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {}
     func dashboardManager(_ manager: PTBluetoothServerManager, unknownData data: String) {}
+    func dashboardManager(_ manager: PTBluetoothServerManager, didObserveLifecycleEvent event: PTXP400BLELifecycleEvent) {}
     func dashboardManager(
         _ manager: PTBluetoothServerManager,
         didUpdateConnectionIdentity identity: PTDashboardConnectionIdentity?
@@ -888,6 +896,11 @@ extension PTBLEDashboardDelegate {
 
 // 只保留外设管理器，做纯粹的服务器
 class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
+
+    // EN: The coordinator owns the lifecycle reducer; this notification exposes only observed transport facts.
+    // ES: El coordinador posee el reductor del ciclo de vida; esta notificación solo expone hechos observados del transporte.
+    // 中文：生命周期归约器仍由协调器持有；此通知只暴露传输层实际观察到的事实。
+    static let lifecycleEventDidObserve = Notification.Name("PTBluetoothServerManager.lifecycleEventDidObserve")
 
     // EN: Track GATT setup and advertising separately; a connected central is not the same as a ready peripheral.
     // ES: Separa la preparación GATT de la publicidad; un central conectado no equivale a un periférico listo.
@@ -957,12 +970,15 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     private(set) var dashboardConnectionIdentity: PTDashboardConnectionIdentity?
 
     // 🚨 核心修复 1：必须使用 16-bit 短标识！否则会撑爆 iOS 的 31 字节广播包，导致摩托车看不见！
-    let TIO_SERVICE = CBUUID(string: "FEFB")
+    // EN: Keep CoreBluetooth identifiers tied to the tested protocol contract.
+    // ES: Mantén los identificadores de CoreBluetooth vinculados al contrato de protocolo probado.
+    // 中文：让 CoreBluetooth 标识符统一绑定到已经测试的协议契约。
+    let TIO_SERVICE = CBUUID(string: PTXP400BLEProtocol.tioServiceUUID)
     
-    let UART_RX = CBUUID(string: "00000001-0000-1000-8000-008025000000")
-    let UART_TX = CBUUID(string: "00000002-0000-1000-8000-008025000000")
-    let UART_RX_CREDITS = CBUUID(string: "00000003-0000-1000-8000-008025000000")
-    let UART_TX_CREDITS = CBUUID(string: "00000004-0000-1000-8000-008025000000")
+    let UART_RX = CBUUID(string: PTXP400BLEProtocol.uartRXUUID)
+    let UART_TX = CBUUID(string: PTXP400BLEProtocol.uartTXUUID)
+    let UART_RX_CREDITS = CBUUID(string: PTXP400BLEProtocol.uartRXCreditsUUID)
+    let UART_TX_CREDITS = CBUUID(string: PTXP400BLEProtocol.uartTXCreditsUUID)
         
     // 🚨 新增：用于缓存当前活跃的通知，等待车机来主动拉取内容
     private var activeNotifications = [UInt32: PTAncsNotif]()
@@ -1057,6 +1073,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         // EN: Starting is an idempotent request; didUpdateState or didAdd will perform the next safe step.
         // ES: El inicio es una solicitud idempotente; didUpdateState o didAdd ejecutará el siguiente paso seguro.
         // 中文：启动只是幂等请求，后续安全步骤由 didUpdateState 或 didAdd 执行。
+        observeLifecycle(.startRequested)
         shouldAdvertise = true
         reconcilePeripheralLifecycle()
     }
@@ -1076,6 +1093,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         }
 
         guard peripheralManager.state == .poweredOn else {
+            observeLifecycle(.bluetoothUnavailable)
             peripheralLifecycleState = .unavailable
             PTOBDLogger.moto.ptLog("⏸️ [基站生命周期] 等待蓝牙可用，当前状态: \(peripheralManager.state.rawValue)")
             return
@@ -1100,6 +1118,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     private func startAdvertisingIfPossible() {
         guard !peripheralManager.isAdvertising else {
             peripheralLifecycleState = .advertising
+            observeLifecycle(.advertisingStarted)
             PTOBDLogger.moto.ptLog("⚠️ [基站生命周期] 广播已经存在，跳过重复启动")
             return
         }
@@ -1120,6 +1139,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
             CBAdvertisementDataServiceUUIDsKey: [TIO_SERVICE]
         ])
         peripheralLifecycleState = .advertising
+        observeLifecycle(.advertisingStarted)
         PTOBDLogger.moto.ptLog("📡 [基站生命周期] 已请求广播 FEFB 服务")
     }
 
@@ -1127,6 +1147,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         PTOBDLogger.moto.ptLog("🛠️ [DEBUG] 硬件状态: \(peripheral.state.rawValue)")
 
         guard peripheral.state == .poweredOn else {
+            observeLifecycle(.bluetoothUnavailable)
             peripheral.stopAdvertising()
             peripheral.removeAllServices()
             serviceAddInFlight = false
@@ -1139,6 +1160,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
             return
         }
 
+        observeLifecycle(.bluetoothPoweredOn)
         peripheralLifecycleState = shouldAdvertise ? .ready : .idle
         if shouldAdvertise {
             startAdvertisingIfPossible()
@@ -1155,6 +1177,8 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
             peripheralLifecycleState = serviceConfigured ? .ready : .configuring
             return
         }
+
+        observeLifecycle(.serviceConfigurationStarted)
 
         let rxChar = CBMutableCharacteristic(
             type: UART_RX,
@@ -1208,6 +1232,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
             serviceConfigured = false
             dashboardService = nil
             peripheralLifecycleState = .idle
+            observeLifecycle(.failure(.serviceConfiguration))
             PTOBDLogger.moto.ptLog("❌ [基站生命周期] FEFB 服务添加失败: \(error.localizedDescription)")
             return
         }
@@ -1222,6 +1247,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
 
         serviceConfigured = true
         peripheralLifecycleState = .ready
+        observeLifecycle(.serviceConfigured)
         PTOBDLogger.moto.ptLog("✅ [基站生命周期] FEFB 服务添加完成")
 
         if shouldAdvertise {
@@ -1278,12 +1304,33 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     private func resetDashboardSessionForPeripheralLoss() {
         resetDashboardSession(notifyDelegates: true)
     }
+
+    // EN: Forward facts to the single lifecycle reducer without duplicating transport state here.
+    // ES: Reenvía hechos al único reductor del ciclo de vida sin duplicar aquí el estado de transporte.
+    // 中文：把事实转发给唯一的生命周期归约器，不在管理器内复制一套传输状态机。
+    private func observeLifecycle(_ event: PTXP400BLELifecycleEvent) {
+        delegates.forEach {
+            $0.delegate?.dashboardManager(self, didObserveLifecycleEvent: event)
+        }
+        NotificationCenter.default.post(
+            name: Self.lifecycleEventDidObserve,
+            object: self,
+            userInfo: ["event": event]
+        )
+    }
     
     // MARK: - 监听订阅
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
         let identityChanged = connectedCentral?.identifier != central.identifier
 
         if identityChanged {
+            // EN: Close the previous observed session before accepting a replacement central.
+            // ES: Cierra la sesión observada anterior antes de aceptar un central de reemplazo.
+            // 中文：接受新的 Central 之前，先结束上一个已观察到的会话。
+            if connectedCentral != nil {
+                observeLifecycle(.disconnectRequested)
+                observeLifecycle(.disconnected)
+            }
             // EN: A new central starts with an empty authenticated session and empty outbound state.
             // ES: Un central nuevo comienza con una sesión autenticada y un estado de salida vacíos.
             // 中文：新的 Central 必须从空认证会话和空发送状态开始。
@@ -1292,6 +1339,9 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
 
         connectedCentral = central
         dashboardConnectionIdentity = PTDashboardConnectionIdentity(centralIdentifier: central.identifier)
+        if identityChanged {
+            observeLifecycle(.centralConnected)
+        }
         PTOBDLogger.moto.ptLog("⚡️ [雷达] 摩托车订阅成功: \(characteristic.uuid.uuidString)")
 
         if identityChanged {
@@ -1305,15 +1355,20 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
 
         if isTioSubscribed && isCreditsSubscribed {
             PTOBDLogger.moto.ptLog("🔗 [状态] 通道订阅完毕！等待车机写入 8758...")
+            observeLifecycle(.subscriptionsReady)
             authState = .waitKeyId
             authenticated = false
             inboundReassembler.reset()
+        } else {
+            observeLifecycle(.subscriptionsWaiting)
         }
     }
     
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didUnsubscribeFrom characteristic: CBCharacteristic) {
         PTOBDLogger.moto.ptLog("⚠️ [状态] 摩托车断开了通道")
+        observeLifecycle(.disconnectRequested)
         resetDashboardSession(notifyDelegates: true)
+        observeLifecycle(.disconnected)
     }
     
     // MARK: - 监听写入
@@ -1420,6 +1475,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
             }
 
             PTOBDLogger.moto.ptLog("✅ [握手 1/4] 收到 8758！下发挑战码...")
+            observeLifecycle(.authenticationStarted)
             let challenge = auth.createChallenge()
             var challengeData = Data()
             for num in challenge {
@@ -1479,6 +1535,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
                 
                 authState = .success
                 authenticated = true
+                observeLifecycle(.authenticationSucceeded)
                 PTMotoUserDefaultStruct.MotoLinkedAPP = true
                 PTOBDLogger.moto.startFileLogging(prefix: "MotoHexLog", headerTitle: "PEUGEOT XP400GT RAW HEX LOG")
                 // 必须在互信彻底完成后，再发钱解锁仪表盘！
@@ -1605,7 +1662,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
         PTOBDLogger.moto.ptLog("⬆️ [发送包] 正在发射指令: \(hexString)")
         // 🚨 优化：向订阅了该特征的中心设备查询它所支持的最大长度，如果没有则安全降级回默认值 20
         // 对于 WriteWithoutResponse 或 Notify，使用 .withoutResponse 类型的 MTU
-        let maxChunkSize = 20
+        let maxChunkSize = PTXP400BLEProtocol.maxTIOChunkLength
                 
         let totalChunks = Int(ceil(Double(data.count) / Double(maxChunkSize)))
         var currentChunk = 0
@@ -1893,13 +1950,13 @@ extension PTBluetoothServerManager {
         PTOBDLogger.moto.ptLog("📦 [原始包] 收到帧数据: \(hexString)")
         
         // 1. 校验最基本长度 (包头1字节 + ID 1字节 + 包尾1字节 = 至少3字节)
-        guard value.count >= 3, value[0] == 0x16 else {
+        guard value.count >= 3, value[0] == PTXP400BLEProtocol.preamble else {
             PTOBDLogger.moto.ptLog("⚠️ [解析拦截] 包头不匹配或长度不足")
             return
         }
         
         // 2. 校验包尾 (安卓协议定义最后 1 字节必须是 0x00)
-        guard value.last == 0x00 else {
+        guard value.last == PTXP400BLEProtocol.terminator else {
             PTOBDLogger.moto.ptLog("⚠️ [解析拦截] 结尾不是 0x00")
             return
         }
@@ -1930,7 +1987,7 @@ extension PTBluetoothServerManager {
         let bytes = [UInt8](payload)
         
         switch id {
-        case 1:
+        case PTXP400BLEProtocol.connectionFrameID:
             if let asciiString = String(bytes: bytes, encoding: .ascii) {
                 dashboardConnectionIdentity = PTDashboardConnectionIdentity(
                     centralIdentifier: connectedCentral?.identifier,
@@ -1949,7 +2006,7 @@ extension PTBluetoothServerManager {
             } else {
                 PTOBDLogger.moto.ptLog("🔗 [状态] 车机报告连接正常 (CONNECTION)")
             }
-        case 2: // DATA1
+        case PTXP400BLEProtocol.data1FrameID: // DATA1
             delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:2 (DATA1) -> \(hexString)") })
             guard bytes.count >= 8 else { return }
             
@@ -1991,7 +2048,7 @@ extension PTBluetoothServerManager {
             let odometerDescription = odometerAvailability.isAvailable ? "\(odo)km" : "-"
             PTOBDLogger.moto.ptLog("📊 [DATA1] 油量: \(fuelDescription), 消耗: \(averageDescription), 总里程: \(odometerDescription)")
             
-        case 3: // DATA2
+        case PTXP400BLEProtocol.data2FrameID: // DATA2
             delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:3 (DATA2) -> \(hexString)") })
             guard bytes.count >= 6 else { return }
             
@@ -2052,7 +2109,7 @@ extension PTBluetoothServerManager {
             let batteryDescription = batteryAvailability.isAvailable ? "\(batt)V" : "-"
             PTOBDLogger.moto.ptLog("🔋 [DATA2] 引擎: \(engineDescription), 电压: \(batteryDescription)")
             
-        case 4: // DATA3
+        case PTXP400BLEProtocol.data3FrameID: // DATA3
             delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:4 (DATA3) -> \(hexString)") })
             guard bytes.count >= 6 else { return }
             if bytes.count >= 8 {
@@ -2085,7 +2142,7 @@ extension PTBluetoothServerManager {
             let autonomyDescription = autonomyAvailability.isAvailable ? "\(Double(autoRaw) * 0.1)km" : "-"
             PTOBDLogger.moto.ptLog("🛣️ [DATA3] 剩余续航: \(autonomyDescription)")
             
-        case 5: // CONTROL
+        case PTXP400BLEProtocol.controlFrameID: // CONTROL
             delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:5 (CONTROL) -> \(hexString)") })
             guard bytes.count >= 8 else { return }
                         
@@ -2144,7 +2201,7 @@ extension PTBluetoothServerManager {
             let rpmDescription = engineRpmAvailability.isAvailable ? "\(Int(Double(engineRaw) * 0.25)) rpm" : "-"
             PTOBDLogger.moto.ptLog("🏍️ [CONTROL] 车速: \(speedDescription), 转速: \(rpmDescription)")
             
-        case 6: // ABS
+        case PTXP400BLEProtocol.absFrameID: // ABS
             delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:6 (ABS) -> \(hexString)") })
             guard bytes.count >= 3 else { return }
             

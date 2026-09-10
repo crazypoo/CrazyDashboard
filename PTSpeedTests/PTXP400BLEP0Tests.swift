@@ -11,6 +11,16 @@ import XCTest
 @testable import XP400Ride
 
 final class PTXP400BLEP0Tests: XCTestCase {
+    // EN: Prevent the stable frame builder from drifting away from the shared wire contract.
+    // ES: Evita que el constructor de tramas estable se desvíe del contrato de cableado compartido.
+    // 中文：防止稳定帧构造器与共享线协议契约发生漂移。
+    func testFrameBuilderUsesTheSharedProtocolContract() {
+        XCTAssertEqual(PTFrameBuilder.PREAMBLE, PTXP400BLEProtocol.preamble)
+        XCTAssertEqual(PTFrameBuilder.END_OF_FRAME, PTXP400BLEProtocol.terminator)
+        XCTAssertEqual(PTFrameBuilder.ID_NAVIGATION, PTXP400BLEProtocol.navigationFrameID)
+        XCTAssertEqual(PTFrameBuilder.ID_CONFIGURATION, PTXP400BLEProtocol.configurationFrameID)
+    }
+
     // EN: The authentication fixture locks the deterministic response prefix without storing the random suffix.
     // ES: El fixture de autenticación fija el prefijo determinista sin guardar el sufijo aleatorio.
     // 中文：认证 Fixture 锁定确定性的响应前缀，不保存随机后缀。
