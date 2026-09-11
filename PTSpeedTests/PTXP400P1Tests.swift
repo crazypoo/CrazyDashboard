@@ -123,6 +123,85 @@ final class PTXP400P1Tests: XCTestCase {
         XCTAssertTrue(PTOBDCommandClassifier.isCaptureAdapterCommand("ATCRA7E8"))
     }
 
+    func testYMOBDVersionParserKeepsGenericELM327OnFallbackPath() {
+        let parser = PTYMOBDVersionParser()
+        let ymobdInfo = parser.parse("""
+        AT+VERSION
+        Company: PTools
+        Version: V1.2.3
+        Device Type: YMOBD
+        Device Name: XP400
+        Device MAC: aa:bb:cc
+        Interface: BLE
+        Cust ID: Peugeot
+        Crypt: 12345678
+        """)
+
+        XCTAssertTrue(ymobdInfo.isYMOBD)
+        XCTAssertEqual(ymobdInfo.company, "Company: PTools")
+        XCTAssertEqual(ymobdInfo.version, "V1.2.3")
+        XCTAssertEqual(ymobdInfo.deviceType, "YMOBD")
+        XCTAssertEqual(ymobdInfo.deviceMac, "AA:BB:CC")
+        XCTAssertEqual(ymobdInfo.customerID, "Peugeot")
+        XCTAssertEqual(ymobdInfo.crypt, "12345678")
+
+        let genericInfo = parser.parse("AT+VERSION\r\nELM327 v1.5\r\nVersion: 1.5\r\n")
+        XCTAssertFalse(genericInfo.isYMOBD)
+        XCTAssertNil(PTYMOBDAuthenticator().makeAuthCommand(versionInfo: genericInfo))
+    }
+
+    func testYMOBDAuthenticatorVerifiesChallengeResponse() throws {
+        let info = PTYMOBDVersionInfo(deviceType: "YMOBD", isYMOBD: true)
+        let authenticator = PTYMOBDAuthenticator()
+        let result = try XCTUnwrap(authenticator.makeAuthCommand(versionInfo: info))
+        let challenge = try XCTUnwrap(result.challenge)
+        let expected = YmobdCrypt.hex8(
+            value: YmobdCrypt.crypt32(input: Int32(bitPattern: challenge))
+        )
+
+        XCTAssertTrue(authenticator.verify(command: result.command, response: "\(expected)\r\n", challenge: challenge))
+        XCTAssertTrue(authenticator.isOfficialYMOBD)
+        XCTAssertFalse(authenticator.verify(command: result.command, response: "00000000\r\n", challenge: challenge))
+    }
+
+    func testYMOBDDeviceClassifierPreservesGenericAndExcludedRules() {
+        let classifier = PTYMOBDDeviceClassifier()
+
+        XCTAssertTrue(classifier.isLikelyOBD(deviceName: "obdii"))
+        XCTAssertTrue(classifier.isLikelyOBD(deviceName: "Nearby Adapter", advertisedServiceUUIDs: ["FFF0"]))
+        XCTAssertFalse(classifier.isLikelyOBD(deviceName: "P300"))
+        XCTAssertFalse(classifier.isLikelyOBD(deviceName: "TPMS"))
+        XCTAssertEqual(classifier.category(forName: "BT_00"), .batteryTester)
+        XCTAssertEqual(classifier.category(forName: "C35"), .otaCapable)
+    }
+
+    func testYMOBDInitializerBoundsDebugAnd0100Retries() {
+        let initializer = PTYMOBDInitializer()
+        initializer.begin()
+        XCTAssertEqual(initializer.state, .initializing)
+        XCTAssertTrue(initializer.shouldSendDebugFlag(forYMOBD: true))
+        XCTAssertFalse(initializer.shouldSendDebugFlag(forYMOBD: true))
+        initializer.recordPID0100Mask(0x1E3E1001)
+        XCTAssertEqual(initializer.pid0100Mask, 0x1E3E1001)
+
+        for _ in 0..<PTYMOBDInitializer.maximum0100RetryCount {
+            XCTAssertTrue(initializer.consume0100Retry())
+        }
+        XCTAssertFalse(initializer.consume0100Retry())
+        XCTAssertEqual(initializer.state, .failed)
+    }
+
+    func testPollingProfilesExposeOfficialCadenceAndKeepAdaptiveDefault() {
+        let supported = ["010C", "010D", "0105", "ATRV", "0104"]
+        let official = PTOBDPollingProfile.officialYMOBD.makeQueue(from: supported)
+        XCTAssertEqual(official.count, 25)
+        XCTAssertEqual(Array(official.prefix(6)), ["010C", "010D", "010C", "0105", "010C", "ATRV"])
+        XCTAssertEqual(official.last, "0104")
+
+        let adaptive = PTOBDPollingProfile.adaptive.makeQueue(from: ["010C", "010D", "0105"])
+        XCTAssertEqual(adaptive, ["010C", "010D", "0105"])
+    }
+
     func testBLESessionStateAndCreditsAreResettableAndGenerationSafe() {
         var session = PTXP400BLESession()
         let firstToken = session.begin()

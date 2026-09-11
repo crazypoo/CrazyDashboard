@@ -1610,6 +1610,23 @@ response verify
 isOfficial
 ```
 
+## 34.1 P1 已落地的兼容迁移边界
+
+P1 已按“策略服务 + 旧连接器兼容门面”的方式完成。新增文件位于：
+
+```text
+Global/OBD/YMOBD/
+├── PTYMOBDInitializer.swift
+├── PTYMOBDVersionParser.swift
+├── PTYMOBDAuthenticator.swift
+├── PTYMOBDDeviceClassifier.swift
+└── PTOBDPollingProfile.swift
+```
+
+本轮没有移动或重写 `PTHiddenOBDConnector` 的 CoreBluetooth、ASCII 分帧、连接发现和收发路径。旧连接器仍负责调用顺序和兼容 API，但已将版本解析、认证生成/校验、0100 重试策略、设备筛选和轮询队列策略委托给上述类型。普通 ELM327 只返回版本信息时仍会跳过 YMOBD 认证；FFF0 只是优先识别线索，不会成为全局扫描硬过滤。
+
+`PTOBDPollingProfile.adaptive` 是默认值，保持现有产品轮询顺序；`officialYMOBD` 只供协议复现和兼容性测试主动选择。OTA、固件下载、RCSP 和写入逻辑不属于本次 P1。
+
 接口建议：
 
 ```swift
@@ -1817,11 +1834,11 @@ AT+VERSION
 
 ## P1：结构重构
 
-- [ ] `PTYMOBDInitializer`
-- [ ] `PTYMOBDVersionParser`
-- [ ] `PTYMOBDAuthenticator`
-- [ ] `PTYMOBDDeviceClassifier`
-- [ ] `PTOBDPollingProfile`
+- [x] `PTYMOBDInitializer`
+- [x] `PTYMOBDVersionParser`
+- [x] `PTYMOBDAuthenticator`
+- [x] `PTYMOBDDeviceClassifier`
+- [x] `PTOBDPollingProfile`
 
 ## P2：OTA read-only
 

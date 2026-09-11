@@ -578,14 +578,13 @@ public class PTOBDTransportBase: NSObject {
     public var onDisconnected: ((Error?) -> Void)?
     public var isUnlocked: Bool = false
     
-    // EN: Keep the ELM327-compatible initialization template immutable; YMOBD authentication is optional.
-    // ES: Mantiene inmutable la plantilla compatible con ELM327; la autenticación YMOBD es opcional.
-    // 中文：保持兼容 ELM327 的初始化模板不可变；YMOBD 认证只在探测到能力后启用。
-    private static let defaultInitQueue: [String] = [
-        "ATZ", "ATE0", "ATL0", "ATH1", "ATSP0", "AT+VERSION", "ATI", "ATRV", "<AUTH>",
-        "0100", "020000", "0600", "0900", "ATDP", "0120", "0140", "0902", "0904", "0906"
-    ]
-    internal var initQueue: [String] = PTOBDTransportBase.defaultInitQueue
+    // EN: The initializer owns policy; this legacy base class keeps the command queue for API compatibility.
+    // ES: El inicializador posee la política; esta clase base heredada conserva la cola por compatibilidad de API.
+    // 中文：初始化器负责策略；这个旧基类保留指令队列以维持 API 兼容性。
+    private let initializer = PTYMOBDInitializer()
+    private let versionParser = PTYMOBDVersionParser()
+    private let authenticator = PTYMOBDAuthenticator()
+    internal var initQueue: [String] = PTYMOBDInitializer.defaultCommandQueue
     internal var currentQueueIndex: Int = 0
     internal var activeCommand: String? = nil
     internal var rxBuffer: String = ""
@@ -595,16 +594,13 @@ public class PTOBDTransportBase: NSObject {
     // ES: Estos valores solo exponen diagnósticos de inicialización y no alteran el entramado de transporte estable.
     // 中文：这些值只暴露初始化诊断信息，不改变已经稳定的传输分帧逻辑。
     public private(set) var currentAuthChallenge: UInt32?
-    public private(set) var isOfficialYMOBD: Bool = false
-    public private(set) var pid0100Mask: UInt32?
+    public var isOfficialYMOBD: Bool { authenticator.isOfficialYMOBD }
+    public var pid0100Mask: UInt32? { initializer.pid0100Mask }
 
     // EN: A plain ELM327 may answer AT+VERSION without YMOBD fields; never send AUTH in that case.
     // ES: Un ELM327 normal puede responder AT+VERSION sin campos YMOBD; en ese caso nunca se envía AUTH.
     // 中文：普通 ELM327 可能会响应 AT+VERSION 但不包含 YMOBD 字段；这种情况下绝不发送 AUTH。
     private var hasYMOBDVersionFields = false
-    private var hasTriggeredDebugFlagFor0100 = false
-    private var retryCountFor0100 = 0
-    private let maximum0100RetryCount = 20
     internal private(set) var initializationActive = false
     private var initAdvanceWorkItem: DispatchWorkItem?
     private var initializationTimeoutWorkItem: DispatchWorkItem?
@@ -690,7 +686,7 @@ public class PTOBDTransportBase: NSObject {
             self.dropPhysicalConnection()
         }
         initializationTimeoutWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 20.0, execute: workItem)
+        DispatchQueue.main.asyncAfter(deadline: .now() + PTYMOBDInitializer.initializationTimeout, execute: workItem)
     }
 
     // EN: Abort initialization through the subclass's physical teardown hook.
@@ -698,6 +694,7 @@ public class PTOBDTransportBase: NSObject {
     // 中文：通过子类的物理断开钩子终止初始化。
     private func failInitialization(reason: String) {
         PTOBDLogger.obd.ptLog("❌ [破冰船] \(reason)")
+        initializer.markFailed()
         cancelInitialization()
         dropPhysicalConnection()
     }
@@ -731,15 +728,14 @@ public class PTOBDTransportBase: NSObject {
     // ES: Repite 0100 sin saltar el comando y mantiene acotado el número de reintentos.
     // 中文：重复发送 0100 而不跳过当前命令，并限制重试次数。
     private func retry0100(reason: String) -> Bool {
-        guard retryCountFor0100 < maximum0100RetryCount else {
-            failInitialization(reason: "0100 \(reason)，已达到 \(maximum0100RetryCount) 次重试上限")
+        guard initializer.consume0100Retry() else {
+            failInitialization(reason: "0100 \(reason)，已达到 \(PTYMOBDInitializer.maximum0100RetryCount) 次重试上限")
             return false
         }
 
-        retryCountFor0100 += 1
         initQueue.insert("0100", at: min(currentQueueIndex + 1, initQueue.count))
         currentQueueIndex += 1
-        PTOBDLogger.obd.ptLog("🔁 [破冰船] 0100 \(reason)，第 \(retryCountFor0100)/\(maximum0100RetryCount) 次重试")
+        PTOBDLogger.obd.ptLog("🔁 [破冰船] 0100 \(reason)，第 \(initializer.retryCountFor0100)/\(PTYMOBDInitializer.maximum0100RetryCount) 次重试")
         scheduleNextInitCommand(after: 0.05)
         return true
     }
@@ -748,30 +744,15 @@ public class PTOBDTransportBase: NSObject {
     // ES: Omite el hueco opcional de autenticación y conserva todos los comandos estándar de ELM327.
     // 中文：跳过可选认证槽位，同时保留所有标准 ELM327 指令。
     private func skipOptionalYMOBDAuthentication() {
-        isOfficialYMOBD = false
         hasYMOBDVersionFields = false
         currentAuthChallenge = nil
+        authenticator.reset()
+        initializer.skipOptionalAuthentication()
         initQueue.removeAll { command in
             command == "<AUTH>" || command.hasPrefix("AT+CRYPT") || command.hasPrefix("AT+SETCRYPT")
         }
         currentQueueIndex += 1
         scheduleNextInitCommand(after: 0.05)
-    }
-
-    // EN: Read only the first complete eight-digit hexadecimal response token for challenge validation.
-    // ES: Lee solo el primer token hexadecimal completo de ocho dígitos para validar el desafío.
-    // 中文：只读取响应中第一个完整的八位十六进制令牌，用于校验 challenge。
-    private func firstEightDigitHexToken(from response: String) -> String? {
-        guard let expression = try? NSRegularExpression(
-            pattern: "(?i)(?<![0-9a-f])[0-9a-f]{8}(?![0-9a-f])"
-        ) else { return nil }
-
-        let range = NSRange(response.startIndex..<response.endIndex, in: response)
-        guard let match = expression.firstMatch(in: response, range: range),
-              let tokenRange = Range(match.range, in: response) else {
-            return nil
-        }
-        return String(response[tokenRange]).uppercased()
     }
     
     // MARK: - 🌟 共享逻辑：重置并启动状态机
@@ -782,13 +763,11 @@ public class PTOBDTransportBase: NSObject {
         currentQueueIndex = 0
         rxBuffer = ""
         collectedPIDResponses.removeAll()
-        initQueue = PTOBDTransportBase.defaultInitQueue
+        initQueue = PTYMOBDInitializer.defaultCommandQueue
         currentAuthChallenge = nil
-        isOfficialYMOBD = false
         hasYMOBDVersionFields = false
-        pid0100Mask = nil
-        hasTriggeredDebugFlagFor0100 = false
-        retryCountFor0100 = 0
+        initializer.begin()
+        authenticator.reset()
         initializationActive = true
 
         scheduleNextInitCommand(after: 1.0)
@@ -897,7 +876,7 @@ public class PTOBDTransportBase: NSObject {
         guard initializationActive else { return }
 
         guard currentQueueIndex < initQueue.count else {
-            guard let mask = pid0100Mask, mask != 0 else {
+            guard initializer.canEnterReadyState(), let mask = pid0100Mask else {
                 failInitialization(reason: "0100 支持位掩码为空或全 0，拒绝进入 connected")
                 return
             }
@@ -907,6 +886,7 @@ public class PTOBDTransportBase: NSObject {
             timeoutTask?.cancel()
             timeoutTask = nil
             PTOBDLogger.obd.ptLog("✅ [破冰船] 初始化完成，0100 支持位掩码 \(String(format: "%08X", mask))，移交控制权！")
+            initializer.markReady()
             self.isUnlocked = true
             didUnlockTransport()
             DispatchQueue.main.async { [weak self] in self?.onIceBroken?() }
@@ -953,47 +933,21 @@ public class PTOBDTransportBase: NSObject {
                 skipOptionalYMOBDAuthentication()
                 return
             }
-            
-            // 提取信息与加密种子
-            let lines = response.components(separatedBy: .newlines).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
-            if let company = lines.first(where: { !$0.uppercased().hasPrefix("AT+VERSION") }) {
-                PTMotoTelemetryManager.shared.obdInfo.moudleInfo.company = company
-            }
 
-            var cryptSeed = ""
-            hasYMOBDVersionFields = false
-            for line in lines {
-                let parts = line.components(separatedBy: ":")
-                guard parts.count >= 2 else { continue }
-                let key = parts[0].lowercased().trimmingCharacters(in: .whitespaces)
-                let value = parts[1...].joined(separator: ":").trimmingCharacters(in: .whitespaces)
-
-                switch key {
-                case "version":
-                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.version = value
-                case "devicetype", "device type":
-                    hasYMOBDVersionFields = true
-                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceType = value
-                case "devicename", "device name":
-                    hasYMOBDVersionFields = true
-                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceName = value
-                case "devicemac", "device mac":
-                    hasYMOBDVersionFields = true
-                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceMac = value.uppercased()
-                case "interface", "interfase":
-                    hasYMOBDVersionFields = true
-                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.interfase = value
-                case "custid", "cust id":
-                    hasYMOBDVersionFields = true
-                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.cust = value
-                case "crypt":
-                    hasYMOBDVersionFields = true
-                    cryptSeed = value.filter { "0123456789abcdefABCDEF".contains($0) }
-                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.crypt = cryptSeed
-                default:
-                    break
-                }
-            }
+            // EN: Keep legacy model population in place while delegating YMOBD parsing to its service.
+            // ES: Mantiene la población del modelo heredado y delega el análisis YMOBD a su servicio.
+            // 中文：保留旧模型赋值行为，同时把 YMOBD 解析委托给独立服务。
+            let versionInfo = versionParser.parse(response)
+            let moduleInfo = PTMotoTelemetryManager.shared.obdInfo.moudleInfo
+            moduleInfo.company = versionInfo.company
+            moduleInfo.version = versionInfo.version
+            moduleInfo.deviceType = versionInfo.deviceType
+            moduleInfo.deviceName = versionInfo.deviceName
+            moduleInfo.deviceMac = versionInfo.deviceMac
+            moduleInfo.interfase = versionInfo.interfaceName
+            moduleInfo.cust = versionInfo.customerID
+            moduleInfo.crypt = versionInfo.crypt
+            hasYMOBDVersionFields = versionInfo.isYMOBD
 
             // EN: Version-only responses are common on generic ELM327 adapters and are not YMOBD proof.
             // ES: Las respuestas que solo contienen la versión son comunes en adaptadores ELM327 genéricos y no prueban YMOBD.
@@ -1004,58 +958,39 @@ public class PTOBDTransportBase: NSObject {
                 return
             }
 
-            let generatedChallenge: Int32?
-            let authCommand: String
-            if !cryptSeed.isEmpty {
-                let setCrypt = YmobdCrypt.setCryptCommand(cryptFromVersion: cryptSeed)
-                if !setCrypt.isEmpty {
-                    generatedChallenge = nil
-                    authCommand = setCrypt
-                } else {
-                    let challenge = YmobdCrypt.newChallenge()
-                    generatedChallenge = challenge
-                    authCommand = YmobdCrypt.challengeCommand(challenge: challenge)
-                }
-            } else {
-                let challenge = YmobdCrypt.newChallenge()
-                generatedChallenge = challenge
-                authCommand = YmobdCrypt.challengeCommand(challenge: challenge)
+            initializer.markAuthenticating()
+            guard let authResult = authenticator.makeAuthCommand(versionInfo: versionInfo) else {
+                skipOptionalYMOBDAuthentication()
+                return
             }
 
-            currentAuthChallenge = generatedChallenge.map { UInt32(bitPattern: $0) }
+            currentAuthChallenge = authResult.challenge
             if let authIndex = initQueue.firstIndex(of: "<AUTH>") {
-                initQueue[authIndex] = authCommand.replacingOccurrences(of: "\r", with: "")
+                initQueue[authIndex] = authResult.command
             }
         }
 
         if cmd.hasPrefix("AT+SETCRYPT") {
-            isOfficialYMOBD = hasYMOBDVersionFields
-                && !cleanResponseForCheck.isEmpty
-                && !cleanResponseForCheck.contains("ERROR")
-                && !cleanResponseForCheck.contains("NODATA")
-                && !cleanResponseForCheck.contains("?")
-                && !cleanResponseForCheck.contains("UNABLETOCONNECT")
+            let verified = authenticator.verify(command: cmd, response: response, challenge: nil)
+            initializer.markCheckingECU()
             currentAuthChallenge = nil
-            PTOBDLogger.obd.ptLog(isOfficialYMOBD ? "✅ [认证] YMOBD crypt 配置已确认" : "⚠️ [认证] YMOBD crypt 配置未确认，继续初始化")
+            PTOBDLogger.obd.ptLog(hasYMOBDVersionFields && verified ? "✅ [认证] YMOBD crypt 配置已确认" : "⚠️ [认证] YMOBD crypt 配置未确认，继续初始化")
         } else if cmd.hasPrefix("AT+CRYPT"), let challenge = currentAuthChallenge {
-            let expected = YmobdCrypt.hex8(value: YmobdCrypt.crypt32(input: Int32(bitPattern: challenge)))
-            let responseWithoutEcho = response.replacingOccurrences(of: cmd, with: "", options: .caseInsensitive)
-            isOfficialYMOBD = hasYMOBDVersionFields
-                && firstEightDigitHexToken(from: responseWithoutEcho) == expected
-            PTOBDLogger.obd.ptLog(isOfficialYMOBD ? "✅ [认证] challenge 校验通过: \(expected)" : "⚠️ [认证] challenge 校验不匹配，继续兼容初始化")
+            let verified = authenticator.verify(command: cmd, response: response, challenge: challenge)
+            initializer.markCheckingECU()
+            PTOBDLogger.obd.ptLog(hasYMOBDVersionFields && verified ? "✅ [认证] challenge 校验通过" : "⚠️ [认证] challenge 校验不匹配，继续兼容初始化")
             currentAuthChallenge = nil
         }
 
         if cmd == "0100" {
             if let mask = extract0100Mask(from: response) {
-                pid0100Mask = (pid0100Mask ?? 0) | mask
+                initializer.recordPID0100Mask(mask)
             }
             collectedPIDResponses.append(response)
 
             let isUnableToConnect = cleanResponseForCheck.contains("UNABLETOCONNECT")
             let isNoData = cleanResponseForCheck.contains("NODATA") || cleanResponseForCheck.contains("NO DATA")
-            if isUnableToConnect && hasYMOBDVersionFields && !hasTriggeredDebugFlagFor0100 {
-                hasTriggeredDebugFlagFor0100 = true
+            if isUnableToConnect && initializer.shouldSendDebugFlag(forYMOBD: hasYMOBDVersionFields) {
                 initQueue.insert(contentsOf: ["AT+DEBUG_FLG", "0100"], at: min(currentQueueIndex + 1, initQueue.count))
                 currentQueueIndex += 1
                 PTOBDLogger.obd.ptLog("🛠️ [破冰船] 0100 无法连接，先发送 AT+DEBUG_FLG 再重试 0100")
@@ -1351,20 +1286,10 @@ public class PTHiddenOBDConnector: PTOBDTransportBase {
     private var serviceDiscoveryTimeoutWorkItem: DispatchWorkItem?
     private var reconnectWorkItem: DispatchWorkItem?
 
-    // EN: Prefer known OBD names while allowing generic ELM327 names and advertised FFF0 devices.
-    // ES: Da preferencia a nombres OBD conocidos y permite nombres ELM327 genéricos y dispositivos FFF0 anunciados.
-    // 中文：优先连接已知 OBD 名称，同时兼容通用 ELM327 名称和广播 FFF0 的设备。
-    private let knownOBDDeviceNames: Set<String> = [
-        "OBDII", "MS310", "B25", "V500", "YM529", "YM329", "YM129", "YM819", "BT529",
-        "OBD114", "OBD147", "BROM S10", "BROM S15", "BROM S20"
-    ]
-
-    // EN: These official YMOBD names belong to OTA, battery, or TPMS products, not normal OBD.
-    // ES: Estos nombres oficiales de YMOBD pertenecen a productos OTA, batería o TPMS, no al OBD normal.
-    // 中文：这些官方 YMOBD 名称属于 OTA、电池或 TPMS 产品，不应进入普通 OBD 链路。
-    private let excludedNonOBDDeviceNames: Set<String> = [
-        "P300", "BT_00", "BT15", "BT17", "BT319", "BT369", "TPMS", "C15", "C35"
-    ]
+    // EN: Keep adapter classification outside CoreBluetooth lifecycle code.
+    // ES: Mantiene la clasificación de adaptadores fuera del código del ciclo de vida de CoreBluetooth.
+    // 中文：把适配器分类移出 CoreBluetooth 生命周期代码。
+    private let deviceClassifier = PTYMOBDDeviceClassifier()
 
     private override init() {
         super.init()
@@ -1389,26 +1314,11 @@ public class PTHiddenOBDConnector: PTOBDTransportBase {
     private func isLikelyOBDPeripheral(_ peripheral: CBPeripheral, advertisementData: [String: Any]) -> Bool {
         let deviceName = (peripheral.name ?? advertisementData[CBAdvertisementDataLocalNameKey] as? String ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        let normalizedName = deviceName.uppercased()
-
-        guard !excludedNonOBDDeviceNames.contains(deviceName) else { return false }
-
-        if knownOBDDeviceNames.contains(deviceName) {
-            return true
-        }
-
         let advertisedServices = advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID] ?? []
-        if advertisedServices.contains(Self.obdServiceUUID) {
-            return true
-        }
-
-        // EN: Keep the fallback narrow so nearby unrelated BLE devices are not claimed as OBD adapters.
-        // ES: Mantiene estrecho el fallback para no reclamar como OBD dispositivos BLE cercanos no relacionados.
-        // 中文：保持回退匹配范围收窄，避免把附近无关 BLE 设备误认成 OBD 适配器。
-        return normalizedName.contains("OBD")
-            || normalizedName.contains("ELM")
-            || normalizedName.hasPrefix("BROM")
-            || normalizedName.hasPrefix("YM")
+        return deviceClassifier.isLikelyOBD(
+            deviceName: deviceName,
+            advertisedServiceUUIDs: advertisedServices.map(\.uuidString)
+        )
     }
 
     // EN: A watchdog failure is not a user disconnect, so the lifecycle may schedule a bounded retry.
@@ -1857,6 +1767,11 @@ public class PTMotoTelemetryManager {
     public private(set) var isConnected: Bool = false
     public private(set) var currentRPM: Double = 0.0
     public private(set) var currentSpeed: Double = 0.0
+
+    // EN: Adaptive polling remains the product default; official cadence is opt-in for compatibility testing.
+    // ES: El sondeo adaptativo sigue siendo el valor predeterminado; la cadencia oficial es opcional para pruebas.
+    // 中文：自适应轮询继续作为产品默认值；官方节奏仅在兼容性测试时主动选择。
+    public var pollingProfile: PTOBDPollingProfile = .adaptive
     
     public var telemetryPollingTask: Task<Void, Never>?
     private var suppressPhysicalDisconnectCallback = false
@@ -1978,8 +1893,12 @@ public class PTMotoTelemetryManager {
     // MARK: - 极简轮询引擎 (全频段动态提取 + 核心加权狂闪版)
     func startLightweightPolling(rawPIDs: [String]) {
         telemetryPollingTask?.cancel()
+        let selectedPollingProfile = pollingProfile
         
-        telemetryPollingTask = Task { [weak self] in
+        // EN: Snapshot the profile once per session so a UI change cannot race with the polling task.
+        // ES: Captura la política una vez por sesión para que un cambio de UI no compita con el sondeo.
+        // 中文：每次会话只读取一次策略，避免 UI 修改与轮询任务产生数据竞争。
+        telemetryPollingTask = Task { [weak self, selectedPollingProfile] in
             guard let self = self else { return }
             
             // 动态解析所有车辆支持的 PID
@@ -2025,23 +1944,10 @@ public class PTMotoTelemetryManager {
             
             PTOBDLogger.obd.ptLog("⚡️ [轮询引擎] 成功提取 \(allDynamicCommands.count) 条支持指令，开始构建加权火力网！")
             
-            // 为了防止全频段扫描导致转速表(RPM)刷新率下降，我们将高优指令交替插入列队
-            var pollingQueue: [String] = []
-            let rpmCmd = "010C"
-            let speedCmd = "010D"
-            
-            let otherCommands = allDynamicCommands.filter { $0 != rpmCmd && $0 != speedCmd }
-            
-            if otherCommands.isEmpty {
-                pollingQueue = allDynamicCommands
-            } else {
-                // 生成交替队列：[转速, 车速, 其它1, 转速, 车速, 其它2...]
-                for other in otherCommands {
-                    if allDynamicCommands.contains(rpmCmd) { pollingQueue.append(rpmCmd) }
-                    if allDynamicCommands.contains(speedCmd) { pollingQueue.append(speedCmd) }
-                    pollingQueue.append(other)
-                }
-            }
+            // EN: Build the queue through the selected policy; the default reproduces the former adaptive order.
+            // ES: Construye la cola mediante la política elegida; el valor predeterminado conserva el orden adaptativo anterior.
+            // 中文：通过选定策略构建队列；默认策略保持原有自适应顺序。
+            let pollingQueue = selectedPollingProfile.makeQueue(from: allDynamicCommands)
             
             // 4. 建立持续保存数据的字典
             var persistentMeasurements: [String: Any] = [:]
