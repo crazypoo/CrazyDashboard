@@ -360,6 +360,21 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                             self.obdButton.isSelected = false
                             self.obdButton.stopLoading()
                         }
+                    case 3:
+//                        let config = PTOTAProductConfiguration(
+//                            isMandatoryUpdate: false,
+//                            minimumBatteryLevel: 0.5,
+//                            recommendsExternalPower: true,
+//                            blocksLowBattery: true
+//                        )
+//
+//                        let vc = PTOTAUpgradeViewController(
+//                            readOnlyResult: readOnlyResult,
+//                            checklist: checklist,
+//                            configuration: config
+//                        )
+//                        self.navigationController?.pushViewController(vc)
+                        break
                     default:
                         break
                     }

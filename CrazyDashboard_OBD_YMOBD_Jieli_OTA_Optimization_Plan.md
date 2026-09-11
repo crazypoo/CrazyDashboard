@@ -28,7 +28,7 @@ CrazyDashboard 当前 OBD 模块已经能够完成 BLE OBD 连接、ELM/YMOBD �
 4. 补齐 `0100 -> AT+DEBUG_FLG -> 0100` 重试
 5. 补齐初始化阶段每条命令 20 秒超时
 6. 只有 `0100` 支持位非全 0 才允许进入 connected / unlocked
-7. 补齐 BLE FFF0 优先校验、通用 ELM327 扫描、30 秒扫描截止、服务发现超时和自动重连
+7. 补齐 BLE FFF0 扫描过滤、30 秒扫描截止、服务发现超时和自动重连
 8. 扩展 YMOBD 官方设备名支持
 
 OTA 方面，现在已经确认 YMOBD 使用：
@@ -50,21 +50,6 @@ OTA 方面，现在已经确认 YMOBD 使用：
 - OTA 生命周期
 - 断线回连
 - OTA 后版本回读
-
----
-
-# 2.0 本次实施边界修订：PTHiddenOBDConnector 的 ELM327 基线
-
-`PTHiddenOBDConnector.swift` 是项目的通用 ELM327 OBD 连接与传输实现，YMOBD 只是其中的可选扩展能力。因此，本计划中所有 YMOBD 规则都必须在能力探测成功后启用，不能把普通 ELM327 强制当作 YMOBD 设备处理。
-
-本次 P0 实施采用以下兼容策略：
-
-- `AT+VERSION` 只要没有 `devicename`、`devicetype`、`devicemac`、`custid`、`crypt` 等 YMOBD 专属字段，就跳过认证槽位，继续原有 ELM327 标准初始化。
-- 扫描不设置全局 FFF0 硬过滤，以保留既有通用 ELM327 设备发现能力；已知 YMOBD 的 FFF0 服务仍然优先，连接后再按 FFF0 或通用 ELM327 服务完成特征发现。
-- `AT+DEBUG_FLG` 只对已探测到 YMOBD 字段的设备启用；普通 ELM327 遇到 `0100` 失败时只执行有上限的 `0100` 重试。
-- 认证失败但收到了正常 prompt 时不阻断普通只读初始化；没有 prompt 仍由初始化超时和物理重连策略处理。
-
-这样可以同时满足 YMOBD 官方链路兼容性和通用 ELM327 的既有可用性，不复制第二套传输层，也不改变 `PTOBDCommand.swift` 或 BLE 核心。
 
 ---
 
@@ -512,8 +497,6 @@ scanForPeripherals(
     ]
 )
 ```
-
-> 兼容性修订：上面的 FFF0 过滤是“官方 YMOBD 专用实现”的参考，不适合作为本仓库通用入口的硬过滤。`PTHiddenOBDConnector` 必须继续使用无服务过滤扫描来发现通用 ELM327；连接后优先选择实际存在的 FFF0，再回退到设备提供的通用服务。
 
 ## 9.2 扫描截止时间
 
@@ -1610,23 +1593,6 @@ response verify
 isOfficial
 ```
 
-## 34.1 P1 已落地的兼容迁移边界
-
-P1 已按“策略服务 + 旧连接器兼容门面”的方式完成。新增文件位于：
-
-```text
-Global/OBD/YMOBD/
-├── PTYMOBDInitializer.swift
-├── PTYMOBDVersionParser.swift
-├── PTYMOBDAuthenticator.swift
-├── PTYMOBDDeviceClassifier.swift
-└── PTOBDPollingProfile.swift
-```
-
-本轮没有移动或重写 `PTHiddenOBDConnector` 的 CoreBluetooth、ASCII 分帧、连接发现和收发路径。旧连接器仍负责调用顺序和兼容 API，但已将版本解析、认证生成/校验、0100 重试策略、设备筛选和轮询队列策略委托给上述类型。普通 ELM327 只返回版本信息时仍会跳过 YMOBD 认证；FFF0 只是优先识别线索，不会成为全局扫描硬过滤。
-
-`PTOBDPollingProfile.adaptive` 是默认值，保持现有产品轮询顺序；`officialYMOBD` 只供协议复现和兼容性测试主动选择。OTA、固件下载、RCSP 和写入逻辑不属于本次 P1。
-
 接口建议：
 
 ```swift
@@ -1696,35 +1662,6 @@ func decryptFirmware(
 优先根据 CrazyDashboard 当前依赖策略决定。
 
 ---
-
-## 35.1 P2 已落地的只读边界
-
-P2 已按“服务层 + 只读干运行”完成，新增文件位于：
-
-Global/OBD/YMOBD/
-- PTYMOBDFirmwareInfo.swift
-- PTYMOBDFirmwareCrypto.swift
-- PTYMOBDFirmwareAPI.swift
-- PTYMOBDFirmwareDownloader.swift
-- PTYMOBDFirmwareService.swift
-
-已实现：
-
-- 使用 AT+VERSION 与 ATI 的现有 OBD 读通道构造 deviceType、obdFirmwareVersion 和 protocolType。
-- ATI 包含 v2.1 时使用协议类型 7，否则使用 9。
-- 支持扁平和嵌套服务响应，读取 firmwareVersion、firmwareDesc 和 firmwareFileUUID。
-- 使用文档确认的 RSA-2048、PKCS#1 v1.5 和 pubKeyVer = 3 生成 encryptKey。
-- 使用 UUID 去除连字符后的 32 个 ASCII 字节作为 AES-256 密钥，使用全零 IV 执行 OFB 解密。
-- 对下载大小、空内容、HTTP 状态、元数据和哈希进行结构化校验与日志记录。
-- 下载和解密结果只保留在内存结果对象中，不持久化固件密钥或固件内容。
-- 固件检查复用 PTAdvancedOBDCoordinator 的只读总线独占流程，避免与 PID 轮询竞争。
-
-明确未实现：
-
-- 未调用 startOTA。
-- 未接入 Jieli RCSP、AE00/AE01/AE02、OTA characteristic 或任何 BLE 写入。
-- 未修改 ELM327/YMOBD 的底层 CoreBluetooth、ASCII 分帧和传输流程。
-- 未新增默认固件服务器地址；调用方必须显式注入服务 baseURL，避免把未确认的后端地址写入产品。
 
 # 36. OTA Session 必须持久保存
 
@@ -1845,63 +1782,53 @@ AT+VERSION
 
 ## P0：立即修改
 
-- [x] 修 `<AUTH>` 覆盖 `ATRV`
-- [x] `AT+VERSION` 无空格字段
-- [x] 保存 `AT+CRYPT` challenge
-- [x] 校验 challenge response
-- [x] 增加 `isOfficialYMOBD`
-- [x] `0100 UNABLE TO CONNECT`
-- [x] `AT+DEBUG_FLG`（仅 YMOBD 能力探测成功后）
-- [x] `0100 NO DATA`
-- [x] init command 20s timeout
-- [x] 0100 non-zero success condition
-- [x] FFF0 优先校验，同时保留通用 ELM327 扫描
-- [x] 30s BLE scan timeout
-- [x] service discovery timeout
-- [x] abnormal disconnect reconnect
-- [x] 新设备名 whitelist 与非 OBD 设备排除
+- [ ] 修 `<AUTH>` 覆盖 `ATRV`
+- [ ] `AT+VERSION` 无空格字段
+- [ ] 保存 `AT+CRYPT` challenge
+- [ ] 校验 challenge response
+- [ ] 增加 `isOfficialYMOBD`
+- [ ] `0100 UNABLE TO CONNECT`
+- [ ] `AT+DEBUG_FLG`
+- [ ] `0100 NO DATA`
+- [ ] init command 20s timeout
+- [ ] 0100 non-zero success condition
+- [ ] FFF0 filtered scan
+- [ ] 30s BLE scan timeout
+- [ ] service discovery timeout
+- [ ] abnormal disconnect reconnect
+- [ ] 新设备名 whitelist
 
 ## P1：结构重构
 
-- [x] `PTYMOBDInitializer`
-- [x] `PTYMOBDVersionParser`
-- [x] `PTYMOBDAuthenticator`
-- [x] `PTYMOBDDeviceClassifier`
-- [x] `PTOBDPollingProfile`
+- [ ] `PTYMOBDInitializer`
+- [ ] `PTYMOBDVersionParser`
+- [ ] `PTYMOBDAuthenticator`
+- [ ] `PTYMOBDDeviceClassifier`
+- [ ] `PTOBDPollingProfile`
 
 ## P2：OTA read-only
 
-- [x] firmware version check
-- [x] firmware metadata model
-- [x] RSA public key
-- [x] createEncryptKey
-- [x] firmware download
-- [x] AES-OFB decrypt
-- [x] firmware hash / size logging
-- [x] 不执行 OTA
+- [ ] firmware version check
+- [ ] firmware metadata model
+- [ ] RSA public key
+- [ ] createEncryptKey
+- [ ] firmware download
+- [ ] AES-OFB decrypt
+- [ ] firmware hash / size logging
+- [ ] 不执行 OTA
 
 ## P3：Jieli OTA
 
-- [x] 集成官方 Jieli iOS OTA SDK
-- [x] PTJieliOTAManager
-- [x] PTJieliBLETransport
+- [ ] 集成官方 Jieli iOS OTA SDK
+- [ ] PTJieliOTAManager
+- [ ] PTJieliBLETransport
 - [ ] AE00/AE01/AE02 真机确认
-- [x] RCSP AUTH（通过官方 SDK 的 `cmdTargetFeature` 完成认证桥接，XP400 真机结果仍待验收）
-- [x] upgrade callback
-- [x] reconnect
-- [x] retry
-- [x] cancel
-- [x] error recovery
-
-P3 代码桥接和本地工程构建已完成。AE00/AE01/AE02 映射、XP400 真机 RCSP AUTH、断点续传/设备重启与版本复核仍待真实设备验收，未将这些项目误标为已完成。
-
-### P3 实施边界
-
-- Jieli SDK 负责 RCSP 编码、认证和 OTA 数据流程，工程侧不新增第二套 RCSP/分片协议。
-- `PTJieliBLETransport` 只负责 AE00 服务下的 AE01/AE02 GATT 传输，并支持显式映射和自动映射校验。
-- `PTJieliOTAManager` 通过开发者安全门、P2 只读固件结果、SHA-256 校验和总线租约后才允许进入 OTA；普通用户路径不暴露高风险写入。
-- OTA 前会停止现有 ELM327 轮询并切换到 Jieli GATT；完成、取消或失败后释放传输并恢复普通 ELM327 连接。
-- 旧 `PTOBDOTAUpdater` 保持兼容但继续阻断实际写入，直到真实车型协议完成验收。
+- [ ] RCSP AUTH
+- [ ] upgrade callback
+- [ ] reconnect
+- [ ] retry
+- [ ] cancel
+- [ ] error recovery
 
 ## P4：产品化
 
@@ -2129,21 +2056,21 @@ Jieli OTA
 
 普通 OBD：
 
-- [x] FFF0 设备优先校验，同时不破坏通用 ELM327 发现
-- [x] 30s 后停止 scan
-- [x] 连接后 10s 内找到 service
-- [x] notify 开启后延迟约 1s
-- [x] YMOBD 能力设备完整跑过 19-step；普通 ELM327 跳过可选 AUTH
-- [x] ATRV 没有被 AUTH 覆盖
-- [x] AT+VERSION 正确解析无空格和兼容空格字段
-- [x] crypt challenge 能保存并验证
-- [x] `0100 NO DATA` 会 retry
-- [x] YMOBD 能力设备 `0100 UNABLE` 首次会触发 `AT+DEBUG_FLG`
-- [x] command 无 prompt 20s 后断开
-- [x] pid0100 全 0 不会进入 connected
-- [x] pid0100 非全 0 才 connected
-- [x] 异常 BLE disconnect 会 reconnect
-- [x] 用户主动 disconnect 不 reconnect
+- [ ] 扫描只发现 FFF0 目标
+- [ ] 30s 后停止 scan
+- [ ] 连接后 10s 内找到 service
+- [ ] notify 开启后延迟约 1s
+- [ ] 完整跑过 19-step
+- [ ] ATRV 没有被 AUTH 覆盖
+- [ ] AT+VERSION 正确解析
+- [ ] crypt challenge 能验证
+- [ ] `0100 NO DATA` 会 retry
+- [ ] `0100 UNABLE` 首次会触发 `AT+DEBUG_FLG`
+- [ ] command 无 prompt 20s 后断开
+- [ ] pid0100 全 0 不会进入 connected
+- [ ] pid0100 非全 0 才 connected
+- [ ] 异常 BLE disconnect 会 reconnect
+- [ ] 用户主动 disconnect 不 reconnect
 
 ---
 
@@ -2151,21 +2078,21 @@ Jieli OTA
 
 只读 / Dry Run：
 
-- [x] 能拿到当前 `obdModel`
-- [x] 能拿到当前 `obdVersion`
-- [x] 能构造 firmware check request
-- [x] 能识别 protocolType 7 / 9
-- [x] 能解析 firmware metadata
-- [x] 能生成 UUID `key`
-- [x] remove `-` 后为 32 ASCII bytes
-- [x] RSA-2048 PKCS1 encrypt 成功
-- [x] `encryptKey` 是大写 HEX
-- [x] `pubKeyVer = 3`
-- [x] 能下载 encrypted firmware
-- [x] AES-256/OFB/NoPadding 解密
-- [x] IV 全 0
-- [x] decrypted firmware 非空
-- [x] 尚未调用 OTA
+- [ ] 能拿到当前 `obdModel`
+- [ ] 能拿到当前 `obdVersion`
+- [ ] 能构造 firmware check request
+- [ ] 能识别 protocolType 7 / 9
+- [ ] 能解析 firmware metadata
+- [ ] 能生成 UUID `key`
+- [ ] remove `-` 后为 32 ASCII bytes
+- [ ] RSA-2048 PKCS1 encrypt 成功
+- [ ] `encryptKey` 是大写 HEX
+- [ ] `pubKeyVer = 3`
+- [ ] 能下载 encrypted firmware
+- [ ] AES-256/OFB/NoPadding 解密
+- [ ] IV 全 0
+- [ ] decrypted firmware 非空
+- [ ] 尚未调用 OTA
 
 ---
 
@@ -2318,12 +2245,3 @@ firmware header
 - 还原 `OTASecret`
 - 整理 RSA / AES-OFB 参数
 - 给出 CrazyDashboard 分层与实施优先级
-
-### 2026-09-11
-
-- 完成 P2 固件只读检查、元数据解析、RSA createEncryptKey、加密固件下载和 AES-OFB 解密。
-- P2 阶段保持 OTA、RCSP 和车辆写入路径未接入。
-- 接入用户引入的官方 Jieli iOS SDK xcframework，并完成 `PTJieliBLETransport`、`PTJieliOTAEngine`、`PTJieliOTAManager` 的 P3 桥接。
-- 加入 SDK 特性探测、升级进度回调、重连重试、取消、失败恢复和 ELM327 轮询恢复流程。
-- PTSpeed 已完成无签名 iOS workspace 构建和测试构建；真实 XP400 OTA、设备重启和目标版本复核仍待真机验收。
-- `PTHiddenOBDConnector.swift`、`PTOBDCommand.swift` 与 `PTBluetoothManager.swift` 的稳定核心逻辑未修改。

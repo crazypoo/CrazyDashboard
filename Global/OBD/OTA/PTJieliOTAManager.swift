@@ -2,9 +2,8 @@
 //  PTJieliOTAManager.swift
 //  CrazyDashboard
 //
-//  EN: Owns the guarded handoff from the stable ELM327 session to Jieli OTA.
-//  ES: Controla la transferencia protegida desde la sesión ELM327 estable hacia Jieli OTA.
-//  中文：负责从稳定 ELM327 会话切换到 Jieli OTA 的受保护流程。
+//  P4 productized OTA coordinator built on the existing official Jieli SDK engine.
+//  This file replaces the current Global/OBD/OTA/PTJieliOTAManager.swift.
 //
 
 @preconcurrency import CoreBluetooth
@@ -14,6 +13,7 @@ nonisolated public enum PTJieliOTAManagerError: Error, Equatable, LocalizedError
     case busy
     case developerAccessDenied
     case preflightFailed([String])
+    case powerPreflightFailed([String])
     case explicitConfirmationRequired
     case invalidFirmware
     case firmwareDigestMismatch
@@ -22,6 +22,9 @@ nonisolated public enum PTJieliOTAManagerError: Error, Equatable, LocalizedError
     case busUnavailable
     case sdkUnavailable
     case cancelled
+    case resumeUnavailable
+    case resumePersistenceFailed(String)
+    case versionVerificationFailed(expected: String, actual: String?)
     case transportFailed(String)
     case engineFailed(PTJieliOTAEngineError)
 
@@ -33,6 +36,8 @@ nonisolated public enum PTJieliOTAManagerError: Error, Equatable, LocalizedError
             return "开发者高风险开关未开启"
         case let .preflightFailed(blockers):
             return "OTA 前置检查未通过：" + blockers.joined(separator: ", ")
+        case let .powerPreflightFailed(blockers):
+            return "OTA 电源检查未通过：" + blockers.joined(separator: ", ")
         case .explicitConfirmationRequired:
             return "OTA 需要开发者明确确认"
         case .invalidFirmware:
@@ -49,6 +54,12 @@ nonisolated public enum PTJieliOTAManagerError: Error, Equatable, LocalizedError
             return "Jieli OTA SDK 不可用"
         case .cancelled:
             return "Jieli OTA 已取消"
+        case .resumeUnavailable:
+            return "没有可恢复的 OTA 会话"
+        case let .resumePersistenceFailed(message):
+            return "OTA 恢复点不可用：" + message
+        case let .versionVerificationFailed(expected, actual):
+            return "OTA 版本复核失败，目标 \(expected)，实际 \(actual ?? "未知")"
         case let .transportFailed(message):
             return "Jieli OTA 传输失败：" + message
         case let .engineFailed(error):
@@ -103,63 +114,176 @@ public final class PTJieliOTAManager {
     public private(set) var currentSession: PTOTASession?
     public private(set) var lastError: PTJieliOTAManagerError?
     public private(set) var isRunning = false
+    public private(set) var isMandatoryUpgrade = false
+    public private(set) var reconnectCount = 0
+    public private(set) var currentPowerReport: PTOTAPowerPreflightReport?
+    public private(set) var currentConfiguration: PTOTAProductConfiguration = .default
 
     private let engine: PTJieliOTAEngine
+    private let resumeStore: PTOTAResumeStore
+    private let analyticsLogger: PTOTAAnalyticsLogger
     private var transport: PTJieliBLETransport?
     private var shouldRestoreOBD = false
 
     public init() {
         self.engine = PTJieliSDKOTAEngine()
+        self.resumeStore = .shared
+        self.analyticsLogger = .shared
     }
 
-    public init(engine: PTJieliOTAEngine) {
+    public init(
+        engine: PTJieliOTAEngine,
+        resumeStore: PTOTAResumeStore = .shared,
+        analyticsLogger: PTOTAAnalyticsLogger = .shared
+    ) {
         self.engine = engine
+        self.resumeStore = resumeStore
+        self.analyticsLogger = analyticsLogger
     }
 
-    /// EN: Starts only from the P2 decrypted artifact, never from encrypted server bytes.
-    /// ES: Solo comienza con el artefacto descifrado de P2, nunca con bytes cifrados del servidor.
-    /// 中文：只允许从 P2 解密后的固件开始，绝不直接使用服务器加密字节。
+    /// Starts from the decrypted artifact produced by the existing P2 read-only flow.
+    /// Existing call sites remain source-compatible because the P4 configuration has a default value.
     public func start(
         readOnlyResult: PTYMOBDFirmwareReadOnlyResult,
         checklist: PTDeveloperTestChecklist,
         explicitlyConfirmed: Bool,
         deviceIdentifier: UUID? = nil,
         deviceName: String? = nil,
+        characteristicMapping: PTJieliCharacteristicMapping = .automatic,
+        productConfiguration: PTOTAProductConfiguration = .default
+    ) async throws -> PTOTAExecutionResult {
+        try await performStart(
+            readOnlyResult: readOnlyResult,
+            checklist: checklist,
+            explicitlyConfirmed: explicitlyConfirmed,
+            deviceIdentifier: deviceIdentifier,
+            deviceName: deviceName,
+            characteristicMapping: characteristicMapping,
+            productConfiguration: productConfiguration,
+            existingSession: nil,
+            isProcessRecovery: false
+        )
+    }
+
+    /// Returns a persisted interrupted session, if P4 previously reached the OTA handoff.
+    public func pendingResumeCheckpoint() async -> PTOTAResumeCheckpoint? {
+        try? await resumeStore.load()
+    }
+
+    /// Process-recovery entry point. JL_OTALib still owns true in-session offset resume through
+    /// cmdOtaDataIIResult; this method restores the prepared firmware/session after an app restart.
+    public func resumeInterruptedUpgrade(
+        checklist: PTDeveloperTestChecklist,
+        explicitlyConfirmed: Bool,
         characteristicMapping: PTJieliCharacteristicMapping = .automatic
     ) async throws -> PTOTAExecutionResult {
-        guard !isRunning else {
-            throw PTJieliOTAManagerError.busy
+        guard !isRunning else { throw PTJieliOTAManagerError.busy }
+        guard let checkpoint = try await resumeStore.load() else {
+            throw PTJieliOTAManagerError.resumeUnavailable
         }
+
+        let firmware: Data
+        do {
+            firmware = try await resumeStore.loadFirmware(for: checkpoint)
+        } catch {
+            throw PTJieliOTAManagerError.resumePersistenceFailed(error.localizedDescription)
+        }
+
+        let readOnlyResult = checkpoint.makeReadOnlyResult(decryptedFirmware: firmware)
+        let identifier = UUID(uuidString: checkpoint.session.deviceIdentifier)
+        return try await performStart(
+            readOnlyResult: readOnlyResult,
+            checklist: checklist,
+            explicitlyConfirmed: explicitlyConfirmed,
+            deviceIdentifier: identifier,
+            deviceName: checkpoint.session.deviceName.isEmpty ? nil : checkpoint.session.deviceName,
+            characteristicMapping: characteristicMapping,
+            productConfiguration: checkpoint.configuration,
+            existingSession: checkpoint.session,
+            isProcessRecovery: true
+        )
+    }
+
+    public func discardInterruptedUpgrade() async {
+        try? await resumeStore.clear(deleteFirmware: true)
+    }
+
+    public func exportCurrentLogURL() async throws -> URL {
+        guard let currentSession else {
+            throw PTOTAAnalyticsLoggerError.sessionUnavailable
+        }
+        return try await analyticsLogger.exportURL(for: currentSession.id)
+    }
+
+    public func exportLogURL(for sessionID: UUID) async throws -> URL {
+        try await analyticsLogger.exportURL(for: sessionID)
+    }
+
+    public func cancel() {
+        guard isRunning else { return }
+        if isMandatoryUpgrade && !currentConfiguration.allowsCancelWhenMandatory {
+            logEvent(name: "cancel_blocked", message: "Mandatory OTA blocks user cancellation")
+            return
+        }
+        logEvent(name: "cancel_requested", message: "User requested OTA cancellation")
+        engine.cancelOTA()
+        transport?.disconnect()
+    }
+}
+
+private extension PTJieliOTAManager {
+    func performStart(
+        readOnlyResult: PTYMOBDFirmwareReadOnlyResult,
+        checklist: PTDeveloperTestChecklist,
+        explicitlyConfirmed: Bool,
+        deviceIdentifier: UUID?,
+        deviceName: String?,
+        characteristicMapping: PTJieliCharacteristicMapping,
+        productConfiguration: PTOTAProductConfiguration,
+        existingSession: PTOTASession?,
+        isProcessRecovery: Bool
+    ) async throws -> PTOTAExecutionResult {
+        guard !isRunning else { throw PTJieliOTAManagerError.busy }
 
         try validate(
             readOnlyResult: readOnlyResult,
             checklist: checklist,
             explicitlyConfirmed: explicitlyConfirmed
         )
+        guard engine.isAvailable else { try reject(.sdkUnavailable) }
 
-        guard engine.isAvailable else {
-            try reject(.sdkUnavailable)
+        currentConfiguration = productConfiguration
+        isMandatoryUpgrade = productConfiguration.isMandatoryUpdate
+        reconnectCount = 0
+        currentPowerReport = PTOTAPowerPreflight.evaluate(configuration: productConfiguration)
+        if let blockers = currentPowerReport?.blockers, !blockers.isEmpty {
+            try reject(.powerPreflightFailed(blockers))
         }
 
         let telemetry = PTMotoTelemetryManager.shared
-        guard telemetry.isConnected else {
-            try reject(.disconnected)
-        }
-
         let obdConnector = PTHiddenOBDConnector.shared
-        guard obdConnector.isUnlocked,
-              let connectedPeripheral = obdConnector.obdPeripheral else {
-            try reject(.disconnected)
+        let connectedPeripheral = (telemetry.isConnected && obdConnector.isUnlocked)
+            ? obdConnector.obdPeripheral
+            : nil
+
+        // 首次升级必须由已解锁的普通 YMOBD session 交接。
+        // 进程恢复允许设备已经停留在 Jieli OTA 模式，此时普通 FFF0 session 可能暂时不存在。
+        if !isProcessRecovery {
+            guard telemetry.isConnected, connectedPeripheral != nil else {
+                try reject(.disconnected)
+            }
         }
 
-        let resolvedIdentifier = deviceIdentifier ?? connectedPeripheral.identifier
-        let resolvedName = (deviceName ?? connectedPeripheral.name ?? "")
+        guard let resolvedIdentifier = deviceIdentifier ?? connectedPeripheral?.identifier else {
+            try reject(.disconnected)
+        }
+        let resolvedName = (deviceName ?? connectedPeripheral?.name ?? existingSession?.deviceName ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !resolvedName.isEmpty || deviceName == nil else {
             try reject(.disconnected)
         }
 
-        let session = PTOTASession(
+        let session = existingSession ?? PTOTASession(
             deviceIdentifier: resolvedIdentifier.uuidString,
             deviceName: resolvedName,
             oldFirmwareVersion: readOnlyResult.checkResult.request.obdFirmwareVersion,
@@ -173,7 +297,47 @@ public final class PTJieliOTAManager {
         lastError = nil
         isRunning = true
         shouldRestoreOBD = false
-        transition(to: .checking, detail: "准备 Jieli OTA")
+        progress = .zero
+        transition(
+            to: .checking,
+            detail: isProcessRecovery ? "恢复未完成的 Jieli OTA" : "准备 Jieli OTA"
+        )
+
+        do {
+            if isProcessRecovery {
+                try await resumeStore.update(
+                    state: state,
+                    progress: progress,
+                    reconnectCount: reconnectCount
+                )
+                await analyticsLogger.record(
+                    session: session,
+                    name: "process_resume",
+                    state: state,
+                    progress: progress,
+                    reconnectCount: reconnectCount,
+                    message: "Recovered persisted P4 OTA session"
+                )
+            } else {
+                _ = try await resumeStore.saveInitial(
+                    session: session,
+                    readOnlyResult: readOnlyResult,
+                    configuration: productConfiguration,
+                    state: state,
+                    progress: progress
+                )
+                if let currentPowerReport {
+                    await analyticsLogger.start(
+                        session: session,
+                        mandatory: isMandatoryUpgrade,
+                        power: currentPowerReport.snapshot
+                    )
+                }
+            }
+        } catch {
+            isRunning = false
+            throw PTJieliOTAManagerError.resumePersistenceFailed(error.localizedDescription)
+        }
 
         var lease: PTOBDBusLeaseToken?
         let nextTransport = PTJieliBLETransport()
@@ -186,18 +350,14 @@ public final class PTJieliOTAManager {
             )
             try Task.checkCancellation()
 
-            // EN: Stop every normal ELM327 producer before changing the BLE service surface.
-            // ES: Detiene todos los productores ELM327 normales antes de cambiar la superficie BLE.
-            // 中文：切换 BLE 服务面之前，先停止所有普通 ELM327 数据生产者。
-            telemetry.telemetryPollingTask?.cancel()
-            telemetry.telemetryPollingTask = nil
-            telemetry.stopKeepAliveHeartbeat()
-            try? await Task.sleep(nanoseconds: 100_000_000)
-
-            // EN: The stable connector still owns the normal ELM327 teardown; this manager only owns the OTA handoff.
-            // ES: El conector estable sigue controlando el cierre ELM327 normal; este gestor solo controla la transferencia OTA.
-            // 中文：普通 ELM327 的拆除仍由稳定连接器负责，本管理器只负责 OTA 交接。
-            telemetry.disconnect()
+            if telemetry.isConnected {
+                telemetry.telemetryPollingTask?.cancel()
+                telemetry.telemetryPollingTask = nil
+                telemetry.stopKeepAliveHeartbeat()
+                try? await Task.sleep(nanoseconds: 100_000_000)
+                telemetry.disconnect()
+            }
+            // OTA 结束后始终恢复普通 FFF0/YMOBD，用 AT+VERSION 作为最终成功门槛。
             shouldRestoreOBD = true
             try Task.checkCancellation()
 
@@ -207,6 +367,10 @@ public final class PTJieliOTAManager {
                 name: resolvedName.isEmpty ? nil : resolvedName,
                 mapping: characteristicMapping,
                 timeout: 20
+            )
+            logEvent(
+                name: "ota_transport_ready",
+                message: "service=\(discovery.serviceUUID), write=\(discovery.selection.writeUUID), notify=\(discovery.selection.notifyUUID)"
             )
 
             try await engine.startOTA(
@@ -228,42 +392,87 @@ public final class PTJieliOTAManager {
             )
 
             nextTransport.disconnect()
-            transition(to: .verifyingVersion, detail: "等待重新读取 AT+VERSION")
+            transport = nil
+
+            // Release the developer-write bus lease before bringing the normal ELM/YMOBD path back.
+            if let currentLease = lease {
+                await PTOBDBusLease.shared.release(currentLease)
+                lease = nil
+            }
+
+            transition(to: .verifyingVersion, detail: "OTA 已停止，重新连接普通 YMOBD 并读取 AT+VERSION")
             restoreNormalOBDConnection()
 
+            let verification = try await PTOTAVersionVerifier.verify(
+                targetVersion: session.targetFirmwareVersion,
+                reconnectTimeout: productConfiguration.normalOBDReconnectTimeout,
+                commandTimeout: productConfiguration.versionVerificationTimeout
+            )
+
+            transition(
+                to: .completed,
+                detail: "版本已确认：\(verification.actualVersion)"
+            )
             let result = PTOTAExecutionResult(
                 session: session,
-                finalState: .verifyingVersion,
-                versionVerified: false
+                finalState: .completed,
+                versionVerified: true
             )
+
+            await analyticsLogger.record(
+                session: session,
+                name: "version_verified",
+                state: .completed,
+                progress: progress,
+                reconnectCount: reconnectCount,
+                message: "AT+VERSION verified",
+                metadata: [
+                    "expectedVersion": verification.expectedVersion,
+                    "actualVersion": verification.actualVersion
+                ]
+            )
+            try? await resumeStore.clear(deleteFirmware: true)
             finishSuccessfully(result)
-            if let lease {
-                await PTOBDBusLease.shared.release(lease)
-            }
             return result
         } catch {
             nextTransport.disconnect()
+            transport = nil
+
+            if let currentLease = lease {
+                await PTOBDBusLease.shared.release(currentLease)
+                lease = nil
+            }
             if shouldRestoreOBD {
                 restoreNormalOBDConnection()
             }
 
             let mappedError = map(error)
-            finishWithFailure(mappedError)
-            if let lease {
-                await PTOBDBusLease.shared.release(lease)
+            let failureState: PTOTAState = mappedError == .cancelled ? .cancelled : .failed
+            state = failureState
+
+            if mappedError == .cancelled || !productConfiguration.keepResumeCheckpointOnFailure {
+                try? await resumeStore.clear(deleteFirmware: true)
+            } else {
+                try? await resumeStore.update(
+                    state: failureState,
+                    progress: progress,
+                    reconnectCount: reconnectCount
+                )
             }
+
+            await analyticsLogger.record(
+                session: session,
+                name: mappedError == .cancelled ? "cancelled" : "failed",
+                state: failureState,
+                progress: progress,
+                reconnectCount: reconnectCount,
+                message: mappedError.localizedDescription
+            )
+            finishWithFailure(mappedError)
             throw mappedError
         }
     }
 
-    public func cancel() {
-        guard isRunning else { return }
-        engine.cancelOTA()
-        transport?.disconnect()
-    }
-}
-
-private extension PTJieliOTAManager {
     func validate(
         readOnlyResult: PTYMOBDFirmwareReadOnlyResult,
         checklist: PTDeveloperTestChecklist,
@@ -276,7 +485,6 @@ private extension PTJieliOTAManager {
         guard preflight.isReady else {
             try reject(.preflightFailed(preflight.blockers))
         }
-
         guard PTDeveloperSafetyGate.shared.authorize(
             .firmwareFlash,
             protocolEvidenceAvailable: checklist.protocolEvidenceAvailable
@@ -313,6 +521,8 @@ private extension PTJieliOTAManager {
     func updateProgress(_ value: PTOTAProgress) {
         progress = value
         delegate?.jieliOTAManager(self, didChange: state, progress: value)
+        persistCheckpoint()
+        logEvent(name: "progress", message: value.detail)
     }
 
     func handle(event: PTJieliOTAEvent) {
@@ -324,14 +534,17 @@ private extension PTJieliOTAManager {
         case .onStartOTA, .onProgress:
             transition(to: .upgrading, detail: "正在传输固件")
         case .onMandatoryUpgrade:
+            isMandatoryUpgrade = true
             transition(to: .preparing, detail: "设备要求强制 OTA")
         case .onNeedReconnect:
-            transition(to: .reconnecting, detail: "等待 OTA 重连")
+            reconnectCount += 1
+            transition(to: .reconnecting, detail: "等待 OTA 重连（第 \(reconnectCount) 次）")
         case .onStopOTA:
             transition(to: .verifying, detail: "设备已停止 OTA，等待版本复核")
         case .onError:
             transition(to: .failed, detail: "Jieli OTA SDK 报告错误")
         }
+        logEvent(name: event.rawValue, message: progress.detail)
     }
 
     func transition(to nextState: PTOTAState, detail: String?) {
@@ -346,6 +559,7 @@ private extension PTJieliOTAManager {
             )
         }
         notifyState()
+        persistCheckpoint()
     }
 
     func notifyState() {
@@ -356,6 +570,7 @@ private extension PTJieliOTAManager {
         isRunning = false
         shouldRestoreOBD = false
         transport = nil
+        lastError = nil
         delegate?.jieliOTAManager(self, didFinish: result)
     }
 
@@ -372,10 +587,37 @@ private extension PTJieliOTAManager {
     func restoreNormalOBDConnection() {
         guard shouldRestoreOBD else { return }
         shouldRestoreOBD = false
-        // EN: Re-enter the existing ELM327 path; no second polling engine is created here.
-        // ES: Vuelve a la ruta ELM327 existente; aquí no se crea un segundo motor de sondeo.
-        // 中文：重新进入现有 ELM327 路径，不在这里创建第二套轮询引擎。
         PTMotoTelemetryManager.shared.connectToMotorcycle(via: .bluetooth)
+    }
+
+    func persistCheckpoint() {
+        let state = state
+        let progress = progress
+        let reconnectCount = reconnectCount
+        Task {
+            try? await resumeStore.update(
+                state: state,
+                progress: progress,
+                reconnectCount: reconnectCount
+            )
+        }
+    }
+
+    func logEvent(name: String, message: String? = nil) {
+        guard let session = currentSession else { return }
+        let state = state
+        let progress = progress
+        let reconnectCount = reconnectCount
+        Task {
+            await analyticsLogger.record(
+                session: session,
+                name: name,
+                state: state,
+                progress: progress,
+                reconnectCount: reconnectCount,
+                message: message
+            )
+        }
     }
 
     func map(_ error: Error) -> PTJieliOTAManagerError {
@@ -390,6 +632,20 @@ private extension PTJieliOTAManager {
         }
         if let error = error as? PTJieliBLETransportError {
             return error == .cancelled ? .cancelled : .transportFailed(error.localizedDescription)
+        }
+        if let error = error as? PTOTAVersionVerificationError {
+            switch error {
+            case let .mismatch(expected, actual):
+                return .versionVerificationFailed(expected: expected, actual: actual)
+            case .emptyVersionResponse, .reconnectTimeout, .commandFailed:
+                return .versionVerificationFailed(
+                    expected: currentSession?.targetFirmwareVersion ?? "未知",
+                    actual: nil
+                )
+            }
+        }
+        if let error = error as? PTOTAResumeStoreError {
+            return .resumePersistenceFailed(error.localizedDescription)
         }
         if error is PTOBDBusLeaseError {
             return .busUnavailable
