@@ -1697,6 +1697,35 @@ func decryptFirmware(
 
 ---
 
+## 35.1 P2 已落地的只读边界
+
+P2 已按“服务层 + 只读干运行”完成，新增文件位于：
+
+Global/OBD/YMOBD/
+- PTYMOBDFirmwareInfo.swift
+- PTYMOBDFirmwareCrypto.swift
+- PTYMOBDFirmwareAPI.swift
+- PTYMOBDFirmwareDownloader.swift
+- PTYMOBDFirmwareService.swift
+
+已实现：
+
+- 使用 AT+VERSION 与 ATI 的现有 OBD 读通道构造 deviceType、obdFirmwareVersion 和 protocolType。
+- ATI 包含 v2.1 时使用协议类型 7，否则使用 9。
+- 支持扁平和嵌套服务响应，读取 firmwareVersion、firmwareDesc 和 firmwareFileUUID。
+- 使用文档确认的 RSA-2048、PKCS#1 v1.5 和 pubKeyVer = 3 生成 encryptKey。
+- 使用 UUID 去除连字符后的 32 个 ASCII 字节作为 AES-256 密钥，使用全零 IV 执行 OFB 解密。
+- 对下载大小、空内容、HTTP 状态、元数据和哈希进行结构化校验与日志记录。
+- 下载和解密结果只保留在内存结果对象中，不持久化固件密钥或固件内容。
+- 固件检查复用 PTAdvancedOBDCoordinator 的只读总线独占流程，避免与 PID 轮询竞争。
+
+明确未实现：
+
+- 未调用 startOTA。
+- 未接入 Jieli RCSP、AE00/AE01/AE02、OTA characteristic 或任何 BLE 写入。
+- 未修改 ELM327/YMOBD 的底层 CoreBluetooth、ASCII 分帧和传输流程。
+- 未新增默认固件服务器地址；调用方必须显式注入服务 baseURL，避免把未确认的后端地址写入产品。
+
 # 36. OTA Session 必须持久保存
 
 OTA 开始后至少保存：
@@ -1842,14 +1871,14 @@ AT+VERSION
 
 ## P2：OTA read-only
 
-- [ ] firmware version check
-- [ ] firmware metadata model
-- [ ] RSA public key
-- [ ] createEncryptKey
-- [ ] firmware download
-- [ ] AES-OFB decrypt
-- [ ] firmware hash / size logging
-- [ ] 不执行 OTA
+- [x] firmware version check
+- [x] firmware metadata model
+- [x] RSA public key
+- [x] createEncryptKey
+- [x] firmware download
+- [x] AES-OFB decrypt
+- [x] firmware hash / size logging
+- [x] 不执行 OTA
 
 ## P3：Jieli OTA
 
@@ -2112,21 +2141,21 @@ Jieli OTA
 
 只读 / Dry Run：
 
-- [ ] 能拿到当前 `obdModel`
-- [ ] 能拿到当前 `obdVersion`
-- [ ] 能构造 firmware check request
-- [ ] 能识别 protocolType 7 / 9
-- [ ] 能解析 firmware metadata
-- [ ] 能生成 UUID `key`
-- [ ] remove `-` 后为 32 ASCII bytes
-- [ ] RSA-2048 PKCS1 encrypt 成功
-- [ ] `encryptKey` 是大写 HEX
-- [ ] `pubKeyVer = 3`
-- [ ] 能下载 encrypted firmware
-- [ ] AES-256/OFB/NoPadding 解密
-- [ ] IV 全 0
-- [ ] decrypted firmware 非空
-- [ ] 尚未调用 OTA
+- [x] 能拿到当前 `obdModel`
+- [x] 能拿到当前 `obdVersion`
+- [x] 能构造 firmware check request
+- [x] 能识别 protocolType 7 / 9
+- [x] 能解析 firmware metadata
+- [x] 能生成 UUID `key`
+- [x] remove `-` 后为 32 ASCII bytes
+- [x] RSA-2048 PKCS1 encrypt 成功
+- [x] `encryptKey` 是大写 HEX
+- [x] `pubKeyVer = 3`
+- [x] 能下载 encrypted firmware
+- [x] AES-256/OFB/NoPadding 解密
+- [x] IV 全 0
+- [x] decrypted firmware 非空
+- [x] 尚未调用 OTA
 
 ---
 
@@ -2279,3 +2308,8 @@ firmware header
 - 还原 `OTASecret`
 - 整理 RSA / AES-OFB 参数
 - 给出 CrazyDashboard 分层与实施优先级
+
+### 2026-09-11
+
+- 完成 P2 固件只读检查、元数据解析、RSA createEncryptKey、加密固件下载和 AES-OFB 解密。
+- 保持 OTA、RCSP 和车辆写入路径未接入。

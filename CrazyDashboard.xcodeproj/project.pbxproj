@@ -207,8 +207,15 @@
 		600000010000000000000402 /* PTYMOBDInitializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000402 /* PTYMOBDInitializer.swift */; };
 		600000010000000000000403 /* PTYMOBDDeviceClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000403 /* PTYMOBDDeviceClassifier.swift */; };
 		600000010000000000000404 /* PTOBDPollingProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000404 /* PTOBDPollingProfile.swift */; };
+		600000010000000000000405 /* PTYMOBDFirmwareInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000405 /* PTYMOBDFirmwareInfo.swift */; };
+		600000010000000000000406 /* PTYMOBDFirmwareCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000406 /* PTYMOBDFirmwareCrypto.swift */; };
+		600000010000000000000407 /* PTYMOBDFirmwareAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000407 /* PTYMOBDFirmwareAPI.swift */; };
+		600000010000000000000408 /* PTYMOBDFirmwareDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000408 /* PTYMOBDFirmwareDownloader.swift */; };
+		600000010000000000000409 /* PTYMOBDFirmwareService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000409 /* PTYMOBDFirmwareService.swift */; };
+		600000010000000000000410 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 600000020000000000000410 /* Security.framework */; };
 		600000010000000000000361 /* PTXP400P2Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000361 /* PTXP400P2Tests.swift */; };
 		600000010000000000000362 /* PTXP400P3Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000362 /* PTXP400P3Tests.swift */; };
+		600000010000000000000411 /* PTYMOBDFirmwareP2Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000411 /* PTYMOBDFirmwareP2Tests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -469,8 +476,15 @@
 		600000020000000000000402 /* PTYMOBDInitializer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTYMOBDInitializer.swift; sourceTree = "<group>"; };
 		600000020000000000000403 /* PTYMOBDDeviceClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTYMOBDDeviceClassifier.swift; sourceTree = "<group>"; };
 		600000020000000000000404 /* PTOBDPollingProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDPollingProfile.swift; sourceTree = "<group>"; };
+		600000020000000000000405 /* PTYMOBDFirmwareInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTYMOBDFirmwareInfo.swift; sourceTree = "<group>"; };
+		600000020000000000000406 /* PTYMOBDFirmwareCrypto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTYMOBDFirmwareCrypto.swift; sourceTree = "<group>"; };
+		600000020000000000000407 /* PTYMOBDFirmwareAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTYMOBDFirmwareAPI.swift; sourceTree = "<group>"; };
+		600000020000000000000408 /* PTYMOBDFirmwareDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTYMOBDFirmwareDownloader.swift; sourceTree = "<group>"; };
+		600000020000000000000409 /* PTYMOBDFirmwareService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTYMOBDFirmwareService.swift; sourceTree = "<group>"; };
+		600000020000000000000410 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		600000020000000000000361 /* PTXP400P2Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400P2Tests.swift; sourceTree = "<group>"; };
 		600000020000000000000362 /* PTXP400P3Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400P3Tests.swift; sourceTree = "<group>"; };
+		600000020000000000000411 /* PTYMOBDFirmwareP2Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTYMOBDFirmwareP2Tests.swift; sourceTree = "<group>"; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -532,6 +546,7 @@
 				600000010000000000000101 /* AppIntents.framework in Frameworks */,
 				600000010000000000000263 /* GroupActivities.framework in Frameworks */,
 				600000010000000000000217 /* AlarmKit.framework in Frameworks */,
+				600000010000000000000410 /* Security.framework in Frameworks */,
 				5A200D40EF300920887AD052 /* Pods_PTSpeed.framework in Frameworks */,
 				55E61692301B45B50075F883 /* QWeatherSDK in Frameworks */,
 				5577E6762FD657F30004733F /* libz.tbd in Frameworks */,
@@ -900,6 +915,11 @@
 				600000020000000000000400 /* PTYMOBDVersionParser.swift */,
 				600000020000000000000403 /* PTYMOBDDeviceClassifier.swift */,
 				600000020000000000000404 /* PTOBDPollingProfile.swift */,
+				600000020000000000000405 /* PTYMOBDFirmwareInfo.swift */,
+				600000020000000000000406 /* PTYMOBDFirmwareCrypto.swift */,
+				600000020000000000000407 /* PTYMOBDFirmwareAPI.swift */,
+				600000020000000000000408 /* PTYMOBDFirmwareDownloader.swift */,
+				600000020000000000000409 /* PTYMOBDFirmwareService.swift */,
 			);
 			path = YMOBD;
 			sourceTree = "<group>";
@@ -992,6 +1012,7 @@
 				600000020000000000000353 /* PTXP400P1Tests.swift */,
 				600000020000000000000361 /* PTXP400P2Tests.swift */,
 				600000020000000000000362 /* PTXP400P3Tests.swift */,
+				600000020000000000000411 /* PTYMOBDFirmwareP2Tests.swift */,
 			);
 			path = PTSpeedTests;
 			sourceTree = "<group>";
@@ -1048,6 +1069,7 @@
 				55499E0B301AFCE800A1A2D9 /* SwiftUI.framework */,
 				600000020000000000000101 /* AppIntents.framework */,
 				600000020000000000000214 /* AlarmKit.framework */,
+				600000020000000000000410 /* Security.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -1380,6 +1402,11 @@
 				600000010000000000000400 /* PTYMOBDVersionParser.swift in Sources */,
 				600000010000000000000403 /* PTYMOBDDeviceClassifier.swift in Sources */,
 				600000010000000000000404 /* PTOBDPollingProfile.swift in Sources */,
+				600000010000000000000405 /* PTYMOBDFirmwareInfo.swift in Sources */,
+				600000010000000000000406 /* PTYMOBDFirmwareCrypto.swift in Sources */,
+				600000010000000000000407 /* PTYMOBDFirmwareAPI.swift in Sources */,
+				600000010000000000000408 /* PTYMOBDFirmwareDownloader.swift in Sources */,
+				600000010000000000000409 /* PTYMOBDFirmwareService.swift in Sources */,
 				55499E03301AFC2200A1A2D9 /* PTWidgetManager.swift in Sources */,
 				555C0FF9300E06630079D94F /* PTGlobalActionHeader.swift in Sources */,
 				55986687301150900049684D /* PTECUSnifferOverlay.swift in Sources */,
@@ -1527,6 +1554,7 @@
 				600000010000000000000353 /* PTXP400P1Tests.swift in Sources */,
 				600000010000000000000361 /* PTXP400P2Tests.swift in Sources */,
 				600000010000000000000362 /* PTXP400P3Tests.swift in Sources */,
+				600000010000000000000411 /* PTYMOBDFirmwareP2Tests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
