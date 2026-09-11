@@ -188,6 +188,20 @@
 		600000010000000000000353 /* PTXP400P1Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000353 /* PTXP400P1Tests.swift */; };
 		600000010000000000000354 /* PTOBDCompatibilityGateway.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000354 /* PTOBDCompatibilityGateway.swift */; };
 		600000010000000000000360 /* PTXP400BLEReliability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000360 /* PTXP400BLEReliability.swift */; };
+		600000010000000000000370 /* PTXP400BLESession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000370 /* PTXP400BLESession.swift */; };
+		600000010000000000000371 /* PTXP400BLEState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000371 /* PTXP400BLEState.swift */; };
+		600000010000000000000372 /* PTXP400Authenticator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000372 /* PTXP400Authenticator.swift */; };
+		600000010000000000000373 /* PTXP400TIOCreditController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000373 /* PTXP400TIOCreditController.swift */; };
+		600000010000000000000374 /* PTXP400TIOSendQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000374 /* PTXP400TIOSendQueue.swift */; };
+		600000010000000000000375 /* PTXP400TelemetryDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000375 /* PTXP400TelemetryDecoder.swift */; };
+		600000010000000000000376 /* PTXP400NavigationScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000376 /* PTXP400NavigationScheduler.swift */; };
+		600000010000000000000380 /* PTBluetoothManagerModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000380 /* PTBluetoothManagerModels.swift */; };
+		600000010000000000000381 /* PTBluetoothServerManager+Transport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000381 /* PTBluetoothServerManager+Transport.swift */; };
+		600000010000000000000382 /* PTBluetoothServerManager+Commands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000382 /* PTBluetoothServerManager+Commands.swift */; };
+		600000010000000000000383 /* PTBluetoothServerManager+Diagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000383 /* PTBluetoothServerManager+Diagnostics.swift */; };
+		600000010000000000000384 /* PTBluetoothServerManager+Developer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000384 /* PTBluetoothServerManager+Developer.swift */; };
+		600000010000000000000385 /* PTBluetoothServerManager+Delegates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000385 /* PTBluetoothServerManager+Delegates.swift */; };
+		600000010000000000000386 /* PTBluetoothServerManager+Mock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000386 /* PTBluetoothServerManager+Mock.swift */; };
 		600000010000000000000361 /* PTXP400P2Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000361 /* PTXP400P2Tests.swift */; };
 		600000010000000000000362 /* PTXP400P3Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000362 /* PTXP400P3Tests.swift */; };
 /* End PBXBuildFile section */
@@ -431,6 +445,20 @@
 		600000020000000000000353 /* PTXP400P1Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400P1Tests.swift; sourceTree = "<group>"; };
 		600000020000000000000354 /* PTOBDCompatibilityGateway.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDCompatibilityGateway.swift; sourceTree = "<group>"; };
 		600000020000000000000360 /* PTXP400BLEReliability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400BLEReliability.swift; sourceTree = "<group>"; };
+		600000020000000000000370 /* PTXP400BLESession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400BLESession.swift; sourceTree = "<group>"; };
+		600000020000000000000371 /* PTXP400BLEState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400BLEState.swift; sourceTree = "<group>"; };
+		600000020000000000000372 /* PTXP400Authenticator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400Authenticator.swift; sourceTree = "<group>"; };
+		600000020000000000000373 /* PTXP400TIOCreditController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400TIOCreditController.swift; sourceTree = "<group>"; };
+		600000020000000000000374 /* PTXP400TIOSendQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400TIOSendQueue.swift; sourceTree = "<group>"; };
+		600000020000000000000375 /* PTXP400TelemetryDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400TelemetryDecoder.swift; sourceTree = "<group>"; };
+		600000020000000000000376 /* PTXP400NavigationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400NavigationScheduler.swift; sourceTree = "<group>"; };
+		600000020000000000000380 /* PTBluetoothManagerModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBluetoothManagerModels.swift; sourceTree = "<group>"; };
+		600000020000000000000381 /* PTBluetoothServerManager+Transport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PTBluetoothServerManager+Transport.swift"; sourceTree = "<group>"; };
+		600000020000000000000382 /* PTBluetoothServerManager+Commands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PTBluetoothServerManager+Commands.swift"; sourceTree = "<group>"; };
+		600000020000000000000383 /* PTBluetoothServerManager+Diagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PTBluetoothServerManager+Diagnostics.swift"; sourceTree = "<group>"; };
+		600000020000000000000384 /* PTBluetoothServerManager+Developer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PTBluetoothServerManager+Developer.swift"; sourceTree = "<group>"; };
+		600000020000000000000385 /* PTBluetoothServerManager+Delegates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PTBluetoothServerManager+Delegates.swift"; sourceTree = "<group>"; };
+		600000020000000000000386 /* PTBluetoothServerManager+Mock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PTBluetoothServerManager+Mock.swift"; sourceTree = "<group>"; };
 		600000020000000000000361 /* PTXP400P2Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400P2Tests.swift; sourceTree = "<group>"; };
 		600000020000000000000362 /* PTXP400P3Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400P3Tests.swift; sourceTree = "<group>"; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
@@ -777,6 +805,20 @@
 				600000020000000000000340 /* PTXP400BLELifecycle.swift */,
 				600000020000000000000341 /* PTXP400BLEPhaseWatchdog.swift */,
 				600000020000000000000360 /* PTXP400BLEReliability.swift */,
+				600000020000000000000370 /* PTXP400BLESession.swift */,
+				600000020000000000000371 /* PTXP400BLEState.swift */,
+				600000020000000000000372 /* PTXP400Authenticator.swift */,
+				600000020000000000000373 /* PTXP400TIOCreditController.swift */,
+				600000020000000000000374 /* PTXP400TIOSendQueue.swift */,
+				600000020000000000000375 /* PTXP400TelemetryDecoder.swift */,
+				600000020000000000000376 /* PTXP400NavigationScheduler.swift */,
+				600000020000000000000380 /* PTBluetoothManagerModels.swift */,
+				600000020000000000000381 /* PTBluetoothServerManager+Transport.swift */,
+				600000020000000000000382 /* PTBluetoothServerManager+Commands.swift */,
+				600000020000000000000383 /* PTBluetoothServerManager+Diagnostics.swift */,
+				600000020000000000000384 /* PTBluetoothServerManager+Developer.swift */,
+				600000020000000000000385 /* PTBluetoothServerManager+Delegates.swift */,
+				600000020000000000000386 /* PTBluetoothServerManager+Mock.swift */,
 				55FE2A5C300DF42A000E741F /* PTBLEConnectViewController.swift */,
 			);
 			path = BLE;
@@ -1369,6 +1411,20 @@
 				600000010000000000000352 /* PTOBDCommandClassifier.swift in Sources */,
 				600000010000000000000354 /* PTOBDCompatibilityGateway.swift in Sources */,
 				600000010000000000000360 /* PTXP400BLEReliability.swift in Sources */,
+				600000010000000000000370 /* PTXP400BLESession.swift in Sources */,
+				600000010000000000000371 /* PTXP400BLEState.swift in Sources */,
+				600000010000000000000372 /* PTXP400Authenticator.swift in Sources */,
+				600000010000000000000373 /* PTXP400TIOCreditController.swift in Sources */,
+				600000010000000000000374 /* PTXP400TIOSendQueue.swift in Sources */,
+				600000010000000000000375 /* PTXP400TelemetryDecoder.swift in Sources */,
+				600000010000000000000376 /* PTXP400NavigationScheduler.swift in Sources */,
+				600000010000000000000380 /* PTBluetoothManagerModels.swift in Sources */,
+				600000010000000000000381 /* PTBluetoothServerManager+Transport.swift in Sources */,
+				600000010000000000000382 /* PTBluetoothServerManager+Commands.swift in Sources */,
+				600000010000000000000383 /* PTBluetoothServerManager+Diagnostics.swift in Sources */,
+				600000010000000000000384 /* PTBluetoothServerManager+Developer.swift in Sources */,
+				600000010000000000000385 /* PTBluetoothServerManager+Delegates.swift in Sources */,
+				600000010000000000000386 /* PTBluetoothServerManager+Mock.swift in Sources */,
 				55499CFA3019D83800A1A2D9 /* PTDashboardBaseView.swift in Sources */,
 				557D0056302ED2A9008BA492 /* PTPeugeotLEDDashBoard.swift in Sources */,
 				5590187230107A1C00A77571 /* PTRoutePlantCell.swift in Sources */,

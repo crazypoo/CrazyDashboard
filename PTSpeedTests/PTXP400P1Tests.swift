@@ -123,6 +123,59 @@ final class PTXP400P1Tests: XCTestCase {
         XCTAssertTrue(PTOBDCommandClassifier.isCaptureAdapterCommand("ATCRA7E8"))
     }
 
+    func testBLESessionStateAndCreditsAreResettableAndGenerationSafe() {
+        var session = PTXP400BLESession()
+        let firstToken = session.begin()
+        XCTAssertTrue(session.accepts(firstToken))
+        session.end()
+        XCTAssertFalse(session.accepts(firstToken))
+
+        var state = PTXP400BLEState(
+            isAuthenticated: true,
+            isTIOSubscribed: true,
+            isCreditsSubscribed: true,
+            sendCredits: 3,
+            localCredits: 4
+        )
+        state.resetSession()
+        XCTAssertEqual(state, PTXP400BLEState())
+
+        var credits = PTXP400TIOCreditController()
+        XCTAssertEqual(credits.acceptRemoteCredits(Data([3])), .accepted(amount: 3))
+        XCTAssertTrue(credits.consumeRemoteCredit())
+        XCTAssertEqual(credits.sendCredits, 2)
+        XCTAssertEqual(credits.acceptRemoteCredits(Data([0])), .invalidAmount(actual: 0))
+        XCTAssertEqual(credits.refillLocalCredits(), PTXP400BLEProtocol.maxCredits)
+    }
+
+    func testTelemetryEnvelopeAndNavigationSchedulerStayPure() {
+        let frame = Data([0x16, PTXP400BLEProtocol.data1FrameID, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x00])
+        let decoded = PTXP400TelemetryDecoder.decode(frame)
+        XCTAssertEqual(decoded?.id, PTXP400BLEProtocol.data1FrameID)
+        XCTAssertEqual(decoded?.payload, Data([1, 2, 3, 4, 5, 6, 7, 8]))
+        XCTAssertEqual(PTXP400TelemetryDecoder.kind(for: PTXP400BLEProtocol.data1FrameID), .data1)
+        XCTAssertNil(PTXP400TelemetryDecoder.decode(Data([0x00, 0x02, 0x00])))
+
+        let info = PTNavigationInfo(
+            nextManeuver: PTManeuverMap.straight,
+            metersToNextManeuver: 100,
+            nameNextRoad: "A",
+            nameCurrentRoad: "B",
+            currentSpeedLimit: 50,
+            distanceToDestination: 1_000,
+            estimatedTimeToDestinationSec: 120
+        )
+        let fingerprint = PTXP400NavigationFingerprint(info: info)
+        var scheduler = PTXP400NavigationScheduler(minimumSendInterval: 0.5)
+        let now = Date(timeIntervalSince1970: 100)
+        XCTAssertFalse(scheduler.isDuplicate(fingerprint))
+        scheduler.recordSent(fingerprint, at: now)
+        XCTAssertTrue(scheduler.isDuplicate(fingerprint))
+        XCTAssertEqual(scheduler.remainingDelay(at: now.addingTimeInterval(0.25)), 0.25, accuracy: 0.001)
+        scheduler.reset()
+        XCTAssertFalse(scheduler.isDuplicate(fingerprint))
+    }
+
     @MainActor
     func testANCSCoordinatorDefaultsToSystemChannel() {
         XCTAssertEqual(PTXP400ANCSCoordinator.shared.channel, .system)

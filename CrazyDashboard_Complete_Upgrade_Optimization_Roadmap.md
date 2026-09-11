@@ -2548,15 +2548,15 @@ Transport facade / compatibility facade
 
 # 63. 第二阶段：P1 BLE Core Refactor
 
-- [ ] 新建 `PTXP400BLESession`
-- [ ] 新建 `PTXP400BLEState`
-- [ ] 新建 `PTXP400Authenticator`
-- [ ] 新建 `PTXP400TIOCreditController`
-- [ ] 新建 `PTXP400TIOSendQueue`
-- [ ] 新建 `PTXP400TelemetryDecoder`
-- [ ] 新建 `PTXP400NavigationScheduler`
-- [ ] 保留旧 Manager 为 Facade
-- [ ] 不改 public API
+- [x] 新建 `PTXP400BLESession`
+- [x] 新建 `PTXP400BLEState`
+- [x] 新建 `PTXP400Authenticator`
+- [x] 新建 `PTXP400TIOCreditController`
+- [x] 新建 `PTXP400TIOSendQueue`
+- [x] 新建 `PTXP400TelemetryDecoder`
+- [x] 新建 `PTXP400NavigationScheduler`
+- [x] 保留旧 Manager 为 Facade
+- [x] 不改 public API
 
 ### 完成条件
 
@@ -2578,7 +2578,7 @@ Transport facade / compatibility facade
 
 - [x] Phase timeout（当前接入 central subscription；其余阶段等待稳定核心 Hook）
 - [x] Session token
-- [ ] CoreBluetooth State Restoration（稳定核心当前未暴露 restoration identifier / willRestoreState）
+- [x] CoreBluetooth State Restoration（2026-09-11 已接入 restoration identifier / willRestoreState）
 - [x] dynamic transport maximum（外围策略已完成；实际发送分片等待稳定核心 Hook）
 - [x] send queue stall detector（纯检测器已完成；实际队列 Hook 等待稳定核心开放）
 - [x] advertisement profile（FEFB Service UUID 边界已固化）
@@ -2607,6 +2607,8 @@ App 被系统回收
 本轮遵循“稳定核心不改”的边界，`PTBluetoothManager.swift`、
 `PTHiddenOBDConnector.swift` 和 `PTOBDCommand.swift` 均未修改。已完成的是可以在外围安全接入、不会复制第二套 BLE 传输层的可靠性能力：
 
+> 历史说明：本段记录的是 2026-09-09 的冻结边界；`PTBluetoothManager.swift` 的恢复入口已在 2026-09-11 的 P1 续记中接入，硬件恢复验证仍未完成。
+
 - [x] Session Token：为每次真实或 Mock 仪表连接尝试分配新的 UUID 和 generation，超时任务及延迟回调不会跨越连接代次。
 - [x] Phase Timeout：继续使用现有集中式 watchdog，并为当前可观测的 central subscription 阶段接入 Token 校验、超时收口和广播停止。
 - [x] Expected Reconnect：保留用户连接意图，支持蓝牙开关、点火恢复和稳定外设回调后的自动接受重连；用户主动断开、Mock 停止和超时会清除意图。
@@ -2625,7 +2627,7 @@ App 被系统回收
 
 以下内容已经准备了外围策略或记录入口，但不能在不修改冻结核心的情况下声称已经接入真实传输：
 
-- [ ] CoreBluetooth State Restoration：当前核心没有 restoration identifier，也没有 `willRestoreState` 入口。
+- [x] CoreBluetooth State Restoration：已在 2026-09-11 接入 restoration identifier、恢复服务校验和 `willRestoreState`；真实系统回收后的设备验证仍待执行。
 - [ ] 实际动态分片：核心的 `CBPeripheral.maximumUpdateValueLength` 和固定发送分片位于私有实现中，本轮未复制或绕过发送队列。
 - [ ] 实际发送队列停滞监控：核心的 queue、`isSending` 和 `sendCredits` 未暴露可靠性回调；当前只交付纯检测器。
 - [ ] 实际 GATT malformed write 埋点：外围校验器已完成，但核心响应/写入路径仍未开放统一事件 Hook。
@@ -3244,6 +3246,8 @@ firmware package download
 
 完整的 `PTBluetoothManager` 文件搬迁（Facade、Session、Authenticator、Credits、SendQueue、Parser、NavigationScheduler）留到后续阶段，在完成真实 BLE Trace 对照和回归后再进行，避免在没有实车证据时改变核心行为。
 
+> 状态更新（2026-09-11）：上述延期项已在 P1 续记中以行为等价方式完成；真实 BLE Trace 和实车回归仍保持未完成，不能替代为硬件验收。
+
 本次新增的独立回归入口：
 
 - `Global/BLE/PTXP400BLELifecycle.swift`
@@ -3278,6 +3282,8 @@ firmware package download
 
 ## 明确延期与边界
 
+> 历史状态说明：以下延期项是 2026-09-09 冻结核心时的记录；2026-09-11 的当前完成状态以本文末尾的 P1 BLE Core Refactor 续记为准。
+
 - [ ] CoreBluetooth State Restoration 尚未接入 `PTBluetoothManager.swift`。当前稳定核心没有 restoration identifier 和 `willRestoreState` 入口；在冻结核心不可修改的约束下，本阶段只能完成生命周期模型和 watchdog，不能宣称已经实现系统级进程恢复。
 - [ ] `PTBluetoothManager` 按 Session、Authenticator、Credits、SendQueue、Parser、NavigationScheduler 拆分延期。该拆分必须先有真实 XP400 BLE Trace，并完成行为等价回归后再做。
 - [ ] 尚不能宣称实现了物理层面的“全局 OBD 互斥”。稳定 OBD manager 内部的 polling、heartbeat、`fetchProprietaryData`、部分 raw API 和 `ATMA` 流式写入仍没有可传递租约令牌的核心接口；当前租约是应用侧兼容协调边界，不是对冻结 transport 的强制硬锁。
@@ -3285,15 +3291,14 @@ firmware package download
 - [ ] 官方 advertising manufacturer data 与 Android 行为对齐仍需 Android 抓包证据；当前不猜测字段、不写入生产逻辑。
 - [ ] 真实 XP400、真实 ELM327 CAN baseline、ANCS 实车结果和 XCTest 实际执行仍待设备条件。当前机器的 iOS 27 模拟器与 `PTSpeed` scheme 不兼容，因此本轮只完成源码解析和测试 bundle 编译，没有把它们表述为运行时验收。
 
-## 稳定核心保护
+## 稳定核心保护（2026-09-09 历史记录）
 
-本次 P1 没有修改以下文件：
+以下内容记录的是 2026-09-09 当时仍处于冻结状态的边界；2026-09-11 用户明确解除 `PTBluetoothManager.swift` 冻结后，当前状态以本文末尾的 P1 续记为准。本阶段仍然没有修改两个稳定 OBD 核心文件：
 
-- `Global/BLE/PTBluetoothManager.swift`
 - `Global/OBD/Function/PTHiddenOBDConnector.swift`
 - `Global/OBD/Function/PTOBDCommand.swift`
 
-它们继续作为 BLE、ELM327、分片、轮询和标准 PID 的稳定底层；P1 的新增代码只通过既有公开能力和外围兼容门面接入。
+它们继续作为 ELM327、分片、轮询和标准 PID 的稳定底层；当时的 P1 新增代码只通过既有公开能力和外围兼容门面接入。
 
 ## 本轮验证
 
@@ -3303,3 +3308,46 @@ firmware package download
 - 无签名 iOS `build-for-testing`：通过，主 App 和 `PTSpeedTests` 均编译了 P1 新文件。
 - 实际 XCTest：未执行；当前 `PTSpeed` scheme 没有与本机 iOS 27 模拟器匹配的可运行目的地。
 - 构建仍有既有 Xcode Beta、Pods 和第三方静态库警告；本阶段未将其误判为 P1 源码错误。
+
+---
+
+## P1 BLE Core Refactor 续（2026-09-11，解除 `PTBluetoothManager` 冻结）
+
+本轮按用户明确授权，允许修改 `Global/BLE/PTBluetoothManager.swift`，但仍保持两个稳定 OBD 核心文件不变。重构采用行为等价的兼容门面：`PTBluetoothServerManager` 的单例、旧方法、代理协议和既有协议帧行为保持不变；新组件只承接状态、会话、认证适配、Credits 计数、发送队列、帧包络校验和导航节流职责，没有新增第二套 BLE 传输或认证算法。
+
+### P1 已完成
+
+- [x] `PTXP400BLESession`：为真实 Central 和 Mock 连接分配连接代次与 Token；断开后旧回调不能复用会话。
+- [x] `PTXP400BLEState`：集中保存认证、订阅和 Credits 状态；会话重置统一清空，避免跨车或跨连接残留。
+- [x] `PTXP400Authenticator`：仅适配现有 `PTScooterAuth`，认证算法和报文顺序继续以既有实现为唯一来源。
+- [x] `PTXP400TIOCreditController`：复用已确认的 Credits 校验边界，限制余额范围，并接入入站消费、远端 Credits 接收和本地补充。
+- [x] `PTXP400TIOSendQueue`：保留普通、导航两类任务顺序，并接入原有 `updateValue` 背压和回调路径。
+- [x] `PTXP400TelemetryDecoder`：只负责 `[preamble, id, payload, terminator]` 包络验证和帧分类；Data1/2/3、CONTROL、ABS 的语义解码继续使用原有逻辑。
+- [x] `PTXP400NavigationScheduler`：复用原有导航 Fingerprint、500ms 最小间隔和重复过滤规则，不改变导航帧编码。
+- [x] 兼容门面：`PTBluetoothManager.swift` 只保留 `PTBluetoothServerManager` 状态和旧入口，实际职责拆到 `PTBluetoothServerManager+*.swift`；门面当前 217 行，满足 `<600` 行完成条件。
+- [x] 工程引用：新增 BLE 模型与 Manager 扩展已加入 `PTSpeed` target，未加入 Widget、Watch 或 OBD target，避免无关模块引入 CoreBluetooth 传输代码。
+- [x] public API 兼容：既有 `PTBluetoothServerManager.shared`、数据读取、代理回调、导航、配置、Mock 和开发者探针入口保留。
+
+### P2 State Restoration 在本轮完成接入
+
+- [x] `CBPeripheralManagerOptionRestoreIdentifierKey` 使用固定标识 `com.yd.PTSpeed.xp400.dashboard.peripheral`。
+- [x] 实现 `peripheralManager(_:willRestoreState:)`，恢复 FEFB Service 及 TX/Credits 特征后才进入 ready。
+- [x] 恢复路径只恢复 GATT 基础设施和用户曾明确开启的广播意图，不恢复认证、Credits、Central 身份、排队数据或导航 Pending 状态。
+- [x] 恢复的 Service 缺少必要特征时保持未配置状态并记录可靠性事件，避免后续 IUO 特征访问导致崩溃。
+- [x] 恢复后仍需重新走既有认证流程；系统没有恢复服务或蓝牙未开启时安全等待正常初始化。
+
+### 当前仍未宣称完成的硬件验收
+
+- [ ] 真实 XP400 上的系统进程回收/重启恢复。
+- [ ] 真实 XP400 完整 BLE Trace 对照。
+- [ ] 真实 ELM327 CAN baseline。
+- [ ] 兼容设备上的 XCTest 实际执行。
+
+### 本轮验证
+
+- `ruby xcodeproj` 工程解析：通过。
+- `xcrun swiftc -parse`：拆分后的 Manager、扩展和 P1 组件通过。
+- `git diff --check`：通过。
+- 无签名 iOS Debug 主 App 构建：通过；构建覆盖 PTSpeed、Widget、Watch App 及测试相关依赖。
+- 实际 XCTest、真实 Apple 设备和 XP400 实车验证：本轮未执行，不能用源码构建结果替代。
+- 冻结保护检查：`Global/OBD/Function/PTHiddenOBDConnector.swift` 与 `Global/OBD/Function/PTOBDCommand.swift` 无差异。
