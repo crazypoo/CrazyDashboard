@@ -1882,16 +1882,26 @@ AT+VERSION
 
 ## P3：Jieli OTA
 
-- [ ] 集成官方 Jieli iOS OTA SDK
-- [ ] PTJieliOTAManager
-- [ ] PTJieliBLETransport
+- [x] 集成官方 Jieli iOS OTA SDK
+- [x] PTJieliOTAManager
+- [x] PTJieliBLETransport
 - [ ] AE00/AE01/AE02 真机确认
-- [ ] RCSP AUTH
-- [ ] upgrade callback
-- [ ] reconnect
-- [ ] retry
-- [ ] cancel
-- [ ] error recovery
+- [x] RCSP AUTH（通过官方 SDK 的 `cmdTargetFeature` 完成认证桥接，XP400 真机结果仍待验收）
+- [x] upgrade callback
+- [x] reconnect
+- [x] retry
+- [x] cancel
+- [x] error recovery
+
+P3 代码桥接和本地工程构建已完成。AE00/AE01/AE02 映射、XP400 真机 RCSP AUTH、断点续传/设备重启与版本复核仍待真实设备验收，未将这些项目误标为已完成。
+
+### P3 实施边界
+
+- Jieli SDK 负责 RCSP 编码、认证和 OTA 数据流程，工程侧不新增第二套 RCSP/分片协议。
+- `PTJieliBLETransport` 只负责 AE00 服务下的 AE01/AE02 GATT 传输，并支持显式映射和自动映射校验。
+- `PTJieliOTAManager` 通过开发者安全门、P2 只读固件结果、SHA-256 校验和总线租约后才允许进入 OTA；普通用户路径不暴露高风险写入。
+- OTA 前会停止现有 ELM327 轮询并切换到 Jieli GATT；完成、取消或失败后释放传输并恢复普通 ELM327 连接。
+- 旧 `PTOBDOTAUpdater` 保持兼容但继续阻断实际写入，直到真实车型协议完成验收。
 
 ## P4：产品化
 
@@ -2312,4 +2322,8 @@ firmware header
 ### 2026-09-11
 
 - 完成 P2 固件只读检查、元数据解析、RSA createEncryptKey、加密固件下载和 AES-OFB 解密。
-- 保持 OTA、RCSP 和车辆写入路径未接入。
+- P2 阶段保持 OTA、RCSP 和车辆写入路径未接入。
+- 接入用户引入的官方 Jieli iOS SDK xcframework，并完成 `PTJieliBLETransport`、`PTJieliOTAEngine`、`PTJieliOTAManager` 的 P3 桥接。
+- 加入 SDK 特性探测、升级进度回调、重连重试、取消、失败恢复和 ELM327 轮询恢复流程。
+- PTSpeed 已完成无签名 iOS workspace 构建和测试构建；真实 XP400 OTA、设备重启和目标版本复核仍待真机验收。
+- `PTHiddenOBDConnector.swift`、`PTOBDCommand.swift` 与 `PTBluetoothManager.swift` 的稳定核心逻辑未修改。

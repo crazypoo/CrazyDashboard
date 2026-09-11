@@ -48,7 +48,7 @@ final class PTYMOBDFirmwareP2Tests: XCTestCase {
 
     func testFirmwareAPIBuildsDocumentedRequestsWithoutSendingThem() async throws {
         let configuration = PTYMOBDFirmwareAPIConfiguration(
-            baseURL: XCTUnwrap(URL(string: "https://example.invalid/api"))
+            baseURL: try XCTUnwrap(URL(string: "https://example.invalid/api"))
         )
         let api = PTYMOBDFirmwareAPI(configuration: configuration)
         let check = PTYMOBDFirmwareCheckRequest(

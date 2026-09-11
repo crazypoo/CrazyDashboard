@@ -28,6 +28,22 @@
 		55499E2C301B2C8800A1A2D9 /* PTPTTViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499E2B301B2C8800A1A2D9 /* PTPTTViewController.swift */; };
 		555C0FF9300E06630079D94F /* PTGlobalActionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */; };
 		555DC849303820E6002B003B /* xp400watch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 555DC83F303820E3002B003B /* xp400watch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		5564B5BC305426FB0044E1C3 /* JL_AdvParse.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5564B5B4305426FB0044E1C3 /* JL_AdvParse.xcframework */; };
+		5564B5BD305426FB0044E1C3 /* JL_OTALib.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5564B5B7305426FB0044E1C3 /* JL_OTALib.xcframework */; };
+		5564B5BE305426FB0044E1C3 /* JL_BLEKit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5564B5B5305426FB0044E1C3 /* JL_BLEKit.xcframework */; };
+		5564B5BF305426FB0044E1C3 /* JL_HashPair.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5564B5B6305426FB0044E1C3 /* JL_HashPair.xcframework */; };
+		5564B5C0305426FB0044E1C3 /* JLLogHelper.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5564B5BA305426FB0044E1C3 /* JLLogHelper.xcframework */; };
+		5564B5C1305426FB0044E1C3 /* JLDialUnit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5564B5B9305426FB0044E1C3 /* JLDialUnit.xcframework */; };
+		5564B5C2305426FB0044E1C3 /* JLBmpConvertKit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5564B5B8305426FB0044E1C3 /* JLBmpConvertKit.xcframework */; };
+		5564B5C3305426FB0044E1C3 /* JLPackageResKit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5564B5BB305426FB0044E1C3 /* JLPackageResKit.xcframework */; };
+		5564B5C4305426FB0044E1C3 /* JL_AdvParse.xcframework in Embed Jieli Frameworks */ = {isa = PBXBuildFile; fileRef = 5564B5B4305426FB0044E1C3 /* JL_AdvParse.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		5564B5C5305426FB0044E1C3 /* JL_OTALib.xcframework in Embed Jieli Frameworks */ = {isa = PBXBuildFile; fileRef = 5564B5B7305426FB0044E1C3 /* JL_OTALib.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		5564B5C6305426FB0044E1C3 /* JL_BLEKit.xcframework in Embed Jieli Frameworks */ = {isa = PBXBuildFile; fileRef = 5564B5B5305426FB0044E1C3 /* JL_BLEKit.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		5564B5C7305426FB0044E1C3 /* JL_HashPair.xcframework in Embed Jieli Frameworks */ = {isa = PBXBuildFile; fileRef = 5564B5B6305426FB0044E1C3 /* JL_HashPair.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		5564B5C8305426FB0044E1C3 /* JLLogHelper.xcframework in Embed Jieli Frameworks */ = {isa = PBXBuildFile; fileRef = 5564B5BA305426FB0044E1C3 /* JLLogHelper.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		5564B5C9305426FB0044E1C3 /* JLDialUnit.xcframework in Embed Jieli Frameworks */ = {isa = PBXBuildFile; fileRef = 5564B5B9305426FB0044E1C3 /* JLDialUnit.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		5564B5CA305426FB0044E1C3 /* JLBmpConvertKit.xcframework in Embed Jieli Frameworks */ = {isa = PBXBuildFile; fileRef = 5564B5B8305426FB0044E1C3 /* JLBmpConvertKit.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		5564B5CB305426FB0044E1C3 /* JLPackageResKit.xcframework in Embed Jieli Frameworks */ = {isa = PBXBuildFile; fileRef = 5564B5BB305426FB0044E1C3 /* JLPackageResKit.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5577E64F2FD6572A0004733F /* PTLocationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6212FD656D20004733F /* PTLocationEngine.swift */; };
 		5577E6762FD657F30004733F /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5577E6752FD657D20004733F /* libz.tbd */; };
 		5577E6AC2FD662C20004733F /* PTMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6AA2FD662C20004733F /* PTMapView.swift */; };
@@ -188,6 +204,8 @@
 		600000010000000000000353 /* PTXP400P1Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000353 /* PTXP400P1Tests.swift */; };
 		600000010000000000000354 /* PTOBDCompatibilityGateway.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000354 /* PTOBDCompatibilityGateway.swift */; };
 		600000010000000000000360 /* PTXP400BLEReliability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000360 /* PTXP400BLEReliability.swift */; };
+		600000010000000000000361 /* PTXP400P2Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000361 /* PTXP400P2Tests.swift */; };
+		600000010000000000000362 /* PTXP400P3Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000362 /* PTXP400P3Tests.swift */; };
 		600000010000000000000370 /* PTXP400BLESession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000370 /* PTXP400BLESession.swift */; };
 		600000010000000000000371 /* PTXP400BLEState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000371 /* PTXP400BLEState.swift */; };
 		600000010000000000000372 /* PTXP400Authenticator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000372 /* PTXP400Authenticator.swift */; };
@@ -213,9 +231,12 @@
 		600000010000000000000408 /* PTYMOBDFirmwareDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000408 /* PTYMOBDFirmwareDownloader.swift */; };
 		600000010000000000000409 /* PTYMOBDFirmwareService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000409 /* PTYMOBDFirmwareService.swift */; };
 		600000010000000000000410 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 600000020000000000000410 /* Security.framework */; };
-		600000010000000000000361 /* PTXP400P2Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000361 /* PTXP400P2Tests.swift */; };
-		600000010000000000000362 /* PTXP400P3Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000362 /* PTXP400P3Tests.swift */; };
 		600000010000000000000411 /* PTYMOBDFirmwareP2Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000411 /* PTYMOBDFirmwareP2Tests.swift */; };
+		600000010000000000000420 /* PTOTAState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000420 /* PTOTAState.swift */; };
+		600000010000000000000421 /* PTJieliBLETransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000421 /* PTJieliBLETransport.swift */; };
+		600000010000000000000422 /* PTJieliOTAEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000422 /* PTJieliOTAEngine.swift */; };
+		600000010000000000000423 /* PTJieliOTAManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000423 /* PTJieliOTAManager.swift */; };
+		600000010000000000000424 /* PTJieliOTAP3Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000424 /* PTJieliOTAP3Tests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -272,6 +293,24 @@
 			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5564B5D0305426FB0044E1C3 /* Embed Jieli Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				5564B5C4305426FB0044E1C3 /* JL_AdvParse.xcframework in Embed Jieli Frameworks */,
+				5564B5C5305426FB0044E1C3 /* JL_OTALib.xcframework in Embed Jieli Frameworks */,
+				5564B5C6305426FB0044E1C3 /* JL_BLEKit.xcframework in Embed Jieli Frameworks */,
+				5564B5C7305426FB0044E1C3 /* JL_HashPair.xcframework in Embed Jieli Frameworks */,
+				5564B5C8305426FB0044E1C3 /* JLLogHelper.xcframework in Embed Jieli Frameworks */,
+				5564B5C9305426FB0044E1C3 /* JLDialUnit.xcframework in Embed Jieli Frameworks */,
+				5564B5CA305426FB0044E1C3 /* JLBmpConvertKit.xcframework in Embed Jieli Frameworks */,
+				5564B5CB305426FB0044E1C3 /* JLPackageResKit.xcframework in Embed Jieli Frameworks */,
+			);
+			name = "Embed Jieli Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -296,6 +335,14 @@
 		55499E2B301B2C8800A1A2D9 /* PTPTTViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPTTViewController.swift; sourceTree = "<group>"; };
 		555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTGlobalActionHeader.swift; sourceTree = "<group>"; };
 		555DC83F303820E3002B003B /* xp400watch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "xp400watch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5564B5B4305426FB0044E1C3 /* JL_AdvParse.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = JL_AdvParse.xcframework; sourceTree = "<group>"; };
+		5564B5B5305426FB0044E1C3 /* JL_BLEKit.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = JL_BLEKit.xcframework; sourceTree = "<group>"; };
+		5564B5B6305426FB0044E1C3 /* JL_HashPair.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = JL_HashPair.xcframework; sourceTree = "<group>"; };
+		5564B5B7305426FB0044E1C3 /* JL_OTALib.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = JL_OTALib.xcframework; sourceTree = "<group>"; };
+		5564B5B8305426FB0044E1C3 /* JLBmpConvertKit.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = JLBmpConvertKit.xcframework; sourceTree = "<group>"; };
+		5564B5B9305426FB0044E1C3 /* JLDialUnit.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = JLDialUnit.xcframework; sourceTree = "<group>"; };
+		5564B5BA305426FB0044E1C3 /* JLLogHelper.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = JLLogHelper.xcframework; sourceTree = "<group>"; };
+		5564B5BB305426FB0044E1C3 /* JLPackageResKit.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = JLPackageResKit.xcframework; sourceTree = "<group>"; };
 		5577E6212FD656D20004733F /* PTLocationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLocationEngine.swift; sourceTree = "<group>"; };
 		5577E6382FD657030004733F /* XP400Ride.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = XP400Ride.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5577E6752FD657D20004733F /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
@@ -457,6 +504,8 @@
 		600000020000000000000353 /* PTXP400P1Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400P1Tests.swift; sourceTree = "<group>"; };
 		600000020000000000000354 /* PTOBDCompatibilityGateway.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDCompatibilityGateway.swift; sourceTree = "<group>"; };
 		600000020000000000000360 /* PTXP400BLEReliability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400BLEReliability.swift; sourceTree = "<group>"; };
+		600000020000000000000361 /* PTXP400P2Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400P2Tests.swift; sourceTree = "<group>"; };
+		600000020000000000000362 /* PTXP400P3Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400P3Tests.swift; sourceTree = "<group>"; };
 		600000020000000000000370 /* PTXP400BLESession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400BLESession.swift; sourceTree = "<group>"; };
 		600000020000000000000371 /* PTXP400BLEState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400BLEState.swift; sourceTree = "<group>"; };
 		600000020000000000000372 /* PTXP400Authenticator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400Authenticator.swift; sourceTree = "<group>"; };
@@ -482,9 +531,12 @@
 		600000020000000000000408 /* PTYMOBDFirmwareDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTYMOBDFirmwareDownloader.swift; sourceTree = "<group>"; };
 		600000020000000000000409 /* PTYMOBDFirmwareService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTYMOBDFirmwareService.swift; sourceTree = "<group>"; };
 		600000020000000000000410 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
-		600000020000000000000361 /* PTXP400P2Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400P2Tests.swift; sourceTree = "<group>"; };
-		600000020000000000000362 /* PTXP400P3Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400P3Tests.swift; sourceTree = "<group>"; };
 		600000020000000000000411 /* PTYMOBDFirmwareP2Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTYMOBDFirmwareP2Tests.swift; sourceTree = "<group>"; };
+		600000020000000000000420 /* PTOTAState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOTAState.swift; sourceTree = "<group>"; };
+		600000020000000000000421 /* PTJieliBLETransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTJieliBLETransport.swift; sourceTree = "<group>"; };
+		600000020000000000000422 /* PTJieliOTAEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTJieliOTAEngine.swift; sourceTree = "<group>"; };
+		600000020000000000000423 /* PTJieliOTAManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTJieliOTAManager.swift; sourceTree = "<group>"; };
+		600000020000000000000424 /* PTJieliOTAP3Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTJieliOTAP3Tests.swift; sourceTree = "<group>"; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -511,8 +563,6 @@
 		};
 		555DC840303820E3002B003B /* xp400watch Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "xp400watch Watch App";
 			sourceTree = "<group>";
 		};
@@ -547,6 +597,14 @@
 				600000010000000000000263 /* GroupActivities.framework in Frameworks */,
 				600000010000000000000217 /* AlarmKit.framework in Frameworks */,
 				600000010000000000000410 /* Security.framework in Frameworks */,
+				5564B5BC305426FB0044E1C3 /* JL_AdvParse.xcframework in Frameworks */,
+				5564B5BD305426FB0044E1C3 /* JL_OTALib.xcframework in Frameworks */,
+				5564B5BE305426FB0044E1C3 /* JL_BLEKit.xcframework in Frameworks */,
+				5564B5BF305426FB0044E1C3 /* JL_HashPair.xcframework in Frameworks */,
+				5564B5C0305426FB0044E1C3 /* JLLogHelper.xcframework in Frameworks */,
+				5564B5C1305426FB0044E1C3 /* JLDialUnit.xcframework in Frameworks */,
+				5564B5C2305426FB0044E1C3 /* JLBmpConvertKit.xcframework in Frameworks */,
+				5564B5C3305426FB0044E1C3 /* JLPackageResKit.xcframework in Frameworks */,
 				5A200D40EF300920887AD052 /* Pods_PTSpeed.framework in Frameworks */,
 				55E61692301B45B50075F883 /* QWeatherSDK in Frameworks */,
 				5577E6762FD657F30004733F /* libz.tbd in Frameworks */,
@@ -671,9 +729,25 @@
 			name = "Recovered References";
 			sourceTree = "<group>";
 		};
+		5564B5B3305426E70044E1C3 /* Jieli */ = {
+			isa = PBXGroup;
+			children = (
+				5564B5B4305426FB0044E1C3 /* JL_AdvParse.xcframework */,
+				5564B5B5305426FB0044E1C3 /* JL_BLEKit.xcframework */,
+				5564B5B6305426FB0044E1C3 /* JL_HashPair.xcframework */,
+				5564B5B7305426FB0044E1C3 /* JL_OTALib.xcframework */,
+				5564B5B8305426FB0044E1C3 /* JLBmpConvertKit.xcframework */,
+				5564B5B9305426FB0044E1C3 /* JLDialUnit.xcframework */,
+				5564B5BA305426FB0044E1C3 /* JLLogHelper.xcframework */,
+				5564B5BB305426FB0044E1C3 /* JLPackageResKit.xcframework */,
+			);
+			path = Jieli;
+			sourceTree = "<group>";
+		};
 		5577E5B42FD5C1DB0004733F = {
 			isa = PBXGroup;
 			children = (
+				5564B5B3305426E70044E1C3 /* Jieli */,
 				55878957302301B200B94E91 /* xp400WidgetExtension.entitlements */,
 				5577E64D2FD657110004733F /* Global */,
 				55F52C4C303D4025007527C2 /* PTSpeed */,
@@ -796,6 +870,7 @@
 			children = (
 				55F1E2F03026D1DF0032EAD5 /* Function */,
 				600000030000000000000400 /* YMOBD */,
+				600000030000000000000420 /* OTA */,
 				55CA9E17302457F300A3A677 /* ViewController */,
 				55CA9DF33024529000A3A677 /* View */,
 			);
@@ -907,23 +982,6 @@
 			path = Function;
 			sourceTree = "<group>";
 		};
-		600000030000000000000400 /* YMOBD */ = {
-			isa = PBXGroup;
-			children = (
-				600000020000000000000402 /* PTYMOBDInitializer.swift */,
-				600000020000000000000401 /* PTYMOBDAuthenticator.swift */,
-				600000020000000000000400 /* PTYMOBDVersionParser.swift */,
-				600000020000000000000403 /* PTYMOBDDeviceClassifier.swift */,
-				600000020000000000000404 /* PTOBDPollingProfile.swift */,
-				600000020000000000000405 /* PTYMOBDFirmwareInfo.swift */,
-				600000020000000000000406 /* PTYMOBDFirmwareCrypto.swift */,
-				600000020000000000000407 /* PTYMOBDFirmwareAPI.swift */,
-				600000020000000000000408 /* PTYMOBDFirmwareDownloader.swift */,
-				600000020000000000000409 /* PTYMOBDFirmwareService.swift */,
-			);
-			path = YMOBD;
-			sourceTree = "<group>";
-		};
 		55F503B5300FC99000C5D085 /* Model */ = {
 			isa = PBXGroup;
 			children = (
@@ -1013,6 +1071,7 @@
 				600000020000000000000361 /* PTXP400P2Tests.swift */,
 				600000020000000000000362 /* PTXP400P3Tests.swift */,
 				600000020000000000000411 /* PTYMOBDFirmwareP2Tests.swift */,
+				600000020000000000000424 /* PTJieliOTAP3Tests.swift */,
 			);
 			path = PTSpeedTests;
 			sourceTree = "<group>";
@@ -1049,6 +1108,34 @@
 				600000020000000000000262 /* PTRoadbookSharePlay.swift */,
 			);
 			path = Feature;
+			sourceTree = "<group>";
+		};
+		600000030000000000000400 /* YMOBD */ = {
+			isa = PBXGroup;
+			children = (
+				600000020000000000000402 /* PTYMOBDInitializer.swift */,
+				600000020000000000000401 /* PTYMOBDAuthenticator.swift */,
+				600000020000000000000400 /* PTYMOBDVersionParser.swift */,
+				600000020000000000000403 /* PTYMOBDDeviceClassifier.swift */,
+				600000020000000000000404 /* PTOBDPollingProfile.swift */,
+				600000020000000000000405 /* PTYMOBDFirmwareInfo.swift */,
+				600000020000000000000406 /* PTYMOBDFirmwareCrypto.swift */,
+				600000020000000000000407 /* PTYMOBDFirmwareAPI.swift */,
+				600000020000000000000408 /* PTYMOBDFirmwareDownloader.swift */,
+				600000020000000000000409 /* PTYMOBDFirmwareService.swift */,
+			);
+			path = YMOBD;
+			sourceTree = "<group>";
+		};
+		600000030000000000000420 /* OTA */ = {
+			isa = PBXGroup;
+			children = (
+				600000020000000000000420 /* PTOTAState.swift */,
+				600000020000000000000421 /* PTJieliBLETransport.swift */,
+				600000020000000000000422 /* PTJieliOTAEngine.swift */,
+				600000020000000000000423 /* PTJieliOTAManager.swift */,
+			);
+			path = OTA;
 			sourceTree = "<group>";
 		};
 		6000000B0000000000000080 /* PTSpeedUITests */ = {
@@ -1129,6 +1216,7 @@
 				DE491308A2EC7C91DFABD672 /* [CP] Copy Pods Resources */,
 				55499E1C301AFCEA00A1A2D9 /* Embed Foundation Extensions */,
 				555DC84A303820E6002B003B /* Embed Watch Content */,
+				5564B5D0305426FB0044E1C3 /* Embed Jieli Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1303,9 +1391,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -1342,9 +1434,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PTSpeed/Pods-PTSpeed-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -1407,6 +1503,10 @@
 				600000010000000000000407 /* PTYMOBDFirmwareAPI.swift in Sources */,
 				600000010000000000000408 /* PTYMOBDFirmwareDownloader.swift in Sources */,
 				600000010000000000000409 /* PTYMOBDFirmwareService.swift in Sources */,
+				600000010000000000000420 /* PTOTAState.swift in Sources */,
+				600000010000000000000421 /* PTJieliBLETransport.swift in Sources */,
+				600000010000000000000422 /* PTJieliOTAEngine.swift in Sources */,
+				600000010000000000000423 /* PTJieliOTAManager.swift in Sources */,
 				55499E03301AFC2200A1A2D9 /* PTWidgetManager.swift in Sources */,
 				555C0FF9300E06630079D94F /* PTGlobalActionHeader.swift in Sources */,
 				55986687301150900049684D /* PTECUSnifferOverlay.swift in Sources */,
@@ -1555,6 +1655,7 @@
 				600000010000000000000361 /* PTXP400P2Tests.swift in Sources */,
 				600000010000000000000362 /* PTXP400P3Tests.swift in Sources */,
 				600000010000000000000411 /* PTYMOBDFirmwareP2Tests.swift in Sources */,
+				600000010000000000000424 /* PTJieliOTAP3Tests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
