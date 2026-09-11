@@ -578,15 +578,36 @@ public class PTOBDTransportBase: NSObject {
     public var onDisconnected: ((Error?) -> Void)?
     public var isUnlocked: Bool = false
     
-    // 严丝合缝的 19 步解锁列队
-    internal var initQueue: [String] = [
+    // EN: Keep the ELM327-compatible initialization template immutable; YMOBD authentication is optional.
+    // ES: Mantiene inmutable la plantilla compatible con ELM327; la autenticación YMOBD es opcional.
+    // 中文：保持兼容 ELM327 的初始化模板不可变；YMOBD 认证只在探测到能力后启用。
+    private static let defaultInitQueue: [String] = [
         "ATZ", "ATE0", "ATL0", "ATH1", "ATSP0", "AT+VERSION", "ATI", "ATRV", "<AUTH>",
         "0100", "020000", "0600", "0900", "ATDP", "0120", "0140", "0902", "0904", "0906"
     ]
+    internal var initQueue: [String] = PTOBDTransportBase.defaultInitQueue
     internal var currentQueueIndex: Int = 0
     internal var activeCommand: String? = nil
     internal var rxBuffer: String = ""
     public var collectedPIDResponses: [String] = []
+
+    // EN: These values expose only initialization diagnostics; they do not alter the stable transport framing.
+    // ES: Estos valores solo exponen diagnósticos de inicialización y no alteran el entramado de transporte estable.
+    // 中文：这些值只暴露初始化诊断信息，不改变已经稳定的传输分帧逻辑。
+    public private(set) var currentAuthChallenge: UInt32?
+    public private(set) var isOfficialYMOBD: Bool = false
+    public private(set) var pid0100Mask: UInt32?
+
+    // EN: A plain ELM327 may answer AT+VERSION without YMOBD fields; never send AUTH in that case.
+    // ES: Un ELM327 normal puede responder AT+VERSION sin campos YMOBD; en ese caso nunca se envía AUTH.
+    // 中文：普通 ELM327 可能会响应 AT+VERSION 但不包含 YMOBD 字段；这种情况下绝不发送 AUTH。
+    private var hasYMOBDVersionFields = false
+    private var hasTriggeredDebugFlagFor0100 = false
+    private var retryCountFor0100 = 0
+    private let maximum0100RetryCount = 20
+    internal private(set) var initializationActive = false
+    private var initAdvanceWorkItem: DispatchWorkItem?
+    private var initializationTimeoutWorkItem: DispatchWorkItem?
     
     internal var responseContinuation: CheckedContinuation<String, any Error>?
     internal var timeoutTask: Task<Void, Never>?
@@ -603,22 +624,174 @@ public class PTOBDTransportBase: NSObject {
     internal func dropPhysicalConnection() {
         fatalError("子类必须重写 dropPhysicalConnection 方法")
     }
+
+    // EN: Subclasses may reset reconnect backoff after a fully unlocked physical session.
+    // ES: Las subclases pueden reiniciar el retroceso de reconexión después de desbloquear por completo la sesión física.
+    // 中文：子类可以在物理会话完整解锁后重置重连退避状态。
+    internal func didUnlockTransport() {}
+
+    // EN: Cancel all delayed initialization work before a user disconnect or a failed session.
+    // ES: Cancela todo el trabajo de inicialización diferido antes de una desconexión del usuario o una sesión fallida.
+    // 中文：用户断开或会话失败前，取消所有延迟初始化任务。
+    internal func cancelInitialization() {
+        initializationActive = false
+        initAdvanceWorkItem?.cancel()
+        initAdvanceWorkItem = nil
+        initializationTimeoutWorkItem?.cancel()
+        initializationTimeoutWorkItem = nil
+        timeoutTask?.cancel()
+        timeoutTask = nil
+    }
+
+    // EN: Finish a pending async command when the physical transport is explicitly torn down.
+    // ES: Finaliza un comando asíncrono pendiente cuando se cierra explícitamente el transporte físico.
+    // 中文：主动关闭物理传输时，结束仍在等待的异步命令。
+    internal func cancelPendingResponse(reason: String = "OBD 连接已关闭") {
+        timeoutTask?.cancel()
+        timeoutTask = nil
+        if let continuation = responseContinuation {
+            continuation.resume(throwing: NSError(
+                domain: "OBDError",
+                code: -2,
+                userInfo: [NSLocalizedDescriptionKey: reason]
+            ))
+            responseContinuation = nil
+        }
+        activeCommand = nil
+        rxBuffer = ""
+    }
+
+    // EN: Schedule the next state-machine step with one cancellable work item.
+    // ES: Programa el siguiente paso de la máquina de estados con una única tarea cancelable.
+    // 中文：使用一个可取消任务调度状态机的下一步。
+    private func scheduleNextInitCommand(after delay: TimeInterval) {
+        initAdvanceWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self, self.initializationActive, !self.isUnlocked else { return }
+            self.sendNextCommand()
+        }
+        initAdvanceWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+    }
+
+    // EN: The initialization watchdog is a main-queue work item, separate from the normal command watchdog.
+    // ES: El perro guardián de inicialización es una tarea de la cola principal, separado del watchdog de comandos normales.
+    // 中文：初始化看门狗使用主队列工作项，与解锁后的普通命令看门狗分离。
+    private func startInitializationTimeout(for command: String) {
+        initializationTimeoutWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self,
+                  self.initializationActive,
+                  !self.isUnlocked,
+                  self.activeCommand == command else { return }
+
+            PTOBDLogger.obd.ptLog("⏳ [破冰船] 初始化命令 \(command) 等待 prompt 超时，断开并交给重连策略")
+            self.cancelInitialization()
+            self.dropPhysicalConnection()
+        }
+        initializationTimeoutWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20.0, execute: workItem)
+    }
+
+    // EN: Abort initialization through the subclass's physical teardown hook.
+    // ES: Aborta la inicialización mediante el método de cierre físico de la subclase.
+    // 中文：通过子类的物理断开钩子终止初始化。
+    private func failInitialization(reason: String) {
+        PTOBDLogger.obd.ptLog("❌ [破冰船] \(reason)")
+        cancelInitialization()
+        dropPhysicalConnection()
+    }
+
+    // EN: Extract one or more 0100 masks without confusing CAN headers or DLC bytes with the payload.
+    // ES: Extrae una o más máscaras 0100 sin confundir las cabeceras CAN ni el DLC con la carga útil.
+    // 中文：提取一个或多个 0100 支持位掩码，避免把 CAN 头或 DLC 误当成 Payload。
+    private func extract0100Mask(from response: String) -> UInt32? {
+        let clean = response.obdCleaned
+        let marker = "4100"
+        var searchStart = clean.startIndex
+        var combined: UInt32 = 0
+        var found = false
+
+        while searchStart < clean.endIndex,
+              let markerRange = clean.range(of: marker, range: searchStart..<clean.endIndex) {
+            let payloadStart = markerRange.upperBound
+            guard let payloadEnd = clean.index(payloadStart, offsetBy: 8, limitedBy: clean.endIndex) else { break }
+            let maskText = String(clean[payloadStart..<payloadEnd])
+            if let mask = UInt32(maskText, radix: 16) {
+                combined |= mask
+                found = true
+            }
+            searchStart = payloadEnd
+        }
+
+        return found ? combined : nil
+    }
+
+    // EN: Repeat 0100 without advancing past the command, while keeping the retry bounded.
+    // ES: Repite 0100 sin saltar el comando y mantiene acotado el número de reintentos.
+    // 中文：重复发送 0100 而不跳过当前命令，并限制重试次数。
+    private func retry0100(reason: String) -> Bool {
+        guard retryCountFor0100 < maximum0100RetryCount else {
+            failInitialization(reason: "0100 \(reason)，已达到 \(maximum0100RetryCount) 次重试上限")
+            return false
+        }
+
+        retryCountFor0100 += 1
+        initQueue.insert("0100", at: min(currentQueueIndex + 1, initQueue.count))
+        currentQueueIndex += 1
+        PTOBDLogger.obd.ptLog("🔁 [破冰船] 0100 \(reason)，第 \(retryCountFor0100)/\(maximum0100RetryCount) 次重试")
+        scheduleNextInitCommand(after: 0.05)
+        return true
+    }
+
+    // EN: Skip the optional authentication slot while preserving every standard ELM327 command.
+    // ES: Omite el hueco opcional de autenticación y conserva todos los comandos estándar de ELM327.
+    // 中文：跳过可选认证槽位，同时保留所有标准 ELM327 指令。
+    private func skipOptionalYMOBDAuthentication() {
+        isOfficialYMOBD = false
+        hasYMOBDVersionFields = false
+        currentAuthChallenge = nil
+        initQueue.removeAll { command in
+            command == "<AUTH>" || command.hasPrefix("AT+CRYPT") || command.hasPrefix("AT+SETCRYPT")
+        }
+        currentQueueIndex += 1
+        scheduleNextInitCommand(after: 0.05)
+    }
+
+    // EN: Read only the first complete eight-digit hexadecimal response token for challenge validation.
+    // ES: Lee solo el primer token hexadecimal completo de ocho dígitos para validar el desafío.
+    // 中文：只读取响应中第一个完整的八位十六进制令牌，用于校验 challenge。
+    private func firstEightDigitHexToken(from response: String) -> String? {
+        guard let expression = try? NSRegularExpression(
+            pattern: "(?i)(?<![0-9a-f])[0-9a-f]{8}(?![0-9a-f])"
+        ) else { return nil }
+
+        let range = NSRange(response.startIndex..<response.endIndex, in: response)
+        guard let match = expression.firstMatch(in: response, range: range),
+              let tokenRange = Range(match.range, in: response) else {
+            return nil
+        }
+        return String(response[tokenRange]).uppercased()
+    }
     
     // MARK: - 🌟 共享逻辑：重置并启动状态机
     internal func resetAndStartStateMachine() {
+        cancelInitialization()
+        cancelPendingResponse(reason: "OBD 初始化重新开始")
         isUnlocked = false
         currentQueueIndex = 0
         rxBuffer = ""
         collectedPIDResponses.removeAll()
-        
-        // 恢复 <AUTH> 槽位
-        if let authIndex = initQueue.firstIndex(where: { $0.hasPrefix("AT+CRYPT") || $0.hasPrefix("AT+SETCRYPT") || $0 == "ATRV" }) {
-            initQueue[authIndex] = "<AUTH>"
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            self?.sendNextCommand()
-        }
+        initQueue = PTOBDTransportBase.defaultInitQueue
+        currentAuthChallenge = nil
+        isOfficialYMOBD = false
+        hasYMOBDVersionFields = false
+        pid0100Mask = nil
+        hasTriggeredDebugFlagFor0100 = false
+        retryCountFor0100 = 0
+        initializationActive = true
+
+        scheduleNextInitCommand(after: 1.0)
     }
     
     // MARK: - 🌟 共享逻辑：异步发送指令 (API)
@@ -690,8 +863,13 @@ public class PTOBDTransportBase: NSObject {
         }
         
         if isComplete, let range = endRange {
-            self.timeoutTask?.cancel()
-            self.timeoutTask = nil
+            if isUnlocked {
+                self.timeoutTask?.cancel()
+                self.timeoutTask = nil
+            } else {
+                self.initializationTimeoutWorkItem?.cancel()
+                self.initializationTimeoutWorkItem = nil
+            }
             
             let completeResponse = String(rxBuffer[..<range.lowerBound])
             
@@ -716,9 +894,21 @@ public class PTOBDTransportBase: NSObject {
     
     // MARK: - 🌟 共享逻辑：自动队列与硬件解密
     internal func sendNextCommand() {
+        guard initializationActive else { return }
+
         guard currentQueueIndex < initQueue.count else {
-            PTOBDLogger.obd.ptLog("✅ [破冰船] 19 步硬件大满贯解锁完毕！移交控制权！")
+            guard let mask = pid0100Mask, mask != 0 else {
+                failInitialization(reason: "0100 支持位掩码为空或全 0，拒绝进入 connected")
+                return
+            }
+
+            initializationActive = false
+            initAdvanceWorkItem?.cancel()
+            timeoutTask?.cancel()
+            timeoutTask = nil
+            PTOBDLogger.obd.ptLog("✅ [破冰船] 初始化完成，0100 支持位掩码 \(String(format: "%08X", mask))，移交控制权！")
             self.isUnlocked = true
+            didUnlockTransport()
             DispatchQueue.main.async { [weak self] in self?.onIceBroken?() }
             return
         }
@@ -727,19 +917,21 @@ public class PTOBDTransportBase: NSObject {
         rxBuffer = ""
         PTOBDLogger.obd.ptLog("⬆️ [TX Init \(currentQueueIndex + 1)/\(initQueue.count)] \(rawCommand)\\r")
         writeRawData(rawCommand)
+        startInitializationTimeout(for: rawCommand)
     }
     
     private func processCompleteResponse(_ response: String) {
+        guard initializationActive else { return }
         let cleanResponseForCheck = response.replacingOccurrences(of: " ", with: "").uppercased()
         let cmd = activeCommand ?? ""
         
         if cmd == "ATZ" && cleanResponseForCheck.contains("STOPPED") {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.sendNextCommand() }
+            scheduleNextInitCommand(after: 0.5)
             return
         }
         let okCheckCommands = ["ATE0", "ATL0", "ATH1", "ATS0"]
         if okCheckCommands.contains(cmd) && !cleanResponseForCheck.contains("OK") {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.sendNextCommand() }
+            scheduleNextInitCommand(after: 0.5)
             return
         }
         
@@ -753,51 +945,133 @@ public class PTOBDTransportBase: NSObject {
         if cmd == "0906" && !cleanResponseForCheck.contains("NODATA") { PTMotoTelemetryManager.shared.obdInfo.cvn = PTMultiFrameParser.parseLongString(response: response) }
 
         if cmd == "AT+VERSION" {
-            // 兼容标准设备降级
-            if response.contains("?") || response.isEmpty || cleanResponseForCheck.contains("ERROR") {
+            // EN: Unsupported or empty AT+VERSION is a normal generic ELM327 fallback.
+            // ES: Una respuesta no compatible o vacía de AT+VERSION es un fallback normal de ELM327 genérico.
+            // 中文：AT+VERSION 不支持或返回空内容时，按普通通用 ELM327 降级处理。
+            if response.contains("?") || response.isEmpty || cleanResponseForCheck.contains("ERROR") || cleanResponseForCheck.contains("NODATA") {
                 PTOBDLogger.obd.ptLog("⚠️ [认证] 发现标准设备，无需 YMOBD 握手，优雅降级！")
-                if let authIndex = initQueue.firstIndex(of: "<AUTH>") { initQueue[authIndex] = "ATRV" }
-                currentQueueIndex += 1
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in self?.sendNextCommand() }
+                skipOptionalYMOBDAuthentication()
                 return
             }
             
             // 提取信息与加密种子
             let lines = response.components(separatedBy: .newlines).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
-            if lines.count > 0 { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.company = lines[0] }
+            if let company = lines.first(where: { !$0.uppercased().hasPrefix("AT+VERSION") }) {
+                PTMotoTelemetryManager.shared.obdInfo.moudleInfo.company = company
+            }
+
+            var cryptSeed = ""
+            hasYMOBDVersionFields = false
             for line in lines {
                 let parts = line.components(separatedBy: ":")
                 guard parts.count >= 2 else { continue }
                 let key = parts[0].lowercased().trimmingCharacters(in: .whitespaces)
                 let value = parts[1...].joined(separator: ":").trimmingCharacters(in: .whitespaces)
-                
-                if key == "version" { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.version = value }
-                else if key == "device type" { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceType = value }
-                else if key == "device name" { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceName = value }
-                else if key == "device mac" { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceMac = value.uppercased() }
-                else if key == "interface" { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.interfase = value }
-                else if key == "cust id" { PTMotoTelemetryManager.shared.obdInfo.moudleInfo.cust = value }
-            }
 
-            var cryptSeed = ""
-            if let regex = try? NSRegularExpression(pattern: "(?im)^\\s*crypt\\s*:\\s*([0-9a-f]{1,8})") {
-                let nsString = response as NSString
-                if let match = regex.matches(in: response, range: NSRange(location: 0, length: nsString.length)).first {
-                    cryptSeed = String(nsString.substring(with: match.range(at: 1)).filter { "0123456789abcdefABCDEF".contains($0) })
+                switch key {
+                case "version":
+                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.version = value
+                case "devicetype", "device type":
+                    hasYMOBDVersionFields = true
+                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceType = value
+                case "devicename", "device name":
+                    hasYMOBDVersionFields = true
+                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceName = value
+                case "devicemac", "device mac":
+                    hasYMOBDVersionFields = true
+                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.deviceMac = value.uppercased()
+                case "interface", "interfase":
+                    hasYMOBDVersionFields = true
+                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.interfase = value
+                case "custid", "cust id":
+                    hasYMOBDVersionFields = true
+                    PTMotoTelemetryManager.shared.obdInfo.moudleInfo.cust = value
+                case "crypt":
+                    hasYMOBDVersionFields = true
+                    cryptSeed = value.filter { "0123456789abcdefABCDEF".contains($0) }
                     PTMotoTelemetryManager.shared.obdInfo.moudleInfo.crypt = cryptSeed
+                default:
+                    break
                 }
             }
-            
-            let authCommand = !cryptSeed.isEmpty ? YmobdCrypt.setCryptCommand(cryptFromVersion: cryptSeed) : YmobdCrypt.challengeCommand(challenge: YmobdCrypt.newChallenge())
+
+            // EN: Version-only responses are common on generic ELM327 adapters and are not YMOBD proof.
+            // ES: Las respuestas que solo contienen la versión son comunes en adaptadores ELM327 genéricos y no prueban YMOBD.
+            // 中文：只有版本号的响应在通用 ELM327 中很常见，不能据此认定为 YMOBD。
+            guard hasYMOBDVersionFields else {
+                PTOBDLogger.obd.ptLog("⚠️ [认证] AT+VERSION 未发现 YMOBD 字段，保留通用 ELM327 路径")
+                skipOptionalYMOBDAuthentication()
+                return
+            }
+
+            let generatedChallenge: Int32?
+            let authCommand: String
+            if !cryptSeed.isEmpty {
+                let setCrypt = YmobdCrypt.setCryptCommand(cryptFromVersion: cryptSeed)
+                if !setCrypt.isEmpty {
+                    generatedChallenge = nil
+                    authCommand = setCrypt
+                } else {
+                    let challenge = YmobdCrypt.newChallenge()
+                    generatedChallenge = challenge
+                    authCommand = YmobdCrypt.challengeCommand(challenge: challenge)
+                }
+            } else {
+                let challenge = YmobdCrypt.newChallenge()
+                generatedChallenge = challenge
+                authCommand = YmobdCrypt.challengeCommand(challenge: challenge)
+            }
+
+            currentAuthChallenge = generatedChallenge.map { UInt32(bitPattern: $0) }
             if let authIndex = initQueue.firstIndex(of: "<AUTH>") {
                 initQueue[authIndex] = authCommand.replacingOccurrences(of: "\r", with: "")
             }
         }
-        
-        if cmd == "0100" || cmd == "0120" || cmd == "0140" { collectedPIDResponses.append(response) }
+
+        if cmd.hasPrefix("AT+SETCRYPT") {
+            isOfficialYMOBD = hasYMOBDVersionFields
+                && !cleanResponseForCheck.isEmpty
+                && !cleanResponseForCheck.contains("ERROR")
+                && !cleanResponseForCheck.contains("NODATA")
+                && !cleanResponseForCheck.contains("?")
+                && !cleanResponseForCheck.contains("UNABLETOCONNECT")
+            currentAuthChallenge = nil
+            PTOBDLogger.obd.ptLog(isOfficialYMOBD ? "✅ [认证] YMOBD crypt 配置已确认" : "⚠️ [认证] YMOBD crypt 配置未确认，继续初始化")
+        } else if cmd.hasPrefix("AT+CRYPT"), let challenge = currentAuthChallenge {
+            let expected = YmobdCrypt.hex8(value: YmobdCrypt.crypt32(input: Int32(bitPattern: challenge)))
+            let responseWithoutEcho = response.replacingOccurrences(of: cmd, with: "", options: .caseInsensitive)
+            isOfficialYMOBD = hasYMOBDVersionFields
+                && firstEightDigitHexToken(from: responseWithoutEcho) == expected
+            PTOBDLogger.obd.ptLog(isOfficialYMOBD ? "✅ [认证] challenge 校验通过: \(expected)" : "⚠️ [认证] challenge 校验不匹配，继续兼容初始化")
+            currentAuthChallenge = nil
+        }
+
+        if cmd == "0100" {
+            if let mask = extract0100Mask(from: response) {
+                pid0100Mask = (pid0100Mask ?? 0) | mask
+            }
+            collectedPIDResponses.append(response)
+
+            let isUnableToConnect = cleanResponseForCheck.contains("UNABLETOCONNECT")
+            let isNoData = cleanResponseForCheck.contains("NODATA") || cleanResponseForCheck.contains("NO DATA")
+            if isUnableToConnect && hasYMOBDVersionFields && !hasTriggeredDebugFlagFor0100 {
+                hasTriggeredDebugFlagFor0100 = true
+                initQueue.insert(contentsOf: ["AT+DEBUG_FLG", "0100"], at: min(currentQueueIndex + 1, initQueue.count))
+                currentQueueIndex += 1
+                PTOBDLogger.obd.ptLog("🛠️ [破冰船] 0100 无法连接，先发送 AT+DEBUG_FLG 再重试 0100")
+                scheduleNextInitCommand(after: 0.05)
+                return
+            }
+            if isUnableToConnect || isNoData {
+                _ = retry0100(reason: isUnableToConnect ? "UNABLE TO CONNECT" : "NO DATA")
+                return
+            }
+        } else if cmd == "0120" || cmd == "0140" {
+            collectedPIDResponses.append(response)
+        }
                 
         currentQueueIndex += 1
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in self?.sendNextCommand() }
+        scheduleNextInitCommand(after: 0.05)
     }
 }
 
@@ -812,6 +1086,7 @@ public class PTMockOBDConnector: PTOBDTransportBase {
     public static let shared = PTMockOBDConnector()
     
     private let mockQueue = DispatchQueue(label: "com.ptools.mockOBDQueue")
+    private var mockStartWorkItem: DispatchWorkItem?
     public var vehicleConfig: PTMockVehicleConfig = .dualECU
     
     // MARK: - 🚗 动态车辆状态变量
@@ -846,6 +1121,7 @@ public class PTMockOBDConnector: PTOBDTransportBase {
     
     // 启动模拟连接
     public func startMockConnection() {
+        mockStartWorkItem?.cancel()
         PTOBDLogger.obd.startFileLogging()
         PTOBDLogger.obd.ptLog("🎮 [模拟器] 正在启动离线沙盒引擎...")
         
@@ -855,10 +1131,24 @@ public class PTMockOBDConnector: PTOBDTransportBase {
         isAccelerating = true
         
         // 模拟 1 秒的连接耗时
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self else { return }
             PTOBDLogger.obd.ptLog("✅ [模拟器] 虚拟物理通道建立成功，启动状态机！")
-            self?.resetAndStartStateMachine() // 呼叫基类，开始 19 步破冰！
+            self.resetAndStartStateMachine() // 呼叫基类，开始 19 步破冰！
         }
+        mockStartWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: workItem)
+    }
+
+    // EN: Stop a mock session through the same explicit-disconnect path as real transports.
+    // ES: Detiene una sesión simulada mediante la misma ruta de desconexión explícita que los transportes reales.
+    // 中文：模拟会话也通过与真实传输一致的主动断开路径停止。
+    public func stopMockConnection() {
+        mockStartWorkItem?.cancel()
+        mockStartWorkItem = nil
+        cancelInitialization()
+        cancelPendingResponse(reason: "模拟器连接已关闭")
+        dropPhysicalConnection()
     }
     
     // MARK: - 🧠 核心：虚拟 ECU 响应大脑 (完美还原实车工况)
@@ -1037,99 +1327,491 @@ public class PTWifiOBDConnector: PTOBDTransportBase {
 
 public class PTHiddenOBDConnector: PTOBDTransportBase {
     public static let shared = PTHiddenOBDConnector()
-    
+
+    // EN: FFF0 is the known YMOBD service, but this connector remains a generic ELM327 transport.
+    // ES: FFF0 es el servicio YMOBD conocido, pero este conector sigue siendo un transporte ELM327 genérico.
+    // 中文：FFF0 是已知的 YMOBD 服务，但此连接器仍然是通用 ELM327 传输层。
+    private static let obdServiceUUID = CBUUID(string: "0000FFF0-0000-1000-8000-00805F9B34FB")
+    private let scanTimeout: TimeInterval = 30
+    private let serviceDiscoveryTimeout: TimeInterval = 10
+
     private var centralManager: CBCentralManager!
     public var obdPeripheral: CBPeripheral?
     private var writeCharacteristic: CBCharacteristic?
     private var notifyCharacteristic: CBCharacteristic?
-    
+
     private var pendingConnection: Bool = false
-    private let allowedDeviceNames: Set<String> = [ "OBDII", "MS310", "B25", "V500", "YM529", "YM329", "YM129", "YM819", "BT529" ]
-    
+    private var connectionIntent = false
+    private var userRequestedDisconnect = false
+    private var shouldReconnectAfterDisconnect = true
+    private var disconnectCallbackDelivered = true
+    private var reconnectAttempts = 0
+    private let maximumReconnectAttempts = 3
+    private var scanTimeoutWorkItem: DispatchWorkItem?
+    private var serviceDiscoveryTimeoutWorkItem: DispatchWorkItem?
+    private var reconnectWorkItem: DispatchWorkItem?
+
+    // EN: Prefer known OBD names while allowing generic ELM327 names and advertised FFF0 devices.
+    // ES: Da preferencia a nombres OBD conocidos y permite nombres ELM327 genéricos y dispositivos FFF0 anunciados.
+    // 中文：优先连接已知 OBD 名称，同时兼容通用 ELM327 名称和广播 FFF0 的设备。
+    private let knownOBDDeviceNames: Set<String> = [
+        "OBDII", "MS310", "B25", "V500", "YM529", "YM329", "YM129", "YM819", "BT529",
+        "OBD114", "OBD147", "BROM S10", "BROM S15", "BROM S20"
+    ]
+
+    // EN: These official YMOBD names belong to OTA, battery, or TPMS products, not normal OBD.
+    // ES: Estos nombres oficiales de YMOBD pertenecen a productos OTA, batería o TPMS, no al OBD normal.
+    // 中文：这些官方 YMOBD 名称属于 OTA、电池或 TPMS 产品，不应进入普通 OBD 链路。
+    private let excludedNonOBDDeviceNames: Set<String> = [
+        "P300", "BT_00", "BT15", "BT17", "BT319", "BT369", "TPMS", "C15", "C35"
+    ]
+
     private override init() {
         super.init()
         centralManager = CBCentralManager(delegate: self, queue: .main)
     }
-    
-    // 重写物理发送方法
+
+    // EN: Write through the characteristic's supported response mode without adding a second transport.
+    // ES: Escribe usando el modo de respuesta admitido por la característica sin añadir otro transporte.
+    // 中文：使用特征自身支持的响应模式写入，不增加第二套传输层。
     override func writeRawData(_ command: String) {
         guard let writeChar = self.writeCharacteristic,
               let data = "\(command)\r".data(using: .ascii),
               let peripheral = self.obdPeripheral else { return }
-        
+
         let writeType: CBCharacteristicWriteType = writeChar.properties.contains(.writeWithoutResponse) ? .withoutResponse : .withResponse
         peripheral.writeValue(data, for: writeChar, type: writeType)
     }
-    
-    // 重写强制断开方法
-    override func dropPhysicalConnection() {
-        if let p = self.obdPeripheral { centralManager.cancelPeripheralConnection(p) }
-    }
-    
-    public func startIcebreakerConnection() {
-        guard centralManager.state == .poweredOn else {
-            pendingConnection = true; return
+
+    // EN: Match exact official names first, then conservative generic ELM327 naming and FFF0 advertisement.
+    // ES: Primero coincide con nombres oficiales exactos, después con nombres ELM327 genéricos conservadores y el anuncio FFF0.
+    // 中文：先匹配官方精确名称，再匹配保守的通用 ELM327 名称和 FFF0 广播。
+    private func isLikelyOBDPeripheral(_ peripheral: CBPeripheral, advertisementData: [String: Any]) -> Bool {
+        let deviceName = (peripheral.name ?? advertisementData[CBAdvertisementDataLocalNameKey] as? String ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedName = deviceName.uppercased()
+
+        guard !excludedNonOBDDeviceNames.contains(deviceName) else { return false }
+
+        if knownOBDDeviceNames.contains(deviceName) {
+            return true
         }
-        PTOBDLogger.obd.startFileLogging()
-        PTOBDLogger.obd.ptLog("🔄 [BLE] 开始扫描...")
+
+        let advertisedServices = advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID] ?? []
+        if advertisedServices.contains(Self.obdServiceUUID) {
+            return true
+        }
+
+        // EN: Keep the fallback narrow so nearby unrelated BLE devices are not claimed as OBD adapters.
+        // ES: Mantiene estrecho el fallback para no reclamar como OBD dispositivos BLE cercanos no relacionados.
+        // 中文：保持回退匹配范围收窄，避免把附近无关 BLE 设备误认成 OBD 适配器。
+        return normalizedName.contains("OBD")
+            || normalizedName.contains("ELM")
+            || normalizedName.hasPrefix("BROM")
+            || normalizedName.hasPrefix("YM")
+    }
+
+    // EN: A watchdog failure is not a user disconnect, so the lifecycle may schedule a bounded retry.
+    // ES: Un fallo del vigilante no es una desconexión del usuario y puede programar un reintento acotado.
+    // 中文：看门狗失败不等同于用户主动断开，因此生命周期可以安排有界重试。
+    override func dropPhysicalConnection() {
+        serviceDiscoveryTimeoutWorkItem?.cancel()
+        serviceDiscoveryTimeoutWorkItem = nil
+        scanTimeoutWorkItem?.cancel()
+        scanTimeoutWorkItem = nil
+        isUnlocked = false
+        isSnifferMode = false
+        shouldReconnectAfterDisconnect = true
+        if let p = self.obdPeripheral {
+            centralManager.cancelPeripheralConnection(p)
+        } else {
+            centralManager.stopScan()
+        }
+    }
+
+    // EN: Report a transport loss once per physical attempt; stale CoreBluetooth callbacks must not duplicate it.
+    // ES: Informa una pérdida una sola vez por intento físico; los callbacks obsoletos no deben duplicarla.
+    // 中文：每次物理连接尝试只上报一次断开，避免过期 CoreBluetooth 回调重复通知。
+    private func reportDisconnected(error: Error?) {
+        guard !disconnectCallbackDelivered else { return }
+        disconnectCallbackDelivered = true
+        onDisconnected?(error)
+    }
+
+    // EN: Cancel only BLE lifecycle work; base initialization and pending commands are cleared separately.
+    // ES: Cancela solo el trabajo del ciclo BLE; la inicialización base y los comandos pendientes se limpian aparte.
+    // 中文：只取消 BLE 生命周期任务，基类初始化和等待中的命令由独立方法清理。
+    private func cancelBLEWatchdogs() {
+        scanTimeoutWorkItem?.cancel()
+        scanTimeoutWorkItem = nil
+        serviceDiscoveryTimeoutWorkItem?.cancel()
+        serviceDiscoveryTimeoutWorkItem = nil
+        reconnectWorkItem?.cancel()
+        reconnectWorkItem = nil
+    }
+
+    // EN: The scan watchdog stops discovery at 30 seconds and hands a clear failure to the manager.
+    // ES: El vigilante detiene el descubrimiento a los 30 segundos y entrega un fallo claro al gestor.
+    // 中文：扫描看门狗在 30 秒时停止发现，并向管理器交付明确失败。
+    private func startScanWatchdog() {
+        scanTimeoutWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self,
+                  self.connectionIntent,
+                  !self.userRequestedDisconnect else { return }
+
+            self.centralManager.stopScan()
+            self.pendingConnection = false
+            self.connectionIntent = false
+            self.shouldReconnectAfterDisconnect = false
+            self.cancelInitialization()
+            self.cancelPendingResponse(reason: "OBD 扫描超时")
+            self.writeCharacteristic = nil
+            self.notifyCharacteristic = nil
+            self.obdPeripheral = nil
+            self.isUnlocked = false
+            self.isSnifferMode = false
+            PTOBDLogger.obd.stopFileLogging()
+            PTOBDLogger.obd.ptLog("⏳ [BLE] OBD 扫描达到 30 秒，停止扫描")
+            self.reportDisconnected(error: NSError(
+                domain: "BLEError",
+                code: -10,
+                userInfo: [NSLocalizedDescriptionKey: "OBD 扫描超时"]
+            ))
+        }
+        scanTimeoutWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + scanTimeout, execute: workItem)
+    }
+
+    // EN: Service and characteristic discovery share a ten-second watchdog.
+    // ES: El descubrimiento del servicio y sus características comparten un vigilante de diez segundos.
+    // 中文：服务和特征发现共用一个 10 秒看门狗。
+    private func startServiceDiscoveryWatchdog() {
+        serviceDiscoveryTimeoutWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self,
+                  self.connectionIntent,
+                  !self.userRequestedDisconnect else { return }
+            self.handleTransportFailure(reason: "OBD 服务或特征发现超时", reconnect: true)
+        }
+        serviceDiscoveryTimeoutWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + serviceDiscoveryTimeout, execute: workItem)
+    }
+
+    // EN: Retry abnormal transport loss with backoff, while user cancellation permanently ends the intent.
+    // ES: Reintenta una pérdida anormal con retroceso, mientras que la cancelación del usuario termina la intención.
+    // 中文：异常断线采用退避重连，用户主动取消则永久结束本次连接意图。
+    private func scheduleReconnect() {
+        guard connectionIntent, !userRequestedDisconnect else { return }
+        guard reconnectAttempts < maximumReconnectAttempts else {
+            connectionIntent = false
+            pendingConnection = false
+            PTOBDLogger.obd.ptLog("❌ [BLE] 已达到 \(maximumReconnectAttempts) 次自动重连上限")
+            return
+        }
+
+        reconnectAttempts += 1
+        let delay = min(pow(2.0, Double(reconnectAttempts - 1)), 8.0)
+        reconnectWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self,
+                  self.connectionIntent,
+                  !self.userRequestedDisconnect else { return }
+            self.startIcebreakerConnection(resetReconnectAttempts: false)
+        }
+        reconnectWorkItem = workItem
+        PTOBDLogger.obd.ptLog("🔁 [BLE] \(delay) 秒后进行第 \(reconnectAttempts) 次自动重连")
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+    }
+
+    // EN: Collapse discovery failures into one teardown path so timers, characteristics, and reconnect state agree.
+    // ES: Reúne los fallos de descubrimiento en un cierre único para mantener coherentes timers, características y reconexión.
+    // 中文：将发现阶段失败统一到一个清理路径，确保计时器、特征和重连状态一致。
+    private func handleTransportFailure(reason: String, reconnect: Bool) {
+        guard !userRequestedDisconnect else { return }
+        PTOBDLogger.obd.ptLog("❌ [BLE] \(reason)")
+        shouldReconnectAfterDisconnect = reconnect
+        serviceDiscoveryTimeoutWorkItem?.cancel()
+        serviceDiscoveryTimeoutWorkItem = nil
+        cancelInitialization()
+        cancelPendingResponse(reason: reason)
+        writeCharacteristic = nil
+        notifyCharacteristic = nil
+
+        if let peripheral = obdPeripheral {
+            centralManager.cancelPeripheralConnection(peripheral)
+        } else {
+            reportDisconnected(error: NSError(
+                domain: "BLEError",
+                code: -11,
+                userInfo: [NSLocalizedDescriptionKey: reason]
+            ))
+            if reconnect { scheduleReconnect() }
+        }
+    }
+
+    private func startIcebreakerConnection(resetReconnectAttempts: Bool) {
+        if resetReconnectAttempts {
+            reconnectAttempts = 0
+        }
+        connectionIntent = true
+        userRequestedDisconnect = false
+        shouldReconnectAfterDisconnect = true
+
+        guard centralManager.state == .poweredOn else {
+            pendingConnection = true
+            return
+        }
+
         pendingConnection = false
-        centralManager.scanForPeripherals(withServices: nil, options: nil)
+        reconnectWorkItem?.cancel()
+        reconnectWorkItem = nil
+        disconnectCallbackDelivered = false
+        cancelInitialization()
+        centralManager.stopScan()
+        PTOBDLogger.obd.startFileLogging()
+        // EN: Scan without a service filter to preserve generic ELM327 discovery; FFF0 is validated after connection.
+        // ES: Escanea sin filtro de servicio para conservar el descubrimiento de ELM327 genérico; FFF0 se valida después de conectar.
+        // 中文：不设置服务过滤以保留通用 ELM327 的发现能力；连接后再校验 FFF0 服务。
+        PTOBDLogger.obd.ptLog("🔄 [BLE] 开始扫描 ELM327 / YMOBD 设备...")
+        centralManager.scanForPeripherals(
+            withServices: nil,
+            options: [CBCentralManagerScanOptionAllowDuplicatesKey: false]
+        )
+        startScanWatchdog()
+    }
+
+    public func startIcebreakerConnection() {
+        startIcebreakerConnection(resetReconnectAttempts: true)
+    }
+
+    // EN: Explicit user disconnect cancels scanning, watchdogs, retries, initialization, and pending commands.
+    // ES: La desconexión explícita cancela escaneo, vigilantes, reintentos, inicialización y comandos pendientes.
+    // 中文：用户主动断开会取消扫描、看门狗、重连、初始化和等待中的命令。
+    public func disconnect() {
+        userRequestedDisconnect = true
+        connectionIntent = false
+        pendingConnection = false
+        shouldReconnectAfterDisconnect = false
+        reconnectAttempts = 0
+        disconnectCallbackDelivered = true
+        cancelBLEWatchdogs()
+        cancelInitialization()
+        cancelPendingResponse()
+        centralManager.stopScan()
+        PTOBDLogger.obd.stopFileLogging()
+        writeCharacteristic = nil
+        notifyCharacteristic = nil
+        isUnlocked = false
+        isSnifferMode = false
+
+        if let peripheral = obdPeripheral {
+            centralManager.cancelPeripheralConnection(peripheral)
+        } else {
+            obdPeripheral = nil
+        }
+    }
+
+    // EN: A fully unlocked session clears retry backoff but keeps reconnect intent for later transport loss.
+    // ES: Una sesión desbloqueada reinicia el retroceso y conserva la intención de reconectar ante una pérdida posterior.
+    // 中文：完整解锁后清除重连退避，但保留后续异常断线的重连意图。
+    override internal func didUnlockTransport() {
+        reconnectAttempts = 0
+        shouldReconnectAfterDisconnect = true
     }
 }
 
 extension PTHiddenOBDConnector: CBCentralManagerDelegate {
     public func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        if central.state == .poweredOn && pendingConnection { startIcebreakerConnection() }
-    }
-    
-    public func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
-        let deviceName = peripheral.name ?? advertisementData[CBAdvertisementDataLocalNameKey] as? String ?? ""
-        if allowedDeviceNames.contains(deviceName) {
-            centralManager.stopScan()
-            self.obdPeripheral = peripheral
-            self.obdPeripheral?.delegate = self
-            centralManager.connect(peripheral, options: nil)
+        guard central.state == .poweredOn else {
+            // EN: Reset stale transport state while Bluetooth is unavailable; retry when CoreBluetooth is powered on again.
+            // ES: Restablece el transporte obsoleto mientras Bluetooth no está disponible; reintenta cuando CoreBluetooth vuelva a estar activo.
+            // 中文：蓝牙不可用时清理过期传输状态，待 CoreBluetooth 恢复供电后再重试。
+            let hadTransportAttempt = connectionIntent || obdPeripheral != nil || initializationActive || isUnlocked
+            central.stopScan()
+            cancelBLEWatchdogs()
+            cancelInitialization()
+            cancelPendingResponse(reason: "蓝牙不可用")
+            isUnlocked = false
+            isSnifferMode = false
+            writeCharacteristic = nil
+            notifyCharacteristic = nil
+            if let peripheral = obdPeripheral {
+                central.cancelPeripheralConnection(peripheral)
+            }
+            obdPeripheral = nil
+            pendingConnection = connectionIntent && !userRequestedDisconnect
+            if hadTransportAttempt {
+                reportDisconnected(error: NSError(
+                    domain: "BLEError",
+                    code: -13,
+                    userInfo: [NSLocalizedDescriptionKey: "蓝牙不可用"]
+                ))
+            }
+            return
+        }
+
+        if pendingConnection {
+            startIcebreakerConnection(resetReconnectAttempts: false)
         }
     }
-    
-    public func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        peripheral.discoverServices([CBUUID(string: "0000FFF0-0000-1000-8000-00805F9B34FB")])
+
+    public func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
+        guard connectionIntent, !userRequestedDisconnect, obdPeripheral == nil else { return }
+        guard isLikelyOBDPeripheral(peripheral, advertisementData: advertisementData) else { return }
+
+        scanTimeoutWorkItem?.cancel()
+        scanTimeoutWorkItem = nil
+        centralManager.stopScan()
+        self.obdPeripheral = peripheral
+        self.obdPeripheral?.delegate = self
+        centralManager.connect(peripheral, options: nil)
     }
-    
+
+    public func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        guard connectionIntent, !userRequestedDisconnect else {
+            central.cancelPeripheralConnection(peripheral)
+            return
+        }
+
+        obdPeripheral = peripheral
+        peripheral.delegate = self
+        startServiceDiscoveryWatchdog()
+        // EN: Discover all services for generic ELM327 adapters; prefer FFF0 when it is actually present.
+        // ES: Descubre todos los servicios para adaptadores ELM327 genéricos; prefiere FFF0 cuando está presente.
+        // 中文：为通用 ELM327 发现全部服务；设备实际存在 FFF0 时优先使用 FFF0。
+        peripheral.discoverServices(nil)
+    }
+
+    public func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
+        guard let currentPeripheral = obdPeripheral,
+              currentPeripheral.identifier == peripheral.identifier else { return }
+        obdPeripheral = nil
+        writeCharacteristic = nil
+        notifyCharacteristic = nil
+        serviceDiscoveryTimeoutWorkItem?.cancel()
+        serviceDiscoveryTimeoutWorkItem = nil
+        cancelInitialization()
+        cancelPendingResponse(reason: "OBD 连接失败")
+        reportDisconnected(error: error ?? NSError(
+            domain: "BLEError",
+            code: -12,
+            userInfo: [NSLocalizedDescriptionKey: "OBD 连接失败"]
+        ))
+        if connectionIntent && !userRequestedDisconnect { scheduleReconnect() }
+    }
+
     public func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
+        guard let currentPeripheral = obdPeripheral,
+              currentPeripheral.identifier == peripheral.identifier else { return }
+        let shouldReconnect = connectionIntent && !userRequestedDisconnect && shouldReconnectAfterDisconnect
         isUnlocked = false
-        responseContinuation?.resume(throwing: NSError(domain: "BLEError", code: -2, userInfo: [NSLocalizedDescriptionKey: "蓝牙断开"]))
-        responseContinuation = nil
+        isSnifferMode = false
+        cancelInitialization()
+        cancelPendingResponse(reason: "蓝牙断开")
+        serviceDiscoveryTimeoutWorkItem?.cancel()
+        serviceDiscoveryTimeoutWorkItem = nil
+        scanTimeoutWorkItem?.cancel()
+        scanTimeoutWorkItem = nil
+        writeCharacteristic = nil
+        notifyCharacteristic = nil
+        obdPeripheral = nil
         PTOBDLogger.obd.stopFileLogging()
-        onDisconnected?(error)
+        let disconnectError = error ?? NSError(
+            domain: "BLEError",
+            code: -2,
+            userInfo: [NSLocalizedDescriptionKey: "蓝牙断开"]
+        )
+        reportDisconnected(error: disconnectError)
+        if shouldReconnect { scheduleReconnect() }
     }
 }
 
 extension PTHiddenOBDConnector: CBPeripheralDelegate {
     public func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        for service in peripheral.services ?? [] { peripheral.discoverCharacteristics(nil, for: service) }
+        guard peripheral.identifier == obdPeripheral?.identifier,
+              error == nil,
+              let services = peripheral.services,
+              !services.isEmpty else {
+            handleTransportFailure(reason: "OBD 服务发现失败", reconnect: true)
+            return
+        }
+
+        // EN: FFF0 is the YMOBD preference; generic ELM327 adapters may expose another service.
+        // ES: FFF0 es la preferencia de YMOBD; los adaptadores ELM327 genéricos pueden exponer otro servicio.
+        // 中文：FFF0 是 YMOBD 的优先服务；通用 ELM327 可能暴露其他服务。
+        let servicesToDiscover: [CBService]
+        if let fff0Service = services.first(where: { $0.uuid == Self.obdServiceUUID }) {
+            servicesToDiscover = [fff0Service]
+        } else {
+            servicesToDiscover = services
+        }
+
+        for service in servicesToDiscover {
+            peripheral.discoverCharacteristics(nil, for: service)
+        }
     }
-    
+
     public func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
-        for char in service.characteristics ?? [] {
-            if char.properties.contains(.notify) || char.properties.contains(.indicate) {
-                self.notifyCharacteristic = char
-                peripheral.setNotifyValue(true, for: char)
-            }
-            if char.properties.contains(.write) || char.properties.contains(.writeWithoutResponse) {
-                self.writeCharacteristic = char
-            }
+        guard peripheral.identifier == obdPeripheral?.identifier,
+              error == nil else {
+            handleTransportFailure(reason: "OBD 特征发现失败", reconnect: true)
+            return
         }
+
+        // EN: Once FFF0 exists, ignore unrelated services; otherwise keep the generic ELM327 path open.
+        // ES: Cuando existe FFF0, ignora servicios no relacionados; de lo contrario conserva la ruta ELM327 genérica.
+        // 中文：如果存在 FFF0，则忽略无关服务；否则保留通用 ELM327 路径。
+        if let services = peripheral.services,
+           services.contains(where: { $0.uuid == Self.obdServiceUUID }),
+           service.uuid != Self.obdServiceUUID {
+            return
+        }
+
+        let characteristics = service.characteristics ?? []
+        if let write = characteristics.last(where: {
+            $0.properties.contains(.write) || $0.properties.contains(.writeWithoutResponse)
+        }) {
+            writeCharacteristic = write
+        }
+        if let notify = characteristics.last(where: {
+            $0.properties.contains(.notify) || $0.properties.contains(.indicate)
+        }) {
+            notifyCharacteristic = notify
+        }
+
+        guard let notifyCharacteristic, writeCharacteristic != nil else {
+            // EN: Generic adapters can report several service callbacks; wait for the remaining one.
+            // ES: Los adaptadores genéricos pueden informar varios callbacks de servicio; espera al restante.
+            // 中文：通用适配器可能分多次回调服务；等待另一侧特征发现完成。
+            return
+        }
+        peripheral.setNotifyValue(true, for: notifyCharacteristic)
     }
-    
+
     public func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
-        if characteristic.isNotifying {
-            PTOBDLogger.obd.ptLog("🔔 [BLE] 通道就绪，启动状态机！")
-            self.resetAndStartStateMachine() // 呼叫基类干活！
+        guard peripheral.identifier == obdPeripheral?.identifier,
+              characteristic.uuid == notifyCharacteristic?.uuid else { return }
+        if let error {
+            handleTransportFailure(reason: "OBD notify 开启失败: \(error.localizedDescription)", reconnect: true)
+            return
         }
+        guard characteristic.isNotifying else {
+            handleTransportFailure(reason: "OBD notify 未处于 notifying 状态", reconnect: true)
+            return
+        }
+
+        serviceDiscoveryTimeoutWorkItem?.cancel()
+        serviceDiscoveryTimeoutWorkItem = nil
+        guard !initializationActive, !isUnlocked else { return }
+        PTOBDLogger.obd.ptLog("🔔 [BLE] OBD 通道就绪，启动状态机！")
+        self.resetAndStartStateMachine()
     }
-    
+
     public func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+        guard peripheral.identifier == obdPeripheral?.identifier,
+              characteristic.uuid == notifyCharacteristic?.uuid,
+              error == nil else { return }
         if let data = characteristic.value, let chunk = String(data: data, encoding: .ascii) {
             self.handleIncomingChunk(chunk, sourceName: "BLE") // 把碎片直接扔给基类组装！
         }
@@ -1177,6 +1859,7 @@ public class PTMotoTelemetryManager {
     public private(set) var currentSpeed: Double = 0.0
     
     public var telemetryPollingTask: Task<Void, Never>?
+    private var suppressPhysicalDisconnectCallback = false
     
     private var customParsers: [String: (_ pureResponse: String) -> Any?] = [:]
     // 🌟 热插拔 API：向系统注册你自己的私有探针！
@@ -1259,11 +1942,29 @@ public class PTMotoTelemetryManager {
             PTOBDLogger.obd.ptLog("⚠️ [物理连接断开] 检测到硬件脱机")
         }
         
-        // 保证在主线程安全地更新所有挂载了的 Delegate UI
+        guard !suppressPhysicalDisconnectCallback else { return }
+
+        // EN: Update delegates on the main queue without invoking the user-disconnect path.
+        // ES: Actualiza los delegados en la cola principal sin invocar la ruta de desconexión del usuario.
+        // 中文：在主队列更新所有代理，但不再调用用户主动断开的路径。
         DispatchQueue.main.async { [weak self] in
-            // 这会调用你现有的 disconnect()，里面包含了中止轮询和触发 Delegate 的完美逻辑！
-            self?.disconnect()
+            self?.resetLogicalConnectionState()
         }
+    }
+
+    // EN: Physical callbacks only clear manager state; explicit disconnect owns physical teardown.
+    // ES: Los callbacks físicos solo limpian el estado del gestor; la desconexión explícita controla el cierre físico.
+    // 中文：物理回调只清理管理器状态，主动断开由显式断开流程负责物理拆除。
+    private func resetLogicalConnectionState() {
+        telemetryPollingTask?.cancel()
+        telemetryPollingTask = nil
+        connectionTimeoutTask?.cancel()
+        connectionTimeoutTask = nil
+        isConnected = false
+        obdInfo.supportCommand = []
+        delegates.forEach { $0.delegate?.telemetryManager(self, didChangeConnectionState: false) }
+        let _ = PTCANRecorder.shared.stop()
+        PTOBDLogger.obd.stopFileLogging()
     }
 
     private func handleIceBroken(rawPIDs: [String]) {
@@ -1568,14 +2269,22 @@ public class PTMotoTelemetryManager {
 
 extension PTMotoTelemetryManager {
     public func disconnect() {
-        telemetryPollingTask?.cancel()
-        connectionTimeoutTask?.cancel()
-        connectionTimeoutTask = nil
-        isConnected = false
-        obdInfo.supportCommand = []
-        delegates.forEach { $0.delegate?.telemetryManager(self, didChangeConnectionState: false) }
-        let _ = PTCANRecorder.shared.stop()
-        PTOBDLogger.obd.stopFileLogging()
+        // EN: User disconnect must stop the physical transport so a scan cannot reconnect after the UI says off.
+        // ES: La desconexión del usuario debe detener el transporte físico para que el escaneo no reconecte después.
+        // 中文：用户主动断开必须停止物理传输，避免 UI 已显示关闭后底层扫描又重新连接。
+        suppressPhysicalDisconnectCallback = true
+        defer { suppressPhysicalDisconnectCallback = false }
+
+        switch activeConnectionType {
+        case .bluetooth:
+            PTHiddenOBDConnector.shared.disconnect()
+        case .wifi:
+            PTWifiOBDConnector.shared.disconnect()
+        case .mock:
+            PTMockOBDConnector.shared.stopMockConnection()
+        }
+
+        resetLogicalConnectionState()
     }
     
     public func clearDiagnosticTroubleCodes() async -> Bool {

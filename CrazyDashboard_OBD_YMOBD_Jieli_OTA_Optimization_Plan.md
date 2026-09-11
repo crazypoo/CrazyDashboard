@@ -28,7 +28,7 @@ CrazyDashboard 当前 OBD 模块已经能够完成 BLE OBD 连接、ELM/YMOBD �
 4. 补齐 `0100 -> AT+DEBUG_FLG -> 0100` 重试
 5. 补齐初始化阶段每条命令 20 秒超时
 6. 只有 `0100` 支持位非全 0 才允许进入 connected / unlocked
-7. 补齐 BLE FFF0 扫描过滤、30 秒扫描截止、服务发现超时和自动重连
+7. 补齐 BLE FFF0 优先校验、通用 ELM327 扫描、30 秒扫描截止、服务发现超时和自动重连
 8. 扩展 YMOBD 官方设备名支持
 
 OTA 方面，现在已经确认 YMOBD 使用：
@@ -50,6 +50,21 @@ OTA 方面，现在已经确认 YMOBD 使用：
 - OTA 生命周期
 - 断线回连
 - OTA 后版本回读
+
+---
+
+# 2.0 本次实施边界修订：PTHiddenOBDConnector 的 ELM327 基线
+
+`PTHiddenOBDConnector.swift` 是项目的通用 ELM327 OBD 连接与传输实现，YMOBD 只是其中的可选扩展能力。因此，本计划中所有 YMOBD 规则都必须在能力探测成功后启用，不能把普通 ELM327 强制当作 YMOBD 设备处理。
+
+本次 P0 实施采用以下兼容策略：
+
+- `AT+VERSION` 只要没有 `devicename`、`devicetype`、`devicemac`、`custid`、`crypt` 等 YMOBD 专属字段，就跳过认证槽位，继续原有 ELM327 标准初始化。
+- 扫描不设置全局 FFF0 硬过滤，以保留既有通用 ELM327 设备发现能力；已知 YMOBD 的 FFF0 服务仍然优先，连接后再按 FFF0 或通用 ELM327 服务完成特征发现。
+- `AT+DEBUG_FLG` 只对已探测到 YMOBD 字段的设备启用；普通 ELM327 遇到 `0100` 失败时只执行有上限的 `0100` 重试。
+- 认证失败但收到了正常 prompt 时不阻断普通只读初始化；没有 prompt 仍由初始化超时和物理重连策略处理。
+
+这样可以同时满足 YMOBD 官方链路兼容性和通用 ELM327 的既有可用性，不复制第二套传输层，也不改变 `PTOBDCommand.swift` 或 BLE 核心。
 
 ---
 
@@ -497,6 +512,8 @@ scanForPeripherals(
     ]
 )
 ```
+
+> 兼容性修订：上面的 FFF0 过滤是“官方 YMOBD 专用实现”的参考，不适合作为本仓库通用入口的硬过滤。`PTHiddenOBDConnector` 必须继续使用无服务过滤扫描来发现通用 ELM327；连接后优先选择实际存在的 FFF0，再回退到设备提供的通用服务。
 
 ## 9.2 扫描截止时间
 
@@ -1782,21 +1799,21 @@ AT+VERSION
 
 ## P0：立即修改
 
-- [ ] 修 `<AUTH>` 覆盖 `ATRV`
-- [ ] `AT+VERSION` 无空格字段
-- [ ] 保存 `AT+CRYPT` challenge
-- [ ] 校验 challenge response
-- [ ] 增加 `isOfficialYMOBD`
-- [ ] `0100 UNABLE TO CONNECT`
-- [ ] `AT+DEBUG_FLG`
-- [ ] `0100 NO DATA`
-- [ ] init command 20s timeout
-- [ ] 0100 non-zero success condition
-- [ ] FFF0 filtered scan
-- [ ] 30s BLE scan timeout
-- [ ] service discovery timeout
-- [ ] abnormal disconnect reconnect
-- [ ] 新设备名 whitelist
+- [x] 修 `<AUTH>` 覆盖 `ATRV`
+- [x] `AT+VERSION` 无空格字段
+- [x] 保存 `AT+CRYPT` challenge
+- [x] 校验 challenge response
+- [x] 增加 `isOfficialYMOBD`
+- [x] `0100 UNABLE TO CONNECT`
+- [x] `AT+DEBUG_FLG`（仅 YMOBD 能力探测成功后）
+- [x] `0100 NO DATA`
+- [x] init command 20s timeout
+- [x] 0100 non-zero success condition
+- [x] FFF0 优先校验，同时保留通用 ELM327 扫描
+- [x] 30s BLE scan timeout
+- [x] service discovery timeout
+- [x] abnormal disconnect reconnect
+- [x] 新设备名 whitelist 与非 OBD 设备排除
 
 ## P1：结构重构
 
@@ -2056,21 +2073,21 @@ Jieli OTA
 
 普通 OBD：
 
-- [ ] 扫描只发现 FFF0 目标
-- [ ] 30s 后停止 scan
-- [ ] 连接后 10s 内找到 service
-- [ ] notify 开启后延迟约 1s
-- [ ] 完整跑过 19-step
-- [ ] ATRV 没有被 AUTH 覆盖
-- [ ] AT+VERSION 正确解析
-- [ ] crypt challenge 能验证
-- [ ] `0100 NO DATA` 会 retry
-- [ ] `0100 UNABLE` 首次会触发 `AT+DEBUG_FLG`
-- [ ] command 无 prompt 20s 后断开
-- [ ] pid0100 全 0 不会进入 connected
-- [ ] pid0100 非全 0 才 connected
-- [ ] 异常 BLE disconnect 会 reconnect
-- [ ] 用户主动 disconnect 不 reconnect
+- [x] FFF0 设备优先校验，同时不破坏通用 ELM327 发现
+- [x] 30s 后停止 scan
+- [x] 连接后 10s 内找到 service
+- [x] notify 开启后延迟约 1s
+- [x] YMOBD 能力设备完整跑过 19-step；普通 ELM327 跳过可选 AUTH
+- [x] ATRV 没有被 AUTH 覆盖
+- [x] AT+VERSION 正确解析无空格和兼容空格字段
+- [x] crypt challenge 能保存并验证
+- [x] `0100 NO DATA` 会 retry
+- [x] YMOBD 能力设备 `0100 UNABLE` 首次会触发 `AT+DEBUG_FLG`
+- [x] command 无 prompt 20s 后断开
+- [x] pid0100 全 0 不会进入 connected
+- [x] pid0100 非全 0 才 connected
+- [x] 异常 BLE disconnect 会 reconnect
+- [x] 用户主动 disconnect 不 reconnect
 
 ---
 
