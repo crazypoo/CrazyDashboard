@@ -8,6 +8,7 @@
 
 @preconcurrency import CoreBluetooth
 import Foundation
+import UIKit
 
 nonisolated public enum PTJieliOTAManagerError: Error, Equatable, LocalizedError, Sendable {
     case busy
@@ -124,11 +125,21 @@ public final class PTJieliOTAManager {
     private let analyticsLogger: PTOTAAnalyticsLogger
     private var transport: PTJieliBLETransport?
     private var shouldRestoreOBD = false
+    // EN: Serialize checkpoint and log writes so a fast progress callback cannot overwrite a newer state.
+    // ES: Serializa los puntos de reanudación y los registros para que un progreso rápido no sobrescriba un estado más nuevo.
+    // 中文：串行化恢复点和日志写入，避免高频进度回调覆盖更新的状态。
+    private var checkpointWriteTask: Task<Void, Never>?
+    private var analyticsWriteTask: Task<Void, Never>?
+    // EN: Backgrounding revokes the foreground-only OTA session before iOS can suspend the app mid-transfer.
+    // ES: Al pasar a segundo plano se revoca la sesión OTA exclusiva de primer plano antes de que iOS la suspenda.
+    // 中文：App 进入后台前撤销仅限前台的 OTA 会话，避免系统挂起时传输处于未知状态。
+    private var backgroundObserver: NSObjectProtocol?
 
     public init() {
         self.engine = PTJieliSDKOTAEngine()
         self.resumeStore = .shared
         self.analyticsLogger = .shared
+        observeBackgroundLifecycle()
     }
 
     public init(
@@ -139,6 +150,15 @@ public final class PTJieliOTAManager {
         self.engine = engine
         self.resumeStore = resumeStore
         self.analyticsLogger = analyticsLogger
+        observeBackgroundLifecycle()
+    }
+
+    @MainActor deinit {
+        if let backgroundObserver {
+            NotificationCenter.default.removeObserver(backgroundObserver)
+        }
+        checkpointWriteTask?.cancel()
+        analyticsWriteTask?.cancel()
     }
 
     /// Starts from the decrypted artifact produced by the existing P2 read-only flow.
@@ -209,6 +229,7 @@ public final class PTJieliOTAManager {
     }
 
     public func exportCurrentLogURL() async throws -> URL {
+        await flushAnalyticsWrites()
         guard let currentSession else {
             throw PTOTAAnalyticsLoggerError.sessionUnavailable
         }
@@ -216,7 +237,8 @@ public final class PTJieliOTAManager {
     }
 
     public func exportLogURL(for sessionID: UUID) async throws -> URL {
-        try await analyticsLogger.exportURL(for: sessionID)
+        await flushAnalyticsWrites()
+        return try await analyticsLogger.exportURL(for: sessionID)
     }
 
     public func cancel() {
@@ -229,9 +251,34 @@ public final class PTJieliOTAManager {
         engine.cancelOTA()
         transport?.disconnect()
     }
+
+    // EN: The developer switch can revoke an active OTA even when mandatory policy blocks the normal cancel button.
+    // ES: El interruptor de desarrollador puede revocar un OTA activo aunque la política obligatoria bloquee el botón normal.
+    // 中文：即使强制升级策略禁止普通取消按钮，开发者开关仍可撤销正在执行的 OTA。
+    public func cancelForSafetyReset(reason: String = "开发者安全会话已结束") {
+        guard isRunning else { return }
+        logEvent(name: "safety_reset", message: reason)
+        engine.cancelOTA()
+        transport?.disconnect()
+    }
 }
 
 private extension PTJieliOTAManager {
+    // EN: Keep the lifecycle observer local to the manager so every OTA entry point follows the same foreground rule.
+    // ES: Mantiene el observador del ciclo de vida dentro del gestor para que toda entrada OTA siga la misma regla de primer plano.
+    // 中文：生命周期监听集中在管理器内，让所有 OTA 入口遵守同一套前台规则。
+    func observeBackgroundLifecycle() {
+        backgroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.cancelForSafetyReset(reason: "App 已进入后台，OTA 已安全停止")
+            }
+        }
+    }
+
     func performStart(
         readOnlyResult: PTYMOBDFirmwareReadOnlyResult,
         checklist: PTDeveloperTestChecklist,
@@ -335,8 +382,9 @@ private extension PTJieliOTAManager {
                 }
             }
         } catch {
-            isRunning = false
-            throw PTJieliOTAManagerError.resumePersistenceFailed(error.localizedDescription)
+            let persistenceError = PTJieliOTAManagerError.resumePersistenceFailed(error.localizedDescription)
+            finishWithFailure(persistenceError)
+            throw persistenceError
         }
 
         var lease: PTOBDBusLeaseToken?
@@ -419,6 +467,8 @@ private extension PTJieliOTAManager {
                 versionVerified: true
             )
 
+            await flushCheckpointWrites()
+            await flushAnalyticsWrites()
             await analyticsLogger.record(
                 session: session,
                 name: "version_verified",
@@ -450,6 +500,8 @@ private extension PTJieliOTAManager {
             let failureState: PTOTAState = mappedError == .cancelled ? .cancelled : .failed
             state = failureState
 
+            await flushCheckpointWrites()
+
             if mappedError == .cancelled || !productConfiguration.keepResumeCheckpointOnFailure {
                 try? await resumeStore.clear(deleteFirmware: true)
             } else {
@@ -459,6 +511,8 @@ private extension PTJieliOTAManager {
                     reconnectCount: reconnectCount
                 )
             }
+
+            await flushAnalyticsWrites()
 
             await analyticsLogger.record(
                 session: session,
@@ -594,8 +648,14 @@ private extension PTJieliOTAManager {
         let state = state
         let progress = progress
         let reconnectCount = reconnectCount
-        Task {
-            try? await resumeStore.update(
+        let store = resumeStore
+        let previousTask = checkpointWriteTask
+        checkpointWriteTask = Task {
+            if let previousTask {
+                await previousTask.value
+            }
+            guard !Task.isCancelled else { return }
+            try? await store.update(
                 state: state,
                 progress: progress,
                 reconnectCount: reconnectCount
@@ -608,8 +668,14 @@ private extension PTJieliOTAManager {
         let state = state
         let progress = progress
         let reconnectCount = reconnectCount
-        Task {
-            await analyticsLogger.record(
+        let logger = analyticsLogger
+        let previousTask = analyticsWriteTask
+        analyticsWriteTask = Task {
+            if let previousTask {
+                await previousTask.value
+            }
+            guard !Task.isCancelled else { return }
+            await logger.record(
                 session: session,
                 name: name,
                 state: state,
@@ -617,6 +683,26 @@ private extension PTJieliOTAManager {
                 reconnectCount: reconnectCount,
                 message: message
             )
+        }
+    }
+
+    // EN: Wait for all queued persistence work before deleting or exporting a session.
+    // ES: Espera toda la persistencia pendiente antes de borrar o exportar una sesión.
+    // 中文：删除或导出会话前，等待所有排队的持久化任务完成。
+    func flushCheckpointWrites() async {
+        while let task = checkpointWriteTask {
+            checkpointWriteTask = nil
+            await task.value
+        }
+    }
+
+    // EN: Keep exported JSONL events in the same order as state transitions.
+    // ES: Mantiene los eventos JSONL exportados en el mismo orden que las transiciones de estado.
+    // 中文：确保导出的 JSONL 事件顺序与状态转换一致。
+    func flushAnalyticsWrites() async {
+        while let task = analyticsWriteTask {
+            analyticsWriteTask = nil
+            await task.value
         }
     }
 
@@ -637,7 +723,7 @@ private extension PTJieliOTAManager {
             switch error {
             case let .mismatch(expected, actual):
                 return .versionVerificationFailed(expected: expected, actual: actual)
-            case .emptyVersionResponse, .reconnectTimeout, .commandFailed:
+            case .emptyVersionResponse, .reconnectTimeout, .commandTimeout, .commandFailed:
                 return .versionVerificationFailed(
                     expected: currentSession?.targetFirmwareVersion ?? "未知",
                     actual: nil

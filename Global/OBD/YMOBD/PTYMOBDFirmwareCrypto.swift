@@ -12,7 +12,7 @@ import CryptoKit
 import Foundation
 import Security
 
-public struct PTYMOBDFirmwareSecret: Codable, Equatable, Sendable {
+nonisolated public struct PTYMOBDFirmwareSecret: Codable, Equatable, Sendable {
     public let keyString: String
     public let encryptKey: String
     public let publicKeyVersion: Int
@@ -24,7 +24,7 @@ public struct PTYMOBDFirmwareSecret: Codable, Equatable, Sendable {
     }
 }
 
-public enum PTYMOBDFirmwareCryptoError: Error, Equatable, LocalizedError, Sendable {
+nonisolated public enum PTYMOBDFirmwareCryptoError: Error, Equatable, LocalizedError, Sendable {
     case invalidKeyString
     case invalidPublicKey
     case rsaEncryptionFailed
@@ -50,7 +50,7 @@ public enum PTYMOBDFirmwareCryptoError: Error, Equatable, LocalizedError, Sendab
     }
 }
 
-public enum PTYMOBDFirmwareCrypto {
+nonisolated public enum PTYMOBDFirmwareCrypto {
     public static let publicKeyVersion = 3
     public static let publicKeyFingerprint = "aba7ea13c8829866703aa87f63b29649eb28c0d4be348383cb458e883598fae1"
 
@@ -72,7 +72,7 @@ public enum PTYMOBDFirmwareCrypto {
     // EN: Create the per-download UUID key and wrap its 32 ASCII bytes with RSA PKCS#1 v1.5.
     // ES: Crea la clave UUID por descarga y envuelve sus 32 bytes ASCII con RSA PKCS#1 v1.5.
     // 中文：为每次下载生成 UUID 密钥，并使用 RSA PKCS#1 v1.5 加密其 32 个 ASCII 字节。
-    public static func createSecret() throws -> PTYMOBDFirmwareSecret {
+    nonisolated public static func createSecret() throws -> PTYMOBDFirmwareSecret {
         let keyString = UUID().uuidString.lowercased()
         let aesKey = try aesKeyData(from: keyString)
         let publicKey = try makePublicKey()
@@ -97,7 +97,7 @@ public enum PTYMOBDFirmwareCrypto {
     // EN: OFB is a stream mode, so CommonCrypto decrypts it with the same zero IV and key shape documented by YMOBD.
     // ES: OFB es un modo de flujo; CommonCrypto lo descifra con el mismo IV cero y la forma de clave documentada por YMOBD.
     // 中文：OFB 属于流模式，CommonCrypto 使用文档规定的全零 IV 和相同密钥形态进行解密。
-    public static func decryptFirmware(encryptedData: Data, keyString: String) throws -> Data {
+    nonisolated public static func decryptFirmware(encryptedData: Data, keyString: String) throws -> Data {
         guard !encryptedData.isEmpty else {
             throw PTYMOBDFirmwareCryptoError.emptyEncryptedFirmware
         }
@@ -164,13 +164,13 @@ public enum PTYMOBDFirmwareCrypto {
         return result
     }
 
-    public static func sha256Hex(_ data: Data) -> String {
+    nonisolated public static func sha256Hex(_ data: Data) -> String {
         SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 }
 
 private extension PTYMOBDFirmwareCrypto {
-    static func aesKeyData(from keyString: String) throws -> Data {
+    nonisolated static func aesKeyData(from keyString: String) throws -> Data {
         let compact = keyString.replacingOccurrences(of: "-", with: "")
         guard compact.utf8.count == kCCKeySizeAES256,
               let data = compact.data(using: .utf8),
@@ -180,7 +180,7 @@ private extension PTYMOBDFirmwareCrypto {
         return data
     }
 
-    static func makePublicKey() throws -> SecKey {
+    nonisolated static func makePublicKey() throws -> SecKey {
         let subjectPublicKeyInfo = try publicKeyDER()
         let fingerprint = sha256Hex(subjectPublicKeyInfo)
         guard fingerprint == publicKeyFingerprint else {
@@ -214,7 +214,7 @@ private extension PTYMOBDFirmwareCrypto {
         throw PTYMOBDFirmwareCryptoError.invalidPublicKey
     }
 
-    static func publicKeyDER() throws -> Data {
+    nonisolated static func publicKeyDER() throws -> Data {
         let base64 = publicKeyPEM
             .components(separatedBy: .newlines)
             .filter { !$0.hasPrefix("-----") }
@@ -225,7 +225,7 @@ private extension PTYMOBDFirmwareCrypto {
         return data
     }
 
-    static func pkcs1PublicKey(from subjectPublicKeyInfo: Data) -> Data? {
+    nonisolated static func pkcs1PublicKey(from subjectPublicKeyInfo: Data) -> Data? {
         var rootOffset = 0
         guard let root = readDERElement(from: subjectPublicKeyInfo, offset: &rootOffset), root.tag == 0x30 else {
             return nil
@@ -241,7 +241,7 @@ private extension PTYMOBDFirmwareCrypto {
         return Data(bitString.value.dropFirst())
     }
 
-    static func readDERElement(from data: Data, offset: inout Int) -> (tag: UInt8, value: Data)? {
+    nonisolated static func readDERElement(from data: Data, offset: inout Int) -> (tag: UInt8, value: Data)? {
         guard offset < data.count else { return nil }
         let tag = data[offset]
         offset += 1
@@ -270,7 +270,7 @@ private extension PTYMOBDFirmwareCrypto {
         return (tag, Data(value))
     }
 
-    static func hexString(_ data: Data) -> String {
+    nonisolated static func hexString(_ data: Data) -> String {
         data.map { String(format: "%02X", $0) }.joined()
     }
 }

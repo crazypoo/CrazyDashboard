@@ -1832,13 +1832,25 @@ AT+VERSION
 
 ## P4：产品化
 
-- [ ] OTA UI
-- [ ] mandatory OTA
-- [ ] battery / power warning
-- [ ] progress
-- [ ] resume
-- [ ] firmware version verify
-- [ ] analytics/log export
+- [x] OTA UI
+- [x] mandatory OTA
+- [x] battery / power warning
+- [x] progress
+- [x] resume（进程恢复检查点；SDK 内部断点续传仍待真机确认）
+- [x] firmware version verify
+- [x] analytics/log export
+
+✅ Build49/P4 implementation:
+
+- `PTOTAUpgradeViewController` 和 Dev 菜单提供开发者专用 OTA 检查、前置清单、强制升级策略、供电预检、进度、取消和日志导出。
+- `PTJieliOTAManager` 串行化恢复点与分析日志写入；App 进入后台或开发者会话结束时安全停止 OTA，并在完成后恢复普通 ELM/YMOBD 流程，再执行 `AT+VERSION` 版本复核。
+- `PTOTAResumeStore` 单独保存固件文件并校验 SHA-256；恢复点 JSON 不再保存临时 YMOBD 密钥，读取旧格式后会安全重写。
+- `PTOTAVersionVerifier` 增加有界读取超时，只取消当前等待的 ELM 响应 continuation，不拆除健康的通用 ELM327 会话。
+- `PTHiddenOBDConnector.swift` 只增加上述待响应取消入口；`PTOBDCommand.swift` 和 `PTBluetoothManager.swift` 未修改。
+
+⚠️ Jieli SDK 的真实断点续传、XP400 专属 AE00/AE01/AE02 行为、真车固件兼容性和实际刷写结果仍必须使用真实配对硬件验证。
+
+⚠️ 未增加普通用户入口或自动 OTA；仍要求开发者高风险开关、逐项前置确认和二次确认。
 
 ---
 
@@ -2245,3 +2257,10 @@ firmware header
 - 还原 `OTASecret`
 - 整理 RSA / AES-OFB 参数
 - 给出 CrazyDashboard 分层与实施优先级
+
+### 2026-09-13
+
+- 完成 P4 产品化 OTA UI、开发者前置清单、强制升级策略、供电预检、进度/取消、进程恢复、版本复核与日志导出。
+- 恢复点 JSON 不再保存临时 YMOBD 密钥，旧文件读取时会被重写为安全格式；固件文件单独保存并以 SHA-256 校验。
+- 增加 App 进入后台和关闭开发者高风险开关时的安全停止；PTHidden 只增加待响应取消入口，未改变通用 ELM327 连接与轮询逻辑。
+- Build 和 Build-for-testing 通过；真实 Jieli OTA、真车 AE00/AE01/AE02 和 XCTest 执行仍待硬件/运行时验证。

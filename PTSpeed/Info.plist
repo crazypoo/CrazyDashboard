@@ -30,6 +30,11 @@
 	<string>$(QWEATHER_PRIVATE_KEY)</string>
 	<key>QWeatherProjectID</key>
 	<string>$(QWEATHER_PROJECT_ID)</string>
+	<!-- EN: The YMOBD firmware endpoint is injected only for developer builds. -->
+	<!-- ES: El endpoint de firmware YMOBD solo se inyecta en compilaciones de desarrollador. -->
+	<!-- 中文：YMOBD 固件服务地址只通过开发者构建配置注入。 -->
+	<key>YMOBDFirmwareAPIBaseURL</key>
+	<string>$(YMOBD_FIRMWARE_API_BASE_URL)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -77,7 +77,10 @@ nonisolated public struct PTOTAProgress: Codable, Equatable, Sendable {
         self.phase = max(phase, 0)
         self.completedBytes = boundedCompleted
         self.totalBytes = boundedTotal
-        self.fractionCompleted = min(max(fractionCompleted ?? calculatedFraction, 0), 1)
+        let requestedFraction = fractionCompleted ?? calculatedFraction
+        self.fractionCompleted = requestedFraction.isFinite
+            ? min(max(requestedFraction, 0), 1)
+            : calculatedFraction
         self.detail = detail?.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 

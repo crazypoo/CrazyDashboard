@@ -10,7 +10,7 @@
 import Foundation
 import OSLog
 
-public struct PTYMOBDFirmwareAPIConfiguration: Sendable {
+nonisolated public struct PTYMOBDFirmwareAPIConfiguration: Sendable {
     public let baseURL: URL
     public let firmwareInfoPath: String
     public let firmwareFilePath: String
@@ -30,9 +30,27 @@ public struct PTYMOBDFirmwareAPIConfiguration: Sendable {
         self.requestTimeout = max(requestTimeout, 1)
         self.maximumMetadataBytes = max(maximumMetadataBytes, 1)
     }
+
+    // EN: Load the optional developer endpoint from Info.plist; production builds never receive a guessed server URL.
+    // ES: Carga el endpoint opcional de desarrollador desde Info.plist; las compilaciones de producción nunca adivinan una URL.
+    // 中文：从 Info.plist 读取可选的开发者服务地址；生产版本不会猜测或内置服务 URL。
+    public static func fromMainBundle(_ bundle: Bundle = .main) -> PTYMOBDFirmwareAPIConfiguration? {
+        guard let rawValue = bundle.object(forInfoDictionaryKey: "YMOBDFirmwareAPIBaseURL") as? String else {
+            return nil
+        }
+        let value = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: value),
+              let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let scheme = components.scheme?.lowercased(),
+              ["http", "https"].contains(scheme),
+              components.host != nil else {
+            return nil
+        }
+        return PTYMOBDFirmwareAPIConfiguration(baseURL: url)
+    }
 }
 
-public enum PTYMOBDFirmwareAPIError: Error, Equatable, LocalizedError, Sendable {
+nonisolated public enum PTYMOBDFirmwareAPIError: Error, Equatable, LocalizedError, Sendable {
     case invalidRequest
     case invalidBaseURL
     case invalidHTTPResponse

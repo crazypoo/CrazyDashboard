@@ -40,6 +40,24 @@ final class PTYMOBDFirmwareP2Tests: XCTestCase {
         XCTAssertEqual(metadata.fileSize, 2048)
     }
 
+    // EN: Server-side mandatory-update flags accept the documented Boolean and numeric forms.
+    // ES: Las marcas de actualización obligatoria aceptan las formas Boolean y numérica documentadas.
+    // 中文：服务端强制升级标记兼容文档中的布尔和数字形式。
+    func testFirmwareMetadataDecoderReadsMandatoryFlag() throws {
+        let response = """
+        {
+          "firmwareVersion": "V2.5.0",
+          "firmwareFileUUID": "file-uuid-002",
+          "forceUpdate": 1
+        }
+        """
+
+        let metadata = try PTYMOBDFirmwareResponseDecoder.decodeMetadata(
+            from: XCTUnwrap(response.data(using: .utf8))
+        )
+        XCTAssertEqual(metadata.isMandatoryUpdate, true)
+    }
+
     func testFirmwareVersionComparisonAvoidsFalseUpdate() {
         XCTAssertTrue(PTYMOBDFirmwareVersionComparator.isNewer("V2.4.1", than: "V2.4.0"))
         XCTAssertFalse(PTYMOBDFirmwareVersionComparator.isNewer("V2.4.0", than: "V2.4"))

@@ -140,4 +140,82 @@ final class PTJieliOTAP3Tests: XCTestCase {
         XCTAssertEqual(session.firmwareByteCount, 0)
         XCTAssertEqual(session.firmwareSHA256, "ABCD")
     }
+
+    // EN: Non-finite SDK progress must fall back to byte-derived progress before persistence.
+    // ES: El progreso no finito del SDK debe volver al progreso derivado de bytes antes de persistirse.
+    // 中文：SDK 返回非有限进度时，持久化前必须回退到按字节计算的进度。
+    func testOTAProgressRejectsNonFiniteFraction() {
+        let progress = PTOTAProgress(
+            phase: 2,
+            completedBytes: 25,
+            totalBytes: 100,
+            fractionCompleted: .nan
+        )
+
+        XCTAssertTrue(progress.fractionCompleted.isFinite)
+        XCTAssertEqual(progress.fractionCompleted, 0.25, accuracy: 0.0001)
+    }
+
+    // EN: Restart-safe checkpoints never serialize the temporary YMOBD AES/RSA secret.
+    // ES: Los puntos de reinicio nunca serializan el secreto AES/RSA temporal de YMOBD.
+    // 中文：可恢复的检查点绝不会序列化 YMOBD 临时 AES/RSA 密钥。
+    func testResumeCheckpointEncodingOmitsTemporarySecret() throws {
+        let session = PTOTASession(
+            deviceIdentifier: UUID().uuidString,
+            deviceName: "XP400",
+            oldFirmwareVersion: "V1.0.0",
+            targetFirmwareVersion: "V1.1.0",
+            firmwareFileUUID: "firmware-001",
+            firmwareByteCount: 4,
+            firmwareSHA256: "ABCD"
+        )
+        let request = PTYMOBDFirmwareCheckRequest(
+            deviceType: "YMOBD",
+            protocolType: 9,
+            obdFirmwareVersion: "V1.0.0"
+        )
+        let metadata = PTYMOBDFirmwareMetadata(
+            firmwareVersion: "V1.1.0",
+            firmwareFileUUID: "firmware-001"
+        )
+        let report = PTYMOBDFirmwareTransferReport(
+            firmwareVersion: "V1.1.0",
+            firmwareFileUUID: "firmware-001",
+            encryptedByteCount: 4,
+            encryptedSHA256: "ABCD",
+            decryptedByteCount: 4,
+            decryptedSHA256: "ABCD",
+            publicKeyVersion: 3,
+            publicKeyFingerprint: "fingerprint"
+        )
+        let secret = PTYMOBDFirmwareSecret(
+            keyString: "550e8400-e29b-41d4-a716-446655440000",
+            encryptKey: String(repeating: "A", count: 512),
+            publicKeyVersion: 3
+        )
+        let checkpoint = PTOTAResumeCheckpoint(
+            session: session,
+            request: request,
+            metadata: metadata,
+            secret: secret,
+            report: report,
+            configuration: .default,
+            state: .checking,
+            progress: .zero,
+            firmwareFileName: "firmware.bin"
+        )
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let encoded = try encoder.encode(checkpoint)
+        let json = try XCTUnwrap(String(data: encoded, encoding: .utf8))
+        XCTAssertFalse(json.contains("secret"))
+        XCTAssertFalse(json.contains("encryptKey"))
+        XCTAssertFalse(json.contains("550e8400-e29b-41d4-a716-446655440000"))
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let decoded = try decoder.decode(PTOTAResumeCheckpoint.self, from: encoded)
+        XCTAssertNil(decoded.secret)
+    }
 }

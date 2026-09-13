@@ -32,7 +32,10 @@ nonisolated public struct PTOTAResumeCheckpoint: Codable, Equatable, Sendable {
     public var session: PTOTASession
     public var request: PTYMOBDFirmwareCheckRequest
     public var metadata: PTYMOBDFirmwareMetadata
-    public var secret: PTYMOBDFirmwareSecret
+    /// EN: The temporary download secret is intentionally memory-only and is never encoded into the checkpoint JSON.
+    /// ES: El secreto temporal de descarga solo vive en memoria y nunca se codifica en el JSON del punto de reanudación.
+    /// 中文：临时下载密钥只存在于内存中，绝不会编码进恢复点 JSON。
+    public var secret: PTYMOBDFirmwareSecret?
     public var report: PTYMOBDFirmwareTransferReport
     public var configuration: PTOTAProductConfiguration
     public var state: PTOTAState
@@ -45,7 +48,7 @@ nonisolated public struct PTOTAResumeCheckpoint: Codable, Equatable, Sendable {
         session: PTOTASession,
         request: PTYMOBDFirmwareCheckRequest,
         metadata: PTYMOBDFirmwareMetadata,
-        secret: PTYMOBDFirmwareSecret,
+        secret: PTYMOBDFirmwareSecret? = nil,
         report: PTYMOBDFirmwareTransferReport,
         configuration: PTOTAProductConfiguration,
         state: PTOTAState,
@@ -74,6 +77,56 @@ nonisolated public struct PTOTAResumeCheckpoint: Codable, Equatable, Sendable {
             decryptedFirmware: decryptedFirmware,
             report: report
         )
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case session
+        case request
+        case metadata
+        case report
+        case configuration
+        case state
+        case progress
+        case firmwareFileName
+        case reconnectCount
+        case updatedAt
+    }
+
+    // EN: Decode old checkpoints but deliberately discard any legacy secret that may have been persisted by an earlier build.
+    // ES: Decodifica puntos antiguos, pero descarta deliberadamente cualquier secreto guardado por una versión anterior.
+    // 中文：兼容读取旧恢复点，但会主动丢弃旧版本可能写入的临时密钥。
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            session: try container.decode(PTOTASession.self, forKey: .session),
+            request: try container.decode(PTYMOBDFirmwareCheckRequest.self, forKey: .request),
+            metadata: try container.decode(PTYMOBDFirmwareMetadata.self, forKey: .metadata),
+            secret: nil,
+            report: try container.decode(PTYMOBDFirmwareTransferReport.self, forKey: .report),
+            configuration: try container.decode(PTOTAProductConfiguration.self, forKey: .configuration),
+            state: try container.decode(PTOTAState.self, forKey: .state),
+            progress: try container.decode(PTOTAProgress.self, forKey: .progress),
+            firmwareFileName: try container.decode(String.self, forKey: .firmwareFileName),
+            reconnectCount: try container.decode(Int.self, forKey: .reconnectCount),
+            updatedAt: try container.decode(Date.self, forKey: .updatedAt)
+        )
+    }
+
+    // EN: Encode only restart-safe metadata; firmware bytes and temporary secrets stay outside the JSON document.
+    // ES: Codifica solo metadatos seguros para reinicio; los bytes y secretos temporales quedan fuera del documento JSON.
+    // 中文：只编码可安全恢复的元数据；固件字节和临时密钥不写入 JSON 文档。
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(session, forKey: .session)
+        try container.encode(request, forKey: .request)
+        try container.encode(metadata, forKey: .metadata)
+        try container.encode(report, forKey: .report)
+        try container.encode(configuration, forKey: .configuration)
+        try container.encode(state, forKey: .state)
+        try container.encode(progress, forKey: .progress)
+        try container.encode(firmwareFileName, forKey: .firmwareFileName)
+        try container.encode(reconnectCount, forKey: .reconnectCount)
+        try container.encode(updatedAt, forKey: .updatedAt)
     }
 }
 
@@ -151,7 +204,14 @@ public actor PTOTAResumeStore {
             let data = try Data(contentsOf: checkpointURL)
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
-            return try decoder.decode(PTOTAResumeCheckpoint.self, from: data)
+            let checkpoint = try decoder.decode(PTOTAResumeCheckpoint.self, from: data)
+            // EN: Rewrite a legacy checkpoint once so an old persisted secret is removed from disk.
+            // ES: Reescribe una vez el punto antiguo para eliminar del disco un secreto persistido previamente.
+            // 中文：首次读取旧恢复点时立即重写，清除磁盘上旧版本遗留的临时密钥。
+            if data.range(of: Data("\"secret\"".utf8)) != nil {
+                try write(checkpoint)
+            }
+            return checkpoint
         } catch {
             throw PTOTAResumeStoreError.persistenceFailed(error.localizedDescription)
         }

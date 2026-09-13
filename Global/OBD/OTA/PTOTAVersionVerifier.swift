@@ -21,6 +21,7 @@ nonisolated public struct PTOTAVersionVerificationResult: Equatable, Sendable {
 
 nonisolated public enum PTOTAVersionVerificationError: Error, Equatable, LocalizedError, Sendable {
     case reconnectTimeout
+    case commandTimeout
     case emptyVersionResponse
     case mismatch(expected: String, actual: String)
     case commandFailed(String)
@@ -29,6 +30,8 @@ nonisolated public enum PTOTAVersionVerificationError: Error, Equatable, Localiz
         switch self {
         case .reconnectTimeout:
             return "OTA 后普通 YMOBD 连接恢复超时"
+        case .commandTimeout:
+            return "OTA 后 AT+VERSION 读取超时"
         case .emptyVersionResponse:
             return "OTA 后 AT+VERSION 未返回有效固件版本"
         case let .mismatch(expected, actual):
@@ -63,13 +66,11 @@ public enum PTOTAVersionVerifier {
 
         let response: String
         do {
-            // sendRawCommandAsync 本身已经由现有 OBD 层负责 command watchdog。
-            // P4 不再额外并发一条 timeout task，避免 timeout 后旧 ELM command 继续占用 BLE 总线。
-            _ = commandTimeout
-            response = try await PTAdvancedOBDCoordinator.shared.executeReadOnly {
-                try await PTMotoTelemetryManager.shared.sendRawCommandAsync("AT+VERSION")
-            }
+            response = try await readVersionCommand(timeout: commandTimeout)
         } catch {
+            if error is PTOTAVersionVerificationError {
+                throw error
+            }
             throw PTOTAVersionVerificationError.commandFailed(error.localizedDescription)
         }
 
@@ -88,6 +89,38 @@ public enum PTOTAVersionVerifier {
             actualVersion: actual,
             rawResponse: response
         )
+    }
+
+    // EN: Race the existing serialized read against a bounded timeout and cancel only its pending response on expiry.
+    // ES: Compite la lectura serializada existente contra un tiempo límite y cancela solo su respuesta pendiente al vencer.
+    // 中文：让现有串行只读任务与有界超时竞争，超时只取消待响应命令，不拆除整个连接。
+    private static func readVersionCommand(timeout: TimeInterval) async throws -> String {
+        let nanoseconds = UInt64(max(timeout, 0.1) * 1_000_000_000)
+        return try await withThrowingTaskGroup(of: String.self) { group in
+            group.addTask {
+                try await PTAdvancedOBDCoordinator.shared.executeReadOnly {
+                    try await PTMotoTelemetryManager.shared.sendRawCommandAsync("AT+VERSION")
+                }
+            }
+            group.addTask {
+                try await Task.sleep(nanoseconds: nanoseconds)
+                throw PTOTAVersionVerificationError.commandTimeout
+            }
+
+            do {
+                guard let result = try await group.next() else {
+                    throw PTOTAVersionVerificationError.commandTimeout
+                }
+                group.cancelAll()
+                return result
+            } catch {
+                group.cancelAll()
+                if error is PTOTAVersionVerificationError {
+                    PTMotoTelemetryManager.shared.cancelPendingCommand(reason: "AT+VERSION 读取超时")
+                }
+                throw error
+            }
+        }
     }
 
     private static func versionsEquivalent(_ lhs: String, _ rhs: String) -> Bool {

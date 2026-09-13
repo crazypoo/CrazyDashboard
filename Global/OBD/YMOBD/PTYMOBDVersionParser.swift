@@ -4,7 +4,7 @@
 
 import Foundation
 
-public struct PTYMOBDVersionInfo: Equatable, Sendable {
+nonisolated public struct PTYMOBDVersionInfo: Equatable, Sendable {
     public let company: String
     public let version: String
     public let deviceType: String
@@ -42,7 +42,7 @@ public struct PTYMOBDVersionInfo: Equatable, Sendable {
     }
 }
 
-public struct PTYMOBDVersionParser: Sendable {
+nonisolated public struct PTYMOBDVersionParser: Sendable {
     public init() {}
 
     public func parse(_ response: String) -> PTYMOBDVersionInfo {

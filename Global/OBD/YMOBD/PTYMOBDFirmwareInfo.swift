@@ -13,12 +13,12 @@ public enum PTYMOBDProtocolTypeResolver {
     // EN: YMOBD v2.1 uses protocol type 7; other adapters use the documented type 9.
     // ES: YMOBD v2.1 usa el tipo de protocolo 7; los demás adaptadores usan el tipo 9 documentado.
     // 中文：YMOBD v2.1 使用协议类型 7，其余适配器使用文档规定的类型 9。
-    public static func resolve(atiResponse: String) -> Int {
+    nonisolated public static func resolve(atiResponse: String) -> Int {
         atiResponse.localizedCaseInsensitiveContains("v2.1") ? 7 : 9
     }
 }
 
-public struct PTYMOBDFirmwareCheckRequest: Codable, Equatable, Sendable {
+nonisolated public struct PTYMOBDFirmwareCheckRequest: Codable, Equatable, Sendable {
     public let deviceType: String
     public let protocolType: Int
     public let obdFirmwareVersion: String
@@ -36,13 +36,17 @@ public struct PTYMOBDFirmwareCheckRequest: Codable, Equatable, Sendable {
     }
 }
 
-public struct PTYMOBDFirmwareMetadata: Codable, Equatable, Sendable {
+nonisolated public struct PTYMOBDFirmwareMetadata: Codable, Equatable, Sendable {
     public let firmwareVersion: String
     public let firmwareDescription: String
     public let firmwareFileUUID: String
     public let publicKeyVersion: Int?
     public let fileSize: Int?
     public let declaredSHA256: String?
+    /// EN: Some YMOBD servers mark a release as mandatory; nil keeps older responses compatible.
+    /// ES: Algunos servidores YMOBD marcan una versión como obligatoria; nil mantiene la compatibilidad anterior.
+    /// 中文：部分 YMOBD 服务会标记强制升级；使用 nil 保持旧响应兼容。
+    public let isMandatoryUpdate: Bool?
 
     public init(
         firmwareVersion: String,
@@ -50,7 +54,8 @@ public struct PTYMOBDFirmwareMetadata: Codable, Equatable, Sendable {
         firmwareFileUUID: String,
         publicKeyVersion: Int? = nil,
         fileSize: Int? = nil,
-        declaredSHA256: String? = nil
+        declaredSHA256: String? = nil,
+        isMandatoryUpdate: Bool? = nil
     ) {
         self.firmwareVersion = firmwareVersion.trimmingCharacters(in: .whitespacesAndNewlines)
         self.firmwareDescription = firmwareDescription.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -58,6 +63,7 @@ public struct PTYMOBDFirmwareMetadata: Codable, Equatable, Sendable {
         self.publicKeyVersion = publicKeyVersion
         self.fileSize = fileSize
         self.declaredSHA256 = declaredSHA256?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        self.isMandatoryUpdate = isMandatoryUpdate
     }
 
     public var isDownloadable: Bool {
@@ -65,7 +71,7 @@ public struct PTYMOBDFirmwareMetadata: Codable, Equatable, Sendable {
     }
 }
 
-public enum PTYMOBDFirmwareResponseError: Error, Equatable, LocalizedError, Sendable {
+nonisolated public enum PTYMOBDFirmwareResponseError: Error, Equatable, LocalizedError, Sendable {
     case invalidJSON
     case metadataMissing
 
@@ -79,11 +85,11 @@ public enum PTYMOBDFirmwareResponseError: Error, Equatable, LocalizedError, Send
     }
 }
 
-public enum PTYMOBDFirmwareResponseDecoder {
+nonisolated public enum PTYMOBDFirmwareResponseDecoder {
     // EN: Decode both flat and nested server envelopes without binding the app to one backend wrapper.
     // ES: Decodifica respuestas planas y anidadas sin acoplar la app a un único envoltorio del servidor.
     // 中文：同时解析扁平和嵌套服务响应，避免把 App 绑定到单一种服务包装结构。
-    public static func decodeMetadata(from data: Data) throws -> PTYMOBDFirmwareMetadata {
+    nonisolated public static func decodeMetadata(from data: Data) throws -> PTYMOBDFirmwareMetadata {
         let root: Any
         do {
             root = try JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed])
@@ -121,7 +127,12 @@ public enum PTYMOBDFirmwareResponseDecoder {
                         fileSize: integerValue(normalized["filesize"])
                             ?? integerValue(normalized["firmwaresize"]),
                         declaredSHA256: stringValue(normalized["sha256"])
-                            ?? stringValue(normalized["firmwaresizehash"])
+                            ?? stringValue(normalized["firmwaresizehash"]),
+                        isMandatoryUpdate: boolValue(normalized["mandatory"])
+                            ?? boolValue(normalized["ismandatory"])
+                            ?? boolValue(normalized["forceupdate"])
+                            ?? boolValue(normalized["isforceupdate"])
+                            ?? boolValue(normalized["required"])
                     )
                 }
 
@@ -141,7 +152,7 @@ public enum PTYMOBDFirmwareResponseDecoder {
     }
 }
 
-public struct PTYMOBDFirmwareCheckResult: Equatable, Sendable {
+nonisolated public struct PTYMOBDFirmwareCheckResult: Equatable, Sendable {
     public let request: PTYMOBDFirmwareCheckRequest
     public let metadata: PTYMOBDFirmwareMetadata
 
@@ -158,11 +169,11 @@ public struct PTYMOBDFirmwareCheckResult: Equatable, Sendable {
     }
 }
 
-public enum PTYMOBDFirmwareVersionComparator {
+nonisolated public enum PTYMOBDFirmwareVersionComparator {
     // EN: Compare numeric version components so V1.2 and 1.2.0 are treated as equal.
     // ES: Compara componentes numéricos para que V1.2 y 1.2.0 se consideren iguales.
     // 中文：比较版本中的数字组件，让 V1.2 与 1.2.0 视为相同版本。
-    public static func isNewer(_ candidate: String, than current: String) -> Bool {
+    nonisolated public static func isNewer(_ candidate: String, than current: String) -> Bool {
         let candidateParts = numericParts(candidate)
         let currentParts = numericParts(current)
 
@@ -183,7 +194,7 @@ public enum PTYMOBDFirmwareVersionComparator {
         return normalizedCandidate > normalizedCurrent
     }
 
-    private static func numericParts(_ value: String) -> [Int] {
+    nonisolated private static func numericParts(_ value: String) -> [Int] {
         var parts: [Int] = []
         var buffer = ""
 
@@ -206,7 +217,7 @@ public enum PTYMOBDFirmwareVersionComparator {
     }
 }
 
-public struct PTYMOBDFirmwareTransferReport: Codable, Equatable, Sendable {
+nonisolated public struct PTYMOBDFirmwareTransferReport: Codable, Equatable, Sendable {
     public let firmwareVersion: String
     public let firmwareFileUUID: String
     public let encryptedByteCount: Int
@@ -240,18 +251,18 @@ public struct PTYMOBDFirmwareTransferReport: Codable, Equatable, Sendable {
     }
 }
 
-// EN: Keep decrypted bytes in memory for the next verified integration step, never in a persisted session.
-// ES: Mantiene los bytes descifrados en memoria para la siguiente integración verificada, nunca en una sesión persistida.
-// 中文：解密后的字节只保留在内存中供后续验证接入使用，不写入持久化会话。
-public struct PTYMOBDFirmwareReadOnlyResult: Sendable {
+// EN: Keep decrypted bytes and the temporary download secret in memory for the next verified integration step.
+// ES: Mantiene los bytes descifrados y el secreto temporal de descarga en memoria para la siguiente integración verificada.
+// 中文：解密字节和临时下载密钥只保留在内存中，供后续验证接入使用。
+nonisolated public struct PTYMOBDFirmwareReadOnlyResult: Sendable {
     public let checkResult: PTYMOBDFirmwareCheckResult
-    public let secret: PTYMOBDFirmwareSecret
+    public let secret: PTYMOBDFirmwareSecret?
     public let decryptedFirmware: Data
     public let report: PTYMOBDFirmwareTransferReport
 
     public init(
         checkResult: PTYMOBDFirmwareCheckResult,
-        secret: PTYMOBDFirmwareSecret,
+        secret: PTYMOBDFirmwareSecret?,
         decryptedFirmware: Data,
         report: PTYMOBDFirmwareTransferReport
     ) {
@@ -263,11 +274,11 @@ public struct PTYMOBDFirmwareReadOnlyResult: Sendable {
 }
 
 private extension PTYMOBDFirmwareResponseDecoder {
-    static func normalizeKey(_ key: String) -> String {
+    nonisolated static func normalizeKey(_ key: String) -> String {
         key.lowercased().filter { $0 != " " && $0 != "_" && $0 != "-" }
     }
 
-    static func stringValue(_ value: Any?) -> String? {
+    nonisolated static func stringValue(_ value: Any?) -> String? {
         if let string = value as? String {
             let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
             return trimmed.isEmpty ? nil : trimmed
@@ -278,9 +289,23 @@ private extension PTYMOBDFirmwareResponseDecoder {
         return nil
     }
 
-    static func integerValue(_ value: Any?) -> Int? {
+    nonisolated static func integerValue(_ value: Any?) -> Int? {
         if let number = value as? NSNumber { return number.intValue }
         if let string = stringValue(value) { return Int(string) }
         return nil
+    }
+
+    // EN: Accept common JSON boolean encodings without treating arbitrary values as mandatory updates.
+    // ES: Acepta las codificaciones booleanas JSON habituales sin convertir valores arbitrarios en actualizaciones obligatorias.
+    // 中文：兼容常见 JSON 布尔编码，但不会把任意值误判为强制升级。
+    nonisolated static func boolValue(_ value: Any?) -> Bool? {
+        if let value = value as? Bool { return value }
+        if let number = value as? NSNumber { return number.boolValue }
+        guard let string = stringValue(value)?.lowercased() else { return nil }
+        switch string {
+        case "true", "yes", "y", "1": return true
+        case "false", "no", "n", "0": return false
+        default: return nil
+        }
     }
 }

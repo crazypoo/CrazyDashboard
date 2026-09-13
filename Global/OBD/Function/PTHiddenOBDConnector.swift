@@ -1758,6 +1758,20 @@ public class PTMotoTelemetryManager {
         }
     }
 
+    // EN: Cancel only the pending response continuation so a bounded read timeout does not tear down a healthy ELM327 session.
+    // ES: Cancela solo la continuación de respuesta pendiente para que un tiempo límite de lectura no cierre una sesión ELM327 sana.
+    // 中文：只取消正在等待的响应 continuation，让有界读取超时不会拆掉健康的 ELM327 会话。
+    public func cancelPendingCommand(reason: String = "OBD 命令已取消") {
+        switch activeConnectionType {
+        case .bluetooth:
+            PTHiddenOBDConnector.shared.cancelPendingResponse(reason: reason)
+        case .wifi:
+            PTWifiOBDConnector.shared.cancelPendingResponse(reason: reason)
+        case .mock:
+            PTMockOBDConnector.shared.cancelPendingResponse(reason: reason)
+        }
+    }
+
     private class WeakDelegateWrapper {
         weak var delegate: PTMotoTelemetryDelegate?
         init(_ delegate: PTMotoTelemetryDelegate) { self.delegate = delegate }

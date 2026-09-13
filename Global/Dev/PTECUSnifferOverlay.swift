@@ -174,6 +174,10 @@ public class PTECUSnifferOverlay: PTDashboardBaseView, UIDocumentPickerDelegate 
     private var pendingLogs: [String] = []
     private var uiRefreshTimer: Timer?
     private var observerTokens: [NSObjectProtocol] = []
+    // EN: Keep the developer-only firmware check cancellable while the overlay is collapsed.
+    // ES: Mantiene cancelable la comprobación de firmware exclusiva del desarrollador mientras el overlay está minimizado.
+    // 中文：即使收起面板，也保留开发者固件检查任务的取消能力。
+    private var firmwareWorkflowTask: Task<Void, Never>?
     private var compactButtonOffset = CGPoint.zero
     private var compactButtonDragStartOffset = CGPoint.zero
 
@@ -447,6 +451,7 @@ public class PTECUSnifferOverlay: PTDashboardBaseView, UIDocumentPickerDelegate 
     // 中文：显式退出会撤销授权，并移除窗口级开发者界面。
     @objc public func endDeveloperSession() {
         stopActiveFuzzing()
+        PTJieliOTAManager.shared.cancelForSafetyReset()
         PTDeveloperSafetyGate.shared.disable(reason: .userDisabled)
         highRiskSwitch.setOn(false, animated: false)
         presentationState = .hidden
@@ -531,6 +536,7 @@ public class PTECUSnifferOverlay: PTDashboardBaseView, UIDocumentPickerDelegate 
         if findFunctionButton.isSelected {
             stopActiveFuzzing()
         }
+        PTJieliOTAManager.shared.cancelForSafetyReset()
         appendDeveloperLog("🛑 高风险开发者操作已关闭，后续调用将被拒绝。")
     }
 
@@ -593,6 +599,15 @@ public class PTECUSnifferOverlay: PTDashboardBaseView, UIDocumentPickerDelegate 
         ) { [weak self] _ in
             self?.runFirmwarePreflight()
         })
+        // EN: This action only prepares a verified read-only artifact and opens the guarded OTA screen.
+        // ES: Esta acción solo prepara un artefacto verificado de solo lectura y abre la pantalla OTA protegida.
+        // 中文：此操作只准备经过校验的只读固件，并打开受保护的 OTA 页面。
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "dev_jieli_ota"),
+            style: .default
+        ) { [weak self] _ in
+            self?.startYMOBDFirmwareWorkflow()
+        })
         alert.addAction(UIAlertAction(
             title: PTDashboardConfig.languageFunc(text: "button_cancel"),
             style: .cancel
@@ -632,6 +647,132 @@ public class PTECUSnifferOverlay: PTDashboardBaseView, UIDocumentPickerDelegate 
     private func stopExperimentalANCSProvider() {
         PTXP400ANCSCoordinator.shared.stopExperimentalProvider()
         appendDeveloperLog("✅ Experimental ANCS provider stopped; stable BLE delegate restored.")
+    }
+
+    // EN: The developer menu is the only UI entry for the YMOBD firmware service and Jieli OTA screen.
+    // ES: El menú de desarrollador es la única entrada de UI al servicio de firmware YMOBD y a la pantalla OTA de Jieli.
+    // 中文：开发者菜单是 YMOBD 固件服务和 Jieli OTA 页面唯一的 UI 入口。
+    private func startYMOBDFirmwareWorkflow() {
+        guard PTDeveloperSafetyGate.shared.isEnabled else {
+            appendDeveloperLog("⛔️ \(PTDashboardConfig.languageFunc(text: "dev_jieli_ota_safety_required"))")
+            presentFirmwareWorkflowMessage(
+                title: PTDashboardConfig.languageFunc(text: "dev_jieli_ota"),
+                message: PTDashboardConfig.languageFunc(text: "dev_jieli_ota_safety_required")
+            )
+            return
+        }
+
+        let manager = PTJieliOTAManager.shared
+        guard !manager.isRunning else {
+            appendDeveloperLog("⚠️ \(PTDashboardConfig.languageFunc(text: "dev_jieli_ota_busy"))")
+            presentFirmwareWorkflowMessage(
+                title: PTDashboardConfig.languageFunc(text: "dev_jieli_ota"),
+                message: PTDashboardConfig.languageFunc(text: "dev_jieli_ota_busy")
+            )
+            return
+        }
+
+        firmwareWorkflowTask?.cancel()
+        firmwareWorkflowTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { self.firmwareWorkflowTask = nil }
+
+            do {
+                // EN: A persisted checkpoint can be resumed without downloading or guessing an API endpoint.
+                // ES: Un punto persistido puede reanudarse sin descargar ni adivinar un endpoint de API.
+                // 中文：已有恢复点时直接进入恢复页面，不下载固件，也不猜测 API 地址。
+                if let checkpoint = await manager.pendingResumeCheckpoint() {
+                    self.appendDeveloperLog(PTDashboardConfig.languageFunc(text: "dev_jieli_ota_resume_detected"))
+                    let controller = PTOTAUpgradeViewController(
+                        resumeCheckpoint: checkpoint,
+                        checklist: .empty,
+                        manager: manager
+                    )
+                    self.presentFirmwareUpgrade(controller)
+                    return
+                }
+
+                guard let configuration = PTYMOBDFirmwareAPIConfiguration.fromMainBundle() else {
+                    self.appendDeveloperLog(PTDashboardConfig.languageFunc(text: "dev_jieli_ota_missing_endpoint"))
+                    self.presentFirmwareWorkflowMessage(
+                        title: PTDashboardConfig.languageFunc(text: "dev_jieli_ota"),
+                        message: PTDashboardConfig.languageFunc(text: "dev_jieli_ota_missing_endpoint")
+                    )
+                    return
+                }
+
+                self.appendDeveloperLog(PTDashboardConfig.languageFunc(text: "dev_jieli_ota_checking"))
+                let service = PTYMOBDFirmwareService(
+                    api: PTYMOBDFirmwareAPI(configuration: configuration)
+                )
+                let checkResult = try await service.checkConnectedAdapter()
+                try Task.checkCancellation()
+
+                guard checkResult.isUpdateAvailable else {
+                    self.appendDeveloperLog(PTDashboardConfig.languageFunc(text: "dev_jieli_ota_no_update"))
+                    self.presentFirmwareWorkflowMessage(
+                        title: PTDashboardConfig.languageFunc(text: "dev_jieli_ota"),
+                        message: PTDashboardConfig.languageFunc(text: "dev_jieli_ota_no_update")
+                    )
+                    return
+                }
+
+                let readOnlyResult = try await service.prepareReadOnlyFirmware(from: checkResult)
+                try Task.checkCancellation()
+                var productConfiguration = PTOTAProductConfiguration.default
+                productConfiguration.isMandatoryUpdate = checkResult.metadata.isMandatoryUpdate ?? false
+                self.appendDeveloperLog(PTDashboardConfig.languageFunc(text: "dev_jieli_ota_prepared"))
+                let controller = PTOTAUpgradeViewController(
+                    readOnlyResult: readOnlyResult,
+                    checklist: .empty,
+                    configuration: productConfiguration,
+                    manager: manager
+                )
+                self.presentFirmwareUpgrade(controller)
+            } catch is CancellationError {
+                self.appendDeveloperLog(PTDashboardConfig.languageFunc(text: "dev_jieli_ota_cancelled"))
+            } catch {
+                self.appendDeveloperLog(
+                    "⚠️ \(PTDashboardConfig.languageFunc(text: "dev_jieli_ota_failed")) \(error.localizedDescription)"
+                )
+                self.presentFirmwareWorkflowMessage(
+                    title: PTDashboardConfig.languageFunc(text: "dev_jieli_ota_failed"),
+                    message: error.localizedDescription
+                )
+            }
+        }
+    }
+
+    // EN: Present the OTA controller after dismissing the developer action sheet, without dismissing unrelated screens.
+    // ES: Presenta el controlador OTA después de cerrar la hoja de acciones del desarrollador, sin cerrar otras pantallas.
+    // 中文：关闭开发者操作菜单后再展示 OTA 页面，不影响其他无关界面。
+    private func presentFirmwareUpgrade(_ controller: PTOTAUpgradeViewController) {
+        guard let presenter = PTUtils.getCurrentVC() else { return }
+        let presentController = {
+            presenter.present(PTBaseNavControl(rootViewController: controller), animated: true)
+        }
+        if presenter.presentedViewController is UIAlertController {
+            presenter.dismiss(animated: true, completion: presentController)
+        } else {
+            presentController()
+        }
+    }
+
+    private func presentFirmwareWorkflowMessage(title: String, message: String) {
+        guard let presenter = PTUtils.getCurrentVC() else { return }
+        let presentMessage = {
+            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(
+                title: PTDashboardConfig.languageFunc(text: "button_confirm"),
+                style: .default
+            ))
+            presenter.present(alert, animated: true)
+        }
+        if presenter.presentedViewController is UIAlertController {
+            presenter.dismiss(animated: true, completion: presentMessage)
+        } else {
+            presentMessage()
+        }
     }
 
     private func runFirmwarePreflight() {
@@ -734,6 +875,7 @@ public class PTECUSnifferOverlay: PTDashboardBaseView, UIDocumentPickerDelegate 
     }
         
     @MainActor deinit {
+        firmwareWorkflowTask?.cancel()
         stopRefreshTimer()
         PTBluetoothServerManager.shared.removeDelegate(self)
         observerTokens.forEach(NotificationCenter.default.removeObserver)

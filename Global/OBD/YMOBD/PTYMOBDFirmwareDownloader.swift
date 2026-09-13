@@ -11,7 +11,7 @@ import Foundation
 import CryptoKit
 import OSLog
 
-public struct PTYMOBDFirmwareDownloadedArtifact: Sendable {
+nonisolated public struct PTYMOBDFirmwareDownloadedArtifact: Sendable {
     public let data: Data
     public let byteCount: Int
     public let sha256Hex: String
@@ -23,7 +23,7 @@ public struct PTYMOBDFirmwareDownloadedArtifact: Sendable {
     }
 }
 
-public enum PTYMOBDFirmwareDownloadError: Error, Equatable, LocalizedError, Sendable {
+nonisolated public enum PTYMOBDFirmwareDownloadError: Error, Equatable, LocalizedError, Sendable {
     case invalidHTTPResponse
     case serverStatus(Int)
     case emptyPayload
