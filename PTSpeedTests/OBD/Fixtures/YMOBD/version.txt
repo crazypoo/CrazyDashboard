@@ -1,0 +1,10 @@
+AT+VERSION
+Company: PTools
+Version: V2.5.0
+Device Type: YMOBD
+Device Name: XP400
+Device MAC: AA:BB:CC:DD:EE:FF
+Interface: BLE
+Cust ID: Peugeot
+Crypt: 12345678
+>

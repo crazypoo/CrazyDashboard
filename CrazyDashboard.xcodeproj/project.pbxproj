@@ -242,6 +242,46 @@
 		600000010000000000000422 /* PTJieliOTAEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000422 /* PTJieliOTAEngine.swift */; };
 		600000010000000000000423 /* PTJieliOTAManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000423 /* PTJieliOTAManager.swift */; };
 		600000010000000000000424 /* PTJieliOTAP3Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000424 /* PTJieliOTAP3Tests.swift */; };
+		610000010000000000000001 /* PTOBDTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000001 /* PTOBDTransport.swift */; };
+		610000010000000000000002 /* PTBLEOBDTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000002 /* PTBLEOBDTransport.swift */; };
+		610000010000000000000003 /* PTWiFiOBDTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000003 /* PTWiFiOBDTransport.swift */; };
+		610000010000000000000004 /* PTOBDMockTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000004 /* PTOBDMockTransport.swift */; };
+		610000010000000000000005 /* PTELM327State.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000005 /* PTELM327State.swift */; };
+		610000010000000000000006 /* PTELM327Parser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000006 /* PTELM327Parser.swift */; };
+		610000010000000000000007 /* PTELM327CommandQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000007 /* PTELM327CommandQueue.swift */; };
+		610000010000000000000008 /* PTELM327Monitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000008 /* PTELM327Monitor.swift */; };
+		610000010000000000000009 /* PTELM327Capabilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000009 /* PTELM327Capabilities.swift */; };
+		610000010000000000000010 /* PTELM327Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000010 /* PTELM327Session.swift */; };
+		610000010000000000000011 /* PTELM327VendorExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000011 /* PTELM327VendorExtension.swift */; };
+		610000010000000000000012 /* PTYMOBDCapabilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000012 /* PTYMOBDCapabilities.swift */; };
+		610000010000000000000013 /* PTYMOBDVendorExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000013 /* PTYMOBDVendorExtension.swift */; };
+		610000010000000000000014 /* PTOBDBusCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000014 /* PTOBDBusCoordinator.swift */; };
+		610000010000000000000015 /* PTOBDCommandClassifierV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000015 /* PTOBDCommandClassifierV2.swift */; };
+		610000010000000000000016 /* PTOBDCompatibilityFacade.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000016 /* PTOBDCompatibilityFacade.swift */; };
+		610000010000000000000017 /* PTOBDSessionTrace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000017 /* PTOBDSessionTrace.swift */; };
+		610000010000000000000018 /* PTYMOBDAdapterModeCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000018 /* PTYMOBDAdapterModeCoordinator.swift */; };
+		610000010000000000000019 /* PTJieliSDKBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000019 /* PTJieliSDKBridge.swift */; };
+		610000010000000000000021 /* PTOBDArchitectureV2Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000021 /* PTOBDArchitectureV2Tests.swift */; };
+		610000010000000000000101 /* prompt.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000101 /* prompt.txt */; };
+		610000010000000000000102 /* echo_on.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000102 /* echo_on.txt */; };
+		610000010000000000000103 /* echo_off.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000103 /* echo_off.txt */; };
+		610000010000000000000104 /* searching.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000104 /* searching.txt */; };
+		610000010000000000000105 /* no_data.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000105 /* no_data.txt */; };
+		610000010000000000000106 /* unable_to_connect.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000106 /* unable_to_connect.txt */; };
+		610000010000000000000107 /* stopped.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000107 /* stopped.txt */; };
+		610000010000000000000108 /* 0100.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000108 /* 0100.txt */; };
+		610000010000000000000109 /* 010C.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000109 /* 010C.txt */; };
+		610000010000000000000110 /* 010D.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000110 /* 010D.txt */; };
+		610000010000000000000111 /* ATRV.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000111 /* ATRV.txt */; };
+		610000010000000000000112 /* version.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000112 /* version.txt */; };
+		610000010000000000000113 /* crypt.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000113 /* crypt.txt */; };
+		610000010000000000000114 /* setcrypt.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000114 /* setcrypt.txt */; };
+		610000010000000000000115 /* init_success.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000115 /* init_success.txt */; };
+		610000010000000000000116 /* init_failure.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000116 /* init_failure.txt */; };
+		610000010000000000000117 /* positive.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000117 /* positive.txt */; };
+		610000010000000000000118 /* negative.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000118 /* negative.txt */; };
+		610000010000000000000119 /* standard.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000119 /* standard.txt */; };
+		610000010000000000000120 /* extended.txt in Resources */ = {isa = PBXBuildFile; fileRef = 610000020000000000000120 /* extended.txt */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -547,6 +587,46 @@
 		600000020000000000000422 /* PTJieliOTAEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTJieliOTAEngine.swift; sourceTree = "<group>"; };
 		600000020000000000000423 /* PTJieliOTAManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTJieliOTAManager.swift; sourceTree = "<group>"; };
 		600000020000000000000424 /* PTJieliOTAP3Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTJieliOTAP3Tests.swift; sourceTree = "<group>"; };
+		610000020000000000000001 /* PTOBDTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDTransport.swift; sourceTree = "<group>"; };
+		610000020000000000000002 /* PTBLEOBDTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBLEOBDTransport.swift; sourceTree = "<group>"; };
+		610000020000000000000003 /* PTWiFiOBDTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTWiFiOBDTransport.swift; sourceTree = "<group>"; };
+		610000020000000000000004 /* PTOBDMockTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDMockTransport.swift; sourceTree = "<group>"; };
+		610000020000000000000005 /* PTELM327State.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTELM327State.swift; sourceTree = "<group>"; };
+		610000020000000000000006 /* PTELM327Parser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTELM327Parser.swift; sourceTree = "<group>"; };
+		610000020000000000000007 /* PTELM327CommandQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTELM327CommandQueue.swift; sourceTree = "<group>"; };
+		610000020000000000000008 /* PTELM327Monitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTELM327Monitor.swift; sourceTree = "<group>"; };
+		610000020000000000000009 /* PTELM327Capabilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTELM327Capabilities.swift; sourceTree = "<group>"; };
+		610000020000000000000010 /* PTELM327Session.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTELM327Session.swift; sourceTree = "<group>"; };
+		610000020000000000000011 /* PTELM327VendorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTELM327VendorExtension.swift; sourceTree = "<group>"; };
+		610000020000000000000012 /* PTYMOBDCapabilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTYMOBDCapabilities.swift; sourceTree = "<group>"; };
+		610000020000000000000013 /* PTYMOBDVendorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTYMOBDVendorExtension.swift; sourceTree = "<group>"; };
+		610000020000000000000014 /* PTOBDBusCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDBusCoordinator.swift; sourceTree = "<group>"; };
+		610000020000000000000015 /* PTOBDCommandClassifierV2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDCommandClassifierV2.swift; sourceTree = "<group>"; };
+		610000020000000000000016 /* PTOBDCompatibilityFacade.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDCompatibilityFacade.swift; sourceTree = "<group>"; };
+		610000020000000000000017 /* PTOBDSessionTrace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDSessionTrace.swift; sourceTree = "<group>"; };
+		610000020000000000000018 /* PTYMOBDAdapterModeCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTYMOBDAdapterModeCoordinator.swift; sourceTree = "<group>"; };
+		610000020000000000000019 /* PTJieliSDKBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTJieliSDKBridge.swift; sourceTree = "<group>"; };
+		610000020000000000000021 /* PTOBDArchitectureV2Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDArchitectureV2Tests.swift; sourceTree = "<group>"; };
+		610000020000000000000101 /* prompt.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = prompt.txt; sourceTree = "<group>"; };
+		610000020000000000000102 /* echo_on.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = echo_on.txt; sourceTree = "<group>"; };
+		610000020000000000000103 /* echo_off.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = echo_off.txt; sourceTree = "<group>"; };
+		610000020000000000000104 /* searching.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = searching.txt; sourceTree = "<group>"; };
+		610000020000000000000105 /* no_data.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = no_data.txt; sourceTree = "<group>"; };
+		610000020000000000000106 /* unable_to_connect.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = unable_to_connect.txt; sourceTree = "<group>"; };
+		610000020000000000000107 /* stopped.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = stopped.txt; sourceTree = "<group>"; };
+		610000020000000000000108 /* 0100.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = 0100.txt; sourceTree = "<group>"; };
+		610000020000000000000109 /* 010C.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = 010C.txt; sourceTree = "<group>"; };
+		610000020000000000000110 /* 010D.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = 010D.txt; sourceTree = "<group>"; };
+		610000020000000000000111 /* ATRV.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = ATRV.txt; sourceTree = "<group>"; };
+		610000020000000000000112 /* version.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = version.txt; sourceTree = "<group>"; };
+		610000020000000000000113 /* crypt.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = crypt.txt; sourceTree = "<group>"; };
+		610000020000000000000114 /* setcrypt.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = setcrypt.txt; sourceTree = "<group>"; };
+		610000020000000000000115 /* init_success.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = init_success.txt; sourceTree = "<group>"; };
+		610000020000000000000116 /* init_failure.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = init_failure.txt; sourceTree = "<group>"; };
+		610000020000000000000117 /* positive.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = positive.txt; sourceTree = "<group>"; };
+		610000020000000000000118 /* negative.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = negative.txt; sourceTree = "<group>"; };
+		610000020000000000000119 /* standard.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = standard.txt; sourceTree = "<group>"; };
+		610000020000000000000120 /* extended.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = extended.txt; sourceTree = "<group>"; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -878,6 +958,11 @@
 		55CA9DF23024528A00A3A677 /* OBD */ = {
 			isa = PBXGroup;
 			children = (
+				610000030000000000000001 /* Transport */,
+				610000030000000000000002 /* ELM327 */,
+				610000030000000000000003 /* VendorExtension */,
+				610000030000000000000005 /* Coordination */,
+				610000030000000000000006 /* AdapterMaintenance */,
 				55F1E2F03026D1DF0032EAD5 /* Function */,
 				600000030000000000000400 /* YMOBD */,
 				600000030000000000000420 /* OTA */,
@@ -1075,6 +1160,8 @@
 			isa = PBXGroup;
 			children = (
 				55F52C5D303D4025007527C2 /* PTCoreTests.swift */,
+				610000020000000000000021 /* PTOBDArchitectureV2Tests.swift */,
+				610000030000000000000101 /* OBD */,
 				600000020000000000000342 /* PTXP400BLEP0Fixtures.swift */,
 				600000020000000000000343 /* PTXP400BLEP0Tests.swift */,
 				600000020000000000000353 /* PTXP400P1Tests.swift */,
@@ -1159,6 +1246,151 @@
 				600000020000000000000080 /* PTSpeedUITests.swift */,
 			);
 			path = PTSpeedUITests;
+			sourceTree = "<group>";
+		};
+		610000030000000000000001 /* Transport */ = {
+			isa = PBXGroup;
+			children = (
+				610000020000000000000001 /* PTOBDTransport.swift */,
+				610000020000000000000002 /* PTBLEOBDTransport.swift */,
+				610000020000000000000003 /* PTWiFiOBDTransport.swift */,
+				610000020000000000000004 /* PTOBDMockTransport.swift */,
+			);
+			path = Transport;
+			sourceTree = "<group>";
+		};
+		610000030000000000000002 /* ELM327 */ = {
+			isa = PBXGroup;
+			children = (
+				610000020000000000000005 /* PTELM327State.swift */,
+				610000020000000000000006 /* PTELM327Parser.swift */,
+				610000020000000000000007 /* PTELM327CommandQueue.swift */,
+				610000020000000000000008 /* PTELM327Monitor.swift */,
+				610000020000000000000009 /* PTELM327Capabilities.swift */,
+				610000020000000000000010 /* PTELM327Session.swift */,
+			);
+			path = ELM327;
+			sourceTree = "<group>";
+		};
+		610000030000000000000003 /* VendorExtension */ = {
+			isa = PBXGroup;
+			children = (
+				610000020000000000000011 /* PTELM327VendorExtension.swift */,
+				610000030000000000000004 /* YMOBD */,
+			);
+			path = VendorExtension;
+			sourceTree = "<group>";
+		};
+		610000030000000000000004 /* YMOBD */ = {
+			isa = PBXGroup;
+			children = (
+				610000020000000000000012 /* PTYMOBDCapabilities.swift */,
+				610000020000000000000013 /* PTYMOBDVendorExtension.swift */,
+			);
+			path = YMOBD;
+			sourceTree = "<group>";
+		};
+		610000030000000000000005 /* Coordination */ = {
+			isa = PBXGroup;
+			children = (
+				610000020000000000000014 /* PTOBDBusCoordinator.swift */,
+				610000020000000000000015 /* PTOBDCommandClassifierV2.swift */,
+				610000020000000000000016 /* PTOBDCompatibilityFacade.swift */,
+				610000020000000000000017 /* PTOBDSessionTrace.swift */,
+			);
+			path = Coordination;
+			sourceTree = "<group>";
+		};
+		610000030000000000000006 /* AdapterMaintenance */ = {
+			isa = PBXGroup;
+			children = (
+				610000030000000000000007 /* YMOBD */,
+			);
+			path = AdapterMaintenance;
+			sourceTree = "<group>";
+		};
+		610000030000000000000007 /* YMOBD */ = {
+			isa = PBXGroup;
+			children = (
+				610000020000000000000018 /* PTYMOBDAdapterModeCoordinator.swift */,
+				610000020000000000000019 /* PTJieliSDKBridge.swift */,
+			);
+			path = YMOBD;
+			sourceTree = "<group>";
+		};
+		610000030000000000000101 /* OBD */ = {
+			isa = PBXGroup;
+			children = (
+				610000030000000000000102 /* Fixtures */,
+			);
+			path = OBD;
+			sourceTree = "<group>";
+		};
+		610000030000000000000102 /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				610000030000000000000103 /* ELM */,
+				610000030000000000000104 /* PID */,
+				610000030000000000000105 /* YMOBD */,
+				610000030000000000000106 /* UDS */,
+				610000030000000000000107 /* CAN */,
+			);
+			path = Fixtures;
+			sourceTree = "<group>";
+		};
+		610000030000000000000103 /* ELM */ = {
+			isa = PBXGroup;
+			children = (
+				610000020000000000000101 /* prompt.txt */,
+				610000020000000000000102 /* echo_on.txt */,
+				610000020000000000000103 /* echo_off.txt */,
+				610000020000000000000104 /* searching.txt */,
+				610000020000000000000105 /* no_data.txt */,
+				610000020000000000000106 /* unable_to_connect.txt */,
+				610000020000000000000107 /* stopped.txt */,
+			);
+			path = ELM;
+			sourceTree = "<group>";
+		};
+		610000030000000000000104 /* PID */ = {
+			isa = PBXGroup;
+			children = (
+				610000020000000000000108 /* 0100.txt */,
+				610000020000000000000109 /* 010C.txt */,
+				610000020000000000000110 /* 010D.txt */,
+				610000020000000000000111 /* ATRV.txt */,
+			);
+			path = PID;
+			sourceTree = "<group>";
+		};
+		610000030000000000000105 /* YMOBD */ = {
+			isa = PBXGroup;
+			children = (
+				610000020000000000000112 /* version.txt */,
+				610000020000000000000113 /* crypt.txt */,
+				610000020000000000000114 /* setcrypt.txt */,
+				610000020000000000000115 /* init_success.txt */,
+				610000020000000000000116 /* init_failure.txt */,
+			);
+			path = YMOBD;
+			sourceTree = "<group>";
+		};
+		610000030000000000000106 /* UDS */ = {
+			isa = PBXGroup;
+			children = (
+				610000020000000000000117 /* positive.txt */,
+				610000020000000000000118 /* negative.txt */,
+			);
+			path = UDS;
+			sourceTree = "<group>";
+		};
+		610000030000000000000107 /* CAN */ = {
+			isa = PBXGroup;
+			children = (
+				610000020000000000000119 /* standard.txt */,
+				610000020000000000000120 /* extended.txt */,
+			);
+			path = CAN;
 			sourceTree = "<group>";
 		};
 		C8AF0651275D1EA16545F01B /* Frameworks */ = {
@@ -1385,6 +1617,26 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				610000010000000000000101 /* prompt.txt in Resources */,
+				610000010000000000000102 /* echo_on.txt in Resources */,
+				610000010000000000000103 /* echo_off.txt in Resources */,
+				610000010000000000000104 /* searching.txt in Resources */,
+				610000010000000000000105 /* no_data.txt in Resources */,
+				610000010000000000000106 /* unable_to_connect.txt in Resources */,
+				610000010000000000000107 /* stopped.txt in Resources */,
+				610000010000000000000108 /* 0100.txt in Resources */,
+				610000010000000000000109 /* 010C.txt in Resources */,
+				610000010000000000000110 /* 010D.txt in Resources */,
+				610000010000000000000111 /* ATRV.txt in Resources */,
+				610000010000000000000112 /* version.txt in Resources */,
+				610000010000000000000113 /* crypt.txt in Resources */,
+				610000010000000000000114 /* setcrypt.txt in Resources */,
+				610000010000000000000115 /* init_success.txt in Resources */,
+				610000010000000000000116 /* init_failure.txt in Resources */,
+				610000010000000000000117 /* positive.txt in Resources */,
+				610000010000000000000118 /* negative.txt in Resources */,
+				610000010000000000000119 /* standard.txt in Resources */,
+				610000010000000000000120 /* extended.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1508,6 +1760,25 @@
 				600000010000000000000120 /* PTRideReplay.swift in Sources */,
 				600000010000000000000130 /* PTWatchRideAssistant.swift in Sources */,
 				55F1E2F23026D2020032EAD5 /* PTHiddenOBDConnector.swift in Sources */,
+				610000010000000000000001 /* PTOBDTransport.swift in Sources */,
+				610000010000000000000002 /* PTBLEOBDTransport.swift in Sources */,
+				610000010000000000000003 /* PTWiFiOBDTransport.swift in Sources */,
+				610000010000000000000004 /* PTOBDMockTransport.swift in Sources */,
+				610000010000000000000005 /* PTELM327State.swift in Sources */,
+				610000010000000000000006 /* PTELM327Parser.swift in Sources */,
+				610000010000000000000007 /* PTELM327CommandQueue.swift in Sources */,
+				610000010000000000000008 /* PTELM327Monitor.swift in Sources */,
+				610000010000000000000009 /* PTELM327Capabilities.swift in Sources */,
+				610000010000000000000010 /* PTELM327Session.swift in Sources */,
+				610000010000000000000011 /* PTELM327VendorExtension.swift in Sources */,
+				610000010000000000000012 /* PTYMOBDCapabilities.swift in Sources */,
+				610000010000000000000013 /* PTYMOBDVendorExtension.swift in Sources */,
+				610000010000000000000014 /* PTOBDBusCoordinator.swift in Sources */,
+				610000010000000000000015 /* PTOBDCommandClassifierV2.swift in Sources */,
+				610000010000000000000016 /* PTOBDCompatibilityFacade.swift in Sources */,
+				610000010000000000000017 /* PTOBDSessionTrace.swift in Sources */,
+				610000010000000000000018 /* PTYMOBDAdapterModeCoordinator.swift in Sources */,
+				610000010000000000000019 /* PTJieliSDKBridge.swift in Sources */,
 				600000010000000000000402 /* PTYMOBDInitializer.swift in Sources */,
 				600000010000000000000401 /* PTYMOBDAuthenticator.swift in Sources */,
 				600000010000000000000400 /* PTYMOBDVersionParser.swift in Sources */,
@@ -1669,6 +1940,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				55F52C5E303D4025007527C2 /* PTCoreTests.swift in Sources */,
+				610000010000000000000021 /* PTOBDArchitectureV2Tests.swift in Sources */,
 				600000010000000000000342 /* PTXP400BLEP0Fixtures.swift in Sources */,
 				600000010000000000000343 /* PTXP400BLEP0Tests.swift in Sources */,
 				600000010000000000000353 /* PTXP400P1Tests.swift in Sources */,

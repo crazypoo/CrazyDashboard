@@ -21,7 +21,20 @@ nonisolated public enum PTOBDCompatibilityGatewayError: Error, Equatable, Sendab
 public actor PTOBDCompatibilityGateway {
     public static let shared = PTOBDCompatibilityGateway()
 
+    // EN: The new session is optional; nil keeps the original stable-manager path byte-for-byte compatible.
+    // ES: La nueva sesión es opcional; nil conserva compatible la ruta original de los gestores estables.
+    // 中文：新会话是可选的；为 nil 时继续使用原稳定管理器路径，保持字节行为兼容。
+    private var attachedSession: PTELM327Session?
+
     private init() {}
+
+    public func attach(session: PTELM327Session) {
+        attachedSession = session
+    }
+
+    public func detachSession() {
+        attachedSession = nil
+    }
 
     public func withLease<Value: Sendable>(
         kind: PTOBDBusLeaseKind,
@@ -41,8 +54,15 @@ public actor PTOBDCompatibilityGateway {
         leaseKind: PTOBDBusLeaseKind,
         leaseToken: PTOBDBusLeaseToken? = nil
     ) async throws -> String {
-        let send = {
-            await PTMotoTelemetryManager.shared.injectRawHexCommand(
+        let send: @Sendable () async -> String = { [attachedSession] in
+            if let attachedSession {
+                do {
+                    return try await attachedSession.execute(normalizedCommand).raw
+                } catch {
+                    return "ERROR: \(error.localizedDescription)"
+                }
+            }
+            return await PTMotoTelemetryManager.shared.injectRawHexCommand(
                 normalizedCommand,
                 requiresPause: requiresPause
             )
