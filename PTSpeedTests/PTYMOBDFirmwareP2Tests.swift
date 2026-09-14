@@ -72,16 +72,22 @@ final class PTYMOBDFirmwareP2Tests: XCTestCase {
         let check = PTYMOBDFirmwareCheckRequest(
             deviceType: "YMOBD",
             protocolType: 9,
-            obdFirmwareVersion: "V1.0.0"
+            obdFirmwareVersion: "100"
         )
         let checkRequest = try await api.makeFirmwareCheckRequest(for: check)
         let checkComponents = try XCTUnwrap(URLComponents(url: XCTUnwrap(checkRequest.url), resolvingAgainstBaseURL: false))
-        let checkItems = Dictionary(uniqueKeysWithValues: (checkComponents.queryItems ?? []).map { ($0.name, $0.value ?? "") })
-        XCTAssertEqual(checkRequest.httpMethod, "GET")
+        let checkBody = try XCTUnwrap(checkRequest.httpBody)
+        let checkPayload = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: checkBody) as? [String: Any]
+        )
+        XCTAssertEqual(checkRequest.httpMethod, "POST")
         XCTAssertEqual(checkComponents.path, "/api/ymobd/client/getFirmwareLastVersionInfo")
-        XCTAssertEqual(checkItems["deviceType"], "YMOBD")
-        XCTAssertEqual(checkItems["protocolType"], "9")
-        XCTAssertEqual(checkItems["obdFirmwareVersion"], "V1.0.0")
+        XCTAssertTrue(checkComponents.queryItems?.isEmpty != false)
+        XCTAssertEqual(checkPayload["deviceType"] as? String, "YMOBD")
+        XCTAssertEqual(checkPayload["protocolType"] as? String, "9")
+        XCTAssertEqual((checkPayload["obdFirmwareVersion"] as? NSNumber)?.intValue, 100)
+        XCTAssertEqual(checkRequest.value(forHTTPHeaderField: "Accept"), "application/json")
+        XCTAssertEqual(checkRequest.value(forHTTPHeaderField: "Content-Type"), "application/json")
 
         let downloadRequest = try await api.makeFirmwareDownloadRequest(
             firmwareFileUUID: "file-uuid-001",
@@ -89,9 +95,30 @@ final class PTYMOBDFirmwareP2Tests: XCTestCase {
         )
         let downloadComponents = try XCTUnwrap(URLComponents(url: XCTUnwrap(downloadRequest.url), resolvingAgainstBaseURL: false))
         let downloadItems = Dictionary(uniqueKeysWithValues: (downloadComponents.queryItems ?? []).map { ($0.name, $0.value ?? "") })
+        XCTAssertEqual(downloadRequest.httpMethod, "GET")
         XCTAssertEqual(downloadComponents.path, "/api/ymobd/client/getFirmwareFile")
         XCTAssertEqual(downloadItems["firmwareFileUUID"], "file-uuid-001")
         XCTAssertEqual(downloadItems["encryptKey"], String(repeating: "A", count: 512))
+        XCTAssertEqual(downloadRequest.value(forHTTPHeaderField: "Accept"), "application/octet-stream")
+    }
+
+    func testFirmwareCheckRejectsNonNumericServerVersionWithoutGuessing() async throws {
+        let configuration = PTYMOBDFirmwareAPIConfiguration(
+            baseURL: try XCTUnwrap(URL(string: "https://example.invalid"))
+        )
+        let api = PTYMOBDFirmwareAPI(configuration: configuration)
+        let check = PTYMOBDFirmwareCheckRequest(
+            deviceType: "YMOBD",
+            protocolType: 9,
+            obdFirmwareVersion: "V1.0.0"
+        )
+
+        do {
+            _ = try await api.makeFirmwareCheckRequest(for: check)
+            XCTFail("A semantic version must not be guessed into the YMOBD integer field")
+        } catch let error as PTYMOBDFirmwareAPIError {
+            XCTAssertEqual(error, .invalidRequest)
+        }
     }
 
     func testFirmwareSecretUsesRSA2048AndUUIDShape() throws {

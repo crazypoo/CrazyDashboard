@@ -1,5 +1,8 @@
 // 调试配置：先加载 CocoaPods，再加载本机未提交的密钥文件。
 // Configuración de depuración: carga CocoaPods y después los secretos locales no versionados.
 #include "../../Pods/Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"
-YMOBD_FIRMWARE_API_BASE_URL = "https://ymobd.com"
+// EN: `$()` prevents xcconfig from treating the URL's `//` as a comment; Xcode expands it to an empty string.
+// ES: `$()` evita que xcconfig trate `//` de la URL como comentario; Xcode lo expande a una cadena vacía.
+// 中文：`$()` 用来避免 xcconfig 把 URL 中的 `//` 识别成注释；Xcode 展开后会还原为空字符串。
+YMOBD_FIRMWARE_API_BASE_URL = https:/$()/ymobd.com
 #include? "Secrets.xcconfig"

@@ -99,18 +99,30 @@ public actor PTYMOBDFirmwareAPI {
             throw PTYMOBDFirmwareAPIError.invalidRequest
         }
 
+        let serverFirmwareVersion = try serverFirmwareVersion(for: request)
+
         let url = try makeURL(
             path: configuration.firmwareInfoPath,
-            queryItems: [
-                URLQueryItem(name: "deviceType", value: request.deviceType),
-                URLQueryItem(name: "protocolType", value: String(request.protocolType)),
-                URLQueryItem(name: "obdFirmwareVersion", value: request.obdFirmwareVersion)
-            ]
+            queryItems: []
         )
         var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "GET"
+        urlRequest.httpMethod = "POST"
         urlRequest.timeoutInterval = configuration.requestTimeout
         urlRequest.setValue("application/json", forHTTPHeaderField: "Accept")
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let payload: [String: Any] = [
+            "deviceType": request.deviceType,
+            "protocolType": String(request.protocolType),
+            "obdFirmwareVersion": serverFirmwareVersion
+        ]
+        guard JSONSerialization.isValidJSONObject(payload) else {
+            throw PTYMOBDFirmwareAPIError.invalidRequest
+        }
+        do {
+            urlRequest.httpBody = try JSONSerialization.data(withJSONObject: payload)
+        } catch {
+            throw PTYMOBDFirmwareAPIError.invalidRequest
+        }
         return urlRequest
     }
 
@@ -177,6 +189,17 @@ public actor PTYMOBDFirmwareAPI {
 }
 
 private extension PTYMOBDFirmwareAPI {
+    // EN: The live YMOBD endpoint requires a decimal integer for the current firmware version; never invent a conversion for semantic labels.
+    // ES: El endpoint YMOBD real requiere un entero decimal para la versión actual; nunca inventamos una conversión para etiquetas semánticas.
+    // 中文：真实 YMOBD 接口要求当前固件版本为十进制整数；不为语义化版本号擅自猜测转换规则。
+    func serverFirmwareVersion(for request: PTYMOBDFirmwareCheckRequest) throws -> Int {
+        let value = request.obdFirmwareVersion.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let version = Int(value), version >= 0 else {
+            throw PTYMOBDFirmwareAPIError.invalidRequest
+        }
+        return version
+    }
+
     func makeURL(path: String, queryItems: [URLQueryItem]) throws -> URL {
         guard let baseComponents = URLComponents(
             url: configuration.baseURL,

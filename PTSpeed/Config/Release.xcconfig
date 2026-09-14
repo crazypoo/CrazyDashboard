@@ -1,5 +1,8 @@
 // 发布配置：密钥由 CI 或本机 Secrets.xcconfig 注入，不写入源代码。
 // Configuración de lanzamiento: CI o Secrets.xcconfig aporta las claves sin guardarlas en el código.
 #include "../../Pods/Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"
-YMOBD_FIRMWARE_API_BASE_URL = "https://ymobd.com"
+// EN: `$()` prevents xcconfig from treating the URL's `//` as a comment; Xcode expands it to an empty string.
+// ES: `$()` evita que xcconfig trate `//` de la URL como comentario; Xcode lo expande a una cadena vacía.
+// 中文：`$()` 用来避免 xcconfig 把 URL 中的 `//` 识别成注释；Xcode 展开后会还原为空字符串。
+YMOBD_FIRMWARE_API_BASE_URL = https:/$()/ymobd.com
 #include? "Secrets.xcconfig"

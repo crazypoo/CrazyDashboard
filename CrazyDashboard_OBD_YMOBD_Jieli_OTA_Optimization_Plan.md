@@ -1183,6 +1183,20 @@ createEncryptKey()
 
 # 25. YMOBD 固件检查 API
 
+当前已确认的正式服务地址：
+
+```text
+https://ymobd.com
+```
+
+检查接口使用 `POST`，请求体是 JSON，不是 URL 查询参数：
+
+```text
+POST /ymobd/client/getFirmwareLastVersionInfo
+Content-Type: application/json
+Accept: application/json
+```
+
 请求参数：
 
 ```text
@@ -1190,6 +1204,24 @@ deviceType
 protocolType
 obdFirmwareVersion
 ```
+
+请求体示例：
+
+```json
+{
+  "deviceType": "<deviceType>",
+  "protocolType": "9",
+  "obdFirmwareVersion": 100
+}
+```
+
+字段类型已按服务端实际校验结果固定：
+
+- `deviceType`：`String`
+- `protocolType`：`String`，当前为 `"7"` 或 `"9"`
+- `obdFirmwareVersion`：十进制 `Int`
+
+App 保留 `AT+VERSION` 的原始字符串用于版本显示和本地比较；发送检查请求时只接受可以无损解析为非负整数的版本值。遇到 `V1.0.0` 这类语义化字符串会明确返回参数错误，不猜测转换为整数。
 
 其中：
 
@@ -1242,6 +1274,14 @@ server firmwareVersion > current version
 ---
 
 # 26. 固件下载 API
+
+下载接口使用 `GET`，参数保持在 URL 查询中：
+
+```text
+GET https://ymobd.com/ymobd/client/getFirmwareFile
+  ?firmwareFileUUID=<UUID>
+  &encryptKey=<encryptKey>
+```
 
 流程：
 
@@ -2264,3 +2304,10 @@ firmware header
 - 恢复点 JSON 不再保存临时 YMOBD 密钥，旧文件读取时会被重写为安全格式；固件文件单独保存并以 SHA-256 校验。
 - 增加 App 进入后台和关闭开发者高风险开关时的安全停止；PTHidden 只增加待响应取消入口，未改变通用 ELM327 连接与轮询逻辑。
 - Build 和 Build-for-testing 通过；真实 Jieli OTA、真车 AE00/AE01/AE02 和 XCTest 执行仍待硬件/运行时验证。
+
+### 2026-09-14
+
+- 接入已确认的 YMOBD 正式服务地址 `https://ymobd.com`。
+- `getFirmwareLastVersionInfo` 改为 JSON `POST`，固定服务端要求的字符串 `protocolType` 和整数 `obdFirmwareVersion`；非数字版本不再猜测转换。
+- `getFirmwareFile` 保持 `GET` 查询参数 `firmwareFileUUID` 与 `encryptKey`，未改变加密、解密和 OTA 安全门禁。
+- 增加请求构造测试；仅完成接口契约和本地构造验证，真实车型固件记录与 OTA 仍需使用真实设备验证。
