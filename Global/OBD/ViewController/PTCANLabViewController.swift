@@ -183,9 +183,29 @@ final class PTCANLabViewController: PTMotoBaseViewController {
         resetExperiment()
         captureTask?.cancel()
         captureTask = nil
+        let captureTransport = PTVehicleConnectivityCoordinator.shared.snapshot.obd.transport
         Task { @MainActor [weak self] in
             guard let self else { return }
             let session = await PTMotoTelemetryManager.shared.stopPTCANExperiment()
+            if let session {
+                // EN: Persist only passive CAN candidates after the capture is closed; no command is generated.
+                // ES: Guarda solo candidatos CAN pasivos después de cerrar la captura; no se genera ningún comando.
+                // 中文：抓包关闭后只保存被动 CAN 候选，不生成任何指令。
+                let evidenceSource: PTProtocolEvidenceSource
+                switch captureTransport {
+                case .obdMock:
+                    evidenceSource = .mock
+                case .obdBluetooth, .obdWiFi:
+                    evidenceSource = .live
+                default:
+                    evidenceSource = .unknown
+                }
+                _ = PTProtocolEvidenceV2Store.shared.ingestCapture(
+                    session,
+                    source: evidenceSource,
+                    vehicleID: PTMotorcycleGarageStore.shared.currentVehicle?.id
+                )
+            }
             if let statusKey {
                 statusLabel.text = localized(statusKey)
             } else {

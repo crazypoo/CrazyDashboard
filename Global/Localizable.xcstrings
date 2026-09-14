@@ -43291,6 +43291,21 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "CrazyDashboard 仪表" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "CrazyDashboard 儀表" } }
       }
+    },
+    "dev_protocol_evidence_v2_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Protokollnachweise 2.0" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Protocol Evidence 2.0" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Evidencia de protocolo 2.0" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Preuves de protocole 2.0" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Evidenze di protocollo 2.0" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロトコル証拠 2.0" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Доказательства протокола 2.0" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Protokol Kanıtı 2.0" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "协议证据 2.0" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "協議證據 2.0" } }
+      }
     }
   },
   "version" : "1.0"

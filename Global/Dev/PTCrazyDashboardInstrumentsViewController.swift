@@ -8,14 +8,26 @@
 //
 
 import UIKit
+import PooTools
+import SafeSFSymbols
 
 @MainActor
-public final class PTCrazyDashboardInstrumentsViewController: UIViewController {
+class PTCrazyDashboardInstrumentsViewController: PTMotoBaseViewController {
     private let store: PTCrazyDashboardInstrumentsStore
     private let scrollView = UIScrollView()
     private let stackView = UIStackView()
     private var snapshotObserver: NSObjectProtocol?
 
+    lazy var exportButton:PTBaseButton = {
+        let view = PTBaseButton(type:.custom)
+        view.setImage(UIImage(.square.andArrowUp).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { _ in
+            self.exportTapped()
+        })
+        return view
+    }()
+    
     public convenience init() {
         self.init(store: PTCrazyDashboardInstrumentsStore.shared)
     }
@@ -32,13 +44,8 @@ public final class PTCrazyDashboardInstrumentsViewController: UIViewController {
 
     public override func viewDidLoad() {
         super.viewDidLoad()
-        title = localized("dev_instruments_title", fallback: "CrazyDashboard Instruments")
+        pt_Title = localized("dev_instruments_title", fallback: "CrazyDashboard Instruments")
         view.backgroundColor = .systemGroupedBackground
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            barButtonSystemItem: .action,
-            target: self,
-            action: #selector(exportTapped)
-        )
         configureLayout()
         snapshotObserver = NotificationCenter.default.addObserver(
             forName: PTCrazyDashboardInstrumentsStore.snapshotDidChange,
@@ -57,17 +64,19 @@ public final class PTCrazyDashboardInstrumentsViewController: UIViewController {
         super.viewWillAppear(animated)
         store.start()
         render(store.snapshot)
+        setCustomRightButtons(buttons: [exportButton])
     }
-
-    public override func viewDidDisappear(_ animated: Bool) {
-        super.viewDidDisappear(animated)
-        store.stop()
-    }
-
-    deinit {
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
         if let snapshotObserver {
             NotificationCenter.default.removeObserver(snapshotObserver)
         }
+    }
+    
+    public override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        store.stop()
     }
 
     private func configureLayout() {

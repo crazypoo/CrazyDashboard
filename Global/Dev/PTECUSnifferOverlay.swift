@@ -565,6 +565,20 @@ public class PTECUSnifferOverlay: PTDashboardBaseView, UIDocumentPickerDelegate 
             let controller = PTXP400EvidenceViewController()
             presenter.present(PTBaseNavControl(rootViewController: controller), animated: true)
         })
+        // EN: Protocol Evidence 2.0 is a read-only report over existing traces and captures.
+        // ES: Protocol Evidence 2.0 es un informe de solo lectura sobre las trazas y capturas existentes.
+        // 中文：Protocol Evidence 2.0 只读汇总现有轨迹和抓包，不新增传输操作。
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "dev_protocol_evidence_v2_title"),
+            style: .default
+        ) { _ in
+            let controller = PTProtocolEvidenceV2ViewController()
+            if let navigationController = presenter.navigationController {
+                navigationController.pushViewController(controller, animated: true)
+            } else {
+                presenter.present(PTBaseNavControl(rootViewController: controller), animated: true)
+            }
+        })
         alert.addAction(UIAlertAction(
             title: PTDashboardConfig.languageFunc(text: "can_lab_developer_title"),
             style: .default

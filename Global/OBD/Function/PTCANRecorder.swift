@@ -2630,14 +2630,20 @@ private extension PTCANCaptureAnalyzer {
 
 // MARK: - CAN Event Analyzer
 
-public struct PTCANEventWindow: Codable, Sendable {
+nonisolated public struct PTCANEventWindow: Codable, Sendable {
     
+    /// EN: The user-defined event timestamp used to split the capture window.
+    /// ES: Marca de tiempo del evento definida por el usuario para dividir la ventana de captura.
     /// 用户定义的事件时间点
     public let eventTimestamp: TimeInterval
     
+    /// EN: Duration sampled before the event.
+    /// ES: Duración muestreada antes del evento.
     /// 事件前窗口，例如 2 秒
     public let beforeInterval: TimeInterval
     
+    /// EN: Duration sampled after the event.
+    /// ES: Duración muestreada después del evento.
     /// 事件后窗口，例如 2 秒
     public let afterInterval: TimeInterval
     
@@ -2663,7 +2669,7 @@ public struct PTCANEventWindow: Codable, Sendable {
 
 // MARK: - Event Frame
 
-public struct PTCANEventFrame: Codable, Sendable {
+nonisolated public struct PTCANEventFrame: Codable, Sendable {
     
     public let frame: PTCANFrame
     
@@ -2687,7 +2693,7 @@ public struct PTCANEventFrame: Codable, Sendable {
 
 // MARK: - CAN ID Event Summary
 
-public struct PTCANEventIDSummary:
+nonisolated public struct PTCANEventIDSummary:
     Codable,
     Sendable {
     
@@ -2747,7 +2753,7 @@ public struct PTCANEventIDSummary:
 
 // MARK: - Event Analysis Result
 
-public struct PTCANEventAnalysis:
+nonisolated public struct PTCANEventAnalysis:
     Codable,
     Sendable {
     
@@ -2780,8 +2786,10 @@ public struct PTCANEventAnalysis:
 
 // MARK: - Event Analyzer
 
-public enum PTCANEventAnalyzer {
+nonisolated public enum PTCANEventAnalyzer {
     
+    /// EN: Analyzes existing capture data around one event without sending CAN data.
+    /// ES: Analiza una captura existente alrededor de un evento sin enviar datos CAN.
     /// 分析一个事件时间点附近的 CAN 数据。
     ///
     /// 这个方法只读取已有 Capture。
@@ -2868,7 +2876,7 @@ public enum PTCANEventAnalyzer {
 
 private extension PTCANEventAnalyzer {
     
-    static func analyzeID(
+    nonisolated static func analyzeID(
         header: String,
         frames: [PTCANFrame],
         eventTimestamp: TimeInterval
@@ -2967,7 +2975,7 @@ private extension PTCANEventAnalyzer {
 
 private extension PTCANEventAnalyzer {
     
-    static func dominantPayload(
+    nonisolated static func dominantPayload(
         _ frames: [PTCANFrame]
     ) -> String? {
         
@@ -3004,8 +3012,10 @@ private extension PTCANEventAnalyzer {
         let after: String?
     }
     
+    /// EN: Finds payload changes between adjacent CAN frames.
+    /// ES: Encuentra cambios de payload entre tramas CAN adyacentes.
     /// 找到相邻 CAN Frame Payload 的变化。
-    static func findChangedPairs(
+    nonisolated static func findChangedPairs(
         frames: [PTCANFrame]
     ) -> [ChangedPair] {
         
@@ -3046,7 +3056,7 @@ private extension PTCANEventAnalyzer {
         return result
     }
     
-    static func byteDiff(
+    nonisolated static func byteDiff(
         before: String?,
         after: String?
     ) -> [PTCANByteChange] {
@@ -3088,7 +3098,7 @@ private extension PTCANEventAnalyzer {
         }
     }
     
-    static func hexToBytes(
+    nonisolated static func hexToBytes(
         _ hex: String
     ) -> [UInt8] {
         
