@@ -43276,6 +43276,21 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "复盘：" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "複盤：" } }
       }
+    },
+    "dev_instruments_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "CrazyDashboard Instruments" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "CrazyDashboard Instruments" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Instrumentos de CrazyDashboard" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Instruments CrazyDashboard" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Strumenti CrazyDashboard" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "CrazyDashboard インストゥルメント" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Инструменты CrazyDashboard" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "CrazyDashboard Araçları" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "CrazyDashboard 仪表" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "CrazyDashboard 儀表" } }
+      }
     }
   },
   "version" : "1.0"

@@ -576,6 +576,20 @@ public class PTECUSnifferOverlay: PTDashboardBaseView, UIDocumentPickerDelegate 
                 presenter.present(PTBaseNavControl(rootViewController: controller), animated: true)
             }
         })
+        // EN: Instruments is a passive observer and must remain next to, not inside, the capture controls.
+        // ES: Instruments es un observador pasivo y debe permanecer junto a los controles de captura, no dentro de ellos.
+        // 中文：Instruments 是被动观察器，应与抓包控制并列，而不应嵌入抓包操作流程。
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "dev_instruments_title"),
+            style: .default
+        ) { _ in
+            let controller = PTCrazyDashboardInstrumentsViewController()
+            if let navigationController = presenter.navigationController {
+                navigationController.pushViewController(controller, animated: true)
+            } else {
+                presenter.present(PTBaseNavControl(rootViewController: controller), animated: true)
+            }
+        })
         // EN: Keep the app-owned ANCS-shaped provider inside the explicit developer surface.
         // ES: Mantiene el proveedor ANCS propio de la app dentro de la superficie explícita de desarrollador.
         // 中文：将 App 自有的 ANCS 风格 Provider 仅放在明确的开发者界面中。
