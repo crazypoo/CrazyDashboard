@@ -194,7 +194,8 @@ final class PTOBDArchitectureV2Tests: XCTestCase {
         await session.markReady()
 
         let extensionProvider = await MainActor.run { PTYMOBDVendorExtension() }
-        XCTAssertTrue(try await extensionProvider.probe(session: session))
+        let probeSucceeded = try await extensionProvider.probe(session: session)
+        XCTAssertTrue(probeSucceeded)
         let capabilities = await session.capabilities
         XCTAssertEqual(capabilities.vendor?.deviceType, "YMOBD")
         XCTAssertTrue(capabilities.vendor?.supportsFirmwareCheck == true)

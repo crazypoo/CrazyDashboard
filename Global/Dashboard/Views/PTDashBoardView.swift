@@ -71,6 +71,10 @@ class PTDashBoardView: UIView {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
     
     override func layoutSubviews() {
         super.layoutSubviews()
@@ -92,6 +96,7 @@ class PTDashBoardView: UIView {
     
     // MARK: - 数据绑定
     func motionSet(motionData: PTMotionData) {
+        guard PTVehicleTelemetryBridge.shared.mode == .live else { return }
         self.speedometer.updateEnvironment(altitude: nil, pressureKpa: motionData.pressure)
         self.gForceView.updateGForce(x: motionData.gForceX, y: motionData.gForceY)
         self.leanAngleGauge.updateLean(current: motionData.roll, leftMax: motionData.maxLeftLean, rightMax: motionData.maxRightLean)
@@ -104,10 +109,42 @@ class PTDashBoardView: UIView {
         
     @objc private func handleLocationUpdate(_ notification: Notification) {
         guard let tripData = notification.object as? PTTripData else { return }
-                
+        guard PTVehicleTelemetryBridge.shared.mode == .live else { return }
+
         self.speedometer.updateSpeed(PTDashboardConfig.shared.appShowMileage(PTMotion.shared.currentSpeedKmh))
         self.compassRoller.updateHeading(tripData.courseDegree)
         self.speedometer.updateEnvironment(altitude: tripData.altitude, pressureKpa: nil)
+    }
+
+    @objc private func handleUnifiedTelemetryUpdate(_ notification: Notification) {
+        guard let snapshot = notification.userInfo?["snapshot"] as? PTUnifiedVehicleTelemetrySnapshot else { return }
+        applyUnifiedTelemetry(snapshot)
+    }
+
+    private func applyUnifiedTelemetry(_ snapshot: PTUnifiedVehicleTelemetrySnapshot) {
+        if let speed = snapshot.speedKmh {
+            speedometer.updateSpeed(
+                CGFloat(PTDashboardConfig.shared.appShowMileage(speed)),
+                animated: snapshot.mode == .live
+            )
+        }
+        if let lean = snapshot.leanAngle {
+            leanAngleGauge.updateLean(
+                current: lean,
+                leftMax: lean < 0 ? abs(lean) : 0,
+                rightMax: lean > 0 ? lean : 0
+            )
+        }
+        if let gForceX = snapshot.double(for: .gForceX),
+           let gForceY = snapshot.double(for: .gForceY) {
+            gForceView.updateGForce(x: gForceX, y: gForceY)
+        }
+        if let gForceZ = snapshot.double(for: .gForceZ) {
+            bumpMeter.updateBump(zForce: gForceZ)
+        }
+        if let pitch = snapshot.pitchAngle {
+            pitchGauge.updatePitch(degrees: pitch)
+        }
     }
 
     // MARK: - UI 排版
@@ -210,6 +247,20 @@ class PTDashBoardView: UIView {
     
     // MARK: - 引擎管理
     @MainActor private func startPootoolsEngines() {
+        let telemetryBridge = PTVehicleTelemetryBridge.shared
+        telemetryBridge.startIfNeeded()
+        let connectivity = PTVehicleConnectivityCoordinator.shared
+        telemetryBridge.ingest(
+            legacySnapshot: connectivity.telemetrySnapshot,
+            connectionSnapshot: connectivity.snapshot
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleUnifiedTelemetryUpdate(_:)),
+            name: PTVehicleTelemetryBridge.didChange,
+            object: telemetryBridge
+        )
+
         PTLocationUsageCoordinator.shared.acquire(.dashboard)
         if !PTDashboardConfig.shared.blueConnected {
             PTMotion.shared.calibrateZeroPoint()

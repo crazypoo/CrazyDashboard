@@ -20,12 +20,39 @@ public nonisolated enum PTVehicleTelemetrySource: String, Codable, Equatable, Se
     case obdWiFi
     case obdMock
     case gps
+    // EN: Canonical Build 58 labels are kept alongside legacy labels for source compatibility.
+    // ES: Las etiquetas canónicas de Build 58 conviven con las etiquetas antiguas para mantener compatibilidad.
+    // 中文：Build 58 的规范标签与旧标签并存，以保持来源兼容性。
+    case xp400BLE
+    case obd
+    case motion
+    case calculated
+    case replay
+
+    public var domain: PTVehicleTelemetrySourceDomain {
+        switch self {
+        case .dashboardBluetooth, .dashboardMock, .xp400BLE:
+            return .xp400BLE
+        case .obdBluetooth, .obdWiFi, .obdMock, .obd:
+            return .obd
+        case .gps:
+            return .gps
+        case .motion:
+            return .motion
+        case .calculated:
+            return .calculated
+        case .replay:
+            return .replay
+        case .unknown:
+            return .unknown
+        }
+    }
 
     public var isMock: Bool {
         switch self {
         case .dashboardMock, .obdMock:
             return true
-        case .dashboardBluetooth, .obdBluetooth, .obdWiFi, .gps:
+        case .dashboardBluetooth, .obdBluetooth, .obdWiFi, .gps, .xp400BLE, .obd, .motion, .calculated, .replay:
             return false
         case .unknown:
             return false
@@ -34,9 +61,9 @@ public nonisolated enum PTVehicleTelemetrySource: String, Codable, Equatable, Se
 
     public var isVerifiedReal: Bool {
         switch self {
-        case .dashboardBluetooth, .obdBluetooth, .obdWiFi, .gps:
+        case .dashboardBluetooth, .obdBluetooth, .obdWiFi, .gps, .xp400BLE, .obd, .motion:
             return true
-        case .unknown, .dashboardMock, .obdMock:
+        case .unknown, .dashboardMock, .obdMock, .calculated, .replay:
             return false
         }
     }
@@ -46,21 +73,31 @@ public nonisolated enum PTVehicleTelemetrySource: String, Codable, Equatable, Se
     // 中文：这些辅助属性让生命周期清理保留另一传输来源仍然拥有的数值。
     public var isDashboardSource: Bool {
         switch self {
-        case .dashboardBluetooth, .dashboardMock:
+        case .dashboardBluetooth, .dashboardMock, .xp400BLE:
             return true
-        case .unknown, .obdBluetooth, .obdWiFi, .obdMock, .gps:
+        case .unknown, .obdBluetooth, .obdWiFi, .obdMock, .obd, .gps, .motion, .calculated, .replay:
             return false
         }
     }
 
     public var isOBDSource: Bool {
         switch self {
-        case .obdBluetooth, .obdWiFi, .obdMock:
+        case .obdBluetooth, .obdWiFi, .obdMock, .obd:
             return true
-        case .unknown, .dashboardBluetooth, .dashboardMock, .gps:
+        case .unknown, .dashboardBluetooth, .dashboardMock, .xp400BLE, .gps, .motion, .calculated, .replay:
             return false
         }
     }
+}
+
+public nonisolated enum PTVehicleTelemetrySourceDomain: String, Codable, CaseIterable, Equatable, Sendable {
+    case xp400BLE
+    case obd
+    case gps
+    case motion
+    case calculated
+    case replay
+    case unknown
 }
 
 public nonisolated enum PTTelemetryFreshness: String, Codable, Equatable, Sendable {

@@ -685,6 +685,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
 
     private func publish(_ next: PTVehicleSnapshot) {
         snapshot = next
+        PTVehicleTelemetryBridge.shared.updateConnectionSnapshot(next)
         NotificationCenter.default.post(
             name: Self.snapshotDidChange,
             object: self,
@@ -702,10 +703,11 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         switch snapshot.obd.transport {
         case .obdMock:
             return .obdMock
-        case .obdWiFi:
-            return .obdWiFi
         default:
-            return .obdBluetooth
+            // EN: All real ELM327 transports expose vehicle data as OBD; transport remains link metadata.
+            // ES: Todos los transportes ELM327 reales exponen datos como OBD; el transporte queda como metadato.
+            // 中文：所有真实 ELM327 传输都统一作为 OBD 数据来源，具体传输只保留为链路元数据。
+            return .obd
         }
     }
 
@@ -715,6 +717,10 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
     private func publishTelemetryChange() {
         let next = telemetryEngine.snapshot
         telemetrySnapshot = next
+        PTVehicleTelemetryBridge.shared.ingest(
+            legacySnapshot: next,
+            connectionSnapshot: snapshot
+        )
         pendingTelemetryNotification = next
         guard telemetryNotificationTask == nil else { return }
 

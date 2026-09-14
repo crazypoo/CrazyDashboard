@@ -1,0 +1,404 @@
+//
+//  PTVehicleTelemetryBridge.swift
+//  CrazyDashboard
+//
+//  EN: The bridge exposes one read-only live or replay telemetry surface to the UI.
+//  ES: El puente expone a la interfaz una única superficie de telemetría en vivo o reproducida.
+//  中文：桥接器为 UI 提供统一的只读实时或回放遥测表面。
+//
+
+import Foundation
+import CoreLocation
+import PooTools
+
+@MainActor
+public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
+    public static let shared = PTVehicleTelemetryBridge()
+    public static let didChange = Notification.Name("PTVehicleTelemetryBridge.didChange")
+    public static let replayEventDidChange = Notification.Name("PTVehicleTelemetryBridge.replayEventDidChange")
+
+    public private(set) var snapshot: PTUnifiedVehicleTelemetrySnapshot = .empty
+    public private(set) var adapterSnapshot: PTOBDAdapterSnapshot = .unavailable
+    public private(set) var mode: PTVehicleTelemetryMode = .live
+
+    private var resolver = PTVehicleTelemetryResolver()
+    private var hasStarted = false
+    private var replayPlayer: PTCrazyTraceReplayPlayer?
+
+    private override init() {
+        super.init()
+    }
+
+    public var isReplayActive: Bool {
+        mode == .replay
+    }
+
+    public func startIfNeeded() {
+        guard !hasStarted else { return }
+        hasStarted = true
+        PTMotion.shared.addDelegate(self)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleLocationUpdate(_:)),
+            name: PTLocationEngineDidUpdate,
+            object: nil
+        )
+        if let location = PTLocationEngine.shared.lastLocation {
+            ingest(location: location)
+        }
+        ingest(motion: PTMotion.shared.currentData)
+    }
+
+    public func ingest(
+        legacySnapshot: PTVehicleTelemetrySnapshot,
+        connectionSnapshot: PTVehicleSnapshot? = nil,
+        at date: Date = Date()
+    ) {
+        startIfNeeded()
+        guard mode == .live else { return }
+        if let connectionSnapshot {
+            applyConnectionSnapshot(connectionSnapshot)
+            if isAvailable(connectionSnapshot.dashboard) {
+                resolver.ingest(PTXP400TelemetryAdapter.observations(from: legacySnapshot, at: date))
+            }
+            if isAvailable(connectionSnapshot.obd) {
+                resolver.ingest(PTOBDTelemetryAdapter.observations(from: legacySnapshot, at: date))
+            }
+        } else {
+            resolver.ingest(PTXP400TelemetryAdapter.observations(from: legacySnapshot, at: date))
+            resolver.ingest(PTOBDTelemetryAdapter.observations(from: legacySnapshot, at: date))
+        }
+        publishLiveSnapshot(at: date)
+    }
+
+    public func updateConnectionSnapshot(_ connectionSnapshot: PTVehicleSnapshot) {
+        startIfNeeded()
+        guard mode == .live else { return }
+        applyConnectionSnapshot(connectionSnapshot)
+        publishLiveSnapshot()
+    }
+
+    private func applyConnectionSnapshot(_ connectionSnapshot: PTVehicleSnapshot) {
+        if !isAvailable(connectionSnapshot.dashboard) {
+            resolver.remove(domain: .xp400BLE)
+        }
+        if !isAvailable(connectionSnapshot.obd) {
+            resolver.remove(domain: .obd)
+        }
+    }
+
+    private func isAvailable(_ link: PTVehicleLinkSnapshot) -> Bool {
+        link.state == .connected || link.state == .connecting
+    }
+
+    public func ingest(observations: [PTVehicleTelemetryObservation], at date: Date = Date()) {
+        startIfNeeded()
+        guard mode == .live else { return }
+        resolver.ingest(observations)
+        publishLiveSnapshot(at: date)
+    }
+
+    public func ingest(location: CLLocation, at date: Date = Date()) {
+        startIfNeeded()
+        guard mode == .live else { return }
+        resolver.ingest(PTGPSMotionTelemetryAdapter.observations(from: location, capturedAt: date))
+        if PTCrazyTraceRecorder.shared.isRecording {
+            let speedKmh = location.speed >= 0 && location.speed.isFinite ? location.speed * 3.6 : nil
+            let course = location.course >= 0 && location.course.isFinite ? location.course : nil
+            PTCrazyTraceRecorder.shared.recordLocation(
+                PTTraceLocationPayload(
+                    latitude: location.coordinate.latitude,
+                    longitude: location.coordinate.longitude,
+                    altitude: location.altitude.isFinite ? location.altitude : 0,
+                    speedKmh: speedKmh,
+                    courseDegree: course
+                ),
+                at: date
+            )
+        }
+        publishLiveSnapshot(at: date)
+    }
+
+    public func ingest(motion: PTMotionData, at date: Date = Date()) {
+        startIfNeeded()
+        guard mode == .live else { return }
+        resolver.ingest(PTGPSMotionTelemetryAdapter.observations(from: motion, capturedAt: date))
+        if PTCrazyTraceRecorder.shared.isRecording {
+            PTCrazyTraceRecorder.shared.recordMotion(
+                PTTraceMotionPayload(
+                    roll: motion.roll,
+                    pitch: motion.pitch,
+                    yaw: motion.yaw,
+                    gForceX: motion.gForceX,
+                    gForceY: motion.gForceY,
+                    gForceZ: motion.gForceZ
+                ),
+                at: date
+            )
+        }
+        publishLiveSnapshot(at: date)
+    }
+
+    public func updateAdapterSnapshot(_ snapshot: PTOBDAdapterSnapshot, at date: Date = Date()) {
+        guard mode == .live else { return }
+        adapterSnapshot = snapshot
+        guard PTCrazyTraceRecorder.shared.isRecording else { return }
+        let source: PTTraceSource = snapshot.transport == .mock ? .mock : .live
+        PTCrazyTraceRecorder.shared.recordAdapter(snapshot, source: source, at: date)
+    }
+
+    // EN: Adapter capabilities stay metadata and never enter the vehicle signal resolver.
+    // ES: Las capacidades del adaptador siguen siendo metadatos y nunca entran en el resolvedor de señales del vehículo.
+    // 中文：适配器能力始终属于元数据，不会进入车辆信号解析器。
+    public func updateAdapterSnapshot(
+        capabilities: PTELM327Capabilities,
+        mode: PTOBDAdapterMode = .disconnected,
+        firmwareVersion: String? = nil,
+        at date: Date = Date()
+    ) {
+        updateAdapterSnapshot(
+            PTOBDAdapterSnapshot(
+                capabilities: capabilities,
+                mode: mode,
+                firmwareVersion: firmwareVersion
+            ),
+            at: date
+        )
+    }
+
+    // EN: Trace controls expose one bounded recorder for all protocol domains and never send a device command.
+    // ES: Los controles de traza exponen un único registrador acotado para todos los dominios y nunca envían comandos al dispositivo.
+    // 中文：轨迹控制为所有协议域提供一个有界记录器，绝不向设备发送指令。
+    @discardableResult
+    public func startTrace(
+        name: String,
+        vehicleID: String? = nil,
+        at date: Date = Date()
+    ) -> UUID? {
+        let traceID = PTCrazyTraceRecorder.shared.start(name: name, vehicleID: vehicleID, at: date)
+        if traceID != nil, snapshot != .empty {
+            PTCrazyTraceRecorder.shared.recordTelemetry(
+                snapshot,
+                source: snapshot.containsSyntheticData ? .mock : .live,
+                at: date
+            )
+        }
+        return traceID
+    }
+
+    @discardableResult
+    public func stopTrace(at date: Date = Date()) -> PTCrazyTraceDocument? {
+        PTCrazyTraceRecorder.shared.stop(at: date)
+    }
+
+    public func exportLatestTrace() async throws -> URL? {
+        try await PTCrazyTraceRecorder.shared.exportLatest()
+    }
+
+    public func markTrace(_ name: String, metadata: [String: String] = [:], at date: Date = Date()) {
+        PTCrazyTraceRecorder.shared.mark(name, metadata: metadata, at: date)
+    }
+
+    public func recordProtocol(
+        domain: PTTraceDomain,
+        raw: String,
+        command: String? = nil,
+        direction: PTTraceDirection,
+        source: PTTraceSource = .live,
+        metadata: [String: String] = [:],
+        at date: Date = Date()
+    ) {
+        PTCrazyTraceRecorder.shared.recordProtocol(
+            domain: domain,
+            raw: raw,
+            command: command,
+            direction: direction,
+            source: source,
+            metadata: metadata,
+            at: date
+        )
+    }
+
+    public func startReplay(_ document: PTCrazyTraceDocument) {
+        endReplay(restoreLiveState: false)
+        mode = .replay
+        resolver.reset()
+        adapterSnapshot = .unavailable
+        snapshot = PTUnifiedVehicleTelemetrySnapshot(updatedAt: Date(), mode: .replay)
+        notifySnapshotChange()
+
+        let player = PTCrazyTraceReplayPlayer(document: document)
+        player.onEvent = { [weak self] event in
+            self?.applyReplayEvent(event)
+        }
+        replayPlayer = player
+        player.play()
+    }
+
+    public func startReplay(from url: URL) async throws {
+        let document = try await PTCrazyTraceRecorder.load(from: url)
+        startReplay(document)
+    }
+
+    public func pauseReplay() {
+        replayPlayer?.pause()
+    }
+
+    public func resumeReplay() {
+        replayPlayer?.play()
+    }
+
+    public func seekReplay(to elapsed: TimeInterval) {
+        replayPlayer?.seek(to: elapsed)
+    }
+
+    public func stopReplay() {
+        endReplay(restoreLiveState: true)
+    }
+
+    private func endReplay(restoreLiveState: Bool) {
+        replayPlayer?.stop()
+        replayPlayer = nil
+        guard mode == .replay else { return }
+        mode = .live
+        resolver.reset()
+        adapterSnapshot = .unavailable
+        snapshot = .empty
+        if restoreLiveState {
+            let connectivity = PTVehicleConnectivityCoordinator.shared
+            ingest(
+                legacySnapshot: connectivity.telemetrySnapshot,
+                connectionSnapshot: connectivity.snapshot
+            )
+        } else {
+            notifySnapshotChange()
+        }
+    }
+
+    nonisolated public func motionManager(_ manager: PTMotion, didUpdateData data: PTMotionData) {
+        Task { @MainActor [weak self] in
+            self?.ingest(motion: data)
+        }
+    }
+
+    nonisolated public func motionManager(_ manager: PTMotion, didChangeDataSource source: PTMotionDataSource) {}
+
+    @objc private func handleLocationUpdate(_ notification: Notification) {
+        guard let tripData = notification.object as? PTTripData,
+              let location = tripData.currentLocation else { return }
+        ingest(location: location)
+    }
+
+    private func publishLiveSnapshot(at date: Date = Date()) {
+        snapshot = resolver.snapshot(at: date, mode: .live)
+        if PTCrazyTraceRecorder.shared.isRecording {
+            PTCrazyTraceRecorder.shared.recordTelemetry(
+                snapshot,
+                source: snapshot.containsSyntheticData ? .mock : .live,
+                at: date
+            )
+        }
+        notifySnapshotChange()
+    }
+
+    private func applyReplayEvent(_ event: PTCrazyTraceEvent) {
+        guard mode == .replay else { return }
+        switch event.payload {
+        case .telemetry(let historicalSnapshot):
+            let values = historicalSnapshot.values.map {
+                PTVehicleTelemetryResolvedValue(
+                    signal: $0.signal,
+                    value: $0.value,
+                    source: .replay,
+                    capturedAt: event.timestamp,
+                    freshness: .fresh,
+                    confidence: $0.confidence,
+                    isSynthetic: true
+                )
+            }
+            snapshot = PTUnifiedVehicleTelemetrySnapshot(values: values, updatedAt: event.timestamp, mode: .replay)
+            notifySnapshotChange()
+        case .location(let payload):
+            mergeReplayValues(
+                [
+                    PTVehicleTelemetryResolvedValue(
+                        signal: .location,
+                        value: .location(
+                            latitude: payload.latitude,
+                            longitude: payload.longitude,
+                            altitude: payload.altitude
+                        ),
+                        source: .replay,
+                        capturedAt: event.timestamp,
+                        freshness: .fresh,
+                        confidence: 1,
+                        isSynthetic: true
+                    )
+                ],
+                at: event.timestamp
+            )
+        case .motion(let payload):
+            mergeReplayValues(
+                [
+                    replayValue(.lean, payload.roll, at: event.timestamp),
+                    replayValue(.pitch, payload.pitch, at: event.timestamp),
+                    replayValue(.yaw, payload.yaw, at: event.timestamp),
+                    replayValue(.gForceX, payload.gForceX, at: event.timestamp),
+                    replayValue(.gForceY, payload.gForceY, at: event.timestamp),
+                    replayValue(.gForceZ, payload.gForceZ, at: event.timestamp)
+                ],
+                at: event.timestamp
+            )
+        case .adapter(let payload):
+            adapterSnapshot = payload.snapshot
+            NotificationCenter.default.post(
+                name: Self.replayEventDidChange,
+                object: self,
+                userInfo: ["event": event]
+            )
+        case .protocolMessage, .marker, .text:
+            NotificationCenter.default.post(
+                name: Self.replayEventDidChange,
+                object: self,
+                userInfo: ["event": event]
+            )
+        }
+    }
+
+    private func mergeReplayValues(_ newValues: [PTVehicleTelemetryResolvedValue], at date: Date) {
+        var values = snapshot.values.filter { existing in
+            !newValues.contains { $0.signal == existing.signal }
+        }
+        values.append(contentsOf: newValues)
+        snapshot = PTUnifiedVehicleTelemetrySnapshot(values: values, updatedAt: date, mode: .replay)
+        notifySnapshotChange()
+    }
+
+    private func replayValue(
+        _ signal: PTVehicleTelemetrySignal,
+        _ value: Double,
+        at date: Date
+    ) -> PTVehicleTelemetryResolvedValue {
+        PTVehicleTelemetryResolvedValue(
+            signal: signal,
+            value: .double(value),
+            source: .replay,
+            capturedAt: date,
+            freshness: .fresh,
+            confidence: 1,
+            isSynthetic: true
+        )
+    }
+
+    private func notifySnapshotChange() {
+        NotificationCenter.default.post(
+            name: Self.didChange,
+            object: self,
+            userInfo: ["snapshot": snapshot]
+        )
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+}
