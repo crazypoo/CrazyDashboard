@@ -2,11 +2,11 @@
 
 > 本文件是项目功能、入口、平台覆盖和完成状态的唯一事实源（Single Source of Truth）。
 >
-> 快照日期：2026-09-08
+> 快照日期：2026-09-14
 >
-> 仓库基线：当前工作区，Build 56 骑行分析详情代码已接入；Build 48 作为日语/俄语切换回归基线，真实设备、车辆和完整发布验证仍待补
+> 仓库基线：当前工作区已进入 Build 61 Architecture Consolidation；Build 57–60 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport 外围能力已接入，真实设备、车辆和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests `CURRENT_PROJECT_VERSION = 56`
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests / UI Tests `CURRENT_PROJECT_VERSION = 61`
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -405,6 +405,27 @@ Build 56 继续保持营销版本 `2.0.8`，只递增工程 Build。骑行历史
 
 Build 56 不计算综合骑行评分，不自动给出驾驶能力或安全结论；它只展示可追溯的事实、数据来源和质量边界。
 
+### 7.9 Build 57–61 架构收口状态
+
+Build 57–61 继续保持营销版本 `2.0.8`，只递增工程 Build。以下状态区分代码静态检查、自动测试、目标编译和真实设备/车辆验证，不把其中一种证据冒充另一种证据。
+
+| Build | 主题 | 静态 | 测试 | 编译 | 真机/实车 |
+| --- | --- | --- | --- | --- | --- |
+| 57 | OBD Architecture 2.0、YMOBD/Jieli 外围隔离 | ✅ | 🟨 | ✅ | ⬜ |
+| 58 | Unified Vehicle Telemetry + Replay | ✅ | 🟨 | ✅ | ⬜ |
+| 59 | CrazyDashboard Instruments Provider 前置能力 | ✅ | 🟨 | ✅ | ⬜ |
+| 60 | Protocol Evidence 2.0、CAN Discovery、Vehicle Passport | ✅ | 🟨 | ✅ | ⬜ |
+| 61 | Architecture Consolidation：Unified Consumer、Projection、Provider Registry、Evidence 边界 | ✅ | 🟨 | ✅ | ⬜ |
+
+Build 61 新增的边界：
+
+- `PTVehicleTelemetryConsumerHub` 发布不可变 Unified 快照，正式 Dashboard 已迁移到 Consumer + Projection 路径。
+- Instruments 通过 `PTInstrumentProviderRegistry` 聚合 XP400 BLE、OBD、YMOBD、Jieli OTA、CAN、Telemetry、GPS、Motion 和 System Provider；原快照字段与导出入口保持兼容。
+- Evidence V2 将 CAN Discovery、Correlation、Passport Resolver、Export 和 UserDefaults State Codec 提取为独立架构组件；Evidence storage key 与 schemaVersion 2 保持不变。
+- 新组件均为只读；未知协议、真实仪表固件写入和 OTA 仍不从普通 UI 暴露。
+
+Build 61 的完整依赖审计记录见 [PTTELEMETRY_MIGRATION_MATRIX.md](PTTELEMETRY_MIGRATION_MATRIX.md)。
+
 ## 8. 已退役功能
 
 当前没有需要登记的已退役功能。后续移除功能时，在下表保留原 ID、最后可用 Build、移除原因和替代路径。
@@ -472,3 +493,4 @@ Build 56 不计算综合骑行评分，不自动给出驾驶能力或安全结�
 | 2026-09-08 | 当前工作区 Build 53 | B53-00～B53-06 已接入：统一只读车辆遥测投影与来源/新鲜度边界、车库自动同步和里程/保养数据隔离、真实数据轮速一致性与电瓶阶段摘要、PTT 会话/头像生命周期收口、开发者嗅探器按需挂载、MetricKit 诊断、LiDAR MainActor 修正和仪表配置请求档案；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；主 App Debug generic build 与 Tests `build-for-testing` 通过，XCTest 实际执行、签名发布、真实设备/车辆验证待补 |
 | 2026-09-08 | 当前工作区 Build 55 | B54-01～B54-06 与 B55-01～B55-04 已接入：电瓶趋势、转向灯/ABS 安全提醒、支架校准、仪表配置安全门禁、统一诊断健康报告、TipKit 上下文提示、A/B/A 协议证据向导、窗口评分、BLE/OBD 会话关联和只读 ECU 指纹；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；主 App Debug generic build 已通过，XCTest 实际执行、签名发布、真实设备/车辆和 Dev 实验仍待补 |
 | 2026-09-08 | 当前工作区 Build 56 | B56-01～B56-07 已接入：骑行历史紧凑摘要、专业事实分析、限量遥测图表、同车历史基线、事件跳转、脱敏摘要/JSON 分享和数据质量提示；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；主 App Debug generic build 与 Tests build-for-testing 已通过，XCTest 实际执行被 Pods 真机签名配置阻断，签名发布、真机与大数据量验证待补 |
+| 2026-09-14 | 当前工作区 Build 61 | B61-00～B61-15 已接入：版本/Blueprint 门禁、Telemetry Consumer/Projection、Instruments Provider Registry、Evidence/CAN/Passport 边界与兼容编解码；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；静态检查、主 App Debug generic build 与 Tests build-for-testing 已通过，XCTest 实际运行受当前模拟器架构/Pods 产物环境阻断，签名发布、真实设备/车辆验证待补 |

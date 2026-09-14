@@ -440,52 +440,13 @@ nonisolated public enum PTProtocolEvidenceV2CANDiscovery {
         after: TimeInterval = 2,
         maximumResults: Int = 100
     ) -> [PTProtocolCANBitCandidate] {
-        guard before >= 0, after >= 0, maximumResults > 0 else { return [] }
-
-        var candidates: [PTProtocolCANBitCandidate] = []
-        for event in session.events {
-            guard event.timestamp.isFinite else { continue }
-            let analysis = PTCANEventAnalyzer.analyze(
-                session: session,
-                eventTimestamp: event.timestamp,
-                before: before,
-                after: after
-            )
-            for summary in analysis.interestingIDs {
-                let boundedScore = max(summary.score, 0)
-                let confidence = min(0.95, max(0.1, Double(boundedScore) / 100))
-                let timestamp = event.timestamp > 0
-                    ? Date(timeIntervalSince1970: event.timestamp)
-                    : session.startedAt
-                candidates.append(
-                    PTProtocolCANBitCandidate(
-                        captureID: session.id,
-                        eventID: event.id,
-                        header: summary.header,
-                        changedByteIndexes: summary.changedByteIndexes,
-                        changedBits: summary.changedBits,
-                        dominantBeforePayload: summary.dominantBeforePayload,
-                        dominantAfterPayload: summary.dominantAfterPayload,
-                        changedFrameCount: summary.changedFrameCount,
-                        firstChangeRelativeTimestamp: summary.firstChangeRelativeTimestamp,
-                        lastChangeRelativeTimestamp: summary.lastChangeRelativeTimestamp,
-                        score: boundedScore,
-                        source: source,
-                        timestamp: timestamp,
-                        confidence: confidence,
-                        vehicleID: vehicleID
-                    )
-                )
-            }
-        }
-
-        return Array(
-            candidates
-                .sorted {
-                    if $0.score != $1.score { return $0.score > $1.score }
-                    return $0.timestamp < $1.timestamp
-                }
-                .prefix(maximumResults)
+        PTProtocolCANDiscoveryEngine.discover(
+            in: session,
+            source: source,
+            vehicleID: vehicleID,
+            before: before,
+            after: after,
+            maximumResults: maximumResults
         )
     }
 
@@ -743,68 +704,61 @@ public enum PTVehiclePassportBuilder {
         let adapter = telemetryBridge.adapterSnapshot
         let obdSource = evidenceSource(for: linkSnapshot.obd.transport, isConnected: linkSnapshot.obd.state == .connected)
         let dashboardSource = evidenceSource(for: linkSnapshot.dashboard.transport, isConnected: linkSnapshot.dashboard.state == .connected)
-
-        var vehicleFields: [PTVehiclePassportField] = []
-        vehicleFields.append(field("vehicle.name", vehicle?.name, source: .system, timestamp: vehicle?.updatedAt ?? date, confidence: vehicle == nil ? 0 : 0.8))
-        vehicleFields.append(field("vehicle.brand", vehicle?.brand, source: .system, timestamp: vehicle?.updatedAt ?? date, confidence: vehicle == nil ? 0 : 0.8))
-        vehicleFields.append(field("vehicle.model", vehicle?.model, source: .system, timestamp: vehicle?.updatedAt ?? date, confidence: vehicle == nil ? 0 : 0.8))
-        vehicleFields.append(field("vehicle.year", vehicle?.year.map(String.init), source: .system, timestamp: vehicle?.updatedAt ?? date, confidence: vehicle?.year == nil ? 0 : 0.8))
-        vehicleFields.append(field("vehicle.vin", redactedVIN(vehicle?.vin), source: .system, timestamp: vehicle?.updatedAt ?? date, confidence: nonEmpty(vehicle?.vin) == nil ? 0 : 0.85))
-
         let dashboardReference = connectivity.dashboardConnectionIdentity?.reportedSerialNumber
             ?? vehicle?.dashboardSerialNumber
             ?? connectivity.dashboardConnectionIdentity?.centralIdentifier.map { String($0.uuidString.suffix(8)).uppercased() }
-        vehicleFields.append(field("dashboard.reference", redactedIdentifier(dashboardReference), source: dashboardReference == nil ? .unknown : dashboardSource, timestamp: date, confidence: dashboardReference == nil ? 0 : (dashboardSource == .live ? 1 : 0.6)))
-        vehicleFields.append(field("dashboard.hardware", nil, source: .unknown, timestamp: date, confidence: 0))
-        vehicleFields.append(field("dashboard.software", nil, source: .unknown, timestamp: date, confidence: 0))
-        vehicleFields.append(field("dashboard.boot", nil, source: .unknown, timestamp: date, confidence: 0))
-        vehicleFields.append(field("connectivityBox.hardware", nil, source: .unknown, timestamp: date, confidence: 0))
-        vehicleFields.append(field("connectivityBox.software", nil, source: .unknown, timestamp: date, confidence: 0))
-        vehicleFields.append(field("connectivityBox.boot", nil, source: .unknown, timestamp: date, confidence: 0))
-        vehicleFields.append(field("connectivityBox.reference", nil, source: .unknown, timestamp: date, confidence: 0))
-
         let ecuAddress = vehicle?.preferredDiagnosticAddress.map { "\($0.tx)->\($0.rx)" }
-        vehicleFields.append(field("ecu.address", ecuAddress, source: ecuAddress == nil ? .unknown : .system, timestamp: vehicle?.updatedAt ?? date, confidence: ecuAddress == nil ? 0 : 0.8))
-        vehicleFields.append(field("ecu.hardware", nil, source: .unknown, timestamp: date, confidence: 0))
-        vehicleFields.append(field("ecu.software", nil, source: .unknown, timestamp: date, confidence: 0))
-        vehicleFields.append(field("ecu.calibration", nonEmpty(obdInfo.ecuVersion), source: nonEmpty(obdInfo.ecuVersion) == nil ? .unknown : obdSource, timestamp: date, confidence: nonEmpty(obdInfo.ecuVersion) == nil ? 0 : (obdSource == .live ? 0.9 : 0.6)))
+        let vehicleFields = PTVehicleIdentityResolver.resolve(
+            PTVehicleIdentityResolutionInput(
+                name: vehicle?.name,
+                brand: vehicle?.brand,
+                model: vehicle?.model,
+                year: vehicle?.year,
+                vin: vehicle?.vin,
+                dashboardReference: dashboardReference,
+                dashboardSource: dashboardSource,
+                vehicleTimestamp: vehicle?.updatedAt ?? date,
+                ecuAddress: ecuAddress,
+                ecuSource: ecuAddress == nil ? .unknown : .system,
+                ecuTimestamp: vehicle?.updatedAt ?? date,
+                ecuCalibration: nonEmpty(obdInfo.ecuVersion),
+                ecuCalibrationSource: nonEmpty(obdInfo.ecuVersion) == nil ? .unknown : obdSource,
+                dashboardTimestamp: date,
+                ecuComponentTimestamp: date
+            )
+        )
 
         let vendor = adapter.vendor ?? nonEmpty(obdInfo.moudleInfo.company)
-        let model = adapter.model ?? nonEmpty(obdInfo.moudleInfo.deviceType) ?? nonEmpty(obdInfo.moudleInfo.deviceName)
+        let adapterModel = adapter.model ?? nonEmpty(obdInfo.moudleInfo.deviceType) ?? nonEmpty(obdInfo.moudleInfo.deviceName)
         let firmware = adapter.firmwareVersion ?? nonEmpty(obdInfo.moudleInfo.version)
         let officialYMOBD = adapter.isOfficialYMOBD || vendor?.localizedCaseInsensitiveContains("YMOBD") == true
         let adapterSource = adapter.vendor != nil || adapter.model != nil || adapter.firmwareVersion != nil
             ? (adapter.transport == .mock ? .mock : .live)
             : obdSource
-        var adapterFields: [PTVehiclePassportField] = []
-        adapterFields.append(field("adapter.vendor", vendor, source: vendor == nil ? .unknown : adapterSource, timestamp: date, confidence: vendor == nil ? 0 : (officialYMOBD ? 1 : 0.7)))
-        adapterFields.append(field("adapter.model", model, source: model == nil ? .unknown : adapterSource, timestamp: date, confidence: model == nil ? 0 : 0.85))
-        adapterFields.append(field("adapter.firmware", firmware, source: firmware == nil ? .unknown : adapterSource, timestamp: date, confidence: firmware == nil ? 0 : 0.9))
         let transport = adapter.transport == .unknown ? linkSnapshot.obd.transport?.rawValue : adapter.transport.rawValue
-        adapterFields.append(field("adapter.transport", transport, source: transport == nil ? .unknown : adapterSource, timestamp: date, confidence: transport == nil ? 0 : 0.8))
         let capabilityCount = PTMotoTelemetryManager.shared.obdInfo.supportCommand.count
-        adapterFields.append(field("adapter.elmCapabilities", capabilityCount > 0 ? "supportedCommands=\(capabilityCount)" : nil, source: capabilityCount > 0 ? adapterSource : .unknown, timestamp: date, confidence: capabilityCount > 0 ? 0.85 : 0))
-        adapterFields.append(field("adapter.vendorExtension", officialYMOBD ? "YMOBD / AT+VERSION" : nil, source: officialYMOBD ? adapterSource : .unknown, timestamp: date, confidence: officialYMOBD ? 0.95 : 0))
         let otaSupported = officialYMOBD && (adapter.isOfficialYMOBD || adapter.mode != .disconnected)
-        adapterFields.append(field("adapter.otaCapability", otaSupported ? "Jieli OTA supported (adapter only)" : nil, source: otaSupported ? adapterSource : .unknown, timestamp: date, confidence: otaSupported ? 0.9 : 0))
         let adapterIdentifier = nonEmpty(obdInfo.moudleInfo.deviceMac)
-        adapterFields.append(field("adapter.identifierSuffix", redactedIdentifier(adapterIdentifier), source: adapterIdentifier == nil ? .unknown : adapterSource, timestamp: date, confidence: adapterIdentifier == nil ? 0 : 0.8))
+        let adapterFields = PTDiagnosticAdapterIdentityResolver.resolve(
+            PTDiagnosticAdapterIdentityResolutionInput(
+                vendor: vendor,
+                model: adapterModel,
+                firmware: firmware,
+                transport: transport,
+                supportedCommandCount: capabilityCount,
+                isOfficialYMOBD: officialYMOBD,
+                identifier: adapterIdentifier,
+                source: adapterSource,
+                timestamp: date,
+                otaSupported: otaSupported
+            )
+        )
 
         return PTVehiclePassport(
             vehicleID: selectedVehicleID,
             vehicleFields: vehicleFields,
             adapterFields: adapterFields
         )
-    }
-
-    private static func field(
-        _ key: String,
-        _ value: String?,
-        source: PTProtocolEvidenceSource,
-        timestamp: Date,
-        confidence: Double
-    ) -> PTVehiclePassportField {
-        PTVehiclePassportField(key: key, value: value, source: source, timestamp: timestamp, confidence: confidence)
     }
 
     private static func evidenceSource(for transport: PTVehicleTransport?, isConnected: Bool) -> PTProtocolEvidenceSource {
@@ -822,16 +776,6 @@ public enum PTVehiclePassportBuilder {
         return normalized.isEmpty ? nil : String(normalized.prefix(256))
     }
 
-    private static func redactedVIN(_ value: String?) -> String? {
-        guard let value = nonEmpty(value) else { return nil }
-        guard value.count > 6 else { return "***" }
-        return "\(value.prefix(3))***\(value.suffix(3))"
-    }
-
-    private static func redactedIdentifier(_ value: String?) -> String? {
-        guard let value = nonEmpty(value) else { return nil }
-        return String(value.suffix(8)).uppercased()
-    }
 }
 
 // EN: The store is bounded and additive; it never forwards migrated data to CoreBluetooth or an OBD transport.
@@ -853,7 +797,7 @@ public final class PTProtocolEvidenceV2Store {
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         if let data = defaults.data(forKey: Self.storageKey),
-           let state = try? Self.decodeState(data) {
+           let state = try? PTProtocolEvidenceV2StateCodec.decode(data) {
             records = Array(state.records.sorted { $0.timestamp > $1.timestamp }.prefix(Self.maximumRecordCount))
             canCandidates = Array(state.canCandidates.sorted { $0.timestamp > $1.timestamp }.prefix(Self.maximumCandidateCount))
         } else {
@@ -1029,90 +973,13 @@ public final class PTProtocolEvidenceV2Store {
         window: TimeInterval = 30,
         at date: Date = Date()
     ) -> PTProtocolEvidenceCorrelationReport {
-        let safeWindow = max(window, 1)
-        let start = date.addingTimeInterval(-safeWindow)
-        let bridge = PTVehicleTelemetryBridge.shared
-        let vehicleID = PTMotorcycleGarageStore.shared.currentVehicle?.id
-        var entries: [PTProtocolEvidenceCorrelationEntry] = []
-
-        for value in bridge.snapshot.values where value.capturedAt >= start && value.capturedAt <= date {
-            let source: PTProtocolEvidenceCorrelationSource
-            let domain: PTProtocolEvidenceDomain?
-            switch value.source.domain {
-            case .xp400BLE:
-                source = .xp400BLETelemetry
-                domain = .xp400BLE
-            case .obd:
-                source = .obdTelemetry
-                domain = .obd
-            case .gps:
-                source = .gps
-                domain = nil
-            case .motion:
-                source = .motion
-                domain = nil
-            case .calculated, .replay, .unknown:
-                continue
-            }
-            entries.append(
-                PTProtocolEvidenceCorrelationEntry(
-                    source: source,
-                    domain: domain,
-                    timestamp: value.capturedAt,
-                    confidence: value.confidence,
-                    summary: "\(value.signal.rawValue)=\(Self.describe(value.value))"
-                )
-            )
-        }
-
-        for record in records where record.timestamp >= start && record.timestamp <= date {
-            guard record.domain != .ymobdFirmwareOTA else { continue }
-            let source: PTProtocolEvidenceCorrelationSource?
-            switch record.domain {
-            case .xp400BLE: source = .xp400BLETelemetry
-            case .obd, .uds: source = .obdTelemetry
-            case .can: source = .can
-            case .ymobdVendorExtension, .ymobdFirmwareOTA, .firmwareResearch: source = nil
-            }
-            guard let source else { continue }
-            entries.append(
-                PTProtocolEvidenceCorrelationEntry(
-                    source: source,
-                    domain: record.domain,
-                    timestamp: record.timestamp,
-                    confidence: record.confidence,
-                    summary: record.value,
-                    evidenceID: record.id
-                )
-            )
-        }
-
-        if let capture = PTCANRecorder.shared.snapshot() {
-            for marker in capture.events {
-                let timestamp = marker.timestamp > 0 ? Date(timeIntervalSince1970: marker.timestamp) : capture.startedAt
-                guard timestamp >= start && timestamp <= date else { continue }
-                entries.append(
-                    PTProtocolEvidenceCorrelationEntry(
-                        source: .userMarker,
-                        domain: .can,
-                        timestamp: timestamp,
-                        confidence: 1,
-                        summary: marker.name
-                    )
-                )
-            }
-        }
-
-        let boundedEntries = Array(
-            entries
-                .sorted { $0.timestamp < $1.timestamp }
-                .suffix(250)
-        )
-        return PTProtocolEvidenceCorrelationReport(
-            vehicleID: vehicleID,
-            startedAt: start,
-            endedAt: date,
-            entries: boundedEntries
+        PTProtocolEvidenceCorrelationBuilder.build(
+            snapshot: PTVehicleTelemetryConsumerHub.shared.latestSnapshot,
+            records: records,
+            capture: PTCANRecorder.shared.snapshot(),
+            vehicleID: PTMotorcycleGarageStore.shared.currentVehicle?.id,
+            window: window,
+            at: date
         )
     }
 
@@ -1128,10 +995,7 @@ public final class PTProtocolEvidenceV2Store {
             correlations: [correlation(at: date)],
             passport: passport(at: date)
         )
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return try encoder.encode(document)
+        return try PTProtocolEvidenceV2Exporter.jsonData(for: document)
     }
 
     public func exportJSONURL(at date: Date = Date()) throws -> URL {
@@ -1143,26 +1007,7 @@ public final class PTProtocolEvidenceV2Store {
     }
 
     public func exportCSVData() -> Data {
-        var rows = ["id,domain,kind,direction,source,timestamp,confidence,value,fingerprint,vehicleID,referenceID,reference,note"]
-        let formatter = ISO8601DateFormatter()
-        rows.append(contentsOf: records.map { record in
-            [
-                record.id.uuidString,
-                record.domain.rawValue,
-                record.kind.rawValue,
-                record.direction.rawValue,
-                record.source.rawValue,
-                formatter.string(from: record.timestamp),
-                String(format: "%.3f", record.confidence),
-                record.value,
-                record.fingerprint ?? "",
-                record.vehicleID?.uuidString ?? "",
-                record.referenceID?.uuidString ?? "",
-                record.reference ?? "",
-                record.note ?? ""
-            ].map(Self.csvField).joined(separator: ",")
-        })
-        return Data(rows.joined(separator: "\n").utf8)
+        PTProtocolEvidenceV2Exporter.csvData(for: records)
     }
 
     public func exportCSVURL() throws -> URL {
@@ -1175,23 +1020,13 @@ public final class PTProtocolEvidenceV2Store {
 }
 
 private extension PTProtocolEvidenceV2Store {
-    struct State: Codable {
-        let schemaVersion: Int
-        let records: [PTProtocolEvidenceRecord]
-        let canCandidates: [PTProtocolCANBitCandidate]
-    }
-
-    static func decodeState(_ data: Data) throws -> State {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode(State.self, from: data)
-    }
-
     func persist() {
-        let state = State(schemaVersion: PTProtocolEvidenceV2Document.currentSchemaVersion, records: records, canCandidates: canCandidates)
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        guard let data = try? encoder.encode(state) else { return }
+        let state = PTProtocolEvidenceV2PersistedState(
+            schemaVersion: PTProtocolEvidenceV2Document.currentSchemaVersion,
+            records: records,
+            canCandidates: canCandidates
+        )
+        guard let data = try? PTProtocolEvidenceV2StateCodec.encode(state) else { return }
         defaults.set(data, forKey: Self.storageKey)
     }
 
@@ -1211,17 +1046,4 @@ private extension PTProtocolEvidenceV2Store {
             && lhs.changedByteIndexes == rhs.changedByteIndexes
     }
 
-    static func describe(_ value: PTVehicleTelemetryValue) -> String {
-        switch value {
-        case .double(let value): return String(format: "%.2f", value)
-        case .integer(let value): return String(value)
-        case .boolean(let value): return value ? "true" : "false"
-        case .location(let latitude, let longitude, _): return String(format: "%.5f,%.5f", latitude, longitude)
-        }
-    }
-
-    static func csvField(_ value: String) -> String {
-        let escaped = value.replacingOccurrences(of: "\"", with: "\"\"")
-        return "\"\(escaped)\""
-    }
 }

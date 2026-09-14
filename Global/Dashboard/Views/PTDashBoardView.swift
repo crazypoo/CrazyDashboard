@@ -11,7 +11,8 @@ import SwifterSwift
 import SnapKit
 import SafeSFSymbols
 
-class PTDashBoardView: UIView {
+@MainActor
+class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
     
     let lrSpacing: CGFloat = 44
     let topSpacing: CGFloat = 44
@@ -116,33 +117,32 @@ class PTDashBoardView: UIView {
         self.speedometer.updateEnvironment(altitude: tripData.altitude, pressureKpa: nil)
     }
 
-    @objc private func handleUnifiedTelemetryUpdate(_ notification: Notification) {
-        guard let snapshot = notification.userInfo?["snapshot"] as? PTUnifiedVehicleTelemetrySnapshot else { return }
-        applyUnifiedTelemetry(snapshot)
+    func vehicleTelemetryDidUpdate(_ snapshot: PTUnifiedVehicleTelemetrySnapshot) {
+        applyUnifiedTelemetry(PTVehicleTelemetryProjections.dashboard(from: snapshot))
     }
 
-    private func applyUnifiedTelemetry(_ snapshot: PTUnifiedVehicleTelemetrySnapshot) {
-        if let speed = snapshot.speedKmh {
+    private func applyUnifiedTelemetry(_ projection: PTDashboardProjection) {
+        if let speed = projection.speedKmh {
             speedometer.updateSpeed(
                 CGFloat(PTDashboardConfig.shared.appShowMileage(speed)),
-                animated: snapshot.mode == .live
+                animated: projection.snapshot.mode == .live
             )
         }
-        if let lean = snapshot.leanAngle {
+        if let lean = projection.double(for: .lean) {
             leanAngleGauge.updateLean(
                 current: lean,
                 leftMax: lean < 0 ? abs(lean) : 0,
                 rightMax: lean > 0 ? lean : 0
             )
         }
-        if let gForceX = snapshot.double(for: .gForceX),
-           let gForceY = snapshot.double(for: .gForceY) {
+        if let gForceX = projection.double(for: .gForceX),
+           let gForceY = projection.double(for: .gForceY) {
             gForceView.updateGForce(x: gForceX, y: gForceY)
         }
-        if let gForceZ = snapshot.double(for: .gForceZ) {
+        if let gForceZ = projection.double(for: .gForceZ) {
             bumpMeter.updateBump(zForce: gForceZ)
         }
-        if let pitch = snapshot.pitchAngle {
+        if let pitch = projection.double(for: .pitch) {
             pitchGauge.updatePitch(degrees: pitch)
         }
     }
@@ -249,16 +249,11 @@ class PTDashBoardView: UIView {
     @MainActor private func startPootoolsEngines() {
         let telemetryBridge = PTVehicleTelemetryBridge.shared
         telemetryBridge.startIfNeeded()
+        PTVehicleTelemetryConsumerHub.shared.register(self)
         let connectivity = PTVehicleConnectivityCoordinator.shared
         telemetryBridge.ingest(
             legacySnapshot: connectivity.telemetrySnapshot,
             connectionSnapshot: connectivity.snapshot
-        )
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleUnifiedTelemetryUpdate(_:)),
-            name: PTVehicleTelemetryBridge.didChange,
-            object: telemetryBridge
         )
 
         PTLocationUsageCoordinator.shared.acquire(.dashboard)

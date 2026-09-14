@@ -8,10 +8,6 @@
 //
 
 import Foundation
-import CoreBluetooth
-import CoreLocation
-import UIKit
-import PooTools
 
 // EN: The domain list prevents XP400 BLE, ELM327, YMOBD, and Jieli events from being presented as one connection.
 // ES: La lista de dominios evita presentar BLE XP400, ELM327, YMOBD y Jieli como una sola conexión.
@@ -461,7 +457,7 @@ nonisolated public enum PTCrazyDashboardInstrumentCSV {
 // ES: La propiedad del actor principal evita carreras entre muestreo y UI; todos los valores muestreados son tipos valor.
 // 中文：由主 actor 持有采样和 UI 通知，避免竞态；所有采样结果都是值类型副本。
 @MainActor
-public final class PTCrazyDashboardInstrumentsStore: NSObject, PTBLEDashboardDelegate, PTMotoTelemetryDelegate {
+public final class PTCrazyDashboardInstrumentsStore: NSObject {
     public static let shared = PTCrazyDashboardInstrumentsStore()
     public static let snapshotDidChange = Notification.Name("PTCrazyDashboardInstrumentsStore.snapshotDidChange")
 
@@ -470,21 +466,16 @@ public final class PTCrazyDashboardInstrumentsStore: NSObject, PTBLEDashboardDel
     public private(set) var timeline: [PTCrazyDashboardInstrumentTimelineEvent] = []
 
     private let historyLimit: Int
+    private let providerRegistry = PTInstrumentProviderRegistry()
     private var isStarted = false
     private var timer: Timer?
     private var observers: [NSObjectProtocol] = []
     private var metadataTask: Task<Void, Never>?
     private var lastMetadataReadAt = Date.distantPast
-    private var lastOBDEventName: String?
-    private var resumeState = "none"
     private var timelineStates: [String: String] = [:]
     private var previousPollingState: Bool?
     private var previousOTAActive = false
     private var waitingForELMReconnectAfterOTA = false
-    private var previousCANFrameCount: Int?
-    private var previousCANSampleAt: Date?
-    private var xp400RXWindow = PTCrazyDashboardInstrumentRateWindow()
-    private var obdMeasurementWindow = PTCrazyDashboardInstrumentRateWindow()
 
     public init(historyLimit: Int = 300) {
         self.historyLimit = max(1, historyLimit)
@@ -503,8 +494,7 @@ public final class PTCrazyDashboardInstrumentsStore: NSObject, PTBLEDashboardDel
             return
         }
         isStarted = true
-        PTBluetoothServerManager.shared.addDelegate(self)
-        PTMotoTelemetryManager.shared.addDelegate(self)
+        providerRegistry.start()
         let notificationNames: [Notification.Name] = [
             PTVehicleConnectivityCoordinator.snapshotDidChange,
             PTVehicleConnectivityCoordinator.telemetryDidChange,
@@ -537,8 +527,7 @@ public final class PTCrazyDashboardInstrumentsStore: NSObject, PTBLEDashboardDel
         timer = nil
         metadataTask?.cancel()
         metadataTask = nil
-        PTBluetoothServerManager.shared.removeDelegate(self)
-        PTMotoTelemetryManager.shared.removeDelegate(self)
+        providerRegistry.stop()
         observers.forEach(NotificationCenter.default.removeObserver)
         observers.removeAll(keepingCapacity: true)
     }
@@ -593,250 +582,8 @@ public final class PTCrazyDashboardInstrumentsStore: NSObject, PTBLEDashboardDel
         return url
     }
 
-    // EN: Delegate callbacks only count observed traffic; they never send commands or start a transport.
-    // ES: Los callbacks solo cuentan tráfico observado; nunca envían comandos ni inician un transporte.
-    // 中文：代理回调只统计已经观察到的流量，绝不发送指令或启动传输。
-    nonisolated func dashboardManager(_ manager: PTBluetoothServerManager, dashboardData data: Any?) {
-        Task { @MainActor [weak self] in
-            self?.xp400RXWindow.record(at: Date())
-        }
-    }
-
-    nonisolated func dashboardManager(_ manager: PTBluetoothServerManager, didChangeConnectionState isConnected: Bool) {
-        Task { @MainActor [weak self] in self?.refresh() }
-    }
-
-    nonisolated func dashboardManager(
-        _ manager: PTBluetoothServerManager,
-        didObserveLifecycleEvent event: PTXP400BLELifecycleEvent
-    ) {
-        Task { @MainActor [weak self] in self?.refresh() }
-    }
-
-    nonisolated func dashboardManager(
-        _ manager: PTBluetoothServerManager,
-        didUpdateConnectionIdentity identity: PTDashboardConnectionIdentity?
-    ) {
-        Task { @MainActor [weak self] in self?.refresh() }
-    }
-
-    public nonisolated func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) {
-        Task { @MainActor [weak self] in
-            self?.obdMeasurementWindow.record(at: Date())
-        }
-    }
-
-    public nonisolated func telemetryManager(_ manager: PTMotoTelemetryManager, didChangeConnectionState isConnected: Bool) {
-        Task { @MainActor [weak self] in self?.refresh() }
-    }
-
     private func makeSnapshot(at date: Date) -> PTCrazyDashboardInstrumentSnapshot {
-        let connectivity = PTVehicleConnectivityCoordinator.shared
-        let vehicle = connectivity.snapshot
-        let bridge = PTVehicleTelemetryBridge.shared
-        let obdManager = PTMotoTelemetryManager.shared
-        let hiddenConnector = PTHiddenOBDConnector.shared
-        let obdInfo = obdManager.obdInfo
-        let activeConnector = connector(for: vehicle.obd.transport)
-        let adapter = makeAdapterMetrics(
-            vehicle: vehicle,
-            bridge: bridge,
-            obdInfo: obdInfo,
-            connector: activeConnector,
-            hiddenConnector: hiddenConnector
-        )
-
-        let canSession = PTCANRecorder.shared.snapshot()
-        let canMetrics = makeCANMetrics(session: canSession, at: date)
-        let otaMetrics = makeOTAMetrics(adapter: adapter)
-        let telemetry = bridge.snapshot
-        let location = PTLocationEngine.shared.lastLocation
-        let motion = PTMotion.shared.currentData
-        let reliability = connectivity.dashboardBLEReliabilitySnapshot
-        let ble = PTCrazyDashboardXP400BLEMetrics(
-            isConnected: vehicle.dashboard.state == .connected,
-            lifecycle: PTBluetoothServerManager.shared.peripheralLifecycleState.rawValue,
-            sessionID: reliability.activeSessionID,
-            generation: reliability.activeGeneration,
-            isAuthenticated: PTBluetoothServerManager.shared.authenticated,
-            isTioSubscribed: PTBluetoothServerManager.shared.isTioSubscribed,
-            isCreditsSubscribed: PTBluetoothServerManager.shared.isCreditsSubscribed,
-            rxPerSecond: xp400RXWindow.rate(at: date),
-            txPerSecond: nil,
-            txRateAvailability: "not-exposed-by-frozen-core",
-            sendCredits: PTBluetoothServerManager.shared.sendCredits,
-            localCredits: PTBluetoothServerManager.shared.localCredits,
-            queueDepth: PTBluetoothServerManager.shared.sendQueue.jobs.count,
-            isSending: PTBluetoothServerManager.shared.isSending,
-            reconnectCount: reliability.eventCounts[PTXP400BLEReliabilityEventKind.automaticReconnect.rawValue] ?? 0,
-            telemetrySignalCount: telemetry.values.count
-        )
-        let obd = makeOBDMetrics(
-            vehicle: vehicle,
-            manager: obdManager,
-            connector: activeConnector,
-            canState: canMetrics.state,
-            pidRate: obdMeasurementWindow.rate(at: date),
-            lastError: vehicle.obd.errorMessage
-        )
-        let gps = PTCrazyDashboardGPSMetrics(
-            isTracking: PTLocationEngine.shared.isTracking,
-            horizontalAccuracyMeters: validAccuracy(location?.horizontalAccuracy)
-        )
-        let motionMetrics = PTCrazyDashboardMotionMetrics(
-            source: motion.currentDataSource.rawValue,
-            sampleRateHz: nil,
-            roll: motion.roll,
-            pitch: motion.pitch,
-            yaw: motion.yaw,
-            gForceX: motion.gForceX,
-            gForceY: motion.gForceY,
-            gForceZ: motion.gForceZ
-        )
-        let telemetryMetrics = PTCrazyDashboardTelemetryMetrics(
-            mode: telemetry.mode.rawValue,
-            valueCount: telemetry.values.count,
-            signalNames: telemetry.values.map(\.signal.rawValue),
-            containsSyntheticData: telemetry.containsSyntheticData,
-            updatedAt: telemetry.updatedAt
-        )
-        let system = PTCrazyDashboardSystemMetrics(
-            appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown",
-            buildVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown",
-            generatedAt: date,
-            isReadOnly: true,
-            isReplayActive: bridge.isReplayActive
-        )
-        return PTCrazyDashboardInstrumentSnapshot(
-            generatedAt: date,
-            xp400BLE: ble,
-            obd: obd,
-            ymobdAdapter: adapter,
-            adapterOTA: otaMetrics,
-            can: canMetrics,
-            telemetry: telemetryMetrics,
-            gps: gps,
-            motion: motionMetrics,
-            system: system
-        )
-    }
-
-    private func makeOBDMetrics(
-        vehicle: PTVehicleSnapshot,
-        manager: PTMotoTelemetryManager,
-        connector: PTOBDTransportBase?,
-        canState: String,
-        pidRate: Double?,
-        lastError: String?
-    ) -> PTCrazyDashboardOBDMetrics {
-        let connected = vehicle.obd.state == .connected || manager.isConnected
-        let polling = manager.telemetryPollingTask != nil
-        let elmState: String
-        if vehicle.obd.state == .connecting {
-            elmState = "connecting"
-        } else if !connected {
-            elmState = "disconnected"
-        } else if connector?.isSnifferMode == true {
-            elmState = "monitoring"
-        } else if polling {
-            elmState = "polling"
-        } else {
-            elmState = "ready"
-        }
-        let traceState = lastOBDEventName.map { String($0.prefix(128)) } ?? "idle"
-        return PTCrazyDashboardOBDMetrics(
-            isConnected: connected,
-            transport: vehicle.obd.transport?.rawValue ?? "unknown",
-            elmState: elmState,
-            isPolling: polling,
-            commandQueueDepth: nil,
-            commandQueueAvailability: "legacy-manager-not-exposed",
-            currentLease: "not-exposed",
-            pidPerSecond: pidRate,
-            rttMilliseconds: nil,
-            canMonitorState: canState,
-            udsState: traceState,
-            lastError: lastError
-        )
-    }
-
-    private func makeAdapterMetrics(
-        vehicle: PTVehicleSnapshot,
-        bridge: PTVehicleTelemetryBridge,
-        obdInfo: PTOBDInfo,
-        connector: PTOBDTransportBase?,
-        hiddenConnector: PTHiddenOBDConnector
-    ) -> PTCrazyDashboardAdapterMetrics {
-        let canonical = bridge.adapterSnapshot
-        let official = canonical.isOfficialYMOBD || hiddenConnector.isOfficialYMOBD
-        let vendor = canonical.vendor ?? nonEmpty(obdInfo.moudleInfo.company)
-        let model = canonical.model ?? nonEmpty(obdInfo.moudleInfo.deviceType)
-        let firmware = canonical.firmwareVersion ?? nonEmpty(obdInfo.moudleInfo.version) ?? nonEmpty(obdInfo.ecuVersion)
-        let identifier: String? = nonEmpty(obdInfo.moudleInfo.deviceMac)
-            ?? redactedIdentifier(hiddenConnector.obdPeripheral?.identifier.uuidString)
-        var capabilities = ["supportedCommands=\(obdInfo.supportCommand.count)"]
-        if official { capabilities.append("officialYMOBD") }
-        if let mask = hiddenConnector.pid0100Mask {
-            capabilities.append(String(format: "PID0100=0x%08X", mask))
-        }
-        let mode = cachedAdapterMode
-            ?? (PTJieliOTAManager.shared.isRunning && official ? .jieliOTA : (vehicle.obd.state == .connected ? .elm : .disconnected))
-        let authenticated = connector?.isUnlocked == true ? "unlocked" : (vehicle.obd.state == .connected ? "locked-or-unknown" : "not-connected")
-        return PTCrazyDashboardAdapterMetrics(
-            vendor: vendor,
-            model: model ?? nonEmpty(obdInfo.moudleInfo.deviceName),
-            firmwareVersion: firmware,
-            identifierSuffix: identifier.flatMap(redactedIdentifier),
-            transport: canonical.transport == .unknown
-                ? (vehicle.obd.transport?.rawValue ?? "unknown")
-                : canonical.transport.rawValue,
-            authentication: authenticated,
-            capabilities: capabilities,
-            mode: mode.rawValue,
-            isOfficialYMOBD: official
-        )
-    }
-
-    private func makeOTAMetrics(adapter: PTCrazyDashboardAdapterMetrics) -> PTCrazyDashboardOTAMetrics {
-        let ota = PTJieliOTAManager.shared
-        let visible = PTDeveloperSafetyGate.shared.isEnabled && ota.isRunning && adapter.isOfficialYMOBD
-        return PTCrazyDashboardOTAMetrics(
-            isVisible: visible,
-            sdkVersion: "2.5.0",
-            state: ota.state.rawValue,
-            progress: ota.progress.fractionCompleted,
-            completedBytes: ota.progress.completedBytes,
-            totalBytes: ota.progress.totalBytes,
-            reconnectCount: ota.reconnectCount,
-            resumeState: resumeState,
-            targetFirmwareVersion: ota.currentSession?.targetFirmwareVersion,
-            currentFirmwareVersion: ota.currentSession?.oldFirmwareVersion ?? adapter.firmwareVersion,
-            versionVerified: ota.state == .completed ? true : (ota.state == .failed ? false : nil),
-            error: ota.lastError?.localizedDescription
-        )
-    }
-
-    private func makeCANMetrics(session: PTCANCaptureSession?, at date: Date) -> PTCrazyDashboardCANMetrics {
-        let currentCount = session?.totalFrameCount ?? 0
-        var framesPerSecond: Double?
-        if let previousCount = previousCANFrameCount,
-           let previousDate = previousCANSampleAt {
-            let elapsed = date.timeIntervalSince(previousDate)
-            if elapsed > 0 {
-                framesPerSecond = Double(max(0, currentCount - previousCount)) / elapsed
-            }
-        }
-        previousCANFrameCount = currentCount
-        previousCANSampleAt = date
-        let headers = Array(Set(session?.frames.compactMap(\.header) ?? [])).sorted().prefix(32)
-        return PTCrazyDashboardCANMetrics(
-            state: PTCANExperimentCoordinator.shared.state.rawValue,
-            framesPerSecond: framesPerSecond,
-            totalFrameCount: session?.totalFrameCount ?? 0,
-            retainedFrameCount: session?.retainedFrameCount ?? 0,
-            droppedFrameCount: session?.droppedFrameCount ?? 0,
-            headers: Array(headers)
-        )
+        providerRegistry.snapshot(at: date)
     }
 
     private func appendTimelineTransitions(
@@ -981,48 +728,10 @@ public final class PTCrazyDashboardInstrumentsStore: NSObject, PTBLEDashboardDel
         lastMetadataReadAt = date
         metadataTask?.cancel()
         metadataTask = Task { @MainActor [weak self] in
-            let mode = await PTYMOBDAdapterModeCoordinator.shared.mode
-            let traceSnapshot = await PTOBDSessionTrace.shared.snapshot()
-            let checkpoint = try? await PTOTAResumeStore.shared.load()
-            guard !Task.isCancelled, let self else { return }
-            self.cachedAdapterMode = mode
-            self.lastOBDEventName = traceSnapshot.events.last?.name
-            if let checkpoint {
-                self.resumeState = "\(checkpoint.state.rawValue) (\(Int(checkpoint.progress.fractionCompleted * 100))%)"
-            } else {
-                self.resumeState = "none"
-            }
+            guard let self else { return }
+            await self.providerRegistry.refreshMetadata()
+            guard !Task.isCancelled else { return }
             self.refresh()
         }
-    }
-
-    private var cachedAdapterMode: PTYMOBDAdapterMode?
-
-    private func connector(for transport: PTVehicleTransport?) -> PTOBDTransportBase? {
-        switch transport {
-        case .obdBluetooth:
-            return PTHiddenOBDConnector.shared
-        case .obdWiFi:
-            return PTWifiOBDConnector.shared
-        case .obdMock:
-            return PTMockOBDConnector.shared
-        default:
-            return nil
-        }
-    }
-
-    private func validAccuracy(_ value: CLLocationAccuracy?) -> Double? {
-        guard let value, value >= 0, value.isFinite else { return nil }
-        return value
-    }
-
-    private func nonEmpty(_ value: String) -> String? {
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : String(trimmed.prefix(128))
-    }
-
-    private func redactedIdentifier(_ value: String?) -> String? {
-        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else { return nil }
-        return String(value.suffix(8)).uppercased()
     }
 }

@@ -391,6 +391,7 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
     }
 
     private func notifySnapshotChange() {
+        PTVehicleTelemetryConsumerHub.shared.publish(snapshot)
         NotificationCenter.default.post(
             name: Self.didChange,
             object: self,
