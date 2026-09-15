@@ -458,6 +458,15 @@ public final class PTCrazyTraceRecorder {
     }
 
     public static func load(from url: URL) async throws -> PTCrazyTraceDocument {
+        let packageManifestURL = url.appendingPathComponent("manifest.json")
+        if FileManager.default.fileExists(atPath: packageManifestURL.path) {
+            // EN: Schema 2 packages are read through the checksum-validating platform before replay.
+            // ES: Los paquetes de esquema 2 pasan por la plataforma que valida las sumas antes de reproducirse.
+            // 中文：Schema 2 数据包在回放前必须经过带校验的 Package Reader。
+            return try await Task.detached(priority: .utility) {
+                try PTCrazyTracePackageReader.load(from: url).document
+            }.value
+        }
         let data = try await Task.detached(priority: .utility) {
             try Data(contentsOf: url)
         }.value

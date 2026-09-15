@@ -44,6 +44,7 @@ nonisolated public enum PTOTAAnalyticsLoggerError: Error, LocalizedError, Sendab
 
 public actor PTOTAAnalyticsLogger {
     public static let shared = PTOTAAnalyticsLogger()
+    public static let maximumLogBytes = 4 * 1024 * 1024
 
     private let fileManager: FileManager
     private let directoryURL: URL
@@ -136,13 +137,33 @@ public actor PTOTAAnalyticsLogger {
             if !fileManager.fileExists(atPath: url.path) {
                 fileManager.createFile(atPath: url.path, contents: nil)
             }
-            let handle = try FileHandle(forWritingTo: url)
-            defer { try? handle.close() }
-            try handle.seekToEnd()
-            try handle.write(contentsOf: data)
+            do {
+                let handle = try FileHandle(forWritingTo: url)
+                defer { try? handle.close() }
+                try handle.seekToEnd()
+                try handle.write(contentsOf: data)
+            }
+            try trimLogIfNeeded(at: url)
         } catch {
             // Logging must never crash or interrupt the OTA transport.
         }
+    }
+
+    private func trimLogIfNeeded(at url: URL) throws {
+        let fileSize = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        guard fileSize > Self.maximumLogBytes else { return }
+        let data = try Data(contentsOf: url)
+        let suffix = data.suffix(Self.maximumLogBytes)
+        let retained: Data
+        if let newline = suffix.firstIndex(of: 0x0A) {
+            retained = Data(suffix[suffix.index(after: newline)...])
+        } else {
+            retained = Data(suffix)
+        }
+        // EN: Keep the newest complete JSONL events while bounding OTA cache growth.
+        // ES: Conserva los eventos JSONL completos más recientes y limita el crecimiento de la caché OTA.
+        // 中文：保留最新的完整 JSONL 事件，并限制 OTA 缓存持续增长。
+        try retained.write(to: url, options: .atomic)
     }
 
     private func logURL(for sessionID: UUID) -> URL {

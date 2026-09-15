@@ -4,9 +4,9 @@
 >
 > 快照日期：2026-09-14
 >
-> 仓库基线：当前工作区已进入 Build 61 Architecture Consolidation；Build 57–60 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport 外围能力已接入，真实设备、车辆和完整发布验证仍待补
+> 仓库基线：当前工作区已进入 Build 62 Persistent Research Storage + Replay Test Platform；Build 57–61 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport 外围能力已接入，真实设备、车辆和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests / UI Tests `CURRENT_PROJECT_VERSION = 61`
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests / UI Tests `CURRENT_PROJECT_VERSION = 62`
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -426,6 +426,25 @@ Build 61 新增的边界：
 
 Build 61 的完整依赖审计记录见 [PTTELEMETRY_MIGRATION_MATRIX.md](PTTELEMETRY_MIGRATION_MATRIX.md)。
 
+### 7.10 Build 62 持久化研究存储与回放测试平台
+
+Build 62 继续保持营销版本 `2.0.8`，只递增工程 Build。Evidence 数据库、CrazyTrace 数据包和回放断言均为只读研究基础设施，不新增 BLE、ELM327、YMOBD 或 Jieli 传输路径；三个稳定核心文件保持零字节变化。
+
+| 工作包 | 状态 | 当前实现 | 验证边界 |
+| --- | --- | --- | --- |
+| B62-01 | ✅ | 原生 SQLite Evidence schema，覆盖车辆、ECU、会话、Capture、Evidence、CAN 候选、Passport 和适配器身份表，并建立研究查询索引 | 数据库独立类型检查、SQLite 模拟器插入/去重验证通过；完整工程构建受 SmartCodable 依赖网络阻断，真实数据规模和迁移前备份待设备验证 |
+| B62-02 | ✅ | `PTProtocolEvidenceRepository` 作为 Evidence V2 的持久化边界，重复证据按稳定指纹合并并保留重复次数 | 纯数据测试；不向任何传输核心发送迁移数据 |
+| B62-03 | ✅ | UserDefaults 旧快照事务迁移、校验、失败回退和一版兼容镜像 | 迁移/回滚与旧库 Schema 升级测试已加入；旧设备升级与异常断电待补 |
+| B62-04 | ✅ | 有界低价值证据清理、VACUUM 和 DB/Trace/CAN/Instrument 空间统计 API；默认不猜测生产目录执行删除 | 数据库与空间统计测试；设置页可视化和真实容量策略待补 |
+| B62-05 | ✅ | CrazyTrace Schema 2 `.crazytrace` 目录包：manifest、timeline、按域 JSONL、metadata、CAN 占位文件、附件目录和 SHA-256 校验 | 包读写、完整性、脱敏和模拟器回放测试通过；iCloud 多设备冲突待补 |
+| B62-06 | ✅ | `PTCrazyTraceExpectedResult`、Snapshot Assertion 和无计时器纯状态回放评估器 | 确定性回放测试；不替代真实 BLE/OBD/车辆验证 |
+| B62-07～B62-09 | ✅ | XP400、ELM327/UDS/CAN、YMOBD/OTA/组合离线样本目录与固定样本工厂；OTA 只回放状态，不执行 Jieli SDK | Fixture 回归测试；真实原始包仍需脱敏后人工导入 |
+| B62-10 | ✅ | `Scripts/build62_checks.sh` 与 GitHub Actions：版本门禁、主 App build-for-testing、纯数据回放和数据库测试入口 | CI 执行受 Pods/Xcode 环境影响时需保留日志；真机不放 CI |
+| B62-11 | ✅ | 空库、迁移、重复/去重、损坏库、事务回滚、Schema 升级、过期 Capture 清理和 100,000 条 Evidence 索引查询测试 | SQLite 模拟器验证通过；目标为 10,000 条常用查询小于 100 ms，仍需真机实测确认 |
+| B62-12 | ✅ | 本节、回放样本说明、持久化边界和核心文件保护记录已同步 | 文档检查；后续 schema 变更必须增加 migration version |
+
+Build 62 的数据库文件位于本地 Application Support，不同步到 iCloud；Trace 导出保留现有 flat JSON 兼容入口，新增目录包 API，不改变旧 UI 调用。UserDefaults 旧 Evidence blob 在本版本不删除，迁移失败时继续可读。真实 XP400 BLE、ELM327 CAN 和 OTA 仍需单独的人工设备验收。
+
 ## 8. 已退役功能
 
 当前没有需要登记的已退役功能。后续移除功能时，在下表保留原 ID、最后可用 Build、移除原因和替代路径。
@@ -494,3 +513,4 @@ Build 61 的完整依赖审计记录见 [PTTELEMETRY_MIGRATION_MATRIX.md](PTTELE
 | 2026-09-08 | 当前工作区 Build 55 | B54-01～B54-06 与 B55-01～B55-04 已接入：电瓶趋势、转向灯/ABS 安全提醒、支架校准、仪表配置安全门禁、统一诊断健康报告、TipKit 上下文提示、A/B/A 协议证据向导、窗口评分、BLE/OBD 会话关联和只读 ECU 指纹；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；主 App Debug generic build 已通过，XCTest 实际执行、签名发布、真实设备/车辆和 Dev 实验仍待补 |
 | 2026-09-08 | 当前工作区 Build 56 | B56-01～B56-07 已接入：骑行历史紧凑摘要、专业事实分析、限量遥测图表、同车历史基线、事件跳转、脱敏摘要/JSON 分享和数据质量提示；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；主 App Debug generic build 与 Tests build-for-testing 已通过，XCTest 实际执行被 Pods 真机签名配置阻断，签名发布、真机与大数据量验证待补 |
 | 2026-09-14 | 当前工作区 Build 61 | B61-00～B61-15 已接入：版本/Blueprint 门禁、Telemetry Consumer/Projection、Instruments Provider Registry、Evidence/CAN/Passport 边界与兼容编解码；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；静态检查、主 App Debug generic build 与 Tests build-for-testing 已通过，XCTest 实际运行受当前模拟器架构/Pods 产物环境阻断，签名发布、真实设备/车辆验证待补 |
+| 2026-09-14 | 当前工作区 Build 62 | B62-01～B62-12 已接入：SQLite Evidence 数据库、UserDefaults 事务迁移与回滚、保留策略/空间统计、CrazyTrace Schema 2 目录包、确定性回放断言、XP400/OBD/YMOBD/OTA 离线样本和 CI 检查；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；版本门禁、工程文件校验、Swift 语法解析、数据库/Trace/Retention 独立类型检查和模拟器验证通过；完整 `build-for-testing` 被现有 SmartCodable 宏插件拉取 `swift-syntax` 的网络超时阻断，XCTest 实际运行、签名发布、真实设备/车辆验证待补 |

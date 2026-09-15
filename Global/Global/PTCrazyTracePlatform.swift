@@ -1,0 +1,654 @@
+//
+//  PTCrazyTracePlatform.swift
+//  CrazyDashboard
+//
+//  EN: Adds a versioned trace package and deterministic, side-effect-free replay assertions.
+//  ES: Añade un paquete de trazas versionado y aserciones de reproducción deterministas y sin efectos secundarios.
+//  中文：增加版本化 CrazyTrace 数据包，以及无副作用的确定性回放断言。
+//
+
+import CryptoKit
+import Foundation
+
+public struct PTCrazyTracePackageManifest: Codable, Equatable, Sendable {
+    public static let currentFormatVersion = 2
+
+    public let formatVersion: Int
+    public let appVersion: String
+    public let buildNumber: String
+    public let createdAt: Date
+    public let device: String
+    public let iosVersion: String
+    public let vehicleID: String?
+    public let domains: [PTTraceDomain]
+    public let startTime: Date
+    public let endTime: Date?
+    public let privacyLevel: String
+    public let checksums: [String: String]
+
+    private enum CodingKeys: String, CodingKey {
+        case formatVersion
+        case appVersion
+        case buildNumber
+        case createdAt
+        case device
+        case iosVersion = "iOS"
+        case vehicleID
+        case domains
+        case startTime
+        case endTime
+        case privacyLevel
+        case checksums
+    }
+
+    public init(
+        formatVersion: Int = currentFormatVersion,
+        appVersion: String,
+        buildNumber: String,
+        createdAt: Date = Date(),
+        device: String,
+        iosVersion: String,
+        vehicleID: String?,
+        domains: [PTTraceDomain],
+        startTime: Date,
+        endTime: Date?,
+        privacyLevel: String = "redacted",
+        checksums: [String: String] = [:]
+    ) {
+        self.formatVersion = formatVersion
+        self.appVersion = String(appVersion.prefix(64))
+        self.buildNumber = String(buildNumber.prefix(32))
+        self.createdAt = createdAt
+        self.device = String(device.prefix(128))
+        self.iosVersion = String(iosVersion.prefix(64))
+        self.vehicleID = vehicleID.map { String($0.prefix(128)) }
+        self.domains = domains.reduce(into: []) { result, domain in
+            if !result.contains(domain) { result.append(domain) }
+        }.sorted { $0.rawValue < $1.rawValue }
+        self.startTime = startTime
+        self.endTime = endTime
+        self.privacyLevel = String(privacyLevel.prefix(32))
+        self.checksums = checksums
+    }
+}
+
+public struct PTCrazyTracePackageMetadata: Codable, Equatable, Sendable {
+    public let schemaVersion: Int
+    public let traceID: UUID
+    public let name: String
+    public let vehicleID: String?
+    public let startedAt: Date
+    public let endedAt: Date?
+
+    public init(document: PTCrazyTraceDocument) {
+        schemaVersion = document.schemaVersion
+        traceID = document.traceID
+        name = document.name
+        vehicleID = document.vehicleID
+        startedAt = document.startedAt
+        endedAt = document.endedAt
+    }
+}
+
+public enum PTCrazyTracePackageError: Error, LocalizedError, Equatable, Sendable {
+    case invalidPackage
+    case unsupportedFormat(Int)
+    case missingFile(String)
+    case checksumMismatch(String)
+    case invalidEvent(String)
+    case metadataMismatch
+
+    public var errorDescription: String? {
+        switch self {
+        case .invalidPackage: return "CrazyTrace 数据包无效"
+        case .unsupportedFormat(let version): return "不支持的 CrazyTrace 格式：\(version)"
+        case .missingFile(let name): return "CrazyTrace 缺少文件：\(name)"
+        case .checksumMismatch(let name): return "CrazyTrace 校验失败：\(name)"
+        case .invalidEvent(let message): return "CrazyTrace 事件无效：\(message)"
+        case .metadataMismatch: return "CrazyTrace manifest 与 metadata 不一致"
+        }
+    }
+}
+
+public struct PTCrazyTracePackage: Equatable, Sendable {
+    public let directoryURL: URL
+    public let manifest: PTCrazyTracePackageManifest
+    public let document: PTCrazyTraceDocument
+
+    public init(directoryURL: URL, manifest: PTCrazyTracePackageManifest, document: PTCrazyTraceDocument) {
+        self.directoryURL = directoryURL
+        self.manifest = manifest
+        self.document = document
+    }
+}
+
+public enum PTCrazyTracePackageWriter {
+    public static let fileNames = [
+        "manifest.json",
+        "timeline.jsonl",
+        "telemetry.jsonl",
+        "obd.jsonl",
+        "xp400_ble.jsonl",
+        "ymobd.jsonl",
+        "ota.jsonl",
+        "can.bin",
+        "metadata.json"
+    ]
+
+    public static func write(
+        document: PTCrazyTraceDocument,
+        to directoryURL: URL,
+        appVersion: String = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown",
+        buildNumber: String = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown",
+        device: String = "iPhone",
+        iosVersion: String = ProcessInfo.processInfo.operatingSystemVersionString,
+        privacyLevel: String = "redacted",
+        fileManager: FileManager = .default
+    ) throws -> URL {
+        let exportedDocument = PTCrazyTracePackagePrivacy.document(
+            document,
+            privacyLevel: privacyLevel
+        )
+        try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        try fileManager.createDirectory(at: directoryURL.appendingPathComponent("attachments", isDirectory: true), withIntermediateDirectories: true)
+
+        let encoder = JSONEncoder.crazyTraceEncoder
+        let metadataData = try encoder.encode(PTCrazyTracePackageMetadata(document: exportedDocument))
+        let timelineData = try jsonLines(exportedDocument.events, encoder: encoder)
+        let telemetryData = try jsonLines(exportedDocument.events.filter { $0.domain == .vehicleTelemetry }, encoder: encoder)
+        let obdData = try jsonLines(exportedDocument.events.filter { $0.domain == .obd }, encoder: encoder)
+        let xp400Data = try jsonLines(exportedDocument.events.filter { $0.domain == .xp400BLE }, encoder: encoder)
+        let ymobdData = try jsonLines(exportedDocument.events.filter { $0.domain == .ymobdAdapter }, encoder: encoder)
+        let otaData = try jsonLines(exportedDocument.events.filter { $0.domain == .adapterOTA }, encoder: encoder)
+        let contents: [String: Data] = [
+            "timeline.jsonl": timelineData,
+            "telemetry.jsonl": telemetryData,
+            "obd.jsonl": obdData,
+            "xp400_ble.jsonl": xp400Data,
+            "ymobd.jsonl": ymobdData,
+            "ota.jsonl": otaData,
+            "can.bin": Data(),
+            "metadata.json": metadataData
+        ]
+
+        var checksums: [String: String] = [:]
+        for name in fileNames where name != "manifest.json" {
+            guard let data = contents[name] else { continue }
+            try data.write(to: directoryURL.appendingPathComponent(name), options: .atomic)
+            checksums[name] = sha256(data)
+        }
+
+        let manifest = PTCrazyTracePackageManifest(
+            appVersion: appVersion,
+            buildNumber: buildNumber,
+            device: device,
+            iosVersion: iosVersion,
+            vehicleID: exportedDocument.vehicleID,
+            domains: exportedDocument.events.map(\.domain),
+            startTime: exportedDocument.startedAt,
+            endTime: exportedDocument.endedAt,
+            privacyLevel: privacyLevel,
+            checksums: checksums
+        )
+        let manifestData = try encoder.encode(manifest)
+        try manifestData.write(to: directoryURL.appendingPathComponent("manifest.json"), options: .atomic)
+        return directoryURL
+    }
+
+    private static func jsonLines(_ events: [PTCrazyTraceEvent], encoder: JSONEncoder) throws -> Data {
+        var data = Data()
+        for event in events {
+            data.append(try encoder.encode(event))
+            data.append(0x0A)
+        }
+        return data
+    }
+
+    private static func sha256(_ data: Data) -> String {
+        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    }
+}
+
+private enum PTCrazyTracePackagePrivacy {
+    static func document(_ document: PTCrazyTraceDocument, privacyLevel: String) -> PTCrazyTraceDocument {
+        guard privacyLevel.caseInsensitiveCompare("redacted") == .orderedSame else {
+            return document
+        }
+
+        // EN: Redacted packages remove vehicle identity and precise locations before any checksum is calculated.
+        // ES: Los paquetes redactados eliminan la identidad del vehículo y las ubicaciones precisas antes de calcular sumas.
+        // 中文：脱敏包会在计算校验和之前移除车辆身份和精确位置。
+        let events = document.events.map { event in
+            let payload: PTTracePayload
+            switch event.payload {
+            case .protocolMessage(let message):
+                let metadata = message.metadata.reduce(into: [String: String]()) { result, pair in
+                    result[pair.key] = isSensitiveKey(pair.key) ? "<redacted>" : pair.value
+                }
+                payload = .protocolMessage(
+                    PTTraceProtocolPayload(
+                        raw: redactText(message.raw),
+                        command: message.command.map(redactText),
+                        metadata: metadata
+                    )
+                )
+            case .location(let location):
+                payload = .location(
+                    PTTraceLocationPayload(
+                        latitude: 0,
+                        longitude: 0,
+                        altitude: 0,
+                        speedKmh: location.speedKmh,
+                        courseDegree: location.courseDegree
+                    )
+                )
+            case .marker(let marker):
+                let metadata = marker.metadata.reduce(into: [String: String]()) { result, pair in
+                    result[pair.key] = isSensitiveKey(pair.key) ? "<redacted>" : pair.value
+                }
+                payload = .marker(PTTraceMarkerPayload(name: marker.name, metadata: metadata))
+            default:
+                payload = event.payload
+            }
+            return PTCrazyTraceEvent(
+                id: event.id,
+                sequence: event.sequence,
+                timestamp: event.timestamp,
+                elapsed: event.elapsed,
+                domain: event.domain,
+                direction: event.direction,
+                source: event.source,
+                payload: payload
+            )
+        }
+        return PTCrazyTraceDocument(
+            schemaVersion: document.schemaVersion,
+            traceID: document.traceID,
+            name: document.name,
+            vehicleID: nil,
+            startedAt: document.startedAt,
+            endedAt: document.endedAt,
+            events: events
+        )
+    }
+
+    private static func isSensitiveKey(_ key: String) -> Bool {
+        let normalized = key.lowercased()
+        return ["vin", "mac", "uuid", "address", "latitude", "longitude", "location", "park", "home"]
+            .contains { normalized.contains($0) }
+    }
+
+    private static func redactText(_ value: String) -> String {
+        value
+            .split(whereSeparator: { $0 == " " || $0 == "\n" || $0 == "\r" || $0 == "\t" || $0 == "," || $0 == ";" || $0 == "|" })
+            .map { token -> String in
+                let tokenString = String(token)
+                let uppercased = tokenString.uppercased()
+                if uppercased.hasPrefix("VIN=") || uppercased.hasPrefix("VIN:") {
+                    return String(tokenString.prefix(4)) + "<redacted>"
+                }
+                let scalars = tokenString.unicodeScalars
+                if scalars.count == 17 && scalars.allSatisfy(CharacterSet.alphanumerics.contains) {
+                    return "<redacted-vin>"
+                }
+                return tokenString
+            }
+            .joined(separator: " ")
+    }
+}
+
+public enum PTCrazyTracePackageReader {
+    public static func load(from directoryURL: URL, fileManager: FileManager = .default) throws -> PTCrazyTracePackage {
+        let rootURL = directoryURL.standardizedFileURL
+        let manifestURL = try packageFileURL(named: "manifest.json", in: rootURL)
+        guard fileManager.fileExists(atPath: manifestURL.path) else {
+            throw PTCrazyTracePackageError.missingFile("manifest.json")
+        }
+        let decoder = JSONDecoder.crazyTraceDecoder
+        let manifest = try decoder.decode(PTCrazyTracePackageManifest.self, from: Data(contentsOf: manifestURL))
+        guard manifest.formatVersion == PTCrazyTracePackageManifest.currentFormatVersion else {
+            throw PTCrazyTracePackageError.unsupportedFormat(manifest.formatVersion)
+        }
+        var isAttachmentsDirectory: ObjCBool = false
+        let attachmentsURL = rootURL.appendingPathComponent("attachments", isDirectory: true)
+        guard fileManager.fileExists(atPath: attachmentsURL.path, isDirectory: &isAttachmentsDirectory),
+              isAttachmentsDirectory.boolValue else {
+            throw PTCrazyTracePackageError.missingFile("attachments")
+        }
+
+        // EN: A valid package must contain every declared v2 stream; this catches interrupted exports.
+        // ES: Un paquete válido debe contener cada flujo v2 declarado; así se detectan exportaciones interrumpidas.
+        // 中文：有效的 v2 数据包必须包含所有声明的数据流，以识别中断的导出。
+        for name in PTCrazyTracePackageWriter.fileNames where name != "manifest.json" {
+            guard let expectedChecksum = manifest.checksums[name] else {
+                throw PTCrazyTracePackageError.missingFile(name)
+            }
+            let url = try packageFileURL(named: name, in: rootURL)
+            guard fileManager.fileExists(atPath: url.path) else { throw PTCrazyTracePackageError.missingFile(name) }
+            let actualChecksum = SHA256.hash(data: try Data(contentsOf: url)).map { String(format: "%02x", $0) }.joined()
+            guard actualChecksum == expectedChecksum else { throw PTCrazyTracePackageError.checksumMismatch(name) }
+        }
+
+        let metadataURL = try packageFileURL(named: "metadata.json", in: rootURL)
+        guard fileManager.fileExists(atPath: metadataURL.path) else { throw PTCrazyTracePackageError.missingFile("metadata.json") }
+        let metadata = try decoder.decode(PTCrazyTracePackageMetadata.self, from: Data(contentsOf: metadataURL))
+        guard metadata.schemaVersion == PTCrazyTraceDocument.currentSchemaVersion else {
+            throw PTCrazyTracePackageError.unsupportedFormat(metadata.schemaVersion)
+        }
+        guard manifest.vehicleID == metadata.vehicleID,
+              manifest.startTime == metadata.startedAt,
+              manifest.endTime == metadata.endedAt else {
+            throw PTCrazyTracePackageError.metadataMismatch
+        }
+        let timelineURL = try packageFileURL(named: "timeline.jsonl", in: rootURL)
+        guard fileManager.fileExists(atPath: timelineURL.path) else { throw PTCrazyTracePackageError.missingFile("timeline.jsonl") }
+        let events = try decodeLines(Data(contentsOf: timelineURL), decoder: decoder)
+        let eventDomains = events.map(\.domain).map(\.rawValue).reduce(into: [String]()) { result, domain in
+            if !result.contains(domain) { result.append(domain) }
+        }.sorted()
+        let manifestDomains = manifest.domains.map(\.rawValue).sorted()
+        guard eventDomains == manifestDomains else {
+            throw PTCrazyTracePackageError.metadataMismatch
+        }
+        let document = PTCrazyTraceDocument(
+            schemaVersion: metadata.schemaVersion,
+            traceID: metadata.traceID,
+            name: metadata.name,
+            vehicleID: metadata.vehicleID,
+            startedAt: metadata.startedAt,
+            endedAt: metadata.endedAt,
+            events: events
+        )
+        return PTCrazyTracePackage(directoryURL: rootURL, manifest: manifest, document: document)
+    }
+
+    private static func packageFileURL(named name: String, in rootURL: URL) throws -> URL {
+        let candidate = rootURL.appendingPathComponent(name).standardizedFileURL
+        let rootPath = rootURL.path.hasSuffix("/") ? rootURL.path : rootURL.path + "/"
+        guard candidate.path.hasPrefix(rootPath) else {
+            throw PTCrazyTracePackageError.invalidPackage
+        }
+        return candidate
+    }
+
+    private static func decodeLines(_ data: Data, decoder: JSONDecoder) throws -> [PTCrazyTraceEvent] {
+        guard let text = String(data: data, encoding: .utf8) else {
+            throw PTCrazyTracePackageError.invalidPackage
+        }
+        return try text.split(whereSeparator: \.isNewline).map { line in
+            do {
+                return try decoder.decode(PTCrazyTraceEvent.self, from: Data(line.utf8))
+            } catch {
+                throw PTCrazyTracePackageError.invalidEvent(error.localizedDescription)
+            }
+        }
+    }
+}
+
+public enum PTReplayExpectedValue: Codable, Equatable, Sendable {
+    case string(String)
+    case integer(Int)
+    case double(Double)
+    case boolean(Bool)
+    case location(latitude: Double, longitude: Double)
+    case missing
+
+    private enum CodingKeys: String, CodingKey { case kind, string, integer, double, boolean, latitude, longitude }
+    private enum Kind: String, Codable { case string, integer, double, boolean, location, missing }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        switch try container.decode(Kind.self, forKey: .kind) {
+        case .string: self = .string(try container.decode(String.self, forKey: .string))
+        case .integer: self = .integer(try container.decode(Int.self, forKey: .integer))
+        case .double: self = .double(try container.decode(Double.self, forKey: .double))
+        case .boolean: self = .boolean(try container.decode(Bool.self, forKey: .boolean))
+        case .location:
+            self = .location(
+                latitude: try container.decode(Double.self, forKey: .latitude),
+                longitude: try container.decode(Double.self, forKey: .longitude)
+            )
+        case .missing: self = .missing
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .string(let value): try container.encode(Kind.string, forKey: .kind); try container.encode(value, forKey: .string)
+        case .integer(let value): try container.encode(Kind.integer, forKey: .kind); try container.encode(value, forKey: .integer)
+        case .double(let value): try container.encode(Kind.double, forKey: .kind); try container.encode(value, forKey: .double)
+        case .boolean(let value): try container.encode(Kind.boolean, forKey: .kind); try container.encode(value, forKey: .boolean)
+        case .location(let latitude, let longitude):
+            try container.encode(Kind.location, forKey: .kind)
+            try container.encode(latitude, forKey: .latitude)
+            try container.encode(longitude, forKey: .longitude)
+        case .missing: try container.encode(Kind.missing, forKey: .kind)
+        }
+    }
+
+    public func matches(_ actual: PTReplayExpectedValue?, tolerance: Double) -> Bool {
+        if self == .missing {
+            return actual == nil || actual == .missing
+        }
+        guard let actual else { return false }
+        switch (self, actual) {
+        case (.string(let expected), .string(let actual)): return expected == actual
+        case (.integer(let expected), .integer(let actual)): return expected == actual
+        case (.double(let expected), .double(let actual)): return abs(expected - actual) <= max(0, tolerance)
+        case (.boolean(let expected), .boolean(let actual)): return expected == actual
+        case (.location(let expectedLat, let expectedLon), .location(let actualLat, let actualLon)):
+            return abs(expectedLat - actualLat) <= max(0, tolerance) && abs(expectedLon - actualLon) <= max(0, tolerance)
+        default: return false
+        }
+    }
+}
+
+public struct PTReplayAssertion: Codable, Equatable, Sendable {
+    public let timestamp: TimeInterval
+    public let path: String
+    public let expected: PTReplayExpectedValue
+    public let tolerance: Double
+
+    public init(timestamp: TimeInterval, path: String, expected: PTReplayExpectedValue, tolerance: Double = 0.001) {
+        self.timestamp = max(0, timestamp)
+        self.path = String(path.prefix(256))
+        self.expected = expected
+        self.tolerance = max(0, tolerance)
+    }
+}
+
+public struct PTCrazyTraceExpectedResult: Codable, Equatable, Sendable {
+    public let fixtureID: String
+    public let assertions: [PTReplayAssertion]
+
+    public init(fixtureID: String, assertions: [PTReplayAssertion]) {
+        self.fixtureID = String(fixtureID.prefix(128))
+        self.assertions = assertions
+    }
+}
+
+public struct PTCrazyTraceReplayState: Equatable, Sendable {
+    private var values: [String: PTReplayExpectedValue] = [:]
+
+    public init() {}
+
+    public func value(for path: String) -> PTReplayExpectedValue? {
+        values[path]
+    }
+
+    public mutating func apply(_ event: PTCrazyTraceEvent) {
+        switch event.payload {
+        case .telemetry(let snapshot):
+            for resolvedValue in snapshot.values {
+                values["telemetry.\(resolvedValue.signal.rawValue)"] = Self.replayValue(for: resolvedValue.value)
+                values["telemetry.\(resolvedValue.signal.rawValue).source"] = .string(resolvedValue.source.rawValue)
+            }
+        case .adapter(let payload):
+            values["obd.transport"] = .string(payload.transport.rawValue)
+            values["obd.elmState"] = .string(payload.mode.rawValue == "disconnected" ? "disconnected" : "ready")
+            values["ymobd.vendor"] = payload.vendor.map { .string($0) }
+            values["ymobd.firmware"] = payload.firmwareVersion.map { .string($0) }
+        case .protocolMessage(let payload):
+            apply(protocolPayload: payload, domain: event.domain)
+        case .marker(let payload):
+            values["marker.name"] = .string(payload.name)
+        case .location, .motion, .text:
+            break
+        }
+    }
+
+    private mutating func apply(protocolPayload: PTTraceProtocolPayload, domain: PTTraceDomain) {
+        if let connected = boolValue(protocolPayload.metadata["connected"]) {
+            values["xp400.connected"] = .boolean(connected)
+        }
+        if let authenticated = boolValue(protocolPayload.metadata["authenticated"]) {
+            switch domain {
+            case .xp400BLE: values["xp400.authenticated"] = .boolean(authenticated)
+            case .ymobdAdapter, .obd: values["ymobd.authenticated"] = .boolean(authenticated)
+            default: break
+            }
+        }
+        if let tcsMode = protocolPayload.metadata["tcsMode"] {
+            values["xp400.tcsMode"] = .string(tcsMode)
+        }
+        if let elmState = protocolPayload.metadata["elmState"] {
+            values["obd.elmState"] = .string(elmState)
+        }
+        if let otaState = protocolPayload.metadata["otaState"] ?? (domain == .adapterOTA ? protocolPayload.metadata["state"] : nil) {
+            values["ota.state"] = .string(otaState)
+        }
+        let normalized = protocolPayload.raw.lowercased()
+        if normalized.contains("disconnect") { values["xp400.connected"] = .boolean(false) }
+        if normalized.contains("auth success") { values["xp400.authenticated"] = .boolean(true) }
+        if normalized.contains("elm ready") { values["obd.elmState"] = .string("ready") }
+    }
+
+    private static func replayValue(for value: PTVehicleTelemetryValue) -> PTReplayExpectedValue {
+        switch value {
+        case .double(let value): return .double(value)
+        case .integer(let value): return .integer(value)
+        case .boolean(let value): return .boolean(value)
+        case .location(let latitude, let longitude, _): return .location(latitude: latitude, longitude: longitude)
+        }
+    }
+
+    private func boolValue(_ value: String?) -> Bool? {
+        guard let value else { return nil }
+        switch value.lowercased() {
+        case "1", "true", "yes", "connected", "success": return true
+        case "0", "false", "no", "disconnected", "failure": return false
+        default: return nil
+        }
+    }
+}
+
+public struct PTReplayAssertionFailure: Equatable, Sendable {
+    public let timestamp: TimeInterval
+    public let path: String
+    public let expected: PTReplayExpectedValue
+    public let actual: PTReplayExpectedValue?
+
+    public init(timestamp: TimeInterval, path: String, expected: PTReplayExpectedValue, actual: PTReplayExpectedValue?) {
+        self.timestamp = timestamp
+        self.path = path
+        self.expected = expected
+        self.actual = actual
+    }
+}
+
+public struct PTReplayEvaluationResult: Equatable, Sendable {
+    public let passed: Bool
+    public let finalState: PTCrazyTraceReplayState
+    public let failures: [PTReplayAssertionFailure]
+
+    public init(passed: Bool, finalState: PTCrazyTraceReplayState, failures: [PTReplayAssertionFailure]) {
+        self.passed = passed
+        self.finalState = finalState
+        self.failures = failures
+    }
+}
+
+public enum PTCrazyTraceReplayRegression {
+    public static func evaluate(
+        document: PTCrazyTraceDocument,
+        expected: PTCrazyTraceExpectedResult
+    ) -> PTReplayEvaluationResult {
+        let sortedAssertions = expected.assertions.enumerated().sorted { lhs, rhs in
+            lhs.element.timestamp < rhs.element.timestamp
+        }
+        let sortedEvents = document.events.sorted {
+            if $0.elapsed != $1.elapsed { return $0.elapsed < $1.elapsed }
+            return $0.sequence < $1.sequence
+        }
+        var state = PTCrazyTraceReplayState()
+        var eventIndex = 0
+        var failures: [PTReplayAssertionFailure] = []
+        for (_, assertion) in sortedAssertions {
+            while eventIndex < sortedEvents.count, sortedEvents[eventIndex].elapsed <= assertion.timestamp {
+                state.apply(sortedEvents[eventIndex])
+                eventIndex += 1
+            }
+            let actual = state.value(for: assertion.path)
+            if !assertion.expected.matches(actual, tolerance: assertion.tolerance) {
+                failures.append(
+                    PTReplayAssertionFailure(
+                        timestamp: assertion.timestamp,
+                        path: assertion.path,
+                        expected: assertion.expected,
+                        actual: actual
+                    )
+                )
+            }
+        }
+        while eventIndex < sortedEvents.count {
+            state.apply(sortedEvents[eventIndex])
+            eventIndex += 1
+        }
+        return PTReplayEvaluationResult(passed: failures.isEmpty, finalState: state, failures: failures)
+    }
+}
+
+public extension PTCrazyTraceRecorder {
+    func exportPackage(
+        _ document: PTCrazyTraceDocument,
+        to directoryURL: URL? = nil,
+        appVersion: String = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown",
+        buildNumber: String = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown",
+        privacyLevel: String = "redacted"
+    ) async throws -> URL {
+        let destination: URL
+        if let directoryURL {
+            destination = directoryURL
+        } else {
+            let root = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+                ?? FileManager.default.temporaryDirectory
+            destination = root.appendingPathComponent(
+                "\(PTCrazyTracePlatform.fileStem(document.name))-\(document.traceID.uuidString).crazytrace",
+                isDirectory: true
+            )
+        }
+        return try await Task.detached(priority: .utility) {
+            try PTCrazyTracePackageWriter.write(
+                document: document,
+                to: destination,
+                appVersion: appVersion,
+                buildNumber: buildNumber,
+                privacyLevel: privacyLevel
+            )
+        }.value
+    }
+}
+
+private enum PTCrazyTracePlatform {
+    static func fileStem(_ value: String) -> String {
+        let allowed = value.unicodeScalars.map { scalar -> Character in
+            if CharacterSet.alphanumerics.contains(scalar) || scalar == "-" || scalar == "_" {
+                return Character(String(scalar))
+            }
+            return "-"
+        }
+        let stem = String(allowed).trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        return String((stem.isEmpty ? "vehicle-trace" : stem).prefix(64))
+    }
+}

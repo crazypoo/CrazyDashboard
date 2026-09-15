@@ -297,6 +297,15 @@
 		640000010000000000000003 /* PTInstrumentArchitecture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640000020000000000000003 /* PTInstrumentArchitecture.swift */; };
 		640000010000000000000004 /* PTProtocolEvidenceArchitecture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640000020000000000000004 /* PTProtocolEvidenceArchitecture.swift */; };
 		640000010000000000000005 /* PTArchitectureConsolidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640000020000000000000005 /* PTArchitectureConsolidationTests.swift */; };
+		650000010000000000000001 /* PTProtocolEvidenceDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650000020000000000000001 /* PTProtocolEvidenceDatabase.swift */; };
+		650000010000000000000002 /* PTProtocolEvidenceMigration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650000020000000000000002 /* PTProtocolEvidenceMigration.swift */; };
+		650000010000000000000003 /* PTProtocolEvidenceRetention.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650000020000000000000003 /* PTProtocolEvidenceRetention.swift */; };
+		650000010000000000000004 /* PTCrazyTracePlatform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650000020000000000000004 /* PTCrazyTracePlatform.swift */; };
+		650000010000000000000005 /* PTProtocolEvidenceDatabaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650000020000000000000005 /* PTProtocolEvidenceDatabaseTests.swift */; };
+		650000010000000000000006 /* PTCrazyTraceBuild62Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650000020000000000000006 /* PTCrazyTraceBuild62Tests.swift */; };
+		650000010000000000000007 /* PTReplayFixtureCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650000020000000000000007 /* PTReplayFixtureCatalog.swift */; };
+		650000010000000000000010 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 650000020000000000000010 /* libsqlite3.tbd */; };
+		650000010000000000000011 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 650000020000000000000010 /* libsqlite3.tbd */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -657,6 +666,14 @@
 		640000020000000000000003 /* PTInstrumentArchitecture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTInstrumentArchitecture.swift; sourceTree = "<group>"; };
 		640000020000000000000004 /* PTProtocolEvidenceArchitecture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTProtocolEvidenceArchitecture.swift; sourceTree = "<group>"; };
 		640000020000000000000005 /* PTArchitectureConsolidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTArchitectureConsolidationTests.swift; sourceTree = "<group>"; };
+		650000020000000000000001 /* PTProtocolEvidenceDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTProtocolEvidenceDatabase.swift; sourceTree = "<group>"; };
+		650000020000000000000002 /* PTProtocolEvidenceMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTProtocolEvidenceMigration.swift; sourceTree = "<group>"; };
+		650000020000000000000003 /* PTProtocolEvidenceRetention.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTProtocolEvidenceRetention.swift; sourceTree = "<group>"; };
+		650000020000000000000004 /* PTCrazyTracePlatform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCrazyTracePlatform.swift; sourceTree = "<group>"; };
+		650000020000000000000005 /* PTProtocolEvidenceDatabaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTProtocolEvidenceDatabaseTests.swift; sourceTree = "<group>"; };
+		650000020000000000000006 /* PTCrazyTraceBuild62Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCrazyTraceBuild62Tests.swift; sourceTree = "<group>"; };
+		650000020000000000000007 /* PTReplayFixtureCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTReplayFixtureCatalog.swift; sourceTree = "<group>"; };
+		650000020000000000000010 /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.tbd; path = usr/lib/libsqlite3.tbd; sourceTree = SDKROOT; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -716,6 +733,7 @@
 				600000010000000000000101 /* AppIntents.framework in Frameworks */,
 				600000010000000000000263 /* GroupActivities.framework in Frameworks */,
 				600000010000000000000217 /* AlarmKit.framework in Frameworks */,
+				650000010000000000000010 /* libsqlite3.tbd in Frameworks */,
 				600000010000000000000410 /* Security.framework in Frameworks */,
 				5564B5BC305426FB0044E1C3 /* JL_AdvParse.xcframework in Frameworks */,
 				5564B5BD305426FB0044E1C3 /* JL_OTALib.xcframework in Frameworks */,
@@ -736,6 +754,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				55F52C61303D4025007527C2 /* XCTest.framework in Frameworks */,
+				650000010000000000000011 /* libsqlite3.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1073,6 +1092,7 @@
 		55E616B7301B89960075F883 /* Dev */ = {
 			isa = PBXGroup;
 			children = (
+				650000030000000000000001 /* ProtocolResearch */,
 				600000020000000000000050 /* PTDeveloperSafetyGate.swift */,
 				600000020000000000000071 /* PTDeveloperTestPreflight.swift */,
 				600000020000000000000154 /* PTFirmwareUpgradeStateMachine.swift */,
@@ -1085,6 +1105,16 @@
 				640000020000000000000004 /* PTProtocolEvidenceArchitecture.swift */,
 			);
 			path = Dev;
+			sourceTree = "<group>";
+		};
+		650000030000000000000001 /* ProtocolResearch */ = {
+			isa = PBXGroup;
+			children = (
+				650000020000000000000001 /* PTProtocolEvidenceDatabase.swift */,
+				650000020000000000000002 /* PTProtocolEvidenceMigration.swift */,
+				650000020000000000000003 /* PTProtocolEvidenceRetention.swift */,
+			);
+			path = ProtocolResearch;
 			sourceTree = "<group>";
 		};
 		55E616B8301B89AA0075F883 /* Chat */ = {
@@ -1156,6 +1186,7 @@
 				600000020000000000000310 /* PTVehicleTelemetry.swift */,
 				620000020000000000000001 /* PTUnifiedVehicleTelemetry.swift */,
 				620000020000000000000002 /* PTCrazyTrace.swift */,
+				650000020000000000000004 /* PTCrazyTracePlatform.swift */,
 				620000020000000000000003 /* PTVehicleTelemetryBridge.swift */,
 				640000020000000000000001 /* PTVehicleTelemetryConsumer.swift */,
 				640000020000000000000002 /* PTVehicleTelemetryProjection.swift */,
@@ -1201,6 +1232,9 @@
 			isa = PBXGroup;
 			children = (
 				55F52C5D303D4025007527C2 /* PTCoreTests.swift */,
+				650000020000000000000005 /* PTProtocolEvidenceDatabaseTests.swift */,
+				650000020000000000000006 /* PTCrazyTraceBuild62Tests.swift */,
+				650000040000000000000001 /* ReplayFixtures */,
 				620000020000000000000011 /* PTVehicleTelemetryV2Tests.swift */,
 				610000020000000000000021 /* PTOBDArchitectureV2Tests.swift */,
 				610000030000000000000101 /* OBD */,
@@ -1216,6 +1250,14 @@
 				640000020000000000000005 /* PTArchitectureConsolidationTests.swift */,
 			);
 			path = PTSpeedTests;
+			sourceTree = "<group>";
+		};
+		650000040000000000000001 /* ReplayFixtures */ = {
+			isa = PBXGroup;
+			children = (
+				650000020000000000000007 /* PTReplayFixtureCatalog.swift */,
+			);
+			path = ReplayFixtures;
 			sourceTree = "<group>";
 		};
 		55FE2A75300DF93F000E741F /* Views */ = {
@@ -1854,6 +1896,10 @@
 				630000010000000000000060 /* PTProtocolEvidenceV2.swift in Sources */,
 				630000010000000000000061 /* PTProtocolEvidenceV2ViewController.swift in Sources */,
 				640000010000000000000004 /* PTProtocolEvidenceArchitecture.swift in Sources */,
+				650000010000000000000001 /* PTProtocolEvidenceDatabase.swift in Sources */,
+				650000010000000000000002 /* PTProtocolEvidenceMigration.swift in Sources */,
+				650000010000000000000003 /* PTProtocolEvidenceRetention.swift in Sources */,
+				650000010000000000000004 /* PTCrazyTracePlatform.swift in Sources */,
 				55F52C51303D4025007527C2 /* AppDelegate.swift in Sources */,
 				55F52C52303D4025007527C2 /* PTCarPlaySceneDelegate.swift in Sources */,
 				55F52C53303D4025007527C2 /* SceneDelegate.swift in Sources */,
@@ -2008,6 +2054,9 @@
 				620000010000000000000032 /* PTCrazyDashboardInstrumentsTests.swift in Sources */,
 				630000010000000000000062 /* PTProtocolEvidenceV2Tests.swift in Sources */,
 				640000010000000000000005 /* PTArchitectureConsolidationTests.swift in Sources */,
+				650000010000000000000005 /* PTProtocolEvidenceDatabaseTests.swift in Sources */,
+				650000010000000000000006 /* PTCrazyTraceBuild62Tests.swift in Sources */,
+				650000010000000000000007 /* PTReplayFixtureCatalog.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2086,7 +2135,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 61;
+				CURRENT_PROJECT_VERSION = 62;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -2119,7 +2168,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 61;
+				CURRENT_PROJECT_VERSION = 62;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -2152,7 +2201,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 61;
+				CURRENT_PROJECT_VERSION = 62;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2187,7 +2236,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 61;
+				CURRENT_PROJECT_VERSION = 62;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2348,7 +2397,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 61;
+				CURRENT_PROJECT_VERSION = 62;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -2498,7 +2547,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 61;
+				CURRENT_PROJECT_VERSION = 62;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -2645,7 +2694,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 61;
+				CURRENT_PROJECT_VERSION = 62;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -2669,7 +2718,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 61;
+				CURRENT_PROJECT_VERSION = 62;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -2692,7 +2741,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 61;
+				CURRENT_PROJECT_VERSION = 62;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -2709,7 +2758,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 61;
+				CURRENT_PROJECT_VERSION = 62;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;

@@ -133,6 +133,22 @@ class PTProtocolEvidenceV2ViewController: PTMotoBaseViewController {
             ].joined(separator: "\n"),
             accent: .systemBlue
         )
+        let usage = store.storageUsage()
+        let databaseState = store.databaseStatus.message.map { "(store.databaseStatus.state.rawValue): \($0)" }
+            ?? store.databaseStatus.state.rawValue
+        addPanel(
+            title: "Storage",
+            body: [
+                "Database: \(formatBytes(usage.evidenceDatabaseBytes))",
+                "Trace: \(formatBytes(usage.traceBytes))",
+                "CAN Capture: \(formatBytes(usage.canCaptureBytes))",
+                "Instrument Export: \(formatBytes(usage.instrumentExportBytes))",
+                "Total: \(formatBytes(usage.totalBytes))",
+                "State: \(databaseState)",
+                "Migration completed: \(store.databaseStatus.migrationCompleted ? "yes" : "no")"
+            ].joined(separator: "\n"),
+            accent: .systemBrown
+        )
         addPanel(title: "Evidence Domains", body: domainCounts, accent: .systemTeal)
         addPanel(title: "CAN Discovery", body: formatCANCandidates(), accent: .systemOrange)
         addPanel(title: "Cross-source Correlation", body: formatCorrelation(currentCorrelation), accent: .systemGreen)
@@ -188,6 +204,13 @@ class PTProtocolEvidenceV2ViewController: PTMotoBaseViewController {
             let marker = template.requiresUserMarker ? "marker required" : "marker optional"
             return "\(template.id.rawValue) · \(template.domain.rawValue) · \(safety) · \(marker)\n\(template.purpose)"
         }.joined(separator: "\n\n")
+    }
+
+    // EN: Keep storage formatting at the UI boundary so the model remains numeric and testable.
+    // ES: Mantiene el formato del almacenamiento en la frontera de UI para que el modelo siga siendo numérico y comprobable.
+    // 中文：把空间格式化留在 UI 边界，模型继续保持数值化和可测试。
+    private func formatBytes(_ bytes: Int64) -> String {
+        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
     }
 
     private func addPanel(title: String, body: String, footer: String? = nil, accent: UIColor) {

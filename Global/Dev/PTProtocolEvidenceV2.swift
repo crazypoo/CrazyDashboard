@@ -83,6 +83,8 @@ nonisolated public struct PTProtocolEvidenceRecord: Codable, Equatable, Identifi
     public let timestamp: Date
     public let confidence: Double
     public let value: String
+    public let request: String?
+    public let response: String?
     public let fingerprint: String?
     public let vehicleID: UUID?
     public let referenceID: UUID?
@@ -98,6 +100,8 @@ nonisolated public struct PTProtocolEvidenceRecord: Codable, Equatable, Identifi
         timestamp: Date = Date(),
         confidence: Double,
         value: String,
+        request: String? = nil,
+        response: String? = nil,
         fingerprint: String? = nil,
         vehicleID: UUID? = nil,
         referenceID: UUID? = nil,
@@ -112,6 +116,8 @@ nonisolated public struct PTProtocolEvidenceRecord: Codable, Equatable, Identifi
         self.timestamp = timestamp
         self.confidence = confidence.isFinite ? min(max(confidence, 0), 1) : 0
         self.value = String(value.prefix(4_096))
+        self.request = request.map { String($0.prefix(1_024)) }
+        self.response = response.map { String($0.prefix(4_096)) }
         self.fingerprint = fingerprint.map { String($0.prefix(512)) }
         self.vehicleID = vehicleID
         self.referenceID = referenceID
@@ -496,6 +502,8 @@ nonisolated public enum PTProtocolEvidenceV2Migration {
             timestamp: record.capturedAt,
             confidence: confidence(for: record.evidenceLevel),
             value: value,
+            request: record.requestHex,
+            response: redactedResponse,
             fingerprint: "uds:\(record.address.tx):\(record.did)",
             vehicleID: record.vehicleID,
             reference: "\(record.address.tx)->\(record.address.rx)"
@@ -526,6 +534,8 @@ nonisolated public enum PTProtocolEvidenceV2Migration {
             timestamp: timestamp,
             confidence: frame.rawHex.isEmpty ? 0 : 0.8,
             value: frame.rawHex,
+            request: frame.direction == .tx ? frame.rawHex : nil,
+            response: frame.direction == .rx ? frame.rawHex : nil,
             fingerprint: "ble:\(frame.characteristicUUID ?? "unknown"):\(frame.rawHex.prefix(24))",
             referenceID: session.id,
             reference: vehicleModel,
@@ -601,6 +611,8 @@ nonisolated public enum PTProtocolEvidenceV2Migration {
             timestamp: event.timestamp,
             confidence: event.isDomainConsistent ? 0.85 : 0.35,
             value: value,
+            request: payloadCommand(from: event.payload, direction: event.direction),
+            response: payloadResponse(from: event.payload, direction: event.direction),
             fingerprint: "trace:\(event.domain.rawValue):\(event.sequence)",
             reference: reference,
             note: event.isDomainConsistent ? nil : "trace domain and payload domain disagree"
@@ -686,6 +698,19 @@ nonisolated public enum PTProtocolEvidenceV2Migration {
         case .state: return .state
         case .marker: return .marker
         }
+    }
+
+    private static func payloadCommand(from payload: PTTracePayload, direction: PTTraceDirection) -> String? {
+        guard case .protocolMessage(let message) = payload else { return nil }
+        if direction == .output, message.command == nil {
+            return message.raw
+        }
+        return message.command
+    }
+
+    private static func payloadResponse(from payload: PTTracePayload, direction: PTTraceDirection) -> String? {
+        guard case .protocolMessage(let message) = payload else { return nil }
+        return direction == .input ? message.raw : nil
     }
 }
 
@@ -784,25 +809,58 @@ public enum PTVehiclePassportBuilder {
 @MainActor
 public final class PTProtocolEvidenceV2Store {
     public static let shared = PTProtocolEvidenceV2Store()
-    public static let storageKey = "PTProtocolEvidenceV2.state"
+    public static let storageKey = PTProtocolEvidenceStorageKeys.legacyState
     public static let maximumRecordCount = 2_000
     public static let maximumCandidateCount = 500
     public static let maximumCorrelationCount = 50
 
     public private(set) var records: [PTProtocolEvidenceRecord]
     public private(set) var canCandidates: [PTProtocolCANBitCandidate]
+    public private(set) var databaseStatus: PTProtocolEvidenceDatabaseStatus
     private let defaults: UserDefaults
+    private let repository: PTProtocolEvidenceRepository?
     private var isRefreshing = false
 
-    public init(defaults: UserDefaults = .standard) {
+    public init(defaults: UserDefaults = .standard, databaseURL: URL? = nil) {
         self.defaults = defaults
-        if let data = defaults.data(forKey: Self.storageKey),
-           let state = try? PTProtocolEvidenceV2StateCodec.decode(data) {
-            records = Array(state.records.sorted { $0.timestamp > $1.timestamp }.prefix(Self.maximumRecordCount))
-            canCandidates = Array(state.canCandidates.sorted { $0.timestamp > $1.timestamp }.prefix(Self.maximumCandidateCount))
+        let legacyState = defaults.data(forKey: Self.storageKey).flatMap { try? PTProtocolEvidenceV2StateCodec.decode($0) }
+        var openedRepository: PTProtocolEvidenceRepository?
+        var loadedRecords: [PTProtocolEvidenceRecord] = []
+        var loadedCandidates: [PTProtocolCANBitCandidate] = []
+        var status = PTProtocolEvidenceDatabaseStatus(state: .unavailable, message: "数据库不可用")
+
+        do {
+            let repository = try PTProtocolEvidenceRepository(databaseURL: databaseURL ?? PTProtocolEvidenceDatabase.defaultURL)
+            openedRepository = repository
+            _ = try PTProtocolEvidenceMigrationCoordinator(defaults: defaults, repository: repository).migrateIfNeeded()
+            loadedRecords = try repository.records(limit: Self.maximumRecordCount)
+            loadedCandidates = try repository.candidates(limit: Self.maximumCandidateCount)
+            status = PTProtocolEvidenceDatabaseStatus(
+                state: .database,
+                schemaVersion: repository.database.schemaVersion,
+                migrationCompleted: defaults.bool(forKey: PTProtocolEvidenceMigrationCoordinator.completionKey)
+            )
+        } catch {
+            defaults.set(error.localizedDescription, forKey: PTProtocolEvidenceMigrationCoordinator.failureKey)
+            status = PTProtocolEvidenceDatabaseStatus(
+                state: .legacyFallback,
+                schemaVersion: nil,
+                migrationCompleted: false,
+                message: error.localizedDescription
+            )
+        }
+
+        self.repository = openedRepository
+        self.databaseStatus = status
+        if loadedRecords.isEmpty, let legacyState {
+            self.records = Array(legacyState.records.sorted { $0.timestamp > $1.timestamp }.prefix(Self.maximumRecordCount))
         } else {
-            records = []
-            canCandidates = []
+            self.records = loadedRecords
+        }
+        if loadedCandidates.isEmpty, let legacyState {
+            self.canCandidates = Array(legacyState.canCandidates.sorted { $0.timestamp > $1.timestamp }.prefix(Self.maximumCandidateCount))
+        } else {
+            self.canCandidates = loadedCandidates
         }
     }
 
@@ -818,6 +876,16 @@ public final class PTProtocolEvidenceV2Store {
         guard inserted > 0 else { return 0 }
         records.sort { $0.timestamp > $1.timestamp }
         records = Array(records.prefix(Self.maximumRecordCount))
+        do {
+            _ = try repository?.insert(records: newRecords)
+        } catch {
+            databaseStatus = PTProtocolEvidenceDatabaseStatus(
+                state: .legacyFallback,
+                schemaVersion: repository?.database.schemaVersion,
+                migrationCompleted: false,
+                message: error.localizedDescription
+            )
+        }
         persist()
         return inserted
     }
@@ -847,6 +915,16 @@ public final class PTProtocolEvidenceV2Store {
         }
         canCandidates.sort { $0.timestamp > $1.timestamp }
         canCandidates = Array(canCandidates.prefix(Self.maximumCandidateCount))
+        do {
+            _ = try repository?.insert(candidates: candidates)
+        } catch {
+            databaseStatus = PTProtocolEvidenceDatabaseStatus(
+                state: .legacyFallback,
+                schemaVersion: repository?.database.schemaVersion,
+                migrationCompleted: false,
+                message: error.localizedDescription
+            )
+        }
         let count = merge(candidates.map(PTProtocolEvidenceV2CANDiscovery.evidenceRecord(from:)))
         persist()
         return count
@@ -928,7 +1006,10 @@ public final class PTProtocolEvidenceV2Store {
                 PTProtocolEvidenceV2CANDiscovery.discover(
                     in: capture,
                     source: .imported,
-                    vehicleID: currentVehicleID
+                    // EN: A historical capture has no immutable vehicle link; keep it unassigned.
+                    // ES: Una captura histórica no tiene un vínculo inmutable con el vehículo; se mantiene sin asignar.
+                    // 中文：历史抓包没有不可变车辆关联，不能猜测归属到当前车辆。
+                    vehicleID: nil
                 )
             }
         }.value
@@ -1017,6 +1098,75 @@ public final class PTProtocolEvidenceV2Store {
         try exportCSVData().write(to: url, options: .atomic)
         return url
     }
+
+    public var databaseURL: URL? {
+        repository?.database.url
+    }
+
+    public func storageUsage() -> PTProtocolEvidenceStorageUsage {
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+        let canCaptureDirectory = PTCANCaptureStore.shared.directoryURL
+        return PTProtocolEvidenceStorageReporter.usage(
+            databaseURL: repository?.database.url ?? PTProtocolEvidenceDatabase.defaultURL,
+            traceDirectoryURL: documents,
+            canCaptureDirectoryURL: canCaptureDirectory,
+            instrumentExportDirectoryURL: nil,
+            excludedDirectoryURLs: [canCaptureDirectory]
+        )
+    }
+
+    @discardableResult
+    public func maintainStorage(
+        policy: PTProtocolEvidenceRetentionPolicy = PTProtocolEvidenceRetentionPolicy(),
+        now: Date = Date()
+    ) -> Int {
+        guard let repository else { return 0 }
+        do {
+            let deleted = try PTProtocolEvidenceRetentionCoordinator(repository: repository).maintain(policy: policy, now: now)
+            if deleted > 0 {
+                records = (try? repository.records(limit: Self.maximumRecordCount)) ?? records
+            }
+            return deleted
+        } catch {
+            databaseStatus = PTProtocolEvidenceDatabaseStatus(
+                state: .legacyFallback,
+                schemaVersion: repository.database.schemaVersion,
+                migrationCompleted: false,
+                message: error.localizedDescription
+            )
+            return 0
+        }
+    }
+
+    /// EN: Capture-file cleanup requires an explicit directory so a settings screen cannot delete an inferred production path.
+    /// ES: La limpieza de capturas requiere un directorio explícito para que la pantalla de ajustes no borre una ruta de producción inferida.
+    /// 中文：抓包文件清理必须显式传入目录，避免设置页误删猜测出的生产路径。
+    public func maintainStorage(
+        policy: PTProtocolEvidenceRetentionPolicy = PTProtocolEvidenceRetentionPolicy(),
+        now: Date = Date(),
+        captureDirectoryURL: URL
+    ) -> PTProtocolEvidenceRetentionResult? {
+        guard let repository else { return nil }
+        do {
+            let result = try PTProtocolEvidenceRetentionCoordinator(repository: repository).maintain(
+                policy: policy,
+                now: now,
+                captureDirectoryURL: captureDirectoryURL
+            )
+            if result.deletedLowValueRecords > 0 {
+                records = (try? repository.records(limit: Self.maximumRecordCount)) ?? records
+            }
+            return result
+        } catch {
+            databaseStatus = PTProtocolEvidenceDatabaseStatus(
+                state: .legacyFallback,
+                schemaVersion: repository.database.schemaVersion,
+                migrationCompleted: false,
+                message: error.localizedDescription
+            )
+            return nil
+        }
+    }
 }
 
 private extension PTProtocolEvidenceV2Store {
@@ -1034,9 +1184,15 @@ private extension PTProtocolEvidenceV2Store {
         if lhs.id == rhs.id { return true }
         return lhs.domain == rhs.domain
             && lhs.kind == rhs.kind
-            && lhs.timestamp == rhs.timestamp
+            && lhs.direction == rhs.direction
+            && lhs.source == rhs.source
+            && lhs.vehicleID == rhs.vehicleID
             && lhs.referenceID == rhs.referenceID
             && lhs.value == rhs.value
+            && lhs.request == rhs.request
+            && lhs.response == rhs.response
+            && lhs.fingerprint == rhs.fingerprint
+            && lhs.reference == rhs.reference
     }
 
     func sameCandidate(_ lhs: PTProtocolCANBitCandidate, _ rhs: PTProtocolCANBitCandidate) -> Bool {
@@ -1044,6 +1200,7 @@ private extension PTProtocolEvidenceV2Store {
             && lhs.eventID == rhs.eventID
             && lhs.header == rhs.header
             && lhs.changedByteIndexes == rhs.changedByteIndexes
+            && lhs.changedBits == rhs.changedBits
     }
 
 }

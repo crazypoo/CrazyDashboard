@@ -1,0 +1,17 @@
+name: PTSpeed Build 62
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build62:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install CocoaPods dependencies
+        run: pod install --deployment
+      - name: Run Build 62 checks
+        env:
+          RUN_SIMULATOR_TESTS: "1"
+        run: ./Scripts/build62_checks.sh

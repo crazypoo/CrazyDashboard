@@ -249,6 +249,11 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
     }
 
     public func seekReplay(to elapsed: TimeInterval) {
+        guard replayPlayer != nil else { return }
+        // EN: Rebuild replay state before a backward seek so later location, motion, and adapter values cannot leak backward.
+        // ES: Reconstruye el estado antes de buscar hacia atrás para que ubicación, movimiento y adaptador posteriores no se filtren.
+        // 中文：回放定位前重建状态，防止后段的位置、运动和适配器数据泄漏到更早时间点。
+        resetReplayState()
         replayPlayer?.seek(to: elapsed)
     }
 
@@ -273,6 +278,13 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
         } else {
             notifySnapshotChange()
         }
+    }
+
+    private func resetReplayState() {
+        resolver.reset()
+        adapterSnapshot = .unavailable
+        snapshot = PTUnifiedVehicleTelemetrySnapshot(updatedAt: Date(), mode: .replay)
+        notifySnapshotChange()
     }
 
     nonisolated public func motionManager(_ manager: PTMotion, didUpdateData data: PTMotionData) {
