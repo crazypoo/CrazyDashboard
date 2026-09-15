@@ -834,8 +834,13 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
             return
         }
 
+        guard status.absWarningState != .unknown else {
+            absWarningTracker.reset()
+            return
+        }
+
         guard absWarningTracker.update(
-            isAbnormal: status.isAbsLightOn,
+            isAbnormal: status.absWarningState == .on,
             speedKmh: speedSample.value,
             source: speedSample.source,
             at: date
@@ -895,7 +900,10 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         } else if let data2 = data as? PTDashboardData2 {
             if data2.engineAvailability.isAvailable {
                 telemetryEngine.updateEngineStatus(data2.engineStatus, source: source, at: date)
-                telemetryEngine.updateKickstand(data2.isKickstandDown, source: source, at: date)
+                didUpdate = true
+            }
+            if let isKickstandDown = data2.isKickstandDown {
+                telemetryEngine.updateKickstand(isKickstandDown, source: source, at: date)
                 didUpdate = true
             }
             if data2.batteryAvailability.isAvailable {
@@ -960,9 +968,23 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
                 didUpdate = true
             }
             if absStatus.statusAvailability.isAvailable {
-                telemetryEngine.updateABS(lightOn: absStatus.isAbsLightOn, source: source, at: date)
-                evaluateABSWarning(absStatus, at: date)
-                didUpdate = true
+                switch absStatus.absWarningState {
+                case .on, .off:
+                    telemetryEngine.updateABS(
+                        lightOn: absStatus.absWarningState == .on,
+                        source: source,
+                        at: date
+                    )
+                    evaluateABSWarning(absStatus, at: date)
+                    didUpdate = true
+                case .unknown:
+                    // EN: An unresolved ABS warning bit must not overwrite a trusted telemetry state.
+                    // ES: Un bit de advertencia ABS no resuelto no debe sobrescribir un estado fiable.
+                    // 中文：ABS 警告位未确认时，不覆盖已经可信的遥测状态。
+                    absWarningTracker.reset()
+                }
+            } else {
+                absWarningTracker.reset()
             }
             updateWheelSpeedConsistency(at: date)
         }

@@ -13,6 +13,7 @@ related_builds:
   - 55
   - 60
   - 64
+  - 67
 supersedes: []
 superseded_by:
 ---
@@ -41,3 +42,16 @@ superseded_by:
 - 将未知帧先进入 Evidence/CAN/Replay，不直接进入 `PTFrameBuilder` 的正式调用。
 - 真实证据确认后才更新 [`XP400_BLE_PROTOCOL.md`](../protocols/xp400/XP400_BLE_PROTOCOL.md) 的状态；旧协议规范保留在同一 canonical 文件，不另建 V2/V3 副本。
 
+## Build 67 仪表字段纠偏证据
+
+| 字段 | 当前等级 | 代码行为 | 仍需的真实证据 |
+| --- | --- | --- | --- |
+| Data2 RTC | Confirmed in recorded samples | `B0 >> 2` 秒、`B1 >> 2` 分、`B2 >> 3` 时；非法时钟不发布为有效 Clock | 多固件跨分钟/跨小时连续采样 |
+| Data2 Engine low bits | Confirmed in implementation | `B1 & 0x03`；高位不再作为背光、电瓶显示或边撑 | 启动、运行、熄火现场矩阵 |
+| Data2 low bits | Unknown / raw only | 保存 `B0.low2`、`B2.low3`，相关业务字段为 `nil` | Backlight、Kickstand、Battery Display A/B/A |
+| Control TCS Ready | Corrected in implementation | TCS Mode 从低半字节读取，Ready 从完整 byte3 bit7 读取 | 三种 TCS 模式和 Ready 的真车观察 |
+| Control rolling counter | Confirmed as raw sequence | 保留原始 byte0，计算模 256 delta；暂不声明时间单位 | 长时间丢帧/重复/回卷统计 |
+| ABS front wheel speed | Confirmed for sample | `03 10` 按 `0.01` 解码为 `7.84 km/h` | 多速度段与后轮/仪表对照 |
+| ABS warning lamp | Unknown | `absWarningState = .unknown`，避免误报并保留 raw bytes | ABS 自检灯人工 Marker 与连续帧对照 |
+
+本 Build 的结论是“纠正已知错误解释并保留研究证据”，不是对未知位做新的协议猜测。实现只修改外围解码、模型、Mock、开发者采样和测试，未改变 `PTBluetoothManager`、ELM327 或 YMOBD 传输核心。

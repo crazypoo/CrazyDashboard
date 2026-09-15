@@ -8,14 +8,15 @@ domain: xp400-ble
 owner: Jax
 created: 2026-09-15
 last_reviewed: 2026-09-15
-related_builds: []
+related_builds:
+  - 67
 supersedes: []
 superseded_by:
 ---
 
 # Peugeot XP400 iOS BLE 通信协议与实现规范
 
-> 文档版本：1.5
+> 文档版本：1.7
 >
 > 审计日期：2026-09-04
 >
@@ -27,6 +28,8 @@ superseded_by:
 > 1.4 更新记录：完成 BLE-OPT-008；Data2 和 ABS Mock 统一为 11-byte 车辆状态帧，并对已知入站帧补齐严格长度校验
 > 1.5 更新记录：记录 PTSpeed-only 真车场景下真实来电和短信可通过系统 ANCS 显示；区分 iPhone 本地测试通知与仪表验证，保留第三方通知和跨条件矩阵待验证
 > 1.6 更新记录：新增 `PTDashboardANCSProvider`，通过现有 `CBPeripheralManager` 提供 App 自有的 ANCS 风格测试通道；设置页增加固定英文直连测试入口。该通道不读取、不伪造系统电话或短信通知，真实 XP400 的服务接受、订阅和显示仍需真机验证
+>
+> 1.7 更新记录：Build67 修正 Data2 RTC、TCS Ready 和 Control rolling counter 的外围解码；停止传播未经确认的 Data2 高位状态；ABS 警告灯降级为 unknown 并保留前轮速度与原始字节；新增分级协议日志和命名实验 Marker。真实车辆字段验收仍按研究证据单独记录
 
 ## 1. 文档边界
 
@@ -784,3 +787,19 @@ TCS、灯光和 ABS 状态字段，以及断开帧的 Frame ID，已经有 `BLE-
 - 系统 ANCS 路径已在 PTSpeed 单独连接的真车场景验证真实来电和短信；代码中的 `PTAncsNotif` 自建通道仍未实现，第三方通知和跨条件兼容性不应宣称为正式支持；TCS、灯光、ABS 前轮速度和部分保留位已经具备真车字段证据，但 TCS/背光写入指令和跨车型兼容性仍不能直接当作正式支持能力。
 
 因此，当前文档可以作为 iOS BLE 实现和真车验证基线，但不能替代车辆固件协议确认；本次实现没有改写认证查表、TIO 分片算法或已稳定的核心传输边界。
+
+## 18. Build67 仪表协议纠偏记录
+
+Build67 只调整外围仪表字段解码和研究证据，不改变 GATT、认证、Credits、TIO 分片或稳定传输核心。
+
+| 字段 | Build67 当前实现 | 证据状态 |
+| --- | --- | --- |
+| Data2 RTC | `B0 >> 2` 为秒、`B1 >> 2` 为分、`B2 >> 3` 为时；非法值不发布为有效 Clock | 记录样本已确认；多固件连续时钟待验证 |
+| Data2 Engine | 使用 `B1 & 0x03`；不再使用 `B1` 高位推导业务状态 | 位布局已在代码和离线测试固定；实车启停待验证 |
+| Data2 Backlight / Kickstand / Battery Display | 字段保持 `nil`，只保留 `B0.low2`、`B2.low3` 和完整 raw Payload | 未知，等待命名 Marker A/B/A 采样 |
+| Control TCS | Mode 只接受 `0x00/0x02/0x04`；Ready 使用完整 byte3 的 bit7 | 位运算错误已修复；三模式真车待验证 |
+| Control byte0 | 暴露 `rollingCounterRaw`，以模 256 delta 记录 `+5`、重复和跳变 | 原始序列已观察；时间单位未知 |
+| ABS | `0x0310` 仍解码为 `7.84 km/h`；保留三个原始字节；warning 为 `unknown` | 前轮速度样本已确认；警告灯语义待验证 |
+| 协议日志 | `normal/protocolDebug/rawHex` 分级，带索引字节和有界 Packet Snapshot | 代码/离线测试；长时间抓包待验证 |
+
+未知字段必须优先保留为 raw/unknown，不得根据单次日志恢复旧的错误高位解释，也不得把滚动计数器命名为时间戳。真实实验使用 `MARK_BACKLIGHT_*`、`MARK_KICKSTAND_*`、`MARK_ABS_*` 和 `MARK_TCS_*` 记录操作时间轴，证据归档在 [`../../research/XP400_RESEARCH_LOG.md`](../../research/XP400_RESEARCH_LOG.md)。

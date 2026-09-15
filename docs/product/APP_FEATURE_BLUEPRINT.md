@@ -10,6 +10,7 @@ created: 2026-09-15
 last_reviewed: 2026-09-15
 related_builds:
   - 66
+  - 67
 supersedes: []
 superseded_by:
 ---
@@ -20,9 +21,9 @@ superseded_by:
 >
 > 快照日期：2026-09-15
 >
-> 仓库基线：当前工作区已进入 Build 66 GPS Speed Fallback + Unified Speed Resolver；Build 57–65 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份和 Swift 6 Release Hardening 外围能力已接入，真实设备、车辆、OTA 和完整发布验证仍待补
+> 仓库基线：当前工作区已进入 Build 67 XP400 Dashboard Protocol Correction；Build 57–66 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening 和统一车速外围能力已接入，真实设备、车辆、OTA 和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests / UI Tests `CURRENT_PROJECT_VERSION = 66`
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests / UI Tests `CURRENT_PROJECT_VERSION = 67`
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -544,6 +545,25 @@ Build 66 继续保持营销版本 `2.0.8`，只递增工程 Build。速度展示
 
 Build 66 的实现记录、速度来源诊断和真机验收矩阵见 [`../history/builds/BUILD_066_GPS_SPEED_FALLBACK.md`](../history/builds/BUILD_066_GPS_SPEED_FALLBACK.md)。静态检查、单元测试和目标编译不等价于真实车辆道路验证。
 
+### 7.15 Build 67 XP400 Dashboard Protocol Correction
+
+Build 67 继续保持营销版本 `2.0.8`，只递增工程 Build。此次修正仅发生在外围仪表协议解码、诊断模型、Mock 和开发者抓包界面；`PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift` 均保持零字节变化。Data2 的前三个字节正式解码为仪表 RTC，原先未经证实的背光、电瓶显示和边撑高位不再传播；Control 修复 TCS Ready 位运算并保留滚动计数器；ABS 保留前轮速度和原始字节，但警告灯状态暂标记为未知。
+
+| 工作包 | 状态 | 内容 | 验证边界 |
+| --- | --- | --- | --- |
+| B67-00 | ✅ | 所有 Target 统一到 `MARKETING_VERSION = 2.0.8`、`CURRENT_PROJECT_VERSION = 67` | 静态版本门禁；签名发布待补 |
+| B67-01 | ✅ | 新增 `PTDashboardClock`，按 `B0>>2/B1>>2/B2>>3` 解码 `HH:mm:ss`，非法 RTC 返回 `nil` | 纯数据单元测试；仪表 RTC 真车矩阵待补 |
+| B67-02 | ✅ | Data2 移除错误高位状态传播，保留低位原始值和既有发动机/电压/温度/保养字段 | 主 App 目标构建；背光、边撑和电瓶显示专项采样待补 |
+| B67-03 | ✅ | Control 从完整 `controlFlagsRaw` 读取 TCS Ready，保持 `0x00/0x02/0x04` 模式映射 | 纯数据回归；三种 TCS 模式真车验证待补 |
+| B67-04 | ✅ | 新增 `rollingCounterRaw`、模 256 delta、重复/跳变诊断和有界 Packet Snapshot | 单元测试与日志检查；精确计时单位待 Build68 |
+| B67-05 | ✅ | ABS 保留 `0x0310 → 7.84 km/h` 前轮速度，新增三个原始字节，警告灯默认 `unknown` | 纯数据测试；ABS 自检灯真车标记待补 |
+| B67-06 | ✅ | 新增 normal/protocolDebug/rawHex 分级诊断；开发者控制台展开时显示索引字节 | 静态与日志路径检查；长时间抓包待补 |
+| B67-07 | ✅ | CAN Lab 手动标记背光、边撑、ABS、TCS 的可逆实验事件 | 开发者界面静态检查；实车 A/B 采样待补 |
+| B67-08 | ✅ | Mock Data2 使用当前 RTC、Mock Control 使用 `+5` 滚动计数器，增加协议回归测试 | Mock/Tests 编译；真实车辆行为待补 |
+| B67-09 | 🟨 | Build67 检查、真实停车/骑行、ABS/TCS/边撑/背光实验和 Release 签名验收 | Debug `build-for-testing` 已通过；真机/实车和签名发布待补 |
+
+Build 67 的实施记录、协议证据和回滚边界见 [`../history/builds/BUILD_067_DASHBOARD_PROTOCOL_CORRECTION.md`](../history/builds/BUILD_067_DASHBOARD_PROTOCOL_CORRECTION.md)。Build 67 不实现 Build68 预留的背光、边撑、电瓶显示、ABS 警告灯正式映射、RTC 对时和滚动计数器时间单位推断。
+
 ## 8. 已退役功能
 
 当前没有需要登记的已退役功能。后续移除功能时，在下表保留原 ID、最后可用 Build、移除原因和替代路径。
@@ -617,3 +637,4 @@ Build 66 的实现记录、速度来源诊断和真机验收矩阵见 [`../histo
 | 2026-09-15 | 当前工作区 Build 64 | B64-01～B64-11 已接入：XP400 ECU/诊断适配器身份模型、证据优先级、只读 DID 目录、只读 ECU 枚举策略、拓扑图、Passport 兼容投影、身份差异和本地 Actor 存储；三个 BLE/OBD 核心文件零字节变化；版本门禁、Swift 解析、身份模型/目录/解析器/存储测试编译与主 App `build-for-testing` 已接入，XCTest 实际执行仍受当前 Pods/模拟器架构限制，真机/实车验证待补 |
 | 2026-09-15 | 当前工作区 Build 65 | B65-01～B65-11 外围能力已接入：并发归属矩阵、目标模型 Sendable/nonisolated、PTSpeedTests Swift 6 strict concurrency 入口、Trace 有界流式写入/批量读取、Evidence 分页、原子临时文件恢复、Release Safety/Privacy 策略、确定性异常语料、版本门禁、CI 与验收文档；三个 BLE/OBD 核心文件零字节变化；主 App 完整编译、XCTest 实际运行、签名发布、4 小时 soak、OTA 和 XP400+YMOBD 真机验证待补 |
 | 2026-09-15 | 当前工作区 Build 66 | B66-00～B66-12 已接入：GPS 速度质量校验与平滑、XP400/OBD/GPS 统一速度 Resolver、过期即时回退、两次有效样本接管、Replay 覆盖、主仪表、`PTMotoInfoViewController` 和 Peugeot 仪表单一消费路径、Unified Speed Instruments、回滚开关和离线测试；三个 BLE/OBD 核心文件零字节变化；静态检查与 Debug 目标构建已通过，真实 iPhone/GPS/OBD/XP400 切源、后台和签名发布验证待补 |
+| 2026-09-15 | 当前工作区 Build 67 | B67-00～B67-08 已接入：Data2 RTC/Engine 位纠偏、未知高位停止传播、TCS Ready 修复、Control rolling counter、ABS raw/unknown 安全模型、分级协议日志、有界快照、命名 Marker、Mock 和纯数据回归；三个 BLE/OBD 核心文件零字节变化；Build67 静态门禁已接入，真实仪表/道路、专项 A/B 采样和签名发布验证待补 |

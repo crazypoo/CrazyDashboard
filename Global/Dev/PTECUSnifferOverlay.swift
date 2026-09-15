@@ -412,6 +412,10 @@ public class PTECUSnifferOverlay: PTDashboardBaseView, UIDocumentPickerDelegate 
     public func showSniffer() {
         presentationState = .expanded
         PTMotoUserDefaultStruct.BleTestDataGet = true
+        // EN: Show indexed raw bytes while the developer console is visible.
+        // ES: Muestra los bytes sin procesar indexados mientras la consola de desarrollador está visible.
+        // 中文：开发者控制台展开时显示带索引的原始字节。
+        PTDashboardProtocolDiagnostics.shared.logLevel = .rawHex
         highRiskSwitch.isOn = PTDeveloperSafetyGate.shared.isEnabled
         self.isHidden = false
         backgroundView.isHidden = false
@@ -432,6 +436,10 @@ public class PTECUSnifferOverlay: PTDashboardBaseView, UIDocumentPickerDelegate 
         stopRefreshTimer()
         presentationState = .compact
         PTMotoUserDefaultStruct.BleTestDataGet = true
+        // EN: Keep protocol details available in the compact session without the highest-volume byte dump.
+        // ES: Mantiene los detalles del protocolo en la sesión compacta sin el volcado de bytes más voluminoso.
+        // 中文：收起控制台后保留协议详情，但关闭高频原始字节展开日志。
+        PTDashboardProtocolDiagnostics.shared.logLevel = .protocolDebug
         backgroundView.isHidden = true
         compactButton.isHidden = false
         isHidden = false
@@ -453,6 +461,11 @@ public class PTECUSnifferOverlay: PTDashboardBaseView, UIDocumentPickerDelegate 
         stopActiveFuzzing()
         PTJieliOTAManager.shared.cancelForSafetyReset()
         PTDeveloperSafetyGate.shared.disable(reason: .userDisabled)
+        // EN: Return to the normal logger level after the developer session ends.
+        // ES: Vuelve al nivel normal del registrador cuando termina la sesión de desarrollador.
+        // 中文：开发者会话结束后恢复普通日志级别。
+        PTDashboardProtocolDiagnostics.shared.logLevel = .normal
+        PTDashboardProtocolDiagnostics.shared.resetSession()
         highRiskSwitch.setOn(false, animated: false)
         presentationState = .hidden
         PTMotoUserDefaultStruct.BleTestDataGet = false

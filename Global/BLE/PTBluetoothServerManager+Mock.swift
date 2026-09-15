@@ -22,6 +22,10 @@ extension PTBluetoothServerManager {
         static var mockRPM: Double = 1200.0     // 模拟转速 (RPM)，默认怠速
         static var mockFuel: Double = 254.0     // 模拟油量原始值 (约等于 100%)
         static var isAccelerating = true        // 物理状态机：是否正在加速
+        // EN: Start the mock control counter at a known value and advance it by five per frame.
+        // ES: Inicia el contador de control simulado en un valor conocido y avanza cinco por trama.
+        // 中文：让 Mock 控制计数器从已知值开始，并且每帧递增 5。
+        static var mockControlCounter: UInt8 = 0xF0
     }
     
     /// 启动本地模拟数据泵 (完全脱离机车进行 UI 联调)
@@ -41,6 +45,7 @@ extension PTBluetoothServerManager {
         
         // 2. 启动 10Hz (0.1秒) 的高频数据泵，实现 UI 丝滑刷新
         PTMockPhysicsState.timer?.invalidate()
+        PTMockPhysicsState.mockControlCounter = 0xF0
         PTMockPhysicsState.timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             
@@ -111,11 +116,23 @@ extension PTBluetoothServerManager {
         let engineStatus: UInt8 = 0x02 // 运转中 (0x02)
         let temp: UInt8 = 35 + 50 // 35°C (逆向公式: byte - 50)
         let batt: UInt8 = 142 // 14.2V (逆向公式: byte * 0.1)
-        
+
+        // EN: Encode the current local clock using the confirmed Data2 RTC bit layout.
+        // ES: Codifica el reloj local actual con el diseño de bits RTC confirmado de Data2.
+        // 中文：使用已确认的 Data2 RTC 位布局编码当前本地时钟。
+        let now = Date()
+        let calendar = Calendar.current
+        let second = UInt8(calendar.component(.second, from: now))
+        let minute = UInt8(calendar.component(.minute, from: now))
+        let hour = UInt8(calendar.component(.hour, from: now))
+        let rtcByte0 = second << 2
+        let rtcByte1 = (minute << 2) | engineStatus
+        let rtcByte2 = hour << 3
+
         // EN: Keep the mock Data2 payload at the confirmed 8-byte size, including two reserved bytes.
         // ES: Mantén la carga simulada Data2 en los 8 bytes confirmados, incluidos dos bytes reservados.
         // 中文：让 Data2 Mock 保持协议确认的 8 字节 Payload，并保留两个预留字节。
-        return [0x00, engineStatus, 0x00, 0x00, temp, batt, 0x00, 0x00]
+        return [rtcByte0, rtcByte1, rtcByte2, 0x00, temp, batt, 0x00, 0x00]
     }
     
     /// 伪造 DATA3 (续航里程、仪表盘颜色/单位、保养距离、语言)
@@ -139,9 +156,11 @@ extension PTBluetoothServerManager {
         let rpmRaw = UInt16(PTMockPhysicsState.mockRPM / 0.25)
         let tcsByte: UInt8 = 0x82 // mode1 (0x02) | ready (0x80)
         let lightByte: UInt8 = 0x40 // 近光灯开启 (0x40)
+        let rollingCounter = PTMockPhysicsState.mockControlCounter
+        PTMockPhysicsState.mockControlCounter &+= 5
         
         return [
-            0x00, 0x00, lightByte, tcsByte,
+            rollingCounter, 0x00, lightByte, tcsByte,
             UInt8((rpmRaw >> 8) & 0xFF), UInt8(rpmRaw & 0xFF),
             UInt8((speedRaw >> 8) & 0xFF), UInt8(speedRaw & 0xFF)
         ]
@@ -161,4 +180,3 @@ extension PTBluetoothServerManager {
         ]
     }
 }
-

@@ -28,6 +28,7 @@
 | [`archive/roadmaps/XP400_V3_UPGRADE_PLAN.md`](archive/roadmaps/XP400_V3_UPGRADE_PLAN.md) | archive | archived | 否 | 2026-09-15 |
 | [`history/builds/BUILD_065_RELEASE_HARDENING.md`](history/builds/BUILD_065_RELEASE_HARDENING.md) | history | stable | 否 | 2026-09-15 |
 | [`history/builds/BUILD_066_GPS_SPEED_FALLBACK.md`](history/builds/BUILD_066_GPS_SPEED_FALLBACK.md) | history | stable | 否 | 2026-09-15 |
+| [`history/builds/BUILD_067_DASHBOARD_PROTOCOL_CORRECTION.md`](history/builds/BUILD_067_DASHBOARD_PROTOCOL_CORRECTION.md) | history | stable | 否 | 2026-09-15 |
 | [`history/BUILD_HISTORY_2026.md`](history/BUILD_HISTORY_2026.md) | history | stable | 是 | 2026-09-15 |
 | [`planning/ACTIVE_WORK.md`](planning/ACTIVE_WORK.md) | planning | active | 是 | 2026-09-15 |
 | [`planning/BACKLOG.md`](planning/BACKLOG.md) | planning | active | 是 | 2026-09-15 |

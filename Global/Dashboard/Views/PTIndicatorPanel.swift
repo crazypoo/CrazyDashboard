@@ -146,41 +146,41 @@ public class PTIndicatorPanel: PTDashboardBaseView {
     }
     
     func updateData2(data2: PTDashboardData2) {
-        // EN: Do not present derived engine-byte indicators while their source is unavailable.
-        // ES: No muestres indicadores derivados del byte del motor mientras su fuente no esté disponible.
-        // 中文：发动机源字节不可用时，不展示由它推导出的状态指示。
-        guard data2.engineAvailability.isAvailable else {
-            toggleGlow(for: kickstandIcon, isOn: false, activeColor: .systemRed)
-            toggleGlow(for: backlightIcon, isOn: false, activeColor: .GoldColor)
-            return
-        }
+        // EN: Do not present unconfirmed kickstand or backlight states as real vehicle facts.
+        // ES: No muestres los estados no confirmados de caballete o luz como hechos reales del vehículo.
+        // 中文：不要把尚未确认的边撑或背光状态显示成真实车辆状态。
+        let isKickstandDown = data2.isKickstandDown ?? false
+        toggleGlow(
+            for: kickstandIcon,
+            isOn: data2.isKickstandDown != nil && isKickstandDown,
+            activeColor: .systemRed
+        )
 
-        toggleGlow(for: kickstandIcon, isOn: data2.isKickstandDown, activeColor: .systemRed)
-        
-         switch data2.backlightMode {
-         case .led2:
-             backlightIcon.image = UIImage(.sun.maxFill)
-         case .led1:
-             backlightIcon.image = UIImage(.sun.minFill)
-         case .led0:
-             backlightIcon.image = UIImage(.moon.fill)
-         case .auto:
-             backlightIcon.image = UIImage(.circle.lefthalfFilled)
-         case .unknown:
-             backlightIcon.image = UIImage(.moon.fill)
-         }
-         
-        // 开启常亮光晕指示
-        toggleGlow(for: backlightIcon, isOn: true, activeColor: .GoldColor)
+        if let backlightMode = data2.backlightMode {
+            switch backlightMode {
+            case .led2:
+                backlightIcon.image = UIImage(.sun.maxFill)
+            case .led1:
+                backlightIcon.image = UIImage(.sun.minFill)
+            case .led0:
+                backlightIcon.image = UIImage(.moon.fill)
+            case .auto:
+                backlightIcon.image = UIImage(.circle.lefthalfFilled)
+            case .unknown:
+                backlightIcon.image = UIImage(.moon.fill)
+            }
+            toggleGlow(for: backlightIcon, isOn: true, activeColor: .GoldColor)
+        } else {
+            backlightIcon.image = UIImage(.moon.fill)
+            toggleGlow(for: backlightIcon, isOn: false, activeColor: .GoldColor)
+        }
     }
     
     func updateABS(abs: PTAbsStatus) {
-        switch abs.absRaw {
-        case 2:
+        switch abs.absWarningState {
+        case .on:
             toggleGlow(for: absIcon, isOn: true, activeColor: .systemOrange)
-        case 1:
-            toggleGlow(for: absIcon, isOn: abs.isAbsLightOn, activeColor: .systemOrange)
-        default:
+        case .off, .unknown:
             toggleGlow(for: absIcon, isOn: false, activeColor: .systemOrange)
         }
     }

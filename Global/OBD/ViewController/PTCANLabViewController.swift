@@ -244,10 +244,31 @@ final class PTCANLabViewController: PTMotoBaseViewController {
 
     @objc private func markCaptureEvent() {
         guard captureTask != nil else { return }
-        let name = "manual-\(Date().formatted(date: .omitted, time: .standard))"
-        if PTCANRecorder.shared.markEvent(name) != nil {
-            statusLabel.text = localized("can_lab_capture_marked")
+        let alert = UIAlertController(
+            title: localized("can_lab_capture_mark"),
+            message: localized("can_lab_marker_hint"),
+            preferredStyle: .actionSheet
+        )
+        PTDashboardProtocolMarker.allCases.forEach { marker in
+            alert.addAction(UIAlertAction(title: marker.rawValue, style: .default) { [weak self] _ in
+                self?.recordCaptureMarker(marker)
+            })
         }
+        alert.addAction(UIAlertAction(title: localized("button_cancel"), style: .cancel))
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = markButton
+            popover.sourceRect = markButton.bounds
+        }
+        present(alert, animated: true)
+    }
+
+    // EN: Persist the selected experiment marker in the active capture without sending a vehicle command.
+    // ES: Guarda la marca experimental seleccionada en la captura activa sin enviar un comando al vehículo.
+    // 中文：把选中的实验标记保存到当前抓包中，但不向车辆发送任何指令。
+    private func recordCaptureMarker(_ marker: PTDashboardProtocolMarker) {
+        guard PTCANRecorder.shared.markEvent(marker.rawValue) != nil else { return }
+        PTOBDLogger.moto.ptLog("🏷️ [MARK] \(marker.rawValue)")
+        statusLabel.text = "\(localized("can_lab_capture_marked")): \(marker.rawValue)"
     }
 
     // EN: Guide the developer through a reversible A/B/A experiment without sending any new command.

@@ -3284,6 +3284,143 @@ final class PTCoreTests: XCTestCase {
     }
 }
 
+// EN: Build67 tests protect the corrected XP400 dashboard field boundaries and raw evidence.
+// ES: Las pruebas de Build67 protegen los límites corregidos de campos y evidencia sin procesar del tablero XP400.
+// 中文：Build67 测试保护 XP400 仪表修正后的字段边界和原始证据。
+@MainActor
+final class PTBuild67DashboardProtocolTests: XCTestCase {
+    private func frame(id: UInt8, payload: [UInt8]) -> Data {
+        Data([0x16, id] + payload + [0x00])
+    }
+
+    func testData2DecodesConfirmedRTCAndLeavesUnresolvedBitsRaw() throws {
+        let samples: [([UInt8], String)] = [
+            ([0xE5, 0xDE, 0x90], "18:55:57"),
+            ([0x01, 0xE2, 0x90], "18:56:00"),
+            ([0x25, 0x06, 0x98], "19:01:09")
+        ]
+
+        for (rtcBytes, expectedTime) in samples {
+            PTBluetoothServerManager.shared.parseDashboardFrame(
+                frame(
+                    id: PTXP400BLEProtocol.data2FrameID,
+                    payload: rtcBytes + [0x00, 0x50, 0x91, 0x00, 0x00]
+                )
+            )
+
+            let data2 = try XCTUnwrap(PTBluetoothServerManager.shared.latestData2)
+            XCTAssertEqual(data2.clock?.displayString, expectedTime)
+            XCTAssertNil(data2.backlightMode)
+            XCTAssertNil(data2.batteryDisplayState)
+            XCTAssertNil(data2.isKickstandDown)
+        }
+
+        let finalData2 = try XCTUnwrap(PTBluetoothServerManager.shared.latestData2)
+        XCTAssertEqual(finalData2.rawByte0LowBits, 0x01)
+        XCTAssertEqual(finalData2.rawByte2LowBits, 0x00)
+    }
+
+    func testData2EngineUsesLowBitsWhileMinuteUsesHighBits() throws {
+        PTBluetoothServerManager.shared.parseDashboardFrame(
+            frame(
+                id: PTXP400BLEProtocol.data2FrameID,
+                payload: [0x25, 0x5C, 0x98, 0x00, 0x50, 0x91, 0x00, 0x00]
+            )
+        )
+
+        let data2 = try XCTUnwrap(PTBluetoothServerManager.shared.latestData2)
+        XCTAssertEqual(data2.clock?.minute, UInt8(0x5C >> 2))
+        XCTAssertEqual(data2.engineStatus, 0)
+        XCTAssertEqual(data2.engineAvailability, .available)
+    }
+
+    func testInvalidData2RTCIsNotPublishedAsAClock() throws {
+        PTBluetoothServerManager.shared.parseDashboardFrame(
+            frame(
+                id: PTXP400BLEProtocol.data2FrameID,
+                payload: [0xFF, 0xFF, 0xFF, 0x00, 0x50, 0x91, 0x00, 0x00]
+            )
+        )
+
+        let data2 = try XCTUnwrap(PTBluetoothServerManager.shared.latestData2)
+        XCTAssertNil(data2.clock)
+        XCTAssertEqual(data2.engineAvailability, .unavailable)
+    }
+
+    func testControlSeparatesTCSModeAndReadyFlag() throws {
+        PTDashboardProtocolDiagnostics.shared.resetSession()
+        PTBluetoothServerManager.shared.parseDashboardFrame(
+            frame(
+                id: PTXP400BLEProtocol.controlFrameID,
+                payload: [0xF0, 0x00, 0x40, 0x82, 0x13, 0x88, 0x27, 0x10]
+            )
+        )
+
+        let ready = try XCTUnwrap(PTBluetoothServerManager.shared.latestControl)
+        XCTAssertEqual(ready.tcsMode, .mode1)
+        XCTAssertEqual(ready.tcsModeRaw, 0x02)
+        XCTAssertEqual(ready.controlFlagsRaw, 0x82)
+        XCTAssertEqual(ready.rollingCounterRaw, 0xF0)
+        XCTAssertTrue(ready.isTcsSystemReady)
+
+        PTBluetoothServerManager.shared.parseDashboardFrame(
+            frame(
+                id: PTXP400BLEProtocol.controlFrameID,
+                payload: [0xF5, 0x00, 0x40, 0x02, 0x13, 0x88, 0x27, 0x10]
+            )
+        )
+        let notReady = try XCTUnwrap(PTBluetoothServerManager.shared.latestControl)
+        XCTAssertEqual(notReady.tcsMode, .mode1)
+        XCTAssertFalse(notReady.isTcsSystemReady)
+        XCTAssertEqual(notReady.rollingCounterRaw, 0xF5)
+    }
+
+    func testRollingCounterUsesModuloDistance() {
+        XCTAssertEqual(PTDashboardRollingCounter.delta(from: 0xF0, to: 0xF5), 5)
+        XCTAssertEqual(PTDashboardRollingCounter.delta(from: 0xFA, to: 0x00), 6)
+        XCTAssertEqual(PTDashboardRollingCounter.delta(from: 0x00, to: 0x00), 0)
+    }
+
+    func testABSKeepsWheelSpeedAndMarksWarningAsUnknown() throws {
+        PTBluetoothServerManager.shared.parseDashboardFrame(
+            frame(
+                id: PTXP400BLEProtocol.absFrameID,
+                payload: [0x03, 0x10, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]
+            )
+        )
+
+        let abs = try XCTUnwrap(PTBluetoothServerManager.shared.latestAbsStatus)
+        XCTAssertEqual(abs.frontWheelSpeedKmh, 7.84, accuracy: 0.001)
+        XCTAssertEqual(abs.absWarningState, .unknown)
+        XCTAssertEqual(abs.rawByte0, 0x03)
+        XCTAssertEqual(abs.rawByte1, 0x10)
+        XCTAssertEqual(abs.rawByte2, 0x01)
+    }
+
+    func testPacketSnapshotIsSerializableAndDiagnosticsRemainBounded() throws {
+        let diagnostics = PTDashboardProtocolDiagnostics.shared
+        diagnostics.clearSnapshots()
+        diagnostics.logLevel = .normal
+        defer {
+            diagnostics.logLevel = .normal
+            diagnostics.resetSession()
+        }
+
+        let snapshot = diagnostics.record(
+            frameID: PTXP400BLEProtocol.data2FrameID,
+            rawData: frame(id: PTXP400BLEProtocol.data2FrameID, payload: [0x01, 0x02]),
+            payload: Data([0x01, 0x02]),
+            decodedSummary: "DATA2 RTC: 00:00:00"
+        )
+        let encoded = try JSONEncoder().encode(snapshot)
+        let decoded = try JSONDecoder().decode(PTDashboardPacketSnapshot.self, from: encoded)
+
+        XCTAssertEqual(decoded, snapshot)
+        XCTAssertEqual(snapshot.rawHexString, "16 03 01 02 00")
+        XCTAssertLessThanOrEqual(diagnostics.recentSnapshots.count, PTDashboardProtocolDiagnostics.maximumSnapshotCount)
+    }
+}
+
 // EN: The actor keeps fallback call-count assertions race-free under Swift concurrency.
 // ES: El actor mantiene seguras las aserciones de llamadas de reserva bajo concurrencia de Swift.
 // 中文：使用 actor 让 Swift 并发测试中的备用调用次数断言不发生数据竞争。

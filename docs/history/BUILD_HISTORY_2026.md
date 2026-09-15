@@ -16,6 +16,7 @@ related_builds:
   - 64
   - 65
   - 66
+  - 67
 supersedes: []
 superseded_by:
 ---
@@ -44,7 +45,10 @@ superseded_by:
 
 完成 GPS 质量门禁、3 点中值/EMA、XP400 > OBD > GPS 优先级、过期回退、连续样本接管、Replay 覆盖、统一仪表消费、来源诊断和离线测试。详细实施记录见 [`builds/BUILD_066_GPS_SPEED_FALLBACK.md`](builds/BUILD_066_GPS_SPEED_FALLBACK.md)。代码门禁已完成，GPS/OBD/XP400 切源、后台、低电量和 Release 设备验收仍在 [`../planning/ACTIVE_WORK.md`](../planning/ACTIVE_WORK.md)。
 
+## Build 67 — XP400 Dashboard Protocol Correction
+
+完成 Data2 RTC 解码、Engine 低位修正、TCS Ready 位运算修复、Control rolling counter 原始证据、ABS 前轮速度/警告状态拆分、分级协议日志、有界 Packet Snapshot、命名实验 Marker 和 Mock 回归。详细实施记录见 [`builds/BUILD_067_DASHBOARD_PROTOCOL_CORRECTION.md`](builds/BUILD_067_DASHBOARD_PROTOCOL_CORRECTION.md)。三个 BLE/OBD 稳定核心文件保持零字节变化；Swift 纯数据解析和 `PTSpeed` Debug `build-for-testing` 已通过，真实仪表/道路/签名验收仍在 [`../planning/ACTIVE_WORK.md`](../planning/ACTIVE_WORK.md)。
+
 ## 版本规则
 
 营销版本继续为 `2.0.8`，只递增工程 Build。后续 Build 结果先追加本文件，再同步产品总纲、架构/协议/研究 canonical 文档；不要创建新的根目录路线图。
-

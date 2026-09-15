@@ -22,6 +22,14 @@ extension UInt8 {
         // 自动补齐前导 0，确保长度总是 8
         return String(repeating: "0", count: 8 - str.count) + str
     }
+
+    // EN: Render a masked protocol field with the exact number of diagnostic bits.
+    // ES: Renderiza un campo de protocolo enmascarado con el número exacto de bits de diagnóstico.
+    // 中文：按诊断字段的实际位宽显示经过掩码的协议字段。
+    func binaryString(paddedTo width: Int) -> String {
+        let value = String(self, radix: 2)
+        return String(repeating: "0", count: Swift.max(0, width - value.count)) + value
+    }
 }
 
 public enum PTBacklightMode: UInt8 {
@@ -176,6 +184,234 @@ public enum PTDashboardValueAvailability: String, Codable, Equatable, Sendable {
     }
 }
 
+// EN: Represents the dashboard's wall clock without inventing a date, timezone, or UTC offset.
+// ES: Representa el reloj del tablero sin inventar una fecha, zona horaria ni desplazamiento UTC.
+// 中文：表示仪表盘时钟，不擅自推断日期、时区或 UTC 偏移。
+public nonisolated struct PTDashboardClock: Codable, Equatable, Sendable {
+    public let hour: UInt8
+    public let minute: UInt8
+    public let second: UInt8
+
+    public init(hour: UInt8, minute: UInt8, second: UInt8) {
+        self.hour = hour
+        self.minute = minute
+        self.second = second
+    }
+
+    public var isValid: Bool {
+        hour < 24 && minute < 60 && second < 60
+    }
+
+    // EN: Format only the confirmed HH:mm:ss value; timezone conversion belongs outside the protocol model.
+    // ES: Formatea solo el valor confirmado HH:mm:ss; la conversión de zona horaria queda fuera del modelo.
+    // 中文：只格式化已确认的 HH:mm:ss，时区转换不属于协议模型。
+    public var displayString: String {
+        String(format: "%02d:%02d:%02d", Int(hour), Int(minute), Int(second))
+    }
+}
+
+// EN: Represents the unresolved ABS warning lamp state separately from wheel-speed data.
+// ES: Representa por separado el estado no resuelto del testigo ABS y los datos de rueda.
+// 中文：将尚未确认的 ABS 警告灯状态与轮速数据分开表示。
+public nonisolated enum PTABSWarningState: String, Codable, Equatable, Sendable {
+    case unknown
+    case off
+    case on
+}
+
+// EN: Exposes modular counter distance without claiming a timestamp unit.
+// ES: Expone la distancia modular del contador sin afirmar una unidad temporal.
+// 中文：提供滚动计数器的模运算距离，不将其宣称为时间单位。
+public nonisolated enum PTDashboardRollingCounter {
+    public static func delta(from previous: UInt8, to current: UInt8) -> UInt8 {
+        UInt8((Int(current) - Int(previous) + 256) % 256)
+    }
+}
+
+// EN: Selects how much dashboard protocol evidence is added to the existing logger stream.
+// ES: Selecciona cuánta evidencia del protocolo del tablero se añade al registro existente.
+// 中文：选择要追加到现有日志流中的仪表协议证据级别。
+public nonisolated enum PTDashboardLogLevel: String, Codable, CaseIterable, Sendable {
+    case normal
+    case protocolDebug
+    case rawHex
+}
+
+// EN: Names the reversible dashboard experiments that can be attached to a CAN capture.
+// ES: Nombra los experimentos reversibles del tablero que pueden adjuntarse a una captura CAN.
+// 中文：定义可附加到 CAN 抓包中的可逆仪表实验标记。
+public nonisolated enum PTDashboardProtocolMarker: String, CaseIterable, Sendable {
+    case backlightAuto = "MARK_BACKLIGHT_AUTO"
+    case backlightLed0 = "MARK_BACKLIGHT_LED0"
+    case backlightLed1 = "MARK_BACKLIGHT_LED1"
+    case backlightLed2 = "MARK_BACKLIGHT_LED2"
+    case kickstandUp = "MARK_KICKSTAND_UP"
+    case kickstandDown = "MARK_KICKSTAND_DOWN"
+    case absOn = "MARK_ABS_ON"
+    case absOff = "MARK_ABS_OFF"
+    case tcsOff = "MARK_TCS_OFF"
+    case tcs1 = "MARK_TCS_1"
+    case tcs2 = "MARK_TCS_2"
+}
+
+// EN: A bounded, serializable snapshot keeps a decoded summary next to the original dashboard frame.
+// ES: Una instantánea serializable y acotada conserva el resumen decodificado junto a la trama original.
+// 中文：有界且可序列化的快照把解码摘要与仪表原始帧放在一起。
+public nonisolated struct PTDashboardPacketSnapshot: Codable, Equatable, Sendable {
+    public let timestamp: Date
+    public let frameID: UInt8
+    public let rawData: Data
+    public let decodedSummary: String
+    public let rollingCounter: UInt8?
+
+    public init(
+        timestamp: Date = Date(),
+        frameID: UInt8,
+        rawData: Data,
+        decodedSummary: String,
+        rollingCounter: UInt8? = nil
+    ) {
+        self.timestamp = timestamp
+        self.frameID = frameID
+        self.rawData = rawData
+        self.decodedSummary = decodedSummary
+        self.rollingCounter = rollingCounter
+    }
+
+    public var rawHexString: String {
+        rawData.map { String(format: "%02X", $0) }.joined(separator: " ")
+    }
+}
+
+// EN: Keeps protocol diagnostics on the app's main actor so the existing MainActor logger is accessed safely.
+// ES: Mantiene los diagnósticos del protocolo en el actor principal para acceder de forma segura al registrador MainActor existente.
+// 中文：让协议诊断运行在应用 MainActor 上，安全访问现有的 MainActor 日志器。
+@MainActor
+public final class PTDashboardProtocolDiagnostics {
+    public static let shared = PTDashboardProtocolDiagnostics()
+
+    private let lock = NSLock()
+    private var currentLevel: PTDashboardLogLevel = .normal
+    private var snapshots: [PTDashboardPacketSnapshot] = []
+    private var previousControlCounter: UInt8?
+    private var previousControlPayload: Data?
+
+    public static let maximumSnapshotCount = 200
+
+    public var logLevel: PTDashboardLogLevel {
+        get {
+            lock.lock()
+            defer { lock.unlock() }
+            return currentLevel
+        }
+        set {
+            lock.lock()
+            currentLevel = newValue
+            lock.unlock()
+        }
+    }
+
+    public var recentSnapshots: [PTDashboardPacketSnapshot] {
+        lock.lock()
+        defer { lock.unlock() }
+        return snapshots
+    }
+
+    public func resetSession() {
+        lock.lock()
+        previousControlCounter = nil
+        previousControlPayload = nil
+        lock.unlock()
+    }
+
+    public func clearSnapshots() {
+        lock.lock()
+        snapshots.removeAll(keepingCapacity: true)
+        lock.unlock()
+    }
+
+    @discardableResult
+    public func record(
+        frameID: UInt8,
+        rawData: Data,
+        payload: Data,
+        decodedSummary: String,
+        rollingCounter: UInt8? = nil,
+        protocolDebug: String? = nil
+    ) -> PTDashboardPacketSnapshot {
+        let snapshot = PTDashboardPacketSnapshot(
+            frameID: frameID,
+            rawData: rawData,
+            decodedSummary: decodedSummary,
+            rollingCounter: rollingCounter
+        )
+
+        lock.lock()
+        let level = currentLevel
+        var counterDiagnostic: String?
+        if let rollingCounter {
+            if let previousControlCounter {
+                let delta = PTDashboardRollingCounter.delta(
+                    from: previousControlCounter,
+                    to: rollingCounter
+                )
+                if delta == 0 {
+                    if previousControlPayload != payload {
+                        counterDiagnostic = "⚠️ rollingCounter repeated with changed payload previous=0x\(String(format: "%02X", previousControlCounter)) current=0x\(String(format: "%02X", rollingCounter))"
+                    } else {
+                        counterDiagnostic = "rollingCounter repeated previous=0x\(String(format: "%02X", previousControlCounter)) current=0x\(String(format: "%02X", rollingCounter))"
+                    }
+                } else if delta != 5 {
+                    counterDiagnostic = "⚠️ rollingCounter jump previous=0x\(String(format: "%02X", previousControlCounter)) current=0x\(String(format: "%02X", rollingCounter)) delta=\(delta)"
+                } else {
+                    counterDiagnostic = "rollingCounter=0x\(String(format: "%02X", rollingCounter)) delta=5"
+                }
+            } else {
+                counterDiagnostic = "rollingCounter=0x\(String(format: "%02X", rollingCounter)) baseline"
+            }
+            previousControlCounter = rollingCounter
+            previousControlPayload = payload
+        }
+        snapshots.append(snapshot)
+        if snapshots.count > Self.maximumSnapshotCount {
+            snapshots.removeFirst(snapshots.count - Self.maximumSnapshotCount)
+        }
+        lock.unlock()
+
+        if Self.allows(.normal, at: level) {
+            PTOBDLogger.moto.ptLog("📊 [DASHBOARD] \(decodedSummary)")
+        }
+        if Self.allows(.protocolDebug, at: level) {
+            let details = [protocolDebug, counterDiagnostic]
+                .compactMap { $0 }
+                .joined(separator: " | ")
+            if !details.isEmpty {
+                PTOBDLogger.moto.ptLog("🔬 [PROTOCOL DEBUG] ID=0x\(String(format: "%02X", frameID)) \(details)")
+            }
+        }
+        if Self.allows(.rawHex, at: level) {
+            let indexedBytes = payload.enumerated()
+                .map { index, byte in
+                    "B\(index)=0x\(String(format: "%02X", byte))/\(byte.binaryString)"
+                }
+                .joined(separator: " ")
+            PTOBDLogger.moto.ptLog("🧾 [RAW HEX] ID=0x\(String(format: "%02X", frameID)) \(snapshot.rawHexString) | \(indexedBytes)")
+        }
+        return snapshot
+    }
+
+    private static func allows(_ messageLevel: PTDashboardLogLevel, at configuredLevel: PTDashboardLogLevel) -> Bool {
+        switch (messageLevel, configuredLevel) {
+        case (.normal, .normal), (.normal, .protocolDebug), (.normal, .rawHex):
+            return true
+        case (.protocolDebug, .protocolDebug), (.protocolDebug, .rawHex), (.rawHex, .rawHex):
+            return true
+        default:
+            return false
+        }
+    }
+}
+
 struct PTDashboardControl {
     /// 当前车速 (数值取决于仪表盘的单位设置，可能是 km/h 或 mph)
     let vehicleSpeedKmh: Double
@@ -192,6 +428,13 @@ struct PTDashboardControl {
     let isHazardOn: Bool
     
     let isTcsSystemReady:Bool
+
+    // EN: Preserve the complete control flags and rolling counter for protocol evidence.
+    // ES: Conserva las banderas de control completas y el contador cíclico para la evidencia del protocolo.
+    // 中文：保留完整控制标志和滚动计数器，供协议证据使用。
+    let tcsModeRaw: UInt8
+    let controlFlagsRaw: UInt8
+    let rollingCounterRaw: UInt8
 
     // EN: Keep the complete payload and the availability of the two numeric control fields.
     // ES: Conserva la carga útil completa y la disponibilidad de los dos campos numéricos de control.
@@ -210,6 +453,9 @@ struct PTDashboardControl {
         isRightTurnOn: Bool,
         isHazardOn: Bool,
         isTcsSystemReady: Bool,
+        tcsModeRaw: UInt8 = 0xFF,
+        controlFlagsRaw: UInt8 = 0,
+        rollingCounterRaw: UInt8 = 0,
         rawPayload: Data = Data(),
         vehicleSpeedAvailability: PTDashboardValueAvailability = .available,
         engineRpmAvailability: PTDashboardValueAvailability = .available
@@ -223,6 +469,9 @@ struct PTDashboardControl {
         self.isRightTurnOn = isRightTurnOn
         self.isHazardOn = isHazardOn
         self.isTcsSystemReady = isTcsSystemReady
+        self.tcsModeRaw = tcsModeRaw
+        self.controlFlagsRaw = controlFlagsRaw
+        self.rollingCounterRaw = rollingCounterRaw
         self.rawPayload = rawPayload
         self.vehicleSpeedAvailability = vehicleSpeedAvailability
         self.engineRpmAvailability = engineRpmAvailability
@@ -281,13 +530,23 @@ struct PTDashboardData2 {
     let engineStatus: Int
     /// 保养状态原始值 (需通过 PTDashboardLabels.maintenanceLabel 解析)
     let maintenance: Int
-    /// 仪表盘光
-    let backlightMode: PTBacklightMode
+
+    // EN: The first three bytes are modeled as RTC plus unresolved low bits.
+    // ES: Los tres primeros bytes se modelan como RTC más bits bajos sin resolver.
+    // 中文：前三个字节按 RTC 与未确认低位建模。
+    let clock: PTDashboardClock?
+    let rawByte0LowBits: UInt8
+    let rawByte2LowBits: UInt8
+
+    // EN: These fields remain optional until independent vehicle experiments confirm their bit positions.
+    // ES: Estos campos siguen siendo opcionales hasta confirmar sus bits con experimentos independientes.
+    // 中文：这些字段在独立实车实验确认位定义前保持可选。
+    let backlightMode: PTBacklightMode?
     
     let engineTempC: Int
-    let isKickstandDown: Bool
+    let isKickstandDown: Bool?
     
-    let batteryDisplayState: Int
+    let batteryDisplayState: Int?
 
     // EN: Keep source bytes and distinguish unavailable engine, maintenance, temperature, and battery values.
     // ES: Conserva los bytes de origen y distingue los valores no disponibles del motor, mantenimiento, temperatura y batería.
@@ -303,10 +562,13 @@ struct PTDashboardData2 {
         outsideTempC: Int,
         engineStatus: Int,
         maintenance: Int,
-        backlightMode: PTBacklightMode,
         engineTempC: Int,
-        isKickstandDown: Bool,
-        batteryDisplayState: Int,
+        clock: PTDashboardClock? = nil,
+        rawByte0LowBits: UInt8 = 0,
+        rawByte2LowBits: UInt8 = 0,
+        backlightMode: PTBacklightMode? = nil,
+        isKickstandDown: Bool? = nil,
+        batteryDisplayState: Int? = nil,
         rawPayload: Data = Data(),
         engineAvailability: PTDashboardValueAvailability = .available,
         maintenanceAvailability: PTDashboardValueAvailability = .available,
@@ -317,6 +579,9 @@ struct PTDashboardData2 {
         self.outsideTempC = outsideTempC
         self.engineStatus = engineStatus
         self.maintenance = maintenance
+        self.clock = clock
+        self.rawByte0LowBits = rawByte0LowBits
+        self.rawByte2LowBits = rawByte2LowBits
         self.backlightMode = backlightMode
         self.engineTempC = engineTempC
         self.isKickstandDown = isKickstandDown
@@ -429,10 +694,24 @@ struct PTDashboardData3 {
 struct PTAbsStatus {
     /// ABS 状态原始值 (1:正常, 2:故障)
     let absRaw: Int
-    
-    let isAbsLightOn: Bool
-    
+
     let frontWheelSpeedKmh:Double
+
+    // EN: Keep the three source bytes so ABS wheel data and warning state cannot be conflated.
+    // ES: Conserva los tres bytes de origen para no mezclar los datos de rueda ABS con el testigo.
+    // 中文：保留三个源字节，避免把 ABS 轮速数据和警告灯混为一谈。
+    let rawByte0: UInt8
+    let rawByte1: UInt8
+    let rawByte2: UInt8
+    let absWarningState: PTABSWarningState
+
+    // EN: Compatibility projection; new code must inspect absWarningState to distinguish unknown from off.
+    // ES: Proyección compatible; el código nuevo debe consultar absWarningState para distinguir unknown de off.
+    // 中文：兼容性投影；新代码必须读取 absWarningState 区分 unknown 与 off。
+    @available(*, deprecated, message: "Build67: inspect absWarningState instead of isAbsLightOn")
+    var isAbsLightOn: Bool {
+        absWarningState == .on
+    }
 
     // EN: Keep the ABS payload and distinguish unavailable wheel speed from a real zero speed.
     // ES: Conserva la carga útil ABS y distingue la velocidad de rueda no disponible de una velocidad real de cero.
@@ -443,18 +722,46 @@ struct PTAbsStatus {
 
     init(
         absRaw: Int,
+        frontWheelSpeedKmh: Double,
+        rawByte0: UInt8 = 0,
+        rawByte1: UInt8 = 0,
+        rawByte2: UInt8 = 0,
+        absWarningState: PTABSWarningState = .unknown,
+        rawPayload: Data = Data(),
+        frontWheelSpeedAvailability: PTDashboardValueAvailability = .available,
+        statusAvailability: PTDashboardValueAvailability = .available
+    ) {
+        self.absRaw = absRaw
+        self.frontWheelSpeedKmh = frontWheelSpeedKmh
+        self.rawByte0 = rawByte0
+        self.rawByte1 = rawByte1
+        self.rawByte2 = rawByte2
+        self.absWarningState = absWarningState
+        self.rawPayload = rawPayload
+        self.frontWheelSpeedAvailability = frontWheelSpeedAvailability
+        self.statusAvailability = statusAvailability
+    }
+
+    // EN: Keep the old initializer source-compatible during the migration window.
+    // ES: Conserva el inicializador antiguo compatible durante la ventana de migración.
+    // 中文：迁移期间保留旧初始化器的源码兼容性。
+    @available(*, deprecated, message: "Build67: use absWarningState and raw bytes")
+    init(
+        absRaw: Int,
         isAbsLightOn: Bool,
         frontWheelSpeedKmh: Double,
         rawPayload: Data = Data(),
         frontWheelSpeedAvailability: PTDashboardValueAvailability = .available,
         statusAvailability: PTDashboardValueAvailability = .available
     ) {
-        self.absRaw = absRaw
-        self.isAbsLightOn = isAbsLightOn
-        self.frontWheelSpeedKmh = frontWheelSpeedKmh
-        self.rawPayload = rawPayload
-        self.frontWheelSpeedAvailability = frontWheelSpeedAvailability
-        self.statusAvailability = statusAvailability
+        self.init(
+            absRaw: absRaw,
+            frontWheelSpeedKmh: frontWheelSpeedKmh,
+            absWarningState: isAbsLightOn ? .on : .off,
+            rawPayload: rawPayload,
+            frontWheelSpeedAvailability: frontWheelSpeedAvailability,
+            statusAvailability: statusAvailability
+        )
     }
 }
 
@@ -894,4 +1201,3 @@ extension PTBLEDashboardDelegate {
         didUpdateConnectionIdentity identity: PTDashboardConnectionIdentity?
     ) {}
 }
-

@@ -94,6 +94,13 @@ extension PTBluetoothServerManager {
         // ES: Valida la envoltura una vez en el límite del decodificador antes de leer la carga.
         // 中文：在读取任何 Payload 字节前，先由解码边界统一校验帧包络。
         guard let decodedFrame = PTXP400TelemetryDecoder.decode(value) else {
+            PTDashboardProtocolDiagnostics.shared.record(
+                frameID: value.count > 1 ? value[1] : 0,
+                rawData: value,
+                payload: Data(),
+                decodedSummary: "INVALID envelope length=\(value.count)",
+                protocolDebug: "frame rejected before semantic decoding"
+            )
             PTOBDLogger.moto.ptLog("⚠️ [解析拦截] 包头不匹配或长度不足")
             return
         }
@@ -126,6 +133,7 @@ extension PTBluetoothServerManager {
         
         switch id {
         case PTXP400BLEProtocol.connectionFrameID:
+            PTDashboardProtocolDiagnostics.shared.resetSession()
             if let asciiString = String(bytes: bytes, encoding: .ascii) {
                 dashboardConnectionIdentity = PTDashboardConnectionIdentity(
                     centralIdentifier: connectedCentral?.identifier,
@@ -144,6 +152,12 @@ extension PTBluetoothServerManager {
             } else {
                 PTOBDLogger.moto.ptLog("🔗 [状态] 车机报告连接正常 (CONNECTION)")
             }
+            PTDashboardProtocolDiagnostics.shared.record(
+                frameID: id,
+                rawData: value,
+                payload: payload,
+                decodedSummary: "CONNECTION serial=\(String(bytes: bytes, encoding: .ascii) ?? "-")"
+            )
         case PTXP400BLEProtocol.data1FrameID: // DATA1
             delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:2 (DATA1) -> \(hexString)") })
             guard bytes.count >= 8 else { return }
@@ -182,39 +196,39 @@ extension PTBluetoothServerManager {
             self.latestData1 = data1
             delegates.forEach( { $0.delegate?.dashboardManager(self, dashboardData: data1) })
             let fuelDescription = fuelAvailability.isAvailable ? "\(fuel)%" : "-"
-            let averageDescription = averageAvailability.isAvailable ? "\(avg)L" : "-"
-            let odometerDescription = odometerAvailability.isAvailable ? "\(odo)km" : "-"
-            PTOBDLogger.moto.ptLog("📊 [DATA1] 油量: \(fuelDescription), 消耗: \(averageDescription), 总里程: \(odometerDescription)")
+            let formattedAverage = averageAvailability.isAvailable ? String(format: "%.1f", avg) : "-"
+            let formattedOdometer = odometerAvailability.isAvailable ? String(format: "%.1f", odo) : "-"
+            let data1Summary = "DATA1 油量: \(fuelDescription), 消耗: \(formattedAverage)L, 总里程: \(formattedOdometer)km"
+            PTDashboardProtocolDiagnostics.shared.record(
+                frameID: id,
+                rawData: value,
+                payload: payload,
+                decodedSummary: data1Summary,
+                protocolDebug: "payload=\(payload.map { String(format: "%02X", $0) }.joined(separator: " "))"
+            )
             
         case PTXP400BLEProtocol.data2FrameID: // DATA2
             delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:3 (DATA2) -> \(hexString)") })
             guard bytes.count >= 6 else { return }
-            
-            // 🚨 深度嗅探：提取被忽略的 bytes[0], bytes[2]，以及如果存在的更靠后的字节
-            var hiddenBits = "b[2]:\(bytes[2].binaryString)"
-            if bytes.count >= 9 { // 根据你提供的数据，DATA2 实际有 9 个 payload 字节
-                hiddenBits += " | b[6]:\(bytes[6].binaryString) | b[7]:\(bytes[7].binaryString) | b[8]:\(bytes[8].binaryString)"
-            }
-            delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "🔬 [未知] DATA2 隐藏位: \(hiddenBits)") })
 
-            let engineRawByte = bytes[1]
-            let engineAvailability: PTDashboardValueAvailability = engineRawByte == 0xFF ? .unavailable : .available
-            let engineRaw = Int(engineRawByte)
-            // 通过 rawValue 安全地转换为枚举对象，如果匹配失败则回退到 .unknown
-            let backlightModeRaw = UInt8((engineRaw & 0xC0) >> 6)
-            let currentBacklightMode = engineAvailability.isAvailable
-                ? (PTBacklightMode(rawValue: backlightModeRaw) ?? .unknown)
-                : .unknown
-
-            let batteryDisplayState = engineAvailability.isAvailable ? (engineRaw & 0x0C) >> 2 : 0
-            // 提取最低 2 位获取引擎状态 (0:未启动, 1:启动中, 2:运转中, 3:关闭中)
-            let engineStatus = engineAvailability.isAvailable ? engineRaw & 0x03 : 0
-
-            let isKickstandDown = engineAvailability.isAvailable && (engineRaw & 0x30) != 0
-            
+            // EN: Data2 bytes 0...2 are the confirmed dashboard RTC; their remaining low bits stay raw.
+            // ES: Los bytes 0...2 de Data2 forman el RTC confirmado; sus bits bajos restantes quedan en bruto.
+            // 中文：Data2 的 bytes 0…2 是已确认的仪表 RTC，其余低位只保留原始值。
+            let byte0 = bytes[0]
+            let byte1 = bytes[1]
+            let byte2 = bytes[2]
+            let clockCandidate = PTDashboardClock(
+                hour: byte2 >> 3,
+                minute: byte1 >> 2,
+                second: byte0 >> 2
+            )
+            let dashboardClock = clockCandidate.isValid ? clockCandidate : nil
+            let engineAvailability: PTDashboardValueAvailability = byte1 == 0xFF ? .unavailable : .available
+            let engineStatus = engineAvailability.isAvailable ? Int(byte1 & 0x03) : 0
+            let rawByte0LowBits = byte0 & 0x03
+            let rawByte2LowBits = byte2 & 0x07
             let engineTempC = 0
 
-            let engine = Int(bytes[1])
             let maintenanceRaw = bytes[3]
             let maintenanceAvailability: PTDashboardValueAvailability = maintenanceRaw == 0xFF ? .unavailable : .available
             let maint = maintenanceAvailability.isAvailable ? Int(maintenanceRaw) : 0
@@ -229,10 +243,13 @@ extension PTBluetoothServerManager {
                 outsideTempC: temp,
                 engineStatus: engineStatus,
                 maintenance: maint,
-                backlightMode: currentBacklightMode,
                 engineTempC: engineTempC,
-                isKickstandDown: isKickstandDown,
-                batteryDisplayState: batteryDisplayState,
+                clock: dashboardClock,
+                rawByte0LowBits: rawByte0LowBits,
+                rawByte2LowBits: rawByte2LowBits,
+                backlightMode: nil,
+                isKickstandDown: nil,
+                batteryDisplayState: nil,
                 rawPayload: payload,
                 engineAvailability: engineAvailability,
                 maintenanceAvailability: maintenanceAvailability,
@@ -242,10 +259,22 @@ extension PTBluetoothServerManager {
             self.latestData2 = data2
             delegates.forEach( { $0.delegate?.dashboardManager(self, dashboardData: data2) })
             let engineDescription = engineAvailability.isAvailable
-                ? PTDashboardLabels.engineStatusLabel(raw: engine)
+                ? PTDashboardLabels.engineStatusLabel(raw: engineStatus)
                 : "-"
-            let batteryDescription = batteryAvailability.isAvailable ? "\(batt)V" : "-"
-            PTOBDLogger.moto.ptLog("🔋 [DATA2] 引擎: \(engineDescription), 电压: \(batteryDescription)")
+            let clockDescription = dashboardClock?.displayString ?? "-"
+            let batteryDescription = batteryAvailability.isAvailable ? "\(String(format: "%.1f", batt))V" : "-"
+            let data2Summary = "DATA2 RTC: \(clockDescription), 引擎: \(engineDescription), 电压: \(batteryDescription)"
+            let data2Debug = "B0=0x\(String(format: "%02X", byte0))/\(byte0.binaryString) B1=0x\(String(format: "%02X", byte1))/\(byte1.binaryString) B2=0x\(String(format: "%02X", byte2))/\(byte2.binaryString) | low2(B0)=0b\(rawByte0LowBits.binaryString(paddedTo: 2)) | low3(B2)=0b\(rawByte2LowBits.binaryString(paddedTo: 3)) | Backlight/Kickstand/BatteryDisplay=unresolved"
+            delegates.forEach {
+                $0.delegate?.dashboardManager(self, unknownData: "🔬 [PROTOCOL DEBUG] \(data2Summary) | \(data2Debug)")
+            }
+            PTDashboardProtocolDiagnostics.shared.record(
+                frameID: id,
+                rawData: value,
+                payload: payload,
+                decodedSummary: data2Summary,
+                protocolDebug: data2Debug
+            )
             
         case PTXP400BLEProtocol.data3FrameID: // DATA3
             delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:4 (DATA3) -> \(hexString)") })
@@ -277,17 +306,28 @@ extension PTBluetoothServerManager {
             )
             self.latestData3 = data3
             delegates.forEach( { $0.delegate?.dashboardManager(self, dashboardData: data3) })
-            let autonomyDescription = autonomyAvailability.isAvailable ? "\(Double(autoRaw) * 0.1)km" : "-"
-            PTOBDLogger.moto.ptLog("🛣️ [DATA3] 剩余续航: \(autonomyDescription)")
+            let autonomyDescription = autonomyAvailability.isAvailable ? "\(String(format: "%.1f", Double(autoRaw) * 0.1))km" : "-"
+            PTDashboardProtocolDiagnostics.shared.record(
+                frameID: id,
+                rawData: value,
+                payload: payload,
+                decodedSummary: "DATA3 剩余续航: \(autonomyDescription)",
+                protocolDebug: "configuration=0x\(String(format: "%02X", col)) language=0x\(String(format: "%02X", lang))"
+            )
             
         case PTXP400BLEProtocol.controlFrameID: // CONTROL
             delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:5 (CONTROL) -> \(hexString)") })
             guard bytes.count >= 8 else { return }
-                        
-            let tcsRaw = bytes[3] & 0x0F // 提取低 4 位
-            let isTcsSystemReady = (tcsRaw & 0b10000000) != 0 // 提取最高位作为系统就绪标志
+
+            // EN: Read TCS mode from the low nibble and readiness from the complete control byte.
+            // ES: Lee el modo TCS del nibble bajo y la disponibilidad desde el byte de control completo.
+            // 中文：从低半字节读取 TCS 模式，从完整控制字节读取系统就绪位。
+            let rollingCounterRaw = bytes[0]
+            let controlFlagsRaw = bytes[3]
+            let tcsModeRaw = controlFlagsRaw & 0x0F
+            let isTcsSystemReady = (controlFlagsRaw & 0x80) != 0
             let currentTCS: PTTCSMode
-            switch tcsRaw {
+            switch tcsModeRaw {
             case 0x02: currentTCS = .mode1
             case 0x04: currentTCS = .mode2
             case 0x00: currentTCS = .off
@@ -329,15 +369,30 @@ extension PTBluetoothServerManager {
                 isRightTurnOn: isRightTurnOn,
                 isHazardOn: isHazardOn,
                 isTcsSystemReady: isTcsSystemReady,
+                tcsModeRaw: tcsModeRaw,
+                controlFlagsRaw: controlFlagsRaw,
+                rollingCounterRaw: rollingCounterRaw,
                 rawPayload: payload,
                 vehicleSpeedAvailability: vehicleSpeedAvailability,
                 engineRpmAvailability: engineRpmAvailability
             )
             self.latestControl = control
             delegates.forEach( { $0.delegate?.dashboardManager(self, dashboardData: control) })
-            let speedDescription = vehicleSpeedAvailability.isAvailable ? "\(rearSpeed) km/h" : "-"
+            let speedDescription = vehicleSpeedAvailability.isAvailable ? "\(String(format: "%.1f", rearSpeed)) km/h" : "-"
             let rpmDescription = engineRpmAvailability.isAvailable ? "\(Int(Double(engineRaw) * 0.25)) rpm" : "-"
-            PTOBDLogger.moto.ptLog("🏍️ [CONTROL] 车速: \(speedDescription), 转速: \(rpmDescription)")
+            let controlSummary = "CONTROL 车速: \(speedDescription), 转速: \(rpmDescription)"
+            let controlDebug = "counter=0x\(String(format: "%02X", rollingCounterRaw)) flags=0x\(String(format: "%02X", controlFlagsRaw))/\(controlFlagsRaw.binaryString) tcsModeRaw=0x\(String(format: "%02X", tcsModeRaw)) ready=\(isTcsSystemReady)"
+            delegates.forEach {
+                $0.delegate?.dashboardManager(self, unknownData: "🔬 [PROTOCOL DEBUG] \(controlSummary) | \(controlDebug)")
+            }
+            PTDashboardProtocolDiagnostics.shared.record(
+                frameID: id,
+                rawData: value,
+                payload: payload,
+                decodedSummary: controlSummary,
+                rollingCounter: rollingCounterRaw,
+                protocolDebug: controlDebug
+            )
             
         case PTXP400BLEProtocol.absFrameID: // ABS
             delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "[已知] ID:6 (ABS) -> \(hexString)") })
@@ -353,28 +408,58 @@ extension PTBluetoothServerManager {
             self.currentFrontSpeedAvailable = frontWheelSpeedAvailability.isAvailable
             self.checkTCSIntervention()
                         
-            let byte1 = bytes[1]
-            // 如果结果为 0 (即 00000000)，说明灯是亮起的
             let statusAvailability: PTDashboardValueAvailability = bytes[2] == 0xFF ? .unavailable : .available
-            let isAbsLightOn = statusAvailability.isAvailable && (byte1 & 0b00010000) == 0
+            let absWarningState: PTABSWarningState = .unknown
 
             let absStatus = PTAbsStatus(
                 absRaw: statusAvailability.isAvailable ? Int(bytes[2]) : 0,
-                isAbsLightOn: isAbsLightOn,
                 frontWheelSpeedKmh: frontSpeed,
+                rawByte0: bytes[0],
+                rawByte1: bytes[1],
+                rawByte2: bytes[2],
+                absWarningState: absWarningState,
                 rawPayload: payload,
                 frontWheelSpeedAvailability: frontWheelSpeedAvailability,
                 statusAvailability: statusAvailability
             )
             self.latestAbsStatus = absStatus
             delegates.forEach( { $0.delegate?.dashboardManager(self, dashboardData: absStatus) })
-            PTOBDLogger.moto.ptLog("🛑 [ABS] 状态: \(PTDashboardLabels.absLabel(raw: Int(bytes[2])))")
+            let absStatusDescription = statusAvailability.isAvailable
+                ? PTDashboardLabels.absLabel(raw: Int(bytes[2]))
+                : "-"
+            let absSummary = "ABS 前轮轮速: \(String(format: "%.1f", frontSpeed)) km/h, 状态: \(absStatusDescription)"
+            // EN: Compare the two wheel-speed readings for diagnostics only; never gate or replace business telemetry here.
+            // ES: Compara las dos velocidades de rueda solo para diagnóstico; nunca bloquea ni sustituye la telemetría de negocio.
+            // 中文：这里只为诊断比较前后轮速，绝不在此处限制或替换业务遥测。
+            let wheelSpeedConsistency: String
+            if currentRearSpeedAvailable && currentFrontSpeedAvailable {
+                let speedDelta = currentRearSpeed - currentFrontSpeed
+                wheelSpeedConsistency = "wheelDelta=\(String(format: "%.2f", speedDelta)) km/h"
+            } else {
+                wheelSpeedConsistency = "wheelDelta=unavailable"
+            }
+            let absDebug = "B0=0x\(String(format: "%02X", bytes[0])) B1=0x\(String(format: "%02X", bytes[1])) B2=0x\(String(format: "%02X", bytes[2])) warning=unknown | \(wheelSpeedConsistency)"
+            delegates.forEach {
+                $0.delegate?.dashboardManager(self, unknownData: "🔬 [PROTOCOL DEBUG] \(absSummary) | \(absDebug)")
+            }
+            PTDashboardProtocolDiagnostics.shared.record(
+                frameID: id,
+                rawData: value,
+                payload: payload,
+                decodedSummary: absSummary,
+                protocolDebug: absDebug
+            )
             
         default:
             let binaryMatrix = bytes.map { $0.binaryString }.joined(separator: " | ")
             delegates.forEach( { $0.delegate?.dashboardManager(self, unknownData: "⚠️ [深挖] 捕获未知 ID 0x\(String(format: "%02X", id)) -> 二进制: [ \(binaryMatrix) ]") })
-            PTOBDLogger.moto.ptLog("❓ [未知数据] ID: 0x\(String(format: "%02X", id)) -> \(binaryMatrix)")
+            PTDashboardProtocolDiagnostics.shared.record(
+                frameID: id,
+                rawData: value,
+                payload: payload,
+                decodedSummary: "UNKNOWN ID=0x\(String(format: "%02X", id))",
+                protocolDebug: "binary=\(binaryMatrix)"
+            )
         }
     }
 }
-
