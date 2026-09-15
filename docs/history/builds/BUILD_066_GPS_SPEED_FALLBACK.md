@@ -1,3 +1,19 @@
+---
+doc_id: CD-HISTORY-BUILD-066
+title: Build 66 GPS Speed Fallback
+type: history
+status: stable
+canonical: false
+domain: build-066
+owner: Jax
+created: 2026-09-15
+last_reviewed: 2026-09-15
+related_builds:
+  - 66
+supersedes: []
+superseded_by:
+---
+
 # PTSpeed 2.0.8 Build 66 — GPS Speed Fallback 实施记录
 
 > English: This file records the implementation and validation boundary for Build 66.
@@ -69,7 +85,7 @@ GPS 车速经过 m/s → km/h、3 点中值和 EMA（`alpha = 0.45`）处理；�
 - `Global/PTMotoInfoViewController.swift`：旧首页的 BLE/OBD 直接写速路径收口到统一 Consumer Hub，避免同一界面多来源竞争。
 - `Global/Dev/PTCrazyDashboardInstruments.swift`、`PTInstrumentArchitecture.swift`、`PTCrazyDashboardInstrumentsViewController.swift`：加入来源、年龄、质量、回退原因、接管计数和 GPS 原始/过滤值。
 - `CrazyDashboard.xcodeproj/project.pbxproj`：所有 Target Build 对齐到 66，新增文件和测试纳入工程。
-- `APP_FEATURE_BLUEPRINT.md`、`PTTELEMETRY_MIGRATION_MATRIX.md`：同步 Build 66 架构和验证状态。
+- [`../../product/APP_FEATURE_BLUEPRINT.md`](../../product/APP_FEATURE_BLUEPRINT.md)、[`../../architecture/TELEMETRY_ARCHITECTURE.md`](../../architecture/TELEMETRY_ARCHITECTURE.md)：同步 Build 66 架构和验证状态。
 
 ## 4. 验收状态
 

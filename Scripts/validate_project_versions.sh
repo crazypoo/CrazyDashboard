@@ -8,7 +8,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 PROJECT_FILE="${PROJECT_DIR}/CrazyDashboard.xcodeproj/project.pbxproj"
-BLUEPRINT_FILE="${PROJECT_DIR}/APP_FEATURE_BLUEPRINT.md"
+BLUEPRINT_FILE="${PROJECT_DIR}/docs/product/APP_FEATURE_BLUEPRINT.md"
 EXPECTED_BUILD="${1:-65}"
 EXPECTED_MARKETING_VERSION="${2:-2.0.8}"
 
@@ -18,7 +18,7 @@ fail() {
 }
 
 [[ -f "$PROJECT_FILE" ]] || fail "project.pbxproj not found"
-[[ -f "$BLUEPRINT_FILE" ]] || fail "APP_FEATURE_BLUEPRINT.md not found"
+[[ -f "$BLUEPRINT_FILE" ]] || fail "docs/product/APP_FEATURE_BLUEPRINT.md not found"
 
 build_versions="$(sed -n 's/.*CURRENT_PROJECT_VERSION = \([^;]*\);/\1/p' "$PROJECT_FILE" | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
 [[ "$build_versions" == "$EXPECTED_BUILD" ]] || fail "project build versions are '${build_versions}', expected '${EXPECTED_BUILD}'"

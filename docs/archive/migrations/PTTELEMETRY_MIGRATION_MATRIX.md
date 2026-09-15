@@ -1,3 +1,23 @@
+---
+doc_id: CD-ARCHIVE-MIGRATION-TELEMETRY
+title: PTVehicleTelemetry Build 61 Migration Matrix (Archived)
+type: archive
+status: archived
+canonical: false
+domain: telemetry-migration
+owner: Jax
+created: 2026-09-15
+last_reviewed: 2026-09-15
+archived_at: 2026-09-15
+related_builds:
+  - 61
+supersedes: []
+superseded_by:
+  - ../../architecture/TELEMETRY_ARCHITECTURE.md
+---
+
+> Archived on 2026-09-15. This document is historical and must not be used as the current implementation plan. See the [telemetry architecture](../../architecture/TELEMETRY_ARCHITECTURE.md).
+
 # PTVehicleTelemetry Build 61 Migration Matrix
 
 > This is the Build 61 dependency audit. It records the current path, the target read-only path, and the validation boundary.

@@ -1,3 +1,23 @@
+---
+doc_id: CD-ARCHIVE-JIELI-INTEGRATION
+title: Jieli Integration Boundary (Archived)
+type: archive
+status: archived
+canonical: false
+domain: jieli-integration
+owner: Jax
+created: 2026-09-15
+last_reviewed: 2026-09-15
+archived_at: 2026-09-15
+related_builds:
+  - 57
+supersedes: []
+superseded_by:
+  - ../../protocols/obd/YMOBD_JIELI_OTA_REFERENCE.md
+---
+
+> Archived on 2026-09-15. This document is historical and must not be used as the current implementation plan. See the [YMOBD/Jieli reference](../../protocols/obd/YMOBD_JIELI_OTA_REFERENCE.md).
+
 # Jieli 集成边界
 
 ## 当前版本

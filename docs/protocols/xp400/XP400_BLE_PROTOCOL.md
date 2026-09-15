@@ -1,3 +1,18 @@
+---
+doc_id: CD-PROTOCOL-XP400-001
+title: XP400 BLE Protocol
+type: protocol
+status: stable
+canonical: true
+domain: xp400-ble
+owner: Jax
+created: 2026-09-15
+last_reviewed: 2026-09-15
+related_builds: []
+supersedes: []
+superseded_by:
+---
+
 # Peugeot XP400 iOS BLE 通信协议与实现规范
 
 > 文档版本：1.5

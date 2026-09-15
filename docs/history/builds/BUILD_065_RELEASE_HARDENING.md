@@ -1,3 +1,19 @@
+---
+doc_id: CD-HISTORY-BUILD-065
+title: Build 65 Release Hardening
+type: history
+status: stable
+canonical: false
+domain: build-065
+owner: Jax
+created: 2026-09-15
+last_reviewed: 2026-09-15
+related_builds:
+  - 65
+supersedes: []
+superseded_by:
+---
+
 # PTSpeed 2.0.8 Build 65 — Swift 6 + Release Hardening
 
 > 本文件记录 Build 65 的实施边界、代码证据、验收矩阵和真实设备缺口。它不替代产品功能总纲，也不授权任何新的车辆写入能力。
@@ -187,6 +203,6 @@ Build 65 只有在以下证据齐全后才能标记“发布级完成”：
 - 4 小时 soak 无明显泄漏，存储压力场景可恢复。
 - OTA 真机闭环和 XP400 + YMOBD 并存由真实设备记录确认。
 - Release Safety Gate 和隐私导出审计通过。
-- `APP_FEATURE_BLUEPRINT.md`、版本门禁、脚本和 CI 与代码同步。
+- [`../../product/APP_FEATURE_BLUEPRINT.md`](../../product/APP_FEATURE_BLUEPRINT.md)、版本门禁、脚本和 CI 与代码同步。
 
 截至当前工作区，Build 65 的外围代码、静态门禁和自动化测试已接入；真机/实车/OTA/签名发布验收仍为未完成证据，不在本文件中虚标为通过。

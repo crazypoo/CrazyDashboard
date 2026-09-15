@@ -1,6 +1,28 @@
+---
+doc_id: CD-ARCHIVE-ROADMAP-XP400-V3
+title: XP400 Ride Build Upgrade Plan (Archived)
+type: archive
+status: archived
+canonical: false
+domain: xp400-build-roadmap
+owner: Jax
+created: 2026-09-15
+last_reviewed: 2026-09-15
+archived_at: 2026-09-15
+related_builds:
+  - 66
+supersedes: []
+superseded_by:
+  - ../../planning/ACTIVE_WORK.md
+  - ../../planning/BACKLOG.md
+  - ../../history/BUILD_HISTORY_2026.md
+---
+
+> Archived on 2026-09-15. This document is historical and must not be used as the current implementation plan. See the [active work](../../planning/ACTIVE_WORK.md), [backlog](../../planning/BACKLOG.md), and [Build history](../../history/BUILD_HISTORY_2026.md).
+
 # XP400 Ride 2.0.8 Build 持续升级计划
 
-> 当前 App 功能、入口、平台和完成状态以 [APP 功能总纲](APP_FEATURE_BLUEPRINT.md) 为唯一事实源；本文件只保留工作包、实施证据、验证缺口和回滚记录。
+> 当前 App 功能、入口、平台和完成状态以 [`../../product/APP_FEATURE_BLUEPRINT.md`](../../product/APP_FEATURE_BLUEPRINT.md) 为唯一事实源；本文件已归档，只保留历史工作包、实施证据、验证缺口和回滚记录。
 >
 > 本文件中出现的 Build 数字可能是对应工作包开始时的历史基线，项目当前 Build 以功能总纲和工程配置为准。
 >
@@ -771,7 +793,7 @@ Peugeot 官方资料确认 XP400 GT 使用 5 英寸连接式 TFT 和 i-Connect�
 - 功能已经可用、仍需真机验证、仅限开发者，还是只处于计划阶段。
 - 新增、修改、隐藏或删除功能时，需要同步更新哪些记录。
 
-本文件不代替实施记录。[XP400_V3_UPGRADE_PLAN.md](XP400_V3_UPGRADE_PLAN.md) 继续记录工作包、实施证据、验证缺口与回滚方法；本文件只维护“当前产品是什么”。当两者不一致时，以当前代码和本文件最近一次核验结果为准。
+本文件已归档；当前未完成工作和产品状态请查看 [`../../planning/ACTIVE_WORK.md`](../../planning/ACTIVE_WORK.md) 与 [`../../product/APP_FEATURE_BLUEPRINT.md`](../../product/APP_FEATURE_BLUEPRINT.md)。
 
 ## 2. 状态与维护规则
 

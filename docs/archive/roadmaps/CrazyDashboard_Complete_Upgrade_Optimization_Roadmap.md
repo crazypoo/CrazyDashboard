@@ -1,3 +1,23 @@
+---
+doc_id: CD-ARCHIVE-ROADMAP-COMPLETE
+title: Complete Upgrade Optimization Roadmap (Archived)
+type: archive
+status: archived
+canonical: false
+domain: complete-roadmap
+owner: Jax
+created: 2026-09-15
+last_reviewed: 2026-09-15
+archived_at: 2026-09-15
+related_builds: []
+supersedes: []
+superseded_by:
+  - ../../architecture/SYSTEM_ARCHITECTURE.md
+  - ../../planning/ACTIVE_WORK.md
+---
+
+> Archived on 2026-09-15. This document is historical and must not be used as the current implementation plan. See the [documentation index](../../README.md), [system architecture](../../architecture/SYSTEM_ARCHITECTURE.md), and [active work](../../planning/ACTIVE_WORK.md).
+
 # CrazyDashboard 完整升级、重构与优化路线图
 
 > 项目：CrazyDashboard  

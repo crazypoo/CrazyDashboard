@@ -1,3 +1,25 @@
+---
+doc_id: CD-ARCHIVE-ROADMAP-OBD-YMOBD
+title: OBD YMOBD Jieli OTA Optimization Plan (Archived)
+type: archive
+status: archived
+canonical: false
+domain: obd-ymobd-jieli-roadmap
+owner: Jax
+created: 2026-09-15
+last_reviewed: 2026-09-15
+archived_at: 2026-09-15
+related_builds:
+  - 57
+supersedes: []
+superseded_by:
+  - ../../architecture/OBD_ARCHITECTURE.md
+  - ../../protocols/obd/YMOBD_JIELI_OTA_REFERENCE.md
+  - ../../research/OBD_DATA_DISCOVERY_LOG.md
+---
+
+> Archived on 2026-09-15. This document is historical and must not be used as the current implementation plan. See the [OBD architecture](../../architecture/OBD_ARCHITECTURE.md), [YMOBD/Jieli reference](../../protocols/obd/YMOBD_JIELI_OTA_REFERENCE.md), and [OBD research log](../../research/OBD_DATA_DISCOVERY_LOG.md).
+
 # CrazyDashboard OBD / YMOBD / Jieli OTA 优化与实现计划
 
 > 用途：作为下一次继续改造 `CrazyDashboard` 的长期参考文档。  

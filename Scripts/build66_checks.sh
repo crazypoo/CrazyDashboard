@@ -8,7 +8,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 PROJECT_FILE="${PROJECT_DIR}/CrazyDashboard.xcodeproj/project.pbxproj"
-BUILD_DOC="${PROJECT_DIR}/BUILD66_GPS_SPEED_FALLBACK.md"
+BUILD_DOC="${PROJECT_DIR}/docs/history/builds/BUILD_066_GPS_SPEED_FALLBACK.md"
 DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-${PROJECT_DIR}/.build/Build66}"
 BUILD_LOG_PATH="${BUILD66_LOG_PATH:-${PROJECT_DIR}/.build/build66-xcodebuild.log}"
 

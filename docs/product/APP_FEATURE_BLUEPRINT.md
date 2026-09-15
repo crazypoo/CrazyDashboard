@@ -1,3 +1,19 @@
+---
+doc_id: CD-PRODUCT-001
+title: APP Feature Blueprint
+type: product
+status: active
+canonical: true
+domain: product
+owner: Jax
+created: 2026-09-15
+last_reviewed: 2026-09-15
+related_builds:
+  - 66
+supersedes: []
+superseded_by:
+---
+
 # XP400 Ride / PTSpeed APP 功能总纲
 
 > 本文件是项目功能、入口、平台覆盖和完成状态的唯一事实源（Single Source of Truth）。
@@ -21,7 +37,7 @@
 - 功能已经可用、仍需真机验证、仅限开发者，还是只处于计划阶段。
 - 新增、修改、隐藏或删除功能时，需要同步更新哪些记录。
 
-本文件不代替实施记录。[XP400_V3_UPGRADE_PLAN.md](XP400_V3_UPGRADE_PLAN.md) 继续记录工作包、实施证据、验证缺口与回滚方法；本文件只维护“当前产品是什么”。当两者不一致时，以当前代码和本文件最近一次核验结果为准。
+本文件不代替实施记录。当前未完成工作、实施证据、验证缺口与回滚方法统一记录在 [`../planning/ACTIVE_WORK.md`](../planning/ACTIVE_WORK.md) 和 [`../history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md)；本文件只维护“当前产品是什么”。当两者不一致时，以当前代码和本文件最近一次核验结果为准。
 
 ## 2. 状态与维护规则
 
@@ -424,7 +440,7 @@ Build 61 新增的边界：
 - Evidence V2 将 CAN Discovery、Correlation、Passport Resolver、Export 和 UserDefaults State Codec 提取为独立架构组件；Evidence storage key 与 schemaVersion 2 保持不变。
 - 新组件均为只读；未知协议、真实仪表固件写入和 OTA 仍不从普通 UI 暴露。
 
-Build 61 的完整依赖审计记录见 [PTTELEMETRY_MIGRATION_MATRIX.md](PTTELEMETRY_MIGRATION_MATRIX.md)。
+Build 61 的完整依赖审计记录已归档；当前遥测架构见 [`../architecture/TELEMETRY_ARCHITECTURE.md`](../architecture/TELEMETRY_ARCHITECTURE.md)。
 
 ### 7.10 Build 62 持久化研究存储与回放测试平台
 
@@ -503,7 +519,7 @@ Build 65 继续保持营销版本 `2.0.8`，只递增工程 Build。重点是并
 | B65-10 | ✅ | Trace 默认脱敏 VIN、MAC、精确位置、联系人、PTT 音频和通知文本 | 默认 Trace 导出测试；旧兼容导出继续单独审计 |
 | B65-11 | ✅ | 版本门禁、冻结核心检查、Swift 解析、build65 脚本、CI 和验收文档同步 | 当前代码/工程；签名与真机待补 |
 
-Build 65 的详细验收、长时间运行、存储压力、崩溃恢复、隐私字段和回滚记录见 [BUILD65_RELEASE_HARDENING.md](BUILD65_RELEASE_HARDENING.md)。本版本所有“真机/实车待补”不得因静态或编译通过而改为 `✅`。
+Build 65 的详细验收、长时间运行、存储压力、崩溃恢复、隐私字段和回滚记录见 [`../history/builds/BUILD_065_RELEASE_HARDENING.md`](../history/builds/BUILD_065_RELEASE_HARDENING.md)。本版本所有“真机/实车待补”不得因静态或编译通过而改为 `✅`。
 
 ### 7.14 Build 66 GPS Speed Fallback + Unified Speed Resolver
 
@@ -526,7 +542,7 @@ Build 66 继续保持营销版本 `2.0.8`，只递增工程 Build。速度展示
 | B66-12 | ✅ | CrazyTrace 位置 0 速保留与旧 Instruments 快照缺省字段回放兼容测试 | 离线 Replay；真实道路回放待补 |
 | B66-13 | 🟨 | Build66 检查脚本、迁移记录和发布门禁已接入；需完成 iPhone GPS-only、GPS→OBD、OBD→XP400、断开回退和后台验证 | 静态/目标构建完成；真机/实车和签名发布待补 |
 
-Build 66 的实现记录、速度来源诊断和真机验收矩阵见 [BUILD66_GPS_SPEED_FALLBACK.md](BUILD66_GPS_SPEED_FALLBACK.md)。静态检查、单元测试和目标编译不等价于真实车辆道路验证。
+Build 66 的实现记录、速度来源诊断和真机验收矩阵见 [`../history/builds/BUILD_066_GPS_SPEED_FALLBACK.md`](../history/builds/BUILD_066_GPS_SPEED_FALLBACK.md)。静态检查、单元测试和目标编译不等价于真实车辆道路验证。
 
 ## 8. 已退役功能
 
@@ -567,7 +583,7 @@ Build 66 的实现记录、速度来源诊断和真机验收矩阵见 [BUILD66_G
 受影响模块：
 验证：静态 / 测试 / 编译 / 真机
 回滚方式：
-文档同步：APP_FEATURE_BLUEPRINT.md / XP400_V3_UPGRADE_PLAN.md / README.md
+文档同步：本文件 / [`../planning/ACTIVE_WORK.md`](../planning/ACTIVE_WORK.md) / [`../history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) / `README.md`
 ```
 
 ## 11. 总纲审计记录
