@@ -62,7 +62,7 @@ nonisolated public struct PTYMOBDVersionParser: Sendable {
         var isYMOBD = false
 
         for line in lines {
-            guard let separator = line.firstIndex(of: ":") else { continue }
+            guard let separator = line.firstIndex(where: { $0 == ":" || $0 == "=" }) else { continue }
 
             let rawKey = String(line[..<separator]).trimmingCharacters(in: .whitespaces)
             let valueStart = line.index(after: separator)
@@ -88,7 +88,9 @@ nonisolated public struct PTYMOBDVersionParser: Sendable {
                 customerID = value
             case "crypt":
                 isYMOBD = true
-                crypt = value.filter { "0123456789abcdefABCDEF".contains($0) }
+                let rawCrypt = value.lowercased().hasPrefix("0x") ? String(value.dropFirst(2)) : value
+                let normalizedCrypt = rawCrypt.filter { "0123456789abcdefABCDEF".contains($0) }.uppercased()
+                crypt = normalizedCrypt.count <= 8 ? normalizedCrypt : ""
             default:
                 continue
             }
@@ -108,10 +110,6 @@ nonisolated public struct PTYMOBDVersionParser: Sendable {
     }
 
     private func normalizeKey(_ key: String) -> String {
-        key
-            .lowercased()
-            .replacingOccurrences(of: " ", with: "")
-            .replacingOccurrences(of: "_", with: "")
-            .replacingOccurrences(of: "-", with: "")
+        key.lowercased().filter { $0.isLetter || $0.isNumber }
     }
 }

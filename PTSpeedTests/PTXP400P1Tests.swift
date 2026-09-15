@@ -150,6 +150,22 @@ final class PTXP400P1Tests: XCTestCase {
         XCTAssertNil(PTYMOBDAuthenticator().makeAuthCommand(versionInfo: genericInfo))
     }
 
+    func testYMOBDVersionParserAcceptsFirmwareFieldSeparatorsAndWhitespace() {
+        let parser = PTYMOBDVersionParser()
+        let info = parser.parse("""
+        AT+VERSION
+        device_type = YMOBD
+        device_name:\tXP400
+        crypt = 0x12345678
+        """)
+
+        XCTAssertTrue(info.isYMOBD)
+        XCTAssertEqual(info.deviceType, "YMOBD")
+        XCTAssertEqual(info.deviceName, "XP400")
+        XCTAssertEqual(info.crypt, "12345678")
+        XCTAssertEqual("7E8\t06\r\n41 00 >".obdCleaned, "7E8064100")
+    }
+
     func testYMOBDAuthenticatorVerifiesChallengeResponse() throws {
         let info = PTYMOBDVersionInfo(deviceType: "YMOBD", isYMOBD: true)
         let authenticator = PTYMOBDAuthenticator()

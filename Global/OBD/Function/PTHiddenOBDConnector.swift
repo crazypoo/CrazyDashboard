@@ -14,16 +14,16 @@ import Network
 
 // MARK: - ✂️ OBD 字符串专属公共扩展
 public extension String {
-    /// 提取纯净的 OBD 报文 (去除空格、换行符、>符号，并转为大写)
+    // EN: Normalize every whitespace variant from ELM327/BLE chunks before protocol matching.
+    // ES: Normaliza todas las variantes de espacio de los fragmentos ELM327/BLE antes de comparar el protocolo.
+    // 中文：在协议匹配前，统一移除 ELM327/BLE 数据片段中的所有空白字符。
     var obdCleaned: String {
-        return self.replacingOccurrences(of: " ", with: "")
-                   .replacingOccurrences(of: ">", with: "")
-                   .replacingOccurrences(of: "\r", with: "")
-                   .replacingOccurrences(of: "\n", with: "")
-                   .uppercased()
+        uppercased().filter { !$0.isWhitespace && $0 != ">" }
     }
     
-    /// 仅保留十六进制有效字符 (0-9, A-F)
+    // EN: Keep only hexadecimal characters for raw OBD payload extraction.
+    // ES: Conserva solo caracteres hexadecimales para extraer cargas OBD sin procesar.
+    // 中文：仅保留十六进制有效字符（0-9、A-F），用于提取原始 OBD Payload。
     var hexOnly: String {
         return self.uppercased().filter { "0123456789ABCDEF".contains($0) }
     }
@@ -902,7 +902,7 @@ public class PTOBDTransportBase: NSObject {
     
     private func processCompleteResponse(_ response: String) {
         guard initializationActive else { return }
-        let cleanResponseForCheck = response.replacingOccurrences(of: " ", with: "").uppercased()
+        let cleanResponseForCheck = response.obdCleaned
         let cmd = activeCommand ?? ""
         
         if cmd == "ATZ" && cleanResponseForCheck.contains("STOPPED") {
@@ -925,10 +925,19 @@ public class PTOBDTransportBase: NSObject {
         if cmd == "0906" && !cleanResponseForCheck.contains("NODATA") { PTMotoTelemetryManager.shared.obdInfo.cvn = PTMultiFrameParser.parseLongString(response: response) }
 
         if cmd == "AT+VERSION" {
+            let versionInfo = versionParser.parse(response)
+            let isUnsupportedVersionResponse = response.contains("?")
+                || cleanResponseForCheck.isEmpty
+                || cleanResponseForCheck.contains("ERROR")
+                || cleanResponseForCheck.contains("NODATA")
+
             // EN: Unsupported or empty AT+VERSION is a normal generic ELM327 fallback.
             // ES: Una respuesta no compatible o vacía de AT+VERSION es un fallback normal de ELM327 genérico.
             // 中文：AT+VERSION 不支持或返回空内容时，按普通通用 ELM327 降级处理。
-            if response.contains("?") || response.isEmpty || cleanResponseForCheck.contains("ERROR") || cleanResponseForCheck.contains("NODATA") {
+            // EN: Parse first so a YMOBD response containing a non-protocol question mark is not downgraded accidentally.
+            // ES: Analiza primero para no degradar accidentalmente una respuesta YMOBD que contenga un signo de interrogación ajeno al protocolo.
+            // 中文：先解析再判断降级，避免 YMOBD 字段中出现非协议问号时被误判为普通设备。
+            if isUnsupportedVersionResponse && !versionInfo.isYMOBD {
                 PTOBDLogger.obd.ptLog("⚠️ [认证] 发现标准设备，无需 YMOBD 握手，优雅降级！")
                 skipOptionalYMOBDAuthentication()
                 return
@@ -937,7 +946,6 @@ public class PTOBDTransportBase: NSObject {
             // EN: Keep legacy model population in place while delegating YMOBD parsing to its service.
             // ES: Mantiene la población del modelo heredado y delega el análisis YMOBD a su servicio.
             // 中文：保留旧模型赋值行为，同时把 YMOBD 解析委托给独立服务。
-            let versionInfo = versionParser.parse(response)
             let moduleInfo = PTMotoTelemetryManager.shared.obdInfo.moudleInfo
             moduleInfo.company = versionInfo.company
             moduleInfo.version = versionInfo.version
@@ -1312,13 +1320,30 @@ public class PTHiddenOBDConnector: PTOBDTransportBase {
     // ES: Primero coincide con nombres oficiales exactos, después con nombres ELM327 genéricos conservadores y el anuncio FFF0.
     // 中文：先匹配官方精确名称，再匹配保守的通用 ELM327 名称和 FFF0 广播。
     private func isLikelyOBDPeripheral(_ peripheral: CBPeripheral, advertisementData: [String: Any]) -> Bool {
-        let deviceName = (peripheral.name ?? advertisementData[CBAdvertisementDataLocalNameKey] as? String ?? "")
+        // EN: Prefer the scan-record local name used by the official flow, then fall back to CoreBluetooth's cached name.
+        // ES: Prioriza el nombre local del registro de escaneo usado por el flujo oficial y luego el nombre en caché de CoreBluetooth.
+        // 中文：优先使用官方流程中的扫描记录本地名称，再回退到 CoreBluetooth 缓存名称。
+        let localName = (advertisementData[CBAdvertisementDataLocalNameKey] as? String)?
             .trimmingCharacters(in: .whitespacesAndNewlines)
+        let candidateNames = [localName, peripheral.name]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
         let advertisedServices = advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID] ?? []
-        return deviceClassifier.isLikelyOBD(
-            deviceName: deviceName,
-            advertisedServiceUUIDs: advertisedServices.map(\.uuidString)
+        let advertisedServiceUUIDs = advertisedServices.map(\.uuidString)
+        let accepted = candidateNames.contains {
+            deviceClassifier.isLikelyOBD(
+                deviceName: $0,
+                advertisedServiceUUIDs: advertisedServiceUUIDs
+            )
+        } || deviceClassifier.isLikelyOBD(
+            deviceName: "",
+            advertisedServiceUUIDs: advertisedServiceUUIDs
         )
+
+        if accepted {
+            PTOBDLogger.obd.ptLog("✅ [BLE] 接受 ELM327/YMOBD 外设，名称: \(candidateNames.first ?? "未命名")，广播服务: \(advertisedServiceUUIDs.joined(separator: ","))")
+        }
+        return accepted
     }
 
     // EN: A watchdog failure is not a user disconnect, so the lifecycle may schedule a bounded retry.
@@ -1479,6 +1504,8 @@ public class PTHiddenOBDConnector: PTOBDTransportBase {
         disconnectCallbackDelivered = false
         cancelInitialization()
         centralManager.stopScan()
+        writeCharacteristic = nil
+        notifyCharacteristic = nil
         PTOBDLogger.obd.startFileLogging()
         // EN: Scan without a service filter to preserve generic ELM327 discovery; FFF0 is validated after connection.
         // ES: Escanea sin filtro de servicio para conservar el descubrimiento de ELM327 genérico; FFF0 se valida después de conectar.
@@ -1742,6 +1769,11 @@ public extension PTMotoTelemetryDelegate {
 
 public class PTMotoTelemetryManager {
     public static let shared = PTMotoTelemetryManager()
+
+    // EN: Keep UI and manager watchdogs aligned with the 30-second scan plus GATT/ELM initialization phases.
+    // ES: Mantiene alineados los vigilantes de la UI y del gestor con las fases de escaneo de 30 segundos y de inicialización GATT/ELM.
+    // 中文：让 UI 与管理器看门狗覆盖 30 秒扫描以及 GATT/ELM 初始化阶段，避免过早判定失败。
+    public static let connectionAttemptTimeout: TimeInterval = 60
     
     private var activeConnectionType: PTOBDConnectionType = .bluetooth
     
@@ -2771,9 +2803,9 @@ extension PTMotoTelemetryManager {
         connectionTimeoutTask?.cancel()
         
         connectionTimeoutTask = Task { [weak self] in
-            let times:UInt64 = 10_000_000_000
-            let seconds = times / 1_000_000_000
-            try? await Task.sleep(nanoseconds: times)
+            let timeoutNanoseconds = UInt64(Self.connectionAttemptTimeout * 1_000_000_000)
+            let seconds = Int(Self.connectionAttemptTimeout)
+            try? await Task.sleep(nanoseconds: timeoutNanoseconds)
             
             guard let self = self, !Task.isCancelled else { return }
             

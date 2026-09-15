@@ -1464,7 +1464,11 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
     private func startOBDWatchdog() {
         obdAttemptTask?.cancel()
         obdAttemptTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: 12_000_000_000)
+            // EN: The coordinator must wait for the full physical scan and ELM327 initialization budget.
+            // ES: El coordinador debe esperar todo el presupuesto de escaneo físico e inicialización ELM327.
+            // 中文：协调器必须覆盖完整的物理扫描和 ELM327 初始化时间预算。
+            let timeoutNanoseconds = UInt64(PTMotoTelemetryManager.connectionAttemptTimeout * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: timeoutNanoseconds)
             guard let self, !Task.isCancelled else { return }
             self.handleOBDConnectionTimeout()
         }
