@@ -358,19 +358,56 @@ nonisolated public struct PTVehiclePassportField: Codable, Equatable, Sendable {
     public let source: PTProtocolEvidenceSource
     public let timestamp: Date
     public let confidence: Double
+    public let evidenceIDs: [UUID]
+
+    private enum CodingKeys: String, CodingKey {
+        case key
+        case value
+        case source
+        case timestamp
+        case confidence
+        case evidenceIDs
+    }
 
     public init(
         key: String,
         value: String?,
         source: PTProtocolEvidenceSource,
         timestamp: Date,
-        confidence: Double
+        confidence: Double,
+        evidenceIDs: [UUID] = []
     ) {
         self.key = String(key.prefix(128))
         self.value = value.map { String($0.prefix(512)) }
         self.source = source
         self.timestamp = timestamp
         self.confidence = confidence.isFinite ? min(max(confidence, 0), 1) : 0
+        self.evidenceIDs = Array(Set(evidenceIDs)).sorted { $0.uuidString < $1.uuidString }
+    }
+
+    // EN: Decode old Passport files without evidenceIDs as empty provenance.
+    // ES: Decodifica archivos Passport antiguos sin evidenceIDs como procedencia vacía.
+    // 中文：兼容没有 evidenceIDs 的旧 Passport 文件，将其视为无证据来源。
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.key = String(try container.decode(String.self, forKey: .key).prefix(128))
+        self.value = try container.decodeIfPresent(String.self, forKey: .value).map { String($0.prefix(512)) }
+        self.source = try container.decode(PTProtocolEvidenceSource.self, forKey: .source)
+        self.timestamp = try container.decode(Date.self, forKey: .timestamp)
+        let decodedConfidence = try container.decode(Double.self, forKey: .confidence)
+        self.confidence = decodedConfidence.isFinite ? min(max(decodedConfidence, 0), 1) : 0
+        let decodedIDs = try container.decodeIfPresent([UUID].self, forKey: .evidenceIDs) ?? []
+        self.evidenceIDs = Array(Set(decodedIDs)).sorted { $0.uuidString < $1.uuidString }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(key, forKey: .key)
+        try container.encodeIfPresent(value, forKey: .value)
+        try container.encode(source, forKey: .source)
+        try container.encode(timestamp, forKey: .timestamp)
+        try container.encode(confidence, forKey: .confidence)
+        try container.encode(evidenceIDs, forKey: .evidenceIDs)
     }
 
     public var displayValue: String { value?.isEmpty == false ? value! : "—" }

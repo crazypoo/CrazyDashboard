@@ -4,9 +4,9 @@
 >
 > 快照日期：2026-09-15
 >
-> 仓库基线：当前工作区已进入 Build 63 Protocol Research Lab 3.0；Build 57–62 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化与 CrazyTrace 回放外围能力已接入，真实设备、车辆和完整发布验证仍待补
+> 仓库基线：当前工作区已进入 Build 64 XP400 Electronic Identity Platform；Build 57–63 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放与协议研究外围能力已接入，真实设备、车辆和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests / UI Tests `CURRENT_PROJECT_VERSION = 63`
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests / UI Tests `CURRENT_PROJECT_VERSION = 64`
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -465,6 +465,26 @@ Build 63 继续保持营销版本 `2.0.8`，只递增工程 Build。Protocol Res
 
 Build 63 的研究资料默认保存在本地 Application Support；CrazyTrace 导出沿用 Build 62 的隐私裁剪和校验机制。研究候选永远不会自动变成可执行指令，OTA 相关内容仍只允许状态回放。真实 XP400、ELM327/CAN、BLE/OBD 时间关联和人工确认必须在开发者工具中单独验收。
 
+### 7.12 Build 64 XP400 Electronic Identity Platform
+
+Build 64 继续保持营销版本 `2.0.8`，只递增工程 Build。Electronic Identity Platform 只解析已保存的 Evidence、已知身份档案和既有只读结果，不新增 BLE、ELM327、YMOBD、UDS 或 OTA 传输路径；`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift` 与 `PTBluetoothManager.swift` 保持冻结、零字节变化。
+
+| 工作包 | 状态 | 当前实现 | 验证边界 |
+| --- | --- | --- | --- |
+| B64-01 | ✅ | `PTElectronicControlUnit` 和 `PTECURole` 建模 dashboard、connectivity box、engine、ABS、body 与 unknown；YMOBD 单独建模为 `PTDiagnosticAdapterIdentity` | 纯模型和解析测试；真实 ECU 地址仍需人工实车证据 |
+| B64-02 | ✅ | `PTEvidenceBackedValue` 为每个身份字段保存 value、source、confidence、evidenceIDs、updatedAt 和 evidence tier | 来源优先级与空值边界有测试；置信度仍由采集/导入流程提供 |
+| B64-03 | ✅ | `PTXP400ReadOnlyDIDCatalog` 只允许有证据的 official/capturedRepeatable DID；candidate 必须显式选择，未知 DID 不自动宽扫 | 目录与显式候选测试；真实 DID 可读性仍需现场确认 |
+| B64-04 | ✅ | `PTReadOnlyECUEnumerationPolicy` 和 `PTReadOnlyECUEnumerationPlan` 只允许 TesterPresent/ReadDataByIdentifier；SecurityAccess、Reset、Write、Routine、Download、Transfer 全部拒绝 | 只读/危险服务分类测试；计划只生成审计请求，不执行传输 |
+| B64-05 | ✅ | `PTVehicleIdentityResolver` 按 Official → Live captured → Repeated captured → Stored profile 解析仪表 reference、HW、SW、Boot、Serial；缺失保持 Unknown | 官方证据优先、Passport 投影和 evidence 追溯测试；不猜测未知字段 |
+| B64-06 | ✅ | connectivity box 与 dashboard 分离，支持 HW、SW、Boot、Reference、Serial、BLE fingerprint 和 protocol fingerprint | 结构化模型测试；真实盒子边界需真实设备证据 |
+| B64-07 | ✅ | engine、ABS、body 只读身份字段和诊断地址可进入身份快照；没有任何刷写执行器 | 解析/拓扑测试；不启用 SecurityAccess 或固件操作 |
+| B64-08 | ✅ | `PTVehicleElectronicTopology` 保存 XP400 车辆、ECU、YMOBD 诊断适配器和 Jieli OTA capability 的证据关联图 | 拓扑保存与 YMOBD 非 ECU 测试；真实网络拓扑待实车确认 |
+| B64-09 | ✅ | Passport 继续作为兼容投影，新增身份字段 evidenceIDs；每个值可回溯到 Evidence | 旧 Passport 编解码保持兼容；暂不新增 Passport UI |
+| B64-10 | ✅ | `PTVehicleIdentityDiff` 对比旧/新身份、软件变化、首次/最近时间和 Evidence IDs；`PTVehicleIdentityStore` Actor 原子保存快照、拓扑与差异 | 存储重开、稳定 ID 和软件差异测试；跨设备同步与真机容量待补 |
+| B64-11 | ✅ | Build 64 版本门禁、工程引用、主 App/Test 构建脚本和 GitHub Actions 已接入 | 当前环境若被 Pods/模拟器架构阻断，保留静态检查和目标构建证据；XCTest 真正执行与签名发布待补 |
+
+Build 64 的身份资料默认保存在本地 Application Support；YMOBD/Jieli OTA 只作为诊断适配器能力证据，不被提升为 XP400 ECU 固件身份。所有候选 DID 和 ECU 观察都必须保留 Evidence ID。Build 64 不开放 SecurityAccess、写入、Reset、RoutineControl、固件下载或刷写操作。
+
 ## 8. 已退役功能
 
 当前没有需要登记的已退役功能。后续移除功能时，在下表保留原 ID、最后可用 Build、移除原因和替代路径。
@@ -535,3 +555,4 @@ Build 63 的研究资料默认保存在本地 Application Support；CrazyTrace �
 | 2026-09-14 | 当前工作区 Build 61 | B61-00～B61-15 已接入：版本/Blueprint 门禁、Telemetry Consumer/Projection、Instruments Provider Registry、Evidence/CAN/Passport 边界与兼容编解码；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；静态检查、主 App Debug generic build 与 Tests build-for-testing 已通过，XCTest 实际运行受当前模拟器架构/Pods 产物环境阻断，签名发布、真实设备/车辆验证待补 |
 | 2026-09-14 | 当前工作区 Build 62 | B62-01～B62-12 已接入：SQLite Evidence 数据库、UserDefaults 事务迁移与回滚、保留策略/空间统计、CrazyTrace Schema 2 目录包、确定性回放断言、XP400/OBD/YMOBD/OTA 离线样本和 CI 检查；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；版本门禁、工程文件校验、Swift 语法解析、数据库/Trace/Retention 独立类型检查和模拟器验证通过；完整 `build-for-testing` 被现有 SmartCodable 宏插件拉取 `swift-syntax` 的网络超时阻断，XCTest 实际运行、签名发布、真实设备/车辆验证待补 |
 | 2026-09-15 | 当前工作区 Build 63 | B63-01～B63-11 已接入：多 Trial Experiment 与原子研究存储、可解释重复性/背景误报评分、统计报告、候选 Signal Catalog 与显式晋级、CAN/BLE/OBD/Telemetry 时间线关联、Evidence 可追溯关系图、12 个只读研究模板和 CrazyTrace 确定性回放；三个 BLE/OBD 核心文件零字节变化；Swift 解析、类型检查、固定离线回放、项目版本/工程文件检查和主 App/Tests `build-for-testing` 通过；XCTest 实际运行受当前 Pods 排除 arm64 Simulator 且可用模拟器为 arm64 的环境限制，真机/实车验证待补 |
+| 2026-09-15 | 当前工作区 Build 64 | B64-01～B64-11 已接入：XP400 ECU/诊断适配器身份模型、证据优先级、只读 DID 目录、只读 ECU 枚举策略、拓扑图、Passport 兼容投影、身份差异和本地 Actor 存储；三个 BLE/OBD 核心文件零字节变化；版本门禁、Swift 解析、身份模型/目录/解析器/存储测试编译与主 App `build-for-testing` 已接入，XCTest 实际执行仍受当前 Pods/模拟器架构限制，真机/实车验证待补 |
