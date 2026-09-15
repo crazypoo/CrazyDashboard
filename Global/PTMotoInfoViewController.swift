@@ -405,7 +405,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
         view.isSelected = false
         view.addActionHandlers(handler: { _ in
-            let actionsConnect = ["Noraml", "Peugeot", PTDashboardConfig.languageFunc(text: "ride_center")]
+            let actionsConnect = ["Noraml", "Peugeot", PTDashboardConfig.languageFunc(text: "ride_center"),"ODB"]
             UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "Dashboard"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: actionsConnect, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
                 switch index {
                 case 0:
@@ -416,6 +416,9 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                     self.navigationController?.pushViewController(vc, animated: true)
                 case 2:
                     let vc = PTRideExperienceViewController()
+                    self.navigationController?.pushViewController(vc, animated: true)
+                case 3:
+                    let vc = PTOBDDataViewController()
                     self.navigationController?.pushViewController(vc, animated: true)
                 default:
                     break

@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 PROJECT_FILE="${PROJECT_DIR}/CrazyDashboard.xcodeproj/project.pbxproj"
 BLUEPRINT_FILE="${PROJECT_DIR}/APP_FEATURE_BLUEPRINT.md"
-EXPECTED_BUILD="${1:-62}"
+EXPECTED_BUILD="${1:-63}"
 EXPECTED_MARKETING_VERSION="${2:-2.0.8}"
 
 fail() {
@@ -30,4 +30,3 @@ grep -Eq "Build[[:space:]]+${EXPECTED_BUILD}([^0-9]|$)" "$BLUEPRINT_FILE" || fai
 grep -Eq "CURRENT_PROJECT_VERSION[^0-9]+${EXPECTED_BUILD}([^0-9]|$)" "$BLUEPRINT_FILE" || fail "blueprint does not declare CURRENT_PROJECT_VERSION = ${EXPECTED_BUILD}"
 
 printf 'version validation passed: marketing=%s build=%s\n' "$EXPECTED_MARKETING_VERSION" "$EXPECTED_BUILD"
-

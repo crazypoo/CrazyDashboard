@@ -2,11 +2,11 @@
 
 > 本文件是项目功能、入口、平台覆盖和完成状态的唯一事实源（Single Source of Truth）。
 >
-> 快照日期：2026-09-14
+> 快照日期：2026-09-15
 >
-> 仓库基线：当前工作区已进入 Build 62 Persistent Research Storage + Replay Test Platform；Build 57–61 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport 外围能力已接入，真实设备、车辆和完整发布验证仍待补
+> 仓库基线：当前工作区已进入 Build 63 Protocol Research Lab 3.0；Build 57–62 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化与 CrazyTrace 回放外围能力已接入，真实设备、车辆和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests / UI Tests `CURRENT_PROJECT_VERSION = 62`
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests / UI Tests `CURRENT_PROJECT_VERSION = 63`
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -445,6 +445,26 @@ Build 62 继续保持营销版本 `2.0.8`，只递增工程 Build。Evidence 数
 
 Build 62 的数据库文件位于本地 Application Support，不同步到 iCloud；Trace 导出保留现有 flat JSON 兼容入口，新增目录包 API，不改变旧 UI 调用。UserDefaults 旧 Evidence blob 在本版本不删除，迁移失败时继续可读。真实 XP400 BLE、ELM327 CAN 和 OTA 仍需单独的人工设备验收。
 
+### 7.11 Build 63 Protocol Research Lab 3.0
+
+Build 63 继续保持营销版本 `2.0.8`，只递增工程 Build。Protocol Research Lab 只消费已经保存的 CAN Capture、Evidence 和 Unified Telemetry，不新增 BLE、ELM327、YMOBD、UDS、OTA 或车辆写入路径；三个稳定核心文件保持零字节变化。
+
+| 工作包 | 状态 | 当前实现 | 验证边界 |
+| --- | --- | --- | --- |
+| B63-01 | ✅ | `PTCANExperiment` 与有界 `PTCANExperimentTrial`，支持多次激活/解除标记、Capture、会话、控制窗口和来源 | 纯数据构造与重复 Trial 回放验证；真实车辆动作仍由开发者人工执行 |
+| B63-02 | ✅ | `PTProtocolResearchStore` Actor 以原子 JSON 保存 Experiment、Trial、Analysis Report 和每车 Signal Catalog；复用现有 ProtocolResearch Application Support 目录 | 持久化重开、Trial 恢复和写入串行化测试；跨设备同步和异常断电仍待真机验证 |
+| B63-03 | ✅ | 透明权重的 Repeatability Score V2，输出激活/解除命中率、背景变化、延迟、跨会话重复性和来源一致性 | 固定两 Trial 模拟器验证；权重不使用黑盒 ML |
+| B63-04 | ✅ | 每个 CAN ID/Byte/Bit 输出统计、Median/P95 延迟、Sessions、Confidence、Background Isolation 和 False Positive 报告 | 确定性离线报告验证；大规模真实 Capture 性能仍待设备验证 |
+| B63-05 | ✅ | `PTVehicleSignalCatalog` 与候选状态流转；自动插入只允许 `candidate`，`probable/confirmed/rejected` 必须显式人工操作 | 自动发现不会晋级；真实证据审查流程和 UI 入口仍需开发者现场验证 |
+| B63-06 | ✅ | CAN、XP400 BLE、OBD 和 Unified Telemetry 合并为可追溯 Timeline，记录时间接近、重复次数、状态一致性和 Evidence ID | 已验证模型级 Evidence 可追溯；各协议真实时钟偏差仍待多设备测试 |
+| B63-07 | ✅ | 事件→Marker→协议信号/Telemetry 的 Relationship Graph，节点与边携带 Evidence 关联 | 图构建确定性验证；不提供任何自动发送命令 |
+| B63-08 | ✅ | 左/右转向、双闪、远光、刹车、支架、点火、TCS、ABS、发动机、骑行模式和燃油变化只读研究模板 | 模板只指导被动采集；安全动作、车辆状态和语言由现场人员确认 |
+| B63-09 | ✅ | 背景窗口 False Positive 检测；背景突变率越高，Background Isolation 和 Confidence 越低 | 固定无背景突变样本通过；噪声强度、不同适配器和真实道路场景待补 |
+| B63-10 | ✅ | Experiment 可导出为 CrazyTrace Schema 2，离线重建 Capture 并重新运行分析，输出稳定 ID 和稳定排序 | 同一输入两次输出一致，回放不执行任何 SDK；真实导入包仍需脱敏 |
+| B63-11 | ✅ | Build 63 XCTest、版本门禁、工程引用和自动化入口已接入 | 当前环境若再次被 SmartCodable/swift-syntax 网络依赖阻断，以静态检查和独立离线测试结果为准；真机/实车验收待补 |
+
+Build 63 的研究资料默认保存在本地 Application Support；CrazyTrace 导出沿用 Build 62 的隐私裁剪和校验机制。研究候选永远不会自动变成可执行指令，OTA 相关内容仍只允许状态回放。真实 XP400、ELM327/CAN、BLE/OBD 时间关联和人工确认必须在开发者工具中单独验收。
+
 ## 8. 已退役功能
 
 当前没有需要登记的已退役功能。后续移除功能时，在下表保留原 ID、最后可用 Build、移除原因和替代路径。
@@ -514,3 +534,4 @@ Build 62 的数据库文件位于本地 Application Support，不同步到 iClou
 | 2026-09-08 | 当前工作区 Build 56 | B56-01～B56-07 已接入：骑行历史紧凑摘要、专业事实分析、限量遥测图表、同车历史基线、事件跳转、脱敏摘要/JSON 分享和数据质量提示；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；主 App Debug generic build 与 Tests build-for-testing 已通过，XCTest 实际执行被 Pods 真机签名配置阻断，签名发布、真机与大数据量验证待补 |
 | 2026-09-14 | 当前工作区 Build 61 | B61-00～B61-15 已接入：版本/Blueprint 门禁、Telemetry Consumer/Projection、Instruments Provider Registry、Evidence/CAN/Passport 边界与兼容编解码；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；静态检查、主 App Debug generic build 与 Tests build-for-testing 已通过，XCTest 实际运行受当前模拟器架构/Pods 产物环境阻断，签名发布、真实设备/车辆验证待补 |
 | 2026-09-14 | 当前工作区 Build 62 | B62-01～B62-12 已接入：SQLite Evidence 数据库、UserDefaults 事务迁移与回滚、保留策略/空间统计、CrazyTrace Schema 2 目录包、确定性回放断言、XP400/OBD/YMOBD/OTA 离线样本和 CI 检查；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；版本门禁、工程文件校验、Swift 语法解析、数据库/Trace/Retention 独立类型检查和模拟器验证通过；完整 `build-for-testing` 被现有 SmartCodable 宏插件拉取 `swift-syntax` 的网络超时阻断，XCTest 实际运行、签名发布、真实设备/车辆验证待补 |
+| 2026-09-15 | 当前工作区 Build 63 | B63-01～B63-11 已接入：多 Trial Experiment 与原子研究存储、可解释重复性/背景误报评分、统计报告、候选 Signal Catalog 与显式晋级、CAN/BLE/OBD/Telemetry 时间线关联、Evidence 可追溯关系图、12 个只读研究模板和 CrazyTrace 确定性回放；三个 BLE/OBD 核心文件零字节变化；Swift 解析、类型检查、固定离线回放、项目版本/工程文件检查和主 App/Tests `build-for-testing` 通过；XCTest 实际运行受当前 Pods 排除 arm64 Simulator 且可用模拟器为 arm64 的环境限制，真机/实车验证待补 |
