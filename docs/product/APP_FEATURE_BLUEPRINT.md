@@ -7,10 +7,11 @@ canonical: true
 domain: product
 owner: Jax
 created: 2026-09-15
-last_reviewed: 2026-09-15
+last_reviewed: 2026-09-16
 related_builds:
   - 66
   - 67
+  - 68
 supersedes: []
 superseded_by:
 ---
@@ -19,11 +20,11 @@ superseded_by:
 
 > 本文件是项目功能、入口、平台覆盖和完成状态的唯一事实源（Single Source of Truth）。
 >
-> 快照日期：2026-09-15
+> 快照日期：2026-09-16
 >
-> 仓库基线：当前工作区已进入 Build 67 XP400 Dashboard Protocol Correction；Build 57–66 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening 和统一车速外围能力已接入，真实设备、车辆、OTA 和完整发布验证仍待补
+> 仓库基线：当前工作区已进入 Build 68 OBD Diagnostic Deep Mining；Build 57–67 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速和仪表协议纠偏能力已接入，真实设备、车辆、OTA 和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests / UI Tests `CURRENT_PROJECT_VERSION = 67`
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests / UI Tests `CURRENT_PROJECT_VERSION = 68`
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -564,6 +565,27 @@ Build 67 继续保持营销版本 `2.0.8`，只递增工程 Build。此次修正
 
 Build 67 的实施记录、协议证据和回滚边界见 [`../history/builds/BUILD_067_DASHBOARD_PROTOCOL_CORRECTION.md`](../history/builds/BUILD_067_DASHBOARD_PROTOCOL_CORRECTION.md)。Build 67 不实现 Build68 预留的背光、边撑、电瓶显示、ABS 警告灯正式映射、RTC 对时和滚动计数器时间单位推断。
 
+### 7.16 Build 68 OBD Diagnostic Deep Mining
+
+Build 68 继续保持营销版本 `2.0.8`，只递增工程 Build。新增能力围绕现有 ELM327 会话和 YMOBD 扩展建立只读诊断证据链：DTC 异常升级、Freeze Frame、Mode 01/02/06/09 能力发现、ECU 身份与 CALID/CVN 指纹、发动机运行时间、每 PID 可靠性、电压与油门语义、基线统计、轮询建议和日志脱敏。`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`、`PTBluetoothManager.swift` 保持冻结，不复制 CoreBluetooth、ELM327 分帧或轮询引擎。
+
+| 工作包 | 状态 | 内容 | 验证边界 |
+| --- | --- | --- | --- |
+| B68-00 | ✅ | 所有 Target 统一到 `MARKETING_VERSION = 2.0.8`、`CURRENT_PROJECT_VERSION = 68` | 静态版本门禁；签名发布待补 |
+| B68-01 | ✅ | `0101` 发现 Confirmed DTC 后，有界读取 `03`、`07`、`0A`；统一 Confirmed/Pending/Permanent 模型，不发送 `04` | 纯解析与 Mock；XP400 真车回传待补 |
+| B68-02 | ✅ | 读取 `0202`～`020D` Freeze Frame，绑定触发 DTC，保存原始 Payload 和已解码字段 | 多帧、无数据和真实 Freeze Frame 待补 |
+| B68-03 | ✅ | Session 阶段分离 Mode 01/02/06/09 capability discovery；单次 `NO DATA` 仅为临时不可用，避免进入高频 Runtime Loop | 纯状态测试；适配器时序和长时间占用待补 |
+| B68-04 | ✅ | 读取 `0904`、`0906`、`0908`、`090A`，支持多个 CALID/CVN、ECU 名称和确定性 Firmware Fingerprint | XP400 固件矩阵待补 |
+| B68-05 | ✅ | Mode 06 从 `0600` 有界发现到 `0620` 等 continuation，保留 MID/TID 原始证据 | 真实 Mode 06 数据待补 |
+| B68-06 | ✅ | 拆分 PID 42/`ATRV` 电压，Relative Throttle 优先，合法 `0 km/h` 保持有效，统一遥测记录 source/confidence/freshness | 真车切源和电气噪声待补 |
+| B68-07 | ✅ | 从 `011F` 推导 Engine Start Time；记录冷怠速、热怠速、巡航、加速、减速的有界基线统计 | 多次骑行趋势待补 |
+| B68-08 | ✅ | 按能力、成功率、延迟和重要性生成 Tier A–D 轮询建议；不改写冻结核心的既有安全轮询队列 | 带宽/延迟 soak 待补 |
+| B68-09 | ✅ | 默认对 Trace/Evidence 的 MAC 中段、crypt/SETCRYPT 脱敏，CALID/CVN 作为研究证据保留 | 导出审计与真实敏感数据矩阵待补 |
+| B68-10 | ✅ | Diagnostic Center 摘要、脱敏 JSON 导出、车库报告、Protocol Evidence/Vehicle Passport 和 Trip 接入 | 真机 UI 与跨会话恢复待补 |
+| B68-11 | 🟨 | Build68 检查、纯数据回归、Cold/Warm Idle、DTC、Mode 06、Mode 09、断连恢复和 Release 验收 | 静态/目标构建已接入；真机/实车和签名发布待补 |
+
+Build 68 的实施记录、代码边界和真实验收矩阵见 [`../history/builds/BUILD_068_OBD_DIAGNOSTIC_DEEP_MINING.md`](../history/builds/BUILD_068_OBD_DIAGNOSTIC_DEEP_MINING.md)。本版本不开放清码、写 DID、ECU Coding、SecurityAccess、RoutineControl、固件刷写或任意 CAN 注入。
+
 ## 8. 已退役功能
 
 当前没有需要登记的已退役功能。后续移除功能时，在下表保留原 ID、最后可用 Build、移除原因和替代路径。
@@ -638,3 +660,4 @@ Build 67 的实施记录、协议证据和回滚边界见 [`../history/builds/BU
 | 2026-09-15 | 当前工作区 Build 65 | B65-01～B65-11 外围能力已接入：并发归属矩阵、目标模型 Sendable/nonisolated、PTSpeedTests Swift 6 strict concurrency 入口、Trace 有界流式写入/批量读取、Evidence 分页、原子临时文件恢复、Release Safety/Privacy 策略、确定性异常语料、版本门禁、CI 与验收文档；三个 BLE/OBD 核心文件零字节变化；主 App 完整编译、XCTest 实际运行、签名发布、4 小时 soak、OTA 和 XP400+YMOBD 真机验证待补 |
 | 2026-09-15 | 当前工作区 Build 66 | B66-00～B66-12 已接入：GPS 速度质量校验与平滑、XP400/OBD/GPS 统一速度 Resolver、过期即时回退、两次有效样本接管、Replay 覆盖、主仪表、`PTMotoInfoViewController` 和 Peugeot 仪表单一消费路径、Unified Speed Instruments、回滚开关和离线测试；三个 BLE/OBD 核心文件零字节变化；静态检查与 Debug 目标构建已通过，真实 iPhone/GPS/OBD/XP400 切源、后台和签名发布验证待补 |
 | 2026-09-15 | 当前工作区 Build 67 | B67-00～B67-08 已接入：Data2 RTC/Engine 位纠偏、未知高位停止传播、TCS Ready 修复、Control rolling counter、ABS raw/unknown 安全模型、分级协议日志、有界快照、命名 Marker、Mock 和纯数据回归；三个 BLE/OBD 核心文件零字节变化；Build67 静态门禁已接入，真实仪表/道路、专项 A/B 采样和签名发布验证待补 |
+| 2026-09-16 | 当前工作区 Build 68 | B68-00～B68-10 已接入：只读 DTC/Freeze Frame、Mode 01/02/06/09 能力、ECU CALID/CVN/Firmware Fingerprint、011F 发动机运行时间、PID42/ATRV 电压、Relative Throttle、NO DATA 语义、基线/轮询建议、地址证据、Trace 脱敏、Diagnostic Center/车库/Evidence 接入与纯数据回归；三个 BLE/OBD 稳定核心文件保持零字节变化；主 App Debug `build-for-testing` 已通过，五类实车 Trial、断连恢复、签名发布和 TestFlight 验收待补 |

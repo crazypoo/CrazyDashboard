@@ -1112,7 +1112,10 @@ private extension PTProtocolDiscoveryRecorder {
         if clean.contains("4902") || clean.contains("62F190") {
             return "<VIN response redacted; bytes=\(clean.count / 2)>"
         }
-        return String(value.prefix(4_096))
+        // EN: Keep protocol facts useful while masking adapter MAC and YMOBD credential material.
+        // ES: Mantiene útiles los hechos del protocolo y oculta la MAC del adaptador y las credenciales YMOBD.
+        // 中文：保留协议事实的研究价值，同时遮盖适配器 MAC 与 YMOBD 认证材料。
+        return PTBuild68TraceRedactor.redact(value, level: .standard)
     }
 
     static func responseBytes(_ value: String) -> [UInt8] {

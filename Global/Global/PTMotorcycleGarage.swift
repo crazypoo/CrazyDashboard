@@ -463,6 +463,10 @@ nonisolated public struct PTGarageDiagnosticReport: Codable, Equatable, Identifi
     public let wheelSpeedConsistency: PTWheelSpeedConsistencyResult?
     public let connectionQuality: PTVehicleConnectionQuality?
     public let ecuFingerprint: PTECUReadOnlyFingerprint?
+    // EN: Build 68 keeps the complete read-only OBD evidence attached to the vehicle report.
+    // ES: Build 68 mantiene toda la evidencia OBD de solo lectura vinculada al informe del vehículo.
+    // 中文：Build 68 将完整的只读 OBD 证据绑定到车辆诊断报告。
+    public let build68Session: PTBuild68DiagnosticSessionRecord?
 
     nonisolated public init(
         id: UUID = UUID(),
@@ -481,7 +485,8 @@ nonisolated public struct PTGarageDiagnosticReport: Codable, Equatable, Identifi
         batteryHealthSummary: PTBatteryHealthSummary? = nil,
         wheelSpeedConsistency: PTWheelSpeedConsistencyResult? = nil,
         connectionQuality: PTVehicleConnectionQuality? = nil,
-        ecuFingerprint: PTECUReadOnlyFingerprint? = nil
+        ecuFingerprint: PTECUReadOnlyFingerprint? = nil,
+        build68Session: PTBuild68DiagnosticSessionRecord? = nil
     ) {
         self.id = id
         self.capturedAt = capturedAt
@@ -500,6 +505,7 @@ nonisolated public struct PTGarageDiagnosticReport: Codable, Equatable, Identifi
         self.wheelSpeedConsistency = wheelSpeedConsistency
         self.connectionQuality = connectionQuality
         self.ecuFingerprint = ecuFingerprint
+        self.build68Session = build68Session
     }
 
     nonisolated public init(
@@ -566,7 +572,8 @@ nonisolated public struct PTGarageDiagnosticReport: Codable, Equatable, Identifi
             batteryHealthSummary: batteryHealthSummary,
             wheelSpeedConsistency: wheelSpeedConsistency,
             connectionQuality: connectionQuality,
-            ecuFingerprint: ecuFingerprint
+            ecuFingerprint: ecuFingerprint,
+            build68Session: build68Session?.redactedForExport()
         )
     }
 }

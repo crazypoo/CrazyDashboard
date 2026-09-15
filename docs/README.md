@@ -17,9 +17,9 @@
 
 | 文档 | 类型 | 状态 | Canonical | 最后复核 |
 | --- | --- | --- | --- | --- |
-| [`architecture/OBD_ARCHITECTURE.md`](architecture/OBD_ARCHITECTURE.md) | architecture | stable | 是 | 2026-09-15 |
+| [`architecture/OBD_ARCHITECTURE.md`](architecture/OBD_ARCHITECTURE.md) | architecture | stable | 是 | 2026-09-16 |
 | [`architecture/SYSTEM_ARCHITECTURE.md`](architecture/SYSTEM_ARCHITECTURE.md) | architecture | stable | 是 | 2026-09-15 |
-| [`architecture/TELEMETRY_ARCHITECTURE.md`](architecture/TELEMETRY_ARCHITECTURE.md) | architecture | stable | 是 | 2026-09-15 |
+| [`architecture/TELEMETRY_ARCHITECTURE.md`](architecture/TELEMETRY_ARCHITECTURE.md) | architecture | stable | 是 | 2026-09-16 |
 | [`archive/superseded/CrazyDashboard_Build57_Implementation_Status.md`](archive/superseded/CrazyDashboard_Build57_Implementation_Status.md) | archive | archived | 否 | 2026-09-15 |
 | [`archive/roadmaps/CrazyDashboard_Complete_Upgrade_Optimization_Roadmap.md`](archive/roadmaps/CrazyDashboard_Complete_Upgrade_Optimization_Roadmap.md) | archive | archived | 否 | 2026-09-15 |
 | [`archive/superseded/JieliIntegration.md`](archive/superseded/JieliIntegration.md) | archive | archived | 否 | 2026-09-15 |
@@ -29,18 +29,19 @@
 | [`history/builds/BUILD_065_RELEASE_HARDENING.md`](history/builds/BUILD_065_RELEASE_HARDENING.md) | history | stable | 否 | 2026-09-15 |
 | [`history/builds/BUILD_066_GPS_SPEED_FALLBACK.md`](history/builds/BUILD_066_GPS_SPEED_FALLBACK.md) | history | stable | 否 | 2026-09-15 |
 | [`history/builds/BUILD_067_DASHBOARD_PROTOCOL_CORRECTION.md`](history/builds/BUILD_067_DASHBOARD_PROTOCOL_CORRECTION.md) | history | stable | 否 | 2026-09-15 |
-| [`history/BUILD_HISTORY_2026.md`](history/BUILD_HISTORY_2026.md) | history | stable | 是 | 2026-09-15 |
-| [`planning/ACTIVE_WORK.md`](planning/ACTIVE_WORK.md) | planning | active | 是 | 2026-09-15 |
+| [`history/builds/BUILD_068_OBD_DIAGNOSTIC_DEEP_MINING.md`](history/builds/BUILD_068_OBD_DIAGNOSTIC_DEEP_MINING.md) | history | stable | 否 | 2026-09-16 |
+| [`history/BUILD_HISTORY_2026.md`](history/BUILD_HISTORY_2026.md) | history | stable | 是 | 2026-09-16 |
+| [`planning/ACTIVE_WORK.md`](planning/ACTIVE_WORK.md) | planning | active | 是 | 2026-09-16 |
 | [`planning/BACKLOG.md`](planning/BACKLOG.md) | planning | active | 是 | 2026-09-15 |
 | [`DOCUMENTATION_POLICY.md`](DOCUMENTATION_POLICY.md) | policy | active | 是 | 2026-09-15 |
 | [`templates/PLAN_SECTION_TEMPLATE.md`](templates/PLAN_SECTION_TEMPLATE.md) | policy | stable | 否 | 2026-09-15 |
 | [`templates/RESEARCH_ENTRY_TEMPLATE.md`](templates/RESEARCH_ENTRY_TEMPLATE.md) | policy | stable | 否 | 2026-09-15 |
 | [`templates/STANDALONE_DOCUMENT_TEMPLATE.md`](templates/STANDALONE_DOCUMENT_TEMPLATE.md) | policy | stable | 否 | 2026-09-15 |
-| [`product/APP_FEATURE_BLUEPRINT.md`](product/APP_FEATURE_BLUEPRINT.md) | product | active | 是 | 2026-09-15 |
+| [`product/APP_FEATURE_BLUEPRINT.md`](product/APP_FEATURE_BLUEPRINT.md) | product | active | 是 | 2026-09-16 |
 | [`protocols/xp400/XP400_BLE_PROTOCOL.md`](protocols/xp400/XP400_BLE_PROTOCOL.md) | protocol | stable | 是 | 2026-09-15 |
 | [`protocols/obd/YMOBD_JIELI_OTA_REFERENCE.md`](protocols/obd/YMOBD_JIELI_OTA_REFERENCE.md) | protocol | stable | 是 | 2026-09-15 |
 | [`research/FIRMWARE_RESEARCH_LOG.md`](research/FIRMWARE_RESEARCH_LOG.md) | research | active | 是 | 2026-09-15 |
-| [`research/OBD_DATA_DISCOVERY_LOG.md`](research/OBD_DATA_DISCOVERY_LOG.md) | research | active | 是 | 2026-09-15 |
+| [`research/OBD_DATA_DISCOVERY_LOG.md`](research/OBD_DATA_DISCOVERY_LOG.md) | research | active | 是 | 2026-09-16 |
 | [`research/XP400_RESEARCH_LOG.md`](research/XP400_RESEARCH_LOG.md) | research | active | 是 | 2026-09-15 |
 
 > `PTSpeedTests/ReplayFixtures/README.md` 是测试夹具旁的局部说明，保留在代码目录中，不纳入本项目级索引。

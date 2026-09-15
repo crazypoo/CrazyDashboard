@@ -18,29 +18,64 @@ final class PTDiagnosticCenterViewController: PTMotoBaseViewController {
     private let scrollView = UIScrollView()
     private let contentStack = UIStackView()
     private let reportTextView = UITextView()
+    private let build68TextView = UITextView()
     private let progressView = UIProgressView(progressViewStyle: .default)
     private let runButton = UIButton(type: .system)
     private let cancelButton = UIButton(type: .system)
     private let exportButton = UIButton(type: .system)
 
     private var diagnosticTask: Task<Void, Never>?
+    private var isObservingBuild68 = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
         pt_Title = localized("obd_diagnostic_center")
         view.backgroundColor = .black
         configureView()
+        PTBuild68DiagnosticCoordinator.shared.start()
+        startObservingBuild68()
         appendReport(localized("obd_diagnostic_ready"))
+        refreshBuild68Report()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        startObservingBuild68()
         updateControls(isRunning: diagnosticTask != nil)
+        refreshBuild68Report()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        stopObservingBuild68()
         diagnosticTask?.cancel()
+    }
+
+    // EN: Observe Build 68 only while this screen is visible to avoid a stale UIKit observer.
+    // ES: Observa Build 68 solo mientras esta pantalla está visible para evitar un observador UIKit obsoleto.
+    // 中文：仅在页面可见时监听 Build 68，避免 UIKit 遗留观察者。
+    private func startObservingBuild68() {
+        guard !isObservingBuild68 else { return }
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(build68DidChange),
+            name: PTBuild68DiagnosticCoordinator.didChange,
+            object: PTBuild68DiagnosticCoordinator.shared
+        )
+        isObservingBuild68 = true
+    }
+
+    // EN: Remove the observer before leaving the screen; the coordinator continues collecting safely.
+    // ES: Elimina el observador antes de salir de la pantalla; el coordinador continúa recopilando de forma segura.
+    // 中文：离开页面前移除观察者，协调器仍可安全继续收集数据。
+    private func stopObservingBuild68() {
+        guard isObservingBuild68 else { return }
+        NotificationCenter.default.removeObserver(
+            self,
+            name: PTBuild68DiagnosticCoordinator.didChange,
+            object: PTBuild68DiagnosticCoordinator.shared
+        )
+        isObservingBuild68 = false
     }
 
     private func configureView() {
@@ -61,6 +96,15 @@ final class PTDiagnosticCenterViewController: PTMotoBaseViewController {
         reportTextView.layer.cornerRadius = 14
         reportTextView.textContainerInset = UIEdgeInsets(top: 14, left: 14, bottom: 14, right: 14)
 
+        build68TextView.translatesAutoresizingMaskIntoConstraints = false
+        build68TextView.isEditable = false
+        build68TextView.isScrollEnabled = false
+        build68TextView.backgroundColor = UIColor(white: 0.08, alpha: 1)
+        build68TextView.textColor = .systemTeal
+        build68TextView.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
+        build68TextView.layer.cornerRadius = 14
+        build68TextView.textContainerInset = UIEdgeInsets(top: 14, left: 14, bottom: 14, right: 14)
+
         progressView.progressTintColor = PTDashboardConfig.shared.appMainColor
         progressView.trackTintColor = UIColor(white: 0.25, alpha: 1)
         progressView.progress = 0
@@ -76,6 +120,7 @@ final class PTDiagnosticCenterViewController: PTMotoBaseViewController {
         scrollView.addSubview(contentStack)
         contentStack.addArrangedSubview(progressView)
         contentStack.addArrangedSubview(reportTextView)
+        contentStack.addArrangedSubview(build68TextView)
         contentStack.addArrangedSubview(runButton)
         contentStack.addArrangedSubview(cancelButton)
         contentStack.addArrangedSubview(exportButton)
@@ -91,6 +136,7 @@ final class PTDiagnosticCenterViewController: PTMotoBaseViewController {
             contentStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
             contentStack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
             reportTextView.heightAnchor.constraint(greaterThanOrEqualToConstant: 300),
+            build68TextView.heightAnchor.constraint(greaterThanOrEqualToConstant: 220),
             runButton.heightAnchor.constraint(equalToConstant: 44),
             cancelButton.heightAnchor.constraint(equalToConstant: 44),
             exportButton.heightAnchor.constraint(equalToConstant: 44)
@@ -219,6 +265,13 @@ final class PTDiagnosticCenterViewController: PTMotoBaseViewController {
                     title: localized("obd_diagnostic_fingerprint"),
                     lines: makeFingerprintLines(fingerprint)
                 )
+                try Task.checkCancellation()
+                do {
+                    _ = try await PTBuild68DiagnosticCoordinator.shared.runManualReadOnlyDiagnostic()
+                    refreshBuild68Report()
+                } catch {
+                    failureReasons.append("Build 68: \(error.localizedDescription)")
+                }
                 let report = PTGarageDiagnosticReport(
                     vin: info.vin,
                     ecuVersion: info.ecuVersion,
@@ -234,7 +287,8 @@ final class PTDiagnosticCenterViewController: PTMotoBaseViewController {
                     batteryHealthSummary: battery.observationCount > 0 ? battery : nil,
                     wheelSpeedConsistency: wheel.state == .unavailable ? nil : wheel,
                     connectionQuality: connectionQuality,
-                    ecuFingerprint: fingerprint
+                    ecuFingerprint: fingerprint,
+                    build68Session: PTBuild68DiagnosticCoordinator.shared.latestSession
                 )
                 if PTMotorcycleGarageStore.shared.addDiagnosticReport(report) {
                     appendReport(localized("obd_diagnostic_saved"))
@@ -275,6 +329,10 @@ final class PTDiagnosticCenterViewController: PTMotoBaseViewController {
         diagnosticTask?.cancel()
     }
 
+    @objc private func build68DidChange() {
+        refreshBuild68Report()
+    }
+
     @objc private func exportLatestReport() {
         let alert = UIAlertController(
             title: localized("can_lab_share"),
@@ -286,6 +344,9 @@ final class PTDiagnosticCenterViewController: PTMotoBaseViewController {
         })
         alert.addAction(UIAlertAction(title: "CSV", style: .default) { [weak self] _ in
             self?.shareLatestReport(format: .csv)
+        })
+        alert.addAction(UIAlertAction(title: "Build 68 JSON", style: .default) { [weak self] _ in
+            self?.shareLatestBuild68Evidence()
         })
         alert.addAction(UIAlertAction(title: localized("button_cancel"), style: .cancel))
         if let popover = alert.popoverPresentationController {
@@ -312,6 +373,29 @@ final class PTDiagnosticCenterViewController: PTMotoBaseViewController {
             present(activity, animated: true)
         } catch {
             appendReport("❌ \(error.localizedDescription)")
+        }
+    }
+
+    // EN: Share the dedicated redacted Build 68 session document when a deep-read session exists.
+    // ES: Comparte el documento específico y redactado de Build 68 cuando existe una sesión profunda.
+    // 中文：存在深度读取会话时，分享专用的 Build 68 脱敏文档。
+    private func shareLatestBuild68Evidence() {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                guard let url = try await PTBuild68EvidenceStore.shared.exportLatestURL() else {
+                    appendReport(localized("obd_diagnostic_no_data"))
+                    return
+                }
+                let activity = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+                if let popover = activity.popoverPresentationController {
+                    popover.sourceView = exportButton
+                    popover.sourceRect = exportButton.bounds
+                }
+                present(activity, animated: true)
+            } catch {
+                appendReport("❌ (error.localizedDescription)")
+            }
         }
     }
 
@@ -367,6 +451,74 @@ final class PTDiagnosticCenterViewController: PTMotoBaseViewController {
             lines.append("\(localized("obd_diagnostic_wheel_speed")): \(localized("obd_diagnostic_no_data"))")
         }
         return lines
+    }
+
+    // EN: The Build 68 panel shows bounded read-only evidence without exposing raw credentials or security material.
+    // ES: El panel de Build 68 muestra evidencia de solo lectura limitada sin exponer credenciales ni material de seguridad.
+    // 中文：Build 68 面板展示有界只读证据，不暴露认证凭据或安全材料。
+    private func refreshBuild68Report() {
+        let noData = localized("obd_diagnostic_no_data")
+        guard let session = PTBuild68DiagnosticCoordinator.shared.latestSession else {
+            build68TextView.text = "Build 68 · \(localized("obd_diagnostic_read_only"))\n\(noData)"
+            return
+        }
+
+        var lines = [
+            "Build 68 · \(localized("obd_diagnostic_read_only"))",
+            "Capability: \(session.capability.supportedPIDs.count) PID · Mode 06: \(session.capability.mode06Masks.count) page · Mode 09: \(session.capability.mode09PIDs.count) PID"
+        ]
+        if let monitor = session.monitorStatus {
+            lines.append("0101: MIL=\(monitor.isMILOn ? "ON" : "OFF") · DTC=\(monitor.confirmedDTCCount)")
+        }
+        if session.troubleCodes.isEmpty {
+            lines.append("DTC: \(localized("obd_diagnostic_no_dtc"))")
+        } else {
+            lines.append("DTC: " + session.troubleCodes.map { "\($0.source.rawValue)=\($0.code)" }.joined(separator: ", "))
+        }
+        if let freeze = session.freezeFrame {
+            let values = [
+                freeze.engineRPM.map { "RPM=\(String(format: "%.0f", $0))" },
+                freeze.vehicleSpeed.map { "Speed=\(String(format: "%.0f", $0))" },
+                freeze.coolantTemperature.map { "Coolant=\(String(format: "%.1f", $0))°C" },
+                freeze.manifoldPressure.map { "MAP=\(String(format: "%.0f", $0))" }
+            ].compactMap { $0 }
+            lines.append("Freeze Frame: \(values.isEmpty ? noData : values.joined(separator: " · "))")
+        } else {
+            lines.append("Freeze Frame: \(noData)")
+        }
+        if let ecu = session.electronicControlUnit {
+            lines.append("ECU: \(ecu.ecuName ?? noData) · RX=0x\(String(format: "%03X", ecu.rxAddress))")
+            if let fingerprint = ecu.fingerprint {
+                lines.append("Fingerprint: \(fingerprint.prefix(16))…")
+            }
+            if !ecu.calibrationRecords.isEmpty {
+                lines.append("CALID/CVN: \(ecu.calibrationRecords.map { "\($0.calibrationID)/\($0.cvn ?? "—")" }.joined(separator: ", "))")
+            }
+        }
+        let voltage = [
+            session.voltage.controlModuleVoltage.map { "PID42=\(String(format: "%.2f", $0))V" },
+            session.voltage.adapterVoltage.map { "ATRV=\(String(format: "%.2f", $0))V" }
+        ].compactMap { $0 }
+        if !voltage.isEmpty {
+            lines.append("Voltage: \(voltage.joined(separator: " · "))\(session.voltage.hasDiscrepancy ? " · discrepancy" : "")")
+        }
+        if let throttle = session.throttle.percent {
+            lines.append("Throttle: \(String(format: "%.1f", throttle))% [\(throttleSourceLabel(session.throttle.source))]")
+        }
+        if let engine = session.engineSession, let runtime = engine.engineRuntimeAtConnect {
+            lines.append("Engine runtime: \(String(format: "%.0f", runtime))s · start=\(engine.engineStartedAt?.formatted(date: .omitted, time: .shortened) ?? noData)")
+        }
+        lines.append("Raw read results: \(session.rawCommandResults.count) · PID runtime states: \(session.pidRuntime.count)")
+        build68TextView.text = lines.joined(separator: "\n")
+    }
+
+    private func throttleSourceLabel(_ source: PTBuild68ThrottleSource?) -> String {
+        switch source {
+        case .relative: return "0145"
+        case .absolute: return "0111"
+        case .xp400Candidate: return "XP400"
+        case nil: return "—"
+        }
     }
 
     // EN: Fingerprint output is read-only and deliberately excludes VIN and raw security material.

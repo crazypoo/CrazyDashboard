@@ -393,11 +393,18 @@ public final class PTCrazyTraceRecorder {
         metadata: [String: String] = [:],
         at date: Date = Date()
     ) {
+        let redactionLevel: PTBuild68TraceRedactionLevel = PTBuild68FeatureFlags.enableTraceRedaction ? .standard : .none
+        // EN: Redact protocol payloads at capture time so a later export cannot accidentally expose adapter credentials.
+        // ES: Redacta la carga del protocolo al capturarla para que una exportación posterior no exponga credenciales.
+        // 中文：在抓取时就脱敏协议 Payload，避免后续导出意外暴露适配器认证信息。
+        let safeRaw = PTBuild68TraceRedactor.redact(raw, level: redactionLevel)
+        let safeCommand = command.map { PTBuild68TraceRedactor.redact($0, level: redactionLevel) }
+        let safeMetadata = metadata.mapValues { PTBuild68TraceRedactor.redact($0, level: redactionLevel) }
         record(
             domain: domain,
             direction: direction,
             source: source,
-            payload: .protocolMessage(PTTraceProtocolPayload(raw: raw, command: command, metadata: metadata)),
+            payload: .protocolMessage(PTTraceProtocolPayload(raw: safeRaw, command: safeCommand, metadata: safeMetadata)),
             at: date
         )
     }

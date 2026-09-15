@@ -253,6 +253,10 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         super.init()
         PTBluetoothServerManager.shared.addDelegate(self)
         PTMotoTelemetryManager.shared.addDelegate(self)
+        // EN: Start passive Build 68 OBD evidence collection beside the existing manager delegate.
+        // ES: Inicia la recopilación pasiva de evidencia OBD de Build 68 junto al delegado existente.
+        // 中文：在现有管理器代理旁启动被动的 Build 68 OBD 证据采集。
+        PTBuild68DiagnosticCoordinator.shared.start()
         // English: Install passive log observers once; they never start a transport operation.
         // Español: Instala una sola vez los observadores pasivos; nunca inician una operación de transporte.
         // 中文：只安装一次被动日志观察者，它们绝不会启动传输操作。

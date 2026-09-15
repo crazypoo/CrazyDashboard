@@ -7,7 +7,7 @@ canonical: true
 domain: build-history-2026
 owner: Jax
 created: 2026-09-15
-last_reviewed: 2026-09-15
+last_reviewed: 2026-09-16
 related_builds:
   - 57
   - 61
@@ -17,6 +17,7 @@ related_builds:
   - 65
   - 66
   - 67
+  - 68
 supersedes: []
 superseded_by:
 ---
@@ -48,6 +49,10 @@ superseded_by:
 ## Build 67 — XP400 Dashboard Protocol Correction
 
 完成 Data2 RTC 解码、Engine 低位修正、TCS Ready 位运算修复、Control rolling counter 原始证据、ABS 前轮速度/警告状态拆分、分级协议日志、有界 Packet Snapshot、命名实验 Marker 和 Mock 回归。详细实施记录见 [`builds/BUILD_067_DASHBOARD_PROTOCOL_CORRECTION.md`](builds/BUILD_067_DASHBOARD_PROTOCOL_CORRECTION.md)。三个 BLE/OBD 稳定核心文件保持零字节变化；Swift 纯数据解析和 `PTSpeed` Debug `build-for-testing` 已通过，真实仪表/道路/签名验收仍在 [`../planning/ACTIVE_WORK.md`](../planning/ACTIVE_WORK.md)。
+
+## Build 68 — OBD Diagnostic Deep Mining
+
+完成只读 DTC 深挖、Freeze Frame、Mode 01/02/06/09 能力证据、`0908`/`090A` ECU 身份、多个 CALID/CVN 与确定性 Firmware Fingerprint、`011F` Engine Session、PID 42/ATRV 电压分离、Relative Throttle 优先、NO DATA 语义、Baseline 统计、Polling 建议和 Trace 脱敏。详细实施记录见 [`builds/BUILD_068_OBD_DIAGNOSTIC_DEEP_MINING.md`](builds/BUILD_068_OBD_DIAGNOSTIC_DEEP_MINING.md)。`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift` 和 `PTBluetoothManager.swift` 继续冻结；iOS 编译和纯数据测试已通过，五类实车 Trial、真实适配器断连恢复与 Release/TestFlight 验收仍在 [`../planning/ACTIVE_WORK.md`](../planning/ACTIVE_WORK.md)。
 
 ## 版本规则
 

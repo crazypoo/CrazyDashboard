@@ -282,6 +282,11 @@ public class PTTripManager: NSObject {
     // 🚨 升级 3：对外暴露的历史记录数组，你的 UI 将直接读取这个属性！
     public private(set) var tripHistory: [PTTripReport] = []
     public private(set) var lastPersistenceError: String?
+
+    // EN: The latest read-only engine timing metadata aligns OBD runtime with the active trip.
+    // ES: Los metadatos de tiempo del motor de solo lectura alinean el tiempo OBD con el viaje activo.
+    // 中文：最新的只读发动机时间元数据用于把 OBD 运行时间对齐到当前行程。
+    public private(set) var engineSessionMetadata: PTBuild68EngineSessionMetadata?
     
     // 用于本地存储的 Key
     private let tripStorageKey = "PTTripHistoryStorageKey"
@@ -379,6 +384,13 @@ public class PTTripManager: NSObject {
         loadHistory()
         setupObservers()
         recoverBlackBoxJournal()
+    }
+
+    // EN: Store only derived engine timing; this method never sends a vehicle command.
+    // ES: Guarda solo el tiempo derivado del motor; este método nunca envía comandos al vehículo.
+    // 中文：这里只保存推导出的发动机时间，不会向车辆发送任何指令。
+    public func recordEngineSessionMetadata(_ metadata: PTBuild68EngineSessionMetadata) {
+        engineSessionMetadata = metadata
     }
     
     private func broadcastLiveStats() {

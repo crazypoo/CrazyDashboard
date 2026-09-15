@@ -16,6 +16,12 @@ public nonisolated enum PTVehicleTelemetrySignal: String, Codable, CaseIterable,
     case rpm
     case fuel
     case batteryVoltage
+    // EN: Keep adapter supply and ECU control-module voltage distinct in the unified surface.
+    // ES: Mantiene separadas la alimentación del adaptador y la tensión del módulo de control del ECU.
+    // 中文：在统一遥测层区分适配器供电电压与 ECU 控制模块电压。
+    case adapterVoltage
+    case controlModuleVoltage
+    case throttlePercent
     case engineTemperature
     case abs
     case tcs
@@ -49,6 +55,11 @@ public nonisolated enum PTVehicleTelemetrySignal: String, Codable, CaseIterable,
             return (0...100).contains(value)
         case (.batteryVoltage, .double(let value)):
             return value.isFinite && (0...20).contains(value)
+        case (.adapterVoltage, .double(let value)),
+             (.controlModuleVoltage, .double(let value)):
+            return value.isFinite && (0...20).contains(value)
+        case (.throttlePercent, .double(let value)):
+            return value.isFinite && (0...100).contains(value)
         case (.engineTemperature, .double(let value)):
             return value.isFinite && (-50...220).contains(value)
         case (.lean, .double(let value)),
@@ -258,6 +269,9 @@ public nonisolated struct PTUnifiedVehicleTelemetrySnapshot: Codable, Equatable,
     public var rpm: Int? { integer(for: .rpm) }
     public var fuelPercent: Int? { integer(for: .fuel) }
     public var batteryVoltage: Double? { double(for: .batteryVoltage) }
+    public var adapterVoltage: Double? { double(for: .adapterVoltage) }
+    public var controlModuleVoltage: Double? { double(for: .controlModuleVoltage) }
+    public var throttlePercent: Double? { double(for: .throttlePercent) }
     public var engineTemperatureC: Double? { double(for: .engineTemperature) }
     public var absLightOn: Bool? { boolean(for: .abs) }
     public var tcsOn: Bool? { boolean(for: .tcs) }
@@ -277,8 +291,10 @@ public nonisolated enum PTVehicleTelemetryFreshnessPolicy {
             return 2
         case .rpm, .engineTemperature, .abs, .tcs, .lights, .leftTurn, .rightTurn, .hazard, .engineStatus, .kickstandDown:
             return 5
-        case .fuel, .batteryVoltage, .location:
+        case .fuel, .batteryVoltage, .adapterVoltage, .controlModuleVoltage, .location:
             return 15
+        case .throttlePercent:
+            return 5
         case .trip, .odometer, .range, .maintenanceDistance:
             return 120
         }

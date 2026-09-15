@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 PROJECT_FILE="${PROJECT_DIR}/CrazyDashboard.xcodeproj/project.pbxproj"
 BLUEPRINT_FILE="${PROJECT_DIR}/docs/product/APP_FEATURE_BLUEPRINT.md"
-EXPECTED_BUILD="${1:-67}"
+EXPECTED_BUILD="${1:-68}"
 EXPECTED_MARKETING_VERSION="${2:-2.0.8}"
 
 fail() {

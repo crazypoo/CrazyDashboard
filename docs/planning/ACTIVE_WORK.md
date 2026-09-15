@@ -7,17 +7,18 @@ canonical: true
 domain: active-work
 owner: Jax
 created: 2026-09-15
-last_reviewed: 2026-09-15
+last_reviewed: 2026-09-16
 related_builds:
   - 66
   - 67
+  - 68
 supersedes: []
 superseded_by:
 ---
 
 # 当前工作
 
-快照日期：2026-09-15。当前工程版本为 `2.0.8 (Build 67)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+快照日期：2026-09-16。当前工程版本为 `2.0.8 (Build 68)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
 
 ## Build 66 收口：统一车速真实验证 🟨
 
@@ -47,12 +48,26 @@ superseded_by:
 
 验收记录必须包括车辆型号、仪表固件、iOS、App Build、适配器、测试时间、完整原始 Hex、Marker、解析结果和失败/断连表现。完成后把产品总纲中的 B67-09 从 `🟨` 更新为对应状态，并同步 Build History、协议文档和研究日志。
 
+## Build 68 收口：OBD 诊断深挖与 ECU 证据真实验证 🟨
+
+代码、纯数据回归测试、iOS `build-for-testing` 和证据/导出边界已完成；以下项目仍需真实 iPhone、真实 ELM327/YMOBD、XP400GT 和 Release/TestFlight 包验证：
+
+- Cold Idle、Warm Idle、DTC、Mode 06、Mode 09 五类 Trial；
+- `03`、`07`、`0A`、Freeze Frame、`0908`、`090A`、`0600 → 0620` 的真实回传、否定响应和超时表现；
+- `0x7E8` 的重复 RX 证据；`0x7E0` 继续保持 probable，不得仅凭常规地址升级为 confirmed；
+- PID 42 / ATRV 的真实值分离、Relative Throttle 优先、合法 `0 km/h` 与 GPS/OBD 切源；
+- 断连、取消、适配器低质量响应后的总线租约、轮询恢复和 Diagnostic Center 状态；
+- 真实长时间运行下的 PID 延迟、成功率、Baseline 统计和主仪表流畅度；
+- Build 68 脱敏 JSON、车库报告、Protocol Evidence/Vehicle Passport 的读取与分享结果。
+
+验收证据必须记录车辆型号、ECU/仪表固件、iOS、App Build、适配器型号/固件、测试时间、完整原始 Hex、命令顺序、来源切换、错误与恢复表现。未完成上述现场证据前，不把 Build 68 标记为完整发布通过。
+
 ## 不在当前工作中
 
-- Build 68 尚未在仓库登记为正式工作包；新任务先写入 [`BACKLOG.md`](BACKLOG.md)，不要新建根目录计划。
+- Build 69 的 UDS Session/DID 深挖尚未排期；新任务先写入 [`BACKLOG.md`](BACKLOG.md)，不要新建根目录计划。
 - `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift` 和 `PTOBDCommand.swift` 仍是冻结核心；本文件不授权解冻。
 - QWeather 现有可用链路不在本轮治理范围。
 
 ## 发布与回滚门
 
-在真实验证未完成前，不把 Build 66 标记为完整发布通过。若速度回退出现异常，先关闭 `PTBuild66FeatureFlags.gpsSpeedFallbackEnabled` 或回滚外围 Resolver/Bridge；不得回滚或修改 BLE/ELM327 核心来掩盖问题。
+在真实验证未完成前，不把 Build 66–68 标记为完整发布通过。若速度回退出现异常，先关闭 `PTBuild66FeatureFlags.gpsSpeedFallbackEnabled`；若 Build 68 深诊断出现适配器兼容问题，按需关闭 `PTBuild68FeatureFlags` 对应开关。不得回滚或修改 BLE/ELM327 核心来掩盖问题。

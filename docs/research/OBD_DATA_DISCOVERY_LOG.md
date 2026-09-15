@@ -7,12 +7,13 @@ canonical: true
 domain: obd-data-discovery
 owner: Jax
 created: 2026-09-15
-last_reviewed: 2026-09-15
+last_reviewed: 2026-09-16
 related_builds:
   - 57
   - 60
   - 64
   - 65
+  - 68
 supersedes: []
 superseded_by:
 ---
@@ -31,6 +32,20 @@ superseded_by:
 | OTA 检查/下载完成不等于刷写成功 | Confirmed | 版本回读要求与 Release 安全策略 |
 | XP400 ECU 写入、SecurityAccess、任意 CAN injection | Unknown | 当前没有足够车型协议、回滚和实车证据，保持拒绝 |
 
+## 2026-09-16：Build 68 OBD 深诊断基线
+
+以下是来自 Build 68 输入研究日志的 `imported`/`captured` 基线，不代表本次代码检查重新连接了真实车辆；后续实车试验仍必须保存完整原始 Hex、适配器和固件信息。
+
+| 观察 | 证据等级 | 当前处理 |
+| --- | --- | --- |
+| OBD 使用 ISO 15765、11-bit、500 kbit/s；观察到 RX `0x7E8` | Captured | 保存为 `captured` 地址证据；TX `0x7E0` 仍为 `probable` |
+| `0100`、`0120`、`0140` 能力位图返回标准 PID 范围 | Captured | 只在 Session discovery 阶段读取，不进入高频 Runtime Loop |
+| `0900` 能力可引导 `0904`/`0906`/`0908`/`090A` | Inferred / Captured | 只读保存原始响应；ASCII 失败保留 raw fallback |
+| CALID `XP40E54000370000` 与 CVN 可用于 ECU 指纹 | Captured | 支持多个 record，生成确定性 fingerprint，不作为刷写授权 |
+| `010D = 00` | Captured | 解释为合法 `0 km/h`，禁止用零值触发 GPS fallback |
+
+Build 68 新增的证据字段包括 Confirmed/Pending/Permanent DTC、Freeze Frame、Mode 06 continuation、ECU 名称、011F 运行时间、PID42/`ATRV` 电压、Relative Throttle、延迟 EWMA 和脱敏后的 Trace。单次 `NO DATA` 不晋级为 Unsupported；只有重复会话或直接官方契约才能提升证据等级。
+
 ## 证据晋级规则
 
 1. 先保存脱敏原始样本和最小复现步骤。
@@ -44,6 +59,7 @@ superseded_by:
 - Jieli SDK 的真实设备识别、RCSP characteristic、断点和中断恢复。
 - XP400 只读 UDS 的车型/固件适用性、多帧和否定响应矩阵。
 - CAN Capture 与 OBD 命令时间关联的多适配器实车证据。
+- Cold Idle、Warm Idle、DTC、Mode 06、Mode 09 五类 Trial，以及断连/取消后轮询恢复。
+- PID 42 与 `ATRV` 的车辆/适配器电压差异、Relative Throttle 优先级和长时间低带宽表现。
 
 参考：[`YMOBD_JIELI_OTA_REFERENCE.md`](../protocols/obd/YMOBD_JIELI_OTA_REFERENCE.md)、[`PTSpeedTests/OBD`](../../PTSpeedTests/OBD) 和已归档的 [OBD 长期计划](../archive/roadmaps/CrazyDashboard_OBD_YMOBD_Jieli_OTA_Optimization_Plan.md)。
-
