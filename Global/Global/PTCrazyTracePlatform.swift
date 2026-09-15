@@ -10,7 +10,7 @@
 import CryptoKit
 import Foundation
 
-public struct PTCrazyTracePackageManifest: Codable, Equatable, Sendable {
+nonisolated public struct PTCrazyTracePackageManifest: Codable, Equatable, Sendable {
     public static let currentFormatVersion = 2
 
     public let formatVersion: Int
@@ -72,7 +72,7 @@ public struct PTCrazyTracePackageManifest: Codable, Equatable, Sendable {
     }
 }
 
-public struct PTCrazyTracePackageMetadata: Codable, Equatable, Sendable {
+nonisolated public struct PTCrazyTracePackageMetadata: Codable, Equatable, Sendable {
     public let schemaVersion: Int
     public let traceID: UUID
     public let name: String
@@ -90,7 +90,7 @@ public struct PTCrazyTracePackageMetadata: Codable, Equatable, Sendable {
     }
 }
 
-public enum PTCrazyTracePackageError: Error, LocalizedError, Equatable, Sendable {
+nonisolated public enum PTCrazyTracePackageError: Error, LocalizedError, Equatable, Sendable {
     case invalidPackage
     case unsupportedFormat(Int)
     case missingFile(String)
@@ -110,7 +110,7 @@ public enum PTCrazyTracePackageError: Error, LocalizedError, Equatable, Sendable
     }
 }
 
-public struct PTCrazyTracePackage: Equatable, Sendable {
+nonisolated public struct PTCrazyTracePackage: Equatable, Sendable {
     public let directoryURL: URL
     public let manifest: PTCrazyTracePackageManifest
     public let document: PTCrazyTraceDocument
@@ -122,7 +122,7 @@ public struct PTCrazyTracePackage: Equatable, Sendable {
     }
 }
 
-public enum PTCrazyTracePackageWriter {
+nonisolated public enum PTCrazyTracePackageWriter {
     public static let fileNames = [
         "manifest.json",
         "timeline.jsonl",
@@ -149,33 +149,56 @@ public enum PTCrazyTracePackageWriter {
             document,
             privacyLevel: privacyLevel
         )
-        try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
-        try fileManager.createDirectory(at: directoryURL.appendingPathComponent("attachments", isDirectory: true), withIntermediateDirectories: true)
+        let targetURL = directoryURL.standardizedFileURL
+        let parentURL = targetURL.deletingLastPathComponent()
+        let stagingURL = parentURL.appendingPathComponent(
+			".\(targetURL.lastPathComponent).\(UUID().uuidString).staging",
+            isDirectory: true
+        )
+
+        // EN: Build the complete package beside the destination and publish it only after every file is valid.
+        // ES: Construye el paquete completo junto al destino y publícalo solo cuando todos los archivos sean válidos.
+        // 中文：先在目标旁边构建完整数据包，所有文件有效后再一次性发布。
+        try fileManager.createDirectory(at: parentURL, withIntermediateDirectories: true)
+        _ = try recoverIncompletePackages(in: parentURL, fileManager: fileManager)
+        try fileManager.createDirectory(at: stagingURL, withIntermediateDirectories: true)
+        defer { try? fileManager.removeItem(at: stagingURL) }
+        try fileManager.createDirectory(at: stagingURL.appendingPathComponent("attachments", isDirectory: true), withIntermediateDirectories: true)
 
         let encoder = JSONEncoder.crazyTraceEncoder
         let metadataData = try encoder.encode(PTCrazyTracePackageMetadata(document: exportedDocument))
-        let timelineData = try jsonLines(exportedDocument.events, encoder: encoder)
-        let telemetryData = try jsonLines(exportedDocument.events.filter { $0.domain == .vehicleTelemetry }, encoder: encoder)
-        let obdData = try jsonLines(exportedDocument.events.filter { $0.domain == .obd }, encoder: encoder)
-        let xp400Data = try jsonLines(exportedDocument.events.filter { $0.domain == .xp400BLE }, encoder: encoder)
-        let ymobdData = try jsonLines(exportedDocument.events.filter { $0.domain == .ymobdAdapter }, encoder: encoder)
-        let otaData = try jsonLines(exportedDocument.events.filter { $0.domain == .adapterOTA }, encoder: encoder)
-        let contents: [String: Data] = [
-            "timeline.jsonl": timelineData,
-            "telemetry.jsonl": telemetryData,
-            "obd.jsonl": obdData,
-            "xp400_ble.jsonl": xp400Data,
-            "ymobd.jsonl": ymobdData,
-            "ota.jsonl": otaData,
-            "can.bin": Data(),
-            "metadata.json": metadataData
-        ]
+        // EN: Encode one event at a time so a four-hour trace does not create several full-size Data copies.
+        // ES: Codifica un evento cada vez para que una traza de cuatro horas no cree varias copias completas de Data.
+        // 中文：逐事件编码，避免四小时 Trace 同时创建多份完整 Data 副本。
+        let streamWriter = try PTCrazyTraceJSONLStreamWriter(
+            directoryURL: stagingURL,
+            fileNames: [
+                "timeline.jsonl",
+                "telemetry.jsonl",
+                "obd.jsonl",
+                "xp400_ble.jsonl",
+                "ymobd.jsonl",
+                "ota.jsonl"
+            ],
+            encoder: encoder
+        )
+        for event in exportedDocument.events {
+            try streamWriter.append(event, to: "timeline.jsonl")
+            if let streamName = streamName(for: event.domain) {
+                try streamWriter.append(event, to: streamName)
+            }
+        }
+        try streamWriter.finish()
+        try Data().write(to: stagingURL.appendingPathComponent("can.bin"), options: .atomic)
+        try metadataData.write(to: stagingURL.appendingPathComponent("metadata.json"), options: .atomic)
 
         var checksums: [String: String] = [:]
         for name in fileNames where name != "manifest.json" {
-            guard let data = contents[name] else { continue }
-            try data.write(to: directoryURL.appendingPathComponent(name), options: .atomic)
-            checksums[name] = sha256(data)
+            let fileURL = stagingURL.appendingPathComponent(name)
+            guard fileManager.fileExists(atPath: fileURL.path) else {
+                throw PTCrazyTracePackageError.missingFile(name)
+            }
+            checksums[name] = try sha256(fileURL: fileURL)
         }
 
         let manifest = PTCrazyTracePackageManifest(
@@ -191,25 +214,124 @@ public enum PTCrazyTracePackageWriter {
             checksums: checksums
         )
         let manifestData = try encoder.encode(manifest)
-        try manifestData.write(to: directoryURL.appendingPathComponent("manifest.json"), options: .atomic)
-        return directoryURL
-    }
+        try manifestData.write(to: stagingURL.appendingPathComponent("manifest.json"), options: .atomic)
 
-    private static func jsonLines(_ events: [PTCrazyTraceEvent], encoder: JSONEncoder) throws -> Data {
-        var data = Data()
-        for event in events {
-            data.append(try encoder.encode(event))
-            data.append(0x0A)
+        if fileManager.fileExists(atPath: targetURL.path) {
+            _ = try fileManager.replaceItemAt(
+                targetURL,
+                withItemAt: stagingURL,
+                backupItemName: nil,
+                options: .usingNewMetadataOnly
+            )
+        } else {
+            try fileManager.moveItem(at: stagingURL, to: targetURL)
         }
-        return data
+        return targetURL
     }
 
-    private static func sha256(_ data: Data) -> String {
-        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    /// EN: Removes only hidden trace staging directories in the supplied parent directory.
+    /// ES: Elimina solo directorios de staging ocultos de trazas dentro del directorio padre indicado.
+    /// 中文：只删除指定父目录内隐藏的 Trace staging 目录。
+    @discardableResult
+    public static func recoverIncompletePackages(
+        in parentURL: URL,
+        fileManager: FileManager = .default
+    ) throws -> Int {
+        guard fileManager.fileExists(atPath: parentURL.path) else { return 0 }
+        let entries = try fileManager.contentsOfDirectory(
+            at: parentURL,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: []
+        )
+        var removedCount = 0
+        for entry in entries {
+            let name = entry.lastPathComponent
+            guard name.hasPrefix("."), name.hasSuffix(".staging") else { continue }
+            guard try entry.resourceValues(forKeys: [.isDirectoryKey]).isDirectory == true else { continue }
+            try fileManager.removeItem(at: entry)
+            removedCount += 1
+        }
+        return removedCount
+    }
+
+    private static func streamName(for domain: PTTraceDomain) -> String? {
+        switch domain {
+        case .vehicleTelemetry: return "telemetry.jsonl"
+        case .obd: return "obd.jsonl"
+        case .xp400BLE: return "xp400_ble.jsonl"
+        case .ymobdAdapter: return "ymobd.jsonl"
+        case .adapterOTA: return "ota.jsonl"
+        case .location, .motion, .navigation, .system: return nil
+        }
+    }
+
+    private static func sha256(fileURL: URL) throws -> String {
+        let handle = try FileHandle(forReadingFrom: fileURL)
+        defer { handle.closeFile() }
+        var hasher = SHA256()
+        while let chunk = try handle.read(upToCount: 64 * 1024), !chunk.isEmpty {
+            hasher.update(data: chunk)
+        }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 }
 
-private enum PTCrazyTracePackagePrivacy {
+// EN: Each JSONL stream owns one handle and a bounded buffer; no event crosses an actor boundary here.
+// ES: Cada flujo JSONL posee un descriptor y un búfer limitado; ningún evento cruza aquí un límite de actor.
+// 中文：每个 JSONL 流独占一个文件句柄和有界缓冲区；这里不让事件跨 actor 边界。
+nonisolated private final class PTCrazyTraceJSONLStreamWriter {
+    private let encoder: JSONEncoder
+    private let bufferLimit = 64 * 1024
+    private var handles: [String: FileHandle] = [:]
+    private var buffers: [String: Data] = [:]
+    private var isFinished = false
+
+    init(
+        directoryURL: URL,
+        fileNames: [String],
+        encoder: JSONEncoder
+    ) throws {
+        self.encoder = encoder
+        for name in fileNames {
+            let fileURL = directoryURL.appendingPathComponent(name, isDirectory: false)
+            try Data().write(to: fileURL, options: .atomic)
+            handles[name] = try FileHandle(forWritingTo: fileURL)
+            buffers[name] = Data()
+        }
+    }
+
+    func append(_ event: PTCrazyTraceEvent, to name: String) throws {
+        guard handles[name] != nil else { throw PTCrazyTracePackageError.invalidPackage }
+        var line = try encoder.encode(event)
+        line.append(0x0A)
+        buffers[name, default: Data()].append(line)
+        if buffers[name]?.count ?? 0 >= bufferLimit {
+            try flush(name)
+        }
+    }
+
+    func finish() throws {
+        guard !isFinished else { return }
+        for name in handles.keys.sorted() {
+            try flush(name)
+            handles[name]?.closeFile()
+        }
+        isFinished = true
+    }
+
+    deinit {
+        for handle in handles.values { handle.closeFile() }
+    }
+
+    private func flush(_ name: String) throws {
+        guard let handle = handles[name], var buffer = buffers[name], !buffer.isEmpty else { return }
+        try handle.write(contentsOf: buffer)
+        buffer.removeAll(keepingCapacity: true)
+        buffers[name] = buffer
+    }
+}
+
+private nonisolated enum PTCrazyTracePackagePrivacy {
     static func document(_ document: PTCrazyTraceDocument, privacyLevel: String) -> PTCrazyTraceDocument {
         guard privacyLevel.caseInsensitiveCompare("redacted") == .orderedSame else {
             return document
@@ -247,6 +369,11 @@ private enum PTCrazyTracePackagePrivacy {
                     result[pair.key] = isSensitiveKey(pair.key) ? "<redacted>" : pair.value
                 }
                 payload = .marker(PTTraceMarkerPayload(name: marker.name, metadata: metadata))
+            case .text:
+                // EN: Free-form trace text is not needed for a redacted replay package and may contain notification or PTT content.
+                // ES: El texto libre no es necesario para un paquete de reproducción redactado y puede contener notificaciones o PTT.
+                // 中文：脱敏回放包不需要自由文本，因为其中可能包含通知或 PTT 内容。
+                payload = .text(PTBuild65PrivacyPolicy.redactFreeText("private trace text"))
             default:
                 payload = event.payload
             }
@@ -273,31 +400,15 @@ private enum PTCrazyTracePackagePrivacy {
     }
 
     private static func isSensitiveKey(_ key: String) -> Bool {
-        let normalized = key.lowercased()
-        return ["vin", "mac", "uuid", "address", "latitude", "longitude", "location", "park", "home"]
-            .contains { normalized.contains($0) }
+        PTBuild65PrivacyPolicy.isSensitiveKey(key)
     }
 
     private static func redactText(_ value: String) -> String {
-        value
-            .split(whereSeparator: { $0 == " " || $0 == "\n" || $0 == "\r" || $0 == "\t" || $0 == "," || $0 == ";" || $0 == "|" })
-            .map { token -> String in
-                let tokenString = String(token)
-                let uppercased = tokenString.uppercased()
-                if uppercased.hasPrefix("VIN=") || uppercased.hasPrefix("VIN:") {
-                    return String(tokenString.prefix(4)) + "<redacted>"
-                }
-                let scalars = tokenString.unicodeScalars
-                if scalars.count == 17 && scalars.allSatisfy(CharacterSet.alphanumerics.contains) {
-                    return "<redacted-vin>"
-                }
-                return tokenString
-            }
-            .joined(separator: " ")
+        PTBuild65PrivacyPolicy.redactExportText(value)
     }
 }
 
-public enum PTCrazyTracePackageReader {
+nonisolated public enum PTCrazyTracePackageReader {
     public static func load(from directoryURL: URL, fileManager: FileManager = .default) throws -> PTCrazyTracePackage {
         let rootURL = directoryURL.standardizedFileURL
         let manifestURL = try packageFileURL(named: "manifest.json", in: rootURL)
@@ -325,7 +436,7 @@ public enum PTCrazyTracePackageReader {
             }
             let url = try packageFileURL(named: name, in: rootURL)
             guard fileManager.fileExists(atPath: url.path) else { throw PTCrazyTracePackageError.missingFile(name) }
-            let actualChecksum = SHA256.hash(data: try Data(contentsOf: url)).map { String(format: "%02x", $0) }.joined()
+            let actualChecksum = try sha256(fileURL: url)
             guard actualChecksum == expectedChecksum else { throw PTCrazyTracePackageError.checksumMismatch(name) }
         }
 
@@ -362,6 +473,64 @@ public enum PTCrazyTracePackageReader {
         return PTCrazyTracePackage(directoryURL: rootURL, manifest: manifest, document: document)
     }
 
+    /// EN: Streams timeline events in bounded batches for large replay and export jobs.
+    /// ES: Transmite los eventos de la línea temporal en lotes limitados para reproducciones y exportaciones grandes.
+    /// 中文：以有界批次读取时间线事件，供大型回放和导出使用。
+    @discardableResult
+    public static func streamEvents(
+        from directoryURL: URL,
+        batchSize: Int = 256,
+        fileManager: FileManager = .default,
+        onBatch: ([PTCrazyTraceEvent]) throws -> Void
+    ) throws -> Int {
+        let rootURL = directoryURL.standardizedFileURL
+        let timelineURL = try packageFileURL(named: "timeline.jsonl", in: rootURL)
+        guard fileManager.fileExists(atPath: timelineURL.path) else {
+            throw PTCrazyTracePackageError.missingFile("timeline.jsonl")
+        }
+
+        let safeBatchSize = min(max(batchSize, 1), 2_048)
+        let maximumLineLength = 4 * 1024 * 1024
+        let handle = try FileHandle(forReadingFrom: timelineURL)
+        defer { handle.closeFile() }
+        let decoder = JSONDecoder.crazyTraceDecoder
+        var pending = Data()
+        var batch: [PTCrazyTraceEvent] = []
+        batch.reserveCapacity(safeBatchSize)
+        var eventCount = 0
+
+        while let chunk = try handle.read(upToCount: 64 * 1024), !chunk.isEmpty {
+            pending.append(chunk)
+            guard pending.count <= maximumLineLength || pending.contains(0x0A) else {
+                throw PTCrazyTracePackageError.invalidEvent("timeline line exceeds 4 MB")
+            }
+            while let newlineIndex = pending.firstIndex(of: 0x0A) {
+                guard newlineIndex <= maximumLineLength else {
+                    throw PTCrazyTracePackageError.invalidEvent("timeline line exceeds 4 MB")
+                }
+                let line = pending.subdata(in: 0..<newlineIndex)
+                pending.removeSubrange(0...newlineIndex)
+                if let event = try decodeEvent(line, decoder: decoder) {
+                    batch.append(event)
+                    eventCount += 1
+                    if batch.count == safeBatchSize {
+                        try onBatch(batch)
+                        batch.removeAll(keepingCapacity: true)
+                    }
+                }
+            }
+        }
+
+        if !pending.isEmpty, let event = try decodeEvent(pending, decoder: decoder) {
+            batch.append(event)
+            eventCount += 1
+        }
+        if !batch.isEmpty {
+            try onBatch(batch)
+        }
+        return eventCount
+    }
+
     private static func packageFileURL(named name: String, in rootURL: URL) throws -> URL {
         let candidate = rootURL.appendingPathComponent(name).standardizedFileURL
         let rootPath = rootURL.path.hasSuffix("/") ? rootURL.path : rootURL.path + "/"
@@ -383,9 +552,32 @@ public enum PTCrazyTracePackageReader {
             }
         }
     }
+
+    private static func decodeEvent(_ data: Data, decoder: JSONDecoder) throws -> PTCrazyTraceEvent? {
+        guard let text = String(data: data, encoding: .utf8) else {
+            throw PTCrazyTracePackageError.invalidPackage
+        }
+        let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty else { return nil }
+        do {
+            return try decoder.decode(PTCrazyTraceEvent.self, from: Data(normalized.utf8))
+        } catch {
+            throw PTCrazyTracePackageError.invalidEvent(error.localizedDescription)
+        }
+    }
+
+    private static func sha256(fileURL: URL) throws -> String {
+        let handle = try FileHandle(forReadingFrom: fileURL)
+        defer { handle.closeFile() }
+        var hasher = SHA256()
+        while let chunk = try handle.read(upToCount: 64 * 1024), !chunk.isEmpty {
+            hasher.update(data: chunk)
+        }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    }
 }
 
-public enum PTReplayExpectedValue: Codable, Equatable, Sendable {
+nonisolated public enum PTReplayExpectedValue: Codable, Equatable, Sendable {
     case string(String)
     case integer(Int)
     case double(Double)
@@ -444,7 +636,7 @@ public enum PTReplayExpectedValue: Codable, Equatable, Sendable {
     }
 }
 
-public struct PTReplayAssertion: Codable, Equatable, Sendable {
+nonisolated public struct PTReplayAssertion: Codable, Equatable, Sendable {
     public let timestamp: TimeInterval
     public let path: String
     public let expected: PTReplayExpectedValue
@@ -458,7 +650,7 @@ public struct PTReplayAssertion: Codable, Equatable, Sendable {
     }
 }
 
-public struct PTCrazyTraceExpectedResult: Codable, Equatable, Sendable {
+nonisolated public struct PTCrazyTraceExpectedResult: Codable, Equatable, Sendable {
     public let fixtureID: String
     public let assertions: [PTReplayAssertion]
 
@@ -468,7 +660,7 @@ public struct PTCrazyTraceExpectedResult: Codable, Equatable, Sendable {
     }
 }
 
-public struct PTCrazyTraceReplayState: Equatable, Sendable {
+nonisolated public struct PTCrazyTraceReplayState: Equatable, Sendable {
     private var values: [String: PTReplayExpectedValue] = [:]
 
     public init() {}
@@ -543,7 +735,7 @@ public struct PTCrazyTraceReplayState: Equatable, Sendable {
     }
 }
 
-public struct PTReplayAssertionFailure: Equatable, Sendable {
+nonisolated public struct PTReplayAssertionFailure: Equatable, Sendable {
     public let timestamp: TimeInterval
     public let path: String
     public let expected: PTReplayExpectedValue
@@ -557,7 +749,7 @@ public struct PTReplayAssertionFailure: Equatable, Sendable {
     }
 }
 
-public struct PTReplayEvaluationResult: Equatable, Sendable {
+nonisolated public struct PTReplayEvaluationResult: Equatable, Sendable {
     public let passed: Bool
     public let finalState: PTCrazyTraceReplayState
     public let failures: [PTReplayAssertionFailure]
@@ -569,7 +761,7 @@ public struct PTReplayEvaluationResult: Equatable, Sendable {
     }
 }
 
-public enum PTCrazyTraceReplayRegression {
+nonisolated public enum PTCrazyTraceReplayRegression {
     public static func evaluate(
         document: PTCrazyTraceDocument,
         expected: PTCrazyTraceExpectedResult

@@ -24,7 +24,7 @@ public enum PTNetworkSignalLevel {
 // EN: Location packets carry an explicit freshness deadline so a relay cannot resurrect stale coordinates.
 // ES: Los paquetes de ubicación llevan una fecha límite explícita para que un repetidor no reviva coordenadas obsoletas.
 // 中文：位置数据包携带明确的过期时间，避免中继节点复活过期坐标。
-public struct PTPeerLocation: Codable, Sendable {
+public nonisolated struct PTPeerLocation: Codable, Sendable {
     public static let currentSchemaVersion = 2
     public let schemaVersion: Int
     public let lat: Double     // 纬度

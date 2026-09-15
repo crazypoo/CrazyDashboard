@@ -25,12 +25,16 @@ public final class PTWiFiOBDTransport: NSObject, PTOBDTransport {
     public init(
         host: String = "192.168.0.10",
         port: UInt16 = 35000,
-        connector: PTWifiOBDConnector = .shared
+        connector: PTWifiOBDConnector
     ) {
         self.host = host
         self.port = port
         self.connector = connector
         super.init()
+    }
+
+    public convenience init(host: String = "192.168.0.10", port: UInt16 = 35000) {
+        self.init(host: host, port: port, connector: PTWifiOBDConnector.shared)
     }
 
     public func connect() async throws {

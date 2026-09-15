@@ -58,7 +58,9 @@ final class PTCarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDeleg
                 object: nil,
                 queue: .main
             ) { [weak self] _ in
-                self?.handleCarPlayBack()
+                Task { @MainActor [weak self] in
+                    self?.handleCarPlayBack()
+                }
             }
         }
     }

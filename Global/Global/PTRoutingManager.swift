@@ -16,7 +16,7 @@ public let MotorcycleSearchAndNavigate = NSNotification.Name("MotorcycleSearchAn
 // EN: This is the compatibility action model for URL Schemes and App Intents.
 // ES: Este es el modelo de acciones compatible para URL Schemes y App Intents.
 // 中文：这是 URL Scheme 与 App Intents 共用的兼容动作模型。
-public enum PTExternalAction: Equatable, Sendable {
+public nonisolated enum PTExternalAction: Equatable, Sendable {
     case checkFuel
     case toggleAntiTheft(enable: Bool)
     case openHUD

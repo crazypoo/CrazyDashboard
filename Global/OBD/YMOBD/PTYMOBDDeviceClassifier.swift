@@ -12,7 +12,7 @@ public enum PTYMOBDDeviceCategory: String, Sendable {
     case unknown
 }
 
-public struct PTYMOBDDeviceClassifier: Sendable {
+public nonisolated struct PTYMOBDDeviceClassifier: Sendable {
     private static let knownOBDNames: Set<String> = [
         "OBDII", "MS310", "B25", "V500", "YM529", "YM329", "YM129", "YM819", "BT529",
         "OBD114", "OBD147", "BROM S10", "BROM S15", "BROM S20"

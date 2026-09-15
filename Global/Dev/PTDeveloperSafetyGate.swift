@@ -10,7 +10,7 @@
 import Foundation
 import UIKit
 
-public enum PTDeveloperSafetyOperation: String, Codable, Sendable {
+nonisolated public enum PTDeveloperSafetyOperation: String, Codable, Sendable {
     // EN: Live CAN capture is developer-only because it temporarily changes the telemetry read mode.
     // ES: La captura CAN en vivo es exclusiva del desarrollador porque cambia temporalmente el modo de lectura.
     // 中文：实时 CAN 抓包只允许开发者使用，因为它会暂时改变遥测读取模式。
@@ -26,14 +26,14 @@ public enum PTDeveloperSafetyOperation: String, Codable, Sendable {
     case lifecycle
 }
 
-public enum PTDeveloperSafetyRejection: String, Codable, Sendable {
+nonisolated public enum PTDeveloperSafetyRejection: String, Codable, Sendable {
     case highRiskModeDisabled
     case protocolEvidenceMissing
     case lifecycleReset
     case userDisabled
 }
 
-public struct PTDeveloperSafetyEvent: Codable, Sendable {
+nonisolated public struct PTDeveloperSafetyEvent: Codable, Sendable {
     public let operation: PTDeveloperSafetyOperation
     public let allowed: Bool
     public let rejection: PTDeveloperSafetyRejection?

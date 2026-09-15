@@ -55,7 +55,7 @@ class PTProtocolEvidenceV2ViewController: PTMotoBaseViewController {
     public override func viewDidLoad() {
         super.viewDidLoad()
         pt_Title = localized("dev_protocol_evidence_v2_title", fallback: "Protocol Evidence 2.0")
-        view.backgroundColor = .systemGroupedBackground
+        view.backgroundColor = .black
         configureLayout()
         render()
     }

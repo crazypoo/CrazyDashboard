@@ -69,6 +69,10 @@ enum PTXP400BLEP0Fixtures {
         0x00
     ])
 
+    // EN: Keep the UIKit-derived navigation fixture on the main actor used by the legacy model.
+    // ES: Mantén este fixture de navegación derivado de UIKit en el actor principal del modelo heredado.
+    // 中文：让依赖旧版 UIKit 模型的导航 Fixture 保持在其使用的主 Actor 上。
+    @MainActor
     static let navigationInfo = PTNavigationInfo(
         nextManeuver: PTManeuverMap.lightRight,
         metersToNextManeuver: 125,

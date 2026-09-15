@@ -61,6 +61,7 @@ final class PTXP400BLEP0Tests: XCTestCase {
     // EN: Credits and navigation fixtures protect the exact envelope and big-endian distance fields.
     // ES: Los fixtures de créditos y navegación protegen la envoltura exacta y las distancias big-endian.
     // 中文：Credits 和导航 Fixture 保护精确包络及大端距离字段。
+    @MainActor
     func testCreditsAndNavigationFixturesPreserveWireShape() {
         XCTAssertEqual(
             PTXP400BLEProtocol.validatedRemoteCreditValue(

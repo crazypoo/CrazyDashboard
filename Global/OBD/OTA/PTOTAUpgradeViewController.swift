@@ -154,7 +154,7 @@ class PTOTAUpgradeViewController: PTMotoBaseViewController {
     public override func viewDidLoad() {
         super.viewDidLoad()
         title = localized("ota_upgrade_title")
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = .black
         isModalInPresentation = configuration.isMandatoryUpdate
         configureNavigation()
         configureViews()

@@ -21,9 +21,13 @@ public final class PTBLEOBDTransport: NSObject, PTOBDTransport {
     private var previousDisconnected: ((Error?) -> Void)?
     private var callbacksInstalled = false
 
-    public init(connector: PTHiddenOBDConnector = .shared) {
+    public init(connector: PTHiddenOBDConnector) {
         self.connector = connector
         super.init()
+    }
+
+    public override convenience init() {
+        self.init(connector: PTHiddenOBDConnector.shared)
     }
 
     public func connect() async throws {

@@ -316,6 +316,8 @@
 		670000010000000000000003 /* PTVehicleIdentityResolverBuild64.swift in Sources */ = {isa = PBXBuildFile; fileRef = 670000020000000000000003 /* PTVehicleIdentityResolverBuild64.swift */; };
 		670000010000000000000004 /* PTVehicleIdentityStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 670000020000000000000004 /* PTVehicleIdentityStore.swift */; };
 		670000010000000000000005 /* PTVehicleIdentityBuild64Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 670000020000000000000005 /* PTVehicleIdentityBuild64Tests.swift */; };
+		680000010000000000000001 /* PTBuild65Hardening.swift in Sources */ = {isa = PBXBuildFile; fileRef = 680000020000000000000001 /* PTBuild65Hardening.swift */; };
+		680000010000000000000002 /* PTBuild65HardeningTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 680000020000000000000002 /* PTBuild65HardeningTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -694,6 +696,8 @@
 		670000020000000000000003 /* PTVehicleIdentityResolverBuild64.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleIdentityResolverBuild64.swift; sourceTree = "<group>"; };
 		670000020000000000000004 /* PTVehicleIdentityStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleIdentityStore.swift; sourceTree = "<group>"; };
 		670000020000000000000005 /* PTVehicleIdentityBuild64Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleIdentityBuild64Tests.swift; sourceTree = "<group>"; };
+		680000020000000000000001 /* PTBuild65Hardening.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBuild65Hardening.swift; sourceTree = "<group>"; };
+		680000020000000000000002 /* PTBuild65HardeningTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBuild65HardeningTests.swift; sourceTree = "<group>"; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -884,6 +888,7 @@
 				600000020000000000000022 /* WatchConnectivity.framework */,
 				55F52C60303D4025007527C2 /* XCTest.framework */,
 				600000020000000000000263 /* GroupActivities.framework */,
+				650000020000000000000010 /* libsqlite3.tbd */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -1113,6 +1118,7 @@
 			isa = PBXGroup;
 			children = (
 				650000030000000000000001 /* ProtocolResearch */,
+				680000020000000000000001 /* PTBuild65Hardening.swift */,
 				600000020000000000000050 /* PTDeveloperSafetyGate.swift */,
 				600000020000000000000071 /* PTDeveloperTestPreflight.swift */,
 				600000020000000000000154 /* PTFirmwareUpgradeStateMachine.swift */,
@@ -1125,24 +1131,6 @@
 				640000020000000000000004 /* PTProtocolEvidenceArchitecture.swift */,
 			);
 			path = Dev;
-			sourceTree = "<group>";
-		};
-		650000030000000000000001 /* ProtocolResearch */ = {
-			isa = PBXGroup;
-			children = (
-				650000020000000000000001 /* PTProtocolEvidenceDatabase.swift */,
-				650000020000000000000002 /* PTProtocolEvidenceMigration.swift */,
-				650000020000000000000003 /* PTProtocolEvidenceRetention.swift */,
-				660000020000000000000001 /* PTProtocolResearchModels.swift */,
-				660000020000000000000002 /* PTProtocolResearchAnalyzer.swift */,
-				660000020000000000000003 /* PTProtocolResearchReplay.swift */,
-				660000020000000000000005 /* PTProtocolResearchStore.swift */,
-				670000020000000000000001 /* PTVehicleIdentityModels.swift */,
-				670000020000000000000002 /* PTXP400ReadOnlyDIDCatalog.swift */,
-				670000020000000000000003 /* PTVehicleIdentityResolverBuild64.swift */,
-				670000020000000000000004 /* PTVehicleIdentityStore.swift */,
-			);
-			path = ProtocolResearch;
 			sourceTree = "<group>";
 		};
 		55E616B8301B89AA0075F883 /* Chat */ = {
@@ -1264,6 +1252,7 @@
 				650000020000000000000006 /* PTCrazyTraceBuild62Tests.swift */,
 				660000020000000000000004 /* PTProtocolResearchLabBuild63Tests.swift */,
 				670000020000000000000005 /* PTVehicleIdentityBuild64Tests.swift */,
+				680000020000000000000002 /* PTBuild65HardeningTests.swift */,
 				650000040000000000000001 /* ReplayFixtures */,
 				620000020000000000000011 /* PTVehicleTelemetryV2Tests.swift */,
 				610000020000000000000021 /* PTOBDArchitectureV2Tests.swift */,
@@ -1280,14 +1269,6 @@
 				640000020000000000000005 /* PTArchitectureConsolidationTests.swift */,
 			);
 			path = PTSpeedTests;
-			sourceTree = "<group>";
-		};
-		650000040000000000000001 /* ReplayFixtures */ = {
-			isa = PBXGroup;
-			children = (
-				650000020000000000000007 /* PTReplayFixtureCatalog.swift */,
-			);
-			path = ReplayFixtures;
 			sourceTree = "<group>";
 		};
 		55FE2A75300DF93F000E741F /* Views */ = {
@@ -1508,6 +1489,32 @@
 				610000020000000000000120 /* extended.txt */,
 			);
 			path = CAN;
+			sourceTree = "<group>";
+		};
+		650000030000000000000001 /* ProtocolResearch */ = {
+			isa = PBXGroup;
+			children = (
+				650000020000000000000001 /* PTProtocolEvidenceDatabase.swift */,
+				650000020000000000000002 /* PTProtocolEvidenceMigration.swift */,
+				650000020000000000000003 /* PTProtocolEvidenceRetention.swift */,
+				660000020000000000000001 /* PTProtocolResearchModels.swift */,
+				660000020000000000000002 /* PTProtocolResearchAnalyzer.swift */,
+				660000020000000000000003 /* PTProtocolResearchReplay.swift */,
+				660000020000000000000005 /* PTProtocolResearchStore.swift */,
+				670000020000000000000001 /* PTVehicleIdentityModels.swift */,
+				670000020000000000000002 /* PTXP400ReadOnlyDIDCatalog.swift */,
+				670000020000000000000003 /* PTVehicleIdentityResolverBuild64.swift */,
+				670000020000000000000004 /* PTVehicleIdentityStore.swift */,
+			);
+			path = ProtocolResearch;
+			sourceTree = "<group>";
+		};
+		650000040000000000000001 /* ReplayFixtures */ = {
+			isa = PBXGroup;
+			children = (
+				650000020000000000000007 /* PTReplayFixtureCatalog.swift */,
+			);
+			path = ReplayFixtures;
 			sourceTree = "<group>";
 		};
 		C8AF0651275D1EA16545F01B /* Frameworks */ = {
@@ -1938,6 +1945,7 @@
 				670000010000000000000002 /* PTXP400ReadOnlyDIDCatalog.swift in Sources */,
 				670000010000000000000003 /* PTVehicleIdentityResolverBuild64.swift in Sources */,
 				670000010000000000000004 /* PTVehicleIdentityStore.swift in Sources */,
+				680000010000000000000001 /* PTBuild65Hardening.swift in Sources */,
 				55F52C51303D4025007527C2 /* AppDelegate.swift in Sources */,
 				55F52C52303D4025007527C2 /* PTCarPlaySceneDelegate.swift in Sources */,
 				55F52C53303D4025007527C2 /* SceneDelegate.swift in Sources */,
@@ -2097,6 +2105,7 @@
 				650000010000000000000007 /* PTReplayFixtureCatalog.swift in Sources */,
 				660000010000000000000004 /* PTProtocolResearchLabBuild63Tests.swift in Sources */,
 				670000010000000000000005 /* PTVehicleIdentityBuild64Tests.swift in Sources */,
+				680000010000000000000002 /* PTBuild65HardeningTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2175,7 +2184,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 64;
+				CURRENT_PROJECT_VERSION = 65;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -2208,7 +2217,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 64;
+				CURRENT_PROJECT_VERSION = 65;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -2241,7 +2250,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 64;
+				CURRENT_PROJECT_VERSION = 65;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2276,7 +2285,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 64;
+				CURRENT_PROJECT_VERSION = 65;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2437,7 +2446,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 64;
+				CURRENT_PROJECT_VERSION = 65;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -2587,7 +2596,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 64;
+				CURRENT_PROJECT_VERSION = 65;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -2734,7 +2743,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 64;
+				CURRENT_PROJECT_VERSION = 65;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -2745,7 +2754,8 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.yd.PTSpeedTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 5.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/XP400Ride.app/XP400Ride";
 			};
@@ -2758,7 +2768,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 64;
+				CURRENT_PROJECT_VERSION = 65;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -2770,7 +2780,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.yd.PTSpeedTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
-				SWIFT_VERSION = 5.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/XP400Ride.app/XP400Ride";
 			};
@@ -2781,7 +2792,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 64;
+				CURRENT_PROJECT_VERSION = 65;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -2798,7 +2809,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 64;
+				CURRENT_PROJECT_VERSION = 65;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;

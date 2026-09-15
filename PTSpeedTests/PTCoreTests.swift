@@ -14,6 +14,7 @@ import ARKit
 import CoreGraphics
 @testable import XP400Ride
 
+@MainActor
 final class PTCoreTests: XCTestCase {
     // EN: GPX imports must support both recorded tracks and standard route points.
     // ES: Las importaciones GPX deben admitir tanto trazas grabadas como puntos de ruta estándar.
@@ -1424,7 +1425,7 @@ final class PTCoreTests: XCTestCase {
                 timestamp: date.timeIntervalSince1970 + Double(index),
                 sequence: index + 1,
                 direction: .rx,
-                rawLine: "123 02 \(payload)",
+                rawLine: "123 02 " + payload,
                 header: "123",
                 dataHex: payload,
                 dlc: 2

@@ -9,7 +9,7 @@
 
 import Foundation
 
-public struct PTProtocolEvidenceRetentionPolicy: Equatable, Sendable {
+public nonisolated struct PTProtocolEvidenceRetentionPolicy: Equatable, Sendable {
     public let lowValueRecordAge: TimeInterval
     public let maximumLowValueRecordsToDelete: Int
     public let rawCaptureMaximumAge: TimeInterval
@@ -28,7 +28,7 @@ public struct PTProtocolEvidenceRetentionPolicy: Equatable, Sendable {
     }
 }
 
-public struct PTProtocolEvidenceStorageUsage: Equatable, Sendable {
+public nonisolated struct PTProtocolEvidenceStorageUsage: Equatable, Sendable {
     public let evidenceDatabaseBytes: Int64
     public let traceBytes: Int64
     public let canCaptureBytes: Int64
@@ -51,7 +51,7 @@ public struct PTProtocolEvidenceStorageUsage: Equatable, Sendable {
     }
 }
 
-public struct PTProtocolEvidenceRetentionResult: Equatable, Sendable {
+public nonisolated struct PTProtocolEvidenceRetentionResult: Equatable, Sendable {
     public let deletedLowValueRecords: Int
     public let deletedRawCaptureFileCount: Int
     public let usageBefore: PTProtocolEvidenceStorageUsage?
@@ -73,7 +73,7 @@ public struct PTProtocolEvidenceRetentionResult: Equatable, Sendable {
 /// EN: Only caller-provided research directories are eligible for file trimming; production paths are never guessed for deletion.
 /// ES: Solo los directorios de investigación proporcionados por el llamador pueden recortarse; nunca se adivinan rutas de producción para borrar.
 /// 中文：只有调用方明确提供的研究目录才允许清理，绝不猜测生产路径执行删除。
-public final class PTProtocolEvidenceRetentionCoordinator: @unchecked Sendable {
+public nonisolated final class PTProtocolEvidenceRetentionCoordinator: @unchecked Sendable {
     private let repository: PTProtocolEvidenceRepository
 
     public init(repository: PTProtocolEvidenceRepository) {
@@ -188,7 +188,7 @@ public final class PTProtocolEvidenceRetentionCoordinator: @unchecked Sendable {
     }
 }
 
-public enum PTProtocolEvidenceStorageReporter {
+public nonisolated enum PTProtocolEvidenceStorageReporter {
     public static func usage(
         databaseURL: URL,
         traceDirectoryURL: URL? = nil,

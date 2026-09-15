@@ -250,7 +250,7 @@ nonisolated public final class PTCANCaptureStore: @unchecked Sendable {
 
 public extension PTCANCaptureStore {
     
-    var directoryURL: URL {
+    nonisolated var directoryURL: URL {
         let documents = FileManager.default.urls(
             for: .documentDirectory,
             in: .userDomainMask
@@ -373,9 +373,15 @@ public extension PTCANCaptureStore {
                 return
             }
 
-            fileHandle.seekToEndOfFile()
-            fileHandle.write(data)
-            fileHandle.write(Data([0x0A]))
+            do {
+                // EN: Throwing writes make disk-full and protected-storage failures observable to the recorder.
+                // ES: Las escrituras con errores hacen visibles al grabador los fallos de disco lleno o almacenamiento protegido.
+                // 中文：使用可抛出的写入，让磁盘已满或存储受保护时的错误能够传递给录制器。
+                try fileHandle.write(contentsOf: data)
+                try fileHandle.write(contentsOf: Data([0x0A]))
+            } catch {
+                self.recordError(error)
+            }
         }
     }
     
@@ -660,39 +666,88 @@ public extension PTCANCaptureStore {
 // MARK: - Read JSONL
 
 public extension PTCANCaptureStore {
+
+    /// EN: Streams JSONL frames in bounded batches so a million-frame capture never becomes one Data value.
+    /// ES: Transmite los frames JSONL en lotes limitados para que una captura de un millón de frames nunca sea un único valor Data.
+    /// 中文：以有界批次读取 JSONL 帧，避免百万帧抓包一次性成为一个 Data 对象。
+    @discardableResult
+    nonisolated func streamFrames(
+        from url: URL,
+        batchSize: Int = 1_024,
+        _ onBatch: ([PTCANFrame]) throws -> Void
+    ) throws -> Int {
+        let safeBatchSize = min(max(batchSize, 1), 4_096)
+        let maximumLineLength = 1 * 1024 * 1024
+        let handle: FileHandle
+        do {
+            handle = try FileHandle(forReadingFrom: url)
+        } catch {
+            throw PTCANCaptureStoreError.invalidCapture
+        }
+        defer { handle.closeFile() }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        var pending = Data()
+        var batch: [PTCANFrame] = []
+        batch.reserveCapacity(safeBatchSize)
+        var decodedCount = 0
+
+        func consumeLine(_ line: Data) throws {
+            guard let frame = try? decoder.decode(PTCANFrame.self, from: line) else {
+                // EN: Keep the existing recovery contract: one malformed line does not discard valid frames around it.
+                // ES: Conserva el contrato de recuperación: una línea malformada no descarta los frames válidos vecinos.
+                // 中文：保持现有恢复约定：单行损坏不会丢弃前后有效帧。
+                return
+            }
+            batch.append(frame)
+            decodedCount += 1
+            if batch.count == safeBatchSize {
+                try onBatch(batch)
+                batch.removeAll(keepingCapacity: true)
+            }
+        }
+
+        while let chunk = try handle.read(upToCount: 64 * 1024), !chunk.isEmpty {
+            pending.append(chunk)
+            guard pending.count <= maximumLineLength || pending.contains(0x0A) else {
+                throw PTCANCaptureStoreError.invalidCapture
+            }
+
+            while let newlineIndex = pending.firstIndex(of: 0x0A) {
+                guard newlineIndex <= maximumLineLength else {
+                    throw PTCANCaptureStoreError.invalidCapture
+                }
+                let line = pending.subdata(in: 0..<newlineIndex)
+                pending.removeSubrange(0...newlineIndex)
+                try consumeLine(line)
+            }
+        }
+
+        if !pending.isEmpty {
+            guard pending.count <= maximumLineLength else {
+                throw PTCANCaptureStoreError.invalidCapture
+            }
+            try consumeLine(pending)
+        }
+        if !batch.isEmpty {
+            try onBatch(batch)
+        }
+        return decodedCount
+    }
     
     /// 从 JSONL 恢复 Capture。
     ///
     nonisolated func loadJSONL(
         from url: URL
     ) throws -> PTCANCaptureSession {
-        
-        let data = try Data(
-            contentsOf: url
-        )
-        
-        guard let text = String(
-            data: data,
-            encoding: .utf8
-        ) else {
-            throw PTCANCaptureStoreError.invalidEncoding
+        var frames: [PTCANFrame] = []
+        _ = try streamFrames(from: url, batchSize: 1_024) { batch in
+            frames.append(contentsOf: batch)
         }
-        
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
 
         if let metadata = try? Data(contentsOf: metadataURL(for: url)),
            let session = try? PTCANCaptureStorage.decode(metadata) {
-            var frames: [PTCANFrame] = []
-
-            for substring in text.split(whereSeparator: \.isNewline) {
-                guard let lineData = String(substring).data(using: .utf8),
-                      let frame = try? decoder.decode(PTCANFrame.self, from: lineData) else {
-                    continue
-                }
-                frames.append(frame)
-            }
-
             // EN: A crash can leave sidecar counts behind the JSONL file; recover from the durable frame lines first.
             // ES: Un cierre inesperado puede dejar los contadores del archivo auxiliar atrasados; primero se recuperan las líneas JSONL persistidas.
             // 中文：异常退出可能导致旁车元数据落后于 JSONL 文件，恢复时优先以已经写入的帧为准。
@@ -720,35 +775,7 @@ public extension PTCANCaptureStore {
                 droppedFrameCount: recoveredDroppedFrameCount
             )
         }
-        
-        var frames: [PTCANFrame] = []
-        
-        for substring in text.split(
-            whereSeparator: \.isNewline
-        ) {
-            
-            let line = String(
-                substring
-            )
-            
-            guard !line.isEmpty else {
-                continue
-            }
-            
-            guard let lineData = line.data(
-                using: .utf8
-            ) else {
-                continue
-            }
-            
-            if let frame = try? decoder.decode(
-                PTCANFrame.self,
-                from: lineData
-            ) {
-                frames.append(frame)
-            }
-        }
-        
+
         guard let first = frames.first else {
             throw PTCANCaptureStoreError.emptyCapture
         }
@@ -2385,7 +2412,7 @@ public extension PTMotoTelemetryManager {
 
 // MARK: - Byte Level Diff
 
-public struct PTCANByteChange: Codable, Sendable {
+public nonisolated struct PTCANByteChange: Codable, Sendable {
     
     public let index: Int
     public let before: UInt8?
@@ -2414,7 +2441,7 @@ public struct PTCANByteChange: Codable, Sendable {
     }
 }
 
-public struct PTCANPayloadDiff: Codable, Sendable {
+public nonisolated struct PTCANPayloadDiff: Codable, Sendable {
     
     public let header: String
     

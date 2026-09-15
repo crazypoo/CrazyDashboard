@@ -11,7 +11,7 @@ import CryptoKit
 import Foundation
 import SQLite3
 
-public enum PTProtocolEvidenceDatabaseError: Error, LocalizedError, Equatable, Sendable {
+nonisolated public enum PTProtocolEvidenceDatabaseError: Error, LocalizedError, Equatable, Sendable {
     case cannotCreateDirectory(String)
     case cannotOpen(String)
     case cannotPrepare(String)
@@ -35,7 +35,7 @@ public enum PTProtocolEvidenceDatabaseError: Error, LocalizedError, Equatable, S
     }
 }
 
-public struct PTProtocolEvidenceDatabaseInsertResult: Equatable, Sendable {
+nonisolated public struct PTProtocolEvidenceDatabaseInsertResult: Equatable, Sendable {
     public let insertedCount: Int
     public let repeatedCount: Int
 
@@ -45,7 +45,7 @@ public struct PTProtocolEvidenceDatabaseInsertResult: Equatable, Sendable {
     }
 }
 
-public struct PTProtocolEvidenceDatabaseStatus: Equatable, Sendable {
+nonisolated public struct PTProtocolEvidenceDatabaseStatus: Equatable, Sendable {
     public enum State: String, Codable, Sendable {
         case database
         case legacyFallback
@@ -73,8 +73,9 @@ public struct PTProtocolEvidenceDatabaseStatus: Equatable, Sendable {
 /// EN: The database is serialized on a utility queue so a large import never races with a reader.
 /// ES: La base de datos se serializa en una cola de utilidad para que una importación grande no compita con lectores.
 /// 中文：数据库操作统一串行到 utility 队列，避免大批量导入与读取发生数据竞争。
-public final class PTProtocolEvidenceDatabase: @unchecked Sendable {
+nonisolated public final class PTProtocolEvidenceDatabase: @unchecked Sendable {
     public static let currentSchemaVersion = 2
+    public static let maximumPageSize = 10_000
 
     public static var defaultURL: URL {
         let root = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
@@ -230,7 +231,19 @@ public final class PTProtocolEvidenceDatabase: @unchecked Sendable {
     }
 
     public func records(domain: PTProtocolEvidenceDomain? = nil, limit: Int = 2_000) throws -> [PTProtocolEvidenceRecord] {
-        let safeLimit = min(max(limit, 1), 1_000_000)
+        try records(domain: domain, limit: limit, offset: 0)
+    }
+
+    /// EN: Page reads keep large evidence histories out of memory; callers can walk the database incrementally.
+    /// ES: Las lecturas paginadas mantienen los historiales grandes fuera de memoria y permiten recorrer la base incrementalmente.
+    /// 中文：分页读取避免大型 Evidence 历史一次性进入内存，调用方可以增量遍历数据库。
+    public func records(
+        domain: PTProtocolEvidenceDomain? = nil,
+        limit: Int = 2_000,
+        offset: Int
+    ) throws -> [PTProtocolEvidenceRecord] {
+        let safeLimit = min(max(limit, 1), Self.maximumPageSize)
+        let safeOffset = max(offset, 0)
         return try withConnection { connection in
             var sql = "SELECT id, domain, kind, direction, source, timestamp, confidence, request, response, summary, fingerprint, vehicle_id, reference_id, reference, note FROM evidence"
             var values: [PTSQLiteValue] = []
@@ -238,11 +251,35 @@ public final class PTProtocolEvidenceDatabase: @unchecked Sendable {
                 sql += " WHERE domain = ?"
                 values.append(.text(domain.rawValue))
             }
-            sql += " ORDER BY last_seen_at DESC, id ASC LIMIT ?"
+            sql += " ORDER BY last_seen_at DESC, id ASC LIMIT ? OFFSET ?"
             values.append(.integer(Int64(safeLimit)))
+            values.append(.integer(Int64(safeOffset)))
             let rows = try queryLocked(sql, values: values, on: connection)
             return try rows.map(Self.decodeRecord)
         }
+    }
+
+    /// EN: Consume records page by page so large evidence sets never become one in-memory array.
+    /// ES: Consume los registros página a página para que un conjunto grande nunca sea un único array en memoria.
+    /// 中文：逐页消费记录，避免大型 Evidence 集合一次性成为内存数组。
+    @discardableResult
+    public func forEachRecord(
+        domain: PTProtocolEvidenceDomain? = nil,
+        pageSize: Int = 2_000,
+        _ body: ([PTProtocolEvidenceRecord]) throws -> Void
+    ) throws -> Int {
+        let safePageSize = min(max(pageSize, 1), Self.maximumPageSize)
+        var offset = 0
+        var total = 0
+        while true {
+            let page = try records(domain: domain, limit: safePageSize, offset: offset)
+            guard !page.isEmpty else { break }
+            try body(page)
+            total += page.count
+            guard page.count == safePageSize else { break }
+            offset += page.count
+        }
+        return total
     }
 
     public func candidates(limit: Int = 500) throws -> [PTProtocolCANBitCandidate] {
@@ -324,7 +361,7 @@ public final class PTProtocolEvidenceDatabase: @unchecked Sendable {
     }
 }
 
-public final class PTProtocolEvidenceRepository: @unchecked Sendable {
+nonisolated public final class PTProtocolEvidenceRepository: @unchecked Sendable {
     public let database: PTProtocolEvidenceDatabase
 
     public init(databaseURL: URL = PTProtocolEvidenceDatabase.defaultURL) throws {
@@ -371,6 +408,29 @@ public final class PTProtocolEvidenceRepository: @unchecked Sendable {
         try database.records(domain: domain, limit: limit)
     }
 
+    /// EN: Exposes the page boundary without changing the legacy first-page API.
+    /// ES: Expone el límite de página sin cambiar la API heredada de la primera página.
+    /// 中文：暴露数据库分页边界，同时保持旧的第一页 API 不变。
+    public func records(
+        domain: PTProtocolEvidenceDomain? = nil,
+        limit: Int = 2_000,
+        offset: Int
+    ) throws -> [PTProtocolEvidenceRecord] {
+        try database.records(domain: domain, limit: limit, offset: offset)
+    }
+
+    /// EN: Keeps the repository facade bounded for exports and research reports.
+    /// ES: Mantiene acotada la fachada del repositorio para exportaciones e informes de investigación.
+    /// 中文：为导出和研究报告保持仓库门面的内存有界。
+    @discardableResult
+    public func forEachRecord(
+        domain: PTProtocolEvidenceDomain? = nil,
+        pageSize: Int = 2_000,
+        _ body: ([PTProtocolEvidenceRecord]) throws -> Void
+    ) throws -> Int {
+        try database.forEachRecord(domain: domain, pageSize: pageSize, body)
+    }
+
     public func candidates(limit: Int = 500) throws -> [PTProtocolCANBitCandidate] {
         try database.candidates(limit: limit)
     }
@@ -390,7 +450,7 @@ private enum PTSQLiteValue {
     case real(Double)
 }
 
-private extension PTProtocolEvidenceDatabase {
+nonisolated private extension PTProtocolEvidenceDatabase {
     func withConnection<T>(_ operation: (OpaquePointer) throws -> T) throws -> T {
         try queue.sync {
             guard let connection else {
@@ -584,7 +644,10 @@ private extension PTProtocolEvidenceDatabase {
         guard let connection else { throw PTProtocolEvidenceDatabaseError.cannotOpen("connection closed") }
         try executeLocked("PRAGMA foreign_keys = ON", on: connection)
         try executeLocked("PRAGMA journal_mode = WAL", on: connection)
-        try executeLocked("PRAGMA synchronous = NORMAL", on: connection)
+        // EN: FULL synchronous mode keeps committed Evidence transactions recoverable after an abrupt termination.
+        // ES: El modo síncrono FULL mantiene recuperables las transacciones confirmadas tras una terminación abrupta.
+        // 中文：FULL 同步模式确保应用异常终止后已提交的 Evidence 事务仍可恢复。
+        try executeLocked("PRAGMA synchronous = FULL", on: connection)
 
         let version = try pragmaUserVersionLocked(on: connection)
         guard version <= Self.currentSchemaVersion else {

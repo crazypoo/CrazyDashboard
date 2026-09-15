@@ -311,14 +311,11 @@ public final class PTMotoSpotlightIndexer: NSObject {
                     return
                 }
                 guard !items.isEmpty else { return }
-                searchableIndex.indexSearchableItems(items) { [weak self] error in
-                    let errorDescription = error?.localizedDescription
-                    Task { @MainActor [weak self] in
-                        guard let self, self.isEnabled, generation == self.reindexGeneration else { return }
-                        if let errorDescription {
-                            PTNSLogConsole("⚠️ [Spotlight] 写入索引失败: \(errorDescription)")
-                        }
-                    }
+                do {
+                    try await searchableIndex.indexSearchableItems(items)
+                } catch {
+                    guard self.isEnabled, generation == self.reindexGeneration else { return }
+                    PTNSLogConsole("⚠️ [Spotlight] 写入索引失败: \(error.localizedDescription)")
                 }
             }
         }

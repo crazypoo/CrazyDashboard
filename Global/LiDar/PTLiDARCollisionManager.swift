@@ -18,12 +18,12 @@ import UIKit
 // EN: The mounted mode is gated by fresh vehicle speed; garage mode is an explicit measuring tool.
 // ES: El modo montado exige una velocidad reciente; el modo garaje es una herramienta de medición explícita.
 // 中文：安装模式必须有新鲜车速门禁，车库模式是用户主动开启的测距工具。
-public enum PTLiDARAssistMode: String, Codable, CaseIterable, Sendable {
+public nonisolated enum PTLiDARAssistMode: String, Codable, CaseIterable, Sendable {
     case mountedLowSpeed
     case garageMeasure
 }
 
-public enum PTLiDARZone: String, Codable, CaseIterable, Sendable {
+public nonisolated enum PTLiDARZone: String, Codable, CaseIterable, Sendable {
     case left
     case center
     case right
@@ -32,26 +32,26 @@ public enum PTLiDARZone: String, Codable, CaseIterable, Sendable {
 @available(*, deprecated, renamed: "PTLiDARZone")
 public typealias PTBlindSpotZone = PTLiDARZone
 
-public enum PTLiDARDepthConfidence: String, Codable, Sendable {
+public nonisolated enum PTLiDARDepthConfidence: String, Codable, Sendable {
     case unavailable
     case low
     case medium
     case high
 }
 
-public enum PTLiDARAlertLevel: String, Codable, Sendable {
+public nonisolated enum PTLiDARAlertLevel: String, Codable, Sendable {
     case none
     case warning
     case critical
 }
 
-public enum PTLiDARSpeedSource: String, Codable, CaseIterable, Sendable {
+public nonisolated enum PTLiDARSpeedSource: String, Codable, CaseIterable, Sendable {
     case dashboard
     case obd
     case gps
 }
 
-public enum PTLiDARStandbyReason: String, Codable, Sendable {
+public nonisolated enum PTLiDARStandbyReason: String, Codable, Sendable {
     case none
     case speedUnavailable
     case speedStale
@@ -64,7 +64,7 @@ public enum PTLiDARStandbyReason: String, Codable, Sendable {
     case failed
 }
 
-public enum PTLiDARRunState: String, Codable, Sendable {
+public nonisolated enum PTLiDARRunState: String, Codable, Sendable {
     case idle
     case running
     case armed
@@ -75,7 +75,7 @@ public enum PTLiDARRunState: String, Codable, Sendable {
     case failed
 }
 
-public enum PTLiDARStartResult: Equatable, Sendable {
+public nonisolated enum PTLiDARStartResult: Equatable, Sendable {
     case started
     case alreadyRunning
     case waitingForCameraPermission
@@ -84,7 +84,7 @@ public enum PTLiDARStartResult: Equatable, Sendable {
     case failed(String)
 }
 
-public struct PTLiDARSpeedSample: Sendable {
+public nonisolated struct PTLiDARSpeedSample: Sendable {
     public let speedKmh: Double
     public let source: PTLiDARSpeedSource
     public let timestamp: Date
@@ -99,7 +99,7 @@ public struct PTLiDARSpeedSample: Sendable {
 // EN: Keep the low-speed gate pure so stale data and hysteresis are testable without ARKit hardware.
 // ES: Mantén pura la puerta de baja velocidad para probar datos obsoletos e histéresis sin hardware ARKit.
 // 中文：将低速门禁保持为纯值逻辑，便于无 ARKit 硬件测试过期数据和滞回。
-struct PTLiDARRidingSpeedGate: Sendable {
+nonisolated struct PTLiDARRidingSpeedGate: Sendable {
     private(set) var isArmed = false
 
     mutating func reset() {
@@ -139,7 +139,7 @@ struct PTLiDARRidingSpeedGate: Sendable {
     }
 }
 
-public struct PTLiDARZoneReading: Codable, Equatable, Sendable {
+public nonisolated struct PTLiDARZoneReading: Codable, Equatable, Sendable {
     public let zone: PTLiDARZone
     public let distanceMeters: Float?
     public let confidence: PTLiDARDepthConfidence
@@ -161,7 +161,7 @@ public struct PTLiDARZoneReading: Codable, Equatable, Sendable {
     }
 }
 
-public struct PTLiDARProximitySnapshot: Codable, Equatable, Sendable {
+public nonisolated struct PTLiDARProximitySnapshot: Codable, Equatable, Sendable {
     public let timestamp: Date
     public let mode: PTLiDARAssistMode
     public let state: PTLiDARRunState
@@ -193,7 +193,7 @@ public struct PTLiDARProximitySnapshot: Codable, Equatable, Sendable {
     }
 }
 
-public struct PTLiDARMeasurement: Codable, Equatable, Sendable {
+public nonisolated struct PTLiDARMeasurement: Codable, Equatable, Sendable {
     public let id: UUID
     public let createdAt: Date
     public let vehicleID: UUID?
@@ -368,14 +368,14 @@ public final class PTLiDARMeasurementStore {
 
 // MARK: - Depth analyzer
 
-struct PTLiDARRawZoneReading: Sendable {
+nonisolated struct PTLiDARRawZoneReading: Sendable {
     let zone: PTLiDARZone
     let distanceMeters: Float?
     let confidence: PTLiDARDepthConfidence
     let coverage: Float
 }
 
-struct PTLiDARRawFrame: Sendable {
+nonisolated struct PTLiDARRawFrame: Sendable {
     let timestamp: Date
     let readings: [PTLiDARRawZoneReading]
 }
@@ -383,7 +383,7 @@ struct PTLiDARRawFrame: Sendable {
 // EN: This analyzer locks each pixel buffer once and never retains a camera frame.
 // ES: Este analizador bloquea cada buffer una sola vez y nunca conserva un fotograma de cámara.
 // 中文：该分析器每个像素缓冲区只加锁一次，且不保存相机帧。
-enum PTLiDARDepthAnalyzer {
+nonisolated enum PTLiDARDepthAnalyzer {
     private static let minimumDepth: Float = 0.15
     private static let minimumCoverage: Float = 0.35
     private static let minimumConfidence = UInt8(ARConfidenceLevel.medium.rawValue)

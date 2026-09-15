@@ -45,7 +45,7 @@ class PTCrazyDashboardInstrumentsViewController: PTMotoBaseViewController {
     public override func viewDidLoad() {
         super.viewDidLoad()
         pt_Title = localized("dev_instruments_title", fallback: "CrazyDashboard Instruments")
-        view.backgroundColor = .systemGroupedBackground
+        view.backgroundColor = .black
         configureLayout()
         snapshotObserver = NotificationCenter.default.addObserver(
             forName: PTCrazyDashboardInstrumentsStore.snapshotDidChange,

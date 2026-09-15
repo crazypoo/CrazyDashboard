@@ -173,6 +173,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // 中文：应用启动时就开始监听仪表，自动同步不再依赖用户打开某个页面。
         _ = PTVehicleConnectivityCoordinator.shared.snapshot
 
+        // EN: Recover only orphaned local atomic-write files; committed data is never touched.
+        // ES: Recupera solo archivos locales huérfanos de escritura atómica; nunca toca datos confirmados.
+        // 中文：只清理本地原子写入残留，不触碰任何已提交数据。
+        Task {
+            _ = try? await PTDataPersistenceActor.shared.recoverOrphanedTemporaryFiles()
+        }
+
         // EN: Build the privacy-safe Spotlight index after the app's main stores are available.
         // ES: Construye el índice de Spotlight respetuoso con la privacidad cuando los almacenes principales están disponibles.
         // 中文：在主数据存储可用后建立保护隐私的 Spotlight 索引。

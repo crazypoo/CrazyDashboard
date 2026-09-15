@@ -205,17 +205,29 @@ public nonisolated enum PTProtocolEvidenceCorrelationBuilder {
 }
 
 public nonisolated enum PTProtocolEvidenceV2Exporter {
-    public static func jsonData(for document: PTProtocolEvidenceV2Document) throws -> Data {
+    public static func jsonData(
+        for document: PTProtocolEvidenceV2Document,
+        privacyLevel: String = "redacted"
+    ) throws -> Data {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return try encoder.encode(document)
+        let exportDocument = privacyLevel.caseInsensitiveCompare("redacted") == .orderedSame
+            ? redacted(document)
+            : document
+        return try encoder.encode(exportDocument)
     }
 
-    public static func csvData(for records: [PTProtocolEvidenceRecord]) -> Data {
+    public static func csvData(
+        for records: [PTProtocolEvidenceRecord],
+        privacyLevel: String = "redacted"
+    ) -> Data {
+        let exportRecords = privacyLevel.caseInsensitiveCompare("redacted") == .orderedSame
+            ? records.map(redacted)
+            : records
         var rows = ["id,domain,kind,direction,source,timestamp,confidence,value,fingerprint,vehicleID,referenceID,reference,note"]
         let formatter = ISO8601DateFormatter()
-        rows.append(contentsOf: records.map { record in
+        rows.append(contentsOf: exportRecords.map { record in
             [
                 record.id.uuidString,
                 record.domain.rawValue,
@@ -233,6 +245,105 @@ public nonisolated enum PTProtocolEvidenceV2Exporter {
             ].map(csvField).joined(separator: ",")
         })
         return Data(rows.joined(separator: "\n").utf8)
+    }
+
+    private static func redacted(_ document: PTProtocolEvidenceV2Document) -> PTProtocolEvidenceV2Document {
+        PTProtocolEvidenceV2Document(
+            schemaVersion: document.schemaVersion,
+            generatedAt: document.generatedAt,
+            records: document.records.map(redacted),
+            canCandidates: document.canCandidates.map(redacted),
+            correlations: document.correlations.map(redacted),
+            passport: redacted(document.passport),
+            captureTemplates: document.captureTemplates
+        )
+    }
+
+    private static func redacted(_ record: PTProtocolEvidenceRecord) -> PTProtocolEvidenceRecord {
+        PTProtocolEvidenceRecord(
+            id: record.id,
+            domain: record.domain,
+            kind: record.kind,
+            direction: record.direction,
+            source: record.source,
+            timestamp: record.timestamp,
+            confidence: record.confidence,
+            value: PTBuild65PrivacyPolicy.redactExportText(record.value),
+            request: record.request.map(PTBuild65PrivacyPolicy.redactExportText),
+            response: record.response.map(PTBuild65PrivacyPolicy.redactExportText),
+            fingerprint: record.fingerprint.map(PTBuild65PrivacyPolicy.redactExportText),
+            vehicleID: nil,
+            referenceID: record.referenceID,
+            reference: record.reference.map(PTBuild65PrivacyPolicy.redactExportText),
+            note: record.note.map(PTBuild65PrivacyPolicy.redactExportText)
+        )
+    }
+
+    private static func redacted(_ candidate: PTProtocolCANBitCandidate) -> PTProtocolCANBitCandidate {
+        PTProtocolCANBitCandidate(
+            id: candidate.id,
+            captureID: candidate.captureID,
+            eventID: candidate.eventID,
+            header: candidate.header,
+            changedByteIndexes: candidate.changedByteIndexes,
+            changedBits: candidate.changedBits,
+            dominantBeforePayload: candidate.dominantBeforePayload.map(PTBuild65PrivacyPolicy.redactExportText),
+            dominantAfterPayload: candidate.dominantAfterPayload.map(PTBuild65PrivacyPolicy.redactExportText),
+            changedFrameCount: candidate.changedFrameCount,
+            firstChangeRelativeTimestamp: candidate.firstChangeRelativeTimestamp,
+            lastChangeRelativeTimestamp: candidate.lastChangeRelativeTimestamp,
+            score: candidate.score,
+            source: candidate.source,
+            timestamp: candidate.timestamp,
+            confidence: candidate.confidence,
+            vehicleID: nil,
+            note: PTBuild65PrivacyPolicy.redactExportText(candidate.note)
+        )
+    }
+
+    private static func redacted(_ report: PTProtocolEvidenceCorrelationReport) -> PTProtocolEvidenceCorrelationReport {
+        PTProtocolEvidenceCorrelationReport(
+            id: report.id,
+            vehicleID: nil,
+            startedAt: report.startedAt,
+            endedAt: report.endedAt,
+            entries: report.entries.map { entry in
+                PTProtocolEvidenceCorrelationEntry(
+                    id: entry.id,
+                    source: entry.source,
+                    domain: entry.domain,
+                    timestamp: entry.timestamp,
+                    confidence: entry.confidence,
+                    summary: PTBuild65PrivacyPolicy.redactExportText(entry.summary),
+                    evidenceID: entry.evidenceID
+                )
+            },
+            excludedDomains: report.excludedDomains
+        )
+    }
+
+    private static func redacted(_ passport: PTVehiclePassport) -> PTVehiclePassport {
+        func redactField(_ field: PTVehiclePassportField) -> PTVehiclePassportField {
+            let value = PTBuild65PrivacyPolicy.isSensitiveKey(field.key)
+                ? nil
+                : field.value.map(PTBuild65PrivacyPolicy.redactExportText)
+            return PTVehiclePassportField(
+                key: field.key,
+                value: value,
+                source: field.source,
+                timestamp: field.timestamp,
+                confidence: field.confidence,
+                evidenceIDs: field.evidenceIDs
+            )
+        }
+
+        return PTVehiclePassport(
+            schemaVersion: passport.schemaVersion,
+            generatedAt: passport.generatedAt,
+            vehicleID: nil,
+            vehicleFields: passport.vehicleFields.map(redactField),
+            adapterFields: passport.adapterFields.map(redactField)
+        )
     }
 
     private static func csvField(_ value: String) -> String {

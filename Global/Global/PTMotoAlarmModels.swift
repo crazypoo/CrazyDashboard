@@ -13,14 +13,14 @@ import Foundation
 import AlarmKit
 #endif
 
-public enum PTMotoAlarmKind: String, Codable, CaseIterable, Sendable {
+public nonisolated enum PTMotoAlarmKind: String, Codable, CaseIterable, Sendable {
     case departure
     case maintenance
     case parking
     case rideBreak
 }
 
-public enum PTMotoAlarmTiming: Codable, Equatable, Sendable {
+public nonisolated enum PTMotoAlarmTiming: Codable, Equatable, Sendable {
     case fixed(Date)
     case countdown(startedAt: Date, duration: TimeInterval)
 
@@ -39,25 +39,25 @@ public enum PTMotoAlarmTiming: Codable, Equatable, Sendable {
     }
 }
 
-public enum PTMotoAlarmDelivery: String, Codable, Sendable {
+public nonisolated enum PTMotoAlarmDelivery: String, Codable, Sendable {
     case alarmKit
     case notificationFallback
 }
 
-public enum PTMotoAlarmState: String, Codable, Sendable {
+public nonisolated enum PTMotoAlarmState: String, Codable, Sendable {
     case scheduled
     case countdown
     case paused
     case alerting
 }
 
-public enum PTMotoAlarmCapability: String, Codable, Sendable {
+public nonisolated enum PTMotoAlarmCapability: String, Codable, Sendable {
     case alarmKit
     case notificationFallback
     case unavailable
 }
 
-public enum PTMotoAlarmError: Error, Equatable, Sendable {
+public nonisolated enum PTMotoAlarmError: Error, Equatable, Sendable {
     case invalidDate
     case invalidDuration
     case notAuthorized
@@ -69,7 +69,7 @@ public enum PTMotoAlarmError: Error, Equatable, Sendable {
 // EN: This record is intentionally local because AlarmKit identifiers and authorization are device-specific.
 // ES: Este registro es local a propósito porque los identificadores y permisos de AlarmKit son propios del dispositivo.
 // 中文：该记录刻意只保存在本机，因为 AlarmKit 标识符和权限都属于具体设备。
-public struct PTMotoAlarmRecord: Codable, Equatable, Identifiable, Sendable {
+public nonisolated struct PTMotoAlarmRecord: Codable, Equatable, Identifiable, Sendable {
     public let id: UUID
     public let kind: PTMotoAlarmKind
     public let timing: PTMotoAlarmTiming

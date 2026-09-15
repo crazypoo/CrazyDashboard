@@ -9,7 +9,7 @@
 
 import Foundation
 
-public enum PTDataPersistenceError: Error, Equatable, LocalizedError, Sendable {
+nonisolated public enum PTDataPersistenceError: Error, Equatable, LocalizedError, Sendable {
     case invalidFileName
     case fileNotFound(String)
     case localReadFailed(String)
@@ -50,7 +50,7 @@ public enum PTDataPersistenceError: Error, Equatable, LocalizedError, Sendable {
     }
 }
 
-public struct PTDataPersistenceWriteResult: Equatable, Sendable {
+nonisolated public struct PTDataPersistenceWriteResult: Equatable, Sendable {
     public let fileName: String
     public let localURL: URL
     public let didWriteLocal: Bool
@@ -73,7 +73,7 @@ public struct PTDataPersistenceWriteResult: Equatable, Sendable {
     }
 }
 
-public struct PTDataPersistenceDeleteResult: Equatable, Sendable {
+nonisolated public struct PTDataPersistenceDeleteResult: Equatable, Sendable {
     public let fileName: String
     public let didDeleteLocal: Bool
     public let didDeleteCloud: Bool
@@ -112,6 +112,32 @@ public actor PTDataPersistenceActor {
             ?? fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
             ?? fileManager.temporaryDirectory
         self.cloudDirectoryOverride = cloudDirectoryURL
+    }
+
+    /// EN: Removes only orphaned local atomic-write files left by a terminated process.
+    /// ES: Elimina solo archivos locales de escritura atómica huérfanos tras terminar el proceso.
+    /// 中文：只清理进程异常终止后遗留的本地原子写入临时文件。
+    @discardableResult
+    public func recoverOrphanedTemporaryFiles() throws -> Int {
+        guard fileManager.fileExists(atPath: localDirectoryURL.path) else { return 0 }
+        let entries = try fileManager.contentsOfDirectory(
+            at: localDirectoryURL,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: []
+        )
+        var removedCount = 0
+        for entry in entries {
+            let name = entry.lastPathComponent
+            guard name.hasPrefix("."), name.hasSuffix(".tmp") else { continue }
+            guard try entry.resourceValues(forKeys: [.isDirectoryKey]).isDirectory == false else { continue }
+            do {
+                try fileManager.removeItem(at: entry)
+                removedCount += 1
+            } catch {
+                throw PTDataPersistenceError.localDeleteFailed(error.localizedDescription)
+            }
+        }
+        return removedCount
     }
 
     public func writeData(_ data: Data,
@@ -392,7 +418,10 @@ public actor PTDataPersistenceActor {
             isDirectory: false
         )
         do {
-            try data.write(to: temporaryURL, options: .atomic)
+            // EN: The unique temporary file is written directly so recovery can identify every orphan left by a crash.
+            // ES: El archivo temporal único se escribe directamente para que la recuperación identifique cualquier huérfano tras un cierre inesperado.
+            // 中文：直接写入唯一临时文件，确保崩溃后的每个残留文件都能被恢复逻辑识别。
+            try data.write(to: temporaryURL, options: .withoutOverwriting)
             if fileManager.fileExists(atPath: destinationURL.path) {
                 _ = try fileManager.replaceItemAt(destinationURL, withItemAt: temporaryURL)
             } else {

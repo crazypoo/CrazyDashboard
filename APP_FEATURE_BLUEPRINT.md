@@ -4,9 +4,9 @@
 >
 > 快照日期：2026-09-15
 >
-> 仓库基线：当前工作区已进入 Build 64 XP400 Electronic Identity Platform；Build 57–63 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放与协议研究外围能力已接入，真实设备、车辆和完整发布验证仍待补
+> 仓库基线：当前工作区已进入 Build 65 Swift 6 + Release Hardening；Build 57–64 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究和 XP400 电子身份外围能力已接入，真实设备、车辆、OTA 和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests / UI Tests `CURRENT_PROJECT_VERSION = 64`
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests / UI Tests `CURRENT_PROJECT_VERSION = 65`
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -485,6 +485,26 @@ Build 64 继续保持营销版本 `2.0.8`，只递增工程 Build。Electronic I
 
 Build 64 的身份资料默认保存在本地 Application Support；YMOBD/Jieli OTA 只作为诊断适配器能力证据，不被提升为 XP400 ECU 固件身份。所有候选 DID 和 ECU 观察都必须保留 Evidence ID。Build 64 不开放 SecurityAccess、写入、Reset、RoutineControl、固件下载或刷写操作。
 
+### 7.13 Build 65 Swift 6 + Release Hardening
+
+Build 65 继续保持营销版本 `2.0.8`，只递增工程 Build。重点是并发归属、纯模型隔离、分阶段 Swift 6、后台生命周期、长时间运行、存储压力、崩溃恢复、Release 安全和默认隐私；不修改 `PTHiddenOBDConnector.swift`、`PTOBDCommand.swift` 或 `PTBluetoothManager.swift`。
+
+| 工作包 | 状态 | 内容 | 验证边界 |
+| --- | --- | --- | --- |
+| B65-01 | ✅ | `PTBuild65ConcurrencyOwnershipMatrix` 固化 UIKit、XP400、ELM327、Telemetry、Evidence、Trace、Instruments 和 UI Store 的唯一归属 | 静态；冻结核心只登记不迁移 |
+| B65-02 | ✅ | 重点遥测、Instruments、Evidence、CAN、Signal、ECU 和 CrazyTrace 模型显式 `Sendable` | Swift 6 泛型约束编译检查 |
+| B65-03 | ✅ | 纯错误/结果/Trace/Safety/Evidence DB 外围模型显式 `nonisolated`，UI Store 保持 `@MainActor` | 只改外围模型，未改变传输状态归属 |
+| B65-04 | 🟨 | `PTSpeedTests` 先启用 Swift 6 + complete strict concurrency；主 App、Widget、Watch 维持分阶段迁移 | 目标编译；全 Target warnings 清零待后续阶段 |
+| B65-05 | 🟨 | 17 项前后台、锁屏、蓝牙/网络、低电量、热、内存、终止恢复和 XP400/OBD 场景矩阵 | 真机/实车执行待补 |
+| B65-06 | 🟨 | 30 分钟、2 小时、4 小时 XP400/OBD/并存/骑行/PTT/Instruments/CAN soak 协议 | Instruments + 真机证据待补 |
+| B65-07 | ✅ | Evidence 有界分页；CrazyTrace 与 CAN Capture 均使用有界写入/批量读取，避免新增全量读接口 | 纯逻辑与存储路径已接入 |
+| B65-08 | ✅ | SQLite 事务、Trace staging 原子发布、临时文件恢复、既有 Ride/OTA checkpoint 保持 | 自动恢复测试；断电/崩溃真机待补 |
+| B65-09 | ✅ | Release 默认策略关闭危险 Dev surface、未知 mutation、CAN injection、SecurityAccess 自动化，Jieli OTA 限 YMOBD | 静态 Safety Gate；TestFlight Dev 仍需显式开关 |
+| B65-10 | ✅ | Trace 默认脱敏 VIN、MAC、精确位置、联系人、PTT 音频和通知文本 | 默认 Trace 导出测试；旧兼容导出继续单独审计 |
+| B65-11 | ✅ | 版本门禁、冻结核心检查、Swift 解析、build65 脚本、CI 和验收文档同步 | 当前代码/工程；签名与真机待补 |
+
+Build 65 的详细验收、长时间运行、存储压力、崩溃恢复、隐私字段和回滚记录见 [BUILD65_RELEASE_HARDENING.md](BUILD65_RELEASE_HARDENING.md)。本版本所有“真机/实车待补”不得因静态或编译通过而改为 `✅`。
+
 ## 8. 已退役功能
 
 当前没有需要登记的已退役功能。后续移除功能时，在下表保留原 ID、最后可用 Build、移除原因和替代路径。
@@ -556,3 +576,4 @@ Build 64 的身份资料默认保存在本地 Application Support；YMOBD/Jieli 
 | 2026-09-14 | 当前工作区 Build 62 | B62-01～B62-12 已接入：SQLite Evidence 数据库、UserDefaults 事务迁移与回滚、保留策略/空间统计、CrazyTrace Schema 2 目录包、确定性回放断言、XP400/OBD/YMOBD/OTA 离线样本和 CI 检查；营销版本仍为 2.0.8，三个 BLE/OBD 核心文件零字节变化；版本门禁、工程文件校验、Swift 语法解析、数据库/Trace/Retention 独立类型检查和模拟器验证通过；完整 `build-for-testing` 被现有 SmartCodable 宏插件拉取 `swift-syntax` 的网络超时阻断，XCTest 实际运行、签名发布、真实设备/车辆验证待补 |
 | 2026-09-15 | 当前工作区 Build 63 | B63-01～B63-11 已接入：多 Trial Experiment 与原子研究存储、可解释重复性/背景误报评分、统计报告、候选 Signal Catalog 与显式晋级、CAN/BLE/OBD/Telemetry 时间线关联、Evidence 可追溯关系图、12 个只读研究模板和 CrazyTrace 确定性回放；三个 BLE/OBD 核心文件零字节变化；Swift 解析、类型检查、固定离线回放、项目版本/工程文件检查和主 App/Tests `build-for-testing` 通过；XCTest 实际运行受当前 Pods 排除 arm64 Simulator 且可用模拟器为 arm64 的环境限制，真机/实车验证待补 |
 | 2026-09-15 | 当前工作区 Build 64 | B64-01～B64-11 已接入：XP400 ECU/诊断适配器身份模型、证据优先级、只读 DID 目录、只读 ECU 枚举策略、拓扑图、Passport 兼容投影、身份差异和本地 Actor 存储；三个 BLE/OBD 核心文件零字节变化；版本门禁、Swift 解析、身份模型/目录/解析器/存储测试编译与主 App `build-for-testing` 已接入，XCTest 实际执行仍受当前 Pods/模拟器架构限制，真机/实车验证待补 |
+| 2026-09-15 | 当前工作区 Build 65 | B65-01～B65-11 外围能力已接入：并发归属矩阵、目标模型 Sendable/nonisolated、PTSpeedTests Swift 6 strict concurrency 入口、Trace 有界流式写入/批量读取、Evidence 分页、原子临时文件恢复、Release Safety/Privacy 策略、确定性异常语料、版本门禁、CI 与验收文档；三个 BLE/OBD 核心文件零字节变化；主 App 完整编译、XCTest 实际运行、签名发布、4 小时 soak、OTA 和 XP400+YMOBD 真机验证待补 |

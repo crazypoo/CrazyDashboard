@@ -12,11 +12,11 @@ import Foundation
 /// EN: Shared UserDefaults keys keep migration independent from the MainActor UI store.
 /// ES: Las claves compartidas de UserDefaults mantienen la migración independiente del store MainActor.
 /// 中文：共享 UserDefaults Key 让迁移逻辑不依赖 MainActor UI Store。
-public enum PTProtocolEvidenceStorageKeys {
+public nonisolated enum PTProtocolEvidenceStorageKeys {
     public static let legacyState = "PTProtocolEvidenceV2.state"
 }
 
-public struct PTProtocolEvidenceMigrationResult: Equatable, Sendable {
+public nonisolated struct PTProtocolEvidenceMigrationResult: Equatable, Sendable {
     public let didMigrate: Bool
     public let recordCount: Int
     public let candidateCount: Int
@@ -28,7 +28,7 @@ public struct PTProtocolEvidenceMigrationResult: Equatable, Sendable {
     }
 }
 
-public final class PTProtocolEvidenceMigrationCoordinator: @unchecked Sendable {
+public nonisolated final class PTProtocolEvidenceMigrationCoordinator: @unchecked Sendable {
     public static let completionKey = "PTProtocolEvidenceV2.databaseMigrationCompleted"
     public static let failureKey = "PTProtocolEvidenceV2.databaseMigrationError"
 
