@@ -318,6 +318,12 @@
 		670000010000000000000005 /* PTVehicleIdentityBuild64Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 670000020000000000000005 /* PTVehicleIdentityBuild64Tests.swift */; };
 		680000010000000000000001 /* PTBuild65Hardening.swift in Sources */ = {isa = PBXBuildFile; fileRef = 680000020000000000000001 /* PTBuild65Hardening.swift */; };
 		680000010000000000000002 /* PTBuild65HardeningTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 680000020000000000000002 /* PTBuild65HardeningTests.swift */; };
+		690000010000000000000001 /* PTVehicleSpeedResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 690000020000000000000001 /* PTVehicleSpeedResolver.swift */; };
+		690000010000000000000002 /* PTGPSSpeedProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 690000020000000000000002 /* PTGPSSpeedProvider.swift */; };
+		690000010000000000000003 /* PTBuild66FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 690000020000000000000003 /* PTBuild66FeatureFlags.swift */; };
+		690000010000000000000011 /* PTVehicleSpeedResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 690000020000000000000011 /* PTVehicleSpeedResolverTests.swift */; };
+		690000010000000000000012 /* PTGPSSpeedProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 690000020000000000000012 /* PTGPSSpeedProviderTests.swift */; };
+		690000010000000000000013 /* PTBuild66SpeedIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 690000020000000000000013 /* PTBuild66SpeedIntegrationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -698,6 +704,12 @@
 		670000020000000000000005 /* PTVehicleIdentityBuild64Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleIdentityBuild64Tests.swift; sourceTree = "<group>"; };
 		680000020000000000000001 /* PTBuild65Hardening.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBuild65Hardening.swift; sourceTree = "<group>"; };
 		680000020000000000000002 /* PTBuild65HardeningTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBuild65HardeningTests.swift; sourceTree = "<group>"; };
+		690000020000000000000001 /* PTVehicleSpeedResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleSpeedResolver.swift; sourceTree = "<group>"; };
+		690000020000000000000002 /* PTGPSSpeedProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTGPSSpeedProvider.swift; sourceTree = "<group>"; };
+		690000020000000000000003 /* PTBuild66FeatureFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBuild66FeatureFlags.swift; sourceTree = "<group>"; };
+		690000020000000000000011 /* PTVehicleSpeedResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleSpeedResolverTests.swift; sourceTree = "<group>"; };
+		690000020000000000000012 /* PTGPSSpeedProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTGPSSpeedProviderTests.swift; sourceTree = "<group>"; };
+		690000020000000000000013 /* PTBuild66SpeedIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBuild66SpeedIntegrationTests.swift; sourceTree = "<group>"; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -1206,6 +1218,9 @@
 				620000020000000000000003 /* PTVehicleTelemetryBridge.swift */,
 				640000020000000000000001 /* PTVehicleTelemetryConsumer.swift */,
 				640000020000000000000002 /* PTVehicleTelemetryProjection.swift */,
+				690000020000000000000001 /* PTVehicleSpeedResolver.swift */,
+				690000020000000000000002 /* PTGPSSpeedProvider.swift */,
+				690000020000000000000003 /* PTBuild66FeatureFlags.swift */,
 				600000020000000000000311 /* PTPerformanceMonitor.swift */,
 				600000020000000000000030 /* PTVehicleConnectivityCoordinator.swift */,
 				600000020000000000000320 /* PTTipKitHints.swift */,
@@ -1253,6 +1268,9 @@
 				660000020000000000000004 /* PTProtocolResearchLabBuild63Tests.swift */,
 				670000020000000000000005 /* PTVehicleIdentityBuild64Tests.swift */,
 				680000020000000000000002 /* PTBuild65HardeningTests.swift */,
+				690000020000000000000011 /* PTVehicleSpeedResolverTests.swift */,
+				690000020000000000000012 /* PTGPSSpeedProviderTests.swift */,
+				690000020000000000000013 /* PTBuild66SpeedIntegrationTests.swift */,
 				650000040000000000000001 /* ReplayFixtures */,
 				620000020000000000000011 /* PTVehicleTelemetryV2Tests.swift */,
 				610000020000000000000021 /* PTOBDArchitectureV2Tests.swift */,
@@ -1979,6 +1997,9 @@
 				620000010000000000000003 /* PTVehicleTelemetryBridge.swift in Sources */,
 				640000010000000000000001 /* PTVehicleTelemetryConsumer.swift in Sources */,
 				640000010000000000000002 /* PTVehicleTelemetryProjection.swift in Sources */,
+				690000010000000000000001 /* PTVehicleSpeedResolver.swift in Sources */,
+				690000010000000000000002 /* PTGPSSpeedProvider.swift in Sources */,
+				690000010000000000000003 /* PTBuild66FeatureFlags.swift in Sources */,
 				600000010000000000000311 /* PTPerformanceMonitor.swift in Sources */,
 				600000010000000000000320 /* PTTipKitHints.swift in Sources */,
 				600000010000000000000330 /* PTRideAnalysis.swift in Sources */,
@@ -2106,6 +2127,9 @@
 				660000010000000000000004 /* PTProtocolResearchLabBuild63Tests.swift in Sources */,
 				670000010000000000000005 /* PTVehicleIdentityBuild64Tests.swift in Sources */,
 				680000010000000000000002 /* PTBuild65HardeningTests.swift in Sources */,
+				690000010000000000000011 /* PTVehicleSpeedResolverTests.swift in Sources */,
+				690000010000000000000012 /* PTGPSSpeedProviderTests.swift in Sources */,
+				690000010000000000000013 /* PTBuild66SpeedIntegrationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2184,7 +2208,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 65;
+				CURRENT_PROJECT_VERSION = 66;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -2217,7 +2241,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 65;
+				CURRENT_PROJECT_VERSION = 66;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -2250,7 +2274,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 65;
+				CURRENT_PROJECT_VERSION = 66;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2285,7 +2309,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 65;
+				CURRENT_PROJECT_VERSION = 66;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2446,7 +2470,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 65;
+				CURRENT_PROJECT_VERSION = 66;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -2596,7 +2620,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 65;
+				CURRENT_PROJECT_VERSION = 66;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -2743,7 +2767,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 65;
+				CURRENT_PROJECT_VERSION = 66;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -2768,7 +2792,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 65;
+				CURRENT_PROJECT_VERSION = 66;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -2792,7 +2816,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 65;
+				CURRENT_PROJECT_VERSION = 66;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -2809,7 +2833,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 65;
+				CURRENT_PROJECT_VERSION = 66;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;

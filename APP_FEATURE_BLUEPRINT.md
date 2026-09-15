@@ -4,9 +4,9 @@
 >
 > 快照日期：2026-09-15
 >
-> 仓库基线：当前工作区已进入 Build 65 Swift 6 + Release Hardening；Build 57–64 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究和 XP400 电子身份外围能力已接入，真实设备、车辆、OTA 和完整发布验证仍待补
+> 仓库基线：当前工作区已进入 Build 66 GPS Speed Fallback + Unified Speed Resolver；Build 57–65 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份和 Swift 6 Release Hardening 外围能力已接入，真实设备、车辆、OTA 和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests / UI Tests `CURRENT_PROJECT_VERSION = 65`
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests / UI Tests `CURRENT_PROJECT_VERSION = 66`
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -505,6 +505,29 @@ Build 65 继续保持营销版本 `2.0.8`，只递增工程 Build。重点是并
 
 Build 65 的详细验收、长时间运行、存储压力、崩溃恢复、隐私字段和回滚记录见 [BUILD65_RELEASE_HARDENING.md](BUILD65_RELEASE_HARDENING.md)。本版本所有“真机/实车待补”不得因静态或编译通过而改为 `✅`。
 
+### 7.14 Build 66 GPS Speed Fallback + Unified Speed Resolver
+
+Build 66 继续保持营销版本 `2.0.8`，只递增工程 Build。速度展示统一经过 `PTVehicleTelemetryBridge`：XP400 BLE 优先，OBD 次之，经过质量校验和平滑的 GPS 作为回退；CrazyTrace Replay 在回放时显式覆盖实时来源。`PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift` 和 `PTOBDCommand.swift` 在本版本保持零字节变化。
+
+| 工作包 | 状态 | 内容 | 验证边界 |
+| --- | --- | --- | --- |
+| B66-00 | ✅ | 工程和所有 Target 统一到 `MARKETING_VERSION = 2.0.8`、`CURRENT_PROJECT_VERSION = 66` | 静态版本门禁；签名发布待补 |
+| B66-01 | ✅ | 新增 `PTVehicleSpeedSource`、`PTVehicleSpeedSample`、质量、解析结果、原因和诊断模型 | Swift 6 解析与单元测试 |
+| B66-02 | ✅ | 固化 XP400 1.5s、OBD 2s、GPS 3s、30m 水平精度、3m/s 速度精度、2km/h 静止阈值、3 点中值、EMA 0.45 和两次接管策略 | 纯逻辑测试；道路噪声待补 |
+| B66-03 | ✅ | `PTGPSSpeedProvider` 复用 `PTLocationEngine/AMap` 已有 CLLocation，拒绝负速度、过期和低精度样本，不创建第二套定位服务 | 单元测试；真实定位权限/弱信号待补 |
+| B66-04 | ✅ | `PTVehicleSpeedResolver` 按来源优先级、独立新鲜度、接管滞回、断开清理和 Replay 覆盖输出唯一速度 | 单元测试；车辆切源实测待补 |
+| B66-05 | ✅ | 过期即时回退、优先来源两次有效样本接管、合法 0 与不可用 `nil` 分离 | 单元测试与诊断字段 |
+| B66-06 | ✅ | GPS 位置适配只把非速度信号交给原 Resolver，GPS 速度交给专用 Provider，保留 CrazyTrace 原始速度 | Replay/纯数据检查 |
+| B66-07 | ✅ | 在既有 `PTVehicleTelemetryBridge` 接入专用速度路径，不改 BLE/ELM327 传输、协议或 PID | 主 App 目标构建 |
+| B66-08 | ✅ | 主 Dashboard 删除 Location 直接写速路径，只消费统一 Projection；速度失效时清除旧指针 | 代码路径检查；CarPlay/真机待补 |
+| B66-09 | ✅ | Peugeot 仪表兼容页和 `PTMotoInfoViewController` 统一消费 Hub 的速度，保留 RPM、温度等未迁移字段的既有兼容路径 | 主 App 构建；真车显示待补 |
+| B66-10 | ✅ | Dev Instruments 增加 Unified Speed 面板、GPS 质量、来源、原因、年龄、接管计数和时间轴 | JSON/旧快照兼容测试 |
+| B66-11 | ✅ | 新增速度 Resolver、GPS Provider 边界测试，覆盖优先级、回退、滞回、0/nil 和质量校验 | PTSpeedTests 编译；实际 XCTest 受环境影响时单独记录 |
+| B66-12 | ✅ | CrazyTrace 位置 0 速保留与旧 Instruments 快照缺省字段回放兼容测试 | 离线 Replay；真实道路回放待补 |
+| B66-13 | 🟨 | Build66 检查脚本、迁移记录和发布门禁已接入；需完成 iPhone GPS-only、GPS→OBD、OBD→XP400、断开回退和后台验证 | 静态/目标构建完成；真机/实车和签名发布待补 |
+
+Build 66 的实现记录、速度来源诊断和真机验收矩阵见 [BUILD66_GPS_SPEED_FALLBACK.md](BUILD66_GPS_SPEED_FALLBACK.md)。静态检查、单元测试和目标编译不等价于真实车辆道路验证。
+
 ## 8. 已退役功能
 
 当前没有需要登记的已退役功能。后续移除功能时，在下表保留原 ID、最后可用 Build、移除原因和替代路径。
@@ -577,3 +600,4 @@ Build 65 的详细验收、长时间运行、存储压力、崩溃恢复、隐�
 | 2026-09-15 | 当前工作区 Build 63 | B63-01～B63-11 已接入：多 Trial Experiment 与原子研究存储、可解释重复性/背景误报评分、统计报告、候选 Signal Catalog 与显式晋级、CAN/BLE/OBD/Telemetry 时间线关联、Evidence 可追溯关系图、12 个只读研究模板和 CrazyTrace 确定性回放；三个 BLE/OBD 核心文件零字节变化；Swift 解析、类型检查、固定离线回放、项目版本/工程文件检查和主 App/Tests `build-for-testing` 通过；XCTest 实际运行受当前 Pods 排除 arm64 Simulator 且可用模拟器为 arm64 的环境限制，真机/实车验证待补 |
 | 2026-09-15 | 当前工作区 Build 64 | B64-01～B64-11 已接入：XP400 ECU/诊断适配器身份模型、证据优先级、只读 DID 目录、只读 ECU 枚举策略、拓扑图、Passport 兼容投影、身份差异和本地 Actor 存储；三个 BLE/OBD 核心文件零字节变化；版本门禁、Swift 解析、身份模型/目录/解析器/存储测试编译与主 App `build-for-testing` 已接入，XCTest 实际执行仍受当前 Pods/模拟器架构限制，真机/实车验证待补 |
 | 2026-09-15 | 当前工作区 Build 65 | B65-01～B65-11 外围能力已接入：并发归属矩阵、目标模型 Sendable/nonisolated、PTSpeedTests Swift 6 strict concurrency 入口、Trace 有界流式写入/批量读取、Evidence 分页、原子临时文件恢复、Release Safety/Privacy 策略、确定性异常语料、版本门禁、CI 与验收文档；三个 BLE/OBD 核心文件零字节变化；主 App 完整编译、XCTest 实际运行、签名发布、4 小时 soak、OTA 和 XP400+YMOBD 真机验证待补 |
+| 2026-09-15 | 当前工作区 Build 66 | B66-00～B66-12 已接入：GPS 速度质量校验与平滑、XP400/OBD/GPS 统一速度 Resolver、过期即时回退、两次有效样本接管、Replay 覆盖、主仪表、`PTMotoInfoViewController` 和 Peugeot 仪表单一消费路径、Unified Speed Instruments、回滚开关和离线测试；三个 BLE/OBD 核心文件零字节变化；静态检查与 Debug 目标构建已通过，真实 iPhone/GPS/OBD/XP400 切源、后台和签名发布验证待补 |

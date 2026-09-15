@@ -29,7 +29,7 @@ Dashboard / Ride / Instruments / Widget / Watch / CarPlay
 | Consumer | Current source | Build 61 target | Status | Validation |
 | --- | --- | --- | --- | --- |
 | Main Dashboard | Unified notification plus Motion/Location events | `PTVehicleTelemetryConsumerHub` + `PTDashboardProjection` | ✅ migrated | static + build; device pending |
-| Peugeot Dashboard | `PTVehicleTelemetryBridge` / legacy manager | Unified projection | 🟨 compatibility path retained | static audit |
+| PTMotoInfo / Peugeot Dashboard | `PTVehicleTelemetryBridge` / legacy manager | Unified projection | ✅ speed migrated; other fields retain compatibility paths | static + build; device pending |
 | Ride Experience | Coordinator snapshot, Widget status and BLE fields | `PTRideProjection` | 🟨 next migration | static audit |
 | PTTripManager | BLE/OBD/Motion delegate sampling | producer-owned sampling | 🟨 intentionally unchanged | trip regression required |
 | Instruments | Bridge, Coordinator and legacy manager | provider snapshots + `PTInstrumentProviderRegistry` | ✅ provider boundary added | static + build |
@@ -46,3 +46,30 @@ Dashboard / Ride / Instruments / Widget / Watch / CarPlay
 4. `PTMotoTelemetryManager` and `PTVehicleTelemetryBridge` remain compatibility facades until all callers migrate; no broad deprecation annotation is added in this build.
 5. Replay telemetry and live telemetry use the same Unified snapshot contract. Ride-history replay remains a separate historical product feature until a later migration.
 
+## Build 66 speed-resolution extension
+
+Build 66 keeps the canonical path above and specializes only the `.speed` signal:
+
+```text
+XP400 BLE / ELM327 OBD ─┐
+                        ├─ PTVehicleSpeedResolver ─┐
+PTLocationEngine/AMap ──┘                          ├─ PTVehicleTelemetryBridge
+CrazyTrace Replay ─────────────────────────────────┘
+                                                      ↓
+                                      PTUnifiedVehicleTelemetrySnapshot
+```
+
+The read-only speed policy is:
+
+| Source | Maximum age | Priority | Notes |
+| --- | ---: | ---: | --- |
+| XP400 BLE | 1.5 s | 400 | Preferred live vehicle speed |
+| ELM327 OBD | 2.0 s | 300 | Immediate fallback when XP400 is stale |
+| GPS | 3.0 s | 200 | Reuses the existing location lease; 30 m horizontal accuracy and 3 m/s speed accuracy gates |
+| Replay | Replay clock | explicit override | Only active while replay mode is active |
+
+GPS samples are converted from m/s to km/h, pass a 3-sample median and EMA (`alpha = 0.45`), and clamp only values below 2 km/h to a valid `0 km/h`. A missing or rejected sample remains unavailable (`nil`), so unavailable is never confused with a stopped motorcycle.
+
+`PTVehicleSpeedResolver` is owned by the `@MainActor` bridge. A higher-priority source needs two consecutive fresh samples to take over an already fresh source; a fresh lower-priority source takes over immediately when the current source expires or is removed. The main Dashboard and Peugeot Dashboard render speed only from the unified consumer boundary. `PTTripManager`, LiDAR safety logic, Widget/Watch and CarPlay retain their staged compatibility paths for later builds.
+
+Build 66 validation is separated into Swift 6 unit tests, target compilation, offline trace compatibility, and real-device/vehicle checks. The latter still require iPhone GPS-only, GPS→OBD, OBD→XP400, disconnect fallback, background and low-power runs.

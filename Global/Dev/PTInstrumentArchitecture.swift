@@ -19,6 +19,7 @@ public nonisolated enum PTInstrumentDomainSnapshot: Sendable {
     case can(PTCrazyDashboardCANMetrics)
     case telemetry(PTCrazyDashboardTelemetryMetrics)
     case gps(PTCrazyDashboardGPSMetrics)
+    case speed(PTCrazyDashboardSpeedMetrics)
     case motion(PTCrazyDashboardMotionMetrics)
     case system(PTCrazyDashboardSystemMetrics)
 }
@@ -386,6 +387,53 @@ public final class PTGPSInstrumentProvider: NSObject, PTInstrumentProvider {
     }
 }
 
+// EN: The speed provider exposes resolver candidates and GPS quality in one read-only snapshot for developer diagnostics.
+// ES: El proveedor de velocidad expone los candidatos del resolvedor y la calidad GPS en una instantánea de diagnóstico de solo lectura.
+// 中文：速度 Provider 在一个只读诊断快照中暴露 Resolver 候选值和 GPS 质量。
+@MainActor
+public final class PTSpeedInstrumentProvider: NSObject, PTInstrumentProvider {
+    public let domain: PTCrazyDashboardInstrumentDomain = .speed
+
+    public func start() {}
+    public func stop() {}
+
+    public func snapshot(at date: Date) -> PTInstrumentDomainSnapshot {
+        let bridge = PTVehicleTelemetryBridge.shared
+        let diagnostics = bridge.speedResolverDiagnostics(at: date)
+        let gps = bridge.gpsSpeedDiagnostics
+        return .speed(
+            PTCrazyDashboardSpeedMetrics(
+                resolvedSpeedKPH: diagnostics.resolved.speedKPH,
+                resolvedSource: diagnostics.resolved.source?.rawValue,
+                resolutionReason: diagnostics.lastResolutionReason.rawValue,
+                resolvedAgeSeconds: diagnostics.resolved.candidateAgeSeconds,
+                isFresh: diagnostics.resolved.isFresh,
+                switchCount: diagnostics.switchCount,
+                pendingSource: diagnostics.pendingSource?.rawValue,
+                pendingSampleCount: diagnostics.pendingSampleCount,
+                gpsStatus: gps.status.rawValue,
+                gpsRawSpeedMetersPerSecond: gps.rawSpeedMetersPerSecond,
+                gpsFilteredSpeedKPH: gps.filteredSpeedKPH,
+                gpsHorizontalAccuracyMeters: gps.horizontalAccuracyMeters,
+                gpsSpeedAccuracyMetersPerSecond: gps.speedAccuracyMetersPerSecond,
+                gpsSampleAgeSeconds: gps.sampleAgeSeconds,
+                candidates: diagnostics.candidates.map {
+                    PTCrazyDashboardSpeedCandidateMetrics(
+                        source: $0.source.rawValue,
+                        speedKPH: $0.speedKPH,
+                        ageSeconds: $0.ageSeconds,
+                        isFresh: $0.isFresh,
+                        isSynthetic: $0.isSynthetic,
+                        horizontalAccuracyMeters: $0.quality.horizontalAccuracyMeters,
+                        speedAccuracyMetersPerSecond: $0.quality.speedAccuracyMetersPerSecond,
+                        rawSpeedMetersPerSecond: $0.quality.rawSpeedMetersPerSecond
+                    )
+                }
+            )
+        )
+    }
+}
+
 @MainActor
 public final class PTMotionInstrumentProvider: NSObject, PTInstrumentProvider {
     public let domain: PTCrazyDashboardInstrumentDomain = .motion
@@ -439,6 +487,7 @@ public final class PTInstrumentProviderRegistry {
     public let can: PTCANInstrumentProvider
     public let telemetry: PTTelemetryInstrumentProvider
     public let gps: PTGPSInstrumentProvider
+    public let speed: PTSpeedInstrumentProvider
     public let motion: PTMotionInstrumentProvider
     public let system: PTSystemInstrumentProvider
 
@@ -453,6 +502,7 @@ public final class PTInstrumentProviderRegistry {
         self.can = PTCANInstrumentProvider()
         self.telemetry = PTTelemetryInstrumentProvider()
         self.gps = PTGPSInstrumentProvider()
+        self.speed = PTSpeedInstrumentProvider()
         self.motion = PTMotionInstrumentProvider()
         self.system = PTSystemInstrumentProvider()
     }
@@ -467,6 +517,7 @@ public final class PTInstrumentProviderRegistry {
         can.start()
         telemetry.start()
         gps.start()
+        speed.start()
         motion.start()
         system.start()
     }
@@ -481,6 +532,7 @@ public final class PTInstrumentProviderRegistry {
         can.stop()
         telemetry.stop()
         gps.stop()
+        speed.stop()
         motion.stop()
         system.stop()
     }
@@ -524,6 +576,7 @@ public final class PTInstrumentProviderRegistry {
               case .can(let canMetrics) = can.snapshot(at: date),
               case .telemetry(let telemetryMetrics) = telemetry.snapshot(at: date),
               case .gps(let gpsMetrics) = gps.snapshot(at: date),
+              case .speed(let speedMetrics) = speed.snapshot(at: date),
               case .motion(let motionMetrics) = motion.snapshot(at: date),
               case .system(let systemMetrics) = system.snapshot(at: date) else {
             return .empty
@@ -537,6 +590,7 @@ public final class PTInstrumentProviderRegistry {
             can: canMetrics,
             telemetry: telemetryMetrics,
             gps: gpsMetrics,
+            speed: speedMetrics,
             motion: motionMetrics,
             system: systemMetrics
         )

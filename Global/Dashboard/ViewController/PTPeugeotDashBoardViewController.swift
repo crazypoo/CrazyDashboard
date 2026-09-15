@@ -10,7 +10,7 @@ import PooTools
 import SnapKit
 import SwifterSwift
 
-class PTPeugeotDashBoardViewController: PTMotoBaseViewController {
+class PTPeugeotDashBoardViewController: PTMotoBaseViewController, PTVehicleTelemetryConsumer {
 
     lazy var speedometer:PTSpeedometerView = {
         let view = PTSpeedometerView(frame: .zero)
@@ -57,11 +57,20 @@ class PTPeugeotDashBoardViewController: PTMotoBaseViewController {
     
     var tempValue:String = "0"
     var voltageValue:String = "0.0"
+    private var lastUnifiedSpeedKmh: Double?
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         PTRotationManager.shared.rotationToLandscapeRight()
         PTRotationManager.shared.isLockOrientationWhenDeviceOrientationDidChange = true
+        let telemetryBridge = PTVehicleTelemetryBridge.shared
+        telemetryBridge.startIfNeeded()
+        PTVehicleTelemetryConsumerHub.shared.register(self)
+        let connectivity = PTVehicleConnectivityCoordinator.shared
+        telemetryBridge.ingest(
+            legacySnapshot: connectivity.telemetrySnapshot,
+            connectionSnapshot: connectivity.snapshot
+        )
         PTMotoTelemetryManager.shared.addDelegate(self)
         self.ledDashboard.speedLabel.isHidden = PTDashboardConfig.shared.naving
         self.ledDashboard.ledNavView.isHidden = !PTDashboardConfig.shared.naving
@@ -70,6 +79,7 @@ class PTPeugeotDashBoardViewController: PTMotoBaseViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         PTMotoTelemetryManager.shared.removeDelegate(self)
+        PTVehicleTelemetryConsumerHub.shared.unregister(self)
         
         // 视图即将消失（比如返回上一页）时：强制恢复为竖屏
         if let coordinator = transitionCoordinator {
@@ -102,6 +112,7 @@ class PTPeugeotDashBoardViewController: PTMotoBaseViewController {
 
     @MainActor deinit {
         PTMotoTelemetryManager.shared.removeDelegate(self)
+        PTVehicleTelemetryConsumerHub.shared.unregister(self)
     }
     
     override func viewDidLoad() {
@@ -190,19 +201,10 @@ class PTPeugeotDashBoardViewController: PTMotoBaseViewController {
                     : unavailable
             }
         } else if let control = data as? PTDashboardControl,!PTMotoTelemetryManager.shared.isConnected {
-            // 💡 车速和转速驱动的是 CoreAnimation 动画指针（PTSpeedometerView），本身不会闪烁，直接驱动即可
+            // EN: RPM remains a dashboard-specific field; speed is rendered only by the unified resolver.
+            // ES: Las RPM siguen siendo específicas del tablero; la velocidad solo la renderiza el resolvedor unificado.
+            // 中文：转速仍由仪表专属路径处理，车速只由统一 Resolver 渲染。
             DispatchQueue.main.async {
-                let unavailable = PTDashboardConfig.languageFunc(text: "ride_not_available")
-                if control.vehicleSpeedAvailability.isAvailable {
-                    self.ledDashboard.speedLabel.text = String(format: "%.0f", control.vehicleSpeedKmh)
-                    self.speedometer.updateSpeed(control.vehicleSpeedKmh)
-                } else {
-                    // EN: Clear the old pointer when the new speed sample is unavailable.
-                    // ES: Limpia el indicador anterior cuando la nueva muestra de velocidad no está disponible.
-                    // 中文：新车速样本不可用时，清除仪表上一次的指针和数值。
-                    self.ledDashboard.speedLabel.text = unavailable
-                    self.speedometer.updateSpeed(0)
-                }
                 if control.engineRpmAvailability.isAvailable {
                     self.speedometerReversed.updateSpeed(CGFloat(control.engineRpm))
                     self.speedometerReversed.applyShiftLightLogic(currentRpm: control.engineRpm)
@@ -218,16 +220,34 @@ class PTPeugeotDashBoardViewController: PTMotoBaseViewController {
     }
 }
 
+extension PTPeugeotDashBoardViewController {
+    func vehicleTelemetryDidUpdate(_ snapshot: PTUnifiedVehicleTelemetrySnapshot) {
+        let projection = PTVehicleTelemetryProjections.dashboard(from: snapshot)
+        let unavailable = PTDashboardConfig.languageFunc(text: "ride_not_available")
+        if let speed = projection.speedKmh {
+            lastUnifiedSpeedKmh = speed
+            ledDashboard.speedLabel.text = String(format: "%.0f", PTDashboardConfig.shared.appShowMileage(speed))
+            speedometer.updateSpeed(
+                CGFloat(PTDashboardConfig.shared.appShowMileage(speed)),
+                animated: snapshot.mode == .live
+            )
+        } else if lastUnifiedSpeedKmh != nil {
+            // EN: Clear an expired unified speed instead of retaining a direct BLE/OBD value.
+            // ES: Limpia una velocidad unificada caducada en vez de conservar un valor directo BLE/OBD.
+            // 中文：统一车速过期时清除旧的 BLE/OBD 数值，避免残留显示。
+            lastUnifiedSpeedKmh = nil
+            ledDashboard.speedLabel.text = unavailable
+            speedometer.updateSpeed(0, animated: false)
+        }
+    }
+}
+
 extension PTPeugeotDashBoardViewController:PTMotoTelemetryDelegate {
     func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String : Any]) {
         if let data = measurements[OBDCommand.mode1(.coolantTemp).properties.command] as? Double {
             self.ledDashboard.rightTempGauge.progress = CGFloat(data) / 120
         }
         
-        if let speed = measurements[OBDCommand.mode1(.speed).properties.command] as? Double {
-            self.ledDashboard.speedLabel.text = String(format: "%.0f", speed)
-            self.speedometer.updateSpeed(speed)
-        }
         if let rpm = measurements[OBDCommand.mode1(.rpm).properties.command] as? Double {
             self.speedometerReversed.updateSpeed(CGFloat(rpm))
             self.speedometerReversed.applyShiftLightLogic(currentRpm: Int(rpm))

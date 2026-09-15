@@ -129,6 +129,7 @@ class PTCrazyDashboardInstrumentsViewController: PTMotoBaseViewController {
         addPanel(title: "CAN Monitor", body: formatCAN(snapshot.can))
         addPanel(title: "Vehicle Telemetry", body: formatTelemetry(snapshot.telemetry))
         addPanel(title: "GPS", body: formatGPS(snapshot.gps))
+        addPanel(title: "Unified Speed", body: formatSpeed(snapshot.speed), accent: .systemGreen)
         addPanel(title: "Motion", body: formatMotion(snapshot.motion))
         addPanel(title: "System", body: formatSystem(snapshot.system))
         addPanel(title: "Timeline", body: formatTimeline(store.timeline))
@@ -251,6 +252,29 @@ class PTCrazyDashboardInstrumentsViewController: PTMotoBaseViewController {
             "tracking: \(metrics.isTracking ? "yes" : "no")",
             "horizontal accuracy: \(metrics.horizontalAccuracyMeters.map { String(format: "%.1f m", $0) } ?? "—")"
         ].joined(separator: "\n")
+    }
+
+    // EN: Render the selected speed and every candidate so developers can diagnose freshness without touching transport code.
+    // ES: Muestra la velocidad seleccionada y cada candidato para diagnosticar la frescura sin tocar el transporte.
+    // 中文：同时展示最终车速和全部候选值，开发者无需触碰传输层即可判断数据新鲜度。
+    private func formatSpeed(_ metrics: PTCrazyDashboardSpeedMetrics) -> String {
+        let candidateLines = metrics.candidates.map { candidate in
+            let freshness = candidate.isFresh ? "fresh" : "stale"
+            let synthetic = candidate.isSynthetic ? " / synthetic" : ""
+            return "candidate \(candidate.source): \(String(format: "%.1f km/h", candidate.speedKPH)) / age=\(String(format: "%.2f s", candidate.ageSeconds)) / \(freshness)\(synthetic)"
+        }
+        return ([
+            "resolved: \(metrics.resolvedSpeedKPH.map { String(format: "%.1f km/h", $0) } ?? "—")",
+            "source: \(metrics.resolvedSource ?? "—") / fresh=\(metrics.isFresh ? "yes" : "no")",
+            "reason: \(metrics.resolutionReason)",
+            "age: \(metrics.resolvedAgeSeconds.map { String(format: "%.2f s", $0) } ?? "—")",
+            "switches: \(metrics.switchCount)",
+            "pending: \(metrics.pendingSource ?? "—") (\(metrics.pendingSampleCount))",
+            "GPS provider: \(metrics.gpsStatus)",
+            "GPS raw/filtered: \(metrics.gpsRawSpeedMetersPerSecond.map { String(format: "%.2f m/s", $0) } ?? "—") / \(metrics.gpsFilteredSpeedKPH.map { String(format: "%.1f km/h", $0) } ?? "—")",
+            "GPS accuracy: \(metrics.gpsHorizontalAccuracyMeters.map { String(format: "%.1f m", $0) } ?? "—") / \(metrics.gpsSpeedAccuracyMetersPerSecond.map { String(format: "%.2f m/s", $0) } ?? "unknown")",
+            "GPS age: \(metrics.gpsSampleAgeSeconds.map { String(format: "%.2f s", $0) } ?? "—")"
+        ] + (candidateLines.isEmpty ? ["candidates: —"] : candidateLines)).joined(separator: "\n")
     }
 
     private func formatMotion(_ metrics: PTCrazyDashboardMotionMetrics) -> String {

@@ -21,6 +21,7 @@ nonisolated public enum PTCrazyDashboardInstrumentDomain: String, Codable, CaseI
     case can
     case telemetry
     case gps
+    case speed
     case motion
     case system
 }
@@ -282,6 +283,131 @@ nonisolated public struct PTCrazyDashboardGPSMetrics: Codable, Equatable, Sendab
     }
 }
 
+// EN: Each candidate stays visible so a connected but stale transport is distinguishable from an unavailable provider.
+// ES: Cada candidato permanece visible para distinguir un transporte conectado pero obsoleto de un proveedor ausente.
+// 中文：保留每个候选值，便于区分“传输已连接但数据过期”和“来源不可用”。
+nonisolated public struct PTCrazyDashboardSpeedCandidateMetrics: Codable, Equatable, Sendable {
+    public let source: String
+    public let speedKPH: Double
+    public let ageSeconds: Double
+    public let isFresh: Bool
+    public let isSynthetic: Bool
+    public let horizontalAccuracyMeters: Double?
+    public let speedAccuracyMetersPerSecond: Double?
+    public let rawSpeedMetersPerSecond: Double?
+
+    public init(
+        source: String,
+        speedKPH: Double,
+        ageSeconds: Double,
+        isFresh: Bool,
+        isSynthetic: Bool,
+        horizontalAccuracyMeters: Double? = nil,
+        speedAccuracyMetersPerSecond: Double? = nil,
+        rawSpeedMetersPerSecond: Double? = nil
+    ) {
+        self.source = source
+        self.speedKPH = speedKPH
+        self.ageSeconds = max(ageSeconds, 0)
+        self.isFresh = isFresh
+        self.isSynthetic = isSynthetic
+        self.horizontalAccuracyMeters = horizontalAccuracyMeters
+        self.speedAccuracyMetersPerSecond = speedAccuracyMetersPerSecond
+        self.rawSpeedMetersPerSecond = rawSpeedMetersPerSecond
+    }
+}
+
+nonisolated public struct PTCrazyDashboardSpeedMetrics: Codable, Equatable, Sendable {
+    public let resolvedSpeedKPH: Double?
+    public let resolvedSource: String?
+    public let resolutionReason: String
+    public let resolvedAgeSeconds: Double?
+    public let isFresh: Bool
+    public let switchCount: Int
+    public let pendingSource: String?
+    public let pendingSampleCount: Int
+    public let gpsStatus: String
+    public let gpsRawSpeedMetersPerSecond: Double?
+    public let gpsFilteredSpeedKPH: Double?
+    public let gpsHorizontalAccuracyMeters: Double?
+    public let gpsSpeedAccuracyMetersPerSecond: Double?
+    public let gpsSampleAgeSeconds: Double?
+    public let candidates: [PTCrazyDashboardSpeedCandidateMetrics]
+
+    public init(
+        resolvedSpeedKPH: Double? = nil,
+        resolvedSource: String? = nil,
+        resolutionReason: String = "noValidSource",
+        resolvedAgeSeconds: Double? = nil,
+        isFresh: Bool = false,
+        switchCount: Int = 0,
+        pendingSource: String? = nil,
+        pendingSampleCount: Int = 0,
+        gpsStatus: String = "idle",
+        gpsRawSpeedMetersPerSecond: Double? = nil,
+        gpsFilteredSpeedKPH: Double? = nil,
+        gpsHorizontalAccuracyMeters: Double? = nil,
+        gpsSpeedAccuracyMetersPerSecond: Double? = nil,
+        gpsSampleAgeSeconds: Double? = nil,
+        candidates: [PTCrazyDashboardSpeedCandidateMetrics] = []
+    ) {
+        self.resolvedSpeedKPH = resolvedSpeedKPH
+        self.resolvedSource = resolvedSource
+        self.resolutionReason = resolutionReason
+        self.resolvedAgeSeconds = resolvedAgeSeconds
+        self.isFresh = isFresh
+        self.switchCount = max(switchCount, 0)
+        self.pendingSource = pendingSource
+        self.pendingSampleCount = max(pendingSampleCount, 0)
+        self.gpsStatus = gpsStatus
+        self.gpsRawSpeedMetersPerSecond = gpsRawSpeedMetersPerSecond
+        self.gpsFilteredSpeedKPH = gpsFilteredSpeedKPH
+        self.gpsHorizontalAccuracyMeters = gpsHorizontalAccuracyMeters
+        self.gpsSpeedAccuracyMetersPerSecond = gpsSpeedAccuracyMetersPerSecond
+        self.gpsSampleAgeSeconds = gpsSampleAgeSeconds
+        self.candidates = candidates
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case resolvedSpeedKPH
+        case resolvedSource
+        case resolutionReason
+        case resolvedAgeSeconds
+        case isFresh
+        case switchCount
+        case pendingSource
+        case pendingSampleCount
+        case gpsStatus
+        case gpsRawSpeedMetersPerSecond
+        case gpsFilteredSpeedKPH
+        case gpsHorizontalAccuracyMeters
+        case gpsSpeedAccuracyMetersPerSecond
+        case gpsSampleAgeSeconds
+        case candidates
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            resolvedSpeedKPH: try container.decodeIfPresent(Double.self, forKey: .resolvedSpeedKPH),
+            resolvedSource: try container.decodeIfPresent(String.self, forKey: .resolvedSource),
+            resolutionReason: try container.decodeIfPresent(String.self, forKey: .resolutionReason) ?? "noValidSource",
+            resolvedAgeSeconds: try container.decodeIfPresent(Double.self, forKey: .resolvedAgeSeconds),
+            isFresh: try container.decodeIfPresent(Bool.self, forKey: .isFresh) ?? false,
+            switchCount: try container.decodeIfPresent(Int.self, forKey: .switchCount) ?? 0,
+            pendingSource: try container.decodeIfPresent(String.self, forKey: .pendingSource),
+            pendingSampleCount: try container.decodeIfPresent(Int.self, forKey: .pendingSampleCount) ?? 0,
+            gpsStatus: try container.decodeIfPresent(String.self, forKey: .gpsStatus) ?? "idle",
+            gpsRawSpeedMetersPerSecond: try container.decodeIfPresent(Double.self, forKey: .gpsRawSpeedMetersPerSecond),
+            gpsFilteredSpeedKPH: try container.decodeIfPresent(Double.self, forKey: .gpsFilteredSpeedKPH),
+            gpsHorizontalAccuracyMeters: try container.decodeIfPresent(Double.self, forKey: .gpsHorizontalAccuracyMeters),
+            gpsSpeedAccuracyMetersPerSecond: try container.decodeIfPresent(Double.self, forKey: .gpsSpeedAccuracyMetersPerSecond),
+            gpsSampleAgeSeconds: try container.decodeIfPresent(Double.self, forKey: .gpsSampleAgeSeconds),
+            candidates: try container.decodeIfPresent([PTCrazyDashboardSpeedCandidateMetrics].self, forKey: .candidates) ?? []
+        )
+    }
+}
+
 nonisolated public struct PTCrazyDashboardMotionMetrics: Codable, Equatable, Sendable {
     public let source: String
     public let sampleRateHz: Double?
@@ -344,6 +470,7 @@ nonisolated public struct PTCrazyDashboardInstrumentSnapshot: Codable, Equatable
     public let can: PTCrazyDashboardCANMetrics
     public let telemetry: PTCrazyDashboardTelemetryMetrics
     public let gps: PTCrazyDashboardGPSMetrics
+    public let speed: PTCrazyDashboardSpeedMetrics
     public let motion: PTCrazyDashboardMotionMetrics
     public let system: PTCrazyDashboardSystemMetrics
 
@@ -356,6 +483,7 @@ nonisolated public struct PTCrazyDashboardInstrumentSnapshot: Codable, Equatable
         can: PTCrazyDashboardCANMetrics = .init(),
         telemetry: PTCrazyDashboardTelemetryMetrics = .init(),
         gps: PTCrazyDashboardGPSMetrics = .init(),
+        speed: PTCrazyDashboardSpeedMetrics = .init(),
         motion: PTCrazyDashboardMotionMetrics = .init(),
         system: PTCrazyDashboardSystemMetrics = .init()
     ) {
@@ -367,8 +495,40 @@ nonisolated public struct PTCrazyDashboardInstrumentSnapshot: Codable, Equatable
         self.can = can
         self.telemetry = telemetry
         self.gps = gps
+        self.speed = speed
         self.motion = motion
         self.system = system
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case generatedAt
+        case xp400BLE
+        case obd
+        case ymobdAdapter
+        case adapterOTA
+        case can
+        case telemetry
+        case gps
+        case speed
+        case motion
+        case system
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            generatedAt: try container.decode(Date.self, forKey: .generatedAt),
+            xp400BLE: try container.decodeIfPresent(PTCrazyDashboardXP400BLEMetrics.self, forKey: .xp400BLE) ?? .init(),
+            obd: try container.decodeIfPresent(PTCrazyDashboardOBDMetrics.self, forKey: .obd) ?? .init(),
+            ymobdAdapter: try container.decodeIfPresent(PTCrazyDashboardAdapterMetrics.self, forKey: .ymobdAdapter) ?? .init(),
+            adapterOTA: try container.decodeIfPresent(PTCrazyDashboardOTAMetrics.self, forKey: .adapterOTA) ?? .init(),
+            can: try container.decodeIfPresent(PTCrazyDashboardCANMetrics.self, forKey: .can) ?? .init(),
+            telemetry: try container.decodeIfPresent(PTCrazyDashboardTelemetryMetrics.self, forKey: .telemetry) ?? .init(),
+            gps: try container.decodeIfPresent(PTCrazyDashboardGPSMetrics.self, forKey: .gps) ?? .init(),
+            speed: try container.decodeIfPresent(PTCrazyDashboardSpeedMetrics.self, forKey: .speed) ?? .init(),
+            motion: try container.decodeIfPresent(PTCrazyDashboardMotionMetrics.self, forKey: .motion) ?? .init(),
+            system: try container.decodeIfPresent(PTCrazyDashboardSystemMetrics.self, forKey: .system) ?? .init()
+        )
     }
 
     public static let empty = PTCrazyDashboardInstrumentSnapshot()
@@ -684,6 +844,13 @@ public final class PTCrazyDashboardInstrumentsStore: NSObject {
             name: "Vehicle telemetry",
             state: next.telemetry.mode,
             detail: "signals=\(next.telemetry.valueCount)"
+        )
+        appendTransition(
+            key: "speed.resolution",
+            domain: .speed,
+            name: "Unified speed",
+            state: "\(next.speed.resolvedSource ?? "none"):\(next.speed.resolutionReason)",
+            detail: "speed=\(next.speed.resolvedSpeedKPH.map { String(format: "%.1f km/h", $0) } ?? "unavailable")"
         )
     }
 

@@ -40,6 +40,7 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
     let crashOverlay = PTCrashWarningView()
     let bumpMeter = PTBumpMeterView()
     let pitchGauge = PTPitchView()
+    private var lastUnifiedSpeedKmh: Double?
     
     lazy var lightControl: PTIndicatorPanel = {
         let view = PTIndicatorPanel()
@@ -112,7 +113,9 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
         guard let tripData = notification.object as? PTTripData else { return }
         guard PTVehicleTelemetryBridge.shared.mode == .live else { return }
 
-        self.speedometer.updateSpeed(PTDashboardConfig.shared.appShowMileage(PTMotion.shared.currentSpeedKmh))
+        // EN: Location updates only drive heading and environment; speed is rendered by the unified resolver.
+        // ES: Las actualizaciones de ubicación solo alimentan rumbo y entorno; la velocidad la renderiza el resolvedor unificado.
+        // 中文：定位更新只负责航向和环境数据，车速统一由 Resolver 渲染。
         self.compassRoller.updateHeading(tripData.courseDegree)
         self.speedometer.updateEnvironment(altitude: tripData.altitude, pressureKpa: nil)
     }
@@ -123,10 +126,17 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
 
     private func applyUnifiedTelemetry(_ projection: PTDashboardProjection) {
         if let speed = projection.speedKmh {
+            lastUnifiedSpeedKmh = speed
             speedometer.updateSpeed(
                 CGFloat(PTDashboardConfig.shared.appShowMileage(speed)),
                 animated: projection.snapshot.mode == .live
             )
+        } else if lastUnifiedSpeedKmh != nil {
+            // EN: Remove an expired speed instead of leaving the last source on screen.
+            // ES: Elimina una velocidad caducada en vez de dejar visible la última fuente.
+            // 中文：速度过期后清除旧值，避免界面继续显示上一个来源的数据。
+            lastUnifiedSpeedKmh = nil
+            speedometer.updateSpeed(0, animated: false)
         }
         if let lean = projection.double(for: .lean) {
             leanAngleGauge.updateLean(
@@ -284,6 +294,7 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
     }
     
     @objc func handleMotorcycleDisconnect() {
+        lastUnifiedSpeedKmh = nil
         speedometer.resetToZeroWithAnimation()
     }
 }

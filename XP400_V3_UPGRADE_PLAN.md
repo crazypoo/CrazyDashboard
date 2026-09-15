@@ -8,7 +8,7 @@
 >
 > 发布方式：只维护现有 `PTSpeed` TestFlight 版本，不新增 Lab Scheme、App Target、Bundle ID 或第二发布渠道；当前没有 App Store 上架计划。
 >
-> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 已进入 Build 56；Build 48 保留为本轮语言问题的回归基线。
+> 版本规则：`MARKETING_VERSION` 固定为 `2.0.8`，以后只递增 `CURRENT_PROJECT_VERSION`（Build）。当前主 App、Widget、Watch 和 Tests 已进入 Build 66；Build 48 保留为本轮语言问题的回归基线。
 >
 > 文件名中的 `V3` 仅为保留现有路径和链接，不代表需要修改 App 大版本号。
 >
@@ -46,10 +46,10 @@
 ### 版本与 Build 规则
 
 - [x] `PTSpeed`、Widget 和 Watch 的 `MARKETING_VERSION` 保持 `2.0.8`。
-- [x] 当前主 App、Widget、Watch 和 Tests Build 已统一为 `55`；Build 48 作为本轮回归基线。
+- [x] 当前主 App、Widget、Watch 和 Tests Build 已统一为 `66`；Build 48 作为本轮回归基线。
 - [x] 每次上传 TestFlight 只将 `CURRENT_PROJECT_VERSION` 加一：44、45、46……
 - [x] App、Widget、Watch 和 Tests 每次使用完全相同的 Build 号；Build 45 Debug/Release 目标构建和无签名 Archive 已按对应验收记录核验。
-- [x] Tests Target 已同步到主 App Build `55`，此后与主 App、Widget 和 Watch 一起递增。
+- [x] Tests Target 已同步到主 App Build `66`，此后与主 App、Widget 和 Watch 一起递增。
 - [ ] 不允许脚本、Archive 或 CI 自动修改 `MARKETING_VERSION`。
 - [ ] 设置页和诊断报告显示格式统一为 `2.0.8 (Build N)`。
 - [ ] 不把 Build 号加入仪表 BLE 认证、握手、广播或配置数据。
@@ -1863,3 +1863,43 @@ Build 56 继续使用营销版本 `2.0.8`。本轮将历史骑行从“摘要列
 - 若详情页影响历史列表，可移除 `PTRideAnalysisViewController` 入口并恢复原卡片高度；不改变 `PTTripReport` 存储格式。
 - 若图表或异步分析出现性能问题，可关闭详情图表分组，保留事实指标、回放和历史列表。
 - 若分享字段有隐私风险，只禁用摘要/JSON 分享按钮，不影响本机历史和原有 GPX 导出。
+## 38. Build 66 GPS Speed Fallback 与统一车速 Resolver 实施记录（2026-09-15）
+
+Build 66 继续使用营销版本 2.0.8，主 App、Widget、Watch 和 Tests 的工程 Build 统一为 66。本轮只在三个稳定传输核心外围增加只读 GPS 候补和统一车速投影，不改变 ELM327 底层、XP400 BLE 底层、协议帧、认证、轮询或任何车辆写入能力。
+
+### 38.1 工作包与状态
+
+| 状态 | ID | 实施结果 | 外部验收 |
+| --- | --- | --- | --- |
+| ✅ | B66-00 | 版本、Target 工程接入、冻结文件门禁和 Build66 检查脚本已完成 | 签名发布仍待补 |
+| ✅ | B66-01 | 新增统一速度来源、候选采样、质量、解析结果和原因模型，均为 Sendable/Equatable，必要类型支持 Codable | Swift 6 解析与测试目标编译 |
+| ✅ | B66-02 | 集中速度优先级、新鲜度、GPS 质量阈值、Median/EMA、静止阈值和接管次数策略 | 纯逻辑测试；道路噪声待补 |
+| ✅ | B66-03 | 新增 PTGPSSpeedProvider，复用现有 PTLocationEngine/AMap 的 CLLocation，拒绝负速、过期和低质量样本 | 单元测试；真实权限/弱信号待补 |
+| ✅ | B66-04 | 新增 PTVehicleSpeedResolver，Live 按 XP400 > OBD > GPS，Replay 显式覆盖 | 单元测试；车辆切源实测待补 |
+| ✅ | B66-05 | 高优先级连续两次有效样本接管；当前来源过期或移除后立即向新鲜低优先级来源回退；合法 0 与不可用 nil 分离 | 单元测试 |
+| ✅ | B66-06 | 位置适配只把非速度数据交给原遥测 Resolver，GPS 速度必须经过专用 Provider；未新增第二套定位管理器 | 静态检查与目标编译 |
+| ✅ | B66-07 | PTVehicleTelemetryBridge 输出唯一 canonical speed，并通过既有 Consumer Hub 投影 | 主 App Debug 构建 |
+| ✅ | B66-08 | 主 Dashboard 不再直接用位置事件决定车速，只消费统一 Projection | 代码路径检查；真机待补 |
+| ✅ | B66-09 | Peugeot 仪表兼容页和 PTMotoInfoViewController 的车速改为统一 Consumer，RPM 等未迁移字段保持兼容路径 | 主 App Debug 构建；实车待补 |
+| ✅ | B66-10 | Dev Instruments 显示最终速度、来源、候选值、年龄、新鲜度、GPS raw/filtered/accuracy、原因和切换计数 | 旧 JSON 缺省字段兼容 |
+| ✅ | B66-11 | 新增 Resolver、GPS Provider 和 0/nil、Replay、质量边界测试 | build-for-testing |
+| ✅ | B66-12 | CrazyTrace 合法 0 速保留、Replay 速度覆盖和旧 Instruments 快照兼容 | 离线数据测试 |
+| 🟨 | B66-13 | Build66 文档、迁移矩阵、Blueprint、XP400 V3 记录和自动门禁已同步 | iPhone GPS-only、GPS→OBD、OBD→XP400、断开回退、后台/低电量和签名发布仍需人工完成 |
+
+### 38.2 保护边界与回滚
+
+- PTBluetoothManager.swift、PTHiddenOBDConnector.swift 和 PTOBDCommand.swift 在 Build 66 保持零字节变化；本轮不需要申请解冻任何一个核心文件。
+- GPS 只作为速度候补源，不能把 GPS 有车速误判为 XP400/OBD 已连接，也不向车辆发送任何数据。
+- 内部开关 PTBuild66FeatureFlags.gpsSpeedFallbackEnabled 可关闭 GPS 候补；关闭后位置、航向和环境数据仍继续由原链路提供。
+- 若真实道路发现 GPS 候补异常，优先关闭该开关或回滚外围 Bridge/Provider，不回滚或修改 BLE/ELM327 稳定核心。
+
+### 38.3 已完成验证与待完成验证
+
+- [x] MARKETING_VERSION = 2.0.8，所有 10 个工程 Target 的 CURRENT_PROJECT_VERSION = 66。
+- [x] git diff --check、冻结文件零差异、工程解析、Swift 6 语法检查、主 App Debug build-for-testing 通过。
+- [x] PTSpeedTests 测试源码已编入工程并完成目标编译；当前 scheme 没有与已安装 Simulator 匹配的可用 destination，因此定向 XCTest 未能启动，不属于断言失败。
+- [ ] 仍需在实体 iPhone、ELM327、XP400 GT 和长时间道路场景验证 GPS-only、GPS→OBD、OBD→GPS、OBD→XP400、XP400 断开回退、后台恢复、权限变化、低电量/温度状态和 TestFlight 签名发布。
+
+### 38.4 与后续 Build 的关系
+
+Build 66 只统一 Dashboard 车速和开发者诊断；PTTripManager、LiDAR 安全门禁、Widget、Watch、CarPlay 等其余消费者保留既有兼容路径。待真实道路证明 Resolver 切源稳定后，再单独制定 Build 67 的骑行采样迁移，避免本轮扩大影响面。

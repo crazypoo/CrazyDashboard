@@ -39,7 +39,7 @@ struct PTMotoInfoViewState: Equatable, Sendable {
     }
 }
 
-class PTMotoInfoViewController: PTMotoBaseViewController {
+class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryConsumer {
     
     fileprivate var instructionsModels:[PTInstructionsModel] = {
         
@@ -440,6 +440,14 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         lightControl.isActive = true
         PTRotationManager.shared.rotationToPortrait()
         PTRotationManager.shared.isLockOrientationWhenDeviceOrientationDidChange = true
+        let telemetryBridge = PTVehicleTelemetryBridge.shared
+        telemetryBridge.startIfNeeded()
+        PTVehicleTelemetryConsumerHub.shared.register(self)
+        let connectivity = PTVehicleConnectivityCoordinator.shared
+        telemetryBridge.ingest(
+            legacySnapshot: connectivity.telemetrySnapshot,
+            connectionSnapshot: connectivity.snapshot
+        )
         PTMotoTelemetryManager.shared.addDelegate(self)
         PTMotoTelemetryManager.shared.onConnectionTimeout = { [weak self] in
             PTVehicleConnectivityCoordinator.shared.handleOBDConnectionTimeout()
@@ -478,7 +486,13 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
         isViewVisible = false
         lightControl.isActive = false
         PTMotoTelemetryManager.shared.removeDelegate(self)
+        PTVehicleTelemetryConsumerHub.shared.unregister(self)
         PTMotoTelemetryManager.shared.onConnectionTimeout = nil
+    }
+
+    @MainActor deinit {
+        PTMotoTelemetryManager.shared.removeDelegate(self)
+        PTVehicleTelemetryConsumerHub.shared.unregister(self)
     }
     
     override func viewDidLoad() {
@@ -676,26 +690,14 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
                 self.speedometerReversed.progressColor = dashboardColor
             }
         } else if let control = data as? PTDashboardControl,!PTMotoTelemetryManager.shared.isConnected {
-            // 💡 车速和转速驱动的是 CoreAnimation 动画指针（PTSpeedometerView），本身不会闪烁，直接驱动即可
+            // EN: RPM remains on the legacy dashboard callback; speed is rendered by the unified resolver below.
+            // ES: Las RPM siguen en el callback heredado; la velocidad la renderiza el resolvedor unificado.
+            // 中文：转速仍由旧仪表回调处理，车速统一由下方 Resolver 渲染。
             DispatchQueue.main.async {
                 guard self.isViewVisible, PTDashboardConfig.shared.blueConnected else { return }
                 self.infoState.dashboardConnected = true
                 self.infoState.dataSource = "Dashboard"
                 self.infoState.lastUpdateAt = Date()
-                if control.vehicleSpeedAvailability.isAvailable {
-                    if self.infoState.speedKmh != control.vehicleSpeedKmh {
-                        self.infoState.speedKmh = control.vehicleSpeedKmh
-                        self.speedometer.updateSpeed(control.vehicleSpeedKmh)
-                    }
-                } else {
-                    // EN: Reset the speed pointer when the dashboard reports an unavailable sample.
-                    // ES: Restablece el indicador de velocidad cuando el tablero informa una muestra no disponible.
-                    // 中文：仪表报告车速不可用时，重置车速指针。
-                    if self.infoState.speedKmh != 0 {
-                        self.infoState.speedKmh = 0
-                        self.speedometer.updateSpeed(0)
-                    }
-                }
                 if control.engineRpmAvailability.isAvailable {
                     if self.infoState.engineRpm != Double(control.engineRpm) {
                         self.infoState.engineRpm = Double(control.engineRpm)
@@ -1050,6 +1052,28 @@ class PTMotoInfoViewController: PTMotoBaseViewController {
 }
 
 extension PTMotoInfoViewController {
+    func vehicleTelemetryDidUpdate(_ snapshot: PTUnifiedVehicleTelemetrySnapshot) {
+        guard isViewVisible else { return }
+        let projection = PTVehicleTelemetryProjections.dashboard(from: snapshot)
+        if let speed = projection.speedKmh {
+            infoState.speedKmh = speed
+            infoState.dataSource = projection.value(for: .speed)?.source.rawValue ?? "unified"
+            infoState.lastUpdateAt = snapshot.updatedAt
+            speedometer.updateSpeed(
+                CGFloat(PTDashboardConfig.shared.appShowMileage(speed)),
+                animated: snapshot.mode == .live
+            )
+        } else if infoState.speedKmh != nil {
+            // EN: Clear stale speed without turning unavailable into a numeric zero in the model.
+            // ES: Limpia la velocidad obsoleta sin convertir la ausencia en cero numérico en el modelo.
+            // 中文：清除过期车速，模型中不把不可用误写成数字零。
+            infoState.speedKmh = nil
+            speedometer.updateSpeed(0, animated: false)
+        }
+    }
+}
+
+extension PTMotoInfoViewController {
 
     private func setupDeveloperGesture() {
         // 创建长按手势识别器，绑定触发事件
@@ -1236,12 +1260,6 @@ extension PTMotoInfoViewController:PTMotoTelemetryDelegate {
     func telemetryManager(_ manager: PTMotoTelemetryManager, didUpdateMeasurements measurements: [String: Any]) {
         PTGCDManager.shared.runOnMain {
             guard self.isViewVisible else { return }
-            if let speed = measurements[OBDCommand.mode1(.speed).properties.command] as? Double {
-                self.infoState.speedKmh = speed
-                self.infoState.dataSource = "OBD"
-                self.infoState.lastUpdateAt = Date()
-                self.speedometer.updateSpeed(speed)
-            }
             if let rpm = measurements[OBDCommand.mode1(.rpm).properties.command] as? Double {
                 self.infoState.engineRpm = rpm
                 self.speedometerReversed.updateSpeed(CGFloat(rpm))

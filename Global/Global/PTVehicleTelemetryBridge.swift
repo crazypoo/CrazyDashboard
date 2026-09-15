@@ -22,6 +22,9 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
     public private(set) var mode: PTVehicleTelemetryMode = .live
 
     private var resolver = PTVehicleTelemetryResolver()
+    private var speedResolver = PTVehicleSpeedResolver()
+    private var gpsSpeedProvider = PTGPSSpeedProvider()
+    public private(set) var resolvedSpeed: PTResolvedVehicleSpeed = .unavailable
     private var hasStarted = false
     private var replayPlayer: PTCrazyTraceReplayPlayer?
 
@@ -31,6 +34,16 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
 
     public var isReplayActive: Bool {
         mode == .replay
+    }
+
+    public var gpsSpeedDiagnostics: PTGPSSpeedDiagnostics {
+        gpsSpeedProvider.diagnostics
+    }
+
+    public func speedResolverDiagnostics(at date: Date = Date()) -> PTVehicleSpeedResolverDiagnostics {
+        let diagnostics = speedResolver.diagnostics(at: date, replayActive: isReplayActive)
+        resolvedSpeed = diagnostics.resolved
+        return diagnostics
     }
 
     public func startIfNeeded() {
@@ -59,14 +72,26 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
         if let connectionSnapshot {
             applyConnectionSnapshot(connectionSnapshot)
             if isAvailable(connectionSnapshot.dashboard) {
-                resolver.ingest(PTXP400TelemetryAdapter.observations(from: legacySnapshot, at: date))
+                ingestLiveObservations(
+                    PTXP400TelemetryAdapter.observations(from: legacySnapshot, at: date),
+                    at: date
+                )
             }
             if isAvailable(connectionSnapshot.obd) {
-                resolver.ingest(PTOBDTelemetryAdapter.observations(from: legacySnapshot, at: date))
+                ingestLiveObservations(
+                    PTOBDTelemetryAdapter.observations(from: legacySnapshot, at: date),
+                    at: date
+                )
             }
         } else {
-            resolver.ingest(PTXP400TelemetryAdapter.observations(from: legacySnapshot, at: date))
-            resolver.ingest(PTOBDTelemetryAdapter.observations(from: legacySnapshot, at: date))
+            ingestLiveObservations(
+                PTXP400TelemetryAdapter.observations(from: legacySnapshot, at: date),
+                at: date
+            )
+            ingestLiveObservations(
+                PTOBDTelemetryAdapter.observations(from: legacySnapshot, at: date),
+                at: date
+            )
         }
         publishLiveSnapshot(at: date)
     }
@@ -81,9 +106,11 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
     private func applyConnectionSnapshot(_ connectionSnapshot: PTVehicleSnapshot) {
         if !isAvailable(connectionSnapshot.dashboard) {
             resolver.remove(domain: .xp400BLE)
+            speedResolver.removeSource(.xp400)
         }
         if !isAvailable(connectionSnapshot.obd) {
             resolver.remove(domain: .obd)
+            speedResolver.removeSource(.obd)
         }
     }
 
@@ -94,14 +121,28 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
     public func ingest(observations: [PTVehicleTelemetryObservation], at date: Date = Date()) {
         startIfNeeded()
         guard mode == .live else { return }
-        resolver.ingest(observations)
+        ingestLiveObservations(observations, at: date)
         publishLiveSnapshot(at: date)
     }
 
     public func ingest(location: CLLocation, at date: Date = Date()) {
         startIfNeeded()
         guard mode == .live else { return }
-        resolver.ingest(PTGPSMotionTelemetryAdapter.observations(from: location, capturedAt: date))
+        ingestLiveObservations(
+            PTGPSMotionTelemetryAdapter.observations(from: location, capturedAt: date),
+            at: date
+        )
+        if PTBuild66FeatureFlags.gpsSpeedFallbackEnabled {
+            if let sample = gpsSpeedProvider.ingest(location: location, now: date) {
+                speedResolver.ingest(sample)
+            }
+        } else {
+            // EN: Disable only the GPS speed candidate; location, heading, and environment remain available.
+            // ES: Desactiva solo el candidato de velocidad GPS; ubicación, rumbo y entorno siguen disponibles.
+            // 中文：只禁用 GPS 车速候选值，位置、航向和环境数据仍然可用。
+            speedResolver.removeSource(.gps)
+            gpsSpeedProvider.reset()
+        }
         if PTCrazyTraceRecorder.shared.isRecording {
             let speedKmh = location.speed >= 0 && location.speed.isFinite ? location.speed * 3.6 : nil
             let course = location.course >= 0 && location.course.isFinite ? location.course : nil
@@ -223,6 +264,9 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
         endReplay(restoreLiveState: false)
         mode = .replay
         resolver.reset()
+        speedResolver.reset()
+        gpsSpeedProvider.reset()
+        resolvedSpeed = .unavailable
         adapterSnapshot = .unavailable
         snapshot = PTUnifiedVehicleTelemetrySnapshot(updatedAt: Date(), mode: .replay)
         notifySnapshotChange()
@@ -267,6 +311,9 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
         guard mode == .replay else { return }
         mode = .live
         resolver.reset()
+        speedResolver.reset()
+        gpsSpeedProvider.reset()
+        resolvedSpeed = .unavailable
         adapterSnapshot = .unavailable
         snapshot = .empty
         if restoreLiveState {
@@ -282,6 +329,9 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
 
     private func resetReplayState() {
         resolver.reset()
+        speedResolver.reset()
+        gpsSpeedProvider.reset()
+        resolvedSpeed = .unavailable
         adapterSnapshot = .unavailable
         snapshot = PTUnifiedVehicleTelemetrySnapshot(updatedAt: Date(), mode: .replay)
         notifySnapshotChange()
@@ -302,7 +352,28 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
     }
 
     private func publishLiveSnapshot(at date: Date = Date()) {
-        snapshot = resolver.snapshot(at: date, mode: .live)
+        if !PTBuild66FeatureFlags.gpsSpeedFallbackEnabled {
+            speedResolver.removeSource(.gps)
+        }
+        let baseSnapshot = resolver.snapshot(at: date, mode: .live)
+        let speed = speedResolver.resolve(at: date)
+        resolvedSpeed = speed
+        var values = baseSnapshot.values.filter { $0.signal != .speed }
+        if let speedKPH = speed.speedKPH,
+           let source = speed.source {
+            values.append(
+                PTVehicleTelemetryResolvedValue(
+                    signal: .speed,
+                    value: .double(speedKPH),
+                    source: telemetrySource(for: source, isSynthetic: speed.isSynthetic),
+                    capturedAt: speed.sampleTimestamp ?? date,
+                    freshness: .fresh,
+                    confidence: speedConfidence(for: source),
+                    isSynthetic: speed.isSynthetic
+                )
+            )
+        }
+        snapshot = PTUnifiedVehicleTelemetrySnapshot(values: values, updatedAt: date, mode: .live)
         if PTCrazyTraceRecorder.shared.isRecording {
             PTCrazyTraceRecorder.shared.recordTelemetry(
                 snapshot,
@@ -317,7 +388,18 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
         guard mode == .replay else { return }
         switch event.payload {
         case .telemetry(let historicalSnapshot):
-            let values = historicalSnapshot.values.map {
+            if let speedKPH = historicalSnapshot.speedKmh,
+               let sample = PTVehicleSpeedSample(
+                   speedKPH: speedKPH,
+                   source: .replay,
+                   timestamp: event.timestamp,
+                   quality: .valid,
+                   isSynthetic: true
+               ) {
+                speedResolver.ingest(sample)
+            }
+            let historicalValues = historicalSnapshot.values.filter { $0.signal != .speed }
+            let values = historicalValues.map {
                 PTVehicleTelemetryResolvedValue(
                     signal: $0.signal,
                     value: $0.value,
@@ -328,25 +410,67 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
                     isSynthetic: true
                 )
             }
-            snapshot = PTUnifiedVehicleTelemetrySnapshot(values: values, updatedAt: event.timestamp, mode: .replay)
-            notifySnapshotChange()
-        case .location(let payload):
-            mergeReplayValues(
-                [
+            let speed = speedResolver.resolve(at: event.timestamp, replayActive: true)
+            resolvedSpeed = speed
+            var replayValues = values
+            if let speedKPH = speed.speedKPH {
+                replayValues.append(
                     PTVehicleTelemetryResolvedValue(
-                        signal: .location,
-                        value: .location(
-                            latitude: payload.latitude,
-                            longitude: payload.longitude,
-                            altitude: payload.altitude
-                        ),
+                        signal: .speed,
+                        value: .double(speedKPH),
                         source: .replay,
-                        capturedAt: event.timestamp,
+                        capturedAt: speed.sampleTimestamp ?? event.timestamp,
                         freshness: .fresh,
                         confidence: 1,
                         isSynthetic: true
                     )
-                ],
+                )
+            }
+            snapshot = PTUnifiedVehicleTelemetrySnapshot(values: replayValues, updatedAt: event.timestamp, mode: .replay)
+            notifySnapshotChange()
+        case .location(let payload):
+            var values = [
+                PTVehicleTelemetryResolvedValue(
+                    signal: .location,
+                    value: .location(
+                        latitude: payload.latitude,
+                        longitude: payload.longitude,
+                        altitude: payload.altitude
+                    ),
+                    source: .replay,
+                    capturedAt: event.timestamp,
+                    freshness: .fresh,
+                    confidence: 1,
+                    isSynthetic: true
+                )
+            ]
+            if let speedKPH = payload.speedKmh,
+               let sample = PTVehicleSpeedSample(
+                   speedKPH: speedKPH,
+                   source: .replay,
+                   timestamp: event.timestamp,
+                   quality: .valid,
+                   isSynthetic: true
+               ) {
+                speedResolver.ingest(sample)
+            }
+            let speed = speedResolver.resolve(at: event.timestamp, replayActive: true)
+            resolvedSpeed = speed
+            if let speedKPH = speed.speedKPH {
+                values.append(
+                    PTVehicleTelemetryResolvedValue(
+                        signal: .speed,
+                        value: .double(speedKPH),
+                        source: .replay,
+                        capturedAt: speed.sampleTimestamp ?? event.timestamp,
+                        freshness: .fresh,
+                        confidence: 1,
+                        isSynthetic: true
+                    )
+                )
+            }
+            mergeReplayValues(
+                values,
                 at: event.timestamp
             )
         case .motion(let payload):
@@ -384,6 +508,68 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
         values.append(contentsOf: newValues)
         snapshot = PTUnifiedVehicleTelemetrySnapshot(values: values, updatedAt: date, mode: .replay)
         notifySnapshotChange()
+    }
+
+    // EN: Only this bridge converts legacy observations into the specialized speed domain; all other signals keep the existing resolver.
+    // ES: Solo este puente convierte observaciones heredadas al dominio especializado de velocidad; las demás señales conservan el resolvedor existente.
+    // 中文：只有 Bridge 将旧观测转换到专用速度领域，其余信号继续使用现有 Resolver。
+    private func ingestLiveObservations(
+        _ observations: [PTVehicleTelemetryObservation],
+        at date: Date
+    ) {
+        resolver.ingest(observations.filter { $0.signal != .speed })
+        for observation in observations where observation.signal == .speed {
+            guard case .double(let speedKPH) = observation.value,
+                  let source = speedSource(for: observation.source),
+                  let sample = PTVehicleSpeedSample(
+                      speedKPH: speedKPH,
+                      source: source,
+                      timestamp: observation.capturedAt,
+                      quality: PTVehicleSpeedQuality(
+                          isValid: observation.isValid,
+                          sampleAgeSeconds: max(0, date.timeIntervalSince(observation.capturedAt))
+                      ),
+                      isSynthetic: observation.isSynthetic
+                  ) else {
+                continue
+            }
+            speedResolver.ingest(sample)
+        }
+    }
+
+    private func speedSource(for source: PTVehicleTelemetrySource) -> PTVehicleSpeedSource? {
+        switch source.domain {
+        case .xp400BLE: return .xp400
+        case .obd: return .obd
+        case .gps:
+            // EN: GPS speed must pass through PTGPSSpeedProvider; never bypass its quality gates here.
+            // ES: La velocidad GPS debe pasar por PTGPSSpeedProvider; nunca omite sus filtros de calidad aquí.
+            // 中文：GPS 车速必须经过 PTGPSSpeedProvider，不能在这里绕过质量门禁。
+            return nil
+        case .replay: return .replay
+        case .motion, .calculated, .unknown: return nil
+        }
+    }
+
+    private func telemetrySource(
+        for source: PTVehicleSpeedSource,
+        isSynthetic: Bool
+    ) -> PTVehicleTelemetrySource {
+        switch source {
+        case .xp400: return isSynthetic ? .dashboardMock : .xp400BLE
+        case .obd: return isSynthetic ? .obdMock : .obd
+        case .gps: return .gps
+        case .replay: return .replay
+        }
+    }
+
+    private func speedConfidence(for source: PTVehicleSpeedSource) -> Double {
+        switch source {
+        case .xp400: return 1
+        case .obd: return 0.95
+        case .gps: return 0.75
+        case .replay: return 1
+        }
     }
 
     private func replayValue(
