@@ -7,13 +7,14 @@ canonical: true
 domain: obd-data-discovery
 owner: Jax
 created: 2026-09-15
-last_reviewed: 2026-09-16
+last_reviewed: 2026-09-17
 related_builds:
   - 57
   - 60
   - 64
   - 65
   - 68
+  - 69
 supersedes: []
 superseded_by:
 ---
@@ -45,6 +46,20 @@ superseded_by:
 | `010D = 00` | Captured | 解释为合法 `0 km/h`，禁止用零值触发 GPS fallback |
 
 Build 68 新增的证据字段包括 Confirmed/Pending/Permanent DTC、Freeze Frame、Mode 06 continuation、ECU 名称、011F 运行时间、PID42/`ATRV` 电压、Relative Throttle、延迟 EWMA 和脱敏后的 Trace。单次 `NO DATA` 不晋级为 Unsupported；只有重复会话或直接官方契约才能提升证据等级。
+
+## 2026-09-17：Build 69 ELM/OBD/UDS 语义分层
+
+Build 69 新增的纯解析层遵循“ELM transport → OBD-II/UDS parser”的边界。ELM normalizer 只处理状态行、Echo、Header、可选 DLC、ISO-TP PCI 和多帧拼接；标准 Mode 的 `43/47/42/4A` 由 OBD-II parser 处理，`62` 和 `7F`/NRC 才进入 UDS parser。YMOBD 仍是 ELM327 会话上的扩展，不被当成第二套物理传输。
+
+| 观察 | Build69 处理 | 证据状态 |
+| --- | --- | --- |
+| `7E8 06 41 ...` | 两字符 `06` 保留为 ISO-TP 数据；只有明确的一字符 DLC 才从数据中分离 | 纯解析测试；多型号适配器待补 |
+| `03/07/0A` | 分别识别 Stored/Pending/Permanent DTC，按 `43/47/4A` 关系校验 | 纯解析测试；真实 ECU 回传待补 |
+| Mode `02` | 作为 Freeze Frame OBD-II 正响应处理，不交给 UDS | 纯解析测试；真实多帧待补 |
+| `22 F190` / `7F 22 xx` | 分别识别 UDS DID 正响应和否定响应/NRC | 纯解析测试；XP400 车型适用性待补 |
+| `NO DATA`、失败和 `0` | 保留不可用/失败状态；合法零值仍是有效测量，不写成 `0.0` 的伪成功 | 代码/纯逻辑已固定；现场时序待补 |
+
+当前记录为实现基线，不代表本次已重新连接真实 ELM327/YMOBD。外部原始诊断日志如需复现，应先通过脱敏的历史回放入口，再把适配器型号、固件、命令顺序和完整响应补入本日志。
 
 ## 证据晋级规则
 

@@ -10,17 +10,18 @@ created: 2026-09-15
 last_reviewed: 2026-09-15
 related_builds:
   - 67
+  - 69
 supersedes: []
 superseded_by:
 ---
 
 # Peugeot XP400 iOS BLE 通信协议与实现规范
 
-> 文档版本：1.7
+> 文档版本：1.8
 >
-> 审计日期：2026-09-04
+> 审计日期：2026-09-17
 >
-> iOS 代码基线：`5c88228`
+> iOS 代码基线：Build69 当前工作区（2026-09-17；提交后补充固定 commit）
 > 文档定位：项目内部实现规范 / 真车抓包校验依据
 > 1.1 更新记录：补充 iOS 运行时边界、证据分层、导航实际链路和 BLE-OPT 优化清单；完成 BLE-OPT-001 上行分片重组实现与纯逻辑验证
 > 1.2 更新记录：完成 BLE-OPT-005 服务生命周期编排；服务添加成功后才开始广播，支持重复启动、显式停止、蓝牙状态恢复及前后台幂等校正
@@ -30,6 +31,8 @@ superseded_by:
 > 1.6 更新记录：新增 `PTDashboardANCSProvider`，通过现有 `CBPeripheralManager` 提供 App 自有的 ANCS 风格测试通道；设置页增加固定英文直连测试入口。该通道不读取、不伪造系统电话或短信通知，真实 XP400 的服务接受、订阅和显示仍需真机验证
 >
 > 1.7 更新记录：Build67 修正 Data2 RTC、TCS Ready 和 Control rolling counter 的外围解码；停止传播未经确认的 Data2 高位状态；ABS 警告灯降级为 unknown 并保留前轮速度与原始字节；新增分级协议日志和命名实验 Marker。真实车辆字段验收仍按研究证据单独记录
+>
+> 1.8 更新记录：Build69 增加 XP400 Semantic Schema/Decoder、11-byte 状态帧长度边界、RTC/rolling tick/sentinel 证据、Frame Inspector 和 Discovery 降噪；未知字段继续保留 raw/candidate，不自动生成可执行指令。该层位于稳定 BLE 核心之外。
 
 ## 1. 文档边界
 
@@ -803,3 +806,13 @@ Build67 只调整外围仪表字段解码和研究证据，不改变 GATT、认�
 | 协议日志 | `normal/protocolDebug/rawHex` 分级，带索引字节和有界 Packet Snapshot | 代码/离线测试；长时间抓包待验证 |
 
 未知字段必须优先保留为 raw/unknown，不得根据单次日志恢复旧的错误高位解释，也不得把滚动计数器命名为时间戳。真实实验使用 `MARK_BACKLIGHT_*`、`MARK_KICKSTAND_*`、`MARK_ABS_*` 和 `MARK_TCS_*` 记录操作时间轴，证据归档在 [`../../research/XP400_RESEARCH_LOG.md`](../../research/XP400_RESEARCH_LOG.md)。
+
+## 19. Build69 语义证据与回放边界
+
+Build69 在稳定的 GATT、认证、Credits、TIO 分片和 CoreBluetooth 生命周期之上增加外围语义层。`PTXP400SemanticEvidence.swift` 负责 Schema、字段角色、可用性、质量、Frame Inspector、rolling tick 和 Dashboard Clock；`PTBluetoothServerManager+Diagnostics.swift` 只在包络和长度通过后提交异步证据，既有业务状态更新仍沿用原解析路径。
+
+当前正式采用的状态帧契约是：Connection Frame 为 15 bytes，`0x02–0x06` 的车辆状态帧为 11 bytes、8-byte Payload。Data2 的前三个 Payload byte 按 `second = B0 >> 2`、`minute = B1 >> 2`、`hour = B2 >> 3` 解码；Data2 低位、Data3 配置、Control bit 7 和 ABS byte 2 仍按 candidate/provisional/raw 记录。ABS bytes 3…7 的全 `FF` 是 sentinel/padding，变化时只生成研究异常，不直接转成警告灯。
+
+Discovery 先识别 TX `01` 为已知 status poll，再区分周期、计数器、时钟、sentinel、已知语义、candidate 和 anomaly。合法的认证/TIO 非包络分片不再被误报为坏包；未知帧仍保留完整 raw 和 fingerprint。ID `0x07` 的主动探测在没有直接车型证据前保持关闭，只允许通过官方设置 A/B 的被动证据研究。
+
+Build69 的 Semantic Evidence、统一 Observation、相关性和历史回放只生成只读研究结果，不会升级未知字段为可执行指令，也不开放 ECU 写入、SecurityAccess、固件刷写或任意 CAN 注入。详细实现记录见 [`../../history/builds/BUILD_069_PROTOCOL_SEMANTIC_EVIDENCE.md`](../../history/builds/BUILD_069_PROTOCOL_SEMANTIC_EVIDENCE.md)。

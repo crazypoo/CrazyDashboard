@@ -7,13 +7,14 @@ canonical: true
 domain: xp400-research
 owner: Jax
 created: 2026-09-15
-last_reviewed: 2026-09-15
+last_reviewed: 2026-09-17
 related_builds:
   - 49
   - 55
   - 60
   - 64
   - 67
+  - 69
 supersedes: []
 superseded_by:
 ---
@@ -55,3 +56,16 @@ superseded_by:
 | ABS warning lamp | Unknown | `absWarningState = .unknown`，避免误报并保留 raw bytes | ABS 自检灯人工 Marker 与连续帧对照 |
 
 本 Build 的结论是“纠正已知错误解释并保留研究证据”，不是对未知位做新的协议猜测。实现只修改外围解码、模型、Mock、开发者采样和测试，未改变 `PTBluetoothManager`、ELM327 或 YMOBD 传输核心。
+
+## 2026-09-17：Build 69 语义证据基线
+
+Build 69 把原始 XP400 帧的包络、字段语义和研究证据分成独立层。记录样本 `MotoHexLog_20260916_160950.txt` 中的 Data2 前三字节按 `B0>>2/B1>>2/B2>>3` 作为 RTC；Control byte0 保留为 rolling tick；ABS bytes 3…7 的全 `FF` 作为 sentinel/padding。未知低位、Data3 配置字段、Control bit 7 和 ABS byte 2 仍不进入正式车辆业务字段。
+
+| 研究对象 | Build69 处理 | 当前证据状态 |
+| --- | --- | --- |
+| 11-byte 状态帧 | 统一验证包头、Frame ID、8-byte Payload 和结束字节；原始 Payload 保留 | 代码/纯逻辑已固定；多固件真车待补 |
+| RTC / rolling tick | Clock 只做时间字段投影；tick 使用模 256 delta、回卷和丢帧提示 | 记录样本支持；精确仪表周期仍待长时间采样 |
+| ABS sentinel | `FF FF FF FF FF` 不生成 candidate/anomaly；局部变化保留 raw 并生成研究警告 | 规则已测试；自检灯关联待真车 Marker |
+| Discovery 候选 | TX `01`、周期帧、clock、counter、sentinel 和合法 TIO 分片先归类，未知才进入候选 | 离线分类已接入；历史样本回放待在工程 Scheme 执行 |
+
+本节是实施后的静态研究记录，不宣称 Swift 回放器已经执行外部文件或宣称真车重新连接。外部样本的复现入口为 `PTBuild69HistoricalReplayAnalyzer` 和 Dev Protocol Evidence 页面；候选率、字段含义和真实车辆行为必须在实际回放/实车验收后另行记录。

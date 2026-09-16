@@ -991,9 +991,9 @@ nonisolated private extension PTProtocolEvidenceDatabase {
         switch record.domain {
         case .ymobdFirmwareOTA, .firmwareResearch:
             return "high-risk-research"
-        case .can, .xp400BLE, .obd, .uds:
+        case .can, .xp400BLE, .xp400BLETransport, .xp400BLESemantic, .obd, .obdTransport, .obd2, .uds, .gps, .motion, .correlation:
             return "passive-observation"
-        case .ymobdVendorExtension:
+        case .ymobdVendorExtension, .adapterVendorExtension:
             return "adapter-read-only"
         }
     }

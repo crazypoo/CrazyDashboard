@@ -7,12 +7,13 @@ canonical: true
 domain: obd-architecture
 owner: Jax
 created: 2026-09-15
-last_reviewed: 2026-09-16
+last_reviewed: 2026-09-17
 related_builds:
   - 57
   - 60
   - 65
   - 68
+  - 69
 supersedes: []
 superseded_by:
 ---
@@ -72,6 +73,12 @@ Diagnostic Center / Garage / Protocol Evidence / Vehicle Passport / Trip
 ```
 
 Capability 位图只在连接会话阶段读取；`0100/0120/0140` 不作为新增的高频诊断命令。单次 `NO DATA` 仅标记为暂时不可用，连续失败和历史成功共同决定 PID 可用性。所有新增命令都经过只读目录与 `PTOBDCommandClassifier`，不包含清码、写入、SecurityAccess 或刷写。
+
+## Build 69 协议语义边界
+
+Build 69 在上述 ELM327 会话之上增加纯解析层 `PTBuild69ELMNormalizer`、`PTBuild69OBD2Parser`、`PTBuild69UDSParser` 和 `PTBuild69ProtocolRouter`。Normalizer 只处理状态行、Echo、Header、可选 DLC、ISO-TP PCI 和多帧拼接；OBD-II parser 处理 `02/03/07/0A` 等标准 Mode；UDS parser 处理 `62` 正响应和 `7F` 否定响应/NRC。三者不共享业务语义判断，避免把 `43/47/42` 误报成 UDS。
+
+Build 69 的协议层只读、无副作用，并把 `unavailable` 与合法零值分开。`011F = 0` 不会单独生成 `engineStartedAt`；DTC 结果区分 confirmed none、values、unsupported、no data、invalid response 和 not queried。ELM327 仍是 OBD 物理/会话底层，YMOBD 只是能力识别后的扩展；本层不复制 CoreBluetooth、命令队列、轮询或 YMOBD/Jieli OTA。
 
 ## 读路径与独占
 

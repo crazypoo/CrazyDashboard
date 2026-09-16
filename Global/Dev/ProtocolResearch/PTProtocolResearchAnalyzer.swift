@@ -596,9 +596,10 @@ public nonisolated enum PTProtocolResearchCorrelationBuilder {
 
     private static func timelineSource(for domain: PTProtocolEvidenceDomain) -> PTProtocolResearchTimelineSource? {
         switch domain {
-        case .xp400BLE: return .xp400BLE
-        case .obd, .uds, .can: return domain == .can ? .can : .obd
-        case .ymobdVendorExtension, .ymobdFirmwareOTA, .firmwareResearch: return nil
+        case .xp400BLE, .xp400BLETransport, .xp400BLESemantic: return .xp400BLE
+        case .obd, .obdTransport, .obd2, .uds, .can: return domain == .can ? .can : .obd
+        case .gps, .motion: return .unifiedTelemetry
+        case .correlation, .ymobdVendorExtension, .adapterVendorExtension, .ymobdFirmwareOTA, .firmwareResearch: return nil
         }
     }
 

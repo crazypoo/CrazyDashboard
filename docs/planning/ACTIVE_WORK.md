@@ -7,18 +7,19 @@ canonical: true
 domain: active-work
 owner: Jax
 created: 2026-09-15
-last_reviewed: 2026-09-16
+last_reviewed: 2026-09-17
 related_builds:
   - 66
   - 67
   - 68
+  - 69
 supersedes: []
 superseded_by:
 ---
 
 # 当前工作
 
-快照日期：2026-09-16。当前工程版本为 `2.0.8 (Build 68)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+快照日期：2026-09-17。当前工程版本为 `2.0.8 (Build 69)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
 
 ## Build 66 收口：统一车速真实验证 🟨
 
@@ -62,9 +63,22 @@ superseded_by:
 
 验收证据必须记录车辆型号、ECU/仪表固件、iOS、App Build、适配器型号/固件、测试时间、完整原始 Hex、命令顺序、来源切换、错误与恢复表现。未完成上述现场证据前，不把 Build 68 标记为完整发布通过。
 
+## Build 69 收口：协议语义与证据智能 🟨
+
+Build 69 的外围代码、Swift 6 纯解析、`build-for-testing`、版本门禁和文档门禁已完成。实现范围包括 XP400 Semantic Schema/Decoder、Data2 RTC、TCS/ABS 边界、rolling tick、sentinel、Discovery 降噪、ELM/OBD2/UDS 分层、DTC 状态、Passport reducer、跨源 Observation/Correlation、Evidence v3、v2 migration、历史回放和 Dev Inspector。三个稳定传输核心文件仍保持冻结。
+
+以下项目仍需要真实 iPhone、XP400GT、ELM327/YMOBD、Release/TestFlight 包或用户提供的脱敏样本完成验收：
+
+- `MotoHexLog_20260916_160950.txt` 的 Swift 回放结果与真实记录逐字段核对；
+- `xp400-protocol-discovery-1789537483.jsonl`、`crazydashboard-protocol-evidence-v2-1789546983.json` 的候选率 `<10%`、sentinel、RTC、counter 和 TX `01` 现场复核；
+- Data2 RTC 跨分钟/跨小时、TCS、ABS 前轮速度与警告灯、Data3 配置字段、真实 OBD/UDS 多帧和否定响应矩阵；
+- BLE、OBD、GPS、Motion 跨源时间偏差、后台/断连恢复、长时间性能和 Release 安装验证。
+
+验收时必须区分静态/编译证据与真机/实车证据；Build 69 不开放 ECU 写入、SecurityAccess、固件刷写、任意 CAN 注入或 ID 7 主动探针。详细记录见 [`../history/builds/BUILD_069_PROTOCOL_SEMANTIC_EVIDENCE.md`](../history/builds/BUILD_069_PROTOCOL_SEMANTIC_EVIDENCE.md)。
+
 ## 不在当前工作中
 
-- Build 69 的 UDS Session/DID 深挖尚未排期；新任务先写入 [`BACKLOG.md`](BACKLOG.md)，不要新建根目录计划。
+- Build 69 新增的 UDS/历史回放/跨源分析扩展，若超出当前只读证据范围，先写入 [`BACKLOG.md`](BACKLOG.md)，不要新建根目录路线图。
 - `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift` 和 `PTOBDCommand.swift` 仍是冻结核心；本文件不授权解冻。
 - QWeather 现有可用链路不在本轮治理范围。
 

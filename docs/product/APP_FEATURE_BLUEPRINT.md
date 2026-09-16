@@ -7,11 +7,12 @@ canonical: true
 domain: product
 owner: Jax
 created: 2026-09-15
-last_reviewed: 2026-09-16
+last_reviewed: 2026-09-17
 related_builds:
   - 66
   - 67
   - 68
+  - 69
 supersedes: []
 superseded_by:
 ---
@@ -20,11 +21,11 @@ superseded_by:
 
 > 本文件是项目功能、入口、平台覆盖和完成状态的唯一事实源（Single Source of Truth）。
 >
-> 快照日期：2026-09-16
+> 快照日期：2026-09-17
 >
-> 仓库基线：当前工作区已进入 Build 68 OBD Diagnostic Deep Mining；Build 57–67 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速和仪表协议纠偏能力已接入，真实设备、车辆、OTA 和完整发布验证仍待补
+> 仓库基线：当前工作区已进入 Build 69 Protocol Semantic Evidence Intelligence；Build 57–68 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速、仪表协议纠偏和 OBD 深诊断能力继续保留，Build 69 的语义证据、跨源关联和历史回放已接入，真实设备、车辆、OTA 和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests / UI Tests `CURRENT_PROJECT_VERSION = 68`
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests / UI Tests `CURRENT_PROJECT_VERSION = 69`
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -585,6 +586,23 @@ Build 68 继续保持营销版本 `2.0.8`，只递增工程 Build。新增能力
 | B68-11 | 🟨 | Build68 检查、纯数据回归、Cold/Warm Idle、DTC、Mode 06、Mode 09、断连恢复和 Release 验收 | 静态/目标构建已接入；真机/实车和签名发布待补 |
 
 Build 68 的实施记录、代码边界和真实验收矩阵见 [`../history/builds/BUILD_068_OBD_DIAGNOSTIC_DEEP_MINING.md`](../history/builds/BUILD_068_OBD_DIAGNOSTIC_DEEP_MINING.md)。本版本不开放清码、写 DID、ECU Coding、SecurityAccess、RoutineControl、固件刷写或任意 CAN 注入。
+
+### 7.17 Build 69 Protocol Semantic Evidence Intelligence
+
+Build 69 继续保持营销版本 `2.0.8`，只递增工程 Build。新增能力位于 BLE/OBD 稳定传输核心之外：XP400 语义 Schema/Decoder、RTC/TCS/ABS/sentinel/rolling tick 纠偏、Discovery 降噪、ELM/OBD2/UDS 分层、DTC 状态、Passport reducer、BLE/OBD/GPS/Motion 统一观察与关联、Evidence v3、v2 迁移、历史回放和 Dev Frame Inspector。`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`、`PTBluetoothManager.swift` 保持冻结。
+
+| 工作包 | 状态 | 内容 | 验证边界 |
+| --- | --- | --- | --- |
+| B69-00 | ✅ | 所有 Target 统一到 `MARKETING_VERSION = 2.0.8`、`CURRENT_PROJECT_VERSION = 69`，新增语义/OBD/证据/回放源码与测试 Target 接入 | 静态门禁和 Debug `build-for-testing`；签名发布待补 |
+| B69-01 | ✅ | XP400 11-byte 状态帧 Schema、Data2 RTC `B0>>2/B1>>2/B2>>3`、Engine low bits、Control TCS Ready、ABS 前轮速度和未知位 raw 保留 | Swift 纯逻辑测试；多固件真车字段矩阵待补 |
+| B69-02 | ✅ | rolling tick 模 256 锚点、sentinel 规则、TX `01` status poll、Discovery 分类与候选/异常降噪 | 离线分类与回放测试；长时间 BLE 丢帧现场待补 |
+| B69-03 | ✅ | ELM transport normalizer、OBD-II Mode 02/03/07/0A、UDS `62`/`7F`/NRC、多帧重组和 DTC 状态分离 | 纯数据测试；真实适配器/车型矩阵待补 |
+| B69-04 | ✅ | Passport reducer、Connectivity Box/Dashboard/ECU 身份域分离、Evidence domain 规范 | 模型迁移测试；真实 ECU 地址和身份仍需独立证据 |
+| B69-05 | ✅ | BLE、OBD、GPS、Motion 统一 Observation、来源/新鲜度/可用性、Speed/RPM/Voltage/Acceleration/Lean 关联 | 纯模型关联测试；多设备时钟偏差待补 |
+| B69-06 | ✅ | Evidence schema v3、v2 migration、历史 JSONL/JSON re-analysis、Dev 分组面板、Frame Inspector、JSON/CSV 导出 | 编译和离线回放；大文件/真机分享待补 |
+| B69-07 | 🟨 | MotoHex 与既有 Discovery/Evidence 样本的真实回放、候选率 `<10%`、前后台/断连/性能和 Release/TestFlight 验收 | 当前方案不提供可用具体 Simulator destination；真机/实车待补 |
+
+Build 69 的实施记录和验收边界见 [`../history/builds/BUILD_069_PROTOCOL_SEMANTIC_EVIDENCE.md`](../history/builds/BUILD_069_PROTOCOL_SEMANTIC_EVIDENCE.md)。候选字段仍是研究证据，不会自动变成可执行指令；本 Build 不开放 ECU 写入、SecurityAccess、固件刷写、任意 CAN 注入或 ID 7 主动探针。
 
 ## 8. 已退役功能
 

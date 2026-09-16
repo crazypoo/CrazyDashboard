@@ -152,6 +152,12 @@ class PTProtocolEvidenceV2ViewController: PTMotoBaseViewController {
         addPanel(title: "Evidence Domains", body: domainCounts, accent: .systemTeal)
         addPanel(title: "CAN Discovery", body: formatCANCandidates(), accent: .systemOrange)
         addPanel(title: "Cross-source Correlation", body: formatCorrelation(currentCorrelation), accent: .systemGreen)
+        addPanel(
+            title: localized("dev_protocol_evidence_build69", fallback: "Build 69 Semantic Evidence"),
+            body: formatBuild69Evidence(),
+            footer: "Read-only semantic evidence; candidates and anomalies are not executable commands.",
+            accent: .systemCyan
+        )
         addPanel(title: "Vehicle Passport", body: formatPassport(passport, adapter: false), accent: .systemIndigo)
         addPanel(
             title: "Diagnostic Adapter",
@@ -204,6 +210,48 @@ class PTProtocolEvidenceV2ViewController: PTMotoBaseViewController {
             let marker = template.requiresUserMarker ? "marker required" : "marker optional"
             return "\(template.id.rawValue) · \(template.domain.rawValue) · \(safety) · \(marker)\n\(template.purpose)"
         }.joined(separator: "\n\n")
+    }
+
+    // EN: Group Build 69 output by semantic quality and show the latest frame masks for protocol research.
+    // ES: Agrupa la salida de Build 69 por calidad semántica y muestra las máscaras de la última trama para investigación.
+    // 中文：按语义质量分组展示 Build 69 结果，并显示最新帧掩码供协议研究使用。
+    private func formatBuild69Evidence() -> String {
+        let build69Store = PTBuild69EvidenceStore.shared
+        guard !build69Store.results.isEmpty else {
+            return "No Build 69 semantic evidence yet. Start a passive dashboard session."
+        }
+        let fields = build69Store.results.flatMap(\.fieldObservations)
+        let qualityCounts = PTXP400SemanticQuality.allCases.map { quality in
+            "\(quality.rawValue)=\(fields.filter { $0.quality == quality }.count)"
+        }.joined(separator: " · ")
+        let roleCounts = PTXP400SemanticFieldRole.allCases.map { role in
+            "\(role.rawValue)=\(fields.filter { $0.role == role }.count)"
+        }.joined(separator: " · ")
+        let candidates = build69Store.results
+            .flatMap(\.candidates)
+            .sorted { $0.score.total > $1.score.total }
+            .prefix(8)
+            .map { "\($0.fieldKey) score=\(String(format: "%.2f", $0.score.total)) samples=\($0.sampleCount)" }
+        let anomalies = build69Store.results
+            .flatMap(\.anomalies)
+            .suffix(8)
+            .map { "\($0.severity.rawValue): \($0.message)" }
+        let latestInspector = build69Store.results.last.map { PTXP400FrameInspector.inspect(frame: $0.frame) }
+        let inspectorLines = latestInspector.map { inspection in
+            let bytes = inspection.bytes.map {
+                let roles = $0.roles.map(\.rawValue).joined(separator: "/")
+                return String(format: "%02d | %02X | known=%02X unknown=%02X | %@", $0.index, $0.rawValue, $0.knownMask, $0.unknownMask, roles.isEmpty ? "unknown" : roles)
+            }.joined(separator: "\n")
+            return "Latest: ID=0x\(String(format: "%02X", inspection.frameID)) \(inspection.name)\nknownMask=\(inspection.knownMaskHex) unknownMask=\(inspection.unknownMaskHex)\n\(bytes)"
+        } ?? "Latest frame: —"
+        return [
+            "Results: \(build69Store.results.count) · markers=\(build69Store.markers.count)",
+            "Quality: \(qualityCounts)",
+            "Roles: \(roleCounts)",
+            "Top candidates: \(candidates.isEmpty ? "—" : candidates.joined(separator: "; "))",
+            "Recent anomalies: \(anomalies.isEmpty ? "—" : anomalies.joined(separator: "; "))",
+            inspectorLines
+        ].joined(separator: "\n")
     }
 
     // EN: Keep storage formatting at the UI boundary so the model remains numeric and testable.
@@ -264,6 +312,12 @@ class PTProtocolEvidenceV2ViewController: PTMotoBaseViewController {
         alert.addAction(UIAlertAction(title: "CSV", style: .default) { [weak self] _ in
             self?.exportCSV()
         })
+        alert.addAction(UIAlertAction(title: "Build 69 JSON", style: .default) { [weak self] _ in
+            self?.exportBuild69JSON()
+        })
+        alert.addAction(UIAlertAction(title: "Build 69 CSV", style: .default) { [weak self] _ in
+            self?.exportBuild69CSV()
+        })
         alert.addAction(UIAlertAction(title: localized("button_cancel", fallback: "Cancel"), style: .cancel))
         if let popover = alert.popoverPresentationController {
             popover.barButtonItem = navigationItem.rightBarButtonItems?.first
@@ -285,6 +339,30 @@ class PTProtocolEvidenceV2ViewController: PTMotoBaseViewController {
         } catch {
             presentError(error)
         }
+    }
+
+    private func exportBuild69JSON() {
+        do {
+            let data = try store.exportBuild69JSONData()
+            presentShare(try writeExport(data: data, filename: "crazydashboard-protocol-evidence-v3.json"))
+        } catch {
+            presentError(error)
+        }
+    }
+
+    private func exportBuild69CSV() {
+        do {
+            let data = store.exportBuild69CSVData()
+            presentShare(try writeExport(data: data, filename: "crazydashboard-protocol-evidence-v3.csv"))
+        } catch {
+            presentError(error)
+        }
+    }
+
+    private func writeExport(data: Data, filename: String) throws -> URL {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+        try data.write(to: url, options: .atomic)
+        return url
     }
 
     private func presentShare(_ url: URL) {

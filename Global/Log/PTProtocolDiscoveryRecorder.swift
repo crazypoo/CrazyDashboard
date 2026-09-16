@@ -32,10 +32,16 @@ nonisolated public enum PTProtocolDiscoveryDirection: String, Codable, Sendable 
 
 nonisolated public enum PTProtocolDiscoveryClassification: String, Codable, Sendable {
     case known
+    case knownPollCommand
     case knownWithUnmappedData
     case knownCommand
     case knownResponse
     case positiveResponse
+    case clock
+    case counter
+    case sentinel
+    case candidate
+    case anomaly
     case unknownFrameID
     case unknownCommand
     case unexpectedLength
@@ -858,6 +864,7 @@ private extension PTProtocolDiscoveryRecorder {
             return
         }
         if event.classification == .knownWithUnmappedData ||
+            event.classification == .candidate ||
             event.classification == .unknownFrameID ||
             event.classification == .unknownCommand ||
             event.classification == .unparsedResponse {
@@ -865,6 +872,7 @@ private extension PTProtocolDiscoveryRecorder {
         }
         if event.classification == .unexpectedLength ||
             event.classification == .malformed ||
+            event.classification == .anomaly ||
             event.classification == .timeout ||
             event.classification == .transportError {
             session.anomalyCount += 1
@@ -985,13 +993,23 @@ private extension PTProtocolDiscoveryRecorder {
         _ data: Data,
         direction: PTProtocolDiscoveryDirection
     ) -> (classification: PTProtocolDiscoveryClassification, fingerprint: String, note: String) {
-        guard data.count >= 3,
-              data.first == PTXP400BLEProtocol.preamble,
-              data.last == PTXP400BLEProtocol.terminator else {
-            return (.malformed, "ble:malformed:\(hexString(data.prefix(8)))", "invalid envelope")
+        if direction == .tx, data == PTXP400OutboundPacketClassifier.statusPoll {
+            return (.knownPollCommand, "ble:tx:status-poll", "known one-byte status poll; not a malformed framed packet")
         }
-
         if direction == .tx {
+            // EN: Authentication and TIO transport chunks are valid non-envelope traffic; only a damaged envelope is malformed.
+            // ES: Los fragmentos de autenticación y transporte TIO son tráfico válido sin envoltura; solo una envoltura dañada es malformada.
+            // 中文：认证和 TIO 传输分片可以是合法的非包络流量；只有疑似包络被破坏时才算非法。
+            if data.first != PTXP400BLEProtocol.preamble,
+               data.last != PTXP400BLEProtocol.terminator,
+               data.count <= PTXP400BLEProtocol.maxTIOChunkLength {
+                return (.knownCommand, "ble:tx:transport:\(data.count)", "known non-envelope authentication/TIO transport chunk")
+            }
+            guard data.count >= 3,
+                  data.first == PTXP400BLEProtocol.preamble,
+                  data.last == PTXP400BLEProtocol.terminator else {
+                return (.malformed, "ble:malformed:\(hexString(data.prefix(8)))", "invalid outbound envelope")
+            }
             guard PTXP400BLEProtocol.isValidOutboundFrame(data) else {
                 return (.malformed, "ble:tx:malformed:\(hexString(data.prefix(8)))", "invalid outbound length")
             }
@@ -1000,6 +1018,12 @@ private extension PTProtocolDiscoveryRecorder {
                 id == PTXP400BLEProtocol.configurationFrameID || id == 0x08
             guard !known else { return (.known, "ble:tx:\(id)", "known outbound frame") }
             return (.unknownFrameID, "ble:tx:id:\(id):\(hexString(data.dropFirst(2).dropLast()) )", "unknown outbound frame ID")
+        }
+
+        guard data.count >= 3,
+              data.first == PTXP400BLEProtocol.preamble,
+              data.last == PTXP400BLEProtocol.terminator else {
+            return (.malformed, "ble:malformed:\(hexString(data.prefix(8)))", "invalid envelope")
         }
 
         let id = data[1]
@@ -1015,17 +1039,19 @@ private extension PTProtocolDiscoveryRecorder {
                 return (.unexpectedLength, "ble:rx:id\(id):\(data.count)", "vehicle status length is not confirmed")
             }
             let payload = Array(data.dropFirst(2).dropLast())
-            let masks = unmappedMasks(for: id)
-            let unknownBytes = zip(payload, masks).map { $0.0 & $0.1 }
-            guard unknownBytes.contains(where: { $0 != 0 }) else {
-                return (.known, "ble:rx:id\(id)", "known vehicle status frame")
+            if let semantic = PTXP400SemanticDecoder.decode(frameID: id, payload: Data(payload)) {
+                switch id {
+                case PTXP400BLEProtocol.data2FrameID:
+                    return (.clock, "ble:rx:id\(id):clock", "RTC fields are known; low bits remain candidate evidence")
+                case PTXP400BLEProtocol.controlFrameID:
+                    return (.counter, "ble:rx:id\(id):counter", "rolling tick is metadata; TCS bit 7 remains a candidate")
+                case PTXP400BLEProtocol.absFrameID where semantic.fields.first(where: { $0.id == "abs.padding3to7" })?.quality == .sentinel:
+                    return (.sentinel, "ble:rx:id\(id):sentinel", "ABS bytes 3...7 are an all-FF sentinel/padding range")
+                default:
+                    return (.known, "ble:rx:id\(id)", "known semantic frame; unresolved fields require a baseline")
+                }
             }
-            let unknownHex = unknownBytes.map { String(format: "%02X", $0) }.joined()
-            return (
-                .knownWithUnmappedData,
-                "ble:rx:id\(id):unknown:\(unknownHex)",
-                "unmapped bytes or bits are non-zero"
-            )
+            return (.anomaly, "ble:rx:id\(id):semantic-error", "known frame could not be semantically decoded")
         default:
             return (
                 .unknownFrameID,
@@ -1040,13 +1066,13 @@ private extension PTProtocolDiscoveryRecorder {
         case PTXP400BLEProtocol.data1FrameID:
             return [0x00, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
         case PTXP400BLEProtocol.data2FrameID:
-            return [0xFF, 0x00, 0xFF, 0x00, 0x00, 0x00, 0xFF, 0xFF]
+            return [0x03, 0x00, 0x07, 0x00, 0x00, 0x00, 0xFF, 0xFF]
         case PTXP400BLEProtocol.data3FrameID:
-            return [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF]
+            return [0x00, 0x00, 0xFF, 0x00, 0x00, 0x00, 0xFF, 0xFF]
         case PTXP400BLEProtocol.controlFrameID:
             return [0xFF, 0xAF, 0xAE, 0xF0, 0x00, 0x00, 0x00, 0x00]
         case PTXP400BLEProtocol.absFrameID:
-            return [0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+            return [0x00, 0x00, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00]
         default:
             return Array(repeating: 0xFF, count: 8)
         }
@@ -1072,39 +1098,21 @@ private extension PTProtocolDiscoveryRecorder {
         _ response: String,
         command: String?
     ) -> PTProtocolDiscoveryClassification {
-        let upper = response.uppercased()
-        if upper.contains("NO DATA") || upper.contains("NODATA") {
-            return .noData
-        }
-        if upper.contains("ERROR") || upper.contains("UNABLE") || upper.contains("?") {
-            return .transportError
-        }
-
-        let bytes = responseBytes(response)
-        if let index = bytes.firstIndex(of: 0x7F), index + 2 < bytes.count {
-            return .negativeResponse
-        }
         if command?.hasPrefix("AT") == true {
             return .knownResponse
         }
-        guard let command, command.count >= 2 else { return .unparsedResponse }
-        let expectedService: UInt8?
-        switch command.prefix(2) {
-        case "01": expectedService = 0x41
-        case "02": expectedService = 0x42
-        case "03": expectedService = 0x43
-        case "04": expectedService = 0x44
-        case "06": expectedService = 0x46
-        case "07": expectedService = 0x47
-        case "08": expectedService = 0x48
-        case "09": expectedService = 0x49
-        case "22": expectedService = 0x62
-        default: expectedService = nil
-        }
-        guard let expectedService, bytes.contains(expectedService) else {
+        let routed = PTBuild69ProtocolRouter.route(command: command, rawResponse: response)
+        switch routed {
+        case .transport(let normalized):
+            return normalized.status == .noData ? .noData : .transportError
+        case .unknown:
             return .unparsedResponse
+        case .uds(let uds):
+            if uds.negativeResponse != nil { return .negativeResponse }
+            return uds.isPositive ? .positiveResponse : .unparsedResponse
+        case .obd2(let obd2):
+            return obd2.isPositive ? .positiveResponse : .unparsedResponse
         }
-        return .positiveResponse
     }
 
     static func redactedOBDValue(_ value: String) -> String {

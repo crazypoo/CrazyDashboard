@@ -15,49 +15,11 @@ extension PTBluetoothServerManager {
     /// 启动全频段主动查询扫描
     /// 向配置通道 (ID: 7) 发送轮询请求，试图触发车机回传隐藏的物理数据
     public func startActiveDiagnosticScan() {
-        guard authenticated else {
-            PTOBDLogger.moto.ptLog("⚠️ [查询拦截] 尚未完成认证，无法发送诊断探针。")
-            return
-        }
-        
-        PTOBDLogger.moto.ptLog("🚀 [深度探测] 开始发送 ISO-TP 增强版主动查询指令 (OBD/UDS 模式)...")
-        currentProbeIndex = 0x00
-        
-        // 每 1.2 秒发送一次探针，给车机留出处理和回传的时间
-        diagnosticTimer = Timer.scheduledTimer(withTimeInterval: 1.2, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            
-            // 🚨 升级点：遵守 ISO-TP 传输层单帧格式 (Single Frame)
-            // UDS 规范中，PID 通常是两字节的 (例如 0xF1 0x90)
-            // 格式：[有效载荷长度, 服务ID, PID高位, PID低位]
-            
-            let udsLength: UInt8 = 0x03
-            let serviceID: UInt8 = 0x22 // 读取数据服务 (Read Data By Identifier)
-            let pidHighByte: UInt8 = 0x00 // 大多车辆标准 PID 从 0x0000 到 0xFFFF
-            let pidLowByte: UInt8 = self.currentProbeIndex
-            
-            // 组合成标准 UDS 载荷
-            let payload: [UInt8] = [udsLength, serviceID, pidHighByte, pidLowByte]
-            let payloadData = Data(payload)
-            
-            // 复用你已有的常量 ID_CONFIGURATION (0x07) 作为诊断通道
-            let targetID = PTFrameBuilder.ID_CONFIGURATION
-            let frame = PTFrameBuilder.wrapTxFrame(idFrame: targetID, payload: payloadData)
-            
-            // 使用现有的分包发送方法将探针压入蓝牙通道
-            self.sendChunkedData(data: frame, to: self.txChar) {
-                let hexStr = payload.map { String(format: "%02X", $0) }.joined(separator: " ")
-                PTOBDLogger.moto.ptLog("📡 [ISO-TP 探针发射] 通道 ID: 0x\(String(format: "%02X", targetID)), 载荷: [ \(hexStr) ]")
-            }
-            
-            // 扫描结束条件
-            if self.currentProbeIndex == 0xFF {
-                self.stopActiveDiagnosticScan()
-            } else {
-                // 使用溢出运算符，防止边界崩溃
-                self.currentProbeIndex &+= 1
-            }
-        }
+        // EN: Build 69 downgrades ID 7 probing to passive research until a repeatable vehicle trace proves its meaning.
+        // ES: Build 69 degrada la sonda del ID 7 a investigación pasiva hasta que una captura repetible pruebe su significado.
+        // 中文：Build 69 将 ID 7 探测降级为被动研究，直到可重复实车抓包证明其语义。
+        stopActiveDiagnosticScan()
+        PTOBDLogger.moto.ptLog("🧪 [Build 69] ID 7 主动探测已禁用：请使用官方设置 A/B 与被动抓包建立证据。")
     }
     
     /// 停止主动诊断扫描
@@ -68,20 +30,10 @@ extension PTBluetoothServerManager {
     }
 
     public func requestStaticConfiguration() {
-        guard authenticated else {
-            PTOBDLogger.moto.ptLog("⚠️ [查询拦截] 尚未完成认证，无法发送查询请求。")
-            return
-        }
-        
-        // 策略 1：针对已知的配置通道 (ID: 7)，发送 0x00 载荷，触发底层 Read 逻辑
-        let readPayload = Data([0x00])
-        
-        // 利用你封装好的通用封包器
-        let requestFrame = PTFrameBuilder.wrapTxFrame(idFrame: 7, payload: readPayload)
-        
-        sendChunkedData(data: requestFrame, to: txChar) {
-            PTOBDLogger.moto.ptLog("📡 [主动查询] 已向配置通道发射探针，请紧盯回传日志...")
-        }
+        // EN: Do not treat an accepted ID 7 packet as confirmed configuration semantics.
+        // ES: No trates un paquete aceptado por ID 7 como semántica de configuración confirmada.
+        // 中文：不能因为 ID 7 接受数据包，就把它当作已确认的配置语义。
+        PTOBDLogger.moto.ptLog("🧪 [Build 69] ID 7 配置请求暂不发送，等待被动证据。")
     }
 
     // MARK: - 解析摩托车回传状态
@@ -106,6 +58,25 @@ extension PTBluetoothServerManager {
         }
 
         let id = decodedFrame.id
+
+        // EN: Enqueue semantic evidence after envelope validation; the stable BLE parser remains the source of business state.
+        // ES: Encola evidencia semántica después de validar la envoltura; el analizador BLE estable sigue siendo la fuente del estado de negocio.
+        // 中文：包络校验后异步入队语义证据，稳定 BLE 解析器仍然是业务状态的唯一来源。
+        let evidenceTimestamp = Date()
+        let evidenceMonotonicNanoseconds = DispatchTime.now().uptimeNanoseconds
+        Task {
+            guard let result = await PTBuild69ProtocolEvidenceCoordinator.shared.ingestBLEFrame(
+                value,
+                timestamp: evidenceTimestamp,
+                monotonicNanoseconds: evidenceMonotonicNanoseconds
+            ) else { return }
+            await MainActor.run {
+                _ = PTBuild69EvidenceStore.shared.merge(result)
+                _ = PTProtocolEvidenceV2Store.shared.merge(
+                    PTBuild69EvidenceRecordFactory.records(from: result, source: .live)
+                )
+            }
+        }
 
         // EN: Enforce the confirmed wire length for known inbound frames without changing unknown-frame diagnostics.
         // ES: Aplica la longitud de cable confirmada para las tramas entrantes conocidas sin cambiar el diagnóstico de tramas desconocidas.

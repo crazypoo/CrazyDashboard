@@ -150,10 +150,12 @@ public nonisolated enum PTProtocolEvidenceCorrelationBuilder {
             guard record.domain != .ymobdFirmwareOTA else { continue }
             let source: PTProtocolEvidenceCorrelationSource?
             switch record.domain {
-            case .xp400BLE: source = .xp400BLETelemetry
-            case .obd, .uds: source = .obdTelemetry
+            case .xp400BLE, .xp400BLETransport, .xp400BLESemantic: source = .xp400BLETelemetry
+            case .obd, .obdTransport, .obd2, .uds: source = .obdTelemetry
             case .can: source = .can
-            case .ymobdVendorExtension, .ymobdFirmwareOTA, .firmwareResearch: source = nil
+            case .gps: source = .gps
+            case .motion: source = .motion
+            case .correlation, .ymobdVendorExtension, .adapterVendorExtension, .ymobdFirmwareOTA, .firmwareResearch: source = nil
             }
             guard let source else { continue }
             entries.append(

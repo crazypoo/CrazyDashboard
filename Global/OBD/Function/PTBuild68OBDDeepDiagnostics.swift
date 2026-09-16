@@ -2052,7 +2052,10 @@ private extension PTBuild68DiagnosticCoordinator {
             processMonitorStatus(status)
         }
 
-        if let runtime = PTBuild68ResponseParser.doubleValue(measurements["011F"]), runtime.isFinite, runtime >= 0 {
+        // EN: Runtime zero is ambiguous during connect and must not fabricate an engine start timestamp.
+        // ES: Un tiempo de funcionamiento cero es ambiguo durante la conexión y no debe fabricar una hora de arranque.
+        // 中文：连接初期的 runtime=0 语义不明确，不能据此伪造发动机启动时间。
+        if let runtime = PTBuild68ResponseParser.doubleValue(measurements["011F"]), runtime.isFinite, runtime > 0 {
             processEngineRuntime(runtime, at: now)
         }
 
@@ -2119,6 +2122,7 @@ private extension PTBuild68DiagnosticCoordinator {
     }
 
     func processEngineRuntime(_ runtime: TimeInterval, at date: Date) {
+        guard runtime.isFinite, runtime > 0 else { return }
         engineRuntimeSamples.append((date: date, runtime: runtime))
         engineRuntimeSamples = Array(engineRuntimeSamples.suffix(3))
         guard let connectedAt = sessionStartedAt else { return }

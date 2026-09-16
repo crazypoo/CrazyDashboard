@@ -7,12 +7,13 @@ canonical: true
 domain: telemetry-architecture
 owner: Jax
 created: 2026-09-15
-last_reviewed: 2026-09-16
+last_reviewed: 2026-09-17
 related_builds:
   - 61
   - 62
   - 66
   - 68
+  - 69
 supersedes: []
 superseded_by:
 ---
@@ -49,6 +50,12 @@ Build 66 专门为 `.speed` 建立 `PTVehicleSpeedResolver`：
 | CrazyTrace Replay | 回放时钟 | 500 | 仅在显式回放期间覆盖实时来源 |
 
 GPS 速度经过 m/s → km/h、三点中值和 EMA；合法静止值 `0` 与不可用 `nil` 分开。负值、未来时间、过期或低质量样本拒绝。当前来源仍新鲜时，高优先级新来源需要两个不同时间戳的有效样本接管；当前来源过期或移除时，低优先级新鲜来源立即接管。
+
+## Build 69 统一观察与证据关联
+
+Build 69 将 XP400 BLE 语义帧、ELM327/OBD-II/UDS 结果、GPS 和 Motion 映射为带 `source`、`key`、墙钟、单调时钟、可用性、质量和原始值的统一 Observation。Observation 适配和跨源关联位于传输回调之外，由 actor 串行处理；CoreBluetooth/ELM327 核心仍只负责既有传输与轮询。
+
+关联引擎只输出时间窗口内的统计关系（速度、RPM、电压、加速度、横向/倾角），不把相关性升级为协议确认。`0` 是可用的静止值，`nil` 才表示不可用；Mock、Replay 与真实车辆来源必须保留来源标签，历史值不得覆盖更新鲜的现场值。
 
 ## 其他信号与来源
 

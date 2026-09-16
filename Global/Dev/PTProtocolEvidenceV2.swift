@@ -14,10 +14,18 @@ import Foundation
 // 中文：域用于防止把 YMOBD 适配器维护流量误认为 XP400 车辆流量。
 nonisolated public enum PTProtocolEvidenceDomain: String, Codable, CaseIterable, Sendable {
     case xp400BLE
+    case xp400BLETransport
+    case xp400BLESemantic
     case obd
+    case obdTransport
+    case obd2
     case can
     case uds
+    case gps
+    case motion
+    case correlation
     case ymobdVendorExtension
+    case adapterVendorExtension
     case ymobdFirmwareOTA
     case firmwareResearch
 }
@@ -636,9 +644,18 @@ nonisolated public enum PTProtocolEvidenceV2Migration {
         }
 
         let normalizedCommand = reference?.replacingOccurrences(of: " ", with: "").uppercased()
-        let resolvedDomain: PTProtocolEvidenceDomain = normalizedCommand == "AT+VERSION"
-            ? .ymobdVendorExtension
-            : domain == .obd && (normalizedCommand?.hasPrefix("22") == true ? true : false) ? .uds : domain
+        let resolvedDomain: PTProtocolEvidenceDomain
+        if normalizedCommand == "AT+VERSION" {
+            resolvedDomain = .ymobdVendorExtension
+        } else if domain == .obd, normalizedCommand?.hasPrefix("22") == true {
+            resolvedDomain = .uds
+        } else if domain == .obd, let normalizedCommand, ["01", "02", "03", "06", "07", "08", "09"].contains(String(normalizedCommand.prefix(2))) {
+            resolvedDomain = .obd2
+        } else if domain == .obd {
+            resolvedDomain = .obdTransport
+        } else {
+            resolvedDomain = domain
+        }
         return PTProtocolEvidenceRecord(
             id: event.id,
             domain: resolvedDomain,
@@ -766,9 +783,10 @@ public enum PTVehiclePassportBuilder {
         let adapter = telemetryBridge.adapterSnapshot
         let obdSource = evidenceSource(for: linkSnapshot.obd.transport, isConnected: linkSnapshot.obd.state == .connected)
         let dashboardSource = evidenceSource(for: linkSnapshot.dashboard.transport, isConnected: linkSnapshot.dashboard.state == .connected)
-        let dashboardReference = connectivity.dashboardConnectionIdentity?.reportedSerialNumber
-            ?? vehicle?.dashboardSerialNumber
-            ?? connectivity.dashboardConnectionIdentity?.centralIdentifier.map { String($0.uuidString.suffix(8)).uppercased() }
+        // EN: A connection-frame serial identifies the Connectivity Box, not the dashboard ECU.
+        // ES: El serial de la trama de conexión identifica la Connectivity Box, no la ECU del tablero.
+        // 中文：连接帧序列号标识的是 Connectivity Box，而不是仪表 ECU。
+        let dashboardReference = vehicle?.dashboardSerialNumber
         let ecuAddress = vehicle?.preferredDiagnosticAddress.map { "\($0.tx)->\($0.rx)" }
         let vehicleFields = PTVehicleIdentityResolver.resolve(
             PTVehicleIdentityResolutionInput(
@@ -1102,7 +1120,11 @@ public final class PTProtocolEvidenceV2Store {
     }
 
     public func passport(at date: Date = Date()) -> PTVehiclePassport {
-        PTVehiclePassportBuilder.build(at: date)
+        let base = PTVehiclePassportBuilder.build(at: date)
+        guard records.contains(where: { $0.reference?.hasPrefix("passport.") == true }) else {
+            return base
+        }
+        return PTBuild69PassportReducer.reduce(base: base, records: records, generatedAt: date)
     }
 
     public func exportJSONData(at date: Date = Date()) throws -> Data {

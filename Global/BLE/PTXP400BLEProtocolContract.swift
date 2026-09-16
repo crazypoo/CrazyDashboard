@@ -39,6 +39,10 @@ nonisolated public enum PTXP400BLEProtocol {
     public static let uartTXCreditsUUID = "00000004-0000-1000-8000-008025000000"
 
     public static let navigationFrameID: UInt8 = 0x01
+    // EN: This one-byte command is the confirmed status poll and is not a framed envelope.
+    // ES: Este comando de un byte es el sondeo de estado confirmado y no es una envoltura enmarcada.
+    // 中文：这个单字节命令是已确认的状态轮询，不属于可变长度包络。
+    public static let statusPollCommand = Data([0x01])
     public static let connectionFrameID: UInt8 = 0x01
     public static let data1FrameID: UInt8 = 0x02
     public static let data2FrameID: UInt8 = 0x03
