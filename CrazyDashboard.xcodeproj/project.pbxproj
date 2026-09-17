@@ -10,6 +10,10 @@
 		5512F332302B7F26001AFED4 /* PTOBDCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F331302B7F26001AFED4 /* PTOBDCommand.swift */; };
 		5512F399302C4CAC001AFED4 /* PTDashboardHacker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F398302C4CAC001AFED4 /* PTDashboardHacker.swift */; };
 		5512F3DE302C8CA7001AFED4 /* PTBLELogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5512F3DD302C8CA7001AFED4 /* PTBLELogger.swift */; };
+		55257B71305C2DAD00DA16D7 /* PTAppVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55257B70305C2DAD00DA16D7 /* PTAppVersion.swift */; };
+		55257B73305C2DF200DA16D7 /* PTAppUpdateManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55257B72305C2DF200DA16D7 /* PTAppUpdateManifest.swift */; };
+		55257B75305C2E1B00DA16D7 /* PTAppUpdateResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55257B74305C2E1B00DA16D7 /* PTAppUpdateResult.swift */; };
+		55257B77305C2E6400DA16D7 /* PTAppUpdateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55257B76305C2E6400DA16D7 /* PTAppUpdateManager.swift */; };
 		554110DB301E65AB0059BFCF /* PTLiDARCollisionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 554110DA301E65AB0059BFCF /* PTLiDARCollisionManager.swift */; };
 		5541111F301F2B630059BFCF /* PTStatusItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5541111E301F2B630059BFCF /* PTStatusItemView.swift */; };
 		554112933021DC830059BFCF /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
@@ -49,6 +53,7 @@
 		5577E6762FD657F30004733F /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5577E6752FD657D20004733F /* libz.tbd */; };
 		5577E6AC2FD662C20004733F /* PTMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6AA2FD662C20004733F /* PTMapView.swift */; };
 		5577E6D22FD680730004733F /* PTTripStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5577E6D02FD680730004733F /* PTTripStatsView.swift */; };
+		5578DC36305C2FD000135C21 /* PTAppUpdatePresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5578DC35305C2FD000135C21 /* PTAppUpdatePresenter.swift */; };
 		557D0044302EA1BD008BA492 /* PTBumpMeterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557D0038302EA1BD008BA492 /* PTBumpMeterView.swift */; };
 		557D0045302EA1BD008BA492 /* PTCompassRollerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557D0039302EA1BD008BA492 /* PTCompassRollerView.swift */; };
 		557D0046302EA1BD008BA492 /* PTCrashWarningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557D003A302EA1BD008BA492 /* PTCrashWarningView.swift */; };
@@ -414,6 +419,10 @@
 		5512F331302B7F26001AFED4 /* PTOBDCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDCommand.swift; sourceTree = "<group>"; };
 		5512F398302C4CAC001AFED4 /* PTDashboardHacker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashboardHacker.swift; sourceTree = "<group>"; };
 		5512F3DD302C8CA7001AFED4 /* PTBLELogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBLELogger.swift; sourceTree = "<group>"; };
+		55257B70305C2DAD00DA16D7 /* PTAppVersion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTAppVersion.swift; sourceTree = "<group>"; };
+		55257B72305C2DF200DA16D7 /* PTAppUpdateManifest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTAppUpdateManifest.swift; sourceTree = "<group>"; };
+		55257B74305C2E1B00DA16D7 /* PTAppUpdateResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTAppUpdateResult.swift; sourceTree = "<group>"; };
+		55257B76305C2E6400DA16D7 /* PTAppUpdateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTAppUpdateManager.swift; sourceTree = "<group>"; };
 		554110DA301E65AB0059BFCF /* PTLiDARCollisionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLiDARCollisionManager.swift; sourceTree = "<group>"; };
 		5541111E301F2B630059BFCF /* PTStatusItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTStatusItemView.swift; sourceTree = "<group>"; };
 		55499CF63019B7DD00A1A2D9 /* PTGlobalMapManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTGlobalMapManager.swift; sourceTree = "<group>"; };
@@ -444,6 +453,7 @@
 		5577E6752FD657D20004733F /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		5577E6AA2FD662C20004733F /* PTMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMapView.swift; sourceTree = "<group>"; };
 		5577E6D02FD680730004733F /* PTTripStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTripStatsView.swift; sourceTree = "<group>"; };
+		5578DC35305C2FD000135C21 /* PTAppUpdatePresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTAppUpdatePresenter.swift; sourceTree = "<group>"; };
 		557D0038302EA1BD008BA492 /* PTBumpMeterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBumpMeterView.swift; sourceTree = "<group>"; };
 		557D0039302EA1BD008BA492 /* PTCompassRollerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCompassRollerView.swift; sourceTree = "<group>"; };
 		557D003A302EA1BD008BA492 /* PTCrashWarningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCrashWarningView.swift; sourceTree = "<group>"; };
@@ -830,6 +840,18 @@
 			path = Log;
 			sourceTree = "<group>";
 		};
+		55257B6F305C2D7E00DA16D7 /* AppUpdate */ = {
+			isa = PBXGroup;
+			children = (
+				55257B70305C2DAD00DA16D7 /* PTAppVersion.swift */,
+				55257B72305C2DF200DA16D7 /* PTAppUpdateManifest.swift */,
+				55257B74305C2E1B00DA16D7 /* PTAppUpdateResult.swift */,
+				55257B76305C2E6400DA16D7 /* PTAppUpdateManager.swift */,
+				5578DC35305C2FD000135C21 /* PTAppUpdatePresenter.swift */,
+			);
+			path = AppUpdate;
+			sourceTree = "<group>";
+		};
 		554110D9301E658D0059BFCF /* LiDar */ = {
 			isa = PBXGroup;
 			children = (
@@ -970,6 +992,7 @@
 		5577E64D2FD657110004733F /* Global */ = {
 			isa = PBXGroup;
 			children = (
+				55257B6F305C2D7E00DA16D7 /* AppUpdate */,
 				600000020000000000000264 /* Feature */,
 				600000020000000000000141 /* PTMotorcycleGarageViewController.swift */,
 				600000020000000000000160 /* PTAutomationGuideViewController.swift */,
@@ -1971,6 +1994,7 @@
 				600000010000000000000050 /* PTDeveloperSafetyGate.swift in Sources */,
 				600000010000000000000071 /* PTDeveloperTestPreflight.swift in Sources */,
 				620000010000000000000030 /* PTCrazyDashboardInstruments.swift in Sources */,
+				55257B75305C2E1B00DA16D7 /* PTAppUpdateResult.swift in Sources */,
 				620000010000000000000031 /* PTCrazyDashboardInstrumentsViewController.swift in Sources */,
 				640000010000000000000003 /* PTInstrumentArchitecture.swift in Sources */,
 				630000010000000000000060 /* PTProtocolEvidenceV2.swift in Sources */,
@@ -2062,6 +2086,7 @@
 				6C0000010000000000000001 /* PTXP400SemanticEvidence.swift in Sources */,
 				600000010000000000000376 /* PTXP400NavigationScheduler.swift in Sources */,
 				600000010000000000000380 /* PTBluetoothManagerModels.swift in Sources */,
+				5578DC36305C2FD000135C21 /* PTAppUpdatePresenter.swift in Sources */,
 				600000010000000000000381 /* PTBluetoothServerManager+Transport.swift in Sources */,
 				600000010000000000000382 /* PTBluetoothServerManager+Commands.swift in Sources */,
 				600000010000000000000383 /* PTBluetoothServerManager+Diagnostics.swift in Sources */,
@@ -2071,12 +2096,14 @@
 				55499CFA3019D83800A1A2D9 /* PTDashboardBaseView.swift in Sources */,
 				557D0056302ED2A9008BA492 /* PTPeugeotLEDDashBoard.swift in Sources */,
 				5590187230107A1C00A77571 /* PTRoutePlantCell.swift in Sources */,
+				55257B71305C2DAD00DA16D7 /* PTAppVersion.swift in Sources */,
 				55FE2966300CA5E0000E741F /* PTDashboardConfig.swift in Sources */,
 				600000010000000000000030 /* PTVehicleConnectivityCoordinator.swift in Sources */,
 				55FE2A0B300CE2B0000E741F /* PTMapKitNavigationHelper.swift in Sources */,
 				55FDBCAC3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift in Sources */,
 				600000010000000000000111 /* PTRoadbookViewController.swift in Sources */,
 				600000010000000000000157 /* PTRoadbookEditorViewController.swift in Sources */,
+				55257B77305C2E6400DA16D7 /* PTAppUpdateManager.swift in Sources */,
 				55FE29A1300CC1F1000E741F /* PTMotoInfoViewController.swift in Sources */,
 				557D027A30335603008BA492 /* PTCANRecorder.swift in Sources */,
 				55F1E2F53026D2020032EAD5 /* PTUDSDiagnosticService.swift in Sources */,
@@ -2087,6 +2114,7 @@
 				55F52C70303D4025007527C2 /* PTOBDiagnosticAddress.swift in Sources */,
 				600000010000000000000070 /* PTXP400InstructionCatalog.swift in Sources */,
 				600000010000000000000153 /* PTXP400InstructionEvidenceStore.swift in Sources */,
+				55257B73305C2DF200DA16D7 /* PTAppUpdateManifest.swift in Sources */,
 				557D0051302EA1E3008BA492 /* PTArcGaugeView.swift in Sources */,
 				558789E4302420CB00B94E91 /* PTCarplayMainController.swift in Sources */,
 				55499CFE3019EA0500A1A2D9 /* PTMotoDashBoardNavFunction.swift in Sources */,

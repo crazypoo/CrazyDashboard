@@ -91,6 +91,15 @@ class SceneDelegate: PTWindowSceneDelegate {
         drainPendingExternalURLs(in: windowScene)
         drainPendingSpotlightIdentifiers(in: windowScene)
         drainPendingSystemRoute(in: windowScene)
+        
+        Task { @MainActor in
+
+            let result = await PTAppUpdateManager.shared.checkIfNeeded()
+
+            PTAppUpdatePresenter.shared.present(
+                result
+            )
+        }
     }
 
     func sceneWillResignActive(_ scene: UIScene) {
