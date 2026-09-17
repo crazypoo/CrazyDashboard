@@ -154,10 +154,10 @@ class PTDashBoardBaseBoardViewController: PTMotoBaseViewController {
             presentLyricsMessage(key: messageKey)
             return
         }
-        guard canPresentFullLyrics() else {
-            presentLyricsMessage(key: "lyrics_park_before_viewing")
-            return
-        }
+//        guard canPresentFullLyrics() else {
+//            presentLyricsMessage(key: "lyrics_park_before_viewing")
+//            return
+//        }
         guard presentedViewController == nil else { return }
 
         let lyricsViewController = PTLyricsViewController(
