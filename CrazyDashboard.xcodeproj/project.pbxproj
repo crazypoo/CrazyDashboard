@@ -74,6 +74,28 @@
 		558789E630242B9400B94E91 /* PTCarPlayContainerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 558789E530242B9400B94E91 /* PTCarPlayContainerViewController.swift */; };
 		55901837300FE37100A77571 /* PTMotoBaseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55901836300FE37100A77571 /* PTMotoBaseViewController.swift */; };
 		5590187230107A1C00A77571 /* PTRoutePlantCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5590187130107A1C00A77571 /* PTRoutePlantCell.swift */; };
+		55983423305C4A4100022658 /* PTMusicTrackCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598341F305C4A4100022658 /* PTMusicTrackCell.swift */; };
+		55983424305C4A4100022658 /* PTMusicPlayerMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55983413305C4A4100022658 /* PTMusicPlayerMode.swift */; };
+		55983425305C4A4100022658 /* PTMusicCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598340C305C4A4100022658 /* PTMusicCoordinator.swift */; };
+		55983426305C4A4100022658 /* PTMusicMiniPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598341B305C4A4100022658 /* PTMusicMiniPlayerView.swift */; };
+		55983427305C4A4100022658 /* PTMusicTrack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55983415305C4A4100022658 /* PTMusicTrack.swift */; };
+		55983428305C4A4100022658 /* PTMusicPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598341C305C4A4100022658 /* PTMusicPlayerView.swift */; };
+		55983429305C4A4100022658 /* PTMusicViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55983420305C4A4100022658 /* PTMusicViewController.swift */; };
+		5598342A305C4A4100022658 /* PTMusicLibraryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598341A305C4A4100022658 /* PTMusicLibraryViewController.swift */; };
+		5598342B305C4A4100022658 /* PTMusicCollectionDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55983418305C4A4100022658 /* PTMusicCollectionDetailViewController.swift */; };
+		5598342C305C4A4100022658 /* PTMusicCatalogService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598340B305C4A4100022658 /* PTMusicCatalogService.swift */; };
+		5598342D305C4A4100022658 /* PTMusicRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598341D305C4A4100022658 /* PTMusicRouter.swift */; };
+		5598342E305C4A4100022658 /* PTMusicBrowseCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55983411305C4A4100022658 /* PTMusicBrowseCategory.swift */; };
+		5598342F305C4A4100022658 /* PTMusicModuleBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598340E305C4A4100022658 /* PTMusicModuleBootstrap.swift */; };
+		55983430305C4A4100022658 /* PTMusicSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55983414305C4A4100022658 /* PTMusicSource.swift */; };
+		55983431305C4A4100022658 /* PTMusicPlaybackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598340F305C4A4100022658 /* PTMusicPlaybackManager.swift */; };
+		55983432305C4A4100022658 /* PTMusicCollectionCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55983417305C4A4100022658 /* PTMusicCollectionCell.swift */; };
+		55983433305C4A4100022658 /* PTMusicDashboardCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55983419305C4A4100022658 /* PTMusicDashboardCardView.swift */; };
+		55983434305C4A4100022658 /* PTMusicArtworkCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55983409305C4A4100022658 /* PTMusicArtworkCache.swift */; };
+		55983435305C4A4100022658 /* PTMusicPlaybackSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55983412305C4A4100022658 /* PTMusicPlaybackSnapshot.swift */; };
+		55983436305C4A4100022658 /* PTMusicSearchViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598341E305C4A4100022658 /* PTMusicSearchViewController.swift */; };
+		55983437305C4A4100022658 /* PTMusicLibraryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598340D305C4A4100022658 /* PTMusicLibraryService.swift */; };
+		55983438305C4A4100022658 /* PTMusicAuthorizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598340A305C4A4100022658 /* PTMusicAuthorizationManager.swift */; };
 		55986640301138A30049684D /* PTTripManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5598663E301138A30049684D /* PTTripManager.swift */; };
 		55986642301141090049684D /* PTAntiTheftManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986641301141090049684D /* PTAntiTheftManager.swift */; };
 		55986676301144060049684D /* PTMaintenanceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55986674301144060049684D /* PTMaintenanceManager.swift */; };
@@ -475,6 +497,28 @@
 		558789E530242B9400B94E91 /* PTCarPlayContainerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCarPlayContainerViewController.swift; sourceTree = "<group>"; };
 		55901836300FE37100A77571 /* PTMotoBaseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMotoBaseViewController.swift; sourceTree = "<group>"; };
 		5590187130107A1C00A77571 /* PTRoutePlantCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRoutePlantCell.swift; sourceTree = "<group>"; };
+		55983409305C4A4100022658 /* PTMusicArtworkCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicArtworkCache.swift; sourceTree = "<group>"; };
+		5598340A305C4A4100022658 /* PTMusicAuthorizationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicAuthorizationManager.swift; sourceTree = "<group>"; };
+		5598340B305C4A4100022658 /* PTMusicCatalogService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicCatalogService.swift; sourceTree = "<group>"; };
+		5598340C305C4A4100022658 /* PTMusicCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicCoordinator.swift; sourceTree = "<group>"; };
+		5598340D305C4A4100022658 /* PTMusicLibraryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicLibraryService.swift; sourceTree = "<group>"; };
+		5598340E305C4A4100022658 /* PTMusicModuleBootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicModuleBootstrap.swift; sourceTree = "<group>"; };
+		5598340F305C4A4100022658 /* PTMusicPlaybackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicPlaybackManager.swift; sourceTree = "<group>"; };
+		55983411305C4A4100022658 /* PTMusicBrowseCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicBrowseCategory.swift; sourceTree = "<group>"; };
+		55983412305C4A4100022658 /* PTMusicPlaybackSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicPlaybackSnapshot.swift; sourceTree = "<group>"; };
+		55983413305C4A4100022658 /* PTMusicPlayerMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicPlayerMode.swift; sourceTree = "<group>"; };
+		55983414305C4A4100022658 /* PTMusicSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicSource.swift; sourceTree = "<group>"; };
+		55983415305C4A4100022658 /* PTMusicTrack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicTrack.swift; sourceTree = "<group>"; };
+		55983417305C4A4100022658 /* PTMusicCollectionCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicCollectionCell.swift; sourceTree = "<group>"; };
+		55983418305C4A4100022658 /* PTMusicCollectionDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicCollectionDetailViewController.swift; sourceTree = "<group>"; };
+		55983419305C4A4100022658 /* PTMusicDashboardCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicDashboardCardView.swift; sourceTree = "<group>"; };
+		5598341A305C4A4100022658 /* PTMusicLibraryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicLibraryViewController.swift; sourceTree = "<group>"; };
+		5598341B305C4A4100022658 /* PTMusicMiniPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicMiniPlayerView.swift; sourceTree = "<group>"; };
+		5598341C305C4A4100022658 /* PTMusicPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicPlayerView.swift; sourceTree = "<group>"; };
+		5598341D305C4A4100022658 /* PTMusicRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicRouter.swift; sourceTree = "<group>"; };
+		5598341E305C4A4100022658 /* PTMusicSearchViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicSearchViewController.swift; sourceTree = "<group>"; };
+		5598341F305C4A4100022658 /* PTMusicTrackCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicTrackCell.swift; sourceTree = "<group>"; };
+		55983420305C4A4100022658 /* PTMusicViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicViewController.swift; sourceTree = "<group>"; };
 		5598663E301138A30049684D /* PTTripManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTripManager.swift; sourceTree = "<group>"; };
 		55986641301141090049684D /* PTAntiTheftManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTAntiTheftManager.swift; sourceTree = "<group>"; };
 		55986674301144060049684D /* PTMaintenanceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMaintenanceManager.swift; sourceTree = "<group>"; };
@@ -1027,6 +1071,7 @@
 				5577E6D02FD680730004733F /* PTTripStatsView.swift */,
 				55FE2A75300DF93F000E741F /* Views */,
 				55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */,
+				55983422305C4A4100022658 /* Music */,
 			);
 			path = Global;
 			sourceTree = "<group>";
@@ -1078,6 +1123,59 @@
 				558789E530242B9400B94E91 /* PTCarPlayContainerViewController.swift */,
 			);
 			path = Carplay;
+			sourceTree = "<group>";
+		};
+		55983410305C4A4100022658 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				55983409305C4A4100022658 /* PTMusicArtworkCache.swift */,
+				5598340A305C4A4100022658 /* PTMusicAuthorizationManager.swift */,
+				5598340B305C4A4100022658 /* PTMusicCatalogService.swift */,
+				5598340C305C4A4100022658 /* PTMusicCoordinator.swift */,
+				5598340D305C4A4100022658 /* PTMusicLibraryService.swift */,
+				5598340E305C4A4100022658 /* PTMusicModuleBootstrap.swift */,
+				5598340F305C4A4100022658 /* PTMusicPlaybackManager.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		55983416305C4A4100022658 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				55983411305C4A4100022658 /* PTMusicBrowseCategory.swift */,
+				55983412305C4A4100022658 /* PTMusicPlaybackSnapshot.swift */,
+				55983413305C4A4100022658 /* PTMusicPlayerMode.swift */,
+				55983414305C4A4100022658 /* PTMusicSource.swift */,
+				55983415305C4A4100022658 /* PTMusicTrack.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		55983421305C4A4100022658 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				55983417305C4A4100022658 /* PTMusicCollectionCell.swift */,
+				55983418305C4A4100022658 /* PTMusicCollectionDetailViewController.swift */,
+				55983419305C4A4100022658 /* PTMusicDashboardCardView.swift */,
+				5598341A305C4A4100022658 /* PTMusicLibraryViewController.swift */,
+				5598341B305C4A4100022658 /* PTMusicMiniPlayerView.swift */,
+				5598341C305C4A4100022658 /* PTMusicPlayerView.swift */,
+				5598341D305C4A4100022658 /* PTMusicRouter.swift */,
+				5598341E305C4A4100022658 /* PTMusicSearchViewController.swift */,
+				5598341F305C4A4100022658 /* PTMusicTrackCell.swift */,
+				55983420305C4A4100022658 /* PTMusicViewController.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		55983422305C4A4100022658 /* Music */ = {
+			isa = PBXGroup;
+			children = (
+				55983410305C4A4100022658 /* Core */,
+				55983416305C4A4100022658 /* Model */,
+				55983421305C4A4100022658 /* UI */,
+			);
+			path = Music;
 			sourceTree = "<group>";
 		};
 		55CA9DF23024528A00A3A677 /* OBD */ = {
@@ -2146,6 +2244,28 @@
 				55FDBCA93010CD6E00EE7FA5 /* PTMOTOParkingManager.swift in Sources */,
 				5541111F301F2B630059BFCF /* PTStatusItemView.swift in Sources */,
 				55986676301144060049684D /* PTMaintenanceManager.swift in Sources */,
+				55983423305C4A4100022658 /* PTMusicTrackCell.swift in Sources */,
+				55983424305C4A4100022658 /* PTMusicPlayerMode.swift in Sources */,
+				55983425305C4A4100022658 /* PTMusicCoordinator.swift in Sources */,
+				55983426305C4A4100022658 /* PTMusicMiniPlayerView.swift in Sources */,
+				55983427305C4A4100022658 /* PTMusicTrack.swift in Sources */,
+				55983428305C4A4100022658 /* PTMusicPlayerView.swift in Sources */,
+				55983429305C4A4100022658 /* PTMusicViewController.swift in Sources */,
+				5598342A305C4A4100022658 /* PTMusicLibraryViewController.swift in Sources */,
+				5598342B305C4A4100022658 /* PTMusicCollectionDetailViewController.swift in Sources */,
+				5598342C305C4A4100022658 /* PTMusicCatalogService.swift in Sources */,
+				5598342D305C4A4100022658 /* PTMusicRouter.swift in Sources */,
+				5598342E305C4A4100022658 /* PTMusicBrowseCategory.swift in Sources */,
+				5598342F305C4A4100022658 /* PTMusicModuleBootstrap.swift in Sources */,
+				55983430305C4A4100022658 /* PTMusicSource.swift in Sources */,
+				55983431305C4A4100022658 /* PTMusicPlaybackManager.swift in Sources */,
+				55983432305C4A4100022658 /* PTMusicCollectionCell.swift in Sources */,
+				55983433305C4A4100022658 /* PTMusicDashboardCardView.swift in Sources */,
+				55983434305C4A4100022658 /* PTMusicArtworkCache.swift in Sources */,
+				55983435305C4A4100022658 /* PTMusicPlaybackSnapshot.swift in Sources */,
+				55983436305C4A4100022658 /* PTMusicSearchViewController.swift in Sources */,
+				55983437305C4A4100022658 /* PTMusicLibraryService.swift in Sources */,
+				55983438305C4A4100022658 /* PTMusicAuthorizationManager.swift in Sources */,
 				55499E2C301B2C8800A1A2D9 /* PTPTTViewController.swift in Sources */,
 				557D0054302ECDAE008BA492 /* PTPeugeotDashBoardViewController.swift in Sources */,
 				5577E6AC2FD662C20004733F /* PTMapView.swift in Sources */,

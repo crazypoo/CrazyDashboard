@@ -56,6 +56,12 @@ class SceneDelegate: PTWindowSceneDelegate {
             AppWindows?.addSubviews([self.weatherOverlay])
             PTLaunchAnimationPresenter.bringToFrontIfVisible(in: scene)
         }
+        
+        PTMusicModuleBootstrap.start()
+        PTGCDManager.shared.delayOnMain(time: 10) {
+            guard let presenter = PTUtils.getCurrentVC() else { return }
+            PTMusicRouter.openPlayer(from: presenter)
+        }
     }
 
     // EN: Lazily attach the developer surface so launch never starts its timer or obscures normal controls.
