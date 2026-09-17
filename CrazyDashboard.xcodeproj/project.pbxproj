@@ -26,6 +26,7 @@
 		55499E24301B204A00A1A2D9 /* PTWeatherManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499E23301B204A00A1A2D9 /* PTWeatherManager.swift */; };
 		55499E29301B2BBB00A1A2D9 /* PTLocalIntercomManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499E28301B2BBB00A1A2D9 /* PTLocalIntercomManager.swift */; };
 		55499E2C301B2C8800A1A2D9 /* PTPTTViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55499E2B301B2C8800A1A2D9 /* PTPTTViewController.swift */; };
+		5550AE51305BE54D0032E97C /* PTOBDCommandSerialGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5550AE50305BE54D0032E97C /* PTOBDCommandSerialGate.swift */; };
 		555C0FF9300E06630079D94F /* PTGlobalActionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */; };
 		555DC849303820E6002B003B /* xp400watch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 555DC83F303820E3002B003B /* xp400watch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		5564B5BC305426FB0044E1C3 /* JL_AdvParse.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5564B5B4305426FB0044E1C3 /* JL_AdvParse.xcframework */; };
@@ -427,6 +428,7 @@
 		55499E23301B204A00A1A2D9 /* PTWeatherManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTWeatherManager.swift; sourceTree = "<group>"; };
 		55499E28301B2BBB00A1A2D9 /* PTLocalIntercomManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTLocalIntercomManager.swift; sourceTree = "<group>"; };
 		55499E2B301B2C8800A1A2D9 /* PTPTTViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPTTViewController.swift; sourceTree = "<group>"; };
+		5550AE50305BE54D0032E97C /* PTOBDCommandSerialGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDCommandSerialGate.swift; sourceTree = "<group>"; };
 		555C0FF8300E06630079D94F /* PTGlobalActionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTGlobalActionHeader.swift; sourceTree = "<group>"; };
 		555DC83F303820E3002B003B /* xp400watch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "xp400watch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5564B5B4305426FB0044E1C3 /* JL_AdvParse.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = JL_AdvParse.xcframework; sourceTree = "<group>"; };
@@ -1186,6 +1188,7 @@
 				600000020000000000000351 /* PTOBDBusLease.swift */,
 				600000020000000000000352 /* PTOBDCommandClassifier.swift */,
 				600000020000000000000354 /* PTOBDCompatibilityGateway.swift */,
+				5550AE50305BE54D0032E97C /* PTOBDCommandSerialGate.swift */,
 			);
 			path = Function;
 			sourceTree = "<group>";
@@ -1912,6 +1915,7 @@
 				600000010000000000000023 /* PTWatchConnectivityManager.swift in Sources */,
 				600000010000000000000213 /* PTMotoAlarmCoordinator.swift in Sources */,
 				600000010000000000000214 /* PTMotoAlarmCenterViewController.swift in Sources */,
+				5550AE51305BE54D0032E97C /* PTOBDCommandSerialGate.swift in Sources */,
 				600000010000000000000215 /* PTMotoAlarmControlIntents.swift in Sources */,
 				55CA9E193024582300A3A677 /* PTOBDDataViewControllerCollection.swift in Sources */,
 				559866C23011A71E0049684D /* SpeechSynthesizer.swift in Sources */,

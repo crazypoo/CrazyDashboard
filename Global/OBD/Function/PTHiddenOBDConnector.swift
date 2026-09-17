@@ -607,6 +607,19 @@ public class PTOBDTransportBase: NSObject {
     
     internal var responseContinuation: CheckedContinuation<String, any Error>?
     internal var timeoutTask: Task<Void, Never>?
+
+    // Build69 Hotfix: ELM327/YMOBD is a serial request-response channel.
+    // The transport owns only one continuation/activeCommand/rxBuffer tuple,
+    // so every normal async command must acquire exclusive ownership first.
+    private let commandSerialGate = PTOBDCommandSerialGate()
+
+    /// Real BLE/Wi-Fi keep the existing recovery behavior. Mock overrides this
+    /// because a synthetic command timeout is not a physical link failure.
+    internal var dropsPhysicalConnectionOnCommandTimeout: Bool { true }
+
+    /// High-frequency Mock polling does not need TX/chunk/RX file logging for
+    /// every PID. Initialization/state-machine logs are still preserved.
+    internal var logsRealtimeTransportTraffic: Bool { true }
     
     public var isSnifferMode: Bool = false
     // MARK: - ⚠️ 子类必须实现的方法
@@ -775,33 +788,83 @@ public class PTOBDTransportBase: NSObject {
     
     // MARK: - 🌟 共享逻辑：异步发送指令 (API)
     public func sendOBDCommandAsync(_ command: String) async throws -> String {
+        await commandSerialGate.acquire()
+
+        do {
+            try Task.checkCancellation()
+            let response = try await performSerializedOBDCommandAsync(command)
+            await commandSerialGate.release()
+            return response
+        } catch {
+            await commandSerialGate.release()
+            throw error
+        }
+    }
+
+    /// Executes one ELM/YMOBD request-response transaction.
+    ///
+    /// ELM327 has no request identifier and this legacy transport has only one
+    /// responseContinuation/activeCommand/rxBuffer set, therefore overlapping
+    /// requests must never enter this section concurrently.
+    private func performSerializedOBDCommandAsync(_ command: String) async throws -> String {
         return try await withCheckedThrowingContinuation { continuation in
             guard isUnlocked else {
-                continuation.resume(throwing: NSError(domain: "OBDError", code: -1, userInfo: [NSLocalizedDescriptionKey: "底层连接尚未准备好"]))
+                continuation.resume(
+                    throwing: NSError(
+                        domain: "OBDError",
+                        code: -1,
+                        userInfo: [NSLocalizedDescriptionKey: "底层连接尚未准备好"]
+                    )
+                )
                 return
             }
-            
+
             self.responseContinuation = continuation
             self.activeCommand = command
             self.rxBuffer = ""
-            
-            PTOBDLogger.obd.ptLog("⬆️ [TX Async] \(command)\\r")
-            self.writeRawData(command) // 呼叫子类去执行物理发送
-            
-            // 20秒超时保护
+
+            if self.logsRealtimeTransportTraffic {
+                PTOBDLogger.obd.ptLog("⬆️ [TX Async] \(command)\\r")
+            }
+            self.writeRawData(command)
+
+            // 20 秒超时保护。初始化阶段仍由 PTYMOBDInitializer 的独立
+            // initialization watchdog 管理，这里只覆盖 isUnlocked 后的命令。
             self.timeoutTask?.cancel()
             self.timeoutTask = Task { [weak self] in
                 try? await Task.sleep(nanoseconds: 20_000_000_000)
-                if !Task.isCancelled {
-                    PTOBDLogger.obd.ptLog("⏳ [TX Async] 响应超时: \(command)")
-                    self?.responseContinuation?.resume(throwing: NSError(domain: "OBDError", code: -3, userInfo: [NSLocalizedDescriptionKey: "响应超时"]))
-                    self?.responseContinuation = nil
-                    self?.dropPhysicalConnection() // 超时断开物理连接
+                guard !Task.isCancelled, let self else { return }
+
+                // A cancelled/obsolete timeout must never hurt the next command.
+                guard self.activeCommand == command,
+                      let pending = self.responseContinuation else { return }
+
+                PTOBDLogger.obd.ptLog("⏳ [TX Async] 响应超时: \(command)")
+
+                // Detach the request state before resuming. Physical teardown
+                // callbacks may also try to finish a pending continuation.
+                self.responseContinuation = nil
+                self.activeCommand = nil
+                self.rxBuffer = ""
+                self.timeoutTask = nil
+
+                pending.resume(
+                    throwing: NSError(
+                        domain: "OBDError",
+                        code: -3,
+                        userInfo: [NSLocalizedDescriptionKey: "响应超时"]
+                    )
+                )
+
+                if self.dropsPhysicalConnectionOnCommandTimeout {
+                    self.dropPhysicalConnection()
+                } else {
+                    PTOBDLogger.obd.ptLog("🎮 [Mock] 单条命令超时，仅结束本次请求，不拆除 Mock 会话")
                 }
             }
         }
     }
-    
+
     // MARK: - 🌟 共享逻辑：接收数据碎片并组装
     internal func handleIncomingChunk(_ chunk: String, sourceName: String) {
         rxBuffer += chunk
@@ -829,8 +892,10 @@ public class PTOBDTransportBase: NSObject {
         }
 
         
-        let displayChunk = chunk.replacingOccurrences(of: "\r", with: "\\r").replacingOccurrences(of: "\n", with: "\\n")
-        PTOBDLogger.obd.ptLog("⬇️ [RX \(sourceName) Chunk] '\(displayChunk)'")
+        if logsRealtimeTransportTraffic {
+            let displayChunk = chunk.replacingOccurrences(of: "\r", with: "\\r").replacingOccurrences(of: "\n", with: "\\n")
+            PTOBDLogger.obd.ptLog("⬇️ [RX \(sourceName) Chunk] '\(displayChunk)'")
+        }
         
         var isComplete = false
         var endRange: Range<String.Index>? = nil
@@ -861,9 +926,13 @@ public class PTOBDTransportBase: NSObject {
             let cleanResponse = completeResponse.trimmingCharacters(in: .whitespacesAndNewlines)
             
             if isUnlocked {
-                PTOBDLogger.obd.ptLog("✅ [RX \(sourceName) Async] 抛出上层: \(cleanResponse)")
-                responseContinuation?.resume(returning: cleanResponse)
+                if logsRealtimeTransportTraffic {
+                    PTOBDLogger.obd.ptLog("✅ [RX \(sourceName) Async] 抛出上层: \(cleanResponse)")
+                }
+                let pending = responseContinuation
                 responseContinuation = nil
+                activeCommand = nil
+                pending?.resume(returning: cleanResponse)
             } else {
                 PTOBDLogger.obd.ptLog("✅ [RX \(sourceName) Init] 消化: \(cleanResponse)")
                 processCompleteResponse(cleanResponse)
@@ -1031,6 +1100,13 @@ public class PTMockOBDConnector: PTOBDTransportBase {
     private let mockQueue = DispatchQueue(label: "com.ptools.mockOBDQueue")
     private var mockStartWorkItem: DispatchWorkItem?
     public var vehicleConfig: PTMockVehicleConfig = .dualECU
+
+    /// Mock runs in-process; one synthetic request timeout is not equivalent
+    /// to a BLE/Wi-Fi physical link failure.
+    override internal var dropsPhysicalConnectionOnCommandTimeout: Bool { false }
+
+    /// Avoid per-PID file I/O during high-frequency UI Mock sessions.
+    override internal var logsRealtimeTransportTraffic: Bool { false }
     
     // MARK: - 🚗 动态车辆状态变量
     private var currentRPM: Int = 800           // 初始怠速 800 转
@@ -1099,7 +1175,7 @@ public class PTMockOBDConnector: PTOBDTransportBase {
         switch command {
         // 基础握手与配置
         case "ATZ", "ATD", "ATI": return "ELM327 v1.5\r\n>"
-        case "ATE0", "ATL0", "ATH1", "ATS1", "ATAL", "ATSP0", "AT+SETCRYPT": return "OK\r\n>"
+        case "ATE0", "ATL0", "ATH1", "ATS0", "ATS1", "ATAL", "ATSP0", "AT+SETCRYPT": return "OK\r\n>"
         case "ATDP": return "AUTO, ISO 15765-4 (CAN 11/500)\r\n>"
         case "AT+VERSION": return "Company: PTools Mock Engine\r\nVersion: V1.0.0\r\n>"
             
@@ -1821,6 +1897,10 @@ public class PTMotoTelemetryManager {
     
     public var telemetryPollingTask: Task<Void, Never>?
     private var suppressPhysicalDisconnectCallback = false
+
+    /// Polling cadence is unchanged; only expensive full-dictionary UIKit /
+    /// delegate refreshes are capped to about 10 Hz.
+    private let minimumUIDispatchIntervalNanoseconds: UInt64 = 100_000_000
     
     private var customParsers: [String: (_ pureResponse: String) -> Any?] = [:]
     // 🌟 热插拔 API：向系统注册你自己的私有探针！
@@ -1948,14 +2028,34 @@ public class PTMotoTelemetryManager {
             guard let self = self else { return }
             
             // 动态解析所有车辆支持的 PID
-            let parsedPIDs = self.parseAllPIDs(rawResponses: rawPIDs)
-            guard !parsedPIDs.isEmpty else {
-                PTOBDLogger.obd.ptLog("❌ [轮询引擎] 探针解析全 0，主动断开！")
-                await MainActor.run { self.disconnect() }
-                return
+            var parsedPIDs = self.parseAllPIDs(rawResponses: rawPIDs)
+
+            // Empty capability metadata is a degraded-data state, not proof
+            // that the underlying BLE/Wi-Fi/Mock transport has disappeared.
+            if parsedPIDs.isEmpty {
+                switch self.activeConnectionType {
+                case .mock:
+                    parsedPIDs = [
+                        "0105", // coolant
+                        "010C", // rpm
+                        "010D", // speed
+                        "010F", // intake air
+                        "0111", // throttle
+                        "011F", // runtime
+                        "0142", // control-module voltage
+                        "0145", // relative throttle
+                        "0151"  // fuel type
+                    ]
+                    PTOBDLogger.obd.ptLog("🎮 [Mock] PID capability 暂为空，使用稳定 fallback，不断开会话")
+
+                default:
+                    PTOBDLogger.obd.ptLog("⚠️ [轮询引擎] PID capability 暂为空，保持物理连接，仅保留基础探针")
+                }
             }
-            
-            await self.autoDetectEngineType(supportedHexPIDs: parsedPIDs)
+
+            if !parsedPIDs.isEmpty {
+                await self.autoDetectEngineType(supportedHexPIDs: parsedPIDs)
+            }
             
             // 2. 构建包含基础电压的动态总表
             var allDynamicCommands = parsedPIDs
@@ -1998,6 +2098,9 @@ public class PTMotoTelemetryManager {
             // 4. 建立持续保存数据的字典
             var persistentMeasurements: [String: Any] = [:]
             for command in allDynamicCommands { persistentMeasurements[command] = 0.0 }
+
+            var measurementsDirty = false
+            var lastUIDispatchNanoseconds: UInt64 = 0
             
             while !Task.isCancelled && self.isConnected {
                 
@@ -2014,31 +2117,42 @@ public class PTMotoTelemetryManager {
                             // 交给无敌装甲解析器
                             if let val = self.parseSingleResponse(command: commandString, response: response) {
                                 persistentMeasurements[commandString] = val
-                                
-                                // 为了防止日志爆炸，可以考虑只打印部分核心数据的解析结果
-                                // PTOBDLogger.obd.ptLog("🏎️ [解析成功] 完美提取 \(commandString) 数据 = \(val)")
-                                
-                                // 0 延迟派发机制，让 UI 极速响应
-                                let mapToDispatch = persistentMeasurements
-                                await MainActor.run {
-                                    self.dispatchMeasurementsToDelegates(measurements: mapToDispatch)
-                                }
+                                measurementsDirty = true
                             } else {
                                 // 如果是支持的 PID 但我们还没在 parseSingleResponse 里写公式，暂存原始 Hex
                                 if cleanResponse.contains("41") {
                                     persistentMeasurements[commandString] = cleanResponse
-                                    let mapToDispatch = persistentMeasurements
-                                    await MainActor.run {
-                                        self.dispatchMeasurementsToDelegates(measurements: mapToDispatch)
-                                    }
+                                    measurementsDirty = true
                                 }
                             }
                         }
                     } catch {}
+
+                    // ECU sampling remains unchanged. Only expensive full UI
+                    // snapshots are coalesced to at most about 10 Hz.
+                    if measurementsDirty {
+                        let now = DispatchTime.now().uptimeNanoseconds
+                        let shouldDispatch =
+                            lastUIDispatchNanoseconds == 0 ||
+                            now &- lastUIDispatchNanoseconds >= self.minimumUIDispatchIntervalNanoseconds
+
+                        if shouldDispatch {
+                            let mapToDispatch = persistentMeasurements
+                            await MainActor.run {
+                                self.dispatchMeasurementsToDelegates(measurements: mapToDispatch)
+                            }
+                            lastUIDispatchNanoseconds = now
+                            measurementsDirty = false
+                        }
+                    }
                     
-                    // 维持 10 毫秒极限微延迟，压榨硬件通讯极速
+                    // 维持 10 毫秒 ECU 轮询间隔
                     try? await Task.sleep(nanoseconds: 10_000_000)
                 }
+
+                // Keep a dirty snapshot pending across cycle boundaries. The next
+                // command will flush it once the 100 ms UI interval is reached.
+                // This avoids a short end-of-cycle burst above the 10 Hz cap.
                 
                 // 周期底噪
                 try? await Task.sleep(nanoseconds: 50_000_000)
@@ -2055,7 +2169,8 @@ public class PTMotoTelemetryManager {
             else if clean.contains("4140") { base = 0x40 }
             allSupported.append(contentsOf: parseSupportedPIDs(response: res, baseCommand: base))
         }
-        return allSupported
+        var seen = Set<String>()
+        return allSupported.filter { seen.insert($0).inserted }
     }
     
     private func parseSupportedPIDs(response: String, baseCommand: Int) -> [String] {
