@@ -26,9 +26,34 @@ class PTMusicLibraryViewController: PTMotoBaseViewController {
         items: PTMusicBrowseCategory.allCases.map(\.title)
     )
 
+    private lazy var searchBar: PTSearchBar = {
+        let view = PTSearchBar(frame: .zero)
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.delegate = self
+
+        view.searchPlaceholder = NSLocalizedString("搜索资料库", comment: "")
+        view.searchPlaceholderFont = .systemFont(ofSize: 15)
+        view.searchPlaceholderColor = .grayCA
+        view.searchTextColor = .white
+        view.cursorColor = .white
+
+        view.searchBarOutViewColor = .clear
+        view.searchTextFieldBackgroundColor = UIColor.white.withAlphaComponent(0.12)
+        view.searchBarTextFieldBorderColor = .clear
+        view.searchBarTextFieldBorderWidth = 0
+        view.searchBarTextFieldCornerRadius = 12
+
+        view.tintColor = .white
+        view.autocapitalizationType = .none
+        view.autocorrectionType = .no
+        view.searchTextField.returnKeyType = .search
+        view.searchTextField.clearButtonMode = .whileEditing
+
+        return view
+    }()
+
     private let tableView = UITableView(frame: .zero, style: .plain)
     private let statusLabel = UILabel()
-    private let searchController = UISearchController(searchResultsController: nil)
 
     private var songs: [Song] = []
     private var albums: [Album] = []
@@ -45,40 +70,89 @@ class PTMusicLibraryViewController: PTMotoBaseViewController {
         view.backgroundColor = .black
 
         setupControls()
+        setupSearchBar()
         setupTableView()
-        setupSearchController()
 
         loadCurrentMode()
     }
 
     private var sourceMode: SourceMode {
-        SourceMode(rawValue: sourceControl.selectedSegmentIndex) ?? .library
+        SourceMode(
+            rawValue: sourceControl.selectedSegmentIndex
+        ) ?? .library
     }
 
     private var category: PTMusicBrowseCategory {
-        PTMusicBrowseCategory(rawValue: categoryControl.selectedSegmentIndex) ?? .songs
+        PTMusicBrowseCategory(
+            rawValue: categoryControl.selectedSegmentIndex
+        ) ?? .songs
     }
 
     private func setupControls() {
         sourceControl.translatesAutoresizingMaskIntoConstraints = false
         sourceControl.selectedSegmentIndex = 0
-        sourceControl.addTarget(self, action: #selector(sourceChanged), for: .valueChanged)
+        sourceControl.addTarget(
+            self,
+            action: #selector(sourceChanged),
+            for: .valueChanged
+        )
 
         categoryControl.translatesAutoresizingMaskIntoConstraints = false
         categoryControl.selectedSegmentIndex = 0
-        categoryControl.addTarget(self, action: #selector(categoryChanged), for: .valueChanged)
+        categoryControl.addTarget(
+            self,
+            action: #selector(categoryChanged),
+            for: .valueChanged
+        )
 
         view.addSubview(sourceControl)
         view.addSubview(categoryControl)
 
         NSLayoutConstraint.activate([
-            sourceControl.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
-            sourceControl.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            sourceControl.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            sourceControl.topAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.topAnchor,
+                constant: 8
+            ),
+            sourceControl.leadingAnchor.constraint(
+                equalTo: view.leadingAnchor,
+                constant: 16
+            ),
+            sourceControl.trailingAnchor.constraint(
+                equalTo: view.trailingAnchor,
+                constant: -16
+            ),
 
-            categoryControl.topAnchor.constraint(equalTo: sourceControl.bottomAnchor, constant: 8),
-            categoryControl.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            categoryControl.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16)
+            categoryControl.topAnchor.constraint(
+                equalTo: sourceControl.bottomAnchor,
+                constant: 8
+            ),
+            categoryControl.leadingAnchor.constraint(
+                equalTo: view.leadingAnchor,
+                constant: 16
+            ),
+            categoryControl.trailingAnchor.constraint(
+                equalTo: view.trailingAnchor,
+                constant: -16
+            )
+        ])
+    }
+
+    private func setupSearchBar() {
+        view.addSubview(searchBar)
+
+        NSLayoutConstraint.activate([
+            searchBar.topAnchor.constraint(
+                equalTo: categoryControl.bottomAnchor,
+                constant: 8
+            ),
+            searchBar.leadingAnchor.constraint(
+                equalTo: view.leadingAnchor,
+                constant: 12
+            ),
+            searchBar.trailingAnchor.constraint(
+                equalTo: view.trailingAnchor,
+                constant: -12
+            )
         ])
     }
 
@@ -92,7 +166,6 @@ class PTMusicLibraryViewController: PTMotoBaseViewController {
             PTMusicTrackCell.self,
             forCellReuseIdentifier: PTMusicTrackCell.reuseIdentifier
         )
-
         tableView.register(
             PTMusicCollectionCell.self,
             forCellReuseIdentifier: PTMusicCollectionCell.reuseIdentifier
@@ -107,42 +180,42 @@ class PTMusicLibraryViewController: PTMotoBaseViewController {
         view.addSubview(tableView)
 
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: categoryControl.bottomAnchor, constant: 8),
+            tableView.topAnchor.constraint(
+                equalTo: searchBar.bottomAnchor,
+                constant: 4
+            ),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
 
-    private func setupSearchController() {
-        searchController.searchResultsUpdater = self
-        searchController.obscuresBackgroundDuringPresentation = false
-        searchController.searchBar.placeholder = NSLocalizedString("搜索资料库", comment: "")
-
-        navigationItem.searchController = searchController
-        navigationItem.hidesSearchBarWhenScrolling = true
-        definesPresentationContext = true
-    }
-
-    @objc private func sourceChanged() {
-        searchController.searchBar.text = nil
-        searchController.isActive = false
+    @objc
+    private func sourceChanged() {
+        searchBar.text = nil
+        searchBar.resignFirstResponder()
 
         if sourceMode == .recentlyPlayed {
             categoryControl.selectedSegmentIndex = PTMusicBrowseCategory.songs.rawValue
             categoryControl.isEnabled = false
-            searchController.searchBar.isUserInteractionEnabled = false
+
+            searchBar.isUserInteractionEnabled = false
+            searchBar.alpha = 0.45
         } else {
             categoryControl.isEnabled = true
-            searchController.searchBar.isUserInteractionEnabled = true
+
+            searchBar.isUserInteractionEnabled = true
+            searchBar.alpha = 1
         }
 
         loadCurrentMode()
     }
 
-    @objc private func categoryChanged() {
-        searchController.searchBar.text = nil
-        searchController.isActive = false
+    @objc
+    private func categoryChanged() {
+        searchBar.text = nil
+        searchBar.resignFirstResponder()
+
         loadCurrentMode()
     }
 
@@ -169,21 +242,30 @@ class PTMusicLibraryViewController: PTMotoBaseViewController {
                 guard let self else { return }
 
                 if sourceMode == .recentlyPlayed {
-                    songs = try await PTMusicLibraryService.shared.recentlyPlayedSongs(limit: 40)
+                    songs = try await PTMusicLibraryService.shared
+                        .recentlyPlayedSongs(limit: 40)
                 } else {
                     switch category {
                     case .songs:
-                        songs = try await PTMusicLibraryService.shared.songs(limit: 150)
+                        songs = try await PTMusicLibraryService.shared
+                            .songs(limit: 150)
+
                     case .albums:
-                        albums = try await PTMusicLibraryService.shared.albums(limit: 100)
+                        albums = try await PTMusicLibraryService.shared
+                            .albums(limit: 100)
+
                     case .artists:
-                        artists = try await PTMusicLibraryService.shared.artists(limit: 100)
+                        artists = try await PTMusicLibraryService.shared
+                            .artists(limit: 100)
+
                     case .playlists:
-                        playlists = try await PTMusicLibraryService.shared.playlists(limit: 100)
+                        playlists = try await PTMusicLibraryService.shared
+                            .playlists(limit: 100)
                     }
                 }
 
                 try Task.checkCancellation()
+
                 tableView.reloadData()
 
                 setStatus(
@@ -251,11 +333,15 @@ class PTMusicLibraryViewController: PTMotoBaseViewController {
                 }
 
                 try Task.checkCancellation()
+
                 tableView.reloadData()
 
                 setStatus(
                     currentResultCount == 0
-                    ? NSLocalizedString("资料库中没有匹配内容", comment: "")
+                    ? NSLocalizedString(
+                        "资料库中没有匹配内容",
+                        comment: ""
+                    )
                     : nil
                 )
 
@@ -277,17 +363,22 @@ class PTMusicLibraryViewController: PTMotoBaseViewController {
         switch category {
         case .songs:
             return songs.count
+
         case .albums:
             return albums.count
+
         case .artists:
             return artists.count
+
         case .playlists:
             return playlists.count
         }
     }
 
     private var itemSource: PTMusicSource {
-        sourceMode == .recentlyPlayed ? .recentlyPlayed : .library
+        sourceMode == .recentlyPlayed
+        ? .recentlyPlayed
+        : .library
     }
 
     private func setStatus(_ text: String?) {
@@ -313,12 +404,23 @@ class PTMusicLibraryViewController: PTMotoBaseViewController {
     }
 }
 
-extension PTMusicLibraryViewController: UISearchResultsUpdating {
+// MARK: - UISearchBarDelegate
 
-    public func updateSearchResults(for searchController: UISearchController) {
-        searchLibrary(searchController.searchBar.text ?? "")
+extension PTMusicLibraryViewController: UISearchBarDelegate {
+
+    public func searchBar(
+        _ searchBar: UISearchBar,
+        textDidChange searchText: String
+    ) {
+        searchLibrary(searchText)
+    }
+
+    public func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.resignFirstResponder()
     }
 }
+
+// MARK: - UITableViewDataSource / UITableViewDelegate
 
 extension PTMusicLibraryViewController: UITableViewDataSource, UITableViewDelegate {
 
@@ -350,6 +452,7 @@ extension PTMusicLibraryViewController: UITableViewDataSource, UITableViewDelega
                     source: itemSource
                 )
             )
+
             return cell
         }
 
@@ -365,8 +468,12 @@ extension PTMusicLibraryViewController: UITableViewDataSource, UITableViewDelega
             return UITableViewCell()
 
         case .albums:
-            guard albums.indices.contains(indexPath.row) else { return UITableViewCell() }
+            guard albums.indices.contains(indexPath.row) else {
+                return UITableViewCell()
+            }
+
             let album = albums[indexPath.row]
+
             cell.configure(
                 id: album.id.rawValue,
                 title: album.title,
@@ -375,8 +482,12 @@ extension PTMusicLibraryViewController: UITableViewDataSource, UITableViewDelega
             )
 
         case .artists:
-            guard artists.indices.contains(indexPath.row) else { return UITableViewCell() }
+            guard artists.indices.contains(indexPath.row) else {
+                return UITableViewCell()
+            }
+
             let artist = artists[indexPath.row]
+
             cell.configure(
                 id: artist.id.rawValue,
                 title: artist.name,
@@ -385,8 +496,12 @@ extension PTMusicLibraryViewController: UITableViewDataSource, UITableViewDelega
             )
 
         case .playlists:
-            guard playlists.indices.contains(indexPath.row) else { return UITableViewCell() }
+            guard playlists.indices.contains(indexPath.row) else {
+                return UITableViewCell()
+            }
+
             let playlist = playlists[indexPath.row]
+
             cell.configure(
                 id: playlist.id.rawValue,
                 title: playlist.name,
@@ -420,6 +535,7 @@ extension PTMusicLibraryViewController: UITableViewDataSource, UITableViewDelega
                     self?.showError(error.localizedDescription)
                 }
             }
+
             return
         }
 

@@ -12,7 +12,36 @@ class PTMusicSearchViewController: PTMotoBaseViewController {
 
     private let tableView = UITableView(frame: .zero, style: .plain)
     private let statusLabel = UILabel()
-    private let searchController = UISearchController(searchResultsController: nil)
+
+    private lazy var searchBar: PTSearchBar = {
+        let view = PTSearchBar(frame: .zero)
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.delegate = self
+
+        view.searchPlaceholder = NSLocalizedString("搜索 Apple Music", comment: "")
+        view.searchPlaceholderFont = .systemFont(ofSize: 15)
+        view.searchPlaceholderColor = .grayCA
+        view.searchTextColor = .white
+        view.cursorColor = .white
+
+        view.searchBarOutViewColor = .clear
+        view.searchTextFieldBackgroundColor = UIColor.white.withAlphaComponent(0.12)
+        view.searchBarTextFieldBorderColor = .clear
+        view.searchBarTextFieldBorderWidth = 0
+        view.searchBarTextFieldCornerRadius = 12
+
+        view.scopeButtonTitles = PTMusicBrowseCategory.allCases.map(\.title)
+        view.selectedScopeButtonIndex = 0
+        view.showsScopeBar = true
+        view.tintColor = .white
+
+        view.autocapitalizationType = .none
+        view.autocorrectionType = .no
+        view.searchTextField.returnKeyType = .search
+        view.searchTextField.clearButtonMode = .whileEditing
+
+        return view
+    }()
 
     private var songs: [Song] = []
     private var albums: [Album] = []
@@ -21,28 +50,40 @@ class PTMusicSearchViewController: PTMotoBaseViewController {
 
     private var searchTask: Task<Void, Never>?
 
-//    lazy var searchBar:PTSearchBar = {
-//        let view = PTSearchBar()
-//        view.delegate = self
-//        view.searchPlaceholder = NSLocalizedString("搜索 Apple Music", comment: "")
-//        return view
-//    }()
-    
     public override func viewDidLoad() {
         super.viewDidLoad()
 
         pt_Title = NSLocalizedString("搜索 Apple Music", comment: "")
         view.backgroundColor = .black
 
+        setupSearchBar()
         setupTableView()
-        setupSearchController()
         setupStatusLabel()
     }
 
     private var category: PTMusicBrowseCategory {
         PTMusicBrowseCategory(
-            rawValue: searchController.searchBar.selectedScopeButtonIndex
+            rawValue: searchBar.selectedScopeButtonIndex
         ) ?? .songs
+    }
+
+    private func setupSearchBar() {
+        view.addSubview(searchBar)
+
+        NSLayoutConstraint.activate([
+            searchBar.topAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.topAnchor,
+                constant: 8
+            ),
+            searchBar.leadingAnchor.constraint(
+                equalTo: view.leadingAnchor,
+                constant: 12
+            ),
+            searchBar.trailingAnchor.constraint(
+                equalTo: view.trailingAnchor,
+                constant: -12
+            )
+        ])
     }
 
     private func setupTableView() {
@@ -55,7 +96,6 @@ class PTMusicSearchViewController: PTMotoBaseViewController {
             PTMusicTrackCell.self,
             forCellReuseIdentifier: PTMusicTrackCell.reuseIdentifier
         )
-
         tableView.register(
             PTMusicCollectionCell.self,
             forCellReuseIdentifier: PTMusicCollectionCell.reuseIdentifier
@@ -64,27 +104,14 @@ class PTMusicSearchViewController: PTMotoBaseViewController {
         view.addSubview(tableView)
 
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.topAnchor),
+            tableView.topAnchor.constraint(
+                equalTo: searchBar.bottomAnchor,
+                constant: 4
+            ),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
-    }
-
-    private func setupSearchController() {
-        searchController.searchResultsUpdater = self
-        searchController.searchBar.delegate = self
-        searchController.obscuresBackgroundDuringPresentation = false
-        searchController.searchBar.placeholder = NSLocalizedString(
-            "搜索 Apple Music",
-            comment: ""
-        )
-        searchController.searchBar.scopeButtonTitles = PTMusicBrowseCategory.allCases.map(\.title)
-        searchController.searchBar.selectedScopeButtonIndex = 0
-
-        navigationItem.searchController = searchController
-        navigationItem.hidesSearchBarWhenScrolling = false
-        definesPresentationContext = true
     }
 
     private func setupStatusLabel() {
@@ -94,7 +121,13 @@ class PTMusicSearchViewController: PTMotoBaseViewController {
         statusLabel.numberOfLines = 0
 
         tableView.backgroundView = statusLabel
-        setStatus(NSLocalizedString("输入至少 2 个字符开始搜索", comment: ""))
+
+        setStatus(
+            NSLocalizedString(
+                "输入至少 2 个字符开始搜索",
+                comment: ""
+            )
+        )
     }
 
     private func clearResults() {
@@ -113,7 +146,12 @@ class PTMusicSearchViewController: PTMotoBaseViewController {
         guard keyword.count >= 2 else {
             clearResults()
             tableView.reloadData()
-            setStatus(NSLocalizedString("输入至少 2 个字符开始搜索", comment: ""))
+            setStatus(
+                NSLocalizedString(
+                    "输入至少 2 个字符开始搜索",
+                    comment: ""
+                )
+            )
             return
         }
 
@@ -155,6 +193,7 @@ class PTMusicSearchViewController: PTMotoBaseViewController {
                 }
 
                 try Task.checkCancellation()
+
                 tableView.reloadData()
 
                 setStatus(
@@ -177,10 +216,13 @@ class PTMusicSearchViewController: PTMotoBaseViewController {
         switch category {
         case .songs:
             return songs.count
+
         case .albums:
             return albums.count
+
         case .artists:
             return artists.count
+
         case .playlists:
             return playlists.count
         }
@@ -209,14 +251,16 @@ class PTMusicSearchViewController: PTMotoBaseViewController {
     }
 }
 
-extension PTMusicSearchViewController: UISearchResultsUpdating {
-
-    public func updateSearchResults(for searchController: UISearchController) {
-        search(searchController.searchBar.text ?? "")
-    }
-}
+// MARK: - UISearchBarDelegate
 
 extension PTMusicSearchViewController: UISearchBarDelegate {
+
+    public func searchBar(
+        _ searchBar: UISearchBar,
+        textDidChange searchText: String
+    ) {
+        search(searchText)
+    }
 
     public func searchBar(
         _ searchBar: UISearchBar,
@@ -224,7 +268,13 @@ extension PTMusicSearchViewController: UISearchBarDelegate {
     ) {
         search(searchBar.text ?? "")
     }
+
+    public func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.resignFirstResponder()
+    }
 }
+
+// MARK: - UITableViewDataSource / UITableViewDelegate
 
 extension PTMusicSearchViewController: UITableViewDataSource, UITableViewDelegate {
 
@@ -257,6 +307,7 @@ extension PTMusicSearchViewController: UITableViewDataSource, UITableViewDelegat
                     source: .catalog
                 )
             )
+
             return cell
 
         case .albums:
@@ -271,12 +322,14 @@ extension PTMusicSearchViewController: UITableViewDataSource, UITableViewDelegat
             }
 
             let album = albums[indexPath.row]
+
             cell.configure(
                 id: album.id.rawValue,
                 title: album.title,
                 subtitle: album.artistName,
                 artwork: album.artwork
             )
+
             return cell
 
         case .artists:
@@ -291,12 +344,14 @@ extension PTMusicSearchViewController: UITableViewDataSource, UITableViewDelegat
             }
 
             let artist = artists[indexPath.row]
+
             cell.configure(
                 id: artist.id.rawValue,
                 title: artist.name,
                 subtitle: NSLocalizedString("歌手", comment: ""),
                 artwork: artist.artwork
             )
+
             return cell
 
         case .playlists:
@@ -311,12 +366,14 @@ extension PTMusicSearchViewController: UITableViewDataSource, UITableViewDelegat
             }
 
             let playlist = playlists[indexPath.row]
+
             cell.configure(
                 id: playlist.id.rawValue,
                 title: playlist.name,
                 subtitle: playlist.curatorName,
                 artwork: playlist.artwork
             )
+
             return cell
         }
     }
@@ -340,6 +397,7 @@ extension PTMusicSearchViewController: UITableViewDataSource, UITableViewDelegat
                         songs: allSongs,
                         startingAt: selected
                     )
+
                     self?.navigationController?.popViewController(animated: true)
                 } catch {
                     self?.showError(error.localizedDescription)
@@ -383,28 +441,44 @@ extension PTMusicSearchViewController: UITableViewDataSource, UITableViewDelegat
         contextMenuConfigurationForRowAt indexPath: IndexPath,
         point: CGPoint
     ) -> UIContextMenuConfiguration? {
-        guard category == .songs, songs.indices.contains(indexPath.row) else {
+        guard
+            category == .songs,
+            songs.indices.contains(indexPath.row)
+        else {
             return nil
         }
 
         let song = songs[indexPath.row]
 
-        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
+        return UIContextMenuConfiguration(
+            identifier: nil,
+            previewProvider: nil
+        ) { _ in
             let playNext = UIAction(
-                title: NSLocalizedString("Riding Queue 下一首播放", comment: ""),
-                image: UIImage(systemName: "text.line.first.and.arrowtriangle.forward")
+                title: NSLocalizedString(
+                    "Riding Queue 下一首播放",
+                    comment: ""
+                ),
+                image: UIImage(
+                    systemName: "text.line.first.and.arrowtriangle.forward"
+                )
             ) { _ in
                 Task { @MainActor in
-                    try? await PTMusicPlaybackManager.shared.playNextInRidingQueue(song)
+                    try? await PTMusicPlaybackManager.shared
+                        .playNextInRidingQueue(song)
                 }
             }
 
             let addLater = UIAction(
-                title: NSLocalizedString("加入 Riding Queue", comment: ""),
+                title: NSLocalizedString(
+                    "加入 Riding Queue",
+                    comment: ""
+                ),
                 image: UIImage(systemName: "text.badge.plus")
             ) { _ in
                 Task { @MainActor in
-                    try? await PTMusicPlaybackManager.shared.appendToRidingQueue(song)
+                    try? await PTMusicPlaybackManager.shared
+                        .appendToRidingQueue(song)
                 }
             }
 
