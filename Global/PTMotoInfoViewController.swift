@@ -277,6 +277,11 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
         return view
     }()
     
+    lazy var dashboardMusic:PTMusicDashboardCardView = {
+        let view = PTMusicDashboardCardView()
+        return view
+    }()
+    
     lazy var obdButton:PTBaseButton = {
         let baseImage = UIImage(.engine.combustionBadgeExclamationmarkFill)
         let view = PTBaseButton()
@@ -743,7 +748,8 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
             odoItem,
             engineItem,
             temItem,
-            globeItem
+            globeItem,
+            dashboardMusic
         ])
 
         vehicleSummaryView.snp.makeConstraints { make in
@@ -828,6 +834,13 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
             make.height.left.right.equalTo(self.tripItem)
             make.top.equalTo(self.temItem.snp.bottom).offset(CGFloat.GlobalItemSpacing)
             make.bottom.equalToSuperview().inset(CGFloat.GlobalItemSpacing * 2)
+        }
+        
+        dashboardMusic.snp.makeConstraints { make in
+            make.left.equalTo(self.tripItem)
+            make.right.equalTo(self.odoItem)
+            make.top.equalTo(self.globeItem.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.height.equalTo(90)
         }
             
         if isFirstLoad {

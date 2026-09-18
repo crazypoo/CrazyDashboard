@@ -51,7 +51,7 @@ public final class PTMusicDashboardCardView: UIView {
         backgroundColor = .secondarySystemBackground
         layer.cornerRadius = 18
         clipsToBounds = true
-        isHidden = true
+//        isHidden = true
 
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "Apple Music"
