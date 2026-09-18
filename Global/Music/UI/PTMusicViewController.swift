@@ -6,9 +6,11 @@
 import UIKit
 import Combine
 import MusicKit
+import PooTools
+import SafeSFSymbols
 
 @MainActor
-public final class PTMusicViewController: UIViewController {
+class PTMusicViewController: PTMotoBaseViewController {
 
     private let modeControl = UISegmentedControl(
         items: [
@@ -26,13 +28,37 @@ public final class PTMusicViewController: UIViewController {
 
     private var cancellables = Set<AnyCancellable>()
 
+    lazy var searchButton:PTBaseButton = {
+        let view = PTBaseButton(type: .custom)
+        view.setImage(UIImage(.magnifyingglass), for: .normal)
+        view.addActionHandlers(handler: { _ in
+            self.openSearch()
+        })
+        view.bounds = .init(x: 0, y: 0, width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize)
+        return view
+    }()
+    
+    lazy var libButton:PTBaseButton = {
+        let view = PTBaseButton(type: .custom)
+        view.setImage(UIImage(.music.noteList), for: .normal)
+        view.addActionHandlers(handler: { _ in
+            self.openLibrary()
+        })
+        view.bounds = .init(x: 0, y: 0, width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize)
+        return view
+    }()
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        setCustomRightButtons(buttons: [searchButton,libButton], buttonSpacing: CGFloat.GlobalItemSpacing)
+    }
+    
     public override func viewDidLoad() {
         super.viewDidLoad()
 
-        title = NSLocalizedString("音乐", comment: "")
+        pt_Title = NSLocalizedString("音乐", comment: "")
         view.backgroundColor = .systemBackground
 
-        setupNavigationItems()
         setupUI()
         bindState()
         bindActions()
@@ -43,23 +69,6 @@ public final class PTMusicViewController: UIViewController {
             )
             self?.updateAuthorizationUI()
         }
-    }
-
-    private func setupNavigationItems() {
-        navigationItem.rightBarButtonItems = [
-            UIBarButtonItem(
-                image: UIImage(systemName: "magnifyingglass"),
-                style: .plain,
-                target: self,
-                action: #selector(openSearch)
-            ),
-            UIBarButtonItem(
-                image: UIImage(systemName: "music.note.list"),
-                style: .plain,
-                target: self,
-                action: #selector(openLibrary)
-            )
-        ]
     }
 
     private func setupUI() {

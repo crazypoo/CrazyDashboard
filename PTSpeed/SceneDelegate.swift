@@ -58,11 +58,7 @@ class SceneDelegate: PTWindowSceneDelegate {
         }
         
         PTMusicModuleBootstrap.start()
-        PTGCDManager.shared.delayOnMain(time: 10) {
-            guard let presenter = PTUtils.getCurrentVC() else { return }
-            PTMusicRouter.openPlayer(from: presenter)
-        }
-        
+
         Task {
             do {
                 let configuration =
