@@ -221,6 +221,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
     private var dashboardFlushTask: Task<Void, Never>?
     private var dashboardIdentityTask: Task<Void, Never>?
     private var protocolCaptureLifecycleTask: Task<Void, Never>?
+    private var telemetryResearchLifecycleTask: Task<Void, Never>?
     private var dashboardSessionToken = UUID()
     private var dashboardSessionActive = false
     private var dashboardIdentityResolved = false
@@ -309,6 +310,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
             }
         }
         syncProtocolCaptureLifecycle(for: snapshot)
+        syncTelemetryResearchLifecycle(for: snapshot)
     }
 
     isolated deinit {
@@ -317,6 +319,7 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         dashboardFlushTask?.cancel()
         dashboardIdentityTask?.cancel()
         protocolCaptureLifecycleTask?.cancel()
+        telemetryResearchLifecycleTask?.cancel()
         if let backgroundObserver {
             NotificationCenter.default.removeObserver(backgroundObserver)
         }
@@ -697,8 +700,72 @@ public final class PTVehicleConnectivityCoordinator: NSObject {
         )
         syncWidgetConnectionProjection()
         syncProtocolCaptureLifecycle(for: next)
+        syncTelemetryResearchLifecycle(for: next)
     }
 
+    private func syncTelemetryResearchLifecycle(
+        for next: PTVehicleSnapshot
+    ) {
+        let dashboardConnected = next.dashboard.state == .connected
+
+        let obdConnected = next.obd.state == .connected
+
+        // connecting 也算“当前 Session 还不能结束”。
+        //
+        // 例如：
+        // Dashboard 刚断开，
+        // OBD 正在 connecting，
+        // 此时不能提前上传。
+        let dashboardActive = next.dashboard.state == .connecting || next.dashboard.state == .connected
+
+        let obdActive = next.obd.state == .connecting || next.obd.state == .connected
+
+        let hasConnectedLink =
+            dashboardConnected
+            || obdConnected
+
+        let hasActiveLink =
+            dashboardActive
+            || obdActive
+
+        // 当前 CrazyDashboard 研究对象就是 XP400GT。
+        // 不放 VIN / UUID / BLE identity。
+        let isMock = next.dashboard.transport == .dashboardMock || next.obd.transport == .obdMock
+
+        let vehicleContext = PTTelemetryVehicleContext(
+            family: isMock
+                ? "XP400GT-MOCK"
+                : "XP400GT",
+            dashboardFirmware: nil,
+            ecuSoftware: nil
+        )
+
+        // 和已有 Protocol Capture 一样串行执行，
+        // 防止快速 connect/disconnect 顺序倒置。
+        let previous =
+            telemetryResearchLifecycleTask
+
+        telemetryResearchLifecycleTask =
+            Task { @MainActor in
+
+                _ = await previous?.result
+
+                guard !Task.isCancelled else {
+                    return
+                }
+
+                await PTTelemetryResearchManager.shared
+                    .synchronizeVehicleLinks(
+                        hasConnectedLink:
+                            hasConnectedLink,
+                        hasActiveLink:
+                            hasActiveLink,
+                        vehicle:
+                            vehicleContext
+                    )
+            }
+    }
+    
     private var dashboardTelemetrySource: PTVehicleTelemetrySource {
         snapshot.dashboard.transport == .dashboardMock ? .dashboardMock : .dashboardBluetooth
     }

@@ -47,6 +47,25 @@ public actor PTTelemetryResearchManager {
     private let uploader: PTCloudKitTelemetryUploader
     private let defaults: UserDefaults
 
+    // MARK: - Automatic vehicle connection lifecycle
+
+    /// 至少有一个真实 Dashboard / OBD 已经连接。
+    private var lifecycleHasConnectedLink = false
+
+    /// 至少有一个真实 Dashboard / OBD 正在 connecting / connected。
+    /// 用它避免一边断开、另一边正在连接时提前结束 Session。
+    private var lifecycleHasActiveLink = false
+
+    /// 当前 Session 使用的匿名车辆上下文。
+    private var lifecycleVehicleContext: PTTelemetryVehicleContext = .unknown
+
+    /// CloudKit 上传和 Recording 是两个不同维度，不能让上传状态覆盖新 Session。
+    private var uploadInProgress = false
+
+    /// 如果上传期间又产生了一个需要上传的新 Session，
+    //// 当前批次完成后再跑一轮。
+    private var uploadRequestedWhileBusy = false
+    
     public init(
         recorder: PTTelemetryRecorder = .shared,
         queue: PTTelemetryUploadQueue = .shared,
@@ -61,9 +80,12 @@ public actor PTTelemetryResearchManager {
 
     public func configure(
         _ configuration: PTTelemetryConfiguration
-    ) {
-        self.configuration =
-            configuration
+    ) async {
+        self.configuration = configuration
+
+        // 如果 Coordinator 比配置更早收到连接状态，
+        // 配置完成后立即补一次生命周期校正。
+        await reconcileVehicleLinkLifecycle()
     }
 
     public func currentState() -> PTTelemetryResearchState {
@@ -85,18 +107,90 @@ public actor PTTelemetryResearchManager {
 
         defaults.set(
             enabled,
-            forKey:
-                PTTelemetryConfiguration
-                    .consentDefaultsKey
+            forKey: PTTelemetryConfiguration.consentDefaultsKey
         )
 
-        if !enabled {
-            await recorder.cancel()
-            state = .idle
+        if enabled {
+            // 用户开启研究贡献时，如果车已经连接，
+            // 不必等待下一次 connection callback。
+            await reconcileVehicleLinkLifecycle()
+            return
+        }
 
-            if purgePendingDataWhenDisabled {
-                await queue.purgeAll()
+        await recorder.cancel()
+        state = .idle
+
+        if purgePendingDataWhenDisabled {
+            await queue.purgeAll()
+        }
+    }
+    
+    public func synchronizeVehicleLinks(
+        hasConnectedLink: Bool,
+        hasActiveLink: Bool,
+        vehicle: PTTelemetryVehicleContext
+    ) async {
+
+        // 即使研究功能暂时没开启，也先保存最新连接状态。
+        // 这样用户开启开关时可以立即开始。
+        lifecycleHasConnectedLink = hasConnectedLink
+        lifecycleHasActiveLink = hasActiveLink
+        lifecycleVehicleContext = vehicle
+
+        await reconcileVehicleLinkLifecycle()
+    }
+
+    private func reconcileVehicleLinkLifecycle() async {
+
+        guard configuration != nil,
+              isResearchEnabled() else {
+            return
+        }
+
+        switch state {
+
+        case .idle, .uploading:
+
+            // 真正有一个连接成功之后才开始。
+            guard lifecycleHasConnectedLink else {
+                return
             }
+
+            do {
+                _ = try await startSession(
+                    vehicle: lifecycleVehicleContext
+                )
+            } catch {
+                // 自动生命周期不能影响正常车辆连接。
+            }
+
+        case .recording:
+
+            // connecting / connected 任意一个还存在，都继续当前 Session。
+            guard !lifecycleHasActiveLink else {
+                return
+            }
+
+            // Dashboard + OBD 都真正结束，才结束并上传。
+            do {
+                _ = try await finishSession(
+                    uploadIfPossible: true
+                )
+            } catch {
+                // 无有效事件等情况不能影响正常车辆连接。
+            }
+
+            // finish/encrypt/upload 是可重入 async。
+            // 如果这段时间车辆又连接回来了，补开下一 Session。
+            if lifecycleHasConnectedLink {
+                await reconcileVehicleLinkLifecycle()
+            }
+
+        case .preparingUpload:
+            // finishSession 正在生成加密 Envelope。
+            // synchronizeVehicleLinks 已经保存最新状态，
+            // 完成后上面的 reconcile 会再次检查。
+            return
         }
     }
 
@@ -115,7 +209,10 @@ public actor PTTelemetryResearchManager {
                 .consentRequired
         }
 
-        guard case .idle = state else {
+        switch state {
+        case .idle, .uploading:
+            break
+        case .recording, .preparingUpload:
             throw PTTelemetryResearchError
                 .sessionAlreadyRunning
         }
@@ -213,55 +310,89 @@ public actor PTTelemetryResearchManager {
     }
 
     public func flushPendingUploads() async {
+
         guard let configuration,
               isResearchEnabled() else {
             return
         }
 
-        state = .uploading
+        if uploadInProgress {
+            uploadRequestedWhileBusy = true
+            return
+        }
 
-        let pending = await queue.pending(
-            limit:
-                configuration
-                    .uploadBatchSize
-        )
+        uploadInProgress = true
 
-        for envelope in pending {
-            do {
-                try Task.checkCancellation()
+        let shouldExposeUploadingState: Bool
 
-                try await uploader.upload(
-                    envelope,
-                    containerIdentifier:
-                        configuration
-                            .cloudKitContainerIdentifier
-                )
+        if case .idle = state {
+            state = .uploading
+            shouldExposeUploadingState = true
+        } else {
+            // 如果正在 recording，后台上传旧 Session
+            // 不允许覆盖 recording 状态。
+            shouldExposeUploadingState = false
+        }
 
-                await queue.markUploaded(
-                    sessionID:
-                        envelope.sessionID
-                )
+        defer {
+            uploadInProgress = false
 
-            } catch is CancellationError {
-                break
-
-            } catch {
-                await queue.markFailed(
-                    sessionID:
-                        envelope.sessionID,
-                    error:
-                        error
-                )
-
-                // CloudKit/iCloud failures generally affect the entire batch.
-                // Keep the remaining encrypted files queued and retry later.
-                break
+            if shouldExposeUploadingState,
+               case .uploading = state {
+                state = .idle
             }
         }
 
-        state = .idle
-    }
+        var shouldStopUploading = false
 
+        repeat {
+            uploadRequestedWhileBusy = false
+
+            let pending = await queue.pending(
+                limit: configuration.uploadBatchSize
+            )
+
+            guard !pending.isEmpty else {
+                break
+            }
+
+            for envelope in pending {
+                do {
+                    try Task.checkCancellation()
+
+                    try await uploader.upload(
+                        envelope,
+                        containerIdentifier:
+                            configuration.cloudKitContainerIdentifier
+                    )
+
+                    await queue.markUploaded(
+                        sessionID: envelope.sessionID
+                    )
+
+                } catch is CancellationError {
+                    shouldStopUploading = true
+                    break
+
+                } catch {
+                    await queue.markFailed(
+                        sessionID: envelope.sessionID,
+                        error: error
+                    )
+
+                    // CloudKit 当前不可用时不要疯狂重试。
+                    shouldStopUploading = true
+                    break
+                }
+            }
+
+            if shouldStopUploading {
+                break
+            }
+
+        } while uploadRequestedWhileBusy
+    }
+    
     public func pendingUploadCount() async -> Int {
         await queue.pendingCount()
     }
