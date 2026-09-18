@@ -61,6 +61,40 @@ class SceneDelegate: PTWindowSceneDelegate {
         PTGCDManager.shared.delayOnMain(time: 10) {
             guard let presenter = PTUtils.getCurrentVC() else { return }
             PTMusicRouter.openPlayer(from: presenter)
+            
+            Task {
+                do {
+                    await PTTelemetryResearchManager.shared.setResearchEnabled(
+                        true
+                    )
+
+                    let sessionID =
+                        try await PTTelemetryResearchManager.shared
+                            .runUploadSmokeTest()
+
+                    PTNSLogConsole(
+                        "Telemetry Smoke Test:",
+                        sessionID
+                    )
+
+                } catch {
+                    PTNSLogConsole(
+                        "Telemetry Smoke Test Error:",
+                        error
+                    )
+                }
+            }
+        }
+        
+        Task {
+            let configuration = try PTTelemetryConfiguration(
+                cloudKitContainerIdentifier: "iCloud.com.yd.PTSpeed.telemetry",
+                serverPublicKeyBase64: "k6jSFSpg1rn3aPM6YdO/cfpLgnO6OiGFES3z5S/hgD4="
+            )
+
+            await PTTelemetryResearchManager.shared.configure(
+                configuration
+            )
         }
     }
 

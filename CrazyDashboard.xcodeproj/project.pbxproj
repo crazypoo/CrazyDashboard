@@ -119,6 +119,18 @@
 		55CA9DF5302452AA00A3A677 /* PTOBDDataView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55CA9DF4302452AA00A3A677 /* PTOBDDataView.swift */; };
 		55CA9E193024582300A3A677 /* PTOBDDataViewControllerCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55CA9E183024582300A3A677 /* PTOBDDataViewControllerCollection.swift */; };
 		55E61692301B45B50075F883 /* QWeatherSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 55E61691301B45B50075F883 /* QWeatherSDK */; };
+		55F033A9305CDA4600A6724D /* PTTelemetryUploadPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F033A1305CDA4600A6724D /* PTTelemetryUploadPayload.swift */; };
+		55F033AA305CDA4600A6724D /* PTTelemetryUploadQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F033A6305CDA4600A6724D /* PTTelemetryUploadQueue.swift */; };
+		55F033AB305CDA4600A6724D /* PTTelemetryEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F03399305CDA4600A6724D /* PTTelemetryEvent.swift */; };
+		55F033AC305CDA4600A6724D /* PTTelemetryEnvelope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F0339E305CDA4600A6724D /* PTTelemetryEnvelope.swift */; };
+		55F033AD305CDA4600A6724D /* PTTelemetryConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F03398305CDA4600A6724D /* PTTelemetryConfiguration.swift */; };
+		55F033AE305CDA4600A6724D /* PTTelemetryMarkerRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F033A3305CDA4600A6724D /* PTTelemetryMarkerRecorder.swift */; };
+		55F033AF305CDA4600A6724D /* PTTelemetryPrivacySanitizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F033A0305CDA4600A6724D /* PTTelemetryPrivacySanitizer.swift */; };
+		55F033B0305CDA4600A6724D /* PTTelemetryRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F033A4305CDA4600A6724D /* PTTelemetryRecorder.swift */; };
+		55F033B1305CDA4600A6724D /* PTTelemetrySession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F0339B305CDA4600A6724D /* PTTelemetrySession.swift */; };
+		55F033B2305CDA4600A6724D /* PTCloudKitTelemetryUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F03396305CDA4600A6724D /* PTCloudKitTelemetryUploader.swift */; };
+		55F033B3305CDA4600A6724D /* PTTelemetryEncryptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F0339D305CDA4600A6724D /* PTTelemetryEncryptor.swift */; };
+		55F033B4305CDA4600A6724D /* PTTelemetryResearchManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F0339A305CDA4600A6724D /* PTTelemetryResearchManager.swift */; };
 		55F1E2F23026D2020032EAD5 /* PTHiddenOBDConnector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F1E2F13026D2020032EAD5 /* PTHiddenOBDConnector.swift */; };
 		55F1E2F53026D2020032EAD5 /* PTUDSDiagnosticService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F1E2F43026D2020032EAD5 /* PTUDSDiagnosticService.swift */; };
 		55F503AC300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */; };
@@ -541,6 +553,18 @@
 		55B720E630547B55001E9020 /* PTOTAVersionVerifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOTAVersionVerifier.swift; sourceTree = "<group>"; };
 		55CA9DF4302452AA00A3A677 /* PTOBDDataView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDDataView.swift; sourceTree = "<group>"; };
 		55CA9E183024582300A3A677 /* PTOBDDataViewControllerCollection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTOBDDataViewControllerCollection.swift; sourceTree = "<group>"; };
+		55F03396305CDA4600A6724D /* PTCloudKitTelemetryUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCloudKitTelemetryUploader.swift; sourceTree = "<group>"; };
+		55F03398305CDA4600A6724D /* PTTelemetryConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTelemetryConfiguration.swift; sourceTree = "<group>"; };
+		55F03399305CDA4600A6724D /* PTTelemetryEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTelemetryEvent.swift; sourceTree = "<group>"; };
+		55F0339A305CDA4600A6724D /* PTTelemetryResearchManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTelemetryResearchManager.swift; sourceTree = "<group>"; };
+		55F0339B305CDA4600A6724D /* PTTelemetrySession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTelemetrySession.swift; sourceTree = "<group>"; };
+		55F0339D305CDA4600A6724D /* PTTelemetryEncryptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTelemetryEncryptor.swift; sourceTree = "<group>"; };
+		55F0339E305CDA4600A6724D /* PTTelemetryEnvelope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTelemetryEnvelope.swift; sourceTree = "<group>"; };
+		55F033A0305CDA4600A6724D /* PTTelemetryPrivacySanitizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTelemetryPrivacySanitizer.swift; sourceTree = "<group>"; };
+		55F033A1305CDA4600A6724D /* PTTelemetryUploadPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTelemetryUploadPayload.swift; sourceTree = "<group>"; };
+		55F033A3305CDA4600A6724D /* PTTelemetryMarkerRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTelemetryMarkerRecorder.swift; sourceTree = "<group>"; };
+		55F033A4305CDA4600A6724D /* PTTelemetryRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTelemetryRecorder.swift; sourceTree = "<group>"; };
+		55F033A6305CDA4600A6724D /* PTTelemetryUploadQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTelemetryUploadQueue.swift; sourceTree = "<group>"; };
 		55F1E2F13026D2020032EAD5 /* PTHiddenOBDConnector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTHiddenOBDConnector.swift; sourceTree = "<group>"; };
 		55F1E2F43026D2020032EAD5 /* PTUDSDiagnosticService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTUDSDiagnosticService.swift; sourceTree = "<group>"; };
 		55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = GlobalAssets.xcassets; sourceTree = "<group>"; };
@@ -1072,6 +1096,7 @@
 				55FE2A75300DF93F000E741F /* Views */,
 				55F503AA300FBDCE00C5D085 /* GlobalAssets.xcassets */,
 				55983422305C4A4100022658 /* Music */,
+				55F033A8305CDA4600A6724D /* TelemetryResearch */,
 			);
 			path = Global;
 			sourceTree = "<group>";
@@ -1291,6 +1316,73 @@
 				55986BAC30179D500049684D /* PTNativeTelemetryChartView.swift */,
 			);
 			path = Chat;
+			sourceTree = "<group>";
+		};
+		55F03397305CDA4600A6724D /* CloudKit */ = {
+			isa = PBXGroup;
+			children = (
+				55F03396305CDA4600A6724D /* PTCloudKitTelemetryUploader.swift */,
+			);
+			path = CloudKit;
+			sourceTree = "<group>";
+		};
+		55F0339C305CDA4600A6724D /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				55F03398305CDA4600A6724D /* PTTelemetryConfiguration.swift */,
+				55F03399305CDA4600A6724D /* PTTelemetryEvent.swift */,
+				55F0339A305CDA4600A6724D /* PTTelemetryResearchManager.swift */,
+				55F0339B305CDA4600A6724D /* PTTelemetrySession.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		55F0339F305CDA4600A6724D /* Crypto */ = {
+			isa = PBXGroup;
+			children = (
+				55F0339D305CDA4600A6724D /* PTTelemetryEncryptor.swift */,
+				55F0339E305CDA4600A6724D /* PTTelemetryEnvelope.swift */,
+			);
+			path = Crypto;
+			sourceTree = "<group>";
+		};
+		55F033A2305CDA4600A6724D /* Privacy */ = {
+			isa = PBXGroup;
+			children = (
+				55F033A0305CDA4600A6724D /* PTTelemetryPrivacySanitizer.swift */,
+				55F033A1305CDA4600A6724D /* PTTelemetryUploadPayload.swift */,
+			);
+			path = Privacy;
+			sourceTree = "<group>";
+		};
+		55F033A5305CDA4600A6724D /* Recording */ = {
+			isa = PBXGroup;
+			children = (
+				55F033A3305CDA4600A6724D /* PTTelemetryMarkerRecorder.swift */,
+				55F033A4305CDA4600A6724D /* PTTelemetryRecorder.swift */,
+			);
+			path = Recording;
+			sourceTree = "<group>";
+		};
+		55F033A7305CDA4600A6724D /* Storage */ = {
+			isa = PBXGroup;
+			children = (
+				55F033A6305CDA4600A6724D /* PTTelemetryUploadQueue.swift */,
+			);
+			path = Storage;
+			sourceTree = "<group>";
+		};
+		55F033A8305CDA4600A6724D /* TelemetryResearch */ = {
+			isa = PBXGroup;
+			children = (
+				55F03397305CDA4600A6724D /* CloudKit */,
+				55F0339C305CDA4600A6724D /* Core */,
+				55F0339F305CDA4600A6724D /* Crypto */,
+				55F033A2305CDA4600A6724D /* Privacy */,
+				55F033A5305CDA4600A6724D /* Recording */,
+				55F033A7305CDA4600A6724D /* Storage */,
+			);
+			path = TelemetryResearch;
 			sourceTree = "<group>";
 		};
 		55F1E2F03026D1DF0032EAD5 /* Function */ = {
@@ -2186,6 +2278,18 @@
 				600000010000000000000380 /* PTBluetoothManagerModels.swift in Sources */,
 				5578DC36305C2FD000135C21 /* PTAppUpdatePresenter.swift in Sources */,
 				600000010000000000000381 /* PTBluetoothServerManager+Transport.swift in Sources */,
+				55F033A9305CDA4600A6724D /* PTTelemetryUploadPayload.swift in Sources */,
+				55F033AA305CDA4600A6724D /* PTTelemetryUploadQueue.swift in Sources */,
+				55F033AB305CDA4600A6724D /* PTTelemetryEvent.swift in Sources */,
+				55F033AC305CDA4600A6724D /* PTTelemetryEnvelope.swift in Sources */,
+				55F033AD305CDA4600A6724D /* PTTelemetryConfiguration.swift in Sources */,
+				55F033AE305CDA4600A6724D /* PTTelemetryMarkerRecorder.swift in Sources */,
+				55F033AF305CDA4600A6724D /* PTTelemetryPrivacySanitizer.swift in Sources */,
+				55F033B0305CDA4600A6724D /* PTTelemetryRecorder.swift in Sources */,
+				55F033B1305CDA4600A6724D /* PTTelemetrySession.swift in Sources */,
+				55F033B2305CDA4600A6724D /* PTCloudKitTelemetryUploader.swift in Sources */,
+				55F033B3305CDA4600A6724D /* PTTelemetryEncryptor.swift in Sources */,
+				55F033B4305CDA4600A6724D /* PTTelemetryResearchManager.swift in Sources */,
 				600000010000000000000382 /* PTBluetoothServerManager+Commands.swift in Sources */,
 				600000010000000000000383 /* PTBluetoothServerManager+Diagnostics.swift in Sources */,
 				600000010000000000000384 /* PTBluetoothServerManager+Developer.swift in Sources */,
