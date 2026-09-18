@@ -5,9 +5,10 @@
 
 import UIKit
 import MusicKit
+import PooTools
 
 @MainActor
-public final class PTMusicLibraryViewController: UIViewController {
+class PTMusicLibraryViewController: PTMotoBaseViewController {
 
     private enum SourceMode: Int {
         case library
@@ -40,19 +41,14 @@ public final class PTMusicLibraryViewController: UIViewController {
     public override func viewDidLoad() {
         super.viewDidLoad()
 
-        title = NSLocalizedString("我的音乐", comment: "")
-        view.backgroundColor = .systemBackground
+        pt_Title = NSLocalizedString("我的音乐", comment: "")
+        view.backgroundColor = .black
 
         setupControls()
         setupTableView()
         setupSearchController()
 
         loadCurrentMode()
-    }
-
-    deinit {
-        loadTask?.cancel()
-        searchTask?.cancel()
     }
 
     private var sourceMode: SourceMode {

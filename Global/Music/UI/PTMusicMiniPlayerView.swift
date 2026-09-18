@@ -32,12 +32,35 @@ public final class PTMusicMiniPlayerView: UIView {
     }
 
     public func render(_ snapshot: PTMusicPlaybackSnapshot) {
+        isHidden = false
+
         guard let track = snapshot.track else {
-            isHidden = true
+            representedTrackID = nil
+            artworkTask?.cancel()
+            artworkTask = nil
+
+            artworkImageView.image = UIImage(
+                systemName: "music.note"
+            )
+
+            titleLabel.text = NSLocalizedString(
+                "暂无播放",
+                comment: ""
+            )
+
+            artistLabel.text = NSLocalizedString(
+                "打开 Apple Music 或点击进入音乐",
+                comment: ""
+            )
+
+            playPauseButton.setImage(
+                UIImage(systemName: "play.fill"),
+                for: .normal
+            )
+
             return
         }
 
-        isHidden = false
         titleLabel.text = track.title
         artistLabel.text = track.artist
 
@@ -90,6 +113,7 @@ public final class PTMusicMiniPlayerView: UIView {
         titleLabel.font = .preferredFont(forTextStyle: .subheadline)
         titleLabel.adjustsFontForContentSizeCategory = true
         titleLabel.numberOfLines = 1
+        titleLabel.textColor = .white
 
         artistLabel.font = .preferredFont(forTextStyle: .caption1)
         artistLabel.adjustsFontForContentSizeCategory = true

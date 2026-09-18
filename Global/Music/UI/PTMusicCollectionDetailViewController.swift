@@ -5,9 +5,10 @@
 
 import UIKit
 import MusicKit
+import PooTools
 
 @MainActor
-public final class PTMusicCollectionDetailViewController: UIViewController {
+class PTMusicCollectionDetailViewController: PTMotoBaseViewController {
 
     public enum Content {
         case album(Album, PTMusicSource)
@@ -38,15 +39,10 @@ public final class PTMusicCollectionDetailViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
 
-    deinit {
-        loadTask?.cancel()
-        artworkTask?.cancel()
-    }
-
     public override func viewDidLoad() {
         super.viewDidLoad()
 
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = .black
 
         setupHeader()
         setupTableView()

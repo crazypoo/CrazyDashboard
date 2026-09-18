@@ -5,9 +5,10 @@
 
 import UIKit
 import MusicKit
+import PooTools
 
 @MainActor
-public final class PTMusicSearchViewController: UIViewController {
+class PTMusicSearchViewController: PTMotoBaseViewController {
 
     private let tableView = UITableView(frame: .zero, style: .plain)
     private let statusLabel = UILabel()
@@ -20,19 +21,22 @@ public final class PTMusicSearchViewController: UIViewController {
 
     private var searchTask: Task<Void, Never>?
 
+//    lazy var searchBar:PTSearchBar = {
+//        let view = PTSearchBar()
+//        view.delegate = self
+//        view.searchPlaceholder = NSLocalizedString("搜索 Apple Music", comment: "")
+//        return view
+//    }()
+    
     public override func viewDidLoad() {
         super.viewDidLoad()
 
-        title = NSLocalizedString("搜索 Apple Music", comment: "")
-        view.backgroundColor = .systemBackground
+        pt_Title = NSLocalizedString("搜索 Apple Music", comment: "")
+        view.backgroundColor = .black
 
         setupTableView()
         setupSearchController()
         setupStatusLabel()
-    }
-
-    deinit {
-        searchTask?.cancel()
     }
 
     private var category: PTMusicBrowseCategory {
@@ -85,7 +89,7 @@ public final class PTMusicSearchViewController: UIViewController {
 
     private func setupStatusLabel() {
         statusLabel.textAlignment = .center
-        statusLabel.textColor = .secondaryLabel
+        statusLabel.textColor = .grayCA
         statusLabel.font = .preferredFont(forTextStyle: .body)
         statusLabel.numberOfLines = 0
 

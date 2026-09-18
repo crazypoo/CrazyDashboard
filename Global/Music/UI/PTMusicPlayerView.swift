@@ -61,8 +61,9 @@ public final class PTMusicPlayerView: UIView {
 
         durationLabel.text = Self.timeString(snapshot.duration)
 
-        let playSymbol = snapshot.isPlaying ? "pause.fill" : "play.fill"
-        playPauseButton.setImage(UIImage(systemName: playSymbol), for: .normal)
+        playPauseButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
+        playPauseButton.setImage(UIImage(systemName: "pause.fill"), for: .selected)
+        playPauseButton.isSelected = snapshot.isPlaying
         playPauseButton.accessibilityLabel = snapshot.isPlaying
             ? NSLocalizedString("暂停", comment: "")
             : NSLocalizedString("播放", comment: "")
@@ -118,7 +119,7 @@ public final class PTMusicPlayerView: UIView {
     }
 
     private func setupUI() {
-        backgroundColor = .systemBackground
+        backgroundColor = .black
 
         artworkImageView.translatesAutoresizingMaskIntoConstraints = false
         artworkImageView.contentMode = .scaleAspectFill
@@ -131,15 +132,16 @@ public final class PTMusicPlayerView: UIView {
         titleLabel.adjustsFontForContentSizeCategory = true
         titleLabel.textAlignment = .center
         titleLabel.numberOfLines = 2
+        titleLabel.textColor = .white
 
         artistLabel.font = .preferredFont(forTextStyle: .body)
         artistLabel.adjustsFontForContentSizeCategory = true
-        artistLabel.textColor = .secondaryLabel
+        artistLabel.textColor = .grayCA
         artistLabel.textAlignment = .center
 
         albumLabel.font = .preferredFont(forTextStyle: .caption1)
         albumLabel.adjustsFontForContentSizeCategory = true
-        albumLabel.textColor = .tertiaryLabel
+        albumLabel.textColor = .grayCA
         albumLabel.textAlignment = .center
         albumLabel.numberOfLines = 1
 
@@ -153,11 +155,11 @@ public final class PTMusicPlayerView: UIView {
         metadataStack.spacing = 5
 
         currentTimeLabel.font = .monospacedDigitSystemFont(ofSize: 12, weight: .regular)
-        currentTimeLabel.textColor = .secondaryLabel
+        currentTimeLabel.textColor = .grayCA
         currentTimeLabel.text = "0:00"
 
         durationLabel.font = .monospacedDigitSystemFont(ofSize: 12, weight: .regular)
-        durationLabel.textColor = .secondaryLabel
+        durationLabel.textColor = .grayCA
         durationLabel.textAlignment = .right
         durationLabel.text = "0:00"
 
@@ -254,6 +256,7 @@ public final class PTMusicPlayerView: UIView {
     }
 
     @objc private func playPauseTapped() {
+        playPauseButton.isSelected.toggle()
         onPlayPause?()
     }
 

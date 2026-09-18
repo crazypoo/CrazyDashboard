@@ -43,19 +43,20 @@ public final class PTMusicDashboardCardView: UIView {
     }
 
     public func render(_ snapshot: PTMusicPlaybackSnapshot) {
+        isHidden = false
         miniPlayer.render(snapshot)
         isHidden = !snapshot.hasCurrentItem
     }
 
     private func setupUI() {
-        backgroundColor = .secondarySystemBackground
+        backgroundColor = .black
         layer.cornerRadius = 18
         clipsToBounds = true
-//        isHidden = true
 
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "Apple Music"
         titleLabel.font = .preferredFont(forTextStyle: .headline)
+        titleLabel.textColor = .white
 
         miniPlayer.translatesAutoresizingMaskIntoConstraints = false
         miniPlayer.backgroundColor = .clear

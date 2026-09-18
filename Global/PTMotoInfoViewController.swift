@@ -11,6 +11,7 @@ import SafeSFSymbols
 import SwifterSwift
 import SnapKit
 import Instructions
+import Combine
 
 fileprivate extension String {
     static let TRIPSECTION = "TRIPSECTION"
@@ -282,6 +283,8 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
         return view
     }()
     
+    private var musicCancellable: AnyCancellable?
+    
     lazy var obdButton:PTBaseButton = {
         let baseImage = UIImage(.engine.combustionBadgeExclamationmarkFill)
         let view = PTBaseButton()
@@ -535,8 +538,37 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
         PTMotion.shared.addDelegate(self)
         NotificationCenter.default.addObserver(self, selector: #selector(appDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(garageDidChange), name: PTMotorcycleGarageStore.didChangeNotification, object: nil)
+        setupMusicDashboard()
     }
 
+    private func setupMusicDashboard() {
+
+        musicCancellable = PTMusicPlaybackManager.shared.$snapshot
+            .removeDuplicates()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] snapshot in
+                self?.dashboardMusic.render(snapshot)
+            }
+
+        dashboardMusic.onPlayPause = {
+            Task { @MainActor in
+                try? await PTMusicPlaybackManager.shared.togglePlayPause()
+            }
+        }
+
+        dashboardMusic.onNext = {
+            Task { @MainActor in
+                try? await PTMusicPlaybackManager.shared.next()
+            }
+        }
+
+        dashboardMusic.onOpenPlayer = { [weak self] in
+            guard let self else { return }
+
+            PTMusicRouter.openPlayer(from: self)
+        }
+    }
+    
     // EN: Apply the compact riding presentation whenever the system Focus filter changes.
     // ES: Aplica la presentación compacta de conducción cuando cambia el filtro Focus del sistema.
     // 中文：系统专注模式筛选条件变化时，刷新紧凑骑行界面。
@@ -833,14 +865,14 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
         globeItem.snp.makeConstraints { make in
             make.height.left.right.equalTo(self.tripItem)
             make.top.equalTo(self.temItem.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-            make.bottom.equalToSuperview().inset(CGFloat.GlobalItemSpacing * 2)
         }
         
         dashboardMusic.snp.makeConstraints { make in
             make.left.equalTo(self.tripItem)
             make.right.equalTo(self.odoItem)
             make.top.equalTo(self.globeItem.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-            make.height.equalTo(90)
+            make.height.greaterThanOrEqualTo(118)
+            make.bottom.equalToSuperview().inset(CGFloat.kTabbarHeight_Total + CGFloat.GlobalItemSpacing)
         }
             
         if isFirstLoad {

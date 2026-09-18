@@ -57,7 +57,7 @@ class PTMusicViewController: PTMotoBaseViewController {
         super.viewDidLoad()
 
         pt_Title = NSLocalizedString("音乐", comment: "")
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = .black
 
         setupUI()
         bindState()
