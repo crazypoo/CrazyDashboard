@@ -1,0 +1,20 @@
+--- a/AppDelegate.swift
++++ b/AppDelegate.swift
+@@
++import CloudKit
+@@
++    // CloudKit Feedback status uses a silent query-subscription push.
++    // If your AppDelegate already implements this callback, merge only the
++    // PTFeedbackPushManager branch and keep the existing handlers.
++    func application(
++        _ application: UIApplication,
++        didReceiveRemoteNotification userInfo: [AnyHashable: Any],
++        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
++    ) {
++        if PTFeedbackPushManager.shared.handleRemoteNotification(userInfo) {
++            completionHandler(.newData)
++            return
++        }
++
++        completionHandler(.noData)
++    }

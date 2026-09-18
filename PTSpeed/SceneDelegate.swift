@@ -86,6 +86,11 @@ class SceneDelegate: PTWindowSceneDelegate {
                 )
             }
         }
+        
+        PTGCDManager.shared.delayOnMain(time: 5) {
+            guard let presenter = PTUtils.getCurrentVC() else { return }
+            presenter.navigationController?.pushViewController(PTFeedbackCenterViewController(), animated: true)
+        }
     }
 
     // EN: Lazily attach the developer surface so launch never starts its timer or obscures normal controls.

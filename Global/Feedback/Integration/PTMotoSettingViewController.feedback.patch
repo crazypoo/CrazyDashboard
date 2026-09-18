@@ -1,0 +1,64 @@
+--- a/Global/PTMotoSettingViewController.swift
++++ b/Global/PTMotoSettingViewController.swift
+@@
+     private lazy var garageButton: UIButton = {
+         let view = UIButton(type: .system)
+         view.titleLabel?.font = .appfont(size: 16)
+         view.setTitleColor(.white, for: .normal)
+         view.setTitle(PTDashboardConfig.languageFunc(text: "garage_open"), for: .normal)
+         view.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
+         view.addActionHandlers { [weak self] _ in
+             let garageViewController = PTMotorcycleGarageViewController()
+             self?.navigationController?.pushViewController(garageViewController, animated: true)
+         }
+         return view
+     }()
++    private lazy var feedbackButton: UIButton = {
++        let view = UIButton(type: .system)
++        view.titleLabel?.font = .appfont(size: 16)
++        view.setTitleColor(.white, for: .normal)
++        view.setTitle(PTDashboardConfig.languageFunc(text: "feedback_center_title"), for: .normal)
++        view.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
++        view.addActionHandlers { [weak self] _ in
++            self?.navigationController?.pushViewController(
++                PTFeedbackCenterViewController(),
++                animated: true
++            )
++        }
++        return view
++    }()
+@@
+-        view.addSubviews([garageButton, shortCut, shortcutsButton, socialStackView, versionLabel])
++        view.addSubviews([garageButton, feedbackButton, shortCut, shortcutsButton, socialStackView, versionLabel])
+@@
+         garageButton.snp.makeConstraints { make in
+             if let tipView = dashboardConfigurationTipViewController?.view {
+                 make.top.equalTo(tipView.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+             } else {
+                 make.top.equalTo(settingsContainer.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+             }
+             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+             make.height.equalTo(44)
+         }
++        feedbackButton.snp.makeConstraints { make in
++            make.top.equalTo(garageButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
++            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
++            make.height.equalTo(44)
++        }
+@@
+         shortCut.snp.makeConstraints { make in
+-            make.top.equalTo(garageButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
++            make.top.equalTo(feedbackButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+         }
+@@
+         garageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
++        feedbackButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
+@@
+             self.garageButton.viewCorner(radius: 4)
++            self.feedbackButton.viewCorner(radius: 4)
+         }
+@@
+                 self.garageButton.setTitle(PTDashboardConfig.languageFunc(text: "garage_open"), for: .normal)
++                self.feedbackButton.setTitle(PTDashboardConfig.languageFunc(text: "feedback_center_title"), for: .normal)
+                 self.updateShortcutGuide()
