@@ -16,7 +16,7 @@ final class PTFeatureSuggestionDetailViewController: PTMotoBaseViewController {
     private lazy var summaryLabel: UILabel = {
         let view = UILabel()
         view.numberOfLines = 0
-        view.textColor = .label
+        view.textColor = .white
         view.font = .systemFont(ofSize: 16)
         return view
     }()

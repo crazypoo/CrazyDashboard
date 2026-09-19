@@ -26,7 +26,7 @@ final class PTAnnouncementDetailViewController: PTMotoBaseViewController {
         let textView = UITextView()
         textView.isEditable = false
         textView.backgroundColor = .clear
-        textView.textColor = .label
+        textView.textColor = .white
         textView.font = .systemFont(ofSize: 16)
         textView.text = announcement.localizedBody(languageIdentifier: language)
         view.addSubview(textView)
