@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "vehicleFamilies": ["XP400", "XP400GT"],
+  "canvas": { "width": 2048, "height": 1024 },
+  "approximateVisualModel": true,
+  "provenance": "Original vector silhouette created for CrazyDashboard; no external image is embedded.",
+  "parts": {
+    "body": "body.svg",
+    "bodyMask": "body_mask.svg",
+    "frontWheel": "front_wheel.svg",
+    "rearWheel": "rear_wheel.svg",
+    "headlight": "headlight.svg",
+    "brakeLight": "brake_light.svg",
+    "indicatorLeft": "indicator_left.svg",
+    "indicatorRight": "indicator_right.svg",
+    "kickstand": "kickstand.svg",
+    "shadow": "shadow.svg"
+  },
+  "anchors": {
+    "frontWheelCenter": [0.76, 0.70],
+    "rearWheelCenter": [0.25, 0.70],
+    "bodyPivot": [0.50, 0.55],
+    "kickstandPivot": [0.37, 0.63],
+    "headlightAnchor": [0.74, 0.55]
+  },
+  "pivots": {
+    "frontWheel": [0.76, 0.70],
+    "rearWheel": [0.25, 0.70],
+    "kickstand": [0.37, 0.63]
+  },
+  "variants": {
+    "xp400": "xp400",
+    "xp400GT": "xp400_gt"
+  },
+  "preview": "preview.svg"
+}

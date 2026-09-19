@@ -107,6 +107,18 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
         }
         return view
     }()
+
+    // EN: The compact twin is a read-only projection of the existing telemetry bridge.
+    // ES: El Digital Twin compacto es una proyección de solo lectura del puente de telemetría existente.
+    // 中文：紧凑数字孪生只读使用现有统一遥测桥接数据。
+    private lazy var vehicleTwinCard: PTXP400TwinCardView = {
+        let view = PTXP400TwinCardView()
+        view.onOpen = { [weak self] in
+            guard let self else { return }
+            self.navigationController?.pushViewController(PTVehicleTwinViewController(), animated: true)
+        }
+        return view
+    }()
     
     lazy var actionStack:UIStackView = {
         let stackView = UIStackView()
@@ -771,6 +783,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
         }
         telemetryContentView.addSubviews([
             vehicleSummaryView,
+            vehicleTwinCard,
             actionStack,
             speedometer,
             speedometerReversed,
@@ -789,10 +802,15 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
             make.top.equalToSuperview().offset(CGFloat.GlobalItemSpacing)
             make.height.greaterThanOrEqualTo(58)
         }
+        vehicleTwinCard.snp.makeConstraints { make in
+            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+            make.top.equalTo(vehicleSummaryView.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.height.equalTo(190)
+        }
         actionStack.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.height.equalTo(54)
-            make.top.equalTo(vehicleSummaryView.snp.bottom).offset(CGFloat.GlobalItemSpacing)
+            make.top.equalTo(vehicleTwinCard.snp.bottom).offset(CGFloat.GlobalItemSpacing)
         }
         
         actionStack.addArrangedSubview(voltageLabel)
@@ -986,6 +1004,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
             self.bleConnectStatusLabel.isSelected = false
             self.updateVehicleSummary()
             self.obdButton.stopLoading()
+            self.vehicleTwinCard.reset()
             self.voltageLabel.modelSet = self.modelvoltageSet(currentValue: 0, isAvailable: false)
             self.distToMaintenanceLabel.modelSet = self.distToMaintenancemodelSet(
                 max: PTDashboardConfig.shared.appShowMileage(PTMotorcycleGarageStore.shared.currentMaintenanceWarningDistanceKm),
@@ -1099,6 +1118,15 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
 extension PTMotoInfoViewController {
     func vehicleTelemetryDidUpdate(_ snapshot: PTUnifiedVehicleTelemetrySnapshot) {
         guard isViewVisible else { return }
+        vehicleTwinCard.update(
+            snapshot: PTVehicleTwinStateMapper.make(
+                unified: snapshot,
+                connection: PTVehicleConnectivityCoordinator.shared.snapshot,
+                control: PTVehicleConnectivityCoordinator.shared.snapshot.dashboard.state == .connected
+                    ? PTBluetoothServerManager.shared.latestControl
+                    : nil
+            )
+        )
         let projection = PTVehicleTelemetryProjections.dashboard(from: snapshot)
         if let speed = projection.speedKmh {
             infoState.speedKmh = speed

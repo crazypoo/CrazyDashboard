@@ -31,6 +31,8 @@
 | [`history/builds/BUILD_067_DASHBOARD_PROTOCOL_CORRECTION.md`](history/builds/BUILD_067_DASHBOARD_PROTOCOL_CORRECTION.md) | history | stable | 否 | 2026-09-15 |
 | [`history/builds/BUILD_068_OBD_DIAGNOSTIC_DEEP_MINING.md`](history/builds/BUILD_068_OBD_DIAGNOSTIC_DEEP_MINING.md) | history | stable | 否 | 2026-09-16 |
 | [`history/builds/BUILD_069_PROTOCOL_SEMANTIC_EVIDENCE.md`](history/builds/BUILD_069_PROTOCOL_SEMANTIC_EVIDENCE.md) | history | stable | 否 | 2026-09-17 |
+| [`history/builds/BUILD_076A_ASSET_IMPORT_GUIDE.md`](history/builds/BUILD_076A_ASSET_IMPORT_GUIDE.md) | history | stable | 否 | 2026-09-19 |
+| [`history/builds/BUILD_076A_DIGITAL_TWIN_2D.md`](history/builds/BUILD_076A_DIGITAL_TWIN_2D.md) | history | draft | 否 | 2026-09-19 |
 | [`history/BUILD_HISTORY_2026.md`](history/BUILD_HISTORY_2026.md) | history | stable | 是 | 2026-09-19 |
 | [`planning/ACTIVE_WORK.md`](planning/ACTIVE_WORK.md) | planning | active | 是 | 2026-09-19 |
 | [`planning/BACKLOG.md`](planning/BACKLOG.md) | planning | active | 是 | 2026-09-15 |

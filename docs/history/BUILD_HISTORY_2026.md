@@ -20,6 +20,7 @@ related_builds:
   - 68
   - 69
   - 74
+  - 76
 supersedes: []
 superseded_by:
 ---
@@ -67,6 +68,12 @@ superseded_by:
 完成 Music 浏览稳定性改造：以 `PTMusicBrowseStore` 统一 Library/Search 的 payload、状态、取消、generation、request identity、超时和重试；资料库按歌曲 50、其他分类 40 分页，最近播放独立处理；缓存采用 TTL + stale-while-revalidate，并为搜索查询提供 20 项 LRU；Search、Library、Collection Detail 共用 UIKit 状态视图；权限、Cloud Library 和底层错误映射为稳定 UI 语义；Artwork cell 的复用身份校验保持不变。`PTMusicCoordinator`、`PTMusicTrack` 和 `PTMusicPlaybackManager` 的 MusicKit Swift 6 兼容警告也一并收敛。
 
 实现证据：`PTSpeed` workspace Debug `build` 与 `build-for-testing` 已通过；新增 Store 测试已编译接入。当前 scheme 没有可用的具体 iOS Simulator destination，因此 XCTest 尚未在模拟器运行；Apple Music 账号矩阵、真机播放/搜索/分页、Release/TestFlight 仍需人工验收，完整待验收项见 [`../planning/ACTIVE_WORK.md`](../planning/ACTIVE_WORK.md)。本轮未修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`。
+
+## Build 76A — XP400 Vehicle Digital Twin 2D
+
+完成 XP400 / XP400 GT 的只读 2D Digital Twin 第一阶段：统一车辆状态投影、fresh/aging/stale/unavailable、新旧数据源可追溯、2D 共用 Twin Snapshot、原创 SVG 分层素材包、车身 lean/pitch、车轮、灯光、转向灯、边撑、TCS/ABS/Engine 状态、主页卡片和全屏 UIKit 页面。全屏页面使用 `PTMotoBaseViewController`，数据通过现有 `PTVehicleTelemetryConsumerHub` 进入，不直接监听 BLE 或 OBD。
+
+本轮未修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`，也没有调整 ELM327/YMOBD 的连接、初始化、握手、能力识别、命令顺序或 fallback。通用 iOS Debug build 与 `build-for-testing` 已通过；Instruments、真机和真实 XP400 GT 验收仍需在设备环境完成。详细记录见 [`builds/BUILD_076A_DIGITAL_TWIN_2D.md`](builds/BUILD_076A_DIGITAL_TWIN_2D.md) 与 [`builds/BUILD_076A_ASSET_IMPORT_GUIDE.md`](builds/BUILD_076A_ASSET_IMPORT_GUIDE.md)。
 
 ## 版本规则
 

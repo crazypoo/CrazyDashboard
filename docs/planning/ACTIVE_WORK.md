@@ -14,13 +14,27 @@ related_builds:
   - 68
   - 69
   - 74
+  - 76
 supersedes: []
 superseded_by:
 ---
 
 # 当前工作
 
-快照日期：2026-09-19。当前工程版本为 `2.0.8 (Build 74)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 76A / Build 76)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+
+## Build 76A：XP400 Vehicle Digital Twin 2D 🟨
+
+代码已完成只读 Vehicle State Projection、fresh/aging/stale/unavailable、共用 `PTVehicleTwinSnapshot`、XP400/XP400 GT 原创近似 SVG 资产包、2D renderer、状态/运动映射、主页卡片和全屏页面。三项稳定 BLE/OBD 核心保持冻结，ELM327/YMOBD 连接链路没有改动。
+
+仍需真实 iPhone、XP400 GT 和 Release/TestFlight 包验证：
+
+- 速度、RPM、燃油、电压、TCS、ABS、灯光、转向灯、边撑与真实仪表含义逐项核对；
+- Mock 高频更新、断连 stale/unavailable、重连、后台/前台恢复；
+- Time Profiler、Core Animation、Allocations，确认主仪表和 Twin 页面没有明显掉帧或增长；
+- 2D 资产的车轮中心、倾斜锚点和不同屏幕尺寸布局。
+
+未完成上述证据前，不把 Gate 76A 标记为完整发布通过，也不进入 76B 3D 正式集成。
 
 ## Build 66 收口：统一车速真实验证 🟨
 

@@ -429,6 +429,11 @@
 		700000010000000000000004 /* PTMusicBrowsePayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 700000020000000000000004 /* PTMusicBrowsePayload.swift */; };
 		700000010000000000000005 /* PTMusicBrowseStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 700000020000000000000005 /* PTMusicBrowseStoreTests.swift */; };
 		700000010000000000000006 /* PTMusicStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 700000020000000000000006 /* PTMusicStateView.swift */; };
+		710000010000000000000001 /* PTVehicleTwin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 710000020000000000000001 /* PTVehicleTwin.swift */; };
+		710000010000000000000002 /* PTXP400TwinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 710000020000000000000002 /* PTXP400TwinView.swift */; };
+		710000010000000000000003 /* PTVehicleTwinViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 710000020000000000000003 /* PTVehicleTwinViewController.swift */; };
+		710000010000000000000004 /* PTVehicleTwinTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 710000020000000000000004 /* PTVehicleTwinTests.swift */; };
+		710000010000000000000005 /* XP400Twin2DAssets in Resources */ = {isa = PBXBuildFile; fileRef = 710000020000000000000005 /* XP400Twin2DAssets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -920,6 +925,11 @@
 		700000020000000000000004 /* PTMusicBrowsePayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicBrowsePayload.swift; sourceTree = "<group>"; };
 		700000020000000000000005 /* PTMusicBrowseStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicBrowseStoreTests.swift; sourceTree = "<group>"; };
 		700000020000000000000006 /* PTMusicStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicStateView.swift; sourceTree = "<group>"; };
+		710000020000000000000001 /* PTVehicleTwin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleTwin.swift; sourceTree = "<group>"; };
+		710000020000000000000002 /* PTXP400TwinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTXP400TwinView.swift; sourceTree = "<group>"; };
+		710000020000000000000003 /* PTVehicleTwinViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleTwinViewController.swift; sourceTree = "<group>"; };
+		710000020000000000000004 /* PTVehicleTwinTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleTwinTests.swift; sourceTree = "<group>"; };
+		710000020000000000000005 /* XP400Twin2DAssets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Assets/XP400Twin2DAssets; sourceTree = "<group>"; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -1212,6 +1222,7 @@
 				55499E25301B2B8600A1A2D9 /* PTPTT */,
 				600000020000000000000232 /* PTRideNarrativeService.swift */,
 				5577E6D02FD680730004733F /* PTTripStatsView.swift */,
+				710000030000000000000001 /* VehicleTwin */,
 				5598676C3011C9720049684D /* Settings.bundle */,
 				55F033A8305CDA4600A6724D /* TelemetryResearch */,
 				55FE2A75300DF93F000E741F /* Views */,
@@ -1219,6 +1230,17 @@
 				55499E00301AFBF700A1A2D9 /* Widget */,
 			);
 			path = Global;
+			sourceTree = "<group>";
+		};
+		710000030000000000000001 /* VehicleTwin */ = {
+			isa = PBXGroup;
+			children = (
+				710000020000000000000001 /* PTVehicleTwin.swift */,
+				710000020000000000000002 /* PTXP400TwinView.swift */,
+				710000020000000000000003 /* PTVehicleTwinViewController.swift */,
+				710000020000000000000005 /* XP400Twin2DAssets */,
+			);
+			path = VehicleTwin;
 			sourceTree = "<group>";
 		};
 		557D0043302EA1BD008BA492 /* Dashboard */ = {
@@ -1866,6 +1888,7 @@
 				6B0000020000000000000002 /* PTBuild68OBDDeepDiagnosticsTests.swift */,
 				6C0000020000000000000004 /* PTBuild69ProtocolSemanticTests.swift */,
 				650000020000000000000005 /* PTProtocolEvidenceDatabaseTests.swift */,
+				710000020000000000000004 /* PTVehicleTwinTests.swift */,
 				650000020000000000000006 /* PTCrazyTraceBuild62Tests.swift */,
 				660000020000000000000004 /* PTProtocolResearchLabBuild63Tests.swift */,
 				670000020000000000000005 /* PTVehicleIdentityBuild64Tests.swift */,
@@ -2345,6 +2368,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				710000010000000000000005 /* XP400Twin2DAssets in Resources */,
 				55F503AC300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */,
 				5598676E3011C9720049684D /* Settings.bundle in Resources */,
 				55F52C4D303D4025007527C2 /* Assets.xcassets in Resources */,
@@ -2712,6 +2736,9 @@
 				55257B71305C2DAD00DA16D7 /* PTAppVersion.swift in Sources */,
 				55FE2966300CA5E0000E741F /* PTDashboardConfig.swift in Sources */,
 				600000010000000000000030 /* PTVehicleConnectivityCoordinator.swift in Sources */,
+				710000010000000000000001 /* PTVehicleTwin.swift in Sources */,
+				710000010000000000000002 /* PTXP400TwinView.swift in Sources */,
+				710000010000000000000003 /* PTVehicleTwinViewController.swift in Sources */,
 				55FE2A0B300CE2B0000E741F /* PTMapKitNavigationHelper.swift in Sources */,
 				55FDBCAC3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift in Sources */,
 				600000010000000000000111 /* PTRoadbookViewController.swift in Sources */,
@@ -2838,6 +2865,7 @@
 				690000010000000000000013 /* PTBuild66SpeedIntegrationTests.swift in Sources */,
 				6C0000010000000000000004 /* PTBuild69ProtocolSemanticTests.swift in Sources */,
 				700000010000000000000005 /* PTMusicBrowseStoreTests.swift in Sources */,
+				710000010000000000000004 /* PTVehicleTwinTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2916,7 +2944,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 75;
+				CURRENT_PROJECT_VERSION = 76;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -2949,7 +2977,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 75;
+				CURRENT_PROJECT_VERSION = 76;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -2982,7 +3010,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 75;
+				CURRENT_PROJECT_VERSION = 76;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -3017,7 +3045,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 75;
+				CURRENT_PROJECT_VERSION = 76;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -3178,7 +3206,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 75;
+				CURRENT_PROJECT_VERSION = 76;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -3328,7 +3356,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 75;
+				CURRENT_PROJECT_VERSION = 76;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
