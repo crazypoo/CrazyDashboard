@@ -15,13 +15,20 @@ related_builds:
   - 69
   - 74
   - 76
+  - 77
 supersedes: []
 superseded_by:
 ---
 
 # 当前工作
 
-快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 76B / Build 76)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 77)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+
+## Build 77：Crazy Black Box Pro / CrazyTrace 2.0 🟨
+
+代码实现已完成：统一遥测、位置、Motion、适配器和协议事件进入同一个有界 CrazyTrace；新增 60 秒 Ring Buffer、事件前后窗口、结构化 `.crazytrace`、后台原子导出、隐私导出、旧包兼容、批量 Reader、Replay Source 和 Digital Twin 导入入口。回放继续复用既有 `PTVehicleTelemetryBridge`、`PTCrazyTraceReplayPlayer` 和 `PTVehicleTelemetryConsumerHub`，不新增 BLE、ELM327、YMOBD 或研究传输层。
+
+三个稳定核心 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift` 保持冻结；ELM327 仍是 OBD 底层，YMOBD 仍是其扩展。Build 77 的真实设备门禁尚未完成：需要 XP400/XP400 GT 实车采集、前后台/断连恢复、2D/3D 回放一致性、无车辆写入证明、Instruments 和 Release/TestFlight 验证。详细记录见 [`../history/builds/BUILD_077_CRAZYTRACE_2.md`](../history/builds/BUILD_077_CRAZYTRACE_2.md) 与 [`../history/builds/BUILD_077_REAL_VEHICLE_VALIDATION.md`](../history/builds/BUILD_077_REAL_VEHICLE_VALIDATION.md)。
 
 ## Build 76：XP400 Vehicle Digital Twin 收尾 🟨
 

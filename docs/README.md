@@ -36,6 +36,8 @@
 | [`history/builds/BUILD_076A_DIGITAL_TWIN_2D.md`](history/builds/BUILD_076A_DIGITAL_TWIN_2D.md) | history | draft | 否 | 2026-09-20 |
 | [`history/builds/BUILD_076B_ASSET_IMPORT_GUIDE.md`](history/builds/BUILD_076B_ASSET_IMPORT_GUIDE.md) | history | stable | 否 | 2026-09-20 |
 | [`history/builds/BUILD_076B_DIGITAL_TWIN_3D.md`](history/builds/BUILD_076B_DIGITAL_TWIN_3D.md) | history | draft | 否 | 2026-09-20 |
+| [`history/builds/BUILD_077_CRAZYTRACE_2.md`](history/builds/BUILD_077_CRAZYTRACE_2.md) | history | draft | 否 | 2026-09-20 |
+| [`history/builds/BUILD_077_REAL_VEHICLE_VALIDATION.md`](history/builds/BUILD_077_REAL_VEHICLE_VALIDATION.md) | history | draft | 否 | 2026-09-20 |
 | [`history/BUILD_HISTORY_2026.md`](history/BUILD_HISTORY_2026.md) | history | stable | 是 | 2026-09-20 |
 | [`planning/ACTIVE_WORK.md`](planning/ACTIVE_WORK.md) | planning | active | 是 | 2026-09-20 |
 | [`planning/BACKLOG.md`](planning/BACKLOG.md) | planning | active | 是 | 2026-09-15 |
@@ -43,7 +45,7 @@
 | [`templates/PLAN_SECTION_TEMPLATE.md`](templates/PLAN_SECTION_TEMPLATE.md) | policy | stable | 否 | 2026-09-15 |
 | [`templates/RESEARCH_ENTRY_TEMPLATE.md`](templates/RESEARCH_ENTRY_TEMPLATE.md) | policy | stable | 否 | 2026-09-15 |
 | [`templates/STANDALONE_DOCUMENT_TEMPLATE.md`](templates/STANDALONE_DOCUMENT_TEMPLATE.md) | policy | stable | 否 | 2026-09-15 |
-| [`product/APP_FEATURE_BLUEPRINT.md`](product/APP_FEATURE_BLUEPRINT.md) | product | active | 是 | 2026-09-17 |
+| [`product/APP_FEATURE_BLUEPRINT.md`](product/APP_FEATURE_BLUEPRINT.md) | product | active | 是 | 2026-09-20 |
 | [`protocols/xp400/XP400_BLE_PROTOCOL.md`](protocols/xp400/XP400_BLE_PROTOCOL.md) | protocol | stable | 是 | 2026-09-15 |
 | [`protocols/obd/YMOBD_JIELI_OTA_REFERENCE.md`](protocols/obd/YMOBD_JIELI_OTA_REFERENCE.md) | protocol | stable | 是 | 2026-09-15 |
 | [`research/FIRMWARE_RESEARCH_LOG.md`](research/FIRMWARE_RESEARCH_LOG.md) | research | active | 是 | 2026-09-15 |

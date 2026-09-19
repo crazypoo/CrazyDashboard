@@ -21,6 +21,7 @@ related_builds:
   - 69
   - 74
   - 76
+  - 77
 supersedes: []
 superseded_by:
 ---
@@ -82,6 +83,12 @@ superseded_by:
 本轮未修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`，也没有重排 ELM327/YMOBD 连接步骤。通用 iOS Debug build 与 `build-for-testing` 已通过；manifest/节点/性能策略纯数据测试已接入。Instruments、真机/实车和 Build 76 Final Gate 仍需现场完成。详细记录见 [`builds/BUILD_076B_DIGITAL_TWIN_3D.md`](builds/BUILD_076B_DIGITAL_TWIN_3D.md) 与 [`builds/BUILD_076B_ASSET_IMPORT_GUIDE.md`](builds/BUILD_076B_ASSET_IMPORT_GUIDE.md)。
 
 Build 76 收尾修复了 2D/3D 当前页面素材来源、2D wheel pivot/角速度积分和 Digital Twin 卡片点击入口。2D 当前优先加载 `XP400Twin2DAssets/xp400/` 的 PNG 分层素材，3D 当前固定使用 XP400 配置；卡片增加明确的 Open 触控入口并禁止 renderer 子视图抢占点击。干净 DerivedData 的通用 iOS Debug build 与 `build-for-testing` 均通过。现场点击、实车语义、Instruments 性能和 thermal 证据仍待人工验收。完整收尾记录见 [`builds/BUILD_076_DIGITAL_TWIN_CLOSEOUT.md`](builds/BUILD_076_DIGITAL_TWIN_CLOSEOUT.md)。
+
+## Build 77 — Crazy Black Box Pro / CrazyTrace 2.0
+
+完成 CrazyTrace 2.0 的外围实现：统一 Vehicle State Projection、Motion、GPS、适配器和协议事件进入单一有界 Recorder；增加 60 秒 Ring Buffer、事件前最多 60 秒与事件后最多 30 秒的 Incident Capture、结构化 `.crazytrace` 目录、诊断摘要、后台编码、staging 原子发布、隐私导出、旧 Schema 2/flat JSON 兼容和 bounded Reader。`PTReplayVehicleStateSource` 复用既有 `PTVehicleTelemetryBridge` 与 `PTCrazyTraceReplayPlayer`，Digital Twin 页面可导入 Trace 并继续通过既有 Consumer Hub 驱动 2D/3D renderer。
+
+营销版本继续为 `2.0.8`，主 App、Widget 和 Watch 工程 Build 推进到 `77`。本轮未修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift` 或 `PTOBDCommand.swift`，没有改变 ELM327/YMOBD 的连接、初始化、握手、能力识别、命令顺序和 fallback。结构化包、旧包兼容、脱敏和黑匣子离线测试已接入；XP400/XP400 GT 真车采集、后台/断连、2D/3D 字段一致性、无写入证明、Instruments 和 Release/TestFlight 仍需人工验收。详细记录见 [`builds/BUILD_077_CRAZYTRACE_2.md`](builds/BUILD_077_CRAZYTRACE_2.md) 与 [`builds/BUILD_077_REAL_VEHICLE_VALIDATION.md`](builds/BUILD_077_REAL_VEHICLE_VALIDATION.md)。
 
 ## 版本规则
 

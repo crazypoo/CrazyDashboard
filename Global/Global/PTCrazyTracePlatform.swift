@@ -135,6 +135,22 @@ nonisolated public enum PTCrazyTracePackageWriter {
         "metadata.json"
     ]
 
+    // EN: Build 77 adds structured streams while retaining the legacy files above for migration.
+    // ES: Build 77 añade flujos estructurados y conserva los archivos heredados para la migración.
+    // 中文：Build 77 增加结构化数据流，同时保留上面的旧文件用于迁移。
+    public static let structuredFileNames = [
+        "samples/vehicle.jsonl",
+        "samples/motion.jsonl",
+        "samples/gps.jsonl",
+        "events/events.jsonl",
+        "events/markers.jsonl",
+        "diagnostics/summary.json"
+    ]
+
+    private static var allFileNames: [String] {
+        fileNames.filter { $0 != "manifest.json" } + structuredFileNames
+    }
+
     public static func write(
         document: PTCrazyTraceDocument,
         to directoryURL: URL,
@@ -164,6 +180,12 @@ nonisolated public enum PTCrazyTracePackageWriter {
         try fileManager.createDirectory(at: stagingURL, withIntermediateDirectories: true)
         defer { try? fileManager.removeItem(at: stagingURL) }
         try fileManager.createDirectory(at: stagingURL.appendingPathComponent("attachments", isDirectory: true), withIntermediateDirectories: true)
+        for name in structuredFileNames {
+            try fileManager.createDirectory(
+                at: stagingURL.appendingPathComponent(name).deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+        }
 
         let encoder = JSONEncoder.crazyTraceEncoder
         let metadataData = try encoder.encode(PTCrazyTracePackageMetadata(document: exportedDocument))
@@ -178,7 +200,12 @@ nonisolated public enum PTCrazyTracePackageWriter {
                 "obd.jsonl",
                 "xp400_ble.jsonl",
                 "ymobd.jsonl",
-                "ota.jsonl"
+                "ota.jsonl",
+                "samples/vehicle.jsonl",
+                "samples/motion.jsonl",
+                "samples/gps.jsonl",
+                "events/events.jsonl",
+                "events/markers.jsonl"
             ],
             encoder: encoder
         )
@@ -187,13 +214,31 @@ nonisolated public enum PTCrazyTracePackageWriter {
             if let streamName = streamName(for: event.domain) {
                 try streamWriter.append(event, to: streamName)
             }
+            switch event.payload {
+            case .telemetry:
+                try streamWriter.append(event, to: "samples/vehicle.jsonl")
+            case .motion:
+                try streamWriter.append(event, to: "samples/motion.jsonl")
+            case .location:
+                try streamWriter.append(event, to: "samples/gps.jsonl")
+            case .marker:
+                try streamWriter.append(event, to: "events/events.jsonl")
+                try streamWriter.append(event, to: "events/markers.jsonl")
+            default:
+                try streamWriter.append(event, to: "events/events.jsonl")
+            }
         }
         try streamWriter.finish()
         try Data().write(to: stagingURL.appendingPathComponent("can.bin"), options: .atomic)
         try metadataData.write(to: stagingURL.appendingPathComponent("metadata.json"), options: .atomic)
+        let summaryData = try encoder.encode(PTCrazyTraceDiagnosticsSummary(document: exportedDocument))
+        try summaryData.write(
+            to: stagingURL.appendingPathComponent("diagnostics/summary.json"),
+            options: .atomic
+        )
 
         var checksums: [String: String] = [:]
-        for name in fileNames where name != "manifest.json" {
+        for name in allFileNames {
             let fileURL = stagingURL.appendingPathComponent(name)
             guard fileManager.fileExists(atPath: fileURL.path) else {
                 throw PTCrazyTracePackageError.missingFile(name)
@@ -417,13 +462,14 @@ nonisolated public enum PTCrazyTracePackageReader {
         }
         let decoder = JSONDecoder.crazyTraceDecoder
         let manifest = try decoder.decode(PTCrazyTracePackageManifest.self, from: Data(contentsOf: manifestURL))
-        guard manifest.formatVersion == PTCrazyTracePackageManifest.currentFormatVersion else {
+        guard (1...PTCrazyTracePackageManifest.currentFormatVersion).contains(manifest.formatVersion) else {
             throw PTCrazyTracePackageError.unsupportedFormat(manifest.formatVersion)
         }
         var isAttachmentsDirectory: ObjCBool = false
         let attachmentsURL = rootURL.appendingPathComponent("attachments", isDirectory: true)
-        guard fileManager.fileExists(atPath: attachmentsURL.path, isDirectory: &isAttachmentsDirectory),
-              isAttachmentsDirectory.boolValue else {
+        let hasAttachments = fileManager.fileExists(atPath: attachmentsURL.path, isDirectory: &isAttachmentsDirectory)
+            && isAttachmentsDirectory.boolValue
+        guard hasAttachments || manifest.formatVersion == 1 else {
             throw PTCrazyTracePackageError.missingFile("attachments")
         }
 
@@ -440,10 +486,32 @@ nonisolated public enum PTCrazyTracePackageReader {
             guard actualChecksum == expectedChecksum else { throw PTCrazyTracePackageError.checksumMismatch(name) }
         }
 
+        // EN: Legacy Schema 2 packages omit structured streams; accept them when the legacy set is intact.
+        // ES: Los paquetes heredados de esquema 2 omiten los flujos estructurados; se aceptan si el conjunto heredado está completo.
+        // 中文：旧版 Schema 2 包可能没有结构化数据流，只要旧文件完整就继续接受。
+        let hasStructuredManifest = PTCrazyTracePackageWriter.structuredFileNames.contains {
+            manifest.checksums[$0] != nil
+        }
+        if hasStructuredManifest {
+            for name in PTCrazyTracePackageWriter.structuredFileNames {
+                guard let expectedChecksum = manifest.checksums[name] else {
+                    throw PTCrazyTracePackageError.missingFile(name)
+                }
+                let url = try packageFileURL(named: name, in: rootURL)
+                guard fileManager.fileExists(atPath: url.path) else {
+                    throw PTCrazyTracePackageError.missingFile(name)
+                }
+                let actualChecksum = try sha256(fileURL: url)
+                guard actualChecksum == expectedChecksum else {
+                    throw PTCrazyTracePackageError.checksumMismatch(name)
+                }
+            }
+        }
+
         let metadataURL = try packageFileURL(named: "metadata.json", in: rootURL)
         guard fileManager.fileExists(atPath: metadataURL.path) else { throw PTCrazyTracePackageError.missingFile("metadata.json") }
         let metadata = try decoder.decode(PTCrazyTracePackageMetadata.self, from: Data(contentsOf: metadataURL))
-        guard metadata.schemaVersion == PTCrazyTraceDocument.currentSchemaVersion else {
+        guard (1...PTCrazyTraceDocument.currentSchemaVersion).contains(metadata.schemaVersion) else {
             throw PTCrazyTracePackageError.unsupportedFormat(metadata.schemaVersion)
         }
         guard manifest.vehicleID == metadata.vehicleID,
@@ -802,6 +870,9 @@ nonisolated public enum PTCrazyTraceReplayRegression {
 }
 
 public extension PTCrazyTraceRecorder {
+    // EN: Package export is the privacy-safe Build 77 path for sharing a trace.
+    // ES: La exportación de paquetes es la ruta segura de privacidad de Build 77 para compartir una traza.
+    // 中文：数据包导出是 Build 77 默认的隐私安全分享路径。
     func exportPackage(
         _ document: PTCrazyTraceDocument,
         to directoryURL: URL? = nil,
@@ -829,6 +900,22 @@ public extension PTCrazyTraceRecorder {
                 privacyLevel: privacyLevel
             )
         }.value
+    }
+
+    func exportLatestPackage(
+        to directoryURL: URL? = nil,
+        appVersion: String = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown",
+        buildNumber: String = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown",
+        privacyLevel: String = "redacted"
+    ) async throws -> URL? {
+        guard let document = lastDocument else { return nil }
+        return try await exportPackage(
+            document,
+            to: directoryURL,
+            appVersion: appVersion,
+            buildNumber: buildNumber,
+            privacyLevel: privacyLevel
+        )
     }
 }
 

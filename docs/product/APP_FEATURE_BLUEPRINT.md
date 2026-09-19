@@ -7,12 +7,13 @@ canonical: true
 domain: product
 owner: Jax
 created: 2026-09-15
-last_reviewed: 2026-09-17
+last_reviewed: 2026-09-20
 related_builds:
   - 66
   - 67
   - 68
   - 69
+  - 77
 supersedes: []
 superseded_by:
 ---
@@ -21,11 +22,11 @@ superseded_by:
 
 > 本文件是项目功能、入口、平台覆盖和完成状态的唯一事实源（Single Source of Truth）。
 >
-> 快照日期：2026-09-17
+> 快照日期：2026-09-20
 >
 > 仓库基线：当前工作区已进入 Build 69 Protocol Semantic Evidence Intelligence；Build 57–68 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速、仪表协议纠偏和 OBD 深诊断能力继续保留，Build 69 的语义证据、跨源关联和历史回放已接入，真实设备、车辆、OTA 和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch / Tests / UI Tests `CURRENT_PROJECT_VERSION = 69`
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch `CURRENT_PROJECT_VERSION = 77`；Tests / UI Tests 保持各自测试版本
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -603,6 +604,21 @@ Build 69 继续保持营销版本 `2.0.8`，只递增工程 Build。新增能力
 | B69-07 | 🟨 | MotoHex 与既有 Discovery/Evidence 样本的真实回放、候选率 `<10%`、前后台/断连/性能和 Release/TestFlight 验收 | 当前方案不提供可用具体 Simulator destination；真机/实车待补 |
 
 Build 69 的实施记录和验收边界见 [`../history/builds/BUILD_069_PROTOCOL_SEMANTIC_EVIDENCE.md`](../history/builds/BUILD_069_PROTOCOL_SEMANTIC_EVIDENCE.md)。候选字段仍是研究证据，不会自动变成可执行指令；本 Build 不开放 ECU 写入、SecurityAccess、固件刷写、任意 CAN 注入或 ID 7 主动探针。
+
+### 7.18 Build 77 Crazy Black Box Pro / CrazyTrace 2.0
+
+Build 77 继续保持营销版本 `2.0.8`，工程 Build 为 `77`。它把统一 Vehicle State Projection、Motion、GPS、适配器和协议事件保存为可回放的 CrazyTrace 2.0，并让 Build 76 Digital Twin 通过既有 Telemetry Bridge/Consumer Hub 支持 2D/3D 离线复现。三个稳定核心 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift` 保持冻结，ELM327 仍是 OBD 底层，YMOBD 仍是其扩展。
+
+| 工作包 | 状态 | 内容 | 验证边界 |
+| --- | --- | --- | --- |
+| B77-01～B77-03 | ✅ | Trace Schema 2、统一 Recorder、60 秒/20,000 事件有界 Ring Buffer | 离线模型/目标编译；长时间真机待补 |
+| B77-04 | ✅ | Incident Trigger：事件前最多 60 秒、事件后最多 30 秒、Incident Marker | 异步回归；真实触发策略待补 |
+| B77-05～B77-07 | ✅ | Reader、Replay Source 和 Digital Twin `.crazytrace` 导入；继续复用既有回放时钟和状态总线 | 包回读/构建；真机交互待补 |
+| B77-08～B77-09 | ✅ | 结构化目录包、后台编码、staging 原子发布、默认 redacted 隐私导出 | Checksum/脱敏回归；真实分享待补 |
+| B77-10～B77-11 | ✅ | 复用固定 Replay Fixture，兼容旧 flat JSON、legacy streams 和没有结构化流的旧包 | 确定性回放与兼容测试 |
+| B77-12 | 🟨 | XP400/XP400 GT 真车、后台/断连、2D/3D 一致性、无写入证明和 Instruments/Release 验收 | 现场证据待补 |
+
+详细实施和现场清单见 [`../history/builds/BUILD_077_CRAZYTRACE_2.md`](../history/builds/BUILD_077_CRAZYTRACE_2.md) 与 [`../history/builds/BUILD_077_REAL_VEHICLE_VALIDATION.md`](../history/builds/BUILD_077_REAL_VEHICLE_VALIDATION.md)。Build 77 不新增第二套 BLE、ELM327、YMOBD、UDS、CAN 或遥测研究管线，也不开放未知写入、SecurityAccess、CAN injection 或刷写。
 
 ## 8. 已退役功能
 

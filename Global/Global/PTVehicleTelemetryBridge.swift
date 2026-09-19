@@ -143,7 +143,7 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
             speedResolver.removeSource(.gps)
             gpsSpeedProvider.reset()
         }
-        if PTCrazyTraceRecorder.shared.isRecording {
+        if PTCrazyTraceRecorder.shared.shouldCapture {
             let speedKmh = location.speed >= 0 && location.speed.isFinite ? location.speed * 3.6 : nil
             let course = location.course >= 0 && location.course.isFinite ? location.course : nil
             PTCrazyTraceRecorder.shared.recordLocation(
@@ -164,7 +164,7 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
         startIfNeeded()
         guard mode == .live else { return }
         resolver.ingest(PTGPSMotionTelemetryAdapter.observations(from: motion, capturedAt: date))
-        if PTCrazyTraceRecorder.shared.isRecording {
+        if PTCrazyTraceRecorder.shared.shouldCapture {
             PTCrazyTraceRecorder.shared.recordMotion(
                 PTTraceMotionPayload(
                     roll: motion.roll,
@@ -183,7 +183,7 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
     public func updateAdapterSnapshot(_ snapshot: PTOBDAdapterSnapshot, at date: Date = Date()) {
         guard mode == .live else { return }
         adapterSnapshot = snapshot
-        guard PTCrazyTraceRecorder.shared.isRecording else { return }
+        guard PTCrazyTraceRecorder.shared.shouldCapture else { return }
         let source: PTTraceSource = snapshot.transport == .mock ? .mock : .live
         PTCrazyTraceRecorder.shared.recordAdapter(snapshot, source: source, at: date)
     }
@@ -232,8 +232,46 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
         PTCrazyTraceRecorder.shared.stop(at: date)
     }
 
+    // EN: Black-box controls stay on the unified bridge and never send a vehicle command.
+    // ES: Los controles de caja negra permanecen en el puente unificado y nunca envían comandos al vehículo.
+    // 中文：黑匣子控制统一放在 Bridge 上，绝不向车辆发送指令。
+    @discardableResult
+    public func armBlackBox(at date: Date = Date()) -> Bool {
+        PTCrazyTraceRecorder.shared.armBlackBox(at: date)
+    }
+
+    public func disarmBlackBox() {
+        PTCrazyTraceRecorder.shared.disarmBlackBox()
+    }
+
+    public func triggerBlackBoxIncident(
+        name: String,
+        vehicleID: String? = nil,
+        preRoll: TimeInterval = 60,
+        postRoll: TimeInterval = 30,
+        at date: Date = Date()
+    ) async -> PTCrazyTraceDocument? {
+        await PTCrazyTraceRecorder.shared.triggerIncident(
+            name: name,
+            vehicleID: vehicleID,
+            preRoll: preRoll,
+            postRoll: postRoll,
+            at: date
+        )
+    }
+
     public func exportLatestTrace() async throws -> URL? {
         try await PTCrazyTraceRecorder.shared.exportLatest()
+    }
+
+    public func exportLatestTracePackage(
+        to directoryURL: URL? = nil,
+        privacyLevel: String = "redacted"
+    ) async throws -> URL? {
+        try await PTCrazyTraceRecorder.shared.exportLatestPackage(
+            to: directoryURL,
+            privacyLevel: privacyLevel
+        )
     }
 
     public func markTrace(_ name: String, metadata: [String: String] = [:], at date: Date = Date()) {
@@ -374,7 +412,7 @@ public final class PTVehicleTelemetryBridge: NSObject, PTMotionDelegate {
             )
         }
         snapshot = PTUnifiedVehicleTelemetrySnapshot(values: values, updatedAt: date, mode: .live)
-        if PTCrazyTraceRecorder.shared.isRecording {
+        if PTCrazyTraceRecorder.shared.shouldCapture {
             PTCrazyTraceRecorder.shared.recordTelemetry(
                 snapshot,
                 source: snapshot.containsSyntheticData ? .mock : .live,

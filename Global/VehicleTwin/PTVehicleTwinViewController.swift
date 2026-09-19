@@ -8,11 +8,13 @@
 //
 
 import UIKit
+import UniformTypeIdentifiers
 import PooTools
 import SnapKit
+import SafeSFSymbols
 
 @MainActor
-final class PTVehicleTwinViewController: PTMotoBaseViewController {
+final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPickerDelegate {
     private let store = PTVehicleTwinStore()
     private let twin2DView = PTXP400TwinView()
     private let twin3DView = PTXP400Twin3DView()
@@ -26,10 +28,31 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController {
 
     private var selectedMode: PTVehicleTwinDisplayMode = .automatic
     private var currentSnapshot = PTVehicleTwinSnapshot.empty
+    private var replaySource: PTReplayVehicleStateSource?
 
+    lazy var stopButton:PTBaseButton = {
+        let view = PTBaseButton(type:.custom)
+        view.setImage(UIImage(.stop.fill).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { _ in
+            self.stopReplayTapped()
+        })
+        return view
+    }()
+    
+    lazy var importButton:PTBaseButton = {
+        let view = PTBaseButton(type:.custom)
+        view.setImage(UIImage(.square.andArrowDownFill).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { _ in
+            self.importTraceTapped()
+        })
+        return view
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.title = PTDashboardConfig.languageFunc(text: "Vehicle Twin")
+        pt_Title = PTDashboardConfig.languageFunc(text: "Vehicle Twin")
         selectedMode = PTVehicleTwinDisplayPreferences.shared.mode
         setupUI()
         store.onChange = { [weak self] snapshot in
@@ -42,6 +65,7 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController {
         super.viewWillAppear(animated)
         store.start()
         store.refresh()
+        setCustomRightButtons(buttons: [importButton,stopButton], buttonSpacing: CGFloat.GlobalItemSpacing)
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -192,6 +216,56 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController {
               cameraControl.selectedSegmentIndex < PTVehicleTwin3DCameraPreset.allCases.count else { return }
         let preset = PTVehicleTwin3DCameraPreset.allCases[cameraControl.selectedSegmentIndex]
         twin3DView.setCameraPreset(preset)
+    }
+
+    // EN: Importing a trace only feeds the existing replay bridge; it never opens BLE or OBD.
+    // ES: Importar una traza solo alimenta el puente de reproducción existente; nunca abre BLE ni OBD.
+    // 中文：导入 Trace 只进入现有回放桥接器，不会打开 BLE 或 OBD。
+    @objc private func importTraceTapped() {
+        let traceType = UTType(filenameExtension: "crazytrace") ?? .package
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [traceType, .data])
+        picker.delegate = self
+        picker.allowsMultipleSelection = false
+        present(picker, animated: true)
+    }
+
+    @objc private func stopReplayTapped() {
+        replaySource?.stop()
+        replaySource = nil
+        store.refresh()
+    }
+
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        guard let url = urls.first else { return }
+        let hasSecurityScope = url.startAccessingSecurityScopedResource()
+        Task { @MainActor [weak self] in
+            defer {
+                if hasSecurityScope {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+            do {
+                let document = try await PTCrazyTraceRecorder.load(from: url)
+                let source = PTReplayVehicleStateSource(document: document)
+                self?.replaySource = source
+                source.start()
+            } catch {
+                self?.showReplayError(error)
+            }
+        }
+    }
+
+    private func showReplayError(_ error: Error) {
+        let alert = UIAlertController(
+            title: PTDashboardConfig.languageFunc(text: "Replay Error"),
+            message: error.localizedDescription,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "button_confirm"),
+            style: .default
+        ))
+        present(alert, animated: true)
     }
 
     private func render(_ snapshot: PTVehicleTwinSnapshot) {
