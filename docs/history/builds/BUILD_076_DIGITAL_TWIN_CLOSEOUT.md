@@ -32,6 +32,7 @@ superseded_by: []
 
 - 轮胎圆环保持静止；
 - 轮辐放入独立 layer/image，并以各自轮心为 anchor point；
+- XP400 全画布素材固定在原生 2:1 canvas 内，避免 `scaleAspectFit` 留白导致图片坐标与 layer anchor 错位；
 - 旋转角使用 `speed × deltaTime ÷ wheelCircumference` 计算；
 - 无效、过期或断开时停止累加，避免旧速度继续转动；
 - XP400 PNG 资产和程序化 fallback 都使用同一轮心和同一角速度规则。
@@ -62,4 +63,3 @@ superseded_by: []
 ## 发布结论
 
 Build 76 的代码范围已收口：2D、3D、Mock、stale/disconnected、模式切换、XP400 资源、入口点击和测试构建均已落地。Build 76 不应在没有真实 iPhone、XP400 和 Instruments 证据的情况下标记为“现场 Gate 全部通过”；现场验证只剩视觉、车辆语义、性能和温度证据，不再需要修改 BLE、ELM327、YMOBD 或标准 OBD 连接代码。
-

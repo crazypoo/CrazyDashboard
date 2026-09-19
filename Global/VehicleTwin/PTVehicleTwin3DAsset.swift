@@ -101,9 +101,12 @@ enum PTVehicleTwin3DAssetFactory {
         root.name = PTVehicleTwin3DNodeName.root
         scene.rootNode.addChildNode(root)
 
+        // EN: Match the active procedural 3D palette to the XP400 2D layers; GT stays a future variant.
+        // ES: Alinea la paleta 3D procedural activa con las capas 2D de XP400; GT queda como variante futura.
+        // 中文：让当前程序化 3D 配色与 XP400 2D 分层保持一致；GT 仅保留为未来变体。
         let bodyColor = configuration.model == .xp400GT
             ? UIColor(red: 0.10, green: 0.28, blue: 0.65, alpha: 1)
-            : UIColor(red: 0.18, green: 0.24, blue: 0.38, alpha: 1)
+            : UIColor(red: 0.10, green: 0.24, blue: 0.56, alpha: 1)
         let body = makeBody(color: bodyColor)
         body.name = PTVehicleTwin3DNodeName.body
         root.addChildNode(body)

@@ -121,7 +121,7 @@ final class PTXP400TwinView: UIView {
     }
 
     private func configureXP400AssetViews() {
-        xp400ShadowImageView.contentMode = .scaleAspectFit
+        xp400ShadowImageView.contentMode = .scaleToFill
         xp400AssetContainer.backgroundColor = .clear
         xp400AssetContainer.isUserInteractionEnabled = false
         xp400AssetContainer.layer.anchorPoint = CGPoint(x: 0.50, y: 0.55)
@@ -143,7 +143,7 @@ final class PTXP400TwinView: UIView {
             xp400KickstandImageView
         ]
         imageViews.forEach { imageView in
-            imageView.contentMode = .scaleAspectFit
+            imageView.contentMode = .scaleToFill
             imageView.isUserInteractionEnabled = false
             xp400AssetContainer.addSubview(imageView)
         }
@@ -320,9 +320,13 @@ final class PTXP400TwinView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        xp400ShadowImageView.frame = bounds
-        xp400AssetContainer.bounds = bounds
-        xp400AssetContainer.layer.position = CGPoint(x: bounds.width * 0.50, y: bounds.height * 0.55)
+        let canvasFrame = xp400AssetCanvasFrame()
+        xp400ShadowImageView.frame = canvasFrame
+        xp400AssetContainer.bounds = CGRect(origin: .zero, size: canvasFrame.size)
+        xp400AssetContainer.layer.position = CGPoint(
+            x: canvasFrame.midX,
+            y: canvasFrame.midY + canvasFrame.height * 0.05
+        )
 
         let imageViews = [
             xp400BodyImageView,
@@ -336,12 +340,31 @@ final class PTXP400TwinView: UIView {
         ]
         imageViews.forEach { imageView in
             imageView.bounds = xp400AssetContainer.bounds
-            imageView.center = CGPoint(x: bounds.width * 0.50, y: bounds.height * 0.50)
+            imageView.center = CGPoint(
+                x: xp400AssetContainer.bounds.midX,
+                y: xp400AssetContainer.bounds.midY
+            )
         }
         layoutXP400WheelImage(xp400RearWheelSpokesImageView, pivot: CGPoint(x: 0.25, y: 0.70))
         layoutXP400WheelImage(xp400FrontWheelSpokesImageView, pivot: CGPoint(x: 0.76, y: 0.70))
         drawVehicle()
         renderCurrentSnapshot()
+    }
+
+    // EN: Keep the XP400 full-canvas layers on their native 2:1 canvas so normalized wheel pivots stay exact.
+    // ES: Mantiene las capas de lienzo completo de XP400 en su lienzo nativo 2:1 para conservar los pivotes exactos.
+    // 中文：让 XP400 全画布分层保持原生 2:1 画布，确保归一化轮心始终准确。
+    private func xp400AssetCanvasFrame() -> CGRect {
+        guard bounds.width > 0, bounds.height > 0 else { return .zero }
+        let aspectRatio: CGFloat = 2
+        let canvasWidth = min(bounds.width, bounds.height * aspectRatio)
+        let canvasHeight = canvasWidth / aspectRatio
+        return CGRect(
+            x: bounds.midX - canvasWidth * 0.5,
+            y: bounds.midY - canvasHeight * 0.5,
+            width: canvasWidth,
+            height: canvasHeight
+        )
     }
 
     private func layoutXP400WheelImage(_ imageView: UIImageView, pivot: CGPoint) {

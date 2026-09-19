@@ -37,7 +37,7 @@ superseded_by: []
 
 Build 76A 已将整个 `XP400Twin2DAssets` 目录作为 PTSpeed 的 bundle resource 导入，构建产物中目录名保持为 `XP400Twin2DAssets`。Build 76 收尾后，`PTXP400TwinView` 优先从 `XP400Twin2DAssets/xp400/` 加载 PNG 分层素材；资源缺失时才使用程序化 Core Animation fallback。资源包不通过网络下载，也不会阻塞真实车辆遥测。
 
-轮子素材拆成静态轮环和独立轮辐：`front_wheel_base`、`front_wheel_spokes`、`rear_wheel_base`、`rear_wheel_spokes`。轮辐 image/layer 的 anchor point 分别固定在 manifest 的 `[0.76, 0.70]` 与 `[0.25, 0.70]`，避免整个全画布图片围绕视图中心旋转。
+轮子素材拆成静态轮环和独立轮辐：`front_wheel_base`、`front_wheel_spokes`、`rear_wheel_base`、`rear_wheel_spokes`。XP400 运行素材保持在原生 2:1 canvas 中，再用 `scaleToFill` 对齐同一 canvas；轮辐 image/layer 的 anchor point 分别固定在 manifest 的 `[0.76, 0.70]` 与 `[0.25, 0.70]`，避免 `scaleAspectFit` 留白造成三叉轮辐偏心或绕圈。
 
 若后续把 SVG 替换为正式授权素材或接入 Asset Catalog，应：
 

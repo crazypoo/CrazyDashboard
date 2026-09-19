@@ -25,7 +25,7 @@ superseded_by:
 
 ## Build 76：XP400 Vehicle Digital Twin 收尾 🟨
 
-代码范围已收口：当前 2D/3D 页面统一选择 XP400 素材/配置；2D wheel 已改为轮环静止、轮辐按真实轮心和时间积分旋转；Digital Twin 卡片增加明确的 Open 按钮并禁止内部 renderer 抢占触摸。干净 DerivedData 的通用 iOS Debug build 与 `build-for-testing` 已通过，三个稳定 BLE/OBD 核心零改动。
+代码范围已收口：当前 2D/3D 页面统一选择 XP400 素材/配置；2D wheel 已改为原生 2:1 XP400 canvas、轮环静止、轮辐按真实轮心和时间积分旋转；Digital Twin 卡片增加明确的 Open 按钮并禁止内部 renderer 抢占触摸。干净 DerivedData 的通用 iOS Debug build 与 `build-for-testing` 已通过，三个稳定 BLE/OBD 核心零改动。
 
 只剩真实设备门禁：iPhone 点击与滚动冲突、XP400/XP400 GT 实车字段语义、长时间帧率/内存/Energy/thermal 和 Release/TestFlight 包验证。完成这些证据后，再把 Build 76 Final Gate 从 `🟨` 更新为完整通过。
 
