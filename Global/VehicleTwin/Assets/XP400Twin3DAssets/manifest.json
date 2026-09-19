@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "source": "CrazyDashboard original procedural low-poly asset",
+  "coordinateSystem": "x=front, y=up, z=left",
+  "modelNames": ["xp400", "xp400_gt"],
+  "requiredNodeNames": [
+    "xp400.root",
+    "xp400.body",
+    "xp400.frontWheel.pivot",
+    "xp400.rearWheel.pivot",
+    "xp400.light.headlight",
+    "xp400.light.brake",
+    "xp400.light.indicator.left",
+    "xp400.light.indicator.right",
+    "xp400.kickstand.pivot",
+    "xp400.rpm.indicator",
+    "xp400.motion.gVector"
+  ],
+  "wheelRadiusMeters": 0.34,
+  "maximumTriangleCount": 2400,
+  "maximumMaterialCount": 8,
+  "usesExternalTextures": false
+}

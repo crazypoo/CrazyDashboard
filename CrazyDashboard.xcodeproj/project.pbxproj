@@ -434,6 +434,12 @@
 		710000010000000000000003 /* PTVehicleTwinViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 710000020000000000000003 /* PTVehicleTwinViewController.swift */; };
 		710000010000000000000004 /* PTVehicleTwinTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 710000020000000000000004 /* PTVehicleTwinTests.swift */; };
 		710000010000000000000005 /* XP400Twin2DAssets in Resources */ = {isa = PBXBuildFile; fileRef = 710000020000000000000005 /* XP400Twin2DAssets */; };
+		720000010000000000000001 /* PTVehicleTwinDisplayMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720000020000000000000001 /* PTVehicleTwinDisplayMode.swift */; };
+		720000010000000000000002 /* PTVehicleTwin3DAsset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720000020000000000000002 /* PTVehicleTwin3DAsset.swift */; };
+		720000010000000000000003 /* PTVehicleTwin3DView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720000020000000000000003 /* PTVehicleTwin3DView.swift */; };
+		720000010000000000000004 /* PTVehicleTwin3DTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720000020000000000000004 /* PTVehicleTwin3DTests.swift */; };
+		720000010000000000000005 /* XP400Twin3DAssets in Resources */ = {isa = PBXBuildFile; fileRef = 720000020000000000000005 /* XP400Twin3DAssets */; };
+		720000010000000000000010 /* SceneKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 720000020000000000000010 /* SceneKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -930,6 +936,12 @@
 		710000020000000000000003 /* PTVehicleTwinViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleTwinViewController.swift; sourceTree = "<group>"; };
 		710000020000000000000004 /* PTVehicleTwinTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleTwinTests.swift; sourceTree = "<group>"; };
 		710000020000000000000005 /* XP400Twin2DAssets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Assets/XP400Twin2DAssets; sourceTree = "<group>"; };
+		720000020000000000000001 /* PTVehicleTwinDisplayMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleTwinDisplayMode.swift; sourceTree = "<group>"; };
+		720000020000000000000002 /* PTVehicleTwin3DAsset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleTwin3DAsset.swift; sourceTree = "<group>"; };
+		720000020000000000000003 /* PTVehicleTwin3DView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleTwin3DView.swift; sourceTree = "<group>"; };
+		720000020000000000000004 /* PTVehicleTwin3DTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleTwin3DTests.swift; sourceTree = "<group>"; };
+		720000020000000000000005 /* XP400Twin3DAssets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Assets/XP400Twin3DAssets; sourceTree = "<group>"; };
+		720000020000000000000010 /* SceneKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SceneKit.framework; path = System/Library/Frameworks/SceneKit.framework; sourceTree = SDKROOT; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -985,6 +997,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				720000010000000000000010 /* SceneKit.framework in Frameworks */,
 				600000010000000000000024 /* WatchConnectivity.framework in Frameworks */,
 				600000010000000000000101 /* AppIntents.framework in Frameworks */,
 				600000010000000000000263 /* GroupActivities.framework in Frameworks */,
@@ -1133,6 +1146,7 @@
 				55F52C60303D4025007527C2 /* XCTest.framework */,
 				600000020000000000000263 /* GroupActivities.framework */,
 				650000020000000000000010 /* libsqlite3.tbd */,
+				720000020000000000000010 /* SceneKit.framework */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -1239,6 +1253,10 @@
 				710000020000000000000002 /* PTXP400TwinView.swift */,
 				710000020000000000000003 /* PTVehicleTwinViewController.swift */,
 				710000020000000000000005 /* XP400Twin2DAssets */,
+				720000020000000000000001 /* PTVehicleTwinDisplayMode.swift */,
+				720000020000000000000002 /* PTVehicleTwin3DAsset.swift */,
+				720000020000000000000003 /* PTVehicleTwin3DView.swift */,
+				720000020000000000000005 /* XP400Twin3DAssets */,
 			);
 			path = VehicleTwin;
 			sourceTree = "<group>";
@@ -1889,6 +1907,7 @@
 				6C0000020000000000000004 /* PTBuild69ProtocolSemanticTests.swift */,
 				650000020000000000000005 /* PTProtocolEvidenceDatabaseTests.swift */,
 				710000020000000000000004 /* PTVehicleTwinTests.swift */,
+				720000020000000000000004 /* PTVehicleTwin3DTests.swift */,
 				650000020000000000000006 /* PTCrazyTraceBuild62Tests.swift */,
 				660000020000000000000004 /* PTProtocolResearchLabBuild63Tests.swift */,
 				670000020000000000000005 /* PTVehicleIdentityBuild64Tests.swift */,
@@ -2369,6 +2388,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				710000010000000000000005 /* XP400Twin2DAssets in Resources */,
+				720000010000000000000005 /* XP400Twin3DAssets in Resources */,
 				55F503AC300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */,
 				5598676E3011C9720049684D /* Settings.bundle in Resources */,
 				55F52C4D303D4025007527C2 /* Assets.xcassets in Resources */,
@@ -2739,6 +2759,9 @@
 				710000010000000000000001 /* PTVehicleTwin.swift in Sources */,
 				710000010000000000000002 /* PTXP400TwinView.swift in Sources */,
 				710000010000000000000003 /* PTVehicleTwinViewController.swift in Sources */,
+				720000010000000000000001 /* PTVehicleTwinDisplayMode.swift in Sources */,
+				720000010000000000000002 /* PTVehicleTwin3DAsset.swift in Sources */,
+				720000010000000000000003 /* PTVehicleTwin3DView.swift in Sources */,
 				55FE2A0B300CE2B0000E741F /* PTMapKitNavigationHelper.swift in Sources */,
 				55FDBCAC3010D6C200EE7FA5 /* PTMOTOParkingAnotationView.swift in Sources */,
 				600000010000000000000111 /* PTRoadbookViewController.swift in Sources */,
@@ -2866,6 +2889,7 @@
 				6C0000010000000000000004 /* PTBuild69ProtocolSemanticTests.swift in Sources */,
 				700000010000000000000005 /* PTMusicBrowseStoreTests.swift in Sources */,
 				710000010000000000000004 /* PTVehicleTwinTests.swift in Sources */,
+				720000010000000000000004 /* PTVehicleTwin3DTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

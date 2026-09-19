@@ -501,6 +501,16 @@ final class PTVehicleTwinStore: PTVehicleTelemetryConsumer {
         PTVehicleTelemetryConsumerHub.shared.unregister(self)
     }
 
+    // EN: Re-project the latest immutable inputs after a connection or lifecycle transition.
+    // ES: Vuelve a proyectar las entradas inmutables más recientes tras un cambio de conexión o ciclo de vida.
+    // 中文：连接状态或页面生命周期变化后，重新投影最近的不可变输入。
+    func refresh(now: Date = Date()) {
+        let next = PTVehicleTwinStateMapper.makeCurrent(now: now)
+        guard snapshot != next else { return }
+        snapshot = next
+        onChange?(next)
+    }
+
     func vehicleTelemetryDidUpdate(_ snapshot: PTUnifiedVehicleTelemetrySnapshot) {
         let coordinator = PTVehicleConnectivityCoordinator.shared
         let next = PTVehicleTwinStateMapper.make(

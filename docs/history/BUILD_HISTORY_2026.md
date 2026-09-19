@@ -7,7 +7,7 @@ canonical: true
 domain: build-history-2026
 owner: Jax
 created: 2026-09-15
-last_reviewed: 2026-09-19
+last_reviewed: 2026-09-20
 related_builds:
   - 57
   - 61
@@ -74,6 +74,12 @@ superseded_by:
 完成 XP400 / XP400 GT 的只读 2D Digital Twin 第一阶段：统一车辆状态投影、fresh/aging/stale/unavailable、新旧数据源可追溯、2D 共用 Twin Snapshot、原创 SVG 分层素材包、车身 lean/pitch、车轮、灯光、转向灯、边撑、TCS/ABS/Engine 状态、主页卡片和全屏 UIKit 页面。全屏页面使用 `PTMotoBaseViewController`，数据通过现有 `PTVehicleTelemetryConsumerHub` 进入，不直接监听 BLE 或 OBD。
 
 本轮未修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`，也没有调整 ELM327/YMOBD 的连接、初始化、握手、能力识别、命令顺序或 fallback。通用 iOS Debug build 与 `build-for-testing` 已通过；Instruments、真机和真实 XP400 GT 验收仍需在设备环境完成。详细记录见 [`builds/BUILD_076A_DIGITAL_TWIN_2D.md`](builds/BUILD_076A_DIGITAL_TWIN_2D.md) 与 [`builds/BUILD_076A_ASSET_IMPORT_GUIDE.md`](builds/BUILD_076A_ASSET_IMPORT_GUIDE.md)。
+
+## Build 76B — XP400 Vehicle Digital Twin 3D
+
+完成 SceneKit 3D 技术选型、原创程序化低面数 XP400/XP400 GT 资产契约、manifest/preview、稳定节点层级、前后轮与灯光/边撑独立节点、统一 `PTVehicleTwinSnapshot` Renderer、RPM/Fuel/Voltage/TCS/ABS/Engine 映射、Lean/Pitch/G-vector、Front/Rear/Left/Right/Top/Follow 相机、停车交互、骑行低干扰 Follow、2D/3D/Auto 切换和低电量/thermal 2D fallback。刹车灯与转向角没有可靠共享语义，因此没有臆测或伪造。
+
+本轮未修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`，也没有重排 ELM327/YMOBD 连接步骤。通用 iOS Debug build 与 `build-for-testing` 已通过；manifest/节点/性能策略纯数据测试已接入。Instruments、真机/实车和 Build 76 Final Gate 仍需现场完成。详细记录见 [`builds/BUILD_076B_DIGITAL_TWIN_3D.md`](builds/BUILD_076B_DIGITAL_TWIN_3D.md) 与 [`builds/BUILD_076B_ASSET_IMPORT_GUIDE.md`](builds/BUILD_076B_ASSET_IMPORT_GUIDE.md)。
 
 ## 版本规则
 

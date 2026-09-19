@@ -7,7 +7,7 @@ canonical: true
 domain: active-work
 owner: Jax
 created: 2026-09-15
-last_reviewed: 2026-09-19
+last_reviewed: 2026-09-20
 related_builds:
   - 66
   - 67
@@ -21,7 +21,27 @@ superseded_by:
 
 # 当前工作
 
-快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 76A / Build 76)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 76B / Build 76)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+
+## Build 76B：XP400 Vehicle Digital Twin 3D 🟨
+
+代码已完成 SceneKit 3D Renderer、原创程序化低面数 XP400/XP400 GT 资源契约、稳定节点层级、统一 `PTVehicleTwinSnapshot` 状态映射、Lean/Pitch/G-vector、六组相机、停车交互、骑行 Follow、2D/3D/Auto 切换和低电量/thermal 2D fallback。没有修改 BLE、ELM327、YMOBD 或标准 OBD 核心；3D 页面不建立第二套连接监听链。
+
+已通过：
+
+- PTSpeed 通用 iOS Debug build；
+- PTSpeed 通用 iOS `build-for-testing`；
+- 3D manifest、节点契约和性能策略 XCTest 编译；
+- `git diff --check` 与文档门禁。
+
+仍需真实 iPhone、XP400/XP400 GT 和 Release/TestFlight 包验证：
+
+- 3D 实车 Speed、RPM、Fuel、Voltage、TCS/ABS、边撑、灯光、Lean/Pitch 与断连 stale；
+- 2D/3D/Mock/Auto fallback 双模式回归；
+- Time Profiler、Core Animation、Allocations、Energy Log、thermal pressure 和长时间内存/帧率；
+- 真实设备上停车旋转/缩放、骑行 Follow 和不同尺寸布局。
+
+刹车灯和转向角当前没有可靠共享语义，继续保持不可伪造原则，不在 76B 中标记为已实现。
 
 ## Build 76A：XP400 Vehicle Digital Twin 2D 🟨
 
@@ -34,7 +54,7 @@ superseded_by:
 - Time Profiler、Core Animation、Allocations，确认主仪表和 Twin 页面没有明显掉帧或增长；
 - 2D 资产的车轮中心、倾斜锚点和不同屏幕尺寸布局。
 
-未完成上述证据前，不把 Gate 76A 标记为完整发布通过，也不进入 76B 3D 正式集成。
+未完成上述证据前，不把 Gate 76A 标记为完整发布通过；76B 代码已接入，但 Build 76 Final Gate 仍需 76A/76B 的现场证据。
 
 ## Build 66 收口：统一车速真实验证 🟨
 

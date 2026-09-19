@@ -805,7 +805,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
         vehicleTwinCard.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.top.equalTo(vehicleSummaryView.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-            make.height.equalTo(190)
+            make.height.equalTo(200)
         }
         actionStack.snp.makeConstraints { make in
             make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)

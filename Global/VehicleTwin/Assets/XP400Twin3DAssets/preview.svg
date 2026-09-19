@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="512" viewBox="0 0 1024 512">
+  <rect width="1024" height="512" fill="#0d0d0d"/>
+  <ellipse cx="512" cy="412" rx="310" ry="28" fill="#000" opacity=".5"/>
+  <circle cx="330" cy="370" r="78" fill="#101010" stroke="#9aa5b5" stroke-width="10"/>
+  <circle cx="694" cy="370" r="78" fill="#101010" stroke="#9aa5b5" stroke-width="10"/>
+  <path d="M250 342 C270 250 350 206 460 228 L615 238 C665 244 720 290 756 342 L684 354 L362 354 Z" fill="#1747a3" stroke="#6aa3ff" stroke-width="9"/>
+  <path d="M470 222 L560 150 L633 227 Z" fill="#161616" stroke="#6aa3ff" stroke-width="7"/>
+  <circle cx="740" cy="293" r="17" fill="#ffe36e"/>
+  <circle cx="306" cy="296" r="12" fill="#ff9b35"/>
+  <circle cx="732" cy="312" r="12" fill="#ff9b35"/>
+  <path d="M382 348 L342 430 L318 430 L366 344" fill="#8e9aaa"/>
+  <text x="512" y="76" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="38" text-anchor="middle">XP400 3D Digital Twin</text>
+  <text x="512" y="118" fill="#8fa8d4" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="20" text-anchor="middle">Original procedural low-poly preview</text>
+</svg>

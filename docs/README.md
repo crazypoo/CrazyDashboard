@@ -33,8 +33,10 @@
 | [`history/builds/BUILD_069_PROTOCOL_SEMANTIC_EVIDENCE.md`](history/builds/BUILD_069_PROTOCOL_SEMANTIC_EVIDENCE.md) | history | stable | 否 | 2026-09-17 |
 | [`history/builds/BUILD_076A_ASSET_IMPORT_GUIDE.md`](history/builds/BUILD_076A_ASSET_IMPORT_GUIDE.md) | history | stable | 否 | 2026-09-19 |
 | [`history/builds/BUILD_076A_DIGITAL_TWIN_2D.md`](history/builds/BUILD_076A_DIGITAL_TWIN_2D.md) | history | draft | 否 | 2026-09-19 |
-| [`history/BUILD_HISTORY_2026.md`](history/BUILD_HISTORY_2026.md) | history | stable | 是 | 2026-09-19 |
-| [`planning/ACTIVE_WORK.md`](planning/ACTIVE_WORK.md) | planning | active | 是 | 2026-09-19 |
+| [`history/builds/BUILD_076B_ASSET_IMPORT_GUIDE.md`](history/builds/BUILD_076B_ASSET_IMPORT_GUIDE.md) | history | stable | 否 | 2026-09-20 |
+| [`history/builds/BUILD_076B_DIGITAL_TWIN_3D.md`](history/builds/BUILD_076B_DIGITAL_TWIN_3D.md) | history | draft | 否 | 2026-09-20 |
+| [`history/BUILD_HISTORY_2026.md`](history/BUILD_HISTORY_2026.md) | history | stable | 是 | 2026-09-20 |
+| [`planning/ACTIVE_WORK.md`](planning/ACTIVE_WORK.md) | planning | active | 是 | 2026-09-20 |
 | [`planning/BACKLOG.md`](planning/BACKLOG.md) | planning | active | 是 | 2026-09-15 |
 | [`DOCUMENTATION_POLICY.md`](DOCUMENTATION_POLICY.md) | policy | active | 是 | 2026-09-15 |
 | [`templates/PLAN_SECTION_TEMPLATE.md`](templates/PLAN_SECTION_TEMPLATE.md) | policy | stable | 否 | 2026-09-15 |
