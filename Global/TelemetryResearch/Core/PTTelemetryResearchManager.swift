@@ -35,6 +35,11 @@ nonisolated public enum PTTelemetryResearchState: Sendable, Equatable {
     case uploading
 }
 
+nonisolated public struct PTTelemetryActiveSessionSnapshot: Sendable, Equatable {
+    public let sessionID: UUID
+    public let elapsedMilliseconds: Int64
+}
+
 public actor PTTelemetryResearchManager {
 
     public static let shared = PTTelemetryResearchManager()
@@ -66,6 +71,9 @@ public actor PTTelemetryResearchManager {
     //// 当前批次完成后再跑一轮。
     private var uploadRequestedWhileBusy = false
     
+    /// Monotonic time only. Never persisted or uploaded as wall-clock time.
+    private var activeSessionStartedUptime: TimeInterval?
+
     public init(
         recorder: PTTelemetryRecorder = .shared,
         queue: PTTelemetryUploadQueue = .shared,
@@ -92,6 +100,25 @@ public actor PTTelemetryResearchManager {
         state
     }
 
+    public func activeSessionSnapshot()
+        -> PTTelemetryActiveSessionSnapshot? {
+        guard case .recording(let sessionID) = state,
+                let started = activeSessionStartedUptime else {
+            return nil
+        }
+
+        let elapsed = max(
+            0,
+            ProcessInfo.processInfo.systemUptime - started
+        )
+
+        return .init(
+            sessionID: sessionID,
+            elapsedMilliseconds:
+                Int64((elapsed * 1_000).rounded())
+        )
+    }
+    
     public func isResearchEnabled() -> Bool {
         defaults.bool(
             forKey:
@@ -118,6 +145,7 @@ public actor PTTelemetryResearchManager {
         }
 
         await recorder.cancel()
+        activeSessionStartedUptime = nil
         state = .idle
 
         if purgePendingDataWhenDisabled {
@@ -221,7 +249,7 @@ public actor PTTelemetryResearchManager {
             vehicle: vehicle,
             configuration: configuration
         )
-
+        activeSessionStartedUptime = ProcessInfo.processInfo.systemUptime
         state = .recording(
             sessionID
         )
@@ -247,11 +275,13 @@ public actor PTTelemetryResearchManager {
         }
 
         guard let session = await recorder.stop() else {
+            activeSessionStartedUptime = nil
             state = .idle
             throw PTTelemetryResearchError
                 .noActiveSession
         }
 
+        activeSessionStartedUptime = nil
         state = .preparingUpload(
             sessionID
         )
@@ -306,6 +336,7 @@ public actor PTTelemetryResearchManager {
 
     public func cancelSession() async {
         await recorder.cancel()
+        activeSessionStartedUptime = nil
         state = .idle
     }
 

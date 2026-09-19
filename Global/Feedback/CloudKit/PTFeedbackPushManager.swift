@@ -23,35 +23,36 @@ final class PTFeedbackPushManager {
         UIApplication.shared.registerForRemoteNotifications()
     }
 
-    /// Call from UIApplicationDelegate's remote-notification callback.
-    /// Returns true only for this module's CloudKit subscription.
-    @discardableResult
-    func handleRemoteNotification(
+    func canHandleRemoteNotification(
         _ userInfo: [AnyHashable: Any]
     ) -> Bool {
         guard let notification = CKNotification(
             fromRemoteNotificationDictionary: userInfo
         ),
-              let subscriptionID = notification.subscriptionID,
-              subscriptionID.hasPrefix(
-                PTFeedbackSubscriptionManager.subscriptionPrefix
-              ) else {
+              let subscriptionID = notification.subscriptionID else {
             return false
         }
 
-        Task {
-            do {
-                let records = try await PTFeedbackManager.shared.refreshStatuses()
-                NotificationCenter.default.post(
-                    name: .ptFeedbackStatusDidChange,
-                    object: records
-                )
-            } catch {
-                // Push is only a change signal. Foreground refresh remains
-                // the fallback and the source of truth stays CloudKit.
-            }
+        return subscriptionID.hasPrefix(
+            PTFeedbackSubscriptionManager.subscriptionPrefix
+        )
+    }
+
+    func handleRemoteNotification(
+        _ userInfo: [AnyHashable: Any]
+    ) async -> UIBackgroundFetchResult {
+        guard canHandleRemoteNotification(userInfo) else {
+            return .noData
         }
 
-        return true
+        return await PTFeedbackNotificationCoordinator
+            .shared
+            .refresh(trigger: .cloudKitPush)
+    }
+
+    func refreshOnForeground() async {
+        _ = await PTFeedbackNotificationCoordinator
+            .shared
+            .refresh(trigger: .foreground)
     }
 }

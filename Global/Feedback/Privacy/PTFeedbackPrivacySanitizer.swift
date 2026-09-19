@@ -26,7 +26,8 @@ nonisolated public enum PTFeedbackPrivacySanitizer {
         draft: PTFeedbackDraft,
         context: PTFeedbackContext,
         diagnostics: PTFeedbackDiagnosticsSnapshot?,
-        telemetrySessionID: UUID?
+        telemetrySessionID: UUID?,
+        telemetrySessionOffsetMilliseconds: Int64? = nil
     ) throws -> PTFeedbackUploadPayload {
         let title = normalized(
             PTFeedbackRedactor.redact(draft.title),
@@ -48,6 +49,18 @@ nonisolated public enum PTFeedbackPrivacySanitizer {
 
         let safeDiagnostics = diagnostics.map {
             sanitizeDiagnostics($0)
+        }
+
+        let shouldLinkTelemetry =
+            draft.linkCurrentTelemetrySession
+            && telemetrySessionID != nil
+
+        let safeOffset: Int64?
+        if shouldLinkTelemetry,
+           let telemetrySessionOffsetMilliseconds {
+            safeOffset = max(0, telemetrySessionOffsetMilliseconds)
+        } else {
+            safeOffset = nil
         }
 
         return .init(
@@ -77,11 +90,11 @@ nonisolated public enum PTFeedbackPrivacySanitizer {
                     : [:]
             ),
             telemetry: .init(
-                linked: draft.linkCurrentTelemetrySession
-                    && telemetrySessionID != nil,
-                sessionID: draft.linkCurrentTelemetrySession
+                linked: shouldLinkTelemetry,
+                sessionID: shouldLinkTelemetry
                     ? telemetrySessionID
-                    : nil
+                    : nil,
+                sessionOffsetMilliseconds: safeOffset
             )
         )
     }
@@ -91,8 +104,6 @@ nonisolated public enum PTFeedbackPrivacySanitizer {
     ) -> String {
         let sanitized = PTFeedbackRedactor.redact(value)
 
-        // Vehicle family is a coarse model family only.
-        // Reject long / identifier-looking values rather than trying to preserve them.
         guard sanitized.count <= 40,
               !sanitized.contains("[REDACTED_") else {
             return "unknown"

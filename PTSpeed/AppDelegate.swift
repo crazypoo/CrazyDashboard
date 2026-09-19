@@ -118,9 +118,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         PTAppBaseConfig.share.tab26Mode = true
         PTAppBaseConfig.share.tabbarMetailMode = true
         PTAppBaseConfig.share.tabSelectedMetailColor = .grayCA
-        PTAppBaseConfig.share.tabTopSpacing = Gobal_device_info.isFaceIDCapable ? 12 : 2.5
-        PTAppBaseConfig.share.tabBottomSpacing = Gobal_device_info.isFaceIDCapable ? 12 : 2.5
-        PTAppBaseConfig.share.tab26BottomSpacing = Gobal_device_info.isFaceIDCapable ? PTAppBaseConfig.share.tab26BottomSpacing : 0
+        PTAppBaseConfig.share.tabTopSpacing = deviceInfo.isFaceIDCapable ? 12 : 2.5
+        PTAppBaseConfig.share.tabBottomSpacing = deviceInfo.isFaceIDCapable ? 12 : 2.5
+        PTAppBaseConfig.share.tab26BottomSpacing = deviceInfo.isFaceIDCapable ? PTAppBaseConfig.share.tab26BottomSpacing : 0
         PTAppBaseConfig.share.tabContentSpacing = 2
         PTAppBaseConfig.share.tabNormalFont = .appfont(size: 10.adapter)
         PTAppBaseConfig.share.tabSelectedFont = .appfont(size: 10.adapter,bold:true)
@@ -208,6 +208,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return PTRotationManager.shared.orientationMask
     }
 
+    // CloudKit subscriptions only signal that remote Feedback state changed.
+    // PTCloudNotificationRouter fetches the current CloudKit state before
+    // completing the background fetch.
+    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        Task { @MainActor in
+            let result = await PTCloudNotificationRouter
+                .shared
+                .handleRemoteNotification(userInfo)
+            completionHandler(result)
+        }
+    }
+    
     func applicationWillTerminate(_ application: UIApplication) { }
 
 //    private func configureQWeatherIfAvailable() {
@@ -287,10 +299,16 @@ extension AppDelegate:UNUserNotificationCenterDelegate {
             // 中文：直接点击提醒通知正文时，也进入与显式按钮相同的提醒中心。
             case UNNotificationDefaultActionIdentifier:
                 let notificationKind = response.notification.request.content.userInfo["pt_notification_kind"] as? String
-                guard notificationKind == PTAppNotificationKind.alarm.rawValue else { break }
-                let alarmID = (response.notification.request.content.userInfo["pt_alarm_id"] as? String)
-                    .flatMap(UUID.init(uuidString:))
-                _ = PTRoutingManager.shared.execute(action: .openAlarmCenter(id: alarmID))
+                if notificationKind == PTFeedbackLocalNotificationManager.notificationKind {
+                    PTUtils.getCurrentVC()?.navigationController?.pushViewController(
+                        PTMyFeedbackViewController(),
+                        animated: true
+                    )
+                } else if notificationKind == PTAppNotificationKind.alarm.rawValue {
+                    let alarmID = (response.notification.request.content.userInfo["pt_alarm_id"] as? String)
+                        .flatMap(UUID.init(uuidString:))
+                    _ = PTRoutingManager.shared.execute(action: .openAlarmCenter(id: alarmID))
+                }
             default:
                 break
             }

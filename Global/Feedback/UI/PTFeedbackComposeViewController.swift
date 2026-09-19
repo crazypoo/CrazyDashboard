@@ -352,10 +352,10 @@ final class PTFeedbackComposeViewController: PTBaseViewController {
     }
 
     private func refreshTelemetryAvailability() async {
-        let sessionID = await PTFeedbackTelemetryLink.currentSessionID()
-        telemetrySwitch.isEnabled = sessionID != nil
+        let telemetryLink = await PTFeedbackTelemetryLink.currentLink()
+        telemetrySwitch.isEnabled = telemetryLink != nil
 
-        if sessionID == nil {
+        if telemetryLink == nil {
             telemetrySwitch.isOn = false
         }
     }
@@ -385,11 +385,11 @@ final class PTFeedbackComposeViewController: PTBaseViewController {
         )
 
         Task {
-            let telemetrySessionID: UUID?
+            let telemetryLink: PTFeedbackTelemetryLinkSnapshot?
             if draftSnapshot.linkCurrentTelemetrySession {
-                telemetrySessionID = await PTFeedbackTelemetryLink.currentSessionID()
+                telemetryLink = await PTFeedbackTelemetryLink.currentLink()
             } else {
-                telemetrySessionID = nil
+                telemetryLink = nil
             }
 
             do {
@@ -397,7 +397,9 @@ final class PTFeedbackComposeViewController: PTBaseViewController {
                     draft: draftSnapshot,
                     context: context,
                     diagnostics: diagnostics,
-                    telemetrySessionID: telemetrySessionID
+                    telemetrySessionID: telemetryLink?.sessionID,
+                    telemetrySessionOffsetMilliseconds:
+                        telemetryLink?.sessionOffsetMilliseconds
                 )
 
                 await PTFeedbackDraftStore.shared.clear()

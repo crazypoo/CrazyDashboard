@@ -7,20 +7,41 @@ import Foundation
 
 @MainActor
 public enum PTFeedbackBootstrap {
-    /// Call once from the app startup path that already configures
-    /// PTTelemetryResearchManager.
+    /// Safe to call more than once. No notification permission prompt is shown.
     public static func configureFromInfoPlist() async {
         do {
-            let configuration = try PTFeedbackConfiguration.fromInfoPlist()
-            await PTFeedbackManager.shared.configure(configuration)
-            PTFeedbackPushManager.shared.registerForRemoteNotifications()
+            let configuration =
+                try PTFeedbackConfiguration.fromInfoPlist()
 
-            // Opportunistic retry; failure is intentionally isolated from
-            // vehicle startup and app launch.
-            _ = await PTFeedbackManager.shared.flushPendingUploads()
+            let manager = PTFeedbackManager.shared
+            await manager.configure(configuration)
+
+            // CloudKit subscription pushes are signal-only. Registering with
+            // APNs is independent from visible alert authorization.
+            PTFeedbackPushManager.shared
+                .registerForRemoteNotifications()
+
+            // Restore subscriptions for already-known local records as well as
+            // newly uploaded ones. Failure doesn't block startup.
+            let records = try await manager.feedbackRecords()
+            await PTFeedbackSubscriptionManager.shared
+                .ensureSubscriptions(
+                    feedbackIDs: records.map(\.feedbackID),
+                    configuration: configuration
+                )
+
+            _ = await manager.flushPendingUploads()
+
+            // Compensating sync for coalesced/missed CloudKit pushes.
+            _ = await PTFeedbackNotificationCoordinator
+                .shared
+                .refresh(trigger: .foreground)
         } catch {
             #if DEBUG
-            print("[Feedback] configure skipped: \(error)")
+            print(
+                "[Feedback] configure skipped:",
+                error.localizedDescription
+            )
             #endif
         }
     }

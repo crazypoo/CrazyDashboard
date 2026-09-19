@@ -145,8 +145,9 @@
 		55E149DA305DAC4600ACEAE7 /* PTFeedbackCenterViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E149BB305DAC4600ACEAE7 /* PTFeedbackCenterViewController.swift */; };
 		55E149DB305DAC4600ACEAE7 /* PTFeedbackBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E149B1305DAC4600ACEAE7 /* PTFeedbackBootstrap.swift */; };
 		55E149DC305DAC4600ACEAE7 /* PTFeedbackDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E149BD305DAC4600ACEAE7 /* PTFeedbackDetailViewController.swift */; };
-		55E149DD305DAC4600ACEAE7 /* PTMotoSettingViewController.feedback.patch in Resources */ = {isa = PBXBuildFile; fileRef = 55E149B2305DAC4600ACEAE7 /* PTMotoSettingViewController.feedback.patch */; };
-		55E149DE305DAC4600ACEAE7 /* AppDelegate.feedback.patch in Resources */ = {isa = PBXBuildFile; fileRef = 55E149B0305DAC4600ACEAE7 /* AppDelegate.feedback.patch */; };
+		55E3062F305E22D500829DD9 /* PTCloudNotificationRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E3062D305E22D500829DD9 /* PTCloudNotificationRouter.swift */; };
+		55E30633305E23B500829DD9 /* PTFeedbackLocalNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E30630305E23B500829DD9 /* PTFeedbackLocalNotificationManager.swift */; };
+		55E30634305E23B500829DD9 /* PTFeedbackNotificationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E30631305E23B500829DD9 /* PTFeedbackNotificationCoordinator.swift */; };
 		55E61692301B45B50075F883 /* QWeatherSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 55E61691301B45B50075F883 /* QWeatherSDK */; };
 		55F033A9305CDA4600A6724D /* PTTelemetryUploadPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F033A1305CDA4600A6724D /* PTTelemetryUploadPayload.swift */; };
 		55F033AA305CDA4600A6724D /* PTTelemetryUploadQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F033A6305CDA4600A6724D /* PTTelemetryUploadQueue.swift */; };
@@ -598,9 +599,7 @@
 		55E149AB305DAC4600ACEAE7 /* PTFeedbackUploadPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeedbackUploadPayload.swift; sourceTree = "<group>"; };
 		55E149AD305DAC4600ACEAE7 /* PTFeedbackDiagnosticsBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeedbackDiagnosticsBuilder.swift; sourceTree = "<group>"; };
 		55E149AE305DAC4600ACEAE7 /* PTFeedbackDiagnosticsSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeedbackDiagnosticsSnapshot.swift; sourceTree = "<group>"; };
-		55E149B0305DAC4600ACEAE7 /* AppDelegate.feedback.patch */ = {isa = PBXFileReference; lastKnownFileType = text; path = AppDelegate.feedback.patch; sourceTree = "<group>"; };
 		55E149B1305DAC4600ACEAE7 /* PTFeedbackBootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeedbackBootstrap.swift; sourceTree = "<group>"; };
-		55E149B2305DAC4600ACEAE7 /* PTMotoSettingViewController.feedback.patch */ = {isa = PBXFileReference; lastKnownFileType = text; path = PTMotoSettingViewController.feedback.patch; sourceTree = "<group>"; };
 		55E149B4305DAC4600ACEAE7 /* PTFeedbackPrivacySanitizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeedbackPrivacySanitizer.swift; sourceTree = "<group>"; };
 		55E149B5305DAC4600ACEAE7 /* PTFeedbackRedactor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeedbackRedactor.swift; sourceTree = "<group>"; };
 		55E149B7305DAC4600ACEAE7 /* PTFeedbackDraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeedbackDraftStore.swift; sourceTree = "<group>"; };
@@ -611,6 +610,9 @@
 		55E149BD305DAC4600ACEAE7 /* PTFeedbackDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeedbackDetailViewController.swift; sourceTree = "<group>"; };
 		55E149BE305DAC4600ACEAE7 /* PTFeedbackPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeedbackPresentation.swift; sourceTree = "<group>"; };
 		55E149BF305DAC4600ACEAE7 /* PTMyFeedbackViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMyFeedbackViewController.swift; sourceTree = "<group>"; };
+		55E3062D305E22D500829DD9 /* PTCloudNotificationRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCloudNotificationRouter.swift; sourceTree = "<group>"; };
+		55E30630305E23B500829DD9 /* PTFeedbackLocalNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeedbackLocalNotificationManager.swift; sourceTree = "<group>"; };
+		55E30631305E23B500829DD9 /* PTFeedbackNotificationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeedbackNotificationCoordinator.swift; sourceTree = "<group>"; };
 		55F03396305CDA4600A6724D /* PTCloudKitTelemetryUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCloudKitTelemetryUploader.swift; sourceTree = "<group>"; };
 		55F03398305CDA4600A6724D /* PTTelemetryConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTelemetryConfiguration.swift; sourceTree = "<group>"; };
 		55F03399305CDA4600A6724D /* PTTelemetryEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTelemetryEvent.swift; sourceTree = "<group>"; };
@@ -1311,6 +1313,7 @@
 			isa = PBXGroup;
 			children = (
 				55E1499B305DAC4600ACEAE7 /* Core */,
+				55E3062E305E22D500829DD9 /* Push */,
 			);
 			path = Cloud;
 			sourceTree = "<group>";
@@ -1367,9 +1370,7 @@
 		55E149B3305DAC4600ACEAE7 /* Integration */ = {
 			isa = PBXGroup;
 			children = (
-				55E149B0305DAC4600ACEAE7 /* AppDelegate.feedback.patch */,
 				55E149B1305DAC4600ACEAE7 /* PTFeedbackBootstrap.swift */,
-				55E149B2305DAC4600ACEAE7 /* PTMotoSettingViewController.feedback.patch */,
 			);
 			path = Integration;
 			sourceTree = "<group>";
@@ -1417,8 +1418,26 @@
 				55E149B6305DAC4600ACEAE7 /* Privacy */,
 				55E149BA305DAC4600ACEAE7 /* Storage */,
 				55E149C0305DAC4600ACEAE7 /* UI */,
+				55E30632305E23B500829DD9 /* Notification */,
 			);
 			path = Feedback;
+			sourceTree = "<group>";
+		};
+		55E3062E305E22D500829DD9 /* Push */ = {
+			isa = PBXGroup;
+			children = (
+				55E3062D305E22D500829DD9 /* PTCloudNotificationRouter.swift */,
+			);
+			path = Push;
+			sourceTree = "<group>";
+		};
+		55E30632305E23B500829DD9 /* Notification */ = {
+			isa = PBXGroup;
+			children = (
+				55E30630305E23B500829DD9 /* PTFeedbackLocalNotificationManager.swift */,
+				55E30631305E23B500829DD9 /* PTFeedbackNotificationCoordinator.swift */,
+			);
+			path = Notification;
 			sourceTree = "<group>";
 		};
 		55E616B4301B88BF0075F883 /* BLE */ = {
@@ -2162,8 +2181,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				55E149DD305DAC4600ACEAE7 /* PTMotoSettingViewController.feedback.patch in Resources */,
-				55E149DE305DAC4600ACEAE7 /* AppDelegate.feedback.patch in Resources */,
 				55F503AC300FBDCE00C5D085 /* GlobalAssets.xcassets in Resources */,
 				5598676E3011C9720049684D /* Settings.bundle in Resources */,
 				55F52C4D303D4025007527C2 /* Assets.xcassets in Resources */,
@@ -2412,6 +2429,8 @@
 				600000010000000000000300 /* PTLyricsService.swift in Sources */,
 				600000010000000000000301 /* PTLyricsViewController.swift in Sources */,
 				557D004D302EA1BD008BA492 /* PTPitchView.swift in Sources */,
+				55E30633305E23B500829DD9 /* PTFeedbackLocalNotificationManager.swift in Sources */,
+				55E30634305E23B500829DD9 /* PTFeedbackNotificationCoordinator.swift in Sources */,
 				557D004E302EA1BD008BA492 /* PTSpeedometerView.swift in Sources */,
 				55FE2A5E300DF42A000E741F /* PTBLEConnectViewController.swift in Sources */,
 				5598683A301348FC0049684D /* PTNotificationCenter.swift in Sources */,
@@ -2540,6 +2559,7 @@
 				600000010000000000000121 /* PTRideReplayViewController.swift in Sources */,
 				55499DFF301AFA2300A1A2D9 /* PTLiveActivityManager.swift in Sources */,
 				55986642301141090049684D /* PTAntiTheftManager.swift in Sources */,
+				55E3062F305E22D500829DD9 /* PTCloudNotificationRouter.swift in Sources */,
 				55F503B7300FC9AA00C5D085 /* PTLanguageModel.swift in Sources */,
 				55499E29301B2BBB00A1A2D9 /* PTLocalIntercomManager.swift in Sources */,
 				5598667E301148290049684D /* PTDiagnosticManager.swift in Sources */,

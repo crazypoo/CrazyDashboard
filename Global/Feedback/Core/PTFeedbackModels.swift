@@ -134,6 +134,26 @@ nonisolated public struct PTFeedbackRemoteStatus: Codable, Sendable, Equatable {
     }
 }
 
+
+nonisolated public struct PTFeedbackStatusChange: Sendable, Equatable {
+    public let feedbackID: UUID
+    public let previousStatus: PTFeedbackStatus
+    public let previousRevision: Int
+    public let current: PTFeedbackLocalRecord
+
+    public init(
+        feedbackID: UUID,
+        previousStatus: PTFeedbackStatus,
+        previousRevision: Int,
+        current: PTFeedbackLocalRecord
+    ) {
+        self.feedbackID = feedbackID
+        self.previousStatus = previousStatus
+        self.previousRevision = previousRevision
+        self.current = current
+    }
+}
+
 nonisolated public struct PTFeedbackSubmissionResult: Sendable, Equatable {
     public let feedbackID: UUID
     public let uploadedImmediately: Bool

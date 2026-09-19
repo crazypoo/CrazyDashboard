@@ -4,6 +4,7 @@
 //
 
 import UIKit
+import UserNotifications
 import PooTools
 import SwifterSwift
 import SnapKit
@@ -66,10 +67,24 @@ final class PTFeedbackCenterViewController: PTBaseViewController {
         return view
     }()
 
+    private lazy var notificationButton: PTBaseButton = {
+        let view = PTBaseButton(type: .custom)
+        view.setTitleColor(.label, for: .normal)
+        view.backgroundColor = .secondarySystemBackground
+        view.addActionHandlers { [weak self] _ in
+            guard let self else { return }
+            Task {
+                await self.handleNotificationAction()
+            }
+        }
+        return view
+    }()
+
     private lazy var queueLabel: UILabel = {
         let view = UILabel()
         view.textColor = .tertiaryLabel
         view.font = .systemFont(ofSize: 12)
+        view.numberOfLines = 0
         return view
     }()
 
@@ -90,6 +105,7 @@ final class PTFeedbackCenterViewController: PTBaseViewController {
             explanationLabel,
             composeButton,
             historyButton,
+            notificationButton,
             queueLabel
         ])
 
@@ -110,17 +126,24 @@ final class PTFeedbackCenterViewController: PTBaseViewController {
             make.left.right.height.equalTo(composeButton)
         }
 
+        notificationButton.snp.makeConstraints { make in
+            make.top.equalTo(historyButton.snp.bottom).offset(12)
+            make.left.right.height.equalTo(composeButton)
+        }
+
         queueLabel.snp.makeConstraints { make in
-            make.top.equalTo(historyButton.snp.bottom).offset(16)
-            make.left.right.equalTo(historyButton)
+            make.top.equalTo(notificationButton.snp.bottom).offset(16)
+            make.left.right.equalTo(notificationButton)
         }
 
         composeButton.viewCorner(radius: 10)
         historyButton.viewCorner(radius: 10)
+        notificationButton.viewCorner(radius: 10)
 
         Task {
             await PTFeedbackBootstrap.configureFromInfoPlist()
             await refreshQueueCount()
+            await refreshNotificationButton()
         }
     }
 
@@ -129,6 +152,7 @@ final class PTFeedbackCenterViewController: PTBaseViewController {
 
         Task {
             await refreshQueueCount()
+            await refreshNotificationButton()
         }
     }
 
@@ -143,5 +167,62 @@ final class PTFeedbackCenterViewController: PTBaseViewController {
         } else {
             queueLabel.text = nil
         }
+    }
+
+    private func refreshNotificationButton() async {
+        let status = await PTFeedbackLocalNotificationManager
+            .shared
+            .authorizationStatus()
+
+        let title: String
+        switch status {
+        case .authorized, .provisional, .ephemeral:
+            title = PTFeedbackPresentation.text(
+                "feedback_notifications_enabled",
+                fallback: "反馈状态通知：已开启"
+            )
+        case .denied:
+            title = PTFeedbackPresentation.text(
+                "feedback_notifications_denied",
+                fallback: "反馈状态通知：前往系统设置开启"
+            )
+        case .notDetermined:
+            title = PTFeedbackPresentation.text(
+                "feedback_notifications_enable",
+                fallback: "开启反馈状态通知"
+            )
+        @unknown default:
+            title = PTFeedbackPresentation.text(
+                "feedback_notifications_enable",
+                fallback: "开启反馈状态通知"
+            )
+        }
+
+        notificationButton.setTitle(
+            title,
+            for: .normal
+        )
+    }
+
+    private func handleNotificationAction() async {
+        let manager = PTFeedbackLocalNotificationManager.shared
+        let status = await manager.authorizationStatus()
+
+        switch status {
+        case .notDetermined:
+            _ = await manager.requestVisibleAuthorization()
+        case .denied:
+            if let url = URL(
+                string: UIApplication.openSettingsURLString
+            ) {
+                await UIApplication.shared.open(url)
+            }
+        case .authorized, .provisional, .ephemeral:
+            break
+        @unknown default:
+            break
+        }
+
+        await refreshNotificationButton()
     }
 }

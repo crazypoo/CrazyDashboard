@@ -2,9 +2,6 @@
 //  PTFeedbackStatusStore.swift
 //  CrazyDashboard
 //
-//  Local user-visible state. This file may contain the user's own sanitized
-//  feedback title/preview, but never encryption keys or CloudKit credentials.
-//
 
 import Foundation
 
@@ -66,26 +63,55 @@ public actor PTFeedbackStatusStore {
     public func apply(
         _ remote: [PTFeedbackRemoteStatus]
     ) throws {
+        _ = try applyAndCollectChanges(remote)
+    }
+
+    /// Applies CloudKit as source-of-truth and returns only genuinely newer
+    /// local-visible state transitions. Push/local notification code uses this
+    /// to avoid duplicate alerts when CloudKit coalesces or replays signals.
+    public func applyAndCollectChanges(
+        _ remote: [PTFeedbackRemoteStatus]
+    ) throws -> [PTFeedbackStatusChange] {
         var values = try load()
+        var changes: [PTFeedbackStatusChange] = []
 
         for status in remote {
             guard var local = values[status.feedbackID] else {
                 continue
             }
 
-            guard status.statusRevision >= local.statusRevision else {
+            guard status.statusRevision > local.statusRevision else {
                 continue
             }
+
+            let previousStatus = local.status
+            let previousRevision = local.statusRevision
+            let previousIssueNumber = local.issueNumber
+            let previousResolutionBuild = local.resolutionBuild
 
             local.status = status.status
             local.statusRevision = status.statusRevision
             local.issueNumber = status.issueNumber
             local.resolutionBuild = status.resolutionBuild
             values[status.feedbackID] = local
+
+            if previousStatus != local.status
+                || previousIssueNumber != local.issueNumber
+                || previousResolutionBuild != local.resolutionBuild {
+                changes.append(
+                    .init(
+                        feedbackID: local.feedbackID,
+                        previousStatus: previousStatus,
+                        previousRevision: previousRevision,
+                        current: local
+                    )
+                )
+            }
         }
 
         cache = values
         try persist(values)
+        return changes
     }
 
     public func removeAll() {

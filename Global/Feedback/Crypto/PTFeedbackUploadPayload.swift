@@ -2,6 +2,9 @@
 //  PTFeedbackUploadPayload.swift
 //  CrazyDashboard
 //
+//  Feedback payload V2 adds only an anonymous relative telemetry offset.
+//  It does not add wall-clock time, GPS, VIN or device identifiers.
+//
 
 import Foundation
 
@@ -26,6 +29,20 @@ nonisolated public struct PTFeedbackUploadPayload: Codable, Sendable, Equatable 
     public struct Telemetry: Codable, Sendable, Equatable {
         public let linked: Bool
         public let sessionID: UUID?
+
+        /// Monotonic elapsed time inside the anonymous TelemetryResearch
+        /// session. This is intentionally not a wall-clock timestamp.
+        public let sessionOffsetMilliseconds: Int64?
+
+        public init(
+            linked: Bool,
+            sessionID: UUID?,
+            sessionOffsetMilliseconds: Int64?
+        ) {
+            self.linked = linked
+            self.sessionID = sessionID
+            self.sessionOffsetMilliseconds = sessionOffsetMilliseconds
+        }
     }
 
     public let schemaVersion: Int

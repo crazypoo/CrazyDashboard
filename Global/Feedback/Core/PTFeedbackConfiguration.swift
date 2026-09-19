@@ -9,7 +9,7 @@ nonisolated public struct PTFeedbackConfiguration: Sendable, Equatable {
     public static let consentDefaultsKey = "CrazyDashboard.Feedback.Consent"
     public static let recordType = "FeedbackEnvelope"
     public static let envelopeSchemaVersion = 1
-    public static let payloadSchemaVersion = 1
+    public static let payloadSchemaVersion = 2
     public static let cryptoVersion = 1
     public static let hkdfSalt = "CrazyDashboardFeedback-v1"
 

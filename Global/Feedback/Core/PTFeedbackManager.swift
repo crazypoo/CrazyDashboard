@@ -70,7 +70,8 @@ public actor PTFeedbackManager {
         draft: PTFeedbackDraft,
         context: PTFeedbackContext,
         diagnostics: PTFeedbackDiagnosticsSnapshot?,
-        telemetrySessionID: UUID?
+        telemetrySessionID: UUID?,
+        telemetrySessionOffsetMilliseconds: Int64? = nil
     ) async throws -> PTFeedbackSubmissionResult {
         guard let configuration else {
             throw PTFeedbackError.missingConfiguration(
@@ -88,7 +89,9 @@ public actor PTFeedbackManager {
             draft: draft,
             context: context,
             diagnostics: diagnostics,
-            telemetrySessionID: telemetrySessionID
+            telemetrySessionID: telemetrySessionID,
+            telemetrySessionOffsetMilliseconds:
+                telemetrySessionOffsetMilliseconds
         )
 
         let envelope = try PTFeedbackEncryptor.encrypt(
@@ -216,8 +219,8 @@ public actor PTFeedbackManager {
         try await statusStore.records()
     }
 
-    @discardableResult
-    public func refreshStatuses() async throws -> [PTFeedbackLocalRecord] {
+    public func refreshStatusChanges() async throws
+        -> [PTFeedbackStatusChange] {
         guard let configuration else {
             throw PTFeedbackError.missingConfiguration(
                 "PTFeedbackManager 尚未 configure。"
@@ -231,8 +234,14 @@ public actor PTFeedbackManager {
             configuration: configuration
         )
 
-        try await statusStore.apply(remote)
+        return try await statusStore.applyAndCollectChanges(
+            remote
+        )
+    }
 
+    @discardableResult
+    public func refreshStatuses() async throws -> [PTFeedbackLocalRecord] {
+        _ = try await refreshStatusChanges()
         return try await statusStore.records()
     }
 
