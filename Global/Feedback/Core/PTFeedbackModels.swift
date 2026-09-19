@@ -1,6 +1,7 @@
 //
 //  PTFeedbackModels.swift
 //  CrazyDashboard
+//  Build75: developer reply + feedback lifecycle display support.
 //
 
 import Foundation
@@ -87,6 +88,12 @@ nonisolated public struct PTFeedbackLocalRecord: Codable, Sendable, Equatable, I
     public var issueNumber: Int?
     public var resolutionBuild: String?
 
+    // Build75. These are developer-authored, sanitized, user-visible texts.
+    public var developerReplyZH: String?
+    public var developerReplyEN: String?
+    public var developerReplyES: String?
+    public var developerReplyUpdatedAtEpochMilliseconds: Int64?
+
     public init(
         feedbackID: UUID,
         category: PTFeedbackCategory,
@@ -97,7 +104,11 @@ nonisolated public struct PTFeedbackLocalRecord: Codable, Sendable, Equatable, I
         status: PTFeedbackStatus = .submitted,
         statusRevision: Int = 0,
         issueNumber: Int? = nil,
-        resolutionBuild: String? = nil
+        resolutionBuild: String? = nil,
+        developerReplyZH: String? = nil,
+        developerReplyEN: String? = nil,
+        developerReplyES: String? = nil,
+        developerReplyUpdatedAtEpochMilliseconds: Int64? = nil
     ) {
         self.feedbackID = feedbackID
         self.category = category
@@ -109,6 +120,32 @@ nonisolated public struct PTFeedbackLocalRecord: Codable, Sendable, Equatable, I
         self.statusRevision = statusRevision
         self.issueNumber = issueNumber
         self.resolutionBuild = resolutionBuild
+        self.developerReplyZH = developerReplyZH
+        self.developerReplyEN = developerReplyEN
+        self.developerReplyES = developerReplyES
+        self.developerReplyUpdatedAtEpochMilliseconds = developerReplyUpdatedAtEpochMilliseconds
+    }
+
+    public func localizedDeveloperReply(languageIdentifier: String) -> String? {
+        let language = languageIdentifier.lowercased()
+        let zh = developerReplyZH?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let en = developerReplyEN?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let es = developerReplyES?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if language.hasPrefix("zh") {
+            return Self.firstNonEmpty(zh, en, es)
+        }
+        if language.hasPrefix("es") {
+            return Self.firstNonEmpty(es, en, zh)
+        }
+        return Self.firstNonEmpty(en, zh, es)
+    }
+
+    private static func firstNonEmpty(_ values: String?...) -> String? {
+        values.first { value in
+            guard let value else { return false }
+            return !value.isEmpty
+        } ?? nil
     }
 }
 
@@ -118,39 +155,53 @@ nonisolated public struct PTFeedbackRemoteStatus: Codable, Sendable, Equatable {
     public let statusRevision: Int
     public let issueNumber: Int?
     public let resolutionBuild: String?
+    public let developerReplyZH: String?
+    public let developerReplyEN: String?
+    public let developerReplyES: String?
+    public let developerReplyUpdatedAtEpochMilliseconds: Int64?
 
     public init(
         feedbackID: UUID,
         status: PTFeedbackStatus,
         statusRevision: Int,
         issueNumber: Int?,
-        resolutionBuild: String?
+        resolutionBuild: String?,
+        developerReplyZH: String? = nil,
+        developerReplyEN: String? = nil,
+        developerReplyES: String? = nil,
+        developerReplyUpdatedAtEpochMilliseconds: Int64? = nil
     ) {
         self.feedbackID = feedbackID
         self.status = status
         self.statusRevision = statusRevision
         self.issueNumber = issueNumber
         self.resolutionBuild = resolutionBuild
+        self.developerReplyZH = developerReplyZH
+        self.developerReplyEN = developerReplyEN
+        self.developerReplyES = developerReplyES
+        self.developerReplyUpdatedAtEpochMilliseconds = developerReplyUpdatedAtEpochMilliseconds
     }
 }
-
 
 nonisolated public struct PTFeedbackStatusChange: Sendable, Equatable {
     public let feedbackID: UUID
     public let previousStatus: PTFeedbackStatus
     public let previousRevision: Int
     public let current: PTFeedbackLocalRecord
+    public let developerReplyChanged: Bool
 
     public init(
         feedbackID: UUID,
         previousStatus: PTFeedbackStatus,
         previousRevision: Int,
-        current: PTFeedbackLocalRecord
+        current: PTFeedbackLocalRecord,
+        developerReplyChanged: Bool = false
     ) {
         self.feedbackID = feedbackID
         self.previousStatus = previousStatus
         self.previousRevision = previousRevision
         self.current = current
+        self.developerReplyChanged = developerReplyChanged
     }
 }
 
@@ -158,10 +209,7 @@ nonisolated public struct PTFeedbackSubmissionResult: Sendable, Equatable {
     public let feedbackID: UUID
     public let uploadedImmediately: Bool
 
-    public init(
-        feedbackID: UUID,
-        uploadedImmediately: Bool
-    ) {
+    public init(feedbackID: UUID, uploadedImmediately: Bool) {
         self.feedbackID = feedbackID
         self.uploadedImmediately = uploadedImmediately
     }
@@ -179,22 +227,14 @@ nonisolated public enum PTFeedbackError: Error, LocalizedError, Sendable {
 
     public var errorDescription: String? {
         switch self {
-        case .missingConfiguration(let message):
-            return message
-        case .invalidTitle:
-            return "反馈标题不能为空，且不能超过允许长度。"
-        case .invalidBody:
-            return "反馈内容不能为空，且不能超过允许长度。"
-        case .payloadTooLarge(let bytes):
-            return "反馈加密前数据过大（\(bytes) bytes）。"
-        case .encryptionFailed:
-            return "反馈加密失败。"
-        case .cloudAccountUnavailable:
-            return "当前 iCloud 账号不可用于提交反馈。"
-        case .cloudRecordMalformed:
-            return "CloudKit 返回的反馈状态格式不正确。"
-        case .storageFailure(let message):
-            return "反馈本地存储失败：\(message)"
+        case .missingConfiguration(let message): return message
+        case .invalidTitle: return "反馈标题不能为空，且不能超过允许长度。"
+        case .invalidBody: return "反馈内容不能为空，且不能超过允许长度。"
+        case .payloadTooLarge(let bytes): return "反馈加密前数据过大（\(bytes) bytes）。"
+        case .encryptionFailed: return "反馈加密失败。"
+        case .cloudAccountUnavailable: return "当前 iCloud 账号不可用于提交反馈。"
+        case .cloudRecordMalformed: return "CloudKit 返回的反馈状态格式不正确。"
+        case .storageFailure(let message): return "反馈本地存储失败：\(message)"
         }
     }
 }
