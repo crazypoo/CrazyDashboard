@@ -187,6 +187,10 @@ enum PTVehicleTwin3DAssetFactory {
     private static func makeBody(color: UIColor) -> SCNNode {
         let body = SCNNode()
 
+        // EN: Keep the low-poly silhouette recognizably XP400: tall screen, angular fairing, long seat and footboard.
+        // ES: Mantiene la silueta low-poly reconocible como XP400: pantalla alta, carenado angular, asiento largo y plataforma.
+        // 中文：保持低面数模型具备 XP400 的辨识度：高风挡、棱角前脸、长座垫和踏板。
+
         let mainGeometry = SCNBox(width: 1.88, height: 0.50, length: 0.68, chamferRadius: 0.12)
         mainGeometry.firstMaterial = material(color: color)
         let main = SCNNode(geometry: mainGeometry)
@@ -213,6 +217,43 @@ enum PTVehicleTwin3DAssetFactory {
         screen.eulerAngles.z = -0.18
         body.addChildNode(screen)
 
+        let windshieldGeometry = SCNBox(width: 0.42, height: 0.52, length: 0.66, chamferRadius: 0.05)
+        windshieldGeometry.firstMaterial = transparentMaterial(color: UIColor(red: 0.28, green: 0.42, blue: 0.50, alpha: 0.42))
+        let windshield = SCNNode(geometry: windshieldGeometry)
+        windshield.position = SCNVector3(0.67, 1.48, 0)
+        windshield.eulerAngles.z = -0.20
+        body.addChildNode(windshield)
+
+        let footboardGeometry = SCNBox(width: 1.08, height: 0.08, length: 0.86, chamferRadius: 0.03)
+        footboardGeometry.firstMaterial = material(color: UIColor(white: 0.22, alpha: 1))
+        let footboard = SCNNode(geometry: footboardGeometry)
+        footboard.position = SCNVector3(-0.02, 0.62, 0)
+        body.addChildNode(footboard)
+
+        let frontPanelGeometry = SCNBox(width: 0.54, height: 0.44, length: 0.80, chamferRadius: 0.12)
+        frontPanelGeometry.firstMaterial = material(color: color.withAlphaComponent(0.92))
+        let frontPanel = SCNNode(geometry: frontPanelGeometry)
+        frontPanel.position = SCNVector3(0.80, 1.00, 0)
+        frontPanel.eulerAngles.z = -0.14
+        body.addChildNode(frontPanel)
+
+        let forkMaterial = material(color: UIColor(red: 0.72, green: 0.52, blue: 0.18, alpha: 1))
+        for z: Float in [-0.23, 0.23] {
+            let forkGeometry = SCNCylinder(radius: 0.035, height: 0.64)
+            forkGeometry.firstMaterial = forkMaterial
+            let fork = SCNNode(geometry: forkGeometry)
+            fork.position = SCNVector3(0.98, 0.60, z)
+            fork.eulerAngles.z = -0.14
+            body.addChildNode(fork)
+        }
+
+        let exhaustGeometry = SCNCylinder(radius: 0.07, height: 0.58)
+        exhaustGeometry.firstMaterial = material(color: UIColor(white: 0.30, alpha: 1))
+        let exhaust = SCNNode(geometry: exhaustGeometry)
+        exhaust.position = SCNVector3(-0.72, 0.60, 0.38)
+        exhaust.eulerAngles.z = Float.pi / 2
+        body.addChildNode(exhaust)
+
         let handlebarGeometry = SCNCylinder(radius: 0.035, height: 0.86)
         handlebarGeometry.firstMaterial = material(color: UIColor(white: 0.55, alpha: 1))
         let handlebar = SCNNode(geometry: handlebarGeometry)
@@ -238,6 +279,21 @@ enum PTVehicleTwin3DAssetFactory {
         rimGeometry.pipeSegmentCount = 6
         rimGeometry.firstMaterial = material(color: UIColor(white: 0.60, alpha: 1))
         wheel.addChildNode(SCNNode(geometry: rimGeometry))
+
+        // EN: Three crossing bars form an XP400-style cross-spoke wheel and rotate with the wheel pivot.
+        // ES: Tres barras cruzadas forman una rueda de radios cruzados estilo XP400 y giran con el pivote.
+        // 中文：用三根交叉轮辐表现 XP400 风格的交叉辐条，并随车轮枢轴旋转。
+        for angle in stride(from: Float(0), to: Float.pi, by: Float.pi / 3) {
+            let spokeGeometry = SCNCylinder(radius: 0.012, height: 0.52)
+            spokeGeometry.firstMaterial = material(color: UIColor(white: 0.78, alpha: 1))
+            let spoke = SCNNode(geometry: spokeGeometry)
+            spoke.eulerAngles.z = angle
+            wheel.addChildNode(spoke)
+        }
+
+        let hubGeometry = SCNCylinder(radius: 0.07, height: 0.18)
+        hubGeometry.firstMaterial = material(color: UIColor(white: 0.78, alpha: 1))
+        wheel.addChildNode(SCNNode(geometry: hubGeometry))
 
         return wheel
     }
@@ -300,6 +356,13 @@ enum PTVehicleTwin3DAssetFactory {
         if let emission {
             material.emission.contents = emission
         }
+        return material
+    }
+
+    private static func transparentMaterial(color: UIColor) -> SCNMaterial {
+        let material = material(color: color)
+        material.transparency = 0.72
+        material.isDoubleSided = true
         return material
     }
 }

@@ -32,6 +32,7 @@ final class PTXP400TwinView: UIView {
     private let xp400FrontWheelSpokesImageView = UIImageView()
     private let xp400RearWheelBaseImageView = UIImageView()
     private let xp400RearWheelSpokesImageView = UIImageView()
+    private let xp400WindshieldImageView = UIImageView()
     private let xp400HeadlightImageView = UIImageView()
     private let xp400BrakeLightImageView = UIImageView()
     private let xp400LeftIndicatorImageView = UIImageView()
@@ -136,6 +137,7 @@ final class PTXP400TwinView: UIView {
             xp400RearWheelSpokesImageView,
             xp400FrontWheelBaseImageView,
             xp400FrontWheelSpokesImageView,
+            xp400WindshieldImageView,
             xp400HeadlightImageView,
             xp400BrakeLightImageView,
             xp400LeftIndicatorImageView,
@@ -156,6 +158,7 @@ final class PTXP400TwinView: UIView {
             "front_wheel_spokes": xp400FrontWheelSpokesImageView,
             "rear_wheel_base": xp400RearWheelBaseImageView,
             "rear_wheel_spokes": xp400RearWheelSpokesImageView,
+            "windshield": xp400WindshieldImageView,
             "headlight": xp400HeadlightImageView,
             "brake_light": xp400BrakeLightImageView,
             "indicator_left": xp400LeftIndicatorImageView,
@@ -304,6 +307,7 @@ final class PTXP400TwinView: UIView {
         xp400ShadowImageView.alpha = usesXP400Assets ? CGFloat(opacity * 0.72) : 0
         xp400FrontWheelSpokesImageView.transform = CGAffineTransform(rotationAngle: wheelRotation)
         xp400RearWheelSpokesImageView.transform = CGAffineTransform(rotationAngle: wheelRotation)
+        xp400WindshieldImageView.alpha = CGFloat(opacity * 0.78)
 
         let headlightOn = currentSnapshot.highBeamOn?.value == true || currentSnapshot.lowBeamOn?.value == true
         headlightLayer.opacity = headlightOn ? 1 : 0.22
@@ -332,6 +336,7 @@ final class PTXP400TwinView: UIView {
             xp400BodyImageView,
             xp400RearWheelBaseImageView,
             xp400FrontWheelBaseImageView,
+            xp400WindshieldImageView,
             xp400HeadlightImageView,
             xp400BrakeLightImageView,
             xp400LeftIndicatorImageView,

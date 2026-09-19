@@ -27,11 +27,13 @@ superseded_by: []
 - `manifest.json`
 - `xp400/` 与 `xp400_gt/` 两套透明 SVG 分层资源
 - `xp400/` 下用于运行时的 PNG 版本；当前 Build 76 页面只加载 `xp400/`
-- body、body mask、前后轮、头灯、刹车灯、左右转向灯、边撑、阴影和 preview
+- body、body mask、前后轮、交叉辐条、头灯、烟熏风挡、刹车灯、左右转向灯、边撑、阴影和 preview
 
 ## 资产说明
 
 当前资源是为 CrazyDashboard 制作的原创近似矢量轮廓，不是 Peugeot 官方 车型图片，也不声称是照片级精确模型。`manifest.json` 记录画布尺寸、provenance、部件名称、车轮中心、车身 pivot、边撑 pivot 和头灯锚点。若后续获得用户自有照片或授权素材，只需按相同文件名替换 SVG，并复核 anchor/pivot。
+
+本轮细化以 XP400 公开车型的高位风挡、棱角前脸、长座垫、低踏板、前叉金属色和交叉辐条为视觉参考；这些特征由项目内原创 SVG 重绘，不直接复制官方图片或商标。3D 页面对应使用程序化 SceneKit 几何，保持与 2D 素材的轮廓语言一致。
 
 ## 工程使用
 
