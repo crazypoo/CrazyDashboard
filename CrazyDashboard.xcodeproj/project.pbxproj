@@ -148,6 +148,28 @@
 		55E3062F305E22D500829DD9 /* PTCloudNotificationRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E3062D305E22D500829DD9 /* PTCloudNotificationRouter.swift */; };
 		55E30633305E23B500829DD9 /* PTFeedbackLocalNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E30630305E23B500829DD9 /* PTFeedbackLocalNotificationManager.swift */; };
 		55E30634305E23B500829DD9 /* PTFeedbackNotificationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E30631305E23B500829DD9 /* PTFeedbackNotificationCoordinator.swift */; };
+		55E3068A305E631400829DD9 /* PTCommunityLocalNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E30680305E631400829DD9 /* PTCommunityLocalNotificationManager.swift */; };
+		55E3068B305E631400829DD9 /* PTFeatureSuggestionDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E30686305E631400829DD9 /* PTFeatureSuggestionDetailViewController.swift */; };
+		55E3068C305E631400829DD9 /* PTAnnouncementListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E30685305E631400829DD9 /* PTAnnouncementListViewController.swift */; };
+		55E3068D305E631400829DD9 /* PTAnnouncementSubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E3067B305E631400829DD9 /* PTAnnouncementSubscriptionManager.swift */; };
+		55E3068E305E631400829DD9 /* PTAnnouncementModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E3067E305E631400829DD9 /* PTAnnouncementModels.swift */; };
+		55E3068F305E631400829DD9 /* PTAnnouncementRevisionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E30682305E631400829DD9 /* PTAnnouncementRevisionStore.swift */; };
+		55E30690305E631400829DD9 /* PTAnnouncementDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E30684305E631400829DD9 /* PTAnnouncementDetailViewController.swift */; };
+		55E30691305E631400829DD9 /* PTAnnouncementRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E3067A305E631400829DD9 /* PTAnnouncementRepository.swift */; };
+		55E30692305E631400829DD9 /* PTAnnouncementManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E3067D305E631400829DD9 /* PTAnnouncementManager.swift */; };
+		55E30693305E631400829DD9 /* PTFeatureSuggestionListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E30687305E631400829DD9 /* PTFeatureSuggestionListViewController.swift */; };
+		55E3069F305E636900829DD9 /* PTFeatureSuggestionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E30696305E636900829DD9 /* PTFeatureSuggestionRepository.swift */; };
+		55E306A0305E636900829DD9 /* PTFeatureSuggestionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E3069B305E636900829DD9 /* PTFeatureSuggestionManager.swift */; };
+		55E306A1305E636900829DD9 /* PTFeatureSuggestionPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E3069C305E636900829DD9 /* PTFeatureSuggestionPresentation.swift */; };
+		55E306A2305E636900829DD9 /* PTCommunityBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E30699305E636900829DD9 /* PTCommunityBootstrap.swift */; };
+		55E306A3305E636900829DD9 /* PTFeatureSuggestionSubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E30697305E636900829DD9 /* PTFeatureSuggestionSubscriptionManager.swift */; };
+		55E306A4305E636900829DD9 /* PTCommunityPushCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E3069A305E636900829DD9 /* PTCommunityPushCoordinator.swift */; };
+		55E306AC305E639800829DD9 /* PTFeedbackAttachmentBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E306A5305E639800829DD9 /* PTFeedbackAttachmentBuilder.swift */; };
+		55E306AD305E639800829DD9 /* PTFeedbackAttachmentModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E306A8305E639800829DD9 /* PTFeedbackAttachmentModels.swift */; };
+		55E306AE305E639800829DD9 /* PTFeedbackAttachmentRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E306AA305E639800829DD9 /* PTFeedbackAttachmentRepository.swift */; };
+		55E306AF305E639800829DD9 /* PTFeedbackAttachmentQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E306A9305E639800829DD9 /* PTFeedbackAttachmentQueue.swift */; };
+		55E306B0305E639800829DD9 /* PTFeedbackAttachmentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E306A7305E639800829DD9 /* PTFeedbackAttachmentManager.swift */; };
+		55E306B1305E639800829DD9 /* PTFeedbackAttachmentEncryptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55E306A6305E639800829DD9 /* PTFeedbackAttachmentEncryptor.swift */; };
 		55E61692301B45B50075F883 /* QWeatherSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 55E61691301B45B50075F883 /* QWeatherSDK */; };
 		55F033A9305CDA4600A6724D /* PTTelemetryUploadPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F033A1305CDA4600A6724D /* PTTelemetryUploadPayload.swift */; };
 		55F033AA305CDA4600A6724D /* PTTelemetryUploadQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F033A6305CDA4600A6724D /* PTTelemetryUploadQueue.swift */; };
@@ -613,6 +635,28 @@
 		55E3062D305E22D500829DD9 /* PTCloudNotificationRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCloudNotificationRouter.swift; sourceTree = "<group>"; };
 		55E30630305E23B500829DD9 /* PTFeedbackLocalNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeedbackLocalNotificationManager.swift; sourceTree = "<group>"; };
 		55E30631305E23B500829DD9 /* PTFeedbackNotificationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeedbackNotificationCoordinator.swift; sourceTree = "<group>"; };
+		55E3067A305E631400829DD9 /* PTAnnouncementRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTAnnouncementRepository.swift; sourceTree = "<group>"; };
+		55E3067B305E631400829DD9 /* PTAnnouncementSubscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTAnnouncementSubscriptionManager.swift; sourceTree = "<group>"; };
+		55E3067D305E631400829DD9 /* PTAnnouncementManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTAnnouncementManager.swift; sourceTree = "<group>"; };
+		55E3067E305E631400829DD9 /* PTAnnouncementModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTAnnouncementModels.swift; sourceTree = "<group>"; };
+		55E30680305E631400829DD9 /* PTCommunityLocalNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCommunityLocalNotificationManager.swift; sourceTree = "<group>"; };
+		55E30682305E631400829DD9 /* PTAnnouncementRevisionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTAnnouncementRevisionStore.swift; sourceTree = "<group>"; };
+		55E30684305E631400829DD9 /* PTAnnouncementDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTAnnouncementDetailViewController.swift; sourceTree = "<group>"; };
+		55E30685305E631400829DD9 /* PTAnnouncementListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTAnnouncementListViewController.swift; sourceTree = "<group>"; };
+		55E30686305E631400829DD9 /* PTFeatureSuggestionDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeatureSuggestionDetailViewController.swift; sourceTree = "<group>"; };
+		55E30687305E631400829DD9 /* PTFeatureSuggestionListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeatureSuggestionListViewController.swift; sourceTree = "<group>"; };
+		55E30696305E636900829DD9 /* PTFeatureSuggestionRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeatureSuggestionRepository.swift; sourceTree = "<group>"; };
+		55E30697305E636900829DD9 /* PTFeatureSuggestionSubscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeatureSuggestionSubscriptionManager.swift; sourceTree = "<group>"; };
+		55E30699305E636900829DD9 /* PTCommunityBootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCommunityBootstrap.swift; sourceTree = "<group>"; };
+		55E3069A305E636900829DD9 /* PTCommunityPushCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCommunityPushCoordinator.swift; sourceTree = "<group>"; };
+		55E3069B305E636900829DD9 /* PTFeatureSuggestionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeatureSuggestionManager.swift; sourceTree = "<group>"; };
+		55E3069C305E636900829DD9 /* PTFeatureSuggestionPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeatureSuggestionPresentation.swift; sourceTree = "<group>"; };
+		55E306A5305E639800829DD9 /* PTFeedbackAttachmentBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeedbackAttachmentBuilder.swift; sourceTree = "<group>"; };
+		55E306A6305E639800829DD9 /* PTFeedbackAttachmentEncryptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeedbackAttachmentEncryptor.swift; sourceTree = "<group>"; };
+		55E306A7305E639800829DD9 /* PTFeedbackAttachmentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeedbackAttachmentManager.swift; sourceTree = "<group>"; };
+		55E306A8305E639800829DD9 /* PTFeedbackAttachmentModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeedbackAttachmentModels.swift; sourceTree = "<group>"; };
+		55E306A9305E639800829DD9 /* PTFeedbackAttachmentQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeedbackAttachmentQueue.swift; sourceTree = "<group>"; };
+		55E306AA305E639800829DD9 /* PTFeedbackAttachmentRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTFeedbackAttachmentRepository.swift; sourceTree = "<group>"; };
 		55F03396305CDA4600A6724D /* PTCloudKitTelemetryUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTCloudKitTelemetryUploader.swift; sourceTree = "<group>"; };
 		55F03398305CDA4600A6724D /* PTTelemetryConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTelemetryConfiguration.swift; sourceTree = "<group>"; };
 		55F03399305CDA4600A6724D /* PTTelemetryEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTelemetryEvent.swift; sourceTree = "<group>"; };
@@ -1159,6 +1203,8 @@
 				55F033A8305CDA4600A6724D /* TelemetryResearch */,
 				55E1499C305DAC4600ACEAE7 /* Cloud */,
 				55E149C1305DAC4600ACEAE7 /* Feedback */,
+				55E30689305E631400829DD9 /* Announcement */,
+				55E3069E305E636900829DD9 /* Community */,
 			);
 			path = Global;
 			sourceTree = "<group>";
@@ -1419,6 +1465,7 @@
 				55E149BA305DAC4600ACEAE7 /* Storage */,
 				55E149C0305DAC4600ACEAE7 /* UI */,
 				55E30632305E23B500829DD9 /* Notification */,
+				55E306AB305E639800829DD9 /* Attachment */,
 			);
 			path = Feedback;
 			sourceTree = "<group>";
@@ -1438,6 +1485,105 @@
 				55E30631305E23B500829DD9 /* PTFeedbackNotificationCoordinator.swift */,
 			);
 			path = Notification;
+			sourceTree = "<group>";
+		};
+		55E3067C305E631400829DD9 /* CloudKit */ = {
+			isa = PBXGroup;
+			children = (
+				55E3067A305E631400829DD9 /* PTAnnouncementRepository.swift */,
+				55E3067B305E631400829DD9 /* PTAnnouncementSubscriptionManager.swift */,
+			);
+			path = CloudKit;
+			sourceTree = "<group>";
+		};
+		55E3067F305E631400829DD9 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				55E3067D305E631400829DD9 /* PTAnnouncementManager.swift */,
+				55E3067E305E631400829DD9 /* PTAnnouncementModels.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		55E30681305E631400829DD9 /* Notification */ = {
+			isa = PBXGroup;
+			children = (
+				55E30680305E631400829DD9 /* PTCommunityLocalNotificationManager.swift */,
+			);
+			path = Notification;
+			sourceTree = "<group>";
+		};
+		55E30683305E631400829DD9 /* Storage */ = {
+			isa = PBXGroup;
+			children = (
+				55E30682305E631400829DD9 /* PTAnnouncementRevisionStore.swift */,
+			);
+			path = Storage;
+			sourceTree = "<group>";
+		};
+		55E30688305E631400829DD9 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				55E30684305E631400829DD9 /* PTAnnouncementDetailViewController.swift */,
+				55E30685305E631400829DD9 /* PTAnnouncementListViewController.swift */,
+				55E30686305E631400829DD9 /* PTFeatureSuggestionDetailViewController.swift */,
+				55E30687305E631400829DD9 /* PTFeatureSuggestionListViewController.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		55E30689305E631400829DD9 /* Announcement */ = {
+			isa = PBXGroup;
+			children = (
+				55E3067C305E631400829DD9 /* CloudKit */,
+				55E3067F305E631400829DD9 /* Core */,
+				55E30681305E631400829DD9 /* Notification */,
+				55E30683305E631400829DD9 /* Storage */,
+				55E30688305E631400829DD9 /* UI */,
+			);
+			path = Announcement;
+			sourceTree = "<group>";
+		};
+		55E30698305E636900829DD9 /* CloudKit */ = {
+			isa = PBXGroup;
+			children = (
+				55E30696305E636900829DD9 /* PTFeatureSuggestionRepository.swift */,
+				55E30697305E636900829DD9 /* PTFeatureSuggestionSubscriptionManager.swift */,
+			);
+			path = CloudKit;
+			sourceTree = "<group>";
+		};
+		55E3069D305E636900829DD9 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				55E30699305E636900829DD9 /* PTCommunityBootstrap.swift */,
+				55E3069A305E636900829DD9 /* PTCommunityPushCoordinator.swift */,
+				55E3069B305E636900829DD9 /* PTFeatureSuggestionManager.swift */,
+				55E3069C305E636900829DD9 /* PTFeatureSuggestionPresentation.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		55E3069E305E636900829DD9 /* Community */ = {
+			isa = PBXGroup;
+			children = (
+				55E30698305E636900829DD9 /* CloudKit */,
+				55E3069D305E636900829DD9 /* Core */,
+			);
+			path = Community;
+			sourceTree = "<group>";
+		};
+		55E306AB305E639800829DD9 /* Attachment */ = {
+			isa = PBXGroup;
+			children = (
+				55E306A5305E639800829DD9 /* PTFeedbackAttachmentBuilder.swift */,
+				55E306A6305E639800829DD9 /* PTFeedbackAttachmentEncryptor.swift */,
+				55E306A7305E639800829DD9 /* PTFeedbackAttachmentManager.swift */,
+				55E306A8305E639800829DD9 /* PTFeedbackAttachmentModels.swift */,
+				55E306A9305E639800829DD9 /* PTFeedbackAttachmentQueue.swift */,
+				55E306AA305E639800829DD9 /* PTFeedbackAttachmentRepository.swift */,
+			);
+			path = Attachment;
 			sourceTree = "<group>";
 		};
 		55E616B4301B88BF0075F883 /* BLE */ = {
@@ -2425,6 +2571,12 @@
 				557D0049302EA1BD008BA492 /* PTGForceView.swift in Sources */,
 				557D004A302EA1BD008BA492 /* PTIndicatorPanel.swift in Sources */,
 				557D004B302EA1BD008BA492 /* PTLeanAngleView.swift in Sources */,
+				55E3069F305E636900829DD9 /* PTFeatureSuggestionRepository.swift in Sources */,
+				55E306A0305E636900829DD9 /* PTFeatureSuggestionManager.swift in Sources */,
+				55E306A1305E636900829DD9 /* PTFeatureSuggestionPresentation.swift in Sources */,
+				55E306A2305E636900829DD9 /* PTCommunityBootstrap.swift in Sources */,
+				55E306A3305E636900829DD9 /* PTFeatureSuggestionSubscriptionManager.swift in Sources */,
+				55E306A4305E636900829DD9 /* PTCommunityPushCoordinator.swift in Sources */,
 				557D004C302EA1BD008BA492 /* PTNowPlayingView.swift in Sources */,
 				600000010000000000000300 /* PTLyricsService.swift in Sources */,
 				600000010000000000000301 /* PTLyricsViewController.swift in Sources */,
@@ -2434,6 +2586,16 @@
 				557D004E302EA1BD008BA492 /* PTSpeedometerView.swift in Sources */,
 				55FE2A5E300DF42A000E741F /* PTBLEConnectViewController.swift in Sources */,
 				5598683A301348FC0049684D /* PTNotificationCenter.swift in Sources */,
+				55E3068A305E631400829DD9 /* PTCommunityLocalNotificationManager.swift in Sources */,
+				55E3068B305E631400829DD9 /* PTFeatureSuggestionDetailViewController.swift in Sources */,
+				55E3068C305E631400829DD9 /* PTAnnouncementListViewController.swift in Sources */,
+				55E3068D305E631400829DD9 /* PTAnnouncementSubscriptionManager.swift in Sources */,
+				55E3068E305E631400829DD9 /* PTAnnouncementModels.swift in Sources */,
+				55E3068F305E631400829DD9 /* PTAnnouncementRevisionStore.swift in Sources */,
+				55E30690305E631400829DD9 /* PTAnnouncementDetailViewController.swift in Sources */,
+				55E30691305E631400829DD9 /* PTAnnouncementRepository.swift in Sources */,
+				55E30692305E631400829DD9 /* PTAnnouncementManager.swift in Sources */,
+				55E30693305E631400829DD9 /* PTFeatureSuggestionListViewController.swift in Sources */,
 				55986640301138A30049684D /* PTTripManager.swift in Sources */,
 				600000010000000000000040 /* PTDataPersistenceActor.swift in Sources */,
 				600000010000000000000310 /* PTVehicleTelemetry.swift in Sources */,
@@ -2600,6 +2762,12 @@
 				55983434305C4A4100022658 /* PTMusicArtworkCache.swift in Sources */,
 				55983435305C4A4100022658 /* PTMusicPlaybackSnapshot.swift in Sources */,
 				55983436305C4A4100022658 /* PTMusicSearchViewController.swift in Sources */,
+				55E306AC305E639800829DD9 /* PTFeedbackAttachmentBuilder.swift in Sources */,
+				55E306AD305E639800829DD9 /* PTFeedbackAttachmentModels.swift in Sources */,
+				55E306AE305E639800829DD9 /* PTFeedbackAttachmentRepository.swift in Sources */,
+				55E306AF305E639800829DD9 /* PTFeedbackAttachmentQueue.swift in Sources */,
+				55E306B0305E639800829DD9 /* PTFeedbackAttachmentManager.swift in Sources */,
+				55E306B1305E639800829DD9 /* PTFeedbackAttachmentEncryptor.swift in Sources */,
 				55983437305C4A4100022658 /* PTMusicLibraryService.swift in Sources */,
 				55983438305C4A4100022658 /* PTMusicAuthorizationManager.swift in Sources */,
 				55499E2C301B2C8800A1A2D9 /* PTPTTViewController.swift in Sources */,

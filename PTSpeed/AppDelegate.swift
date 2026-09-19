@@ -299,11 +299,10 @@ extension AppDelegate:UNUserNotificationCenterDelegate {
             // 中文：直接点击提醒通知正文时，也进入与显式按钮相同的提醒中心。
             case UNNotificationDefaultActionIdentifier:
                 let notificationKind = response.notification.request.content.userInfo["pt_notification_kind"] as? String
-                if notificationKind == PTFeedbackLocalNotificationManager.notificationKind {
-                    PTUtils.getCurrentVC()?.navigationController?.pushViewController(
-                        PTMyFeedbackViewController(),
-                        animated: true
-                    )
+                if notificationKind == PTCommunityLocalNotificationManager.announcementNotificationKind {
+                    PTUtils.getCurrentVC()?.navigationController?.pushViewController(PTAnnouncementListViewController(), animated: true)
+                } else if notificationKind == PTFeedbackLocalNotificationManager.notificationKind {
+                    PTUtils.getCurrentVC()?.navigationController?.pushViewController(PTMyFeedbackViewController(), animated: true)
                 } else if notificationKind == PTAppNotificationKind.alarm.rawValue {
                     let alarmID = (response.notification.request.content.userInfo["pt_alarm_id"] as? String)
                         .flatMap(UUID.init(uuidString:))

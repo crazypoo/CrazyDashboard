@@ -2,8 +2,7 @@
 //  PTFeedbackSubscriptionManager.swift
 //  CrazyDashboard
 //
-//  One narrow public-database query subscription per locally-owned feedback.
-//  The CloudKit notification is signal-only; state is fetched afterwards.
+//  Signal-only CloudKit subscriptions. State is fetched after wake-up.
 //
 
 @preconcurrency import CloudKit
@@ -11,10 +10,7 @@ import Foundation
 
 public actor PTFeedbackSubscriptionManager {
     public static let shared = PTFeedbackSubscriptionManager()
-
-    public static let subscriptionPrefix =
-        "crazydashboard.feedback.status."
-
+    public static let subscriptionPrefix = "crazydashboard.feedback.status."
     private init() {}
 
     public func ensureSubscriptions(
@@ -31,8 +27,6 @@ public actor PTFeedbackSubscriptionManager {
             } catch is CancellationError {
                 return
             } catch {
-                // Subscription recovery is best-effort. Foreground refresh
-                // remains the fallback when CloudKit/APNs is unavailable.
             }
         }
     }
@@ -45,41 +39,24 @@ public actor PTFeedbackSubscriptionManager {
             identifier: configuration.cloudKit.containerIdentifier
         )
         let database = container.publicCloudDatabase
-
-        let subscriptionID = Self.subscriptionPrefix
-            + feedbackID.uuidString.lowercased()
-
+        let subscriptionID = Self.subscriptionPrefix + feedbackID.uuidString.lowercased()
         do {
-            _ = try await database.subscription(
-                for: subscriptionID
-            )
+            _ = try await database.subscription(for: subscriptionID)
             return
-        } catch let error as CKError
-            where error.code == .unknownItem {
-            // Expected for a new feedback record.
+        } catch let error as CKError where error.code == .unknownItem {
         }
-
-        let predicate = NSPredicate(
-            format: "feedbackID == %@",
-            feedbackID.uuidString.lowercased()
-        )
-
         let subscription = CKQuerySubscription(
             recordType: PTFeedbackConfiguration.recordType,
-            predicate: predicate,
+            predicate: NSPredicate(
+                format: "feedbackID == %@",
+                feedbackID.uuidString.lowercased()
+            ),
             subscriptionID: subscriptionID,
             options: [.firesOnRecordUpdate]
         )
-
-        let notificationInfo = CKSubscription.NotificationInfo()
-
-        // IMPORTANT:
-        // Keep this signal-only. Apple documents that a background CloudKit
-        // notification should set only shouldSendContentAvailable. The app
-        // fetches the current record after receiving the signal.
-        notificationInfo.shouldSendContentAvailable = true
-        subscription.notificationInfo = notificationInfo
-
+        let info = CKSubscription.NotificationInfo()
+        info.shouldSendContentAvailable = true
+        subscription.notificationInfo = info
         _ = try await database.save(subscription)
     }
 }

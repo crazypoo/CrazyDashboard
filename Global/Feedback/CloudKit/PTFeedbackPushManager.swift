@@ -16,43 +16,33 @@ extension Notification.Name {
 @MainActor
 final class PTFeedbackPushManager {
     static let shared = PTFeedbackPushManager()
-
     private init() {}
 
     func registerForRemoteNotifications() {
         UIApplication.shared.registerForRemoteNotifications()
     }
 
-    func canHandleRemoteNotification(
-        _ userInfo: [AnyHashable: Any]
-    ) -> Bool {
-        guard let notification = CKNotification(
+    func canHandleRemoteNotification(_ userInfo: [AnyHashable: Any]) -> Bool {
+        guard let id = CKNotification(
             fromRemoteNotificationDictionary: userInfo
-        ),
-              let subscriptionID = notification.subscriptionID else {
-            return false
-        }
-
-        return subscriptionID.hasPrefix(
-            PTFeedbackSubscriptionManager.subscriptionPrefix
-        )
+        )?.subscriptionID else { return false }
+        return id.hasPrefix(PTFeedbackSubscriptionManager.subscriptionPrefix)
     }
 
     func handleRemoteNotification(
         _ userInfo: [AnyHashable: Any]
     ) async -> UIBackgroundFetchResult {
-        guard canHandleRemoteNotification(userInfo) else {
-            return .noData
-        }
-
-        return await PTFeedbackNotificationCoordinator
-            .shared
-            .refresh(trigger: .cloudKitPush)
+        guard canHandleRemoteNotification(userInfo) else { return .noData }
+        return await PTFeedbackNotificationCoordinator.shared.refresh(
+            trigger: .cloudKitPush
+        )
     }
 
     func refreshOnForeground() async {
-        _ = await PTFeedbackNotificationCoordinator
-            .shared
-            .refresh(trigger: .foreground)
+        _ = await PTFeedbackNotificationCoordinator.shared.refresh(
+            trigger: .foreground
+        )
+        await PTCommunityPushCoordinator.shared.refreshOnForeground()
+        await PTFeedbackAttachmentManager.shared.flushPendingUploads()
     }
 }
