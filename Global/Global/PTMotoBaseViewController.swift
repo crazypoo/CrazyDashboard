@@ -40,7 +40,7 @@ class PTMotoBaseViewController: PTBaseViewController {
         
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+        view.backgroundColor = .black
         PTBluetoothServerManager.shared.addDelegate(self)
     }
     

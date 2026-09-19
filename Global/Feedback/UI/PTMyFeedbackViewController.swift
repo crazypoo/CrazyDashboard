@@ -9,7 +9,7 @@ import SwifterSwift
 import SnapKit
 
 @MainActor
-final class PTMyFeedbackViewController: PTBaseViewController {
+final class PTMyFeedbackViewController: PTMotoBaseViewController {
 
     private var records: [PTFeedbackLocalRecord] = []
 
@@ -49,10 +49,6 @@ final class PTMyFeedbackViewController: PTBaseViewController {
         return view
     }()
 
-    override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
-        .solid(.systemBackground)
-    }
-
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -60,8 +56,7 @@ final class PTMyFeedbackViewController: PTBaseViewController {
             "feedback_my_feedback",
             fallback: "我的反馈"
         )
-        view.backgroundColor = .systemBackground
-
+        
         view.addSubviews([
             tableView,
             emptyLabel

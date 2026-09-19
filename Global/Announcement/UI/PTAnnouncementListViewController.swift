@@ -8,7 +8,7 @@ import PooTools
 import SnapKit
 
 @MainActor
-final class PTAnnouncementListViewController: PTBaseViewController {
+final class PTAnnouncementListViewController: PTMotoBaseViewController {
     private var values: [PTAnnouncement] = []
     private lazy var tableView: UITableView = {
         let view = UITableView(frame: .zero, style: .insetGrouped)
@@ -18,16 +18,11 @@ final class PTAnnouncementListViewController: PTBaseViewController {
         return view
     }()
 
-    override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
-        .solid(.systemBackground)
-    }
-
     override func viewDidLoad() {
         super.viewDidLoad()
         pt_Title = PTFeedbackPresentation.text(
             "feedback_announcements", fallback: "公告"
         )
-        view.backgroundColor = .systemBackground
         view.addSubview(tableView)
         tableView.snp.makeConstraints { make in
             make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total)
@@ -46,8 +41,6 @@ final class PTAnnouncementListViewController: PTBaseViewController {
             reloadFromCache()
         }
     }
-
-    deinit { NotificationCenter.default.removeObserver(self) }
 
     @objc private func reloadFromCache() {
         Task { @MainActor in

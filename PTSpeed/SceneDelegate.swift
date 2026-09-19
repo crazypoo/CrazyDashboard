@@ -87,10 +87,10 @@ class SceneDelegate: PTWindowSceneDelegate {
             }
         }
         
-        PTGCDManager.shared.delayOnMain(time: 5) {
-            guard let presenter = PTUtils.getCurrentVC() else { return }
-            presenter.navigationController?.pushViewController(PTFeatureSuggestionListViewController(), animated: true)
-        }
+//        PTGCDManager.shared.delayOnMain(time: 5) {
+//            guard let presenter = PTUtils.getCurrentVC() else { return }
+//            presenter.navigationController?.pushViewController(PTFeatureSuggestionListViewController(), animated: true)
+//        }
         // Feedback CloudKit + APNs bootstrap. This is idempotent and never
         // requests visible notification permission at launch.
         Task { @MainActor in
@@ -121,7 +121,6 @@ class SceneDelegate: PTWindowSceneDelegate {
         if let windowScene = scene as? UIWindowScene {
             PTLaunchAnimationPresenter.dismiss(in: windowScene)
         }
-        PTNSLogConsole(">>>>>>>>>>>>>>>>>>>>>sceneDidDisconnect")
     }
 
     func sceneDidBecomeActive(_ scene: UIScene) {

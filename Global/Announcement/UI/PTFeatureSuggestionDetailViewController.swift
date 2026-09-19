@@ -9,7 +9,7 @@ import SnapKit
 import SwifterSwift
 
 @MainActor
-final class PTFeatureSuggestionDetailViewController: PTBaseViewController {
+final class PTFeatureSuggestionDetailViewController: PTMotoBaseViewController {
     private var suggestion: PTFeatureSuggestion
     private var voted = false
 
@@ -50,14 +50,9 @@ final class PTFeatureSuggestionDetailViewController: PTBaseViewController {
 
     required init?(coder: NSCoder) { nil }
 
-    override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
-        .solid(.systemBackground)
-    }
-
     override func viewDidLoad() {
         super.viewDidLoad()
         pt_Title = suggestion.title
-        view.backgroundColor = .systemBackground
         view.addSubviews([summaryLabel, metaLabel, voteButton])
         summaryLabel.snp.makeConstraints { make in
             make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + 24)

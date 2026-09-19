@@ -10,7 +10,7 @@ import SwifterSwift
 import SnapKit
 
 @MainActor
-final class PTFeedbackCenterViewController: PTBaseViewController {
+final class PTFeedbackCenterViewController: PTMotoBaseViewController {
     private lazy var explanationLabel: UILabel = {
         let view = UILabel()
         view.numberOfLines = 0
@@ -65,14 +65,9 @@ final class PTFeedbackCenterViewController: PTBaseViewController {
         return view
     }()
 
-    override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
-        .solid(.systemBackground)
-    }
-
     override func viewDidLoad() {
         super.viewDidLoad()
         pt_Title = PTFeedbackPresentation.text("feedback_center_title", fallback: "用户反馈")
-        view.backgroundColor = .systemBackground
         stack.axis = .vertical
         stack.spacing = 12
         stack.distribution = .fillEqually
@@ -110,15 +105,7 @@ final class PTFeedbackCenterViewController: PTBaseViewController {
     ) -> PTBaseButton {
         let view = PTBaseButton(type: .custom)
         view.setTitle(title, for: .normal)
-        view.setTitleColor(primary ? .white : .label, for: .normal)
-        if primary {
-            view.setBackgroundColor(
-                color: PTDashboardConfig.shared.appMainColor,
-                forState: .normal
-            )
-        } else {
-            view.backgroundColor = .secondarySystemBackground
-        }
+        view.setTitleColor(.white, for: .normal)
         view.viewCorner(radius: 10)
         view.addActionHandlers { _ in action() }
         return view

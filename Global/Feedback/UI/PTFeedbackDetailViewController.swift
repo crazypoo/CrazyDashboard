@@ -8,7 +8,7 @@ import PooTools
 import SnapKit
 
 @MainActor
-final class PTFeedbackDetailViewController: PTBaseViewController {
+final class PTFeedbackDetailViewController: PTMotoBaseViewController {
 
     private let record: PTFeedbackLocalRecord
 
@@ -32,10 +32,6 @@ final class PTFeedbackDetailViewController: PTBaseViewController {
         return view
     }()
 
-    override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
-        .solid(.systemBackground)
-    }
-
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -43,7 +39,6 @@ final class PTFeedbackDetailViewController: PTBaseViewController {
             "feedback_detail",
             fallback: "反馈详情"
         )
-        view.backgroundColor = .systemBackground
         view.addSubview(stackView)
 
         stackView.snp.makeConstraints { make in

@@ -12,7 +12,7 @@ import SnapKit
 import SwifterSwift
 
 @MainActor
-final class PTFeedbackComposeViewController: PTBaseViewController {
+final class PTFeedbackComposeViewController: PTMotoBaseViewController {
 
     private var draft = PTFeedbackDraft()
     private var isSubmitting = false
@@ -132,17 +132,12 @@ final class PTFeedbackComposeViewController: PTBaseViewController {
         return view
     }()
 
-    override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
-        .solid(.systemBackground)
-    }
-
     override func viewDidLoad() {
         super.viewDidLoad()
         pt_Title = PTFeedbackPresentation.text(
             "feedback_compose_title",
             fallback: "提交反馈"
         )
-        view.backgroundColor = .systemBackground
         setupUI()
         rebuildMenus()
         refreshAttachmentUI()
@@ -269,7 +264,7 @@ final class PTFeedbackComposeViewController: PTBaseViewController {
     private func makeSwitchTitle(_ text: String) -> UILabel {
         let view = UILabel()
         view.numberOfLines = 0
-        view.textColor = .label
+        view.textColor = .white
         view.font = .systemFont(ofSize: 15)
         view.text = text
         return view

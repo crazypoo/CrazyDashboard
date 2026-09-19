@@ -8,7 +8,7 @@ import PooTools
 import SnapKit
 
 @MainActor
-final class PTAnnouncementDetailViewController: PTBaseViewController {
+final class PTAnnouncementDetailViewController: PTMotoBaseViewController {
     private let announcement: PTAnnouncement
 
     init(announcement: PTAnnouncement) {
@@ -18,15 +18,10 @@ final class PTAnnouncementDetailViewController: PTBaseViewController {
 
     required init?(coder: NSCoder) { nil }
 
-    override func preferredNavigationBarStyle() -> PTNavigationBarStyle {
-        .solid(.systemBackground)
-    }
-
     override func viewDidLoad() {
         super.viewDidLoad()
         let language = PTDashboardConfig.selectedLanguageIdentifier
         pt_Title = announcement.localizedTitle(languageIdentifier: language)
-        view.backgroundColor = .systemBackground
 
         let textView = UITextView()
         textView.isEditable = false

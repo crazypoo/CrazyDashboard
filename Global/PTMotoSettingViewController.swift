@@ -261,10 +261,45 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         return stack
     }()
     
+    lazy var feedbackButton:PTBaseButton = {
+        let view = PTBaseButton(type: .custom)
+        view.setImage(UIImage(.pencil).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
+        view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
+        view.addActionHandlers(handler: { _ in
+            let actions = [
+                PTDashboardConfig.languageFunc(text: "Feedback"),
+                PTDashboardConfig.languageFunc(text: "Notification"),
+                PTDashboardConfig.languageFunc(text: "Suggestion")
+            ]
+            UIAlertController.base_alertVC(title: PTDashboardConfig.languageFunc(text: "Feedback & Notification"), titleColor: PTDashboardConfig.shared.appMainColor, titleFont: .appfont(size: 16), okBtns: actions, cancelBtn: PTDashboardConfig.languageFunc(text: "button_cancel"), showIn: PTUtils.getCurrentVC(), cancelBtnColor: .systemBlue, doneBtnColors: [.systemBlue], moreBtn:  { index, title in
+                switch index {
+                case 0:
+                    self.navigationController?.pushViewController(
+                        PTFeedbackCenterViewController(),
+                        animated: true
+                    )
+                case 1:
+                    self.navigationController?.pushViewController(
+                        PTAnnouncementListViewController(),
+                        animated: true
+                    )
+                case 2:
+                    self.navigationController?.pushViewController(
+                        PTFeatureSuggestionListViewController(),
+                        animated: true
+                    )
+                default:
+                    break
+                }
+            })
+        })
+        return view
+    }()
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setLeftButtons(views: [appLogo])
-        setCustomRightButtons(buttons: [globalButton])
+        setCustomRightButtons(buttons: [feedbackButton,globalButton],buttonSpacing:CGFloat.GlobalItemSpacing)
     }
 
     // EN: Do not surface a delayed confirmation after leaving the settings screen.
