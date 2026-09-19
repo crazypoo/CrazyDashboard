@@ -87,7 +87,6 @@ final class PTFeedbackComposeViewController: PTMotoBaseViewController {
     private lazy var attachmentButton: PTBaseButton = {
         let view = PTBaseButton(type: .custom)
         view.setTitleColor(.label, for: .normal)
-        view.backgroundColor = .secondarySystemBackground
         view.viewCorner(radius: 10)
         view.addActionHandlers { [weak self] _ in
             self?.presentScreenshotPicker()

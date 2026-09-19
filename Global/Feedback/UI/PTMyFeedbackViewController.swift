@@ -18,7 +18,6 @@ final class PTMyFeedbackViewController: PTMotoBaseViewController {
             frame: .zero,
             style: .insetGrouped
         )
-        view.backgroundColor = .systemBackground
         view.register(
             UITableViewCell.self,
             forCellReuseIdentifier: "FeedbackCell"

@@ -131,7 +131,7 @@ final class PTFeedbackDetailViewController: PTMotoBaseViewController {
         view.numberOfLines = 0
         view.text = title
         view.font = font
-        view.textColor = .label
+        view.textColor = .white
         return view
     }
 }
