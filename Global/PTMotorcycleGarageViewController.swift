@@ -214,7 +214,9 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         contentStack.addArrangedSubview(makeCard(title: localized("garage_parts"), body: partsBody))
 
         scrollView.snp.makeConstraints { make in
-            make.edges.equalTo(view.safeAreaLayoutGuide)
+            make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total)
+            make.left.right.equalToSuperview().inset(16)
+            make.bottom.equalToSuperview()
         }
         contentStack.snp.makeConstraints { make in
             make.top.bottom.equalToSuperview().inset(16)
