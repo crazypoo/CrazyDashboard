@@ -87,9 +87,14 @@ class SceneDelegate: PTWindowSceneDelegate {
             }
         }
         
-        PTGCDManager.shared.delayOnMain(time: 5) {
-            guard let presenter = PTUtils.getCurrentVC() else { return }
-            presenter.navigationController?.pushViewController(PTFeedbackCenterViewController(), animated: true)
+//        PTGCDManager.shared.delayOnMain(time: 5) {
+//            guard let presenter = PTUtils.getCurrentVC() else { return }
+//            presenter.navigationController?.pushViewController(PTFeedbackCenterViewController(), animated: true)
+//        }
+        // Feedback CloudKit + APNs bootstrap. This is idempotent and never
+        // requests visible notification permission at launch.
+        Task { @MainActor in
+            await PTFeedbackBootstrap.configureFromInfoPlist()
         }
     }
 
@@ -128,12 +133,14 @@ class SceneDelegate: PTWindowSceneDelegate {
         drainPendingSystemRoute(in: windowScene)
         
         Task { @MainActor in
-
             let result = await PTAppUpdateManager.shared.checkIfNeeded()
-
-            PTAppUpdatePresenter.shared.present(
-                result
-            )
+            PTAppUpdatePresenter.shared.present(result)
+        }
+        
+        // Push may be coalesced by the system, so every foreground activation
+        // performs a cheap source-of-truth status reconciliation.
+        Task { @MainActor in
+            await PTFeedbackPushManager.shared.refreshOnForeground()
         }
     }
 
