@@ -6,7 +6,7 @@
 import Foundation
 import MusicKit
 
-public enum PTMusicBrowseCategory: Int, CaseIterable, Sendable {
+public enum PTMusicBrowseCategory: Int, CaseIterable, Hashable, Sendable {
     case songs
     case albums
     case artists

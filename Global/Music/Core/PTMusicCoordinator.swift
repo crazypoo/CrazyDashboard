@@ -20,12 +20,19 @@ public final class PTMusicCoordinator {
     private var isBootstrapped = false
 
     private init(
-        authorizationManager: PTMusicAuthorizationManager = .shared,
-        playbackManager: PTMusicPlaybackManager = .shared
+        authorizationManager: PTMusicAuthorizationManager,
+        playbackManager: PTMusicPlaybackManager
     ) {
         self.authorizationManager = authorizationManager
         self.playbackManager = playbackManager
         installLifecycleObservers()
+    }
+
+    private convenience init() {
+        self.init(
+            authorizationManager: PTMusicAuthorizationManager.shared,
+            playbackManager: PTMusicPlaybackManager.shared
+        )
     }
 
     /// Call once from app startup, or lazily when the Music screen is opened.

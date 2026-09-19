@@ -5,7 +5,7 @@
 
 import Foundation
 
-public enum PTMusicSource: String, Sendable {
+public enum PTMusicSource: String, Hashable, Sendable {
     case systemPlayer
     case applicationPlayer
     case catalog

@@ -2,6 +2,10 @@
 //  PTMusicCollectionDetailViewController.swift
 //  CrazyDashboard
 //
+//  English: Detail loading uses the same generation, timeout and error rules as browsing.
+//  Español: La carga de detalles usa las mismas reglas de generación, tiempo límite y errores.
+//  中文：详情页复用浏览页的 generation、超时和错误处理规则。
+//
 
 import UIKit
 import MusicKit
@@ -17,33 +21,61 @@ class PTMusicCollectionDetailViewController: PTMotoBaseViewController {
     }
 
     private let content: Content
+    private let libraryService: any PTMusicCollectionServing
+    private let catalogService: any PTMusicCollectionServing
+    private let authorization: any PTMusicAuthorizationProviding
 
     private let headerArtworkImageView = UIImageView()
     private let headerTitleLabel = UILabel()
     private let headerSubtitleLabel = UILabel()
     private let playButton = UIButton(type: .system)
     private let tableView = UITableView(frame: .zero, style: .plain)
-    private let statusLabel = UILabel()
+    private let stateView = PTMusicStateView()
 
     private var tracks: [Track] = []
     private var albums: [Album] = []
     private var loadTask: Task<Void, Never>?
+    private var timeoutTask: Task<Void, Never>?
     private var artworkTask: Task<Void, Never>?
+    private var generation: UInt64 = 0
+    private var requestID: UUID?
+    private var state: PTMusicLoadState = .idle
 
-    public init(content: Content) {
+    public init(
+        content: Content,
+        libraryService: any PTMusicCollectionServing,
+        catalogService: any PTMusicCollectionServing,
+        authorization: any PTMusicAuthorizationProviding
+    ) {
         self.content = content
+        self.libraryService = libraryService
+        self.catalogService = catalogService
+        self.authorization = authorization
         super.init(nibName: nil, bundle: nil)
+    }
+
+    public convenience init(content: Content) {
+        self.init(
+            content: content,
+            libraryService: PTMusicLibraryService.shared,
+            catalogService: PTMusicCatalogService.shared,
+            authorization: PTMusicAuthorizationManager.shared
+        )
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    public override func viewDidLoad() {
+    @MainActor deinit {
+        loadTask?.cancel()
+        timeoutTask?.cancel()
+        artworkTask?.cancel()
+    }
+
+    override func viewDidLoad() {
         super.viewDidLoad()
-
         view.backgroundColor = .black
-
         setupHeader()
         setupTableView()
         configureHeader()
@@ -57,6 +89,28 @@ class PTMusicCollectionDetailViewController: PTMotoBaseViewController {
              .artist(_, let source):
             return source
         }
+    }
+
+    private var queryKey: PTMusicQueryKey {
+        let identity: String
+        let category: PTMusicBrowseCategory
+        switch content {
+        case .album(let album, _):
+            identity = album.id.rawValue
+            category = .albums
+        case .playlist(let playlist, _):
+            identity = playlist.id.rawValue
+            category = .playlists
+        case .artist(let artist, _):
+            identity = artist.id.rawValue
+            category = .artists
+        }
+        return PTMusicQueryKey(
+            surface: .collectionDetail,
+            source: source,
+            category: category,
+            keyword: identity
+        )
     }
 
     private func setupHeader() {
@@ -84,12 +138,9 @@ class PTMusicCollectionDetailViewController: PTMotoBaseViewController {
         playButton.configuration?.title = NSLocalizedString("播放", comment: "")
         playButton.configuration?.imagePadding = 8
         playButton.addTarget(self, action: #selector(playAllTapped), for: .touchUpInside)
+        playButton.isHidden = true
 
-        let textStack = UIStackView(arrangedSubviews: [
-            headerTitleLabel,
-            headerSubtitleLabel,
-            playButton
-        ])
+        let textStack = UIStackView(arrangedSubviews: [headerTitleLabel, headerSubtitleLabel, playButton])
         textStack.translatesAutoresizingMaskIntoConstraints = false
         textStack.axis = .vertical
         textStack.alignment = .leading
@@ -99,26 +150,22 @@ class PTMusicCollectionDetailViewController: PTMotoBaseViewController {
         header.translatesAutoresizingMaskIntoConstraints = false
         header.addSubview(headerArtworkImageView)
         header.addSubview(textStack)
-
+        header.tag = 10_001
         view.addSubview(header)
 
         NSLayoutConstraint.activate([
             header.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             header.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             header.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-
             headerArtworkImageView.topAnchor.constraint(equalTo: header.topAnchor, constant: 16),
             headerArtworkImageView.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
             headerArtworkImageView.widthAnchor.constraint(equalToConstant: 120),
             headerArtworkImageView.heightAnchor.constraint(equalToConstant: 120),
             headerArtworkImageView.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -16),
-
             textStack.leadingAnchor.constraint(equalTo: headerArtworkImageView.trailingAnchor, constant: 16),
             textStack.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
             textStack.centerYAnchor.constraint(equalTo: headerArtworkImageView.centerYAnchor)
         ])
-
-        header.tag = 10_001
     }
 
     private func setupTableView() {
@@ -127,21 +174,13 @@ class PTMusicCollectionDetailViewController: PTMotoBaseViewController {
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.dataSource = self
         tableView.delegate = self
-        tableView.register(
-            PTMusicTrackCell.self,
-            forCellReuseIdentifier: PTMusicTrackCell.reuseIdentifier
-        )
-        tableView.register(
-            PTMusicCollectionCell.self,
-            forCellReuseIdentifier: PTMusicCollectionCell.reuseIdentifier
-        )
+        tableView.register(PTMusicTrackCell.self, forCellReuseIdentifier: PTMusicTrackCell.reuseIdentifier)
+        tableView.register(PTMusicCollectionCell.self, forCellReuseIdentifier: PTMusicCollectionCell.reuseIdentifier)
 
-        statusLabel.textAlignment = .center
-        statusLabel.textColor = .secondaryLabel
-        statusLabel.font = .preferredFont(forTextStyle: .body)
-        statusLabel.numberOfLines = 0
-        tableView.backgroundView = statusLabel
-
+        stateView.onRetry = { [weak self] in
+            self?.performStateAction()
+        }
+        tableView.backgroundView = stateView
         view.addSubview(tableView)
 
         NSLayoutConstraint.activate([
@@ -154,20 +193,17 @@ class PTMusicCollectionDetailViewController: PTMotoBaseViewController {
 
     private func configureHeader() {
         let artwork: Artwork?
-
         switch content {
         case .album(let album, _):
             title = album.title
             headerTitleLabel.text = album.title
             headerSubtitleLabel.text = album.artistName
             artwork = album.artwork
-
         case .playlist(let playlist, _):
             title = playlist.name
             headerTitleLabel.text = playlist.name
             headerSubtitleLabel.text = playlist.curatorName
             artwork = playlist.artwork
-
         case .artist(let artist, _):
             title = artist.name
             headerTitleLabel.text = artist.name
@@ -176,125 +212,226 @@ class PTMusicCollectionDetailViewController: PTMotoBaseViewController {
         }
 
         artworkTask = Task { @MainActor [weak self] in
-            guard let self else { return }
-
             let image = await PTMusicArtworkCache.shared.image(
                 for: artwork,
                 targetSize: CGSize(width: 240, height: 240)
             )
-
-            guard !Task.isCancelled else { return }
+            guard let self, !Task.isCancelled else { return }
             headerArtworkImageView.image = image ?? UIImage(systemName: "music.note")
         }
     }
 
     private func loadContent() {
         loadTask?.cancel()
-        setStatus(NSLocalizedString("正在加载…", comment: ""))
+        timeoutTask?.cancel()
+        generation &+= 1
+        let localGeneration = generation
+        let localRequestID = UUID()
+        requestID = localRequestID
+        state = .loading(queryKey)
+        render()
 
         let content = self.content
+        let source = self.source
+        let authorization = self.authorization
+        let libraryService = self.libraryService
+        let catalogService = self.catalogService
+
+        timeoutTask = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: 15_000_000_000)
+            } catch {
+                return
+            }
+            guard let self,
+                  self.isCurrent(localGeneration, localRequestID) else { return }
+            self.loadTask?.cancel()
+            self.loadTask = nil
+            self.timeoutTask = nil
+            self.generation &+= 1
+            self.requestID = nil
+            self.state = .timedOut(self.queryKey)
+            self.render()
+        }
 
         loadTask = Task { @MainActor [weak self] in
             do {
-                guard let self else { return }
+                authorization.refreshAuthorizationStatus()
+                switch PTMusicAuthorizationCapability(status: authorization.authorizationStatus) {
+                case .notDetermined:
+                    throw PTMusicUIError.authorizationRequired
+                case .denied:
+                    throw PTMusicUIError.accessDenied
+                case .restricted:
+                    throw PTMusicUIError.accessRestricted
+                case .authorized:
+                    break
+                }
+                if source == .library {
+                    await authorization.refreshSubscription()
+                    guard authorization.hasCloudLibraryEnabled else {
+                        throw PTMusicUIError.libraryUnavailable
+                    }
+                }
 
+                var loadedTracks: [Track] = []
+                var loadedAlbums: [Album] = []
                 switch content {
-                case .album(let album, let source):
-                    let detailed: Album
-                    if source == .library {
-                        detailed = try await PTMusicLibraryService.shared.loadAlbum(album)
-                    } else {
-                        detailed = try await PTMusicCatalogService.shared.loadAlbum(album)
-                    }
-
-                    tracks = Array(detailed.tracks ?? [])
-
-                case .playlist(let playlist, let source):
-                    let detailed: Playlist
-                    if source == .library {
-                        detailed = try await PTMusicLibraryService.shared.loadPlaylist(playlist)
-                    } else {
-                        detailed = try await PTMusicCatalogService.shared.loadPlaylist(playlist)
-                    }
-
-                    tracks = Array(detailed.tracks ?? [])
-
-                case .artist(let artist, let source):
-                    let detailed: Artist
-                    if source == .library {
-                        detailed = try await PTMusicLibraryService.shared.loadArtist(artist)
-                    } else {
-                        detailed = try await PTMusicCatalogService.shared.loadArtist(artist)
-                    }
-
-                    albums = Array(detailed.albums ?? [])
+                case .album(let album, _):
+                    let detailed = source == .library
+                        ? try await libraryService.loadAlbum(album)
+                        : try await catalogService.loadAlbum(album)
+                    loadedTracks = Array(detailed.tracks ?? [])
+                case .playlist(let playlist, _):
+                    let detailed = source == .library
+                        ? try await libraryService.loadPlaylist(playlist)
+                        : try await catalogService.loadPlaylist(playlist)
+                    loadedTracks = Array(detailed.tracks ?? [])
+                case .artist(let artist, _):
+                    let detailed = source == .library
+                        ? try await libraryService.loadArtist(artist)
+                        : try await catalogService.loadArtist(artist)
+                    loadedAlbums = Array(detailed.albums ?? [])
                 }
 
                 try Task.checkCancellation()
-                tableView.reloadData()
+                guard let self,
+                      self.isCurrent(localGeneration, localRequestID) else { return }
 
-                if tracks.isEmpty && albums.isEmpty {
-                    setStatus(NSLocalizedString("暂无内容", comment: ""))
-                } else {
-                    setStatus(nil)
-                }
-
-                playButton.isHidden = tracks.isEmpty
-
+                self.timeoutTask?.cancel()
+                self.timeoutTask = nil
+                self.loadTask = nil
+                self.requestID = nil
+                self.tracks = loadedTracks
+                self.albums = loadedAlbums
+                self.state = loadedTracks.isEmpty && loadedAlbums.isEmpty
+                    ? .empty(self.queryKey)
+                    : .content(self.queryKey)
+                self.render()
             } catch is CancellationError {
                 return
-
             } catch {
-                guard !Task.isCancelled else { return }
-                self?.setStatus(error.localizedDescription)
+                guard let self,
+                      self.isCurrent(localGeneration, localRequestID) else { return }
+                self.timeoutTask?.cancel()
+                self.timeoutTask = nil
+                self.loadTask = nil
+                self.requestID = nil
+                self.state = .failed(self.queryKey, PTMusicUIError.map(error))
+                self.render()
             }
         }
+    }
+
+    private func render() {
+        guard isViewLoaded else { return }
+        tableView.reloadData()
+        switch state {
+        case .idle:
+            stateView.render(message: nil, showsRetry: false, showsLoading: false)
+            playButton.isHidden = true
+        case .loading:
+            stateView.render(
+                message: NSLocalizedString("正在加载…", comment: ""),
+                showsRetry: false,
+                showsLoading: true
+            )
+            playButton.isHidden = true
+        case .content:
+            stateView.render(message: nil, showsRetry: false, showsLoading: false)
+            playButton.isHidden = tracks.isEmpty
+        case .empty:
+            stateView.render(
+                message: NSLocalizedString("暂无内容", comment: ""),
+                showsRetry: false,
+                showsLoading: false
+            )
+            playButton.isHidden = true
+        case .failed(_, let error):
+            stateView.render(
+                message: error.userMessage,
+                showsRetry: true,
+                showsLoading: false,
+                actionTitle: stateActionTitle(for: error)
+            )
+            playButton.isHidden = true
+        case .timedOut:
+            stateView.render(
+                message: PTMusicUIError.timedOut.userMessage,
+                showsRetry: true,
+                showsLoading: false
+            )
+            playButton.isHidden = true
+        }
+    }
+
+    private func isCurrent(_ generation: UInt64, _ requestID: UUID) -> Bool {
+        self.generation == generation && self.requestID == requestID
+    }
+
+    private func performStateAction() {
+        guard case .failed(_, let error) = state else {
+            loadContent()
+            return
+        }
+
+        switch error {
+        case .authorizationRequired:
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                _ = await authorization.requestAuthorization()
+                loadContent()
+            }
+        case .accessDenied:
+            openMusicSettings()
+        default:
+            loadContent()
+        }
+    }
+
+    private func stateActionTitle(for error: PTMusicUIError) -> String {
+        switch error {
+        case .authorizationRequired:
+            return NSLocalizedString("允许访问", comment: "")
+        case .accessDenied:
+            return NSLocalizedString("打开设置", comment: "")
+        default:
+            return NSLocalizedString("重试", comment: "")
+        }
+    }
+
+    private func openMusicSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString),
+              UIApplication.shared.canOpenURL(url) else { return }
+        UIApplication.shared.open(url)
     }
 
     @objc private func playAllTapped() {
         guard let first = tracks.first else { return }
-
+        let allTracks = tracks
         Task { @MainActor [weak self] in
             do {
-                try await PTMusicPlaybackManager.shared.play(
-                    tracks: self?.tracks ?? [],
-                    startingAt: first
-                )
+                try await PTMusicPlaybackManager.shared.play(tracks: allTracks, startingAt: first)
             } catch {
-                self?.showError(error.localizedDescription)
+                self?.showError(error)
             }
         }
     }
 
-    private func setStatus(_ text: String?) {
-        statusLabel.text = text
-        statusLabel.isHidden = text == nil
-    }
-
-    private func showError(_ message: String) {
+    private func showError(_ error: Error) {
+        let uiError = PTMusicUIError.map(error)
         let alert = UIAlertController(
             title: NSLocalizedString("Apple Music", comment: ""),
-            message: message,
+            message: uiError.userMessage,
             preferredStyle: .alert
         )
-
-        alert.addAction(
-            UIAlertAction(
-                title: NSLocalizedString("确定", comment: ""),
-                style: .default
-            )
-        )
-
+        alert.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default))
         present(alert, animated: true)
     }
 }
 
 extension PTMusicCollectionDetailViewController: UITableViewDataSource, UITableViewDelegate {
-
-    public func tableView(
-        _ tableView: UITableView,
-        numberOfRowsInSection section: Int
-    ) -> Int {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch content {
         case .artist:
             return albums.count
@@ -303,83 +440,47 @@ extension PTMusicCollectionDetailViewController: UITableViewDataSource, UITableV
         }
     }
 
-    public func tableView(
-        _ tableView: UITableView,
-        cellForRowAt indexPath: IndexPath
-    ) -> UITableViewCell {
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         switch content {
         case .artist:
-            guard
-                albums.indices.contains(indexPath.row),
-                let cell = tableView.dequeueReusableCell(
+            guard albums.indices.contains(indexPath.row),
+                  let cell = tableView.dequeueReusableCell(
                     withIdentifier: PTMusicCollectionCell.reuseIdentifier,
                     for: indexPath
-                ) as? PTMusicCollectionCell
-            else {
-                return UITableViewCell()
-            }
-
+                  ) as? PTMusicCollectionCell else { return UITableViewCell() }
             let album = albums[indexPath.row]
-            cell.configure(
-                id: album.id.rawValue,
-                title: album.title,
-                subtitle: album.artistName,
-                artwork: album.artwork
-            )
+            cell.configure(id: album.id.rawValue, title: album.title, subtitle: album.artistName, artwork: album.artwork)
             return cell
 
         case .album, .playlist:
-            guard
-                tracks.indices.contains(indexPath.row),
-                let cell = tableView.dequeueReusableCell(
+            guard tracks.indices.contains(indexPath.row),
+                  let cell = tableView.dequeueReusableCell(
                     withIdentifier: PTMusicTrackCell.reuseIdentifier,
                     for: indexPath
-                ) as? PTMusicTrackCell
-            else {
-                return UITableViewCell()
-            }
-
-            cell.configure(
-                with: PTMusicTrack(
-                    track: tracks[indexPath.row],
-                    source: source
-                )
-            )
+                  ) as? PTMusicTrackCell else { return UITableViewCell() }
+            cell.configure(with: PTMusicTrack(track: tracks[indexPath.row], source: source))
             return cell
         }
     }
 
-    public func tableView(
-        _ tableView: UITableView,
-        didSelectRowAt indexPath: IndexPath
-    ) {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-
         switch content {
         case .artist:
             guard albums.indices.contains(indexPath.row) else { return }
-
             navigationController?.pushViewController(
-                PTMusicCollectionDetailViewController(
-                    content: .album(albums[indexPath.row], source)
-                ),
+                PTMusicCollectionDetailViewController(content: .album(albums[indexPath.row], source)),
                 animated: true
             )
-
         case .album, .playlist:
             guard tracks.indices.contains(indexPath.row) else { return }
-
             let selectedTrack = tracks[indexPath.row]
             let allTracks = tracks
-
             Task { @MainActor [weak self] in
                 do {
-                    try await PTMusicPlaybackManager.shared.play(
-                        tracks: allTracks,
-                        startingAt: selectedTrack
-                    )
+                    try await PTMusicPlaybackManager.shared.play(tracks: allTracks, startingAt: selectedTrack)
                 } catch {
-                    self?.showError(error.localizedDescription)
+                    self?.showError(error)
                 }
             }
         }

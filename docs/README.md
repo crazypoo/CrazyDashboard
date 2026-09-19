@@ -31,8 +31,8 @@
 | [`history/builds/BUILD_067_DASHBOARD_PROTOCOL_CORRECTION.md`](history/builds/BUILD_067_DASHBOARD_PROTOCOL_CORRECTION.md) | history | stable | 否 | 2026-09-15 |
 | [`history/builds/BUILD_068_OBD_DIAGNOSTIC_DEEP_MINING.md`](history/builds/BUILD_068_OBD_DIAGNOSTIC_DEEP_MINING.md) | history | stable | 否 | 2026-09-16 |
 | [`history/builds/BUILD_069_PROTOCOL_SEMANTIC_EVIDENCE.md`](history/builds/BUILD_069_PROTOCOL_SEMANTIC_EVIDENCE.md) | history | stable | 否 | 2026-09-17 |
-| [`history/BUILD_HISTORY_2026.md`](history/BUILD_HISTORY_2026.md) | history | stable | 是 | 2026-09-17 |
-| [`planning/ACTIVE_WORK.md`](planning/ACTIVE_WORK.md) | planning | active | 是 | 2026-09-17 |
+| [`history/BUILD_HISTORY_2026.md`](history/BUILD_HISTORY_2026.md) | history | stable | 是 | 2026-09-19 |
+| [`planning/ACTIVE_WORK.md`](planning/ACTIVE_WORK.md) | planning | active | 是 | 2026-09-19 |
 | [`planning/BACKLOG.md`](planning/BACKLOG.md) | planning | active | 是 | 2026-09-15 |
 | [`DOCUMENTATION_POLICY.md`](DOCUMENTATION_POLICY.md) | policy | active | 是 | 2026-09-15 |
 | [`templates/PLAN_SECTION_TEMPLATE.md`](templates/PLAN_SECTION_TEMPLATE.md) | policy | stable | 否 | 2026-09-15 |

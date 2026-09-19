@@ -81,6 +81,9 @@ public struct PTMusicTrack: Identifiable, Hashable, Sendable {
             case .musicVideo(let musicVideo):
                 self.init(musicVideo: musicVideo, source: source)
                 return
+
+            @unknown default:
+                break
             }
         }
 

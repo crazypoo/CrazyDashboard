@@ -7,7 +7,7 @@ canonical: true
 domain: build-history-2026
 owner: Jax
 created: 2026-09-15
-last_reviewed: 2026-09-17
+last_reviewed: 2026-09-19
 related_builds:
   - 57
   - 61
@@ -19,6 +19,7 @@ related_builds:
   - 67
   - 68
   - 69
+  - 74
 supersedes: []
 superseded_by:
 ---
@@ -60,6 +61,12 @@ superseded_by:
 完成 XP400 Semantic Schema/Decoder、Data2 RTC 语义纠偏、Control/TCS Ready 位边界、ABS 前轮速度与 sentinel 识别、rolling tick 锚点、Discovery 降噪、ELM/OBD2/UDS 三层解析、DTC 状态、`unavailable` 与零值分离、Passport reducer、Evidence domain、BLE/OBD/GPS/Motion 统一 Observation 与 Correlation、Evidence schema v3、v2 migration、历史 JSONL/JSON 回放和 Dev Frame Inspector。实现只扩展外围证据与研究层，不修改 `PTHiddenOBDConnector.swift`、`PTOBDCommand.swift` 或 `PTBluetoothManager.swift`，不开放 ECU 写入、SecurityAccess、固件刷写、任意 CAN 注入和 ID 7 主动探针。
 
 详细实施记录见 [`builds/BUILD_069_PROTOCOL_SEMANTIC_EVIDENCE.md`](builds/BUILD_069_PROTOCOL_SEMANTIC_EVIDENCE.md)。主 App Debug `build-for-testing` 与 Swift 6 纯代码解析已通过；当前工程 Scheme 不提供可用的具体 iOS Simulator destination，因此 XCTest 运行、真实 XP400/ELM327/YMOBD、后台和签名 TestFlight 验收仍需人工完成。
+
+## Build 74 — Music Module Reliability Optimization
+
+完成 Music 浏览稳定性改造：以 `PTMusicBrowseStore` 统一 Library/Search 的 payload、状态、取消、generation、request identity、超时和重试；资料库按歌曲 50、其他分类 40 分页，最近播放独立处理；缓存采用 TTL + stale-while-revalidate，并为搜索查询提供 20 项 LRU；Search、Library、Collection Detail 共用 UIKit 状态视图；权限、Cloud Library 和底层错误映射为稳定 UI 语义；Artwork cell 的复用身份校验保持不变。`PTMusicCoordinator`、`PTMusicTrack` 和 `PTMusicPlaybackManager` 的 MusicKit Swift 6 兼容警告也一并收敛。
+
+实现证据：`PTSpeed` workspace Debug `build` 与 `build-for-testing` 已通过；新增 Store 测试已编译接入。当前 scheme 没有可用的具体 iOS Simulator destination，因此 XCTest 尚未在模拟器运行；Apple Music 账号矩阵、真机播放/搜索/分页、Release/TestFlight 仍需人工验收，完整待验收项见 [`../planning/ACTIVE_WORK.md`](../planning/ACTIVE_WORK.md)。本轮未修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`。
 
 ## 版本规则
 

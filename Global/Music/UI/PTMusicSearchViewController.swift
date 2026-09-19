@@ -2,7 +2,12 @@
 //  PTMusicSearchViewController.swift
 //  CrazyDashboard
 //
+//  English: Search UI delegates all request correctness to PTMusicBrowseStore.
+//  Español: La UI de búsqueda delega toda la corrección de solicitudes a PTMusicBrowseStore.
+//  中文：搜索界面把请求一致性统一交给 PTMusicBrowseStore。
+//
 
+import Combine
 import UIKit
 import MusicKit
 import PooTools
@@ -10,79 +15,85 @@ import PooTools
 @MainActor
 class PTMusicSearchViewController: PTMotoBaseViewController {
 
+    private let store: PTMusicBrowseStore
+    private var cancellables = Set<AnyCancellable>()
     private let tableView = UITableView(frame: .zero, style: .plain)
-    private let statusLabel = UILabel()
+    private let stateView = PTMusicStateView()
 
     private lazy var searchBar: PTSearchBar = {
         let view = PTSearchBar(frame: .zero)
         view.translatesAutoresizingMaskIntoConstraints = false
         view.delegate = self
-
         view.searchPlaceholder = NSLocalizedString("搜索 Apple Music", comment: "")
         view.searchPlaceholderFont = .systemFont(ofSize: 15)
         view.searchPlaceholderColor = .grayCA
         view.searchTextColor = .white
         view.cursorColor = .white
-
         view.searchBarOutViewColor = .clear
         view.searchTextFieldBackgroundColor = UIColor.white.withAlphaComponent(0.12)
         view.searchBarTextFieldBorderColor = .clear
         view.searchBarTextFieldBorderWidth = 0
         view.searchBarTextFieldCornerRadius = 12
-
         view.scopeButtonTitles = PTMusicBrowseCategory.allCases.map(\.title)
         view.selectedScopeButtonIndex = 0
         view.showsScopeBar = true
         view.tintColor = .white
-
         view.autocapitalizationType = .none
         view.autocorrectionType = .no
         view.searchTextField.returnKeyType = .search
         view.searchTextField.clearButtonMode = .whileEditing
-
         return view
     }()
 
-    private var songs: [Song] = []
-    private var albums: [Album] = []
-    private var artists: [Artist] = []
-    private var playlists: [Playlist] = []
+    init(store: PTMusicBrowseStore) {
+        self.store = store
+        super.init(nibName: nil, bundle: nil)
+    }
 
-    private var searchTask: Task<Void, Never>?
+    convenience init() {
+        self.init(store: PTMusicBrowseStore())
+    }
 
-    public override func viewDidLoad() {
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    @MainActor deinit {
+        store.invalidate()
+    }
+
+    override func viewDidLoad() {
         super.viewDidLoad()
 
         pt_Title = NSLocalizedString("搜索 Apple Music", comment: "")
         view.backgroundColor = .black
-
         setupSearchBar()
         setupTableView()
-        setupStatusLabel()
+        bindStore()
+        render()
     }
 
     private var category: PTMusicBrowseCategory {
-        PTMusicBrowseCategory(
-            rawValue: searchBar.selectedScopeButtonIndex
-        ) ?? .songs
+        PTMusicBrowseCategory(rawValue: searchBar.selectedScopeButtonIndex) ?? .songs
+    }
+
+    private var visiblePayload: PTMusicBrowsePayload? {
+        guard
+            let key = store.currentQueryKey,
+            key.surface == .search,
+            key.category == category
+        else {
+            return nil
+        }
+        return store.payload
     }
 
     private func setupSearchBar() {
         view.addSubview(searchBar)
-
         NSLayoutConstraint.activate([
-            searchBar.topAnchor.constraint(
-                equalTo: view.safeAreaLayoutGuide.topAnchor,
-                constant: 8
-            ),
-            searchBar.leadingAnchor.constraint(
-                equalTo: view.leadingAnchor,
-                constant: 12
-            ),
-            searchBar.trailingAnchor.constraint(
-                equalTo: view.trailingAnchor,
-                constant: -12
-            )
+            searchBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
+            searchBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
+            searchBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12)
         ])
     }
 
@@ -91,394 +102,266 @@ class PTMusicSearchViewController: PTMotoBaseViewController {
         tableView.dataSource = self
         tableView.delegate = self
         tableView.keyboardDismissMode = .onDrag
+        tableView.register(PTMusicTrackCell.self, forCellReuseIdentifier: PTMusicTrackCell.reuseIdentifier)
+        tableView.register(PTMusicCollectionCell.self, forCellReuseIdentifier: PTMusicCollectionCell.reuseIdentifier)
 
-        tableView.register(
-            PTMusicTrackCell.self,
-            forCellReuseIdentifier: PTMusicTrackCell.reuseIdentifier
-        )
-        tableView.register(
-            PTMusicCollectionCell.self,
-            forCellReuseIdentifier: PTMusicCollectionCell.reuseIdentifier
-        )
-
+        stateView.onRetry = { [weak self] in
+            self?.performStateAction()
+        }
+        tableView.backgroundView = stateView
         view.addSubview(tableView)
-
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(
-                equalTo: searchBar.bottomAnchor,
-                constant: 4
-            ),
+            tableView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 4),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
 
-    private func setupStatusLabel() {
-        statusLabel.textAlignment = .center
-        statusLabel.textColor = .grayCA
-        statusLabel.font = .preferredFont(forTextStyle: .body)
-        statusLabel.numberOfLines = 0
-
-        tableView.backgroundView = statusLabel
-
-        setStatus(
-            NSLocalizedString(
-                "输入至少 2 个字符开始搜索",
-                comment: ""
-            )
-        )
+    private func bindStore() {
+        store.objectWillChange
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.render()
+            }
+            .store(in: &cancellables)
     }
 
-    private func clearResults() {
-        songs = []
-        albums = []
-        artists = []
-        playlists = []
+    private func render() {
+        guard isViewLoaded else { return }
+        tableView.reloadData()
+
+        let message: String?
+        let showsRetry: Bool
+        let showsLoading: Bool
+        let actionTitle: String?
+        switch store.state {
+        case .idle:
+            message = NSLocalizedString("输入至少 2 个字符开始搜索", comment: "")
+            showsRetry = false
+            showsLoading = false
+            actionTitle = nil
+        case .loading:
+            message = NSLocalizedString("正在搜索…", comment: "")
+            showsRetry = false
+            showsLoading = true
+            actionTitle = nil
+        case .content:
+            message = nil
+            showsRetry = false
+            showsLoading = false
+            actionTitle = nil
+        case .empty:
+            message = NSLocalizedString("没有找到内容", comment: "")
+            showsRetry = false
+            showsLoading = false
+            actionTitle = nil
+        case .failed(_, let error):
+            message = error.userMessage
+            showsRetry = true
+            showsLoading = false
+            actionTitle = stateActionTitle(for: error)
+        case .timedOut:
+            message = PTMusicUIError.timedOut.userMessage
+            showsRetry = true
+            showsLoading = false
+            actionTitle = NSLocalizedString("重试", comment: "")
+        }
+        stateView.render(
+            message: message,
+            showsRetry: showsRetry,
+            showsLoading: showsLoading,
+            actionTitle: actionTitle
+        )
     }
 
     private func search(_ term: String) {
-        searchTask?.cancel()
+        store.search(term: term, category: category)
+    }
 
-        let keyword = term.trimmingCharacters(in: .whitespacesAndNewlines)
-        let category = self.category
-
-        guard keyword.count >= 2 else {
-            clearResults()
-            tableView.reloadData()
-            setStatus(
-                NSLocalizedString(
-                    "输入至少 2 个字符开始搜索",
-                    comment: ""
-                )
-            )
+    private func performStateAction() {
+        guard case .failed(_, let error) = store.state else {
+            store.retryCurrentQuery()
             return
         }
 
-        setStatus(NSLocalizedString("正在搜索…", comment: ""))
-
-        searchTask = Task { @MainActor [weak self] in
-            do {
-                try await Task.sleep(for: .milliseconds(350))
-                try Task.checkCancellation()
-
-                guard let self else { return }
-
-                clearResults()
-
-                switch category {
-                case .songs:
-                    songs = try await PTMusicCatalogService.shared.searchSongs(
-                        term: keyword,
-                        limit: 40
-                    )
-
-                case .albums:
-                    albums = try await PTMusicCatalogService.shared.searchAlbums(
-                        term: keyword,
-                        limit: 40
-                    )
-
-                case .artists:
-                    artists = try await PTMusicCatalogService.shared.searchArtists(
-                        term: keyword,
-                        limit: 40
-                    )
-
-                case .playlists:
-                    playlists = try await PTMusicCatalogService.shared.searchPlaylists(
-                        term: keyword,
-                        limit: 40
-                    )
-                }
-
-                try Task.checkCancellation()
-
-                tableView.reloadData()
-
-                setStatus(
-                    currentResultCount == 0
-                    ? NSLocalizedString("没有找到内容", comment: "")
-                    : nil
-                )
-
-            } catch is CancellationError {
-                return
-
-            } catch {
-                guard !Task.isCancelled else { return }
-                self?.setStatus(error.localizedDescription)
-            }
+        switch error {
+        case .authorizationRequired:
+            store.requestAuthorizationAndRetry()
+        case .accessDenied:
+            openMusicSettings()
+        default:
+            store.retryCurrentQuery()
         }
     }
 
-    private var currentResultCount: Int {
-        switch category {
-        case .songs:
-            return songs.count
-
-        case .albums:
-            return albums.count
-
-        case .artists:
-            return artists.count
-
-        case .playlists:
-            return playlists.count
+    private func stateActionTitle(for error: PTMusicUIError) -> String {
+        switch error {
+        case .authorizationRequired:
+            return NSLocalizedString("允许访问", comment: "")
+        case .accessDenied:
+            return NSLocalizedString("打开设置", comment: "")
+        default:
+            return NSLocalizedString("重试", comment: "")
         }
     }
 
-    private func setStatus(_ text: String?) {
-        statusLabel.text = text
-        statusLabel.isHidden = text == nil
+    private func openMusicSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString),
+              UIApplication.shared.canOpenURL(url) else { return }
+        UIApplication.shared.open(url)
     }
 
-    private func showError(_ message: String) {
+    private func showError(_ error: Error) {
+        let uiError = PTMusicUIError.map(error)
         let alert = UIAlertController(
             title: NSLocalizedString("Apple Music", comment: ""),
-            message: message,
+            message: uiError.userMessage,
             preferredStyle: .alert
         )
-
-        alert.addAction(
-            UIAlertAction(
-                title: NSLocalizedString("确定", comment: ""),
-                style: .default
-            )
-        )
-
+        alert.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default))
         present(alert, animated: true)
     }
 }
 
-// MARK: - UISearchBarDelegate
-
 extension PTMusicSearchViewController: UISearchBarDelegate {
-
-    public func searchBar(
-        _ searchBar: UISearchBar,
-        textDidChange searchText: String
-    ) {
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         search(searchText)
     }
 
-    public func searchBar(
-        _ searchBar: UISearchBar,
-        selectedScopeButtonIndexDidChange selectedScope: Int
-    ) {
+    func searchBar(_ searchBar: UISearchBar, selectedScopeButtonIndexDidChange selectedScope: Int) {
         search(searchBar.text ?? "")
     }
 
-    public func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         searchBar.resignFirstResponder()
     }
 }
 
-// MARK: - UITableViewDataSource / UITableViewDelegate
-
 extension PTMusicSearchViewController: UITableViewDataSource, UITableViewDelegate {
-
-    public func tableView(
-        _ tableView: UITableView,
-        numberOfRowsInSection section: Int
-    ) -> Int {
-        currentResultCount
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        visiblePayload?.count ?? 0
     }
 
-    public func tableView(
-        _ tableView: UITableView,
-        cellForRowAt indexPath: IndexPath
-    ) -> UITableViewCell {
-        switch category {
-        case .songs:
-            guard
-                songs.indices.contains(indexPath.row),
-                let cell = tableView.dequeueReusableCell(
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        guard let payload = visiblePayload else { return UITableViewCell() }
+
+        switch payload {
+        case .songs(let values):
+            guard values.indices.contains(indexPath.row),
+                  let cell = tableView.dequeueReusableCell(
                     withIdentifier: PTMusicTrackCell.reuseIdentifier,
                     for: indexPath
-                ) as? PTMusicTrackCell
-            else {
-                return UITableViewCell()
-            }
-
-            cell.configure(
-                with: PTMusicTrack(
-                    song: songs[indexPath.row],
-                    source: .catalog
-                )
-            )
-
+                  ) as? PTMusicTrackCell else { return UITableViewCell() }
+            cell.configure(with: PTMusicTrack(song: values[indexPath.row], source: .catalog))
             return cell
 
-        case .albums:
-            guard
-                albums.indices.contains(indexPath.row),
-                let cell = tableView.dequeueReusableCell(
+        case .albums(let values):
+            guard values.indices.contains(indexPath.row),
+                  let cell = tableView.dequeueReusableCell(
                     withIdentifier: PTMusicCollectionCell.reuseIdentifier,
                     for: indexPath
-                ) as? PTMusicCollectionCell
-            else {
-                return UITableViewCell()
-            }
-
-            let album = albums[indexPath.row]
-
-            cell.configure(
-                id: album.id.rawValue,
-                title: album.title,
-                subtitle: album.artistName,
-                artwork: album.artwork
-            )
-
+                  ) as? PTMusicCollectionCell else { return UITableViewCell() }
+            let value = values[indexPath.row]
+            cell.configure(id: value.id.rawValue, title: value.title, subtitle: value.artistName, artwork: value.artwork)
             return cell
 
-        case .artists:
-            guard
-                artists.indices.contains(indexPath.row),
-                let cell = tableView.dequeueReusableCell(
+        case .artists(let values):
+            guard values.indices.contains(indexPath.row),
+                  let cell = tableView.dequeueReusableCell(
                     withIdentifier: PTMusicCollectionCell.reuseIdentifier,
                     for: indexPath
-                ) as? PTMusicCollectionCell
-            else {
-                return UITableViewCell()
-            }
-
-            let artist = artists[indexPath.row]
-
+                  ) as? PTMusicCollectionCell else { return UITableViewCell() }
+            let value = values[indexPath.row]
             cell.configure(
-                id: artist.id.rawValue,
-                title: artist.name,
+                id: value.id.rawValue,
+                title: value.name,
                 subtitle: NSLocalizedString("歌手", comment: ""),
-                artwork: artist.artwork
+                artwork: value.artwork
             )
-
             return cell
 
-        case .playlists:
-            guard
-                playlists.indices.contains(indexPath.row),
-                let cell = tableView.dequeueReusableCell(
+        case .playlists(let values):
+            guard values.indices.contains(indexPath.row),
+                  let cell = tableView.dequeueReusableCell(
                     withIdentifier: PTMusicCollectionCell.reuseIdentifier,
                     for: indexPath
-                ) as? PTMusicCollectionCell
-            else {
-                return UITableViewCell()
-            }
-
-            let playlist = playlists[indexPath.row]
-
-            cell.configure(
-                id: playlist.id.rawValue,
-                title: playlist.name,
-                subtitle: playlist.curatorName,
-                artwork: playlist.artwork
-            )
-
+                  ) as? PTMusicCollectionCell else { return UITableViewCell() }
+            let value = values[indexPath.row]
+            cell.configure(id: value.id.rawValue, title: value.name, subtitle: value.curatorName, artwork: value.artwork)
             return cell
         }
     }
 
-    public func tableView(
-        _ tableView: UITableView,
-        didSelectRowAt indexPath: IndexPath
-    ) {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
+        guard let payload = visiblePayload else { return }
 
-        switch category {
-        case .songs:
-            guard songs.indices.contains(indexPath.row) else { return }
-
-            let selected = songs[indexPath.row]
-            let allSongs = songs
-
+        switch payload {
+        case .songs(let values):
+            guard values.indices.contains(indexPath.row) else { return }
+            let selected = values[indexPath.row]
             Task { @MainActor [weak self] in
                 do {
-                    try await PTMusicPlaybackManager.shared.play(
-                        songs: allSongs,
-                        startingAt: selected
-                    )
-
+                    try await PTMusicPlaybackManager.shared.play(songs: values, startingAt: selected)
                     self?.navigationController?.popViewController(animated: true)
                 } catch {
-                    self?.showError(error.localizedDescription)
+                    self?.showError(error)
                 }
             }
 
-        case .albums:
-            guard albums.indices.contains(indexPath.row) else { return }
-
+        case .albums(let values):
+            guard values.indices.contains(indexPath.row) else { return }
             navigationController?.pushViewController(
-                PTMusicCollectionDetailViewController(
-                    content: .album(albums[indexPath.row], .catalog)
-                ),
+                PTMusicCollectionDetailViewController(content: .album(values[indexPath.row], .catalog)),
                 animated: true
             )
 
-        case .artists:
-            guard artists.indices.contains(indexPath.row) else { return }
-
+        case .artists(let values):
+            guard values.indices.contains(indexPath.row) else { return }
             navigationController?.pushViewController(
-                PTMusicCollectionDetailViewController(
-                    content: .artist(artists[indexPath.row], .catalog)
-                ),
+                PTMusicCollectionDetailViewController(content: .artist(values[indexPath.row], .catalog)),
                 animated: true
             )
 
-        case .playlists:
-            guard playlists.indices.contains(indexPath.row) else { return }
-
+        case .playlists(let values):
+            guard values.indices.contains(indexPath.row) else { return }
             navigationController?.pushViewController(
-                PTMusicCollectionDetailViewController(
-                    content: .playlist(playlists[indexPath.row], .catalog)
-                ),
+                PTMusicCollectionDetailViewController(content: .playlist(values[indexPath.row], .catalog)),
                 animated: true
             )
         }
     }
 
-    public func tableView(
+    func tableView(
         _ tableView: UITableView,
         contextMenuConfigurationForRowAt indexPath: IndexPath,
         point: CGPoint
     ) -> UIContextMenuConfiguration? {
         guard
-            category == .songs,
-            songs.indices.contains(indexPath.row)
+            case .songs(let values) = visiblePayload,
+            values.indices.contains(indexPath.row)
         else {
             return nil
         }
 
-        let song = songs[indexPath.row]
-
-        return UIContextMenuConfiguration(
-            identifier: nil,
-            previewProvider: nil
-        ) { _ in
+        let song = values[indexPath.row]
+        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
             let playNext = UIAction(
-                title: NSLocalizedString(
-                    "Riding Queue 下一首播放",
-                    comment: ""
-                ),
-                image: UIImage(
-                    systemName: "text.line.first.and.arrowtriangle.forward"
-                )
+                title: NSLocalizedString("Riding Queue 下一首播放", comment: ""),
+                image: UIImage(systemName: "text.line.first.and.arrowtriangle.forward")
             ) { _ in
                 Task { @MainActor in
-                    try? await PTMusicPlaybackManager.shared
-                        .playNextInRidingQueue(song)
+                    try? await PTMusicPlaybackManager.shared.playNextInRidingQueue(song)
                 }
             }
 
             let addLater = UIAction(
-                title: NSLocalizedString(
-                    "加入 Riding Queue",
-                    comment: ""
-                ),
+                title: NSLocalizedString("加入 Riding Queue", comment: ""),
                 image: UIImage(systemName: "text.badge.plus")
             ) { _ in
                 Task { @MainActor in
-                    try? await PTMusicPlaybackManager.shared
-                        .appendToRidingQueue(song)
+                    try? await PTMusicPlaybackManager.shared.appendToRidingQueue(song)
                 }
             }
 

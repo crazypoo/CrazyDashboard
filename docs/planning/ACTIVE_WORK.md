@@ -7,19 +7,20 @@ canonical: true
 domain: active-work
 owner: Jax
 created: 2026-09-15
-last_reviewed: 2026-09-17
+last_reviewed: 2026-09-19
 related_builds:
   - 66
   - 67
   - 68
   - 69
+  - 74
 supersedes: []
 superseded_by:
 ---
 
 # 当前工作
 
-快照日期：2026-09-17。当前工程版本为 `2.0.8 (Build 69)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+快照日期：2026-09-19。当前工程版本为 `2.0.8 (Build 74)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
 
 ## Build 66 收口：统一车速真实验证 🟨
 
@@ -75,6 +76,19 @@ Build 69 的外围代码、Swift 6 纯解析、`build-for-testing`、版本门�
 - BLE、OBD、GPS、Motion 跨源时间偏差、后台/断连恢复、长时间性能和 Release 安装验证。
 
 验收时必须区分静态/编译证据与真机/实车证据；Build 69 不开放 ECU 写入、SecurityAccess、固件刷写、任意 CAN 注入或 ID 7 主动探针。详细记录见 [`../history/builds/BUILD_069_PROTOCOL_SEMANTIC_EVIDENCE.md`](../history/builds/BUILD_069_PROTOCOL_SEMANTIC_EVIDENCE.md)。
+
+## Build 74：Music 模块稳定性优化 🟨
+
+代码门禁已完成：资料库、搜索和详情页已统一使用 `PTMusicBrowseStore`/状态机，加入不可变 `QueryKey`、generation/request identity、取消与迟到响应丢弃、UI watchdog、分页、stale-while-revalidate 缓存、搜索 LRU 缓存、权限/Cloud Library 预检、稳定错误映射和统一重试视图；新增的并发测试已接入 `PTSpeedTests`，且没有修改 BLE/OBD 核心。
+
+仍需真实设备验收：
+
+- Apple Music 已订阅、未订阅、Cloud Library 开/关、权限拒绝/限制和空资料库矩阵；
+- Wi-Fi、蜂窝、断网恢复、高延迟、搜索快速输入/切 scope、资料库快速切 segment 和分页到底；
+- Album、Playlist、Artist 详情加载、Artwork 复用、SystemMusicPlayer/ApplicationMusicPlayer 切换与播放；
+- Release/TestFlight 包和当前 Apple Music 服务行为。
+
+当前静态证据：`PTSpeed` workspace Debug `build` 与 `build-for-testing` 已通过。由于当前 Xcode scheme 没有可用的具体 iOS Simulator destination，本轮 XCTest 尚未在模拟器执行；上述真机/服务依赖项不能由编译结果替代。
 
 ## 不在当前工作中
 

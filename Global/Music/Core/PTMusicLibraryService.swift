@@ -8,7 +8,7 @@ import MusicKit
 
 /// Dedicated actor for the user's Apple Music library.
 /// Keep library/catalog I/O out of UIKit and dashboard refresh callbacks.
-public actor PTMusicLibraryService {
+public actor PTMusicLibraryService: PTMusicLibraryServing, PTMusicCollectionServing {
 
     public static let shared = PTMusicLibraryService()
 

@@ -423,6 +423,12 @@
 		6C0000010000000000000003 /* PTBuild69ProtocolIntelligence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C0000020000000000000003 /* PTBuild69ProtocolIntelligence.swift */; };
 		6C0000010000000000000004 /* PTBuild69ProtocolSemanticTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C0000020000000000000004 /* PTBuild69ProtocolSemanticTests.swift */; };
 		6C0000010000000000000005 /* PTBuild69Replay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C0000020000000000000005 /* PTBuild69Replay.swift */; };
+		700000010000000000000001 /* PTMusicBrowseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 700000020000000000000001 /* PTMusicBrowseStore.swift */; };
+		700000010000000000000002 /* PTMusicQueryKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 700000020000000000000002 /* PTMusicQueryKey.swift */; };
+		700000010000000000000003 /* PTMusicLoadState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 700000020000000000000003 /* PTMusicLoadState.swift */; };
+		700000010000000000000004 /* PTMusicBrowsePayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 700000020000000000000004 /* PTMusicBrowsePayload.swift */; };
+		700000010000000000000005 /* PTMusicBrowseStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 700000020000000000000005 /* PTMusicBrowseStoreTests.swift */; };
+		700000010000000000000006 /* PTMusicStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 700000020000000000000006 /* PTMusicStateView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -908,6 +914,12 @@
 		6C0000020000000000000003 /* PTBuild69ProtocolIntelligence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBuild69ProtocolIntelligence.swift; sourceTree = "<group>"; };
 		6C0000020000000000000004 /* PTBuild69ProtocolSemanticTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBuild69ProtocolSemanticTests.swift; sourceTree = "<group>"; };
 		6C0000020000000000000005 /* PTBuild69Replay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBuild69Replay.swift; sourceTree = "<group>"; };
+		700000020000000000000001 /* PTMusicBrowseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicBrowseStore.swift; sourceTree = "<group>"; };
+		700000020000000000000002 /* PTMusicQueryKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicQueryKey.swift; sourceTree = "<group>"; };
+		700000020000000000000003 /* PTMusicLoadState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicLoadState.swift; sourceTree = "<group>"; };
+		700000020000000000000004 /* PTMusicBrowsePayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicBrowsePayload.swift; sourceTree = "<group>"; };
+		700000020000000000000005 /* PTMusicBrowseStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicBrowseStoreTests.swift; sourceTree = "<group>"; };
+		700000020000000000000006 /* PTMusicStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTMusicStateView.swift; sourceTree = "<group>"; };
 		D09A390A369C6CD52A68264C /* Pods-CrazyDashboard.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CrazyDashboard.debug.xcconfig"; path = "Target Support Files/Pods-CrazyDashboard/Pods-CrazyDashboard.debug.xcconfig"; sourceTree = "<group>"; };
 		D34B5AEEFEEEB370C9E04AED /* Pods-PTSpeed.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.debug.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.debug.xcconfig"; sourceTree = "<group>"; };
 		FCB0604515CAED1E21FA36B8 /* Pods-PTSpeed.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PTSpeed.release.xcconfig"; path = "Target Support Files/Pods-PTSpeed/Pods-PTSpeed.release.xcconfig"; sourceTree = "<group>"; };
@@ -1264,6 +1276,7 @@
 				55983409305C4A4100022658 /* PTMusicArtworkCache.swift */,
 				5598340A305C4A4100022658 /* PTMusicAuthorizationManager.swift */,
 				5598340B305C4A4100022658 /* PTMusicCatalogService.swift */,
+				700000020000000000000001 /* PTMusicBrowseStore.swift */,
 				5598340C305C4A4100022658 /* PTMusicCoordinator.swift */,
 				5598340D305C4A4100022658 /* PTMusicLibraryService.swift */,
 				5598340E305C4A4100022658 /* PTMusicModuleBootstrap.swift */,
@@ -1276,10 +1289,13 @@
 			isa = PBXGroup;
 			children = (
 				55983411305C4A4100022658 /* PTMusicBrowseCategory.swift */,
+				700000020000000000000004 /* PTMusicBrowsePayload.swift */,
+				700000020000000000000003 /* PTMusicLoadState.swift */,
 				55983412305C4A4100022658 /* PTMusicPlaybackSnapshot.swift */,
 				55983413305C4A4100022658 /* PTMusicPlayerMode.swift */,
 				55983414305C4A4100022658 /* PTMusicSource.swift */,
 				55983415305C4A4100022658 /* PTMusicTrack.swift */,
+				700000020000000000000002 /* PTMusicQueryKey.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -1295,6 +1311,7 @@
 				5598341C305C4A4100022658 /* PTMusicPlayerView.swift */,
 				5598341D305C4A4100022658 /* PTMusicRouter.swift */,
 				5598341E305C4A4100022658 /* PTMusicSearchViewController.swift */,
+				700000020000000000000006 /* PTMusicStateView.swift */,
 				5598341F305C4A4100022658 /* PTMusicTrackCell.swift */,
 				55983420305C4A4100022658 /* PTMusicViewController.swift */,
 			);
@@ -1870,6 +1887,7 @@
 				620000020000000000000032 /* PTCrazyDashboardInstrumentsTests.swift */,
 				630000020000000000000062 /* PTProtocolEvidenceV2Tests.swift */,
 				640000020000000000000005 /* PTArchitectureConsolidationTests.swift */,
+				700000020000000000000005 /* PTMusicBrowseStoreTests.swift */,
 			);
 			path = PTSpeedTests;
 			sourceTree = "<group>";
@@ -2762,6 +2780,11 @@
 				55983434305C4A4100022658 /* PTMusicArtworkCache.swift in Sources */,
 				55983435305C4A4100022658 /* PTMusicPlaybackSnapshot.swift in Sources */,
 				55983436305C4A4100022658 /* PTMusicSearchViewController.swift in Sources */,
+				700000010000000000000001 /* PTMusicBrowseStore.swift in Sources */,
+				700000010000000000000002 /* PTMusicQueryKey.swift in Sources */,
+				700000010000000000000003 /* PTMusicLoadState.swift in Sources */,
+				700000010000000000000004 /* PTMusicBrowsePayload.swift in Sources */,
+				700000010000000000000006 /* PTMusicStateView.swift in Sources */,
 				55E306AC305E639800829DD9 /* PTFeedbackAttachmentBuilder.swift in Sources */,
 				55E306AD305E639800829DD9 /* PTFeedbackAttachmentModels.swift in Sources */,
 				55E306AE305E639800829DD9 /* PTFeedbackAttachmentRepository.swift in Sources */,
@@ -2814,6 +2837,7 @@
 				690000010000000000000012 /* PTGPSSpeedProviderTests.swift in Sources */,
 				690000010000000000000013 /* PTBuild66SpeedIntegrationTests.swift in Sources */,
 				6C0000010000000000000004 /* PTBuild69ProtocolSemanticTests.swift in Sources */,
+				700000010000000000000005 /* PTMusicBrowseStoreTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2892,7 +2916,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 74;
+				CURRENT_PROJECT_VERSION = 75;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -2925,7 +2949,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 74;
+				CURRENT_PROJECT_VERSION = 75;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -2958,7 +2982,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 74;
+				CURRENT_PROJECT_VERSION = 75;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2993,7 +3017,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 74;
+				CURRENT_PROJECT_VERSION = 75;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -3154,7 +3178,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 74;
+				CURRENT_PROJECT_VERSION = 75;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -3304,7 +3328,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 74;
+				CURRENT_PROJECT_VERSION = 75;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;

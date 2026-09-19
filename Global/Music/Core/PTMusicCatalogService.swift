@@ -9,7 +9,7 @@ import MusicKit
 /// Dedicated actor for Apple Music catalog requests.
 /// MusicKit result types (Song/Album/Artist/Playlist) are Sendable,
 /// so callers can safely receive them across the actor boundary.
-public actor PTMusicCatalogService {
+public actor PTMusicCatalogService: PTMusicCatalogServing, PTMusicCollectionServing {
 
     public static let shared = PTMusicCatalogService()
 

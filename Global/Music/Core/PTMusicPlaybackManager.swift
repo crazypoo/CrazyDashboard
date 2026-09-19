@@ -109,7 +109,7 @@ public final class PTMusicPlaybackManager: ObservableObject {
     public func setRepeatMode(_ repeatMode: PTMusicRepeatMode) {
         switch repeatMode {
         case .none:
-            activePlayer.state.repeatMode = .none
+            activePlayer.state.repeatMode = MusicPlayer.RepeatMode.none
         case .one:
             activePlayer.state.repeatMode = .one
         case .all:
