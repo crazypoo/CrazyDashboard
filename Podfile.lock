@@ -64,9 +64,9 @@ PODS:
   - LookinServer/Swift (1.2.8):
     - LookinServer/Core
   - lottie-ios (4.6.1)
-  - PooTools/CameraPermission (5.11.14):
+  - PooTools/CameraPermission (5.11.17):
     - PooTools/PToolsPermissionCore
-  - PooTools/Core (5.11.14):
+  - PooTools/Core (5.11.17):
     - AttributedString
     - CocoaLumberjack/Swift
     - DeviceKit
@@ -82,76 +82,76 @@ PODS:
     - SnapKit
     - SwiftDate
     - SwifterSwift
-  - PooTools/CustomerLabel (5.11.14):
+  - PooTools/CustomerLabel (5.11.17):
     - PooTools/Core
-  - PooTools/DEBUG (5.11.14):
+  - PooTools/DEBUG (5.11.17):
     - PooTools/Core
     - PooTools/NetWork
     - PooTools/PDF
     - PooTools/SearchBar
     - PooTools/Share
-  - PooTools/Flag (5.11.14):
+  - PooTools/Flag (5.11.17):
     - FlagKit
     - PooTools/Core
-  - PooTools/Hud (5.11.14):
+  - PooTools/Hud (5.11.17):
     - PooTools/Core
     - PooTools/ProgressBar
-  - PooTools/ImagePicker (5.11.14):
+  - PooTools/ImagePicker (5.11.17):
     - PooTools/CameraPermission
     - PooTools/Core
-  - PooTools/Instructions (5.11.14):
+  - PooTools/Instructions (5.11.17):
     - Instructions
     - PooTools/Core
-  - PooTools/LivePhoto (5.11.14):
+  - PooTools/LivePhoto (5.11.17):
     - PooTools/Core
-  - PooTools/Loading (5.11.14):
+  - PooTools/Loading (5.11.17):
     - PooTools/Core
-  - PooTools/LocationPermission (5.11.14):
+  - PooTools/LocationPermission (5.11.17):
     - PooTools/PToolsPermissionCore
-  - PooTools/MediaCore (5.11.14)
-  - PooTools/MediaViewer (5.11.14):
+  - PooTools/MediaCore (5.11.17)
+  - PooTools/MediaViewer (5.11.17):
     - PooTools/Core
     - PooTools/LivePhoto
     - PooTools/MediaCore
     - PooTools/PageControl
     - PooTools/ProgressBar
-  - PooTools/MicPermission (5.11.14):
+  - PooTools/MicPermission (5.11.17):
     - PooTools/PToolsPermissionCore
-  - PooTools/Motion (5.11.14):
+  - PooTools/Motion (5.11.17):
     - PooTools/Core
     - PooTools/MotionPermission
-  - PooTools/MotionPermission (5.11.14):
+  - PooTools/MotionPermission (5.11.17):
     - PooTools/PToolsPermissionCore
-  - PooTools/NetWork (5.11.14):
+  - PooTools/NetWork (5.11.17):
     - PooTools/Network
-  - PooTools/Network (5.11.14):
+  - PooTools/Network (5.11.17):
     - Alamofire
     - PooTools/Core
     - PooTools/Loading
-  - PooTools/PageControl (5.11.14):
+  - PooTools/PageControl (5.11.17):
     - PooTools/Core
-  - PooTools/PDF (5.11.14):
+  - PooTools/PDF (5.11.17):
     - PooTools/Core
-  - PooTools/PhotoPicker (5.11.14):
+  - PooTools/PhotoPicker (5.11.17):
     - Kakapos
     - PooTools/Core
     - PooTools/ImagePicker
     - PooTools/Loading
     - PooTools/MediaCore
-  - PooTools/Picker (5.11.14):
+  - PooTools/Picker (5.11.17):
     - PooTools/Core
-  - PooTools/ProgressBar (5.11.14):
+  - PooTools/ProgressBar (5.11.17):
     - PooTools/Core
-  - PooTools/PToolsPermissionCore (5.11.14)
-  - PooTools/PToolsUIFoundation (5.11.14):
+  - PooTools/PToolsPermissionCore (5.11.17)
+  - PooTools/PToolsUIFoundation (5.11.17):
     - SnapKit
-  - PooTools/SearchBar (5.11.14):
+  - PooTools/SearchBar (5.11.17):
     - PooTools/Core
-  - PooTools/Share (5.11.14):
+  - PooTools/Share (5.11.17):
     - PooTools/CustomerLabel
-  - PooTools/Vision (5.11.14):
+  - PooTools/Vision (5.11.17):
     - PooTools/Core
-  - PooTools/WhatsNewsKit (5.11.14):
+  - PooTools/WhatsNewsKit (5.11.17):
     - PooTools/Core
   - SafeSFSymbols (2.0.0)
   - SmartCodable (6.0.8):
@@ -262,7 +262,7 @@ EXTERNAL SOURCES:
 
 CHECKOUT OPTIONS:
   PooTools:
-    :commit: 60d318f64a7b03360667190ee2f62169f3f1efd0
+    :commit: 1ac0bd73f037dcc8207a520c618a70d4f0c82e5b
     :git: https://github.com/crazypoo/PTools.git
 
 SPEC CHECKSUMS:
@@ -290,7 +290,7 @@ SPEC CHECKSUMS:
   Kingfisher: 64e06c7d1a9851ecff9d1b14f92ad01141263dae
   LookinServer: 1b2b61c6402ae29fa22182d48f5cd067b4e99e80
   lottie-ios: 6467ca7035120c5b0e0acee58bb679cf15875686
-  PooTools: 42aeeb7e61968b30309e330dc19eee3768743cbc
+  PooTools: f069242107c7b863e9d58596bf76782ba16086e7
   SafeSFSymbols: c57c8752149b2ddc0213d3d519a3a31a8bd76340
   SmartCodable: db7f9dc94eb9022ede18adf5052772432c5286c7
   SnapKit: d612e99e678a2d3b95bf60b0705ed0a35c03484a

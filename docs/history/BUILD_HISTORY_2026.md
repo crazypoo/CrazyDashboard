@@ -81,6 +81,8 @@ superseded_by:
 
 本轮未修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`，也没有重排 ELM327/YMOBD 连接步骤。通用 iOS Debug build 与 `build-for-testing` 已通过；manifest/节点/性能策略纯数据测试已接入。Instruments、真机/实车和 Build 76 Final Gate 仍需现场完成。详细记录见 [`builds/BUILD_076B_DIGITAL_TWIN_3D.md`](builds/BUILD_076B_DIGITAL_TWIN_3D.md) 与 [`builds/BUILD_076B_ASSET_IMPORT_GUIDE.md`](builds/BUILD_076B_ASSET_IMPORT_GUIDE.md)。
 
+Build 76 收尾修复了 2D/3D 当前页面素材来源、2D wheel pivot/角速度积分和 Digital Twin 卡片点击入口。2D 当前优先加载 `XP400Twin2DAssets/xp400/` 的 PNG 分层素材，3D 当前固定使用 XP400 配置；卡片增加明确的 Open 触控入口并禁止 renderer 子视图抢占点击。干净 DerivedData 的通用 iOS Debug build 与 `build-for-testing` 均通过。现场点击、实车语义、Instruments 性能和 thermal 证据仍待人工验收。完整收尾记录见 [`builds/BUILD_076_DIGITAL_TWIN_CLOSEOUT.md`](builds/BUILD_076_DIGITAL_TWIN_CLOSEOUT.md)。
+
 ## 版本规则
 
 营销版本继续为 `2.0.8`，只递增工程 Build。后续 Build 结果先追加本文件，再同步产品总纲、架构/协议/研究 canonical 文档；不要创建新的根目录路线图。

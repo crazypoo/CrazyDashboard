@@ -22,7 +22,7 @@ final class PTXP400Twin3DView: UIView {
     private let rpmProgress = UIProgressView(progressViewStyle: .bar)
     private let overlay = UIStackView()
 
-    private var configuration = PTVehicleTwinConfiguration.xp400GT
+    private var configuration = PTVehicleTwinConfiguration.xp400
     private var nodeReferences: PTVehicleTwin3DNodeReferences?
     private var cameraNode: SCNNode?
     private var currentSnapshot = PTVehicleTwinSnapshot.empty
@@ -41,7 +41,7 @@ final class PTXP400Twin3DView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         configureView()
-        configure(.xp400GT)
+        configure(.xp400)
     }
 
     required init?(coder: NSCoder) {
@@ -49,8 +49,16 @@ final class PTXP400Twin3DView: UIView {
     }
 
     func configure(_ configuration: PTVehicleTwinConfiguration) {
-        self.configuration = configuration
-        let asset = PTVehicleTwin3DAssetFactory.makeScene(configuration: configuration)
+        // EN: Build 76 pins the active 3D renderer to the verified XP400 material set.
+        // ES: Build 76 fija el renderizador 3D activo al conjunto de recursos XP400 verificado.
+        // 中文：Build 76 将当前 3D 渲染器固定到已验证的 XP400 素材集。
+        let activeConfiguration: PTVehicleTwinConfiguration
+        switch configuration.model {
+        case .xp400, .xp400GT:
+            activeConfiguration = .xp400
+        }
+        self.configuration = activeConfiguration
+        let asset = PTVehicleTwin3DAssetFactory.makeScene(configuration: activeConfiguration)
         sceneView.scene = asset.scene
         nodeReferences = asset.nodes
         cameraNode = makeCamera(in: asset.scene)

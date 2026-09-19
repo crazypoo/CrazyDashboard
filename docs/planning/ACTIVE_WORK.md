@@ -23,9 +23,17 @@ superseded_by:
 
 快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 76B / Build 76)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
 
+## Build 76：XP400 Vehicle Digital Twin 收尾 🟨
+
+代码范围已收口：当前 2D/3D 页面统一选择 XP400 素材/配置；2D wheel 已改为轮环静止、轮辐按真实轮心和时间积分旋转；Digital Twin 卡片增加明确的 Open 按钮并禁止内部 renderer 抢占触摸。干净 DerivedData 的通用 iOS Debug build 与 `build-for-testing` 已通过，三个稳定 BLE/OBD 核心零改动。
+
+只剩真实设备门禁：iPhone 点击与滚动冲突、XP400/XP400 GT 实车字段语义、长时间帧率/内存/Energy/thermal 和 Release/TestFlight 包验证。完成这些证据后，再把 Build 76 Final Gate 从 `🟨` 更新为完整通过。
+
+详细记录见 [`../history/builds/BUILD_076_DIGITAL_TWIN_CLOSEOUT.md`](../history/builds/BUILD_076_DIGITAL_TWIN_CLOSEOUT.md)。
+
 ## Build 76B：XP400 Vehicle Digital Twin 3D 🟨
 
-代码已完成 SceneKit 3D Renderer、原创程序化低面数 XP400/XP400 GT 资源契约、稳定节点层级、统一 `PTVehicleTwinSnapshot` 状态映射、Lean/Pitch/G-vector、六组相机、停车交互、骑行 Follow、2D/3D/Auto 切换和低电量/thermal 2D fallback。没有修改 BLE、ELM327、YMOBD 或标准 OBD 核心；3D 页面不建立第二套连接监听链。
+代码已完成 SceneKit 3D Renderer、XP400 当前资源/配置、原创程序化低面数资源契约、稳定节点层级、统一 `PTVehicleTwinSnapshot` 状态映射、Lean/Pitch/G-vector、六组相机、停车交互、骑行 Follow、2D/3D/Auto 切换和低电量/thermal 2D fallback。没有修改 BLE、ELM327、YMOBD 或标准 OBD 核心；3D 页面不建立第二套连接监听链。
 
 已通过：
 

@@ -58,7 +58,7 @@ La fase 3D mantiene intactos el transporte ELM327, el límite de extensión YMOB
 - 轮半径 0.34 m，最大三角形预算 2400，最大材质预算 8；
 - 当前不引入外部纹理、网络下载或来源不明的车型图片。
 
-这是项目内原创的低面数近似资源，不是 Peugeot 官方模型，也不声称具有照片级车型精度。后续如替换为用户自有或已授权模型，必须保持 manifest 中的节点名、pivot、原点、比例和朝向。
+当前 Build 76 页面固定选择 `PTVehicleTwinConfiguration.xp400`，使用 XP400 的配色和资源契约；`xp400_gt` 只作为未来素材替换的保留目录，不作为本次页面来源。3D 几何是项目内原创的低面数近似资源，不是 Peugeot 官方模型，也不声称具有照片级车型精度。后续如替换为用户自有或已授权 XP400 模型，必须保持 manifest 中的节点名、pivot、原点、比例和朝向。
 
 ## B76-15 / B76-16 — Renderer 与车辆状态映射
 
@@ -162,4 +162,3 @@ ELM327 仍是 OBD 底层，YMOBD 仍是 ELM327 扩展；未改动 YMOBD 初始�
 | Instruments 性能与 thermal | 待真机 |
 | XP400/XP400 GT 实车 | 待实车 |
 | Build 76 Final Gate | 待 B76A/B76B 现场证据 |
-

@@ -7,7 +7,7 @@ canonical: false
 domain: build-076a-assets
 owner: Jax
 created: 2026-09-19
-last_reviewed: 2026-09-19
+last_reviewed: 2026-09-20
 related_builds:
   - 76
 supersedes: []
@@ -26,6 +26,7 @@ superseded_by: []
 
 - `manifest.json`
 - `xp400/` 与 `xp400_gt/` 两套透明 SVG 分层资源
+- `xp400/` 下用于运行时的 PNG 版本；当前 Build 76 页面只加载 `xp400/`
 - body、body mask、前后轮、头灯、刹车灯、左右转向灯、边撑、阴影和 preview
 
 ## 资产说明
@@ -34,7 +35,9 @@ superseded_by: []
 
 ## 工程使用
 
-Build 76A 已将整个 `XP400Twin2DAssets` 目录作为 PTSpeed 的 bundle resource 导入，构建产物中目录名保持为 `XP400Twin2DAssets`，因此 manifest、两套车型目录和 preview 可以随包交付。`PTXP400TwinView` 仍使用程序化 Core Animation 轮廓作为稳定 fallback；资源包不通过网络下载，也不会阻塞真实车辆遥测。
+Build 76A 已将整个 `XP400Twin2DAssets` 目录作为 PTSpeed 的 bundle resource 导入，构建产物中目录名保持为 `XP400Twin2DAssets`。Build 76 收尾后，`PTXP400TwinView` 优先从 `XP400Twin2DAssets/xp400/` 加载 PNG 分层素材；资源缺失时才使用程序化 Core Animation fallback。资源包不通过网络下载，也不会阻塞真实车辆遥测。
+
+轮子素材拆成静态轮环和独立轮辐：`front_wheel_base`、`front_wheel_spokes`、`rear_wheel_base`、`rear_wheel_spokes`。轮辐 image/layer 的 anchor point 分别固定在 manifest 的 `[0.76, 0.70]` 与 `[0.25, 0.70]`，避免整个全画布图片围绕视图中心旋转。
 
 若后续把 SVG 替换为正式授权素材或接入 Asset Catalog，应：
 

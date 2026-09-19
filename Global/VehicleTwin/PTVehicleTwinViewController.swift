@@ -104,11 +104,11 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController {
         modeHintLabel.textColor = .systemOrange
         modeHintLabel.numberOfLines = 2
 
-        twin2DView.configure(.xp400GT)
+        twin2DView.configure(.xp400)
         twin2DView.backgroundColor = UIColor(white: 0.08, alpha: 1)
         twin2DView.layer.cornerRadius = 18
 
-        twin3DView.configure(.xp400GT)
+        twin3DView.configure(.xp400)
         twin3DView.onFallbackSuggested = { [weak self] reason in
             self?.modeHintLabel.text = PTVehicleTwinCopy.text(reason.localizationKey)
         }

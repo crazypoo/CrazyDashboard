@@ -7,7 +7,7 @@ canonical: false
 domain: build-076a
 owner: Jax
 created: 2026-09-19
-last_reviewed: 2026-09-19
+last_reviewed: 2026-09-20
 related_builds:
   - 76
 supersedes: []
@@ -31,7 +31,8 @@ La capa Twin es solo de lectura y mantiene intactos el transporte ELM327, la ext
 - `PTVehicleTwinStore`：通过现有遥测消费者 Hub 接收快照，页面不直接监听 BLE/OBD。
 - `PTXP400TwinView`：轻量 UIKit/Core Animation 2D renderer，支持车身 lean/pitch、轮胎旋转、远光/近光、转向灯、危险灯和边撑显示。
 - `PTXP400TwinCardView`：已接入 `PTMotoInfoViewController`，点击进入全屏 `PTVehicleTwinViewController`。
-- `XP400Twin2DAssets`：提供 XP400 / XP400 GT 的原创近似 SVG 分层素材、manifest、pivot/anchor 和 preview；已作为 PTSpeed bundle resource 导入，运行时同时保留程序化 fallback。
+- `XP400Twin2DAssets`：提供 XP400 / XP400 GT 的原创近似 SVG 分层素材、由 XP400 SVG 生成的 PNG 运行素材、manifest、pivot/anchor 和 preview；Build 76 收尾时当前页面固定加载 `xp400/` 目录。
+- 2D wheel ring 与 wheel spokes 分离，spokes 以真实轮心作为旋转锚点；无资源时的程序化 fallback 也使用相同轮心和速度积分。
 - `PTVehicleTwinTests`：覆盖 freshness、Mock 标记、unavailable 不转成数字零、断开后缓存降级为 stale、Motion/Engine 分离。
 
 ## 稳定核心边界
