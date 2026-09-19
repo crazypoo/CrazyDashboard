@@ -87,10 +87,10 @@ class SceneDelegate: PTWindowSceneDelegate {
             }
         }
         
-//        PTGCDManager.shared.delayOnMain(time: 5) {
-//            guard let presenter = PTUtils.getCurrentVC() else { return }
-//            presenter.navigationController?.pushViewController(PTFeedbackCenterViewController(), animated: true)
-//        }
+        PTGCDManager.shared.delayOnMain(time: 5) {
+            guard let presenter = PTUtils.getCurrentVC() else { return }
+            presenter.navigationController?.pushViewController(PTFeatureSuggestionListViewController(), animated: true)
+        }
         // Feedback CloudKit + APNs bootstrap. This is idempotent and never
         // requests visible notification permission at launch.
         Task { @MainActor in
