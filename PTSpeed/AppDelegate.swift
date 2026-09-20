@@ -173,6 +173,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // 中文：应用启动时就开始监听仪表，自动同步不再依赖用户打开某个页面。
         _ = PTVehicleConnectivityCoordinator.shared.snapshot
 
+        // EN: Start health timeline observation after the existing stores are available.
+        // ES: Inicia la observación de la línea temporal de salud después de cargar los almacenes existentes.
+        // 中文：在现有存储可用后启动健康时间线监听。
+        PTVehicleHealthRepository.shared.start()
+
         // EN: Recover only orphaned local atomic-write files; committed data is never touched.
         // ES: Recupera solo archivos locales huérfanos de escritura atómica; nunca toca datos confirmados.
         // 中文：只清理本地原子写入残留，不触碰任何已提交数据。

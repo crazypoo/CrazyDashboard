@@ -25,6 +25,7 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
     private let displayModeControl = UISegmentedControl()
     private let cameraControl = UISegmentedControl()
     private let metricsStack = UIStackView()
+    private let healthSummaryLabel = UILabel()
 
     private var selectedMode: PTVehicleTwinDisplayMode = .automatic
     private var currentSnapshot = PTVehicleTwinSnapshot.empty
@@ -55,6 +56,13 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
         pt_Title = PTDashboardConfig.languageFunc(text: "Vehicle Twin")
         selectedMode = PTVehicleTwinDisplayPreferences.shared.mode
         setupUI()
+        PTVehicleHealthRepository.shared.start()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(healthRepositoryDidChange),
+            name: PTVehicleHealthRepository.didChange,
+            object: PTVehicleHealthRepository.shared
+        )
         store.onChange = { [weak self] snapshot in
             self?.render(snapshot)
         }
@@ -153,6 +161,10 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
         metricsStack.spacing = 8
         metricsStack.distribution = .fillEqually
 
+        healthSummaryLabel.font = .appfont(size: 12)
+        healthSummaryLabel.textColor = .systemGray2
+        healthSummaryLabel.numberOfLines = 0
+
         let scrollView = UIScrollView()
         scrollView.alwaysBounceVertical = true
         scrollView.showsVerticalScrollIndicator = false
@@ -165,6 +177,7 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
         contentView.addSubview(modeHintLabel)
         contentView.addSubview(twinContainer)
         contentView.addSubview(metricsStack)
+        contentView.addSubview(healthSummaryLabel)
 
         scrollView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
@@ -198,6 +211,10 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
         metricsStack.snp.makeConstraints { make in
             make.top.equalTo(twinContainer.snp.bottom).offset(14)
             make.left.right.equalToSuperview().inset(16)
+        }
+        healthSummaryLabel.snp.makeConstraints { make in
+            make.top.equalTo(metricsStack.snp.bottom).offset(12)
+            make.left.right.equalTo(metricsStack)
             make.bottom.equalToSuperview().inset(24)
         }
         rebuildMetricRows()
@@ -216,6 +233,10 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
               cameraControl.selectedSegmentIndex < PTVehicleTwin3DCameraPreset.allCases.count else { return }
         let preset = PTVehicleTwin3DCameraPreset.allCases[cameraControl.selectedSegmentIndex]
         twin3DView.setCameraPreset(preset)
+    }
+
+    @objc private func healthRepositoryDidChange() {
+        refreshHealthSummary()
     }
 
     // EN: Importing a trace only feeds the existing replay bridge; it never opens BLE or OBD.
@@ -306,6 +327,32 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
         statusLabel.text = "\(dashboard) · \(obd)"
         freshnessLabel.text = "\(PTDashboardConfig.languageFunc(text: "State")): \(freshnessText(snapshot.freshness))"
         rebuildMetricRows(snapshot: snapshot)
+        refreshHealthSummary()
+    }
+
+    // EN: The health summary is auxiliary context and never replaces live twin metrics.
+    // ES: El resumen de salud es contexto auxiliar y nunca sustituye las métricas vivas del gemelo.
+    // 中文：健康摘要只是辅助信息，不会替换数字孪生的实时指标。
+    private func refreshHealthSummary() {
+        guard let vehicleID = PTVehicleConnectivityCoordinator.shared.dashboardGarageVehicleID
+                ?? PTMotorcycleGarageStore.shared.selectedVehicleID else {
+            healthSummaryLabel.text = PTDashboardConfig.languageFunc(text: "Unavailable")
+            return
+        }
+        let summary = PTVehicleHealthRepository.shared.summary(for: vehicleID, includeSynthetic: true)
+        let battery = summary.battery.latest.map { String(format: "%.2f V", $0) } ?? "--"
+        let dtc = summary.latestConfirmedDTCCount.map(String.init) ?? "--"
+        let maintenance = summary.latestMaintenanceDistanceKm.map {
+            "\(String(format: "%.0f", $0)) \(PTDashboardConfig.shared.appShowUniLabel)"
+        } ?? "--"
+        let ride = summary.lastRideDistanceKm.map {
+            "\(String(format: "%.1f", $0)) \(PTDashboardConfig.shared.appShowUniLabel)"
+        } ?? "--"
+        healthSummaryLabel.text = [
+            "\(PTDashboardConfig.languageFunc(text: "vehicle_health_timeline")) · \(freshnessText(currentSnapshot.freshness))",
+            "\(PTDashboardConfig.languageFunc(text: "obd_diagnostic_battery")): \(battery)  ·  DTC: \(dtc)",
+            "\(PTDashboardConfig.languageFunc(text: "garage_maintenance")): \(maintenance)  ·  \(PTDashboardConfig.languageFunc(text: "ride_analysis_history")): \(ride)"
+        ].joined(separator: "\n")
     }
 
     private func index(for mode: PTVehicleTwinDisplayMode) -> Int {

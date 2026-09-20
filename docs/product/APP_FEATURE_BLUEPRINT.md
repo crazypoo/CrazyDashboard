@@ -14,6 +14,7 @@ related_builds:
   - 68
   - 69
   - 77
+  - 78
 supersedes: []
 superseded_by:
 ---
@@ -24,9 +25,9 @@ superseded_by:
 >
 > 快照日期：2026-09-20
 >
-> 仓库基线：当前工作区已进入 Build 69 Protocol Semantic Evidence Intelligence；Build 57–68 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速、仪表协议纠偏和 OBD 深诊断能力继续保留，Build 69 的语义证据、跨源关联和历史回放已接入，真实设备、车辆、OTA 和完整发布验证仍待补
+> 仓库基线：当前工作区已进入 Build 78 Vehicle Health Timeline；Build 57–69 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速、仪表协议纠偏、OBD 深诊断和协议语义证据能力继续保留，Build 78 的长期健康趋势已接入，真实设备、车辆、OTA 和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch `CURRENT_PROJECT_VERSION = 77`；Tests / UI Tests 保持各自测试版本
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch `CURRENT_PROJECT_VERSION = 78`；Tests / UI Tests 保持各自测试版本
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -619,6 +620,18 @@ Build 77 继续保持营销版本 `2.0.8`，工程 Build 为 `77`。它把统一
 | B77-12 | 🟨 | XP400/XP400 GT 真车、后台/断连、2D/3D 一致性、无写入证明和 Instruments/Release 验收 | 现场证据待补 |
 
 详细实施和现场清单见 [`../history/builds/BUILD_077_CRAZYTRACE_2.md`](../history/builds/BUILD_077_CRAZYTRACE_2.md) 与 [`../history/builds/BUILD_077_REAL_VEHICLE_VALIDATION.md`](../history/builds/BUILD_077_REAL_VEHICLE_VALIDATION.md)。Build 77 不新增第二套 BLE、ELM327、YMOBD、UDS、CAN 或遥测研究管线，也不开放未知写入、SecurityAccess、CAN injection 或刷写。
+
+### 7.19 Build 78 Vehicle Health Timeline
+
+| 工作包 | 状态 | 用户入口 / 数据链路 | 当前边界 |
+| --- | --- | --- | --- |
+| B78-01～B78-05 | 🟨 | Garage 自动进入健康时间线；复用 live Telemetry、电池历史、诊断报告/会话、保养和行程 | 结构化只读投影已完成，真实 XP400 字段语义待核对 |
+| B78-06 | 🟨 | Vehicle Health UIKit 页面：状态、来源、Battery/Mileage/DTC 图表、保养和 JSON 分享 | 需要真实设备、多语言和不同尺寸布局验收 |
+| B78-07 | 🟨 | Vehicle Twin 辅助健康摘要 | 不替换实时 Twin 指标，不提供车辆控制 |
+| B78-08～B78-09 | 🟨 | 多车 UUID 隔离、365 天/每车 2,000 点上限、本地/iCloud 原子健康文档 | iCloud 冲突、无网络、容量和迁移矩阵待补 |
+| B78-10 | ⬜ | XP400/XP400 GT 真车健康数据与 Release/TestFlight 验收 | 不能用 Mock、编译或日志替代现场证据 |
+
+健康时间线只展示已有数据，不把统计阈值当作厂家诊断结论；Mock/回放与真实/历史来源明确区分。实现记录和验收模板见 [Build 78 实施记录](../history/builds/BUILD_078_VEHICLE_HEALTH_TIMELINE.md) 与 [Build 78 真车验收清单](../history/builds/BUILD_078_REAL_DATA_VALIDATION.md)。
 
 ## 8. 已退役功能
 

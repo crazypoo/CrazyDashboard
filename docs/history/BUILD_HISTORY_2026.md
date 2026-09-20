@@ -22,6 +22,7 @@ related_builds:
   - 74
   - 76
   - 77
+  - 78
 supersedes: []
 superseded_by:
 ---
@@ -89,6 +90,14 @@ Build 76 收尾修复了 2D/3D 当前页面素材来源、2D wheel pivot/角速�
 完成 CrazyTrace 2.0 的外围实现：统一 Vehicle State Projection、Motion、GPS、适配器和协议事件进入单一有界 Recorder；增加 60 秒 Ring Buffer、事件前最多 60 秒与事件后最多 30 秒的 Incident Capture、结构化 `.crazytrace` 目录、诊断摘要、后台编码、staging 原子发布、隐私导出、旧 Schema 2/flat JSON 兼容和 bounded Reader。`PTReplayVehicleStateSource` 复用既有 `PTVehicleTelemetryBridge` 与 `PTCrazyTraceReplayPlayer`，Digital Twin 页面可导入 Trace 并继续通过既有 Consumer Hub 驱动 2D/3D renderer。
 
 营销版本继续为 `2.0.8`，主 App、Widget 和 Watch 工程 Build 推进到 `77`。本轮未修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift` 或 `PTOBDCommand.swift`，没有改变 ELM327/YMOBD 的连接、初始化、握手、能力识别、命令顺序和 fallback。结构化包、旧包兼容、脱敏和黑匣子离线测试已接入；XP400/XP400 GT 真车采集、后台/断连、2D/3D 字段一致性、无写入证明、Instruments 和 Release/TestFlight 仍需人工验收。详细记录见 [`builds/BUILD_077_CRAZYTRACE_2.md`](builds/BUILD_077_CRAZYTRACE_2.md) 与 [`builds/BUILD_077_REAL_VEHICLE_VALIDATION.md`](builds/BUILD_077_REAL_VEHICLE_VALIDATION.md)。
+
+## Build 78 — Vehicle Health Timeline
+
+完成只读车辆健康时间线外围能力：PTVehicleHealthRepository 复用既有 live Telemetry、电池历史、Garage 诊断/保养、Trip 和 Build 68 Diagnostic Session；PTVehicleHealthAnalyzer 提供 Battery、Mileage、DTC 趋势与健康状态；数据按车辆 UUID 隔离，Mock/回放通过 isSynthetic 标记；Garage 新增健康页面入口，Vehicle Twin 增加辅助摘要。
+
+健康时间线以单一 PTVehicleHealthTimeline.json 保存，使用 PTDataPersistenceActor 做本地与 iCloud 原子写入，365 天保留且每车最多 2,000 点，并提供 JSON 导出。营销版本保持 2.0.8，主 App、Widget 和 Watch 工程 Build 推进到 78。PTBluetoothManager.swift、PTHiddenOBDConnector.swift、PTOBDCommand.swift 保持零字节变化，ELM327/YMOBD 连接逻辑未改。
+
+主 App Debug generic build 已通过，Build 78 健康分析纯逻辑测试已接入 build-for-testing；真实 XP400/XP400 GT、iCloud、前后台/断连、长时间性能和 Release/TestFlight 验收仍在 [Build 78 真车清单](builds/BUILD_078_REAL_DATA_VALIDATION.md)。
 
 ## 版本规则
 

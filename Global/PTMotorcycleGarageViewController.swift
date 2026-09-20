@@ -38,6 +38,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
     private let editMileageButton: UIButton
     private let syncLiveDataButton: UIButton
     private let documentsButton: UIButton
+    private let healthTimelineButton: UIButton
     private let lidarMeasureButton: UIButton
     private let fuelProfileButton: UIButton
     private let maintenanceWarningButton: UIButton
@@ -60,6 +61,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         self.editMileageButton = Self.makeActionButton(titleKey: "garage_edit_mileage")
         self.syncLiveDataButton = Self.makeActionButton(titleKey: "garage_sync_live_data")
         self.documentsButton = Self.makeActionButton(titleKey: "garage_documents")
+        self.healthTimelineButton = Self.makeActionButton(titleKey: "vehicle_health_timeline")
         self.lidarMeasureButton = Self.makeActionButton(titleKey: "garage_lidar_measure")
         self.fuelProfileButton = Self.makeActionButton(titleKey: "garage_set_fuel_profile")
         self.maintenanceWarningButton = Self.makeActionButton(titleKey: "garage_set_maintenance_warning")
@@ -144,6 +146,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         editMileageButton.addTarget(self, action: #selector(showMileageForm), for: .touchUpInside)
         syncLiveDataButton.addTarget(self, action: #selector(syncLiveData), for: .touchUpInside)
         documentsButton.addTarget(self, action: #selector(openVehicleDocuments), for: .touchUpInside)
+        healthTimelineButton.addTarget(self, action: #selector(openHealthTimeline), for: .touchUpInside)
         lidarMeasureButton.addTarget(self, action: #selector(openLiDARGarageMeasure), for: .touchUpInside)
         fuelProfileButton.addTarget(self, action: #selector(showFuelProfileForm), for: .touchUpInside)
         maintenanceWarningButton.addTarget(self, action: #selector(showMaintenanceWarningForm), for: .touchUpInside)
@@ -171,7 +174,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
             vehicleFuelProfileLabel,
             makeButtonRow([switchVehicleButton, addVehicleButton, deleteVehicleButton]),
             makeButtonRow([editVehicleNameButton, editMileageButton, syncLiveDataButton]),
-            makeButtonRow([documentsButton]),
+            makeButtonRow([documentsButton, healthTimelineButton]),
             makeButtonRow([lidarMeasureButton]),
             fuelProfileButton
         ])
@@ -862,6 +865,17 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
             return
         }
         safePushViewController(PTGarageDocumentsViewController(vehicleID: vehicleID))
+    }
+
+    // EN: Open the read-only health timeline for the selected motorcycle.
+    // ES: Abre la línea temporal de salud de solo lectura de la motocicleta seleccionada.
+    // 中文：打开当前选中摩托车的只读健康时间线。
+    @objc private func openHealthTimeline() {
+        guard let vehicleID = store.currentVehicle?.id else {
+            showMessage(localized("garage_no_vehicle"))
+            return
+        }
+        safePushViewController(PTVehicleHealthViewController(vehicleID: vehicleID))
     }
 
     // EN: Open the explicit garage LiDAR measurement tool without starting a vehicle command.

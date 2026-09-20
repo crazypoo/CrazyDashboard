@@ -16,13 +16,20 @@ related_builds:
   - 74
   - 76
   - 77
+  - 78
 supersedes: []
 superseded_by:
 ---
 
 # 当前工作
 
-快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 77)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 78)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+
+## Build 78：Vehicle Health Timeline 🟨
+
+代码实现已完成：新增有界的 PTVehicleHealthRepository、PTVehicleHealthPoint、健康趋势分析器和只读 Vehicle Health 页面；适配现有电池历史、诊断报告/会话、车库保养、行程和 live Telemetry。健康数据按车辆 UUID 隔离，区分 Mock/回放与真实/历史来源，使用单一 PTVehicleHealthTimeline.json 通过 PTDataPersistenceActor 做本地/iCloud 原子保存；Garage 新增入口，Vehicle Twin 增加辅助健康摘要。
+
+三个稳定核心 PTBluetoothManager.swift、PTHiddenOBDConnector.swift、PTOBDCommand.swift 保持冻结；ELM327 仍是 OBD 底层，YMOBD 仍是其扩展。Build 78 的真实设备门禁尚未完成：需要 XP400/XP400 GT 电池、里程、保养、DTC、行程、多车、前后台/断连、iCloud、Instruments 和 Release/TestFlight 验证。详细记录见 [Build 78 实施记录](../history/builds/BUILD_078_VEHICLE_HEALTH_TIMELINE.md) 与 [Build 78 真车验收清单](../history/builds/BUILD_078_REAL_DATA_VALIDATION.md)。
 
 ## Build 77：Crazy Black Box Pro / CrazyTrace 2.0 🟨
 
