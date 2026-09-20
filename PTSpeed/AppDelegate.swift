@@ -178,6 +178,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // 中文：在现有存储可用后启动健康时间线监听。
         PTVehicleHealthRepository.shared.start()
 
+        // EN: Start the read-only road-surface projection on the existing GPS and motion streams.
+        // ES: Inicia la proyección de superficie de carretera de solo lectura sobre los flujos GPS y de movimiento existentes.
+        // 中文：启动基于现有 GPS 与运动数据流的只读道路体验投影。
+        PTRoadSurfaceRepository.shared.start()
+
         // EN: Recover only orphaned local atomic-write files; committed data is never touched.
         // ES: Recupera solo archivos locales huérfanos de escritura atómica; nunca toca datos confirmados.
         // 中文：只清理本地原子写入残留，不触碰任何已提交数据。

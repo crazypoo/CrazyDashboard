@@ -17,13 +17,20 @@ related_builds:
   - 76
   - 77
   - 78
+  - 79
 supersedes: []
 superseded_by:
 ---
 
 # 当前工作
 
-快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 78)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 79)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+
+## Build 79：Road Surface Intelligence 🟨
+
+代码实现已完成：新增 `PTRoadSurfaceRepository`、道路体验样本/路段/摘要模型、IMU + GPS 速度门控、偏置校准、路面评分与事件候选分类、分段去重、CrazyTrace marker、Replay 重算、MapKit 路线覆盖、Garage 入口、JSON 分享和 Vehicle Twin 强冲击提示。实现只监听现有 GPS、Motion 和统一遥测，不创建第二套传输或回放管线。
+
+三个稳定核心 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift` 保持冻结；ELM327 仍是 OBD 底层，YMOBD 仍是其扩展。Build 79 的真实道路门禁尚未完成：需要固定手机支架、XP400/XP400 GT、不同路面/速度、Replay、前后台、iCloud、Instruments 和 Release/TestFlight 验证。详细记录见 [Build 79 实施记录](../history/builds/BUILD_079_ROAD_SURFACE_INTELLIGENCE.md) 与 [Build 79 真车验收清单](../history/builds/BUILD_079_REAL_DATA_VALIDATION.md)。
 
 ## Build 78：Vehicle Health Timeline 🟨
 

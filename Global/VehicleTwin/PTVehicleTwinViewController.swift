@@ -26,10 +26,12 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
     private let cameraControl = UISegmentedControl()
     private let metricsStack = UIStackView()
     private let healthSummaryLabel = UILabel()
+    private let roadSurfaceLabel = UILabel()
 
     private var selectedMode: PTVehicleTwinDisplayMode = .automatic
     private var currentSnapshot = PTVehicleTwinSnapshot.empty
     private var replaySource: PTReplayVehicleStateSource?
+    private var roadSurfaceImpactID: UUID?
 
     lazy var stopButton:PTBaseButton = {
         let view = PTBaseButton(type:.custom)
@@ -57,11 +59,18 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
         selectedMode = PTVehicleTwinDisplayPreferences.shared.mode
         setupUI()
         PTVehicleHealthRepository.shared.start()
+        PTRoadSurfaceRepository.shared.start()
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(healthRepositoryDidChange),
             name: PTVehicleHealthRepository.didChange,
             object: PTVehicleHealthRepository.shared
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(roadSurfaceImpactDidDetect(_:)),
+            name: PTRoadSurfaceRepository.impactDidDetect,
+            object: PTRoadSurfaceRepository.shared
         )
         store.onChange = { [weak self] snapshot in
             self?.render(snapshot)
@@ -165,6 +174,11 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
         healthSummaryLabel.textColor = .systemGray2
         healthSummaryLabel.numberOfLines = 0
 
+        roadSurfaceLabel.font = .appfont(size: 13, bold: true)
+        roadSurfaceLabel.textColor = .systemOrange
+        roadSurfaceLabel.numberOfLines = 2
+        roadSurfaceLabel.isHidden = true
+
         let scrollView = UIScrollView()
         scrollView.alwaysBounceVertical = true
         scrollView.showsVerticalScrollIndicator = false
@@ -178,6 +192,7 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
         contentView.addSubview(twinContainer)
         contentView.addSubview(metricsStack)
         contentView.addSubview(healthSummaryLabel)
+        contentView.addSubview(roadSurfaceLabel)
 
         scrollView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
@@ -215,6 +230,10 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
         healthSummaryLabel.snp.makeConstraints { make in
             make.top.equalTo(metricsStack.snp.bottom).offset(12)
             make.left.right.equalTo(metricsStack)
+        }
+        roadSurfaceLabel.snp.makeConstraints { make in
+            make.top.equalTo(healthSummaryLabel.snp.bottom).offset(8)
+            make.left.right.equalTo(metricsStack)
             make.bottom.equalToSuperview().inset(24)
         }
         rebuildMetricRows()
@@ -237,6 +256,22 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
 
     @objc private func healthRepositoryDidChange() {
         refreshHealthSummary()
+    }
+
+    // EN: Show the latest read-only road impact briefly without opening a vehicle command path.
+    // ES: Muestra brevemente el último impacto de carretera de solo lectura sin abrir comandos del vehículo.
+    // 中文：短暂显示最新的只读道路冲击提示，不会打开任何车辆指令通道。
+    @objc private func roadSurfaceImpactDidDetect(_ notification: Notification) {
+        guard let segment = notification.userInfo?["segment"] as? PTRoadSurfaceSegment else { return }
+        roadSurfaceImpactID = segment.id
+        roadSurfaceLabel.text = "\(PTDashboardConfig.languageFunc(text: "road_surface_impact")) · \(String(format: "%.2f G", segment.maxVerticalImpactG))"
+        roadSurfaceLabel.isHidden = false
+        let expectedID = segment.id
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            guard let self, self.roadSurfaceImpactID == expectedID else { return }
+            self.roadSurfaceLabel.isHidden = true
+        }
     }
 
     // EN: Importing a trace only feeds the existing replay bridge; it never opens BLE or OBD.

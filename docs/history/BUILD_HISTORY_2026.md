@@ -23,6 +23,7 @@ related_builds:
   - 76
   - 77
   - 78
+  - 79
 supersedes: []
 superseded_by:
 ---
@@ -98,6 +99,14 @@ Build 76 收尾修复了 2D/3D 当前页面素材来源、2D wheel pivot/角速�
 健康时间线以单一 PTVehicleHealthTimeline.json 保存，使用 PTDataPersistenceActor 做本地与 iCloud 原子写入，365 天保留且每车最多 2,000 点，并提供 JSON 导出。营销版本保持 2.0.8，主 App、Widget 和 Watch 工程 Build 推进到 78。PTBluetoothManager.swift、PTHiddenOBDConnector.swift、PTOBDCommand.swift 保持零字节变化，ELM327/YMOBD 连接逻辑未改。
 
 主 App Debug generic build 已通过，Build 78 健康分析纯逻辑测试已接入 build-for-testing；真实 XP400/XP400 GT、iCloud、前后台/断连、长时间性能和 Release/TestFlight 验收仍在 [Build 78 真车清单](builds/BUILD_078_REAL_DATA_VALIDATION.md)。
+
+## Build 79 — Road Surface Intelligence
+
+完成只读道路体验层：复用既有 PooTools Motion、PTLocationEngine、统一 Vehicle Telemetry 和 CrazyTrace，新增有界采样窗口、速度/GPS/倾倒门控、支架偏置校准、路面评分、pothole/speed bump/repeated vibration/strong impact 候选分类、路段分割与去重。道路数据按车辆 UUID 隔离，Mock/Replay 标记为 synthetic，使用 `PTDataPersistenceActor` 保存 180 天/每车 2,000 段的本地与 iCloud JSON。
+
+Garage 新增 Road Surface 页面，提供 MapKit 路线覆盖、事件点、质量摘要、JSON 分享和停车校准；Vehicle Twin 在强冲击时显示短暂 Road Impact 提示，回放通过统一快照重算。营销版本保持 `2.0.8`，主 App、Widget 和 Watch 工程 Build 推进到 `79`。三个稳定 BLE/OBD 核心零字节变化，ELM327/YMOBD 连接流程未改。
+
+纯数据回归和工程接入已完成；真实 XP400/XP400 GT 道路场景、固定支架校准、前后台/断连、iCloud、长时间性能和 Release/TestFlight 验收仍在 [`../planning/ACTIVE_WORK.md`](../planning/ACTIVE_WORK.md)。详细记录见 [`builds/BUILD_079_ROAD_SURFACE_INTELLIGENCE.md`](builds/BUILD_079_ROAD_SURFACE_INTELLIGENCE.md) 与 [`builds/BUILD_079_REAL_DATA_VALIDATION.md`](builds/BUILD_079_REAL_DATA_VALIDATION.md)。
 
 ## 版本规则
 

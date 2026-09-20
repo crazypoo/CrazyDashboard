@@ -53153,6 +53153,306 @@
     "音乐数据加载失败，请重试" : {
 
     },
+    "road_surface_intelligence" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Straßenoberflächenanalyse" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Road Surface" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Superficie de carretera" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "État de la route" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Superficie stradale" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "路面分析" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Состояние дороги" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yol yüzeyi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "道路体验" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "道路體驗" } }
+      }
+    },
+    "road_surface_segments" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Letzte Straßenabschnitte" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Recent road segments" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Tramos recientes" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Tronçons récents" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Tratti recenti" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最近の道路区間" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Последние участки дороги" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Son yol bölümleri" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "最近道路路段" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "最近道路路段" } }
+      }
+    },
+    "road_surface_no_data" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Keine Straßendaten" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No road-surface data" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin datos de carretera" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Aucune donnée routière" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Nessun dato stradale" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "道路データなし" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Нет данных о дороге" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yol verisi yok" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂无道路体验数据" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "暫無道路體驗資料" } }
+      }
+    },
+    "road_surface_quality" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Oberflächenqualität" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Surface quality" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Calidad de la superficie" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Qualité de la route" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Qualità della superficie" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "路面状態" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Качество дороги" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yüzey kalitesi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "路面质量" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "路面品質" } }
+      }
+    },
+    "road_surface_score" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Durchschnittswert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Average score" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Puntuación media" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Score moyen" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Punteggio medio" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "平均スコア" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Средняя оценка" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Ortalama puan" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "平均评分" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "平均評分" } }
+      }
+    },
+    "road_surface_peak" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Spitzenwert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Peak score" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Puntuación máxima" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Score maximal" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Punteggio massimo" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ピークスコア" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Пиковая оценка" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Tepe puan" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "峰值评分" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "峰值評分" } }
+      }
+    },
+    "road_surface_max_impact" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Stärkster Stoß" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Peak impact" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Impacto máximo" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Impact maximal" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Impatto massimo" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最大衝撃" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Максимальный удар" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Tepe darbe" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "最大冲击" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "最大衝擊" } }
+      }
+    },
+    "road_surface_coverage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Abgedeckte Strecke" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Covered distance" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Distancia cubierta" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Distance couverte" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Distanza coperta" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "走行距離" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Покрытое расстояние" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kapsanan mesafe" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "覆盖距离" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "覆蓋距離" } }
+      }
+    },
+    "road_surface_rough_segments" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Raue Abschnitte" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rough segments" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Tramos irregulares" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Tronçons irréguliers" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Tratti sconnessi" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "荒れた区間" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Неровные участки" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bozuk bölümler" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "颠簸路段" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "顛簸路段" } }
+      }
+    },
+    "road_surface_severe_segments" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Starke Abschnitte" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Severe segments" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Tramos severos" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Tronçons sévères" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Tratti critici" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "悪路区間" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Опасные участки" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Zorlu bölümler" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "严重颠簸路段" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "嚴重顛簸路段" } }
+      }
+    },
+    "road_surface_source_mock" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Simulation" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mock" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Simulado" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Simulation" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Simulato" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "モック" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Тестовые данные" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sahte" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "模拟" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "模擬" } }
+      }
+    },
+    "road_surface_source_live" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Live / Verlauf" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Live / history" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "En vivo / historial" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Direct / historique" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Live / storico" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ライブ / 履歴" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Онлайн / история" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Canlı / geçmiş" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "实时 / 历史" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "即時 / 歷史" } }
+      }
+    },
+    "road_surface_smooth" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Glatt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Smooth" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Suave" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Lisse" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Liscia" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "滑らか" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Ровная" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Düzgün" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "平顺" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "平順" } }
+      }
+    },
+    "road_surface_moderate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mäßig" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Moderate" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Moderada" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Modérée" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Moderata" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "普通" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Умеренная" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Orta" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "一般" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "一般" } }
+      }
+    },
+    "road_surface_rough" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Uneben" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rough" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Irregular" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Irrégulière" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Sconnessa" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "荒い" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Неровная" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bozuk" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "颠簸" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "顛簸" } }
+      }
+    },
+    "road_surface_severe" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Stark" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Severe" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Severa" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Sévère" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Critica" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "深刻" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Тяжёлая" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Şiddetli" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "严重" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "嚴重" } }
+      }
+    },
+    "road_surface_calibrate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Halterung kalibrieren" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Calibrate mount" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Calibrar soporte" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Calibrer le support" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Calibra supporto" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "マウントを調整" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Калибровать крепление" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yuvayı kalibre et" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "校准支架" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "校準支架" } }
+      }
+    },
+    "road_surface_calibration_success" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Halterungskalibrierung gespeichert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mount calibration saved" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Calibración guardada" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Calibration enregistrée" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Calibrazione salvata" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "調整を保存しました" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Калибровка сохранена" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kalibrasyon kaydedildi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "支架校准已保存" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "支架校準已儲存" } }
+      }
+    },
+    "road_surface_calibration_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zum Kalibrieren anhalten" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Stop the vehicle before calibrating" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Detén el vehículo antes de calibrar" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Arrêtez le véhicule avant de calibrer" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Ferma il veicolo prima di calibrare" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "校正前に車両を停止してください" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Остановите транспорт перед калибровкой" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Kalibrasyondan önce aracı durdurun" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请停车后再校准" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請停車後再校準" } }
+      }
+    },
+    "road_surface_impact" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Straßenstoß" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Road impact" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Impacto en la carretera" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Choc routier" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Impatto stradale" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "路面衝撃" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Удар на дороге" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yol darbesi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "路面冲击" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "路面衝擊" } }
+      }
+    },
     "vehicle_health_timeline" : {
       "extractionState" : "manual",
       "localizations" : {

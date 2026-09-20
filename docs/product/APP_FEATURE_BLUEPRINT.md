@@ -15,6 +15,7 @@ related_builds:
   - 69
   - 77
   - 78
+  - 79
 supersedes: []
 superseded_by:
 ---
@@ -25,9 +26,9 @@ superseded_by:
 >
 > 快照日期：2026-09-20
 >
-> 仓库基线：当前工作区已进入 Build 78 Vehicle Health Timeline；Build 57–69 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速、仪表协议纠偏、OBD 深诊断和协议语义证据能力继续保留，Build 78 的长期健康趋势已接入，真实设备、车辆、OTA 和完整发布验证仍待补
+> 仓库基线：当前工作区已进入 Build 79 Road Surface Intelligence；Build 57–69 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速、仪表协议纠偏、OBD 深诊断和协议语义证据能力继续保留，Build 78 的长期健康趋势和 Build 79 的 IMU + GPS 道路体验层已接入，真实设备、车辆、OTA 和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch `CURRENT_PROJECT_VERSION = 78`；Tests / UI Tests 保持各自测试版本
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch `CURRENT_PROJECT_VERSION = 79`；Tests / UI Tests 保持各自测试版本
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -632,6 +633,18 @@ Build 77 继续保持营销版本 `2.0.8`，工程 Build 为 `77`。它把统一
 | B78-10 | ⬜ | XP400/XP400 GT 真车健康数据与 Release/TestFlight 验收 | 不能用 Mock、编译或日志替代现场证据 |
 
 健康时间线只展示已有数据，不把统计阈值当作厂家诊断结论；Mock/回放与真实/历史来源明确区分。实现记录和验收模板见 [Build 78 实施记录](../history/builds/BUILD_078_VEHICLE_HEALTH_TIMELINE.md) 与 [Build 78 真车验收清单](../history/builds/BUILD_078_REAL_DATA_VALIDATION.md)。
+
+### 7.20 Build 79 Road Surface Intelligence
+
+| 工作包 | 状态 | 用户入口 / 数据链路 | 当前边界 |
+| --- | --- | --- | --- |
+| B79-01～B79-04 | 🟨 | 复用 Motion/GPS/统一遥测，按速度、GPS 精度、位置新鲜度和倾倒状态门控，生成道路评分和事件候选并去重 | 阈值是应用启发式，不是道路工程结论 |
+| B79-05～B79-06 | 🟨 | CrazyTrace marker 与 Replay 统一快照重算；路段按车辆 UUID 保存并区分 Mock/Replay | 固定样本已测，真实 GPS 漂移/时间轴待补 |
+| B79-07～B79-08 | 🟨 | Garage Road Surface 页面、MapKit 覆盖、摘要、事件列表和 JSON 分享 | 真机地图、分享、多语言和不同尺寸布局待验收 |
+| B79-09 | 🟨 | 停车时按车辆保存 IMU/倾角偏置校准 | 必须在固定支架上完成，不能骑行中校准 |
+| B79-10 | ⬜ | XP400/XP400 GT 不同道路、速度、前后台/断连、性能与 Release/TestFlight 验收 | 必须由真实设备与道路证据完成 |
+
+道路体验只读展示现有传感器分析结果，不开放车辆写入、仪表控制、ECU 诊断或未知指令。实现记录和现场清单见 [Build 79 实施记录](../history/builds/BUILD_079_ROAD_SURFACE_INTELLIGENCE.md) 与 [Build 79 真车验收清单](../history/builds/BUILD_079_REAL_DATA_VALIDATION.md)。
 
 ## 8. 已退役功能
 

@@ -39,6 +39,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
     private let syncLiveDataButton: UIButton
     private let documentsButton: UIButton
     private let healthTimelineButton: UIButton
+    private let roadSurfaceButton: UIButton
     private let lidarMeasureButton: UIButton
     private let fuelProfileButton: UIButton
     private let maintenanceWarningButton: UIButton
@@ -62,6 +63,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         self.syncLiveDataButton = Self.makeActionButton(titleKey: "garage_sync_live_data")
         self.documentsButton = Self.makeActionButton(titleKey: "garage_documents")
         self.healthTimelineButton = Self.makeActionButton(titleKey: "vehicle_health_timeline")
+        self.roadSurfaceButton = Self.makeActionButton(titleKey: "road_surface_intelligence")
         self.lidarMeasureButton = Self.makeActionButton(titleKey: "garage_lidar_measure")
         self.fuelProfileButton = Self.makeActionButton(titleKey: "garage_set_fuel_profile")
         self.maintenanceWarningButton = Self.makeActionButton(titleKey: "garage_set_maintenance_warning")
@@ -147,6 +149,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
         syncLiveDataButton.addTarget(self, action: #selector(syncLiveData), for: .touchUpInside)
         documentsButton.addTarget(self, action: #selector(openVehicleDocuments), for: .touchUpInside)
         healthTimelineButton.addTarget(self, action: #selector(openHealthTimeline), for: .touchUpInside)
+        roadSurfaceButton.addTarget(self, action: #selector(openRoadSurface), for: .touchUpInside)
         lidarMeasureButton.addTarget(self, action: #selector(openLiDARGarageMeasure), for: .touchUpInside)
         fuelProfileButton.addTarget(self, action: #selector(showFuelProfileForm), for: .touchUpInside)
         maintenanceWarningButton.addTarget(self, action: #selector(showMaintenanceWarningForm), for: .touchUpInside)
@@ -175,6 +178,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
             makeButtonRow([switchVehicleButton, addVehicleButton, deleteVehicleButton]),
             makeButtonRow([editVehicleNameButton, editMileageButton, syncLiveDataButton]),
             makeButtonRow([documentsButton, healthTimelineButton]),
+            makeButtonRow([roadSurfaceButton]),
             makeButtonRow([lidarMeasureButton]),
             fuelProfileButton
         ])
@@ -218,7 +222,7 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
 
         scrollView.snp.makeConstraints { make in
             make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total)
-            make.left.right.equalToSuperview().inset(16)
+            make.left.right.equalToSuperview()
             make.bottom.equalToSuperview()
         }
         contentStack.snp.makeConstraints { make in
@@ -876,6 +880,17 @@ final class PTMotorcycleGarageViewController: PTMotoBaseViewController {
             return
         }
         safePushViewController(PTVehicleHealthViewController(vehicleID: vehicleID))
+    }
+
+    // EN: Road Surface is a read-only projection over the existing GPS and motion streams.
+    // ES: Road Surface es una proyección de solo lectura sobre los flujos GPS y de movimiento existentes.
+    // 中文：道路体验是基于现有 GPS 与运动数据流的只读投影。
+    @objc private func openRoadSurface() {
+        guard let vehicleID = store.currentVehicle?.id else {
+            showMessage(localized("garage_no_vehicle"))
+            return
+        }
+        safePushViewController(PTRoadSurfaceViewController(vehicleID: vehicleID))
     }
 
     // EN: Open the explicit garage LiDAR measurement tool without starting a vehicle command.
