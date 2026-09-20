@@ -19,7 +19,9 @@ final class PTRideAnalysisViewController: PTMotoBaseViewController {
     private let comparisonPool: [PTTripReport]
     private var analysisTask: Task<Void, Never>?
     private var snapshot: PTRideAnalysisSnapshot?
+    private var dna: PTRideDNA?
     private var eventTimestamps: [Int: Date] = [:]
+    private var dnaMarkerTimestamps: [Int: Date] = [:]
     private weak var routeImageView: UIImageView?
 
     private let scrollView = UIScrollView()
@@ -101,20 +103,25 @@ final class PTRideAnalysisViewController: PTMotoBaseViewController {
         let comparisonPool = self.comparisonPool
         analysisTask = Task { [weak self] in
             let result = await Task.detached(priority: .userInitiated) {
-                PTRideAnalysisBuilder.make(report: report, comparisonPool: comparisonPool)
+                (
+                    PTRideAnalysisBuilder.make(report: report, comparisonPool: comparisonPool),
+                    PTRideDNABuilder.make(report: report, comparisonPool: comparisonPool)
+                )
             }.value
             guard !Task.isCancelled else { return }
-            self?.render(result)
+            self?.render(result.0, dna: result.1)
         }
     }
 
-    private func render(_ snapshot: PTRideAnalysisSnapshot) {
+    private func render(_ snapshot: PTRideAnalysisSnapshot, dna: PTRideDNA) {
         analysisTask = nil
         self.snapshot = snapshot
+        self.dna = dna
         activityIndicator.stopAnimating()
         contentStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
 
         contentStack.addArrangedSubview(makeHeader(snapshot))
+        contentStack.addArrangedSubview(makeDNASection(dna))
         contentStack.addArrangedSubview(makeSection(
             title: localized("ride_analysis_overview"),
             content: makeMetricGrid([
@@ -176,6 +183,98 @@ final class PTRideAnalysisViewController: PTMotoBaseViewController {
         contentStack.addArrangedSubview(makeEventsSection(snapshot))
         contentStack.addArrangedSubview(makeQualitySection(snapshot))
         loadRouteThumbnail()
+    }
+
+    // EN: The DNA card is the bounded Build80 summary; detailed signal charts remain below it.
+    // ES: La tarjeta de ADN es el resumen acotado de Build80; los gráficos detallados permanecen debajo.
+    // 中文：DNA 卡片是 Build80 的有界摘要，详细信号图表仍放在下方，避免一次渲染过重。
+    private func makeDNASection(_ dna: PTRideDNA) -> UIView {
+        let body = UIStackView()
+        body.axis = .vertical
+        body.spacing = 10
+
+        if let warning = dna.qualityWarning {
+            body.addArrangedSubview(makeWarningLabel(localized(warning)))
+        }
+        body.addArrangedSubview(makeMetricGrid([
+            (localized("ride_dna_moving_duration"), durationText(dna.pace.movingDurationSeconds)),
+            (localized("ride_dna_stop_duration"), durationText(dna.pace.stopDurationSeconds)),
+            (localized("ride_dna_average_moving_speed"), speedText(dna.pace.averageMovingSpeedKmh)),
+            (localized("ride_dna_cruise_ratio"), percentText(dna.pace.cruiseRatio)),
+            (localized("ride_dna_idle_ratio"), percentText(dna.engine.idleRatio)),
+            (localized("ride_dna_high_rpm_duration"), durationText(dna.engine.highRPMDurationSeconds)),
+            (localized("ride_dna_deceleration_events"), "\(dna.motion.decelerationEventCount)"),
+            (localized("ride_dna_rough_duration"), durationText(dna.road.roughDurationSeconds)),
+            (localized("ride_dna_impact_count"), "\(dna.road.impactCount)"),
+            (localized("ride_dna_consumption"), numberText(dna.efficiency.consumptionLPer100Km, decimals: 1, unit: "L/100 km")),
+            (localized("ride_dna_samples"), "\(dna.sampleCount)"),
+            (localized("ride_dna_coverage"), coverageSummary(dna.coverage))
+        ]))
+        body.addArrangedSubview(makeBodyLabel("\(localized("ride_dna_rpm_histogram")): \(histogramText(dna.engine.rpmHistogram))"))
+        body.addArrangedSubview(makeBodyLabel("\(localized("ride_dna_lean_distribution")): \(histogramText(dna.motion.leanDistribution))"))
+        body.addArrangedSubview(makeBodyLabel("\(localized("ride_dna_g_distribution")): \(histogramText(dna.motion.gDistribution))"))
+
+        if !dna.historyComparisons.isEmpty {
+            let history = dna.historyComparisons.map { comparison in
+                "\(dnaComparisonTitle(comparison.metricKey)): \(dnaComparisonValue(comparison))"
+            }.joined(separator: "\n")
+            body.addArrangedSubview(makeBodyLabel("\(localized("ride_dna_comparison"))\n\(history)"))
+        } else {
+            body.addArrangedSubview(makeBodyLabel(localized("ride_dna_insufficient_history")))
+        }
+
+        dnaMarkerTimestamps.removeAll()
+        if dna.markers.isEmpty {
+            body.addArrangedSubview(makeBodyLabel(localized("ride_dna_no_data")))
+        } else {
+            for (index, marker) in dna.markers.enumerated() {
+                dnaMarkerTimestamps[index] = report.startTime.addingTimeInterval(marker.offsetSeconds)
+                let button = UIButton(type: .system)
+                button.tag = index
+                button.contentHorizontalAlignment = .left
+                var configuration = UIButton.Configuration.plain()
+                configuration.title = "\(localized(marker.titleKey)) · \(durationText(marker.offsetSeconds))"
+                configuration.subtitle = numberText(marker.value, decimals: 1, unit: "")
+                configuration.baseForegroundColor = .white
+                configuration.contentInsets = NSDirectionalEdgeInsets(top: 9, leading: 12, bottom: 9, trailing: 12)
+                configuration.background.backgroundColor = UIColor(white: 0.14, alpha: 1)
+                configuration.background.cornerRadius = 10
+                button.configuration = configuration
+                button.accessibilityHint = localized("ride_analysis_event_open_hint")
+                button.addTarget(self, action: #selector(openDNAMarkerReplay(_:)), for: .touchUpInside)
+                body.addArrangedSubview(button)
+            }
+        }
+        return makeSection(title: localized("ride_dna_title"), content: body)
+    }
+
+    private func histogramText(_ buckets: [PTRideDNAHistogramBucket]) -> String {
+        buckets.map { "\($0.label) \(String(format: "%.0f", $0.fraction * 100))%" }.joined(separator: " · ")
+    }
+
+    private func coverageSummary(_ coverage: PTRideDNACoverage) -> String {
+        [coverage.xp400, coverage.obd, coverage.gps, coverage.motion]
+            .map { localized("ride_dna_\($0.rawValue)") }
+            .joined(separator: " / ")
+    }
+
+    private func dnaComparisonTitle(_ key: String) -> String {
+        switch key {
+        case "averageMovingSpeed": return localized("ride_dna_average_moving_speed")
+        case "idleRatio": return localized("ride_dna_idle_ratio")
+        case "highRPMDuration": return localized("ride_dna_high_rpm_duration")
+        case "roughDuration": return localized("ride_dna_rough_duration")
+        case "impactCount": return localized("ride_dna_impact_count")
+        case "consumption": return localized("ride_dna_consumption")
+        default: return key
+        }
+    }
+
+    private func dnaComparisonValue(_ comparison: PTRideDNAHistoryComparison) -> String {
+        let current = numberText(comparison.currentValue, decimals: 1, unit: "")
+        let baseline = numberText(comparison.historicalAverage, decimals: 1, unit: "")
+        let delta = numberText(comparison.delta, decimals: 1, unit: "", signed: true)
+        return "\(current) · \(localized("ride_analysis_recent_average")): \(baseline) · Δ \(delta)"
     }
 
     private func makeHeader(_ snapshot: PTRideAnalysisSnapshot) -> UIView {
@@ -566,6 +665,10 @@ final class PTRideAnalysisViewController: PTMotoBaseViewController {
         openReplay(at: eventTimestamps[sender.tag])
     }
 
+    @objc private func openDNAMarkerReplay(_ sender: UIButton) {
+        openReplay(at: dnaMarkerTimestamps[sender.tag])
+    }
+
     private func openReplay(at timestamp: Date?) {
         let replay = PTRideReplayViewController(report: report, initialTimestamp: timestamp)
         navigationController?.pushViewController(replay, animated: true)
@@ -579,10 +682,10 @@ final class PTRideAnalysisViewController: PTMotoBaseViewController {
     }
 
     @objc private func shareJSON() {
-        guard let snapshot else { return }
+        guard let snapshot, let dna else { return }
         let urlTask = Task { [weak self] in
             let url = await Task.detached(priority: .utility) {
-                Self.makeJSONFile(snapshot: snapshot)
+                Self.makeJSONFile(snapshot: snapshot, dna: dna)
             }.value
             guard !Task.isCancelled, let self, let url else { return }
             let activity = UIActivityViewController(activityItems: [url], applicationActivities: nil)
@@ -602,11 +705,13 @@ final class PTRideAnalysisViewController: PTMotoBaseViewController {
         present(activity, animated: true)
     }
 
-    nonisolated private static func makeJSONFile(snapshot: PTRideAnalysisSnapshot) -> URL? {
+    nonisolated private static func makeJSONFile(snapshot: PTRideAnalysisSnapshot, dna: PTRideDNA) -> URL? {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
-        guard let data = try? encoder.encode(snapshot) else { return nil }
+        guard let data = try? encoder.encode(PTRideAnalysisExportDocument(analysis: snapshot, dna: dna)) else {
+            return nil
+        }
         let fileName = "PTSpeed-Ride-Analysis-\(Int(Date().timeIntervalSince1970)).json"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
         guard (try? data.write(to: url, options: .atomic)) != nil else { return nil }

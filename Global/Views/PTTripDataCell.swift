@@ -51,6 +51,19 @@ class PTTripDataCell: PTBaseSwipeCell {
         label.adjustsFontSizeToFitWidth = true
         return label
     }()
+
+    // EN: Keep the list card useful without duplicating the detailed analysis screen.
+    // ES: Mantiene útil la tarjeta sin duplicar la pantalla de análisis detallado.
+    // 中文：列表卡片保留关键 DNA 摘要，不重复完整分析页面。
+    private lazy var dnaSummaryLabel: UILabel = {
+        let label = UILabel()
+        label.font = .appfont(size: 10, bold: true)
+        label.textColor = PTDashboardConfig.shared.appMainColor
+        label.numberOfLines = 2
+        label.adjustsFontSizeToFitWidth = true
+        label.minimumScaleFactor = 0.75
+        return label
+    }()
     
     // 现代化数据网格容器
     private lazy var statsGridStackView: UIStackView = {
@@ -136,6 +149,7 @@ class PTTripDataCell: PTBaseSwipeCell {
         contentContainer.addSubviews([
             timeTitleLabel,
             reviewSummaryLabel,
+            dnaSummaryLabel,
             statsGridStackView,
             thumbnailImageView,
             gpxButton,
@@ -173,10 +187,15 @@ class PTTripDataCell: PTBaseSwipeCell {
             make.top.equalTo(timeTitleLabel.snp.bottom).offset(4)
             make.left.right.equalTo(timeTitleLabel)
         }
+
+        dnaSummaryLabel.snp.makeConstraints { make in
+            make.top.equalTo(reviewSummaryLabel.snp.bottom).offset(3)
+            make.left.right.equalTo(timeTitleLabel)
+        }
         
         // 数据网格 (标题下方)
         statsGridStackView.snp.makeConstraints { make in
-            make.top.equalTo(reviewSummaryLabel.snp.bottom).offset(8)
+            make.top.equalTo(dnaSummaryLabel.snp.bottom).offset(8)
             make.left.equalToSuperview().inset(margin)
             make.right.equalTo(thumbnailImageView.snp.left).offset(-margin)
         }
@@ -199,6 +218,12 @@ class PTTripDataCell: PTBaseSwipeCell {
         reviewSummaryLabel.text = reviewTitles.isEmpty
             ? PTDashboardConfig.languageFunc(text: "ride_analysis_no_events")
             : "\(PTDashboardConfig.languageFunc(text: "ride_analysis_review_prefix"))" + reviewTitles.joined(separator: " · ")
+
+        let dna = PTRideDNABuilder.make(report: cellModel)
+        let speed = dna.pace.averageMovingSpeedKmh > 0
+            ? "\(String(format: "%.1f", PTDashboardConfig.shared.appShowMileage(dna.pace.averageMovingSpeedKmh))) \(PTDashboardConfig.shared.appShowUniLabel)/h"
+            : PTDashboardConfig.languageFunc(text: "ride_dna_unknown")
+        dnaSummaryLabel.text = "\(PTDashboardConfig.languageFunc(text: "ride_dna_pace")): \(speed) · \(PTDashboardConfig.languageFunc(text: "ride_dna_impact_count")): \(dna.road.impactCount)"
         
         // 更新数据网格
         updateStatsGrid()

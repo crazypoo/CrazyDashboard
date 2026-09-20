@@ -16,6 +16,7 @@ related_builds:
   - 77
   - 78
   - 79
+  - 80
 supersedes: []
 superseded_by:
 ---
@@ -26,9 +27,9 @@ superseded_by:
 >
 > 快照日期：2026-09-20
 >
-> 仓库基线：当前工作区已进入 Build 79 Road Surface Intelligence；Build 57–69 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速、仪表协议纠偏、OBD 深诊断和协议语义证据能力继续保留，Build 78 的长期健康趋势和 Build 79 的 IMU + GPS 道路体验层已接入，真实设备、车辆、OTA 和完整发布验证仍待补
+> 仓库基线：当前工作区已进入 Build 80 Ride DNA；Build 57–69 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速、仪表协议纠偏、OBD 深诊断和协议语义证据能力继续保留，Build 78 的长期健康趋势、Build 79 的 IMU + GPS 道路体验层和 Build 80 的骑行数据 DNA 已接入，真实设备、车辆、OTA 和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch `CURRENT_PROJECT_VERSION = 79`；Tests / UI Tests 保持各自测试版本
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch `CURRENT_PROJECT_VERSION = 80`；Tests / UI Tests 保持各自测试版本
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -645,6 +646,18 @@ Build 77 继续保持营销版本 `2.0.8`，工程 Build 为 `77`。它把统一
 | B79-10 | ⬜ | XP400/XP400 GT 不同道路、速度、前后台/断连、性能与 Release/TestFlight 验收 | 必须由真实设备与道路证据完成 |
 
 道路体验只读展示现有传感器分析结果，不开放车辆写入、仪表控制、ECU 诊断或未知指令。实现记录和现场清单见 [Build 79 实施记录](../history/builds/BUILD_079_ROAD_SURFACE_INTELLIGENCE.md) 与 [Build 79 真车验收清单](../history/builds/BUILD_079_REAL_DATA_VALIDATION.md)。
+
+### 7.21 Build 80 Ride DNA
+
+| 工作包 | 状态 | 产品能力 | 数据来源 |
+| --- | --- | --- | --- |
+| B80-01～B80-04 | ✅ | 结构化 Pace、Engine、Motion、Road、Efficiency、Coverage 与直方图 | 既有 PTTripReport |
+| B80-05 | ✅ | 同车历史骑行比较，历史不足时明确提示 | 既有行程历史 |
+| B80-06～B80-07 | 🟨 | 行程列表摘要、专业详情页、JSON 分享 | 只读分析结果 |
+| B80-08 | 🟨 | 数字孪生/Replay 时间线标记 | 既有回放事件流 |
+| B80-09～B80-10 | 🟨 | 纯逻辑回归与有界按需计算 | PTSpeedTests / Instruments |
+
+Ride DNA 用统一结果解释一次骑行的节奏、发动机使用、姿态、路面、效率和数据覆盖；它不修改 Trip schema，不接触 BLE/ELM327/YMOBD 核心，也不把缺失来源元数据伪装成真实 ECU 证据。详细实施与现场门见 [Build 80 实施记录](../history/builds/BUILD_080_RIDE_DNA.md)。
 
 ## 8. 已退役功能
 

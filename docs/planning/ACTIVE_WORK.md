@@ -18,13 +18,20 @@ related_builds:
   - 77
   - 78
   - 79
+  - 80
 supersedes: []
 superseded_by:
 ---
 
 # 当前工作
 
-快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 79)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 80)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+
+## Build 80：Ride DNA 🟨
+
+代码实现已完成：复用现有 PTTripReport、PTRideAnalysis、CrazyTrace 和 Replay，新增纯值类型 PTRideDNA 提取层，提供 Pace、Engine、Motion、Road、Efficiency、Coverage、RPM/倾角/G 直方图、同车历史比较和五类时间线 marker。既有行程列表显示紧凑摘要，PTRideAnalysisViewController 显示详细 DNA、覆盖率、历史对比并可跳转回放；JSON 分享同时包含旧分析快照和 DNA 文档。
+
+Build 80 仍需现场验收：真实 XP400/XP400 GT、Mock/旧 JSON/缺 GPX、多语言/VoiceOver/窄屏、长历史和长轨迹 Instruments、回放地图定位以及 Release/TestFlight。三个稳定核心 PTBluetoothManager.swift、PTHiddenOBDConnector.swift、PTOBDCommand.swift 保持冻结；ELM327/YMOBD 连接链路没有改动。详细记录见 [Build 80 实施记录](../history/builds/BUILD_080_RIDE_DNA.md)。
 
 ## Build 79：Road Surface Intelligence 🟨
 

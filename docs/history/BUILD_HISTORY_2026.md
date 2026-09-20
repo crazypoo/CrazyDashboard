@@ -24,6 +24,7 @@ related_builds:
   - 77
   - 78
   - 79
+  - 80
 supersedes: []
 superseded_by:
 ---
@@ -99,6 +100,10 @@ Build 76 收尾修复了 2D/3D 当前页面素材来源、2D wheel pivot/角速�
 健康时间线以单一 PTVehicleHealthTimeline.json 保存，使用 PTDataPersistenceActor 做本地与 iCloud 原子写入，365 天保留且每车最多 2,000 点，并提供 JSON 导出。营销版本保持 2.0.8，主 App、Widget 和 Watch 工程 Build 推进到 78。PTBluetoothManager.swift、PTHiddenOBDConnector.swift、PTOBDCommand.swift 保持零字节变化，ELM327/YMOBD 连接逻辑未改。
 
 主 App Debug generic build 已通过，Build 78 健康分析纯逻辑测试已接入 build-for-testing；真实 XP400/XP400 GT、iCloud、前后台/断连、长时间性能和 Release/TestFlight 验收仍在 [Build 78 真车清单](builds/BUILD_078_REAL_DATA_VALIDATION.md)。
+
+## Build 80 — Ride DNA
+
+完成结构化 Ride DNA 纯计算层：从既有行程报告提取 Pace、Engine、Motion、Road、Efficiency、Coverage，生成 RPM/倾角/G 直方图、同车历史比较和高转速/强冲击/最大倾角/最长怠速/粗糙路段回放标记；列表摘要、详细分析页、JSON 分享和 Replay 共用同一份结果。Build80 不修改 PTTripReport schema，不增加任何 BLE、ELM327、YMOBD、CAN 或 UDS 传输。Debug 工程编译、静态门禁和纯数据测试已接入；真实 XP400/XP400 GT、长历史性能、UI/本地化和 Release/TestFlight 仍需验收。详细记录见 [Build 80 实施记录](builds/BUILD_080_RIDE_DNA.md)。
 
 ## Build 79 — Road Surface Intelligence
 

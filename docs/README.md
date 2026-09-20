@@ -42,6 +42,7 @@
 | [`history/builds/BUILD_078_VEHICLE_HEALTH_TIMELINE.md`](history/builds/BUILD_078_VEHICLE_HEALTH_TIMELINE.md) | history | draft | 否 | 2026-09-20 |
 | [`history/builds/BUILD_079_REAL_DATA_VALIDATION.md`](history/builds/BUILD_079_REAL_DATA_VALIDATION.md) | history | draft | 否 | 2026-09-20 |
 | [`history/builds/BUILD_079_ROAD_SURFACE_INTELLIGENCE.md`](history/builds/BUILD_079_ROAD_SURFACE_INTELLIGENCE.md) | history | draft | 否 | 2026-09-20 |
+| [`history/builds/BUILD_080_RIDE_DNA.md`](history/builds/BUILD_080_RIDE_DNA.md) | history | draft | 否 | 2026-09-20 |
 | [`history/BUILD_HISTORY_2026.md`](history/BUILD_HISTORY_2026.md) | history | stable | 是 | 2026-09-20 |
 | [`planning/ACTIVE_WORK.md`](planning/ACTIVE_WORK.md) | planning | active | 是 | 2026-09-20 |
 | [`planning/BACKLOG.md`](planning/BACKLOG.md) | planning | active | 是 | 2026-09-15 |

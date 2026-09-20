@@ -78,6 +78,7 @@ nonisolated public struct PTRideReplaySample: Equatable, Sendable {
 nonisolated public enum PTRideReplayEventKind: String, Codable, Hashable, Sendable {
     case review
     case offRoad
+    case dnaMarker
 }
 
 nonisolated public struct PTRideReplayEvent: Identifiable, Codable, Hashable, Sendable {
@@ -276,10 +277,27 @@ nonisolated public enum PTRideReplayBuilder {
                 severity: min(max(abs(event.slipRatio) / 100, 0), 1)
             )
         }
+        // EN: Ride DNA markers reuse the same replay event stream so the Twin has one timeline.
+        // ES: Los marcadores de ADN reutilizan la misma línea temporal para que el Twin tenga una sola fuente.
+        // 中文：Ride DNA 标记复用现有回放事件流，让数字孪生只有一条时间轴。
+        let dnaMarkers = PTRideDNABuilder.make(report: report).markers.map { marker in
+            let timestamp = report.startTime.addingTimeInterval(marker.offsetSeconds)
+            let nearest = samples.min {
+                abs($0.timestamp.timeIntervalSince(timestamp)) < abs($1.timestamp.timeIntervalSince(timestamp))
+            }
+            return PTRideReplayEvent(
+                kind: .dnaMarker,
+                titleKey: marker.titleKey,
+                timestamp: timestamp,
+                latitude: nearest?.latitude ?? validPoints[0].latitude,
+                longitude: nearest?.longitude ?? validPoints[0].longitude,
+                severity: marker.severity
+            )
+        }
         return PTRideReplaySession(
             report: report,
             samples: samples,
-            events: reviewEvents + offRoadEvents
+            events: reviewEvents + offRoadEvents + dnaMarkers
         )
     }
 

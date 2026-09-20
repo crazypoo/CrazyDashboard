@@ -406,6 +406,9 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
     }
 
     private func title(for event: PTRideReplayEvent) -> String {
+        if event.kind == .dnaMarker {
+            return PTDashboardConfig.languageFunc(text: event.titleKey)
+        }
         guard event.kind == .review else {
             return PTDashboardConfig.languageFunc(text: "ride_replay_event_offroad")
         }
