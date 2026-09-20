@@ -19,6 +19,7 @@ related_builds:
   - 80
   - 83
   - 84
+  - 85
 supersedes: []
 superseded_by:
 ---
@@ -29,9 +30,9 @@ superseded_by:
 >
 > 快照日期：2026-09-20
 >
-> 仓库基线：当前工作区已进入 Build 84 Pit Wall 第二屏；Build 57–69 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速、仪表协议纠偏、OBD 深诊断和协议语义证据能力继续保留，Build 78 的长期健康趋势、Build 79 的 IMU + GPS 道路体验层、Build 80 的骑行数据 DNA、Build 81 的历史路线 Ghost 对比、Build 82 的动态 Dashboard 上下文、Build 83 的音乐封面装饰主题和 Build 84 的局域网只读 Pit Wall 第二屏已接入，真实设备、车辆、浏览器、OTA 和完整发布验证仍待补
+> 仓库基线：当前工作区已进入 Build 85 Vehicle Intelligence；Build 57–69 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速、仪表协议纠偏、OBD 深诊断和协议语义证据能力继续保留，Build 78 的长期健康趋势、Build 79 的 IMU + GPS 道路体验层、Build 80 的骑行数据 DNA、Build 81 的历史路线 Ghost 对比、Build 82 的动态 Dashboard 上下文、Build 83 的音乐封面装饰主题、Build 84 的局域网只读 Pit Wall 第二屏和 Build 85 的车辆智能摘要已接入，真实设备、车辆、浏览器、OTA 和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch `CURRENT_PROJECT_VERSION = 84`；Tests / UI Tests 保持各自测试版本
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch `CURRENT_PROJECT_VERSION = 85`；Tests / UI Tests 保持各自测试版本
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -711,6 +712,20 @@ Build 83 的主题只影响背景、环境光、非语义 glow 和装饰卡片�
 | B84-10 | 🟨 | HTTP allow-list、Token、隐私字段和响应边界测试已接入 | 当前仅完成编译证据；真实网络、权限、断网和 Release/TestFlight 待验 |
 
 Pit Wall 只读投影既有连接和遥测状态：iPhone 继续负责 XP400/OBD 连接，Mac/iPad/浏览器只通过同一局域网查看最近状态。该功能不新增 BLE、ELM327、YMOBD、OBD、OTA、SecurityAccess 或车辆控制路径，三个稳定核心继续保持冻结。详细实施与现场门见 [Build 84 实施记录](../history/builds/BUILD_084_PIT_WALL.md)。
+
+### 7.26 Build 85 Vehicle Intelligence
+
+| 工作包 | 状态 | 产品能力 | 数据边界 |
+| --- | --- | --- | --- |
+| B85-01～B85-02 | ✅ | Insight Schema 与 Evidence Pack，统一记录来源、时间窗口、样本数、质量和证据说明 | 只接受成熟结构化数据 |
+| B85-03～B85-05 | ✅ | 电池趋势、发动机怠速基线、确认/待定 DTC 规则 | 不读取 Raw Hex，不把 probable/unknown 升级为语义 |
+| B85-06～B85-07 | ✅ | 最近行程、Ride DNA 和 Road Surface 描述摘要 | Ride/Road 是体验描述，不是机械故障诊断 |
+| B85-08 | ✅ | 按车辆 ID 去重，Ride/Road 按事实发生时间 24 小时过期 | 旧证据不会因重新计算而续期 |
+| B85-09～B85-10 | ✅ | Vehicle Twin 停车页摘要、evidence count 和只读定位适配 | 不播放伪造故障动画，不写入车辆 |
+| B85-11 | ✅ | 仅 confirmed/observed、非 synthetic、可操作且非保养类洞察可触发通知 | 继续复用统一通知冷却、去重和权限边界 |
+| B85-12 | ✅ | false-positive review 与 synthetic/probable/unknown 抑制记录 | 不能替代真实车辆验收 |
+
+Build 85 的 Vehicle Intelligence 只消费 Health、Ride DNA、Road Surface、Trip、DTC、Maintenance 与已确认 XP400 Semantic State；Unknown Candidate、Probable Protocol Field、Raw Hex Guess 继续留在 Telemetry Research。Vehicle Twin 只显示可解释的摘要，不宣称维修诊断，也不新增 BLE、ELM327、YMOBD、OBD、OTA、SecurityAccess 或车辆写入路径。详细实施与现场门见 [Build 85 实施记录](../history/builds/BUILD_085_VEHICLE_INTELLIGENCE.md)。
 
 ## 8. 已退役功能
 

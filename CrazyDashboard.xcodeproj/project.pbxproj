@@ -311,6 +311,8 @@
 		840000010000000000000003 /* PTPitWallWebUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 840000020000000000000003 /* PTPitWallWebUI.swift */; };
 		840000010000000000000004 /* PTPitWallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 840000020000000000000004 /* PTPitWallManager.swift */; };
 		840000010000000000000005 /* PTPitWallBuild84Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 840000020000000000000005 /* PTPitWallBuild84Tests.swift */; };
+		850000010000000000000001 /* PTVehicleIntelligence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 850000020000000000000001 /* PTVehicleIntelligence.swift */; };
+		850000010000000000000002 /* PTVehicleIntelligenceBuild85Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 850000020000000000000002 /* PTVehicleIntelligenceBuild85Tests.swift */; };
 		600000010000000000000320 /* PTTipKitHints.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000320 /* PTTipKitHints.swift */; };
 		600000010000000000000330 /* PTRideAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000330 /* PTRideAnalysis.swift */; };
 		600000010000000000000331 /* PTRideAnalysisViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000331 /* PTRideAnalysisViewController.swift */; };
@@ -837,6 +839,8 @@
 		840000020000000000000003 /* PTPitWallWebUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPitWallWebUI.swift; sourceTree = "<group>"; };
 		840000020000000000000004 /* PTPitWallManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPitWallManager.swift; sourceTree = "<group>"; };
 		840000020000000000000005 /* PTPitWallBuild84Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPitWallBuild84Tests.swift; sourceTree = "<group>"; };
+		850000020000000000000001 /* PTVehicleIntelligence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleIntelligence.swift; sourceTree = "<group>"; };
+		850000020000000000000002 /* PTVehicleIntelligenceBuild85Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTVehicleIntelligenceBuild85Tests.swift; sourceTree = "<group>"; };
 		600000020000000000000320 /* PTTipKitHints.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTipKitHints.swift; sourceTree = "<group>"; };
 		600000020000000000000330 /* PTRideAnalysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideAnalysis.swift; sourceTree = "<group>"; };
 		600000020000000000000331 /* PTRideAnalysisViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideAnalysisViewController.swift; sourceTree = "<group>"; };
@@ -1906,6 +1910,7 @@
 				5598663E301138A30049684D /* PTTripManager.swift */,
 				600000020000000000000310 /* PTVehicleTelemetry.swift */,
 				780000020000000000000001 /* PTVehicleHealthTimeline.swift */,
+				850000020000000000000001 /* PTVehicleIntelligence.swift */,
 				790000020000000000000001 /* PTRoadSurfaceIntelligence.swift */,
 				800000020000000000000001 /* PTRideDNA.swift */,
 				810000020000000000000001 /* PTRideGhost.swift */,
@@ -1961,6 +1966,7 @@
 			children = (
 				55F52C5D303D4025007527C2 /* PTCoreTests.swift */,
 				840000020000000000000005 /* PTPitWallBuild84Tests.swift */,
+				850000020000000000000002 /* PTVehicleIntelligenceBuild85Tests.swift */,
 				820000020000000000000004 /* PTDashboardContextBuild82Tests.swift */,
 				830000020000000000000004 /* PTDashboardThemeBuild83Tests.swift */,
 				6B0000020000000000000002 /* PTBuild68OBDDeepDiagnosticsTests.swift */,
@@ -2746,6 +2752,7 @@
 				840000010000000000000002 /* PTPitWallHTTP.swift in Sources */,
 				840000010000000000000003 /* PTPitWallWebUI.swift in Sources */,
 				840000010000000000000004 /* PTPitWallManager.swift in Sources */,
+				850000010000000000000001 /* PTVehicleIntelligence.swift in Sources */,
 				620000010000000000000001 /* PTUnifiedVehicleTelemetry.swift in Sources */,
 				620000010000000000000002 /* PTCrazyTrace.swift in Sources */,
 				620000010000000000000003 /* PTVehicleTelemetryBridge.swift in Sources */,
@@ -2984,6 +2991,7 @@
 				820000010000000000000004 /* PTDashboardContextBuild82Tests.swift in Sources */,
 				830000010000000000000004 /* PTDashboardThemeBuild83Tests.swift in Sources */,
 				840000010000000000000005 /* PTPitWallBuild84Tests.swift in Sources */,
+				850000010000000000000002 /* PTVehicleIntelligenceBuild85Tests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3062,7 +3070,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 84;
+				CURRENT_PROJECT_VERSION = 85;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -3095,7 +3103,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 84;
+				CURRENT_PROJECT_VERSION = 85;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -3128,7 +3136,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 84;
+				CURRENT_PROJECT_VERSION = 85;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -3163,7 +3171,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 84;
+				CURRENT_PROJECT_VERSION = 85;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -3324,7 +3332,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 84;
+				CURRENT_PROJECT_VERSION = 85;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -3474,7 +3482,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 84;
+				CURRENT_PROJECT_VERSION = 85;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;

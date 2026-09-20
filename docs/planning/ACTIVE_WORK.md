@@ -23,13 +23,22 @@ related_builds:
   - 82
   - 83
   - 84
+  - 85
 supersedes: []
 superseded_by:
 ---
 
 # 当前工作
 
-快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 84)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 85)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+
+## Build 85：Vehicle Intelligence 🟨
+
+代码实现已完成：新增只读 `PTVehicleIntelligence` 分析层，把既有 Health、Ride DNA、Road Surface、Trip、DTC、Maintenance 和已确认的 XP400 Semantic State 组合成带 `source`、时间窗口、样本数、质量和 evidence note 的结构化摘要。规则首版覆盖六次真实启动电压趋势、发动机怠速基线、确认/待定 DTC、保养剩余里程、最近行程、道路体验摘要和新鲜的 XP400 ABS 语义状态；Unknown Candidate、Probable Protocol Field、Raw Hex Guess、Mock/Replay synthetic 数据不会升级为可通知故障。
+
+Vehicle Twin 停车页已显示摘要和证据数量；通知只允许 confirmed/observed、非 synthetic、可操作且非保养类洞察，并继续复用 `PTNotificationCenter` 的冷却和去重。洞察带有车辆范围的 ID、24 小时 Ride/Road 过期边界和 false-positive 抑制记录；分析层是纯值计算，仓库仅做主线程防抖和快照消费，不触碰 BLE、ELM327、YMOBD、OBD 或车辆写入路径。
+
+营销版本保持 `2.0.8`，主 App、Widget 和 Watch 工程 Build 推进到 `85`。三个稳定核心 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift` 保持冻结；主 App workspace Debug `build` 与 `build-for-testing` 已通过，Build85 纯规则测试已接入。真实 XP400/XP400 GT、电压趋势、DTC、保养、道路和通知权限矩阵，以及真机/Release/TestFlight 验收仍待完成。详细记录见 [Build 85 实施记录](../history/builds/BUILD_085_VEHICLE_INTELLIGENCE.md)。
 
 ## Build 83：Music × Dashboard Theme 🟨
 

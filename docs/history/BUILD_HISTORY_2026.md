@@ -28,6 +28,7 @@ related_builds:
   - 82
   - 83
   - 84
+  - 85
 supersedes: []
 superseded_by:
 ---
@@ -125,6 +126,14 @@ Build83 的主题回归测试已接入 PTSpeedTests；主 App workspace Debug `b
 完成默认关闭、仅 Wi-Fi 局域网、Token 配对、只读的 Pit Wall 第二屏：复用现有统一 Vehicle Telemetry 与 XP400 Twin Snapshot，新增 GET-only `NWListener`、Bonjour `_pt-pitwall._tcp`、隐私裁剪后的 Snapshot/rolling samples/events JSON、内置浏览器 UI、简化 2D Twin、Live Map、Speed/RPM rolling chart、设置页开关与配对分享，以及前后台/场景生命周期清理。所有数据都经过有界模型和坐标舍入，不暴露 VIN、蓝牙 UUID、原始 Hex、诊断错误或协议载荷。
 
 Build 84 没有修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`，没有改变 ELM327/YMOBD 的连接、初始化、握手、能力识别、命令顺序、轮询或 fallback；没有新增 BLE 写入、OBD 写入、OTA、SecurityAccess 或车辆控制入口。营销版本保持 `2.0.8`，主 App、Widget 和 Watch 工程 Build 推进到 `84`。主 App Debug generic iOS `build` 与 `build-for-testing` 已通过；B84-10 纯边界测试已编译接入，但当前环境没有可用的具体 Simulator destination，真实 iPhone/LAN 浏览器、系统局域网授权、断网/场景生命周期、Release/TestFlight 和长期性能仍需人工验收。详细实施记录见 [`builds/BUILD_084_PIT_WALL.md`](builds/BUILD_084_PIT_WALL.md)。
+
+## Build 85 — Vehicle Intelligence
+
+完成只读车辆智能摘要层：新增 `PTVehicleIntelligence` Schema、Evidence Pack、规则分析器、车辆范围去重/过期和 false-positive review。分析器复用 Build 78 Health、Build 79 Road Surface、Build 80 Ride DNA、Trip、DTC、Garage Maintenance 与已确认 XP400 Semantic State，提供电池六次真实启动趋势、发动机怠速基线、确认/待定 DTC、保养剩余里程、最近行程、道路体验和新鲜 XP400 ABS 状态摘要。每条洞察都携带来源、时间窗口、样本数、质量和证据说明；Unknown Candidate、Probable Protocol Field、Raw Hex Guess 以及 Mock/Replay synthetic 数据不进入可通知故障。
+
+Vehicle Twin 停车页已接入紧凑的 Vehicle Summary 与 evidence count；Twin 只显示定位信息，不播放伪造故障动画。通知策略仅允许非 synthetic、confirmed/observed、可操作且非保养类洞察，并复用现有 `PTNotificationCenter` 的冷却、去重和权限边界。Ride/Road 洞察以事实发生时间为基准 24 小时过期，不会因为重新计算而延长旧证据生命周期。
+
+营销版本保持 `2.0.8`，主 App、Widget 和 Watch 工程 Build 推进到 `85`。`PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift` 保持零字节变化，ELM327/YMOBD 连接、初始化、握手、能力识别、命令顺序、轮询和 fallback 未改。Build85 纯规则测试已接入，主 App workspace Debug `build` 与 `build-for-testing` 已通过；真实车辆、通知权限、长时间性能和 Release/TestFlight 仍需人工验收。详细记录见 [`builds/BUILD_085_VEHICLE_INTELLIGENCE.md`](builds/BUILD_085_VEHICLE_INTELLIGENCE.md)。
 
 ## Build 80 — Ride DNA
 

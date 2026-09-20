@@ -27,6 +27,7 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
     private let metricsStack = UIStackView()
     private let healthSummaryLabel = UILabel()
     private let roadSurfaceLabel = UILabel()
+    private let intelligenceSummaryLabel = UILabel()
 
     private var selectedMode: PTVehicleTwinDisplayMode = .automatic
     private var currentSnapshot = PTVehicleTwinSnapshot.empty
@@ -62,6 +63,7 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
         setupUI()
         PTVehicleHealthRepository.shared.start()
         PTRoadSurfaceRepository.shared.start()
+        PTVehicleIntelligenceRepository.shared.start()
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(healthRepositoryDidChange),
@@ -85,6 +87,12 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
             selector: #selector(dashboardThemeDidChange(_:)),
             name: PTDashboardThemeEngine.didChange,
             object: dashboardThemeEngine
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(vehicleIntelligenceDidChange),
+            name: PTVehicleIntelligenceRepository.didChange,
+            object: PTVehicleIntelligenceRepository.shared
         )
         store.onChange = { [weak self] snapshot in
             self?.render(snapshot)
@@ -201,6 +209,10 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
         roadSurfaceLabel.numberOfLines = 2
         roadSurfaceLabel.isHidden = true
 
+        intelligenceSummaryLabel.font = .appfont(size: 12)
+        intelligenceSummaryLabel.textColor = .systemGray2
+        intelligenceSummaryLabel.numberOfLines = 0
+
         let scrollView = UIScrollView()
         scrollView.alwaysBounceVertical = true
         scrollView.showsVerticalScrollIndicator = false
@@ -215,6 +227,7 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
         contentView.addSubview(metricsStack)
         contentView.addSubview(healthSummaryLabel)
         contentView.addSubview(roadSurfaceLabel)
+        contentView.addSubview(intelligenceSummaryLabel)
 
         scrollView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
@@ -256,6 +269,10 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
         roadSurfaceLabel.snp.makeConstraints { make in
             make.top.equalTo(healthSummaryLabel.snp.bottom).offset(8)
             make.left.right.equalTo(metricsStack)
+        }
+        intelligenceSummaryLabel.snp.makeConstraints { make in
+            make.top.equalTo(roadSurfaceLabel.snp.bottom).offset(8)
+            make.left.right.equalTo(metricsStack)
             make.bottom.equalToSuperview().inset(24)
         }
         rebuildMetricRows()
@@ -278,6 +295,11 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
 
     @objc private func healthRepositoryDidChange() {
         refreshHealthSummary()
+        refreshVehicleIntelligenceSummary()
+    }
+
+    @objc private func vehicleIntelligenceDidChange() {
+        refreshVehicleIntelligenceSummary()
     }
 
     @objc private func dashboardContextDidChange(_ notification: Notification) {
@@ -417,6 +439,7 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
         freshnessLabel.text = "\(PTDashboardConfig.languageFunc(text: "State")): \(freshnessText(snapshot.freshness))"
         rebuildMetricRows(snapshot: snapshot)
         refreshHealthSummary()
+        refreshVehicleIntelligenceSummary()
     }
 
     // EN: The health summary is auxiliary context and never replaces live twin metrics.
@@ -442,6 +465,94 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
             "\(PTDashboardConfig.languageFunc(text: "obd_diagnostic_battery")): \(battery)  ·  DTC: \(dtc)",
             "\(PTDashboardConfig.languageFunc(text: "garage_maintenance")): \(maintenance)  ·  \(PTDashboardConfig.languageFunc(text: "ride_analysis_history")): \(ride)"
         ].joined(separator: "\n")
+    }
+
+    // EN: The Twin receives concise, evidence-backed context without turning the renderer into a fault animation.
+    // ES: El Twin recibe contexto breve y respaldado por evidencia sin convertir el renderizador en una animación de avería.
+    // 中文：Twin 只接收简洁且有证据的上下文，不把渲染器变成故障动画。
+    private func refreshVehicleIntelligenceSummary() {
+        guard let vehicleID = PTVehicleConnectivityCoordinator.shared.dashboardGarageVehicleID
+                ?? PTMotorcycleGarageStore.shared.selectedVehicleID else {
+            intelligenceSummaryLabel.text = PTDashboardConfig.languageFunc(text: "vehicle_intelligence_no_evidence")
+            return
+        }
+        guard let summary = PTVehicleIntelligenceRepository.shared.summary(for: vehicleID) else {
+            intelligenceSummaryLabel.text = PTDashboardConfig.languageFunc(text: "vehicle_intelligence_no_evidence")
+            return
+        }
+
+        let presentation = PTVehicleTwinIntelligenceAdapter.make(from: summary)
+        let title = PTDashboardConfig.languageFunc(text: "vehicle_intelligence_summary")
+        let state = PTDashboardConfig.languageFunc(text: intelligenceStateKey(presentation.state))
+        var lines = ["\(title) · \(state)"]
+        if presentation.evidenceCount > 0 {
+            lines.append("\(PTDashboardConfig.languageFunc(text: "vehicle_intelligence_evidence")): \(presentation.evidenceCount)")
+        }
+        if let remaining = presentation.maintenanceRemainingKm,
+           !presentation.insights.contains(where: { $0.kind == .maintenance }) {
+            let maintenanceTitle = PTDashboardConfig.languageFunc(text: "garage_maintenance")
+            if remaining <= 0 {
+                lines.append("\(maintenanceTitle): \(PTDashboardConfig.languageFunc(text: "maintenance_need_msg"))")
+            } else {
+                let distance = PTDashboardConfig.shared.appShowMileageValueString(remaining)
+                    + PTDashboardConfig.shared.appShowUniLabel
+                lines.append("\(maintenanceTitle): \(distance)")
+            }
+        }
+        let details = presentation.insights.map(intelligenceDetail)
+        if details.isEmpty && lines.count == 1 {
+            lines.append(PTDashboardConfig.languageFunc(text: "vehicle_intelligence_no_evidence"))
+        } else {
+            lines.append(contentsOf: details)
+        }
+        intelligenceSummaryLabel.text = lines.joined(separator: "\n")
+    }
+
+    private func intelligenceStateKey(_ state: PTVehicleIntelligenceSeverity) -> String {
+        switch state {
+        case .unknown: return "vehicle_intelligence_unknown"
+        case .healthy: return "vehicle_intelligence_healthy"
+        case .observe: return "vehicle_intelligence_observe"
+        case .attention: return "vehicle_intelligence_attention"
+        case .critical: return "vehicle_intelligence_critical"
+        }
+    }
+
+    private func intelligenceDetail(_ insight: PTVehicleIntelligenceInsight) -> String {
+        let title = PTDashboardConfig.languageFunc(text: insight.titleKey)
+        let evidence = "\(PTDashboardConfig.languageFunc(text: "vehicle_intelligence_evidence")) \(insight.sampleCount)"
+        switch insight.kind {
+        case .batteryTrend:
+            let latest = String(format: "%.2f V", insight.primaryValue ?? 0)
+            return "\(title): \(latest) · \(evidence)"
+        case .batteryLow:
+            return PTDashboardConfig.language(key: "batt_warning_msg", insight.primaryValue ?? 0)
+        case .engineBaseline:
+            let average = String(format: "%.0f", insight.primaryValue ?? 0)
+            let peak = String(format: "%.0f", insight.secondaryValue ?? 0)
+            return "\(title): \(average)–\(peak) \(RPMUnit) · \(evidence)"
+        case .confirmedDTC, .pendingDTC:
+            return "\(title): \(Int(insight.primaryValue ?? 0)) · \(evidence)"
+        case .maintenance:
+            let remaining = insight.primaryValue ?? 0
+            guard remaining > 0 else {
+                return "\(title): \(PTDashboardConfig.languageFunc(text: "maintenance_need_msg"))"
+            }
+            let displayedDistance = PTDashboardConfig.shared.appShowMileageValueString(remaining)
+                + PTDashboardConfig.shared.appShowUniLabel
+            return PTDashboardConfig.language(key: "maintenance_warning_msg", displayedDistance)
+        case .lastRide:
+            let distance = PTDashboardConfig.shared.appShowMileage(insight.primaryValue ?? 0)
+            let speed = PTDashboardConfig.shared.appShowMileage(insight.secondaryValue ?? 0)
+            return "\(title): \(String(format: "%.1f", distance)) \(PTDashboardConfig.shared.appShowUniLabel) · \(String(format: "%.1f", speed)) \(PTDashboardConfig.shared.appShowUniLabel)/h"
+        case .rideReview:
+            return "\(title) · \(evidence)"
+        case .roadSummary:
+            let impact = String(format: "%.2f G", insight.primaryValue ?? 0)
+            return "\(title): \(impact) · \(evidence)"
+        case .absWarning:
+            return PTDashboardConfig.languageFunc(text: "vehicle_intelligence_abs_warning")
+        }
     }
 
     private func index(for mode: PTVehicleTwinDisplayMode) -> Int {

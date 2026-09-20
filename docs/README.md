@@ -47,6 +47,7 @@
 | [`history/builds/BUILD_082_DYNAMIC_DASHBOARD.md`](history/builds/BUILD_082_DYNAMIC_DASHBOARD.md) | history | draft | 否 | 2026-09-20 |
 | [`history/builds/BUILD_083_MUSIC_DASHBOARD_THEME.md`](history/builds/BUILD_083_MUSIC_DASHBOARD_THEME.md) | history | draft | 否 | 2026-09-20 |
 | [`history/builds/BUILD_084_PIT_WALL.md`](history/builds/BUILD_084_PIT_WALL.md) | history | draft | 否 | 2026-09-20 |
+| [`history/builds/BUILD_085_VEHICLE_INTELLIGENCE.md`](history/builds/BUILD_085_VEHICLE_INTELLIGENCE.md) | history | draft | 否 | 2026-09-20 |
 | [`history/BUILD_HISTORY_2026.md`](history/BUILD_HISTORY_2026.md) | history | stable | 是 | 2026-09-20 |
 | [`planning/ACTIVE_WORK.md`](planning/ACTIVE_WORK.md) | planning | active | 是 | 2026-09-20 |
 | [`planning/BACKLOG.md`](planning/BACKLOG.md) | planning | active | 是 | 2026-09-15 |
