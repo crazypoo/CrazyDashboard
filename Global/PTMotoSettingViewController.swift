@@ -51,6 +51,13 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
     private var pendingDashboardConfigurationCandidate: PTDashboardConfigurationExpectation?
     private var dashboardConfigurationTipViewController: UIViewController?
 
+    // EN: Keep the settings page scrollable as new controls are added.
+    // ES: Mantén desplazable la página de ajustes cuando se añadan nuevos controles.
+    // 中文：随着设置项增加，保证设置页始终可以滚动展示。
+    private let settingsScrollView = UIScrollView()
+    private let settingsContentStack = UIStackView()
+    private let settingsRowsStack = UIStackView()
+
     lazy var appLogo:UIImageView = {
         let view = UIImageView()
         view.image = UIImage(named: "app_inside_logo")
@@ -359,173 +366,126 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         super.viewDidLoad()
         view.backgroundColor = .black
         
-        // MARK: - 1. 创建现代 iOS 风格的设置卡片容器
+        // EN: One vertical scroll hierarchy keeps every setting reachable on small screens.
+        // ES: Una sola jerarquía vertical desplazable mantiene accesibles todos los ajustes en pantallas pequeñas.
+        // 中文：使用统一的纵向滚动层，保证小屏幕也能访问所有设置项。
         let settingsContainer = UIView()
-        // 使用半透明白色作为暗黑模式下的卡片底色
         settingsContainer.backgroundColor = UIColor.white.withAlphaComponent(0.08)
         settingsContainer.layer.cornerRadius = 12
-        view.addSubview(settingsContainer)
-        
-        settingsContainer.addSubviews([dashBoadColorTitle, dashBoardColorButton,
-                                        dashUniTitle, dashBoardUniButton,
-                                        dashLanguageTitle, dashBoardLanguageButton,
-                                        pttRestoreTitle, pttRestoreSwitch,
-                                        dashboardNotificationTitle, dashboardNotificationButton,
-                                        lyricsOnlineTitle, lyricsOnlineSwitch,
-                                        artworkThemeTitle, artworkThemeSwitch,
-                                        pitWallTitle, pitWallSwitch, pitWallPairingButton])
-        
-        view.addSubviews([garageButton, shortCut, shortcutsButton, socialStackView, versionLabel])
-        
+
+        settingsRowsStack.axis = .vertical
+        settingsRowsStack.alignment = .fill
+        settingsRowsStack.spacing = 16
+        settingsRowsStack.addArrangedSubview(
+            makeSettingRow(title: dashBoadColorTitle, control: dashBoardColorButton)
+        )
+        settingsRowsStack.addArrangedSubview(
+            makeSettingRow(title: dashUniTitle, control: dashBoardUniButton)
+        )
+        settingsRowsStack.addArrangedSubview(
+            makeSettingRow(title: dashLanguageTitle, control: dashBoardLanguageButton)
+        )
+        settingsRowsStack.addArrangedSubview(
+            makeSettingRow(title: pttRestoreTitle, control: pttRestoreSwitch)
+        )
+        settingsRowsStack.addArrangedSubview(
+            makeSettingRow(title: dashboardNotificationTitle, control: dashboardNotificationButton)
+        )
+        settingsRowsStack.addArrangedSubview(
+            makeSettingRow(title: lyricsOnlineTitle, control: lyricsOnlineSwitch)
+        )
+        settingsRowsStack.addArrangedSubview(
+            makeSettingRow(title: artworkThemeTitle, control: artworkThemeSwitch)
+        )
+        settingsRowsStack.addArrangedSubview(
+            makeSettingRow(title: pitWallTitle, control: pitWallSwitch)
+        )
+        settingsRowsStack.addArrangedSubview(makeTrailingButtonRow(pitWallPairingButton))
+        settingsContainer.addSubview(settingsRowsStack)
+        settingsRowsStack.snp.makeConstraints { make in
+            make.edges.equalToSuperview().inset(16)
+        }
+
+        settingsScrollView.alwaysBounceVertical = true
+        settingsScrollView.showsVerticalScrollIndicator = true
+        settingsScrollView.keyboardDismissMode = .onDrag
+        settingsScrollView.contentInsetAdjustmentBehavior = .never
+        view.addSubview(settingsScrollView)
+        settingsScrollView.snp.makeConstraints { make in
+            make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total)
+            make.left.right.equalToSuperview()
+            make.bottom.equalToSuperview().inset(CGFloat.kTabbarHeight_Total)
+        }
+
+        settingsContentStack.axis = .vertical
+        settingsContentStack.alignment = .fill
+        settingsContentStack.spacing = CGFloat.GlobalItemSpacing
+        settingsContentStack.isLayoutMarginsRelativeArrangement = true
+        settingsContentStack.layoutMargins = UIEdgeInsets(
+            top: CGFloat.GlobalItemSpacing,
+            left: PTAppBaseConfig.share.defaultViewSpace,
+            bottom: CGFloat.GlobalItemSpacing,
+            right: PTAppBaseConfig.share.defaultViewSpace
+        )
+        settingsScrollView.addSubview(settingsContentStack)
+        settingsContentStack.snp.makeConstraints { make in
+            make.edges.equalTo(settingsScrollView.contentLayoutGuide)
+            make.width.equalTo(settingsScrollView.frameLayoutGuide)
+        }
+
         setupSocialButtons()
 
-        // EN: Keep the configuration confirmation hint close to the dashboard controls.
-        // ES: Mantén la sugerencia de confirmación cerca de los controles del tablero.
-        // 中文：将配置确认提示放在仪表控制项附近。
+        // EN: Keep the confirmation hint in the same scroll hierarchy as its controls.
+        // ES: Mantén la sugerencia de confirmación en la misma jerarquía desplazable que sus controles.
+        // 中文：将确认提示放入与仪表设置相同的滚动层级中。
         if #available(iOS 17.0, *) {
             let tipViewController = PTTipKitHintFactory.makeViewController(PTDashboardConfigurationTip())
             addChild(tipViewController)
-            view.addSubview(tipViewController.view)
             tipViewController.view.setContentHuggingPriority(.required, for: .vertical)
             tipViewController.view.setContentCompressionResistancePriority(.required, for: .vertical)
             tipViewController.view.heightAnchor.constraint(greaterThanOrEqualToConstant: 72).isActive = true
-            tipViewController.didMove(toParent: self)
             dashboardConfigurationTipViewController = tipViewController
         }
-                
-        settingsContainer.snp.makeConstraints { make in
-            make.top.equalToSuperview().inset(CGFloat.kNavBarHeight_Total + CGFloat.GlobalItemSpacing)
-            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
+
+        settingsContentStack.addArrangedSubview(settingsContainer)
+        if let tipViewController = dashboardConfigurationTipViewController {
+            settingsContentStack.addArrangedSubview(tipViewController.view)
+            tipViewController.didMove(toParent: self)
         }
-        
-        dashBoadColorTitle.snp.makeConstraints { make in
-            make.left.equalToSuperview().inset(16)
-            make.centerY.equalTo(dashBoardColorButton)
-        }
+        settingsContentStack.addArrangedSubview(garageButton)
+        settingsContentStack.addArrangedSubview(shortCut)
+        settingsContentStack.addArrangedSubview(shortcutsButton)
+        settingsContentStack.addArrangedSubview(socialStackView)
+        settingsContentStack.addArrangedSubview(versionLabel)
+
         dashBoardColorButton.snp.makeConstraints { make in
-            make.right.equalToSuperview().inset(16)
-            make.top.equalToSuperview().inset(16)
-            make.height.equalTo(34)
-            make.width.greaterThanOrEqualTo(54) // 允许按钮根据文字自动加宽
-        }
-        
-        dashUniTitle.snp.makeConstraints { make in
-            make.left.equalToSuperview().inset(16)
-            make.centerY.equalTo(dashBoardUniButton)
-        }
-        dashBoardUniButton.snp.makeConstraints { make in
-            make.right.equalToSuperview().inset(16)
-            make.top.equalTo(dashBoardColorButton.snp.bottom).offset(20)
             make.height.equalTo(34)
             make.width.greaterThanOrEqualTo(54)
         }
-        
-        dashLanguageTitle.snp.makeConstraints { make in
-            make.left.equalToSuperview().inset(16)
-            make.centerY.equalTo(dashBoardLanguageButton)
+        dashBoardUniButton.snp.makeConstraints { make in
+            make.height.equalTo(34)
+            make.width.greaterThanOrEqualTo(54)
         }
         dashBoardLanguageButton.snp.makeConstraints { make in
-            make.right.equalToSuperview().inset(16)
-            make.top.equalTo(dashBoardUniButton.snp.bottom).offset(20)
             make.height.equalTo(34)
-            make.width.greaterThanOrEqualTo(dashBoardLanguageButton.sizeFor().width + CGFloat.GlobalItemSpacing * 2)
-        }
-
-        pttRestoreTitle.snp.makeConstraints { make in
-            make.left.equalToSuperview().inset(16)
-            make.right.lessThanOrEqualTo(pttRestoreSwitch.snp.left).offset(-12)
-            make.centerY.equalTo(pttRestoreSwitch)
-        }
-        pttRestoreSwitch.snp.makeConstraints { make in
-            make.right.equalToSuperview().inset(16)
-            make.top.equalTo(dashBoardLanguageButton.snp.bottom).offset(20)
-        }
-
-        dashboardNotificationTitle.snp.makeConstraints { make in
-            make.left.equalToSuperview().inset(16)
-            make.right.lessThanOrEqualTo(dashboardNotificationButton.snp.left).offset(-12)
-            make.centerY.equalTo(dashboardNotificationButton)
+            make.width.greaterThanOrEqualTo(54)
         }
         dashboardNotificationButton.snp.makeConstraints { make in
-            make.right.equalToSuperview().inset(16)
-            make.top.equalTo(pttRestoreSwitch.snp.bottom).offset(20)
             make.height.equalTo(34)
             make.width.greaterThanOrEqualTo(110)
         }
-
-        lyricsOnlineTitle.snp.makeConstraints { make in
-            make.left.equalToSuperview().inset(16)
-            make.right.lessThanOrEqualTo(lyricsOnlineSwitch.snp.left).offset(-12)
-            make.centerY.equalTo(lyricsOnlineSwitch)
-        }
-        lyricsOnlineSwitch.snp.makeConstraints { make in
-            make.right.equalToSuperview().inset(16)
-            make.top.equalTo(dashboardNotificationButton.snp.bottom).offset(20)
-        }
-
-        artworkThemeTitle.snp.makeConstraints { make in
-            make.left.equalToSuperview().inset(16)
-            make.right.lessThanOrEqualTo(artworkThemeSwitch.snp.left).offset(-12)
-            make.centerY.equalTo(artworkThemeSwitch)
-        }
-        artworkThemeSwitch.snp.makeConstraints { make in
-            make.right.equalToSuperview().inset(16)
-            make.top.equalTo(lyricsOnlineSwitch.snp.bottom).offset(20)
-        }
-
-        pitWallTitle.snp.makeConstraints { make in
-            make.left.equalToSuperview().inset(16)
-            make.right.lessThanOrEqualTo(pitWallSwitch.snp.left).offset(-12)
-            make.centerY.equalTo(pitWallSwitch)
-        }
-        pitWallSwitch.snp.makeConstraints { make in
-            make.right.equalToSuperview().inset(16)
-            make.top.equalTo(artworkThemeSwitch.snp.bottom).offset(20)
-        }
         pitWallPairingButton.snp.makeConstraints { make in
-            make.right.equalToSuperview().inset(16)
-            make.top.equalTo(pitWallSwitch.snp.bottom).offset(8)
             make.height.equalTo(34)
             make.width.greaterThanOrEqualTo(140)
-            make.bottom.equalToSuperview().inset(16)
         }
-        
+
         garageButton.snp.makeConstraints { make in
-            if let tipView = dashboardConfigurationTipViewController?.view {
-                make.top.equalTo(tipView.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-            } else {
-                make.top.equalTo(settingsContainer.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-            }
-            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
             make.height.equalTo(44)
         }
-
-        if let tipView = dashboardConfigurationTipViewController?.view {
-            tipView.snp.makeConstraints { make in
-                make.top.equalTo(settingsContainer.snp.bottom).offset(8)
-                make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-            }
-        }
-
-        shortCut.snp.makeConstraints { make in
-            make.top.equalTo(garageButton.snp.bottom).offset(CGFloat.GlobalItemSpacing)
-            make.left.right.equalToSuperview().inset(PTAppBaseConfig.share.defaultViewSpace)
-        }
-
         shortcutsButton.snp.makeConstraints { make in
-            make.top.equalTo(shortCut.snp.bottom).offset(8)
-            make.left.equalTo(shortCut)
             make.height.equalTo(32)
         }
-
-        versionLabel.snp.makeConstraints { make in
-            make.bottom.equalToSuperview().inset(CGFloat.kTabbarHeight_Total + CGFloat.GlobalItemSpacing)
-            make.centerX.equalToSuperview()
-        }
-        
         socialStackView.snp.makeConstraints { make in
-            make.bottom.equalTo(versionLabel.snp.top).offset(-CGFloat.GlobalItemSpacing)
-            make.centerX.equalToSuperview()
             make.height.equalTo(40)
         }
                 
@@ -574,6 +534,37 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             }
         }
         vcDidLoad = true
+    }
+
+    // EN: Use a reusable row so localized titles can wrap without colliding with controls.
+    // ES: Usa una fila reutilizable para que los títulos localizados se ajusten sin chocar con los controles.
+    // 中文：使用可复用行，让多语言标题自动换行，避免与控件重叠。
+    private func makeSettingRow(title: UILabel, control: UIView) -> UIStackView {
+        title.numberOfLines = 0
+        title.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        title.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        control.setContentHuggingPriority(.required, for: .horizontal)
+        control.setContentCompressionResistancePriority(.required, for: .horizontal)
+
+        let row = UIStackView(arrangedSubviews: [title, control])
+        row.axis = .horizontal
+        row.alignment = .center
+        row.distribution = .fill
+        row.spacing = 12
+        return row
+    }
+
+    // EN: Keep secondary actions right-aligned while letting the card determine its height.
+    // ES: Mantén las acciones secundarias alineadas a la derecha y deja que la tarjeta determine su altura.
+    // 中文：让次级操作保持右对齐，并由卡片内容自动决定高度。
+    private func makeTrailingButtonRow(_ button: UIButton) -> UIStackView {
+        let spacer = UIView()
+        let row = UIStackView(arrangedSubviews: [spacer, button])
+        row.axis = .horizontal
+        row.alignment = .center
+        row.distribution = .fill
+        row.spacing = 12
+        return row
     }
 
     private func setupSocialButtons() {
