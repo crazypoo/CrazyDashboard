@@ -211,6 +211,32 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         view.addTarget(self, action: #selector(artworkThemeSwitchChanged(_:)), for: .valueChanged)
         return view
     }()
+
+    // EN: The Pit Wall is an opt-in, read-only second-screen server on the local Wi-Fi network.
+    // ES: El Pit Wall es un servidor de segunda pantalla, opcional y de solo lectura, en la red Wi-Fi local.
+    // 中文：Pit Wall 是仅局域网、默认关闭、只读的第二屏服务。
+    private lazy var pitWallTitle: UILabel = {
+        baseTitle(value: PTDashboardConfig.languageFunc(text: "pit_wall_title"))
+    }()
+
+    private lazy var pitWallSwitch: UISwitch = {
+        let view = UISwitch()
+        view.isOn = PTMotoUserDefaultStruct.PTPitWallEnabled
+        view.onTintColor = PTDashboardConfig.shared.appMainColor
+        view.addTarget(self, action: #selector(pitWallSwitchChanged(_:)), for: .valueChanged)
+        return view
+    }()
+
+    private lazy var pitWallPairingButton: UIButton = {
+        let view = UIButton(type: .system)
+        view.titleLabel?.font = .appfont(size: 14)
+        view.setTitleColor(.white, for: .normal)
+        view.setTitle(PTDashboardConfig.languageFunc(text: "pit_wall_pairing"), for: .normal)
+        view.addActionHandlers { [weak self] _ in
+            self?.showPitWallPairing()
+        }
+        return view
+    }()
     
     private lazy var garageButton: UIButton = {
         let view = UIButton(type: .system)
@@ -346,7 +372,8 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                                         pttRestoreTitle, pttRestoreSwitch,
                                         dashboardNotificationTitle, dashboardNotificationButton,
                                         lyricsOnlineTitle, lyricsOnlineSwitch,
-                                        artworkThemeTitle, artworkThemeSwitch])
+                                        artworkThemeTitle, artworkThemeSwitch,
+                                        pitWallTitle, pitWallSwitch, pitWallPairingButton])
         
         view.addSubviews([garageButton, shortCut, shortcutsButton, socialStackView, versionLabel])
         
@@ -444,6 +471,22 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         artworkThemeSwitch.snp.makeConstraints { make in
             make.right.equalToSuperview().inset(16)
             make.top.equalTo(lyricsOnlineSwitch.snp.bottom).offset(20)
+        }
+
+        pitWallTitle.snp.makeConstraints { make in
+            make.left.equalToSuperview().inset(16)
+            make.right.lessThanOrEqualTo(pitWallSwitch.snp.left).offset(-12)
+            make.centerY.equalTo(pitWallSwitch)
+        }
+        pitWallSwitch.snp.makeConstraints { make in
+            make.right.equalToSuperview().inset(16)
+            make.top.equalTo(artworkThemeSwitch.snp.bottom).offset(20)
+        }
+        pitWallPairingButton.snp.makeConstraints { make in
+            make.right.equalToSuperview().inset(16)
+            make.top.equalTo(pitWallSwitch.snp.bottom).offset(8)
+            make.height.equalTo(34)
+            make.width.greaterThanOrEqualTo(140)
             make.bottom.equalToSuperview().inset(16)
         }
         
@@ -495,6 +538,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         dashboardNotificationButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         garageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         artworkThemeSwitch.onTintColor = PTDashboardConfig.shared.appMainColor
+        pitWallPairingButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         
         DispatchQueue.main.async {
             self.dashBoardColorButton.viewCorner(radius: 4)
@@ -502,7 +546,15 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             self.dashBoardLanguageButton.viewCorner(radius: 4)
             self.dashboardNotificationButton.viewCorner(radius: 4)
             self.garageButton.viewCorner(radius: 4)
+            self.pitWallPairingButton.viewCorner(radius: 4)
         }
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(pitWallStateChanged),
+            name: PTPitWallManager.didChange,
+            object: PTPitWallManager.shared
+        )
 
         pt_observerLanguage {
             if self.vcDidLoad {
@@ -514,6 +566,8 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 self.dashboardNotificationButton.setTitle(PTDashboardConfig.languageFunc(text: "dashboard_notification_setup"), for: .normal)
                 self.lyricsOnlineTitle.text = PTDashboardConfig.languageFunc(text: "lyrics_online_toggle")
                 self.artworkThemeTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_artwork_theme_toggle")
+                self.pitWallTitle.text = PTDashboardConfig.languageFunc(text: "pit_wall_title")
+                self.pitWallPairingButton.setTitle(PTDashboardConfig.languageFunc(text: "pit_wall_pairing"), for: .normal)
                 self.garageButton.setTitle(PTDashboardConfig.languageFunc(text: "garage_open"), for: .normal)
                 self.updateShortcutGuide()
                 self.shortcutsButton.setTitle(PTDashboardConfig.languageFunc(text: "automation_guide_open"), for: .normal)
@@ -521,7 +575,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         }
         vcDidLoad = true
     }
-    
+
     private func setupSocialButtons() {
         let socials = [
             ("X", "https://twitter.com/crazypeepoo", "icon_x"),
@@ -601,6 +655,63 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
 
     @objc private func artworkThemeSwitchChanged(_ sender: UISwitch) {
         PTDashboardThemeEngine.shared.setEnabled(sender.isOn)
+    }
+
+    @objc private func pitWallSwitchChanged(_ sender: UISwitch) {
+        PTPitWallManager.shared.setEnabled(sender.isOn)
+    }
+
+    @objc private func pitWallStateChanged() {
+        pitWallSwitch.setOn(PTPitWallManager.shared.isEnabled, animated: true)
+    }
+
+    private func showPitWallPairing() {
+        let manager = PTPitWallManager.shared
+        guard manager.isEnabled else {
+            presentPitWallAlert(
+                title: PTDashboardConfig.languageFunc(text: "pit_wall_disabled_title"),
+                message: PTDashboardConfig.languageFunc(text: "pit_wall_disabled_message"),
+                shareText: nil
+            )
+            return
+        }
+
+        guard let pairingText = manager.pairingText else {
+            presentPitWallAlert(
+                title: PTDashboardConfig.languageFunc(text: "pit_wall_waiting_title"),
+                message: PTDashboardConfig.languageFunc(text: "pit_wall_waiting_message"),
+                shareText: nil
+            )
+            return
+        }
+
+        presentPitWallAlert(
+            title: PTDashboardConfig.languageFunc(text: "pit_wall_pairing_title"),
+            message: pairingText,
+            shareText: pairingText
+        )
+    }
+
+    private func presentPitWallAlert(title: String, message: String, shareText: String?) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        if let shareText {
+            alert.addAction(UIAlertAction(
+                title: PTDashboardConfig.languageFunc(text: "pit_wall_share"),
+                style: .default
+            ) { [weak self] _ in
+                let activity = UIActivityViewController(activityItems: [shareText], applicationActivities: nil)
+                if let popover = activity.popoverPresentationController {
+                    popover.sourceView = self?.pitWallPairingButton
+                    popover.sourceRect = self?.pitWallPairingButton.bounds ?? .zero
+                }
+                self?.present(activity, animated: true)
+            })
+        }
+        alert.addAction(UIAlertAction(
+            title: PTDashboardConfig.languageFunc(text: "button_cancel"),
+            style: .cancel
+        ))
+        present(alert, animated: true)
     }
 
     func baseTitle(value:String) -> UILabel {

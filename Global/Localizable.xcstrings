@@ -55818,6 +55818,126 @@
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "騎行中" } }
       }
     },
+    "pit_wall_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Pit-Wall-Zweitbildschirm" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall second screen" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Segunda pantalla Pit Wall" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Deuxième écran Pit Wall" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Secondo schermo Pit Wall" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall セカンド画面" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Второй экран Pit Wall" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall ikinci ekranı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall 第二屏" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall 第二螢幕" } }
+      }
+    },
+    "pit_wall_pairing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Verbindungslink anzeigen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show pairing link" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Mostrar enlace de conexión" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Afficher le lien de jumelage" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Mostra link di abbinamento" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ペアリングリンクを表示" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Показать ссылку сопряжения" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Eşleştirme bağlantısını göster" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示配对链接" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "顯示配對連結" } }
+      }
+    },
+    "pit_wall_disabled_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall ist deaktiviert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall is off" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall está desactivado" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall est désactivé" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall è disattivato" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall はオフです" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall выключен" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall kapalı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall 已关闭" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall 已關閉" } }
+      }
+    },
+    "pit_wall_disabled_message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aktiviere Pit Wall in den Einstellungen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Turn on Pit Wall in Settings first." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Activa primero Pit Wall en Ajustes." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Activez d’abord Pit Wall dans Réglages." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Attiva prima Pit Wall nelle Impostazioni." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "先に設定で Pit Wall をオンにしてください。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Сначала включите Pit Wall в настройках." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Önce Ayarlar'dan Pit Wall'u açın." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请先在设置中打开 Pit Wall。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請先在設定中開啟 Pit Wall。" } }
+      }
+    },
+    "pit_wall_waiting_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Warte auf lokales Netzwerk" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Waiting for local network" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Esperando la red local" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "En attente du réseau local" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "In attesa della rete locale" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ローカルネットワークを待機中" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Ожидание локальной сети" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Yerel ağ bekleniyor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在等待局域网" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正在等待區域網路" } }
+      }
+    },
+    "pit_wall_waiting_message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Lass das iPhone aktiv und mit WLAN verbunden und versuche es erneut." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep the iPhone active and connected to Wi-Fi, then try again." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Mantén el iPhone activo y conectado a Wi-Fi e inténtalo de nuevo." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Gardez l’iPhone actif et connecté au Wi-Fi, puis réessayez." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Mantieni l’iPhone attivo e connesso al Wi-Fi, poi riprova." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "iPhone をアクティブな Wi-Fi に接続してから、もう一度お試しください。" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Оставьте iPhone активным и подключённым к Wi‑Fi, затем повторите попытку." } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "iPhone'u etkin ve Wi-Fi'ye bağlı tutup tekrar deneyin." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请保持 iPhone 活跃并连接 Wi‑Fi，然后重试。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請保持 iPhone 作用中並連接 Wi‑Fi，然後重試。" } }
+      }
+    },
+    "pit_wall_pairing_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Pit-Wall-Verbindung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall pairing" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Conexión de Pit Wall" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Connexion Pit Wall" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Connessione Pit Wall" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall の接続" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Подключение Pit Wall" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall bağlantısı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall 配对" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "Pit Wall 配對" } }
+      }
+    },
+    "pit_wall_share" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Link teilen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share link" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Compartir enlace" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Partager le lien" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Condividi link" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "リンクを共有" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Поделиться ссылкой" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bağlantıyı paylaş" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "分享链接" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "分享連結" } }
+      }
+    },
     "预计抵达" : {
 
     }

@@ -306,6 +306,11 @@
 		830000010000000000000002 /* PTDashboardArtworkColorExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830000020000000000000002 /* PTDashboardArtworkColorExtractor.swift */; };
 		830000010000000000000003 /* PTDashboardThemeEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830000020000000000000003 /* PTDashboardThemeEngine.swift */; };
 		830000010000000000000004 /* PTDashboardThemeBuild83Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830000020000000000000004 /* PTDashboardThemeBuild83Tests.swift */; };
+		840000010000000000000001 /* PTPitWallModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 840000020000000000000001 /* PTPitWallModels.swift */; };
+		840000010000000000000002 /* PTPitWallHTTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 840000020000000000000002 /* PTPitWallHTTP.swift */; };
+		840000010000000000000003 /* PTPitWallWebUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 840000020000000000000003 /* PTPitWallWebUI.swift */; };
+		840000010000000000000004 /* PTPitWallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 840000020000000000000004 /* PTPitWallManager.swift */; };
+		840000010000000000000005 /* PTPitWallBuild84Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 840000020000000000000005 /* PTPitWallBuild84Tests.swift */; };
 		600000010000000000000320 /* PTTipKitHints.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000320 /* PTTipKitHints.swift */; };
 		600000010000000000000330 /* PTRideAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000330 /* PTRideAnalysis.swift */; };
 		600000010000000000000331 /* PTRideAnalysisViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600000020000000000000331 /* PTRideAnalysisViewController.swift */; };
@@ -827,6 +832,11 @@
 		830000020000000000000002 /* PTDashboardArtworkColorExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashboardArtworkColorExtractor.swift; sourceTree = "<group>"; };
 		830000020000000000000003 /* PTDashboardThemeEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashboardThemeEngine.swift; sourceTree = "<group>"; };
 		830000020000000000000004 /* PTDashboardThemeBuild83Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTDashboardThemeBuild83Tests.swift; sourceTree = "<group>"; };
+		840000020000000000000001 /* PTPitWallModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPitWallModels.swift; sourceTree = "<group>"; };
+		840000020000000000000002 /* PTPitWallHTTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPitWallHTTP.swift; sourceTree = "<group>"; };
+		840000020000000000000003 /* PTPitWallWebUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPitWallWebUI.swift; sourceTree = "<group>"; };
+		840000020000000000000004 /* PTPitWallManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPitWallManager.swift; sourceTree = "<group>"; };
+		840000020000000000000005 /* PTPitWallBuild84Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTPitWallBuild84Tests.swift; sourceTree = "<group>"; };
 		600000020000000000000320 /* PTTipKitHints.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTTipKitHints.swift; sourceTree = "<group>"; };
 		600000020000000000000330 /* PTRideAnalysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideAnalysis.swift; sourceTree = "<group>"; };
 		600000020000000000000331 /* PTRideAnalysisViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTRideAnalysisViewController.swift; sourceTree = "<group>"; };
@@ -1275,6 +1285,7 @@
 				600000020000000000000233 /* PTMotoTranslationViewController.swift */,
 				55499E25301B2B8600A1A2D9 /* PTPTT */,
 				600000020000000000000232 /* PTRideNarrativeService.swift */,
+				840000030000000000000001 /* PTPitWall */,
 				5577E6D02FD680730004733F /* PTTripStatsView.swift */,
 				710000030000000000000001 /* VehicleTwin */,
 				5598676C3011C9720049684D /* Settings.bundle */,
@@ -1284,6 +1295,17 @@
 				55499E00301AFBF700A1A2D9 /* Widget */,
 			);
 			path = Global;
+			sourceTree = "<group>";
+		};
+		840000030000000000000001 /* PTPitWall */ = {
+			isa = PBXGroup;
+			children = (
+				840000020000000000000001 /* PTPitWallModels.swift */,
+				840000020000000000000002 /* PTPitWallHTTP.swift */,
+				840000020000000000000003 /* PTPitWallWebUI.swift */,
+				840000020000000000000004 /* PTPitWallManager.swift */,
+			);
+			path = PTPitWall;
 			sourceTree = "<group>";
 		};
 		557D0043302EA1BD008BA492 /* Dashboard */ = {
@@ -1938,6 +1960,7 @@
 			isa = PBXGroup;
 			children = (
 				55F52C5D303D4025007527C2 /* PTCoreTests.swift */,
+				840000020000000000000005 /* PTPitWallBuild84Tests.swift */,
 				820000020000000000000004 /* PTDashboardContextBuild82Tests.swift */,
 				830000020000000000000004 /* PTDashboardThemeBuild83Tests.swift */,
 				6B0000020000000000000002 /* PTBuild68OBDDeepDiagnosticsTests.swift */,
@@ -2719,6 +2742,10 @@
 				830000010000000000000001 /* PTDashboardTheme.swift in Sources */,
 				830000010000000000000002 /* PTDashboardArtworkColorExtractor.swift in Sources */,
 				830000010000000000000003 /* PTDashboardThemeEngine.swift in Sources */,
+				840000010000000000000001 /* PTPitWallModels.swift in Sources */,
+				840000010000000000000002 /* PTPitWallHTTP.swift in Sources */,
+				840000010000000000000003 /* PTPitWallWebUI.swift in Sources */,
+				840000010000000000000004 /* PTPitWallManager.swift in Sources */,
 				620000010000000000000001 /* PTUnifiedVehicleTelemetry.swift in Sources */,
 				620000010000000000000002 /* PTCrazyTrace.swift in Sources */,
 				620000010000000000000003 /* PTVehicleTelemetryBridge.swift in Sources */,
@@ -2956,6 +2983,7 @@
 				810000010000000000000002 /* PTRideGhostBuild81Tests.swift in Sources */,
 				820000010000000000000004 /* PTDashboardContextBuild82Tests.swift in Sources */,
 				830000010000000000000004 /* PTDashboardThemeBuild83Tests.swift in Sources */,
+				840000010000000000000005 /* PTPitWallBuild84Tests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3034,7 +3062,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 83;
+				CURRENT_PROJECT_VERSION = 84;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -3067,7 +3095,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = xp400WidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 83;
+				CURRENT_PROJECT_VERSION = 84;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = xp400Widget/Info.plist;
@@ -3100,7 +3128,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 83;
+				CURRENT_PROJECT_VERSION = 84;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -3135,7 +3163,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "xp400watch Watch App/xp400watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 83;
+				CURRENT_PROJECT_VERSION = 84;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -3296,7 +3324,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 83;
+				CURRENT_PROJECT_VERSION = 84;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -3305,7 +3333,7 @@
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "用于连接摩托车仪表并读取车辆数据 / Para conectar el cuadro de la moto y leer sus datos";
 				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "用于将保养和路线提醒添加到日历";
 				INFOPLIST_KEY_NSCameraUsageDescription = "用于低速骑行辅助和车库测距";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "用于发现同组骑手并进行对讲 / Para descubrir a los pilotos del grupo y usar el intercomunicador";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "用于发现同组骑手、进行对讲并连接 Pit Wall 第二屏 / Para descubrir a los pilotos del grupo, usar el intercomunicador y conectar la segunda pantalla Pit Wall";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "用于记录骑行路线、停车位置和防盗状态 / Para registrar la ruta, el aparcamiento y el estado antirrobo";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "用于后台记录骑行路线和防盗状态 / Para registrar la ruta y el estado antirrobo en segundo plano";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "用于记录骑行路线和当前位置 / Para registrar la ruta y la ubicación actual";
@@ -3446,7 +3474,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PTSpeed/PTSpeed.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 83;
+				CURRENT_PROJECT_VERSION = 84;
 				DEVELOPMENT_TEAM = 5U99J43536;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PTSpeed/Info.plist;
@@ -3455,7 +3483,7 @@
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "用于连接摩托车仪表并读取车辆数据 / Para conectar el cuadro de la moto y leer sus datos";
 				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "用于将保养和路线提醒添加到日历";
 				INFOPLIST_KEY_NSCameraUsageDescription = "用于低速骑行辅助和车库测距";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "用于发现同组骑手并进行对讲 / Para descubrir a los pilotos del grupo y usar el intercomunicador";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "用于发现同组骑手、进行对讲并连接 Pit Wall 第二屏 / Para descubrir a los pilotos del grupo, usar el intercomunicador y conectar la segunda pantalla Pit Wall";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "用于记录骑行路线、停车位置和防盗状态 / Para registrar la ruta, el aparcamiento y el estado antirrobo";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "用于后台记录骑行路线和防盗状态 / Para registrar la ruta y el estado antirrobo en segundo plano";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "用于记录骑行路线和当前位置 / Para registrar la ruta y la ubicación actual";

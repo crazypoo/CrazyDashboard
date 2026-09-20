@@ -19,6 +19,7 @@
 	<array>
 		<string>_pt-moto-voice._tcp</string>
 		<string>_pt-moto-voice._udp</string>
+		<string>_pt-pitwall._tcp</string>
 	</array>
 	<key>NSMicrophoneInjectionUsageDescription</key>
 	<string>我要用Mic</string>

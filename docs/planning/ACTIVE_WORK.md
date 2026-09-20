@@ -22,19 +22,26 @@ related_builds:
   - 81
   - 82
   - 83
+  - 84
 supersedes: []
 superseded_by:
 ---
 
 # 当前工作
 
-快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 83)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 84)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
 
 ## Build 83：Music × Dashboard Theme 🟨
 
 代码实现已完成：Now Playing artwork 经过有界主色提取、缓存、对比度校验和安全上下文解析后，只驱动 Dashboard 与 XP400 Twin 的背景、环境光、非语义 glow 和装饰渐变。主 Dashboard、2D Twin、3D Twin、音乐卡片和设置开关已接入同一套主题令牌；没有封面、权限受限、不可解码或 warning/maneuver 时自动回退，不阻塞仪表和导航。
 
 Build 83 使用营销版本 `2.0.8`，主 App、Widget 和 Watch Build 为 `83`。三个稳定核心 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift` 保持冻结，ELM327/YMOBD 连接链路没有改动。主 App workspace Debug `build` 与 `build-for-testing` 已通过，主题纯逻辑测试已编译；真实 Apple Music 权限、iPhone 视觉/性能、警告与导航安全上下文、CarPlay、前后台和 Release/TestFlight 仍待验收。详细记录见 [Build 83 实施记录](../history/builds/BUILD_083_MUSIC_DASHBOARD_THEME.md)。
+
+## Build 84：Pit Wall / 第二屏 🟨
+
+代码实现已完成：新增默认关闭、仅 Wi-Fi 局域网、只读的 Pit Wall 第二屏。iPhone 继续复用现有统一遥测和 `PTVehicleTwinStateMapper`，通过 `NWListener` 发布 Bonjour 服务；浏览器使用内置无第三方依赖的 HTML/CSS/JavaScript 展示简化 2D Twin、Live Map、Telemetry、滚动 Speed/RPM 图表和安全事件流。配对 Token 只在内存中生成，通过设置页临时展示/分享；服务停用、场景失活或 App 进程结束后失效。
+
+Build 84 使用营销版本 `2.0.8`，主 App、Widget 和 Watch Build 为 `84`。B84-01～B84-09 已接入，B84-10 的隐私/HTTP 边界测试已编译接入；没有增加 BLE、ELM327、YMOBD、OBD 写入、OTA、SecurityAccess 或未知指令路径。三个稳定核心保持冻结，ELM327/YMOBD 连接链路没有改动。主 App workspace Debug `build` 与 `build-for-testing` 已通过；当前 Xcode 环境没有可用的具体 Simulator destination，通用 iOS Simulator 构建另受既有 Watch App `AppIcon` 素材错误阻塞，尚未替代真实 iPhone、同一 Wi-Fi 下 Mac/iPad/浏览器、权限弹窗、断网/断场景和 Release/TestFlight 验收。详细记录见 [Build 84 实施记录](../history/builds/BUILD_084_PIT_WALL.md)。
 
 ## Build 82：Dynamic Dashboard 🟨
 

@@ -130,6 +130,11 @@ class SceneDelegate: PTWindowSceneDelegate {
         drainPendingExternalURLs(in: windowScene)
         drainPendingSpotlightIdentifiers(in: windowScene)
         drainPendingSystemRoute(in: windowScene)
+
+        // EN: Start the opt-in Pit Wall only while the iPhone scene is visibly active.
+        // ES: Inicia el Pit Wall opcional solo mientras la escena del iPhone está activa y visible.
+        // 中文：仅在 iPhone 场景处于前台活跃状态时启动可选的 Pit Wall。
+        PTPitWallManager.shared.setSceneActive(true)
         
         Task { @MainActor in
             let result = await PTAppUpdateManager.shared.checkIfNeeded()
@@ -149,6 +154,11 @@ class SceneDelegate: PTWindowSceneDelegate {
         if let windowScene = scene as? UIWindowScene {
             PTLaunchAnimationPresenter.dismiss(in: windowScene)
         }
+
+        // EN: Stop the local server before the app is backgrounded; no background LAN endpoint is kept alive.
+        // ES: Detiene el servidor local antes de pasar a segundo plano; no se mantiene un punto LAN en background.
+        // 中文：进入后台前停止本地服务，不保留后台局域网入口。
+        PTPitWallManager.shared.setSceneActive(false)
     }
 
     func sceneWillEnterForeground(_ scene: UIScene) {

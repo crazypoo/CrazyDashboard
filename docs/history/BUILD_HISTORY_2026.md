@@ -27,6 +27,7 @@ related_builds:
   - 80
   - 82
   - 83
+  - 84
 supersedes: []
 superseded_by:
 ---
@@ -118,6 +119,12 @@ Build82 增加纯 Resolver 回归测试、九种语言上下文文案、低干�
 完成音乐封面驱动的 Dashboard 装饰主题：新增纯值 Theme Token、ImageIO/CoreGraphics 低分辨率 Artwork Color Extractor、有界缓存、对比度校验、主 Dashboard 适配、XP400 Twin 2D/3D 适配、安全上下文回退、设置开关和无权限/无封面 fallback。主题只影响背景、环境光、非语义 glow 和装饰卡片渐变，不影响 TCS、ABS、Warning、车速可读性、导航关键 UI 或车辆状态颜色。
 
 Build83 的主题回归测试已接入 PTSpeedTests；主 App workspace Debug `build` 与 `build-for-testing` 均通过。营销版本保持 `2.0.8`，主 App、Widget 和 Watch 工程 Build 推进到 `83`。本轮未修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`，没有改变 ELM327/YMOBD 连接步骤、握手、轮询或 fallback。真实 Apple Music 权限、真机视觉/性能、Warning/Navigation 安全上下文、CarPlay、前后台和 Release/TestFlight 验收仍待完成。详细记录见 [Build 83 实施记录](builds/BUILD_083_MUSIC_DASHBOARD_THEME.md)。
+
+## Build 84 — Pit Wall / 第二屏
+
+完成默认关闭、仅 Wi-Fi 局域网、Token 配对、只读的 Pit Wall 第二屏：复用现有统一 Vehicle Telemetry 与 XP400 Twin Snapshot，新增 GET-only `NWListener`、Bonjour `_pt-pitwall._tcp`、隐私裁剪后的 Snapshot/rolling samples/events JSON、内置浏览器 UI、简化 2D Twin、Live Map、Speed/RPM rolling chart、设置页开关与配对分享，以及前后台/场景生命周期清理。所有数据都经过有界模型和坐标舍入，不暴露 VIN、蓝牙 UUID、原始 Hex、诊断错误或协议载荷。
+
+Build 84 没有修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`，没有改变 ELM327/YMOBD 的连接、初始化、握手、能力识别、命令顺序、轮询或 fallback；没有新增 BLE 写入、OBD 写入、OTA、SecurityAccess 或车辆控制入口。营销版本保持 `2.0.8`，主 App、Widget 和 Watch 工程 Build 推进到 `84`。主 App Debug generic iOS `build` 与 `build-for-testing` 已通过；B84-10 纯边界测试已编译接入，但当前环境没有可用的具体 Simulator destination，真实 iPhone/LAN 浏览器、系统局域网授权、断网/场景生命周期、Release/TestFlight 和长期性能仍需人工验收。详细实施记录见 [`builds/BUILD_084_PIT_WALL.md`](builds/BUILD_084_PIT_WALL.md)。
 
 ## Build 80 — Ride DNA
 

@@ -18,6 +18,7 @@ related_builds:
   - 79
   - 80
   - 83
+  - 84
 supersedes: []
 superseded_by:
 ---
@@ -28,9 +29,9 @@ superseded_by:
 >
 > 快照日期：2026-09-20
 >
-> 仓库基线：当前工作区已进入 Build 83 Music × Dashboard Theme；Build 57–69 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速、仪表协议纠偏、OBD 深诊断和协议语义证据能力继续保留，Build 78 的长期健康趋势、Build 79 的 IMU + GPS 道路体验层、Build 80 的骑行数据 DNA、Build 81 的历史路线 Ghost 对比、Build 82 的动态 Dashboard 上下文和 Build 83 的音乐封面装饰主题已接入，真实设备、车辆、OTA 和完整发布验证仍待补
+> 仓库基线：当前工作区已进入 Build 84 Pit Wall 第二屏；Build 57–69 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速、仪表协议纠偏、OBD 深诊断和协议语义证据能力继续保留，Build 78 的长期健康趋势、Build 79 的 IMU + GPS 道路体验层、Build 80 的骑行数据 DNA、Build 81 的历史路线 Ghost 对比、Build 82 的动态 Dashboard 上下文、Build 83 的音乐封面装饰主题和 Build 84 的局域网只读 Pit Wall 第二屏已接入，真实设备、车辆、浏览器、OTA 和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch `CURRENT_PROJECT_VERSION = 83`；Tests / UI Tests 保持各自测试版本
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch `CURRENT_PROJECT_VERSION = 84`；Tests / UI Tests 保持各自测试版本
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -696,6 +697,20 @@ Build 82 的动态 Dashboard 只改变模块展示优先级，不创建新的 BL
 | B83-10 | ✅ | 24px 采样、后台提取、缓存命中和按需刷新 | Theme Engine |
 
 Build 83 的主题只影响背景、环境光、非语义 glow 和装饰卡片渐变；TCS、ABS、Warning、车速可读性和导航关键 UI 继续由现有语义逻辑控制。没有封面、封面不可解码、媒体权限受限或安全上下文激活时，系统回到默认主题。主题不新增 BLE、ELM327、YMOBD、OBD、GPS、Motion 或车辆写入链路，三个稳定核心继续保持冻结。详细实施与现场门见 [Build 83 实施记录](../history/builds/BUILD_083_MUSIC_DASHBOARD_THEME.md)。
+
+### 7.25 Build 84 Pit Wall / 第二屏
+
+| 工作包 | 状态 | 产品能力 | 当前边界 |
+| --- | --- | --- | --- |
+| B84-01 | ✅ | Pit Wall 默认关闭的 feature gate 与设置页开关 | 不在后台或场景失活时自动开启 |
+| B84-02～B84-03 | ✅ | Wi-Fi LAN-only GET server 与 Bonjour `_pt-pitwall._tcp` 发布 | 不监听蜂窝、互联网或任意写入接口 |
+| B84-04 | ✅ | 内存 Token 配对、设置页展示与分享 | Token 不进入 Bonjour TXT、不落盘，服务重启后失效 |
+| B84-05 | ✅ | schema version、ISO8601、排序 JSON、有界 Snapshot 序列化与坐标舍入 | 不输出 VIN、UUID、原始 Hex、诊断错误或协议载荷 |
+| B84-06～B84-08 | ✅ | 内置 Web UI、简化 2D Twin、Live Map、Telemetry、滚动 Speed/RPM chart 和事件流 | 第一版不做 Web 3D、不改变 iPhone Twin、不发送车辆指令 |
+| B84-09 | ✅ | scene active 生命周期、退出清理、遥测 Consumer 注册/注销 | 依赖 iPhone 前台场景与现有统一遥测 |
+| B84-10 | 🟨 | HTTP allow-list、Token、隐私字段和响应边界测试已接入 | 当前仅完成编译证据；真实网络、权限、断网和 Release/TestFlight 待验 |
+
+Pit Wall 只读投影既有连接和遥测状态：iPhone 继续负责 XP400/OBD 连接，Mac/iPad/浏览器只通过同一局域网查看最近状态。该功能不新增 BLE、ELM327、YMOBD、OBD、OTA、SecurityAccess 或车辆控制路径，三个稳定核心继续保持冻结。详细实施与现场门见 [Build 84 实施记录](../history/builds/BUILD_084_PIT_WALL.md)。
 
 ## 8. 已退役功能
 

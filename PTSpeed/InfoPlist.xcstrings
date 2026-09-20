@@ -246,7 +246,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "new",
-            "value": "用于发现同组骑手并进行对讲 / Para descubrir a los pilotos del grupo y usar el intercomunicador"
+            "value": "用于发现同组骑手、进行对讲并连接 Pit Wall 第二屏 / Para descubrir a los pilotos del grupo, usar el intercomunicador y conectar la segunda pantalla Pit Wall"
           }
         }
       }

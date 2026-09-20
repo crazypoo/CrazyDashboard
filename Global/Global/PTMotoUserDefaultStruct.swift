@@ -40,6 +40,11 @@ struct PTMotoUserDefaultStruct {
     // ES: La decoración del tablero basada en la portada está activada por defecto y nunca cambia colores semánticos del vehículo.
     // 中文：专辑封面仪表盘装饰默认开启，但绝不改变车辆语义颜色。
     @PTUserDefault(withKey: "PTDashboardArtworkThemeEnabled", defaultValue: true) public static var PTDashboardArtworkThemeEnabled:Bool
+
+    // EN: The Pit Wall is opt-in and only starts while the iPhone scene is active.
+    // ES: El Pit Wall requiere activación explícita y solo arranca mientras la escena del iPhone está activa.
+    // 中文：Pit Wall 默认关闭，并且只在 iPhone 场景活跃时启动。
+    @PTUserDefault(withKey: "PTPitWallEnabled", defaultValue: false) public static var PTPitWallEnabled:Bool
     
     @PTUserDefault(withKey: "PTMotoSafteyMileValue", defaultValue: 2500) public static var PTMotoSafteyMileValue:Double
 }
