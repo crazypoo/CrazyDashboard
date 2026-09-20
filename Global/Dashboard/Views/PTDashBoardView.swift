@@ -401,7 +401,10 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
 
         let mediaPolicy = snapshot.presentation(for: .media)
         musicNowPlaying.isHidden = !mediaPolicy.isVisible
-        musicNowPlaying.alpha = mediaPolicy.isEmphasized ? 1 : 0.82
+        // EN: Keep the card opacity stable; context changes must not look like a blink.
+        // ES: Mantén estable la opacidad; los cambios de contexto no deben parecer un parpadeo.
+        // 中文：保持卡片透明度稳定，避免上下文变化看起来像闪烁。
+        musicNowPlaying.alpha = 0.82
         musicNowPlaying.isUserInteractionEnabled = mediaPolicy.isVisible
 
         let navigationPolicy = snapshot.presentation(for: .navigation)

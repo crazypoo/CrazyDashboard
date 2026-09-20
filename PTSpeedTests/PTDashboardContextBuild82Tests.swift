@@ -63,6 +63,15 @@ final class PTDashboardContextBuild82Tests: XCTestCase {
         XCTAssertFalse(snapshot.presentation(for: .media).isEmphasized)
     }
 
+    func testConnectionDegradedKeepsMediaMounted() {
+        let snapshot = PTDashboardContextResolver.resolve(
+            PTDashboardContextInput(isRiding: true, connectionDegraded: true)
+        )
+
+        XCTAssertEqual(snapshot.primaryContext, .connectionDegraded)
+        XCTAssertTrue(snapshot.presentation(for: .media).isVisible)
+    }
+
     func testInvalidSpeedCannotCreateRidingState() {
         let snapshot = PTDashboardContextResolver.resolve(
             PTDashboardContextInput(speedKmh: .infinity)

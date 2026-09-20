@@ -244,7 +244,10 @@ public nonisolated enum PTDashboardContextResolver {
             )
         case .media:
             return PTDashboardModulePresentation(
-                isVisible: !hasWarning && primary != .maneuver && primary != .connectionDegraded,
+                // EN: A transient transport degradation must not unmount the media card.
+                // ES: Una degradación transitoria del transporte no debe desmontar la tarjeta multimedia.
+                // 中文：短暂的连接降级不能卸载音乐卡片。
+                isVisible: !hasWarning && primary != .maneuver,
                 isCompact: primary != .parked && primary != .mediaChanged,
                 isEmphasized: primary == .mediaChanged,
                 priority: PTDashboardContext.mediaChanged.priority

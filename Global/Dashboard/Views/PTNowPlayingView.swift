@@ -105,6 +105,12 @@ public class PTNowPlayingView: UIView {
     private var progressTimer: Timer?
     private var lyricsTask: Task<Void, Never>?
     private var isObservingPlayback = false
+    // EN: Artwork is refreshed only when the represented track changes.
+    // ES: La portada solo se actualiza cuando cambia la pista representada.
+    // 中文：只有当前展示的歌曲发生变化时才重新加载封面。
+    private var renderedArtworkTrackIdentifier: String?
+    private var artworkRequestGeneration = 0
+    private var pendingEmptyStateWorkItem: DispatchWorkItem?
     private let trackLayer = CAShapeLayer()
     private let progressLayer = CAShapeLayer()
 
@@ -123,7 +129,10 @@ public class PTNowPlayingView: UIView {
     // 中文：只有音乐卡片的装饰表面使用封面主题令牌。
     @MainActor
     func applyDashboardTheme(_ tokens: PTDashboardThemeTokens) {
-        let opacity = CGFloat(tokens.decorationOpacity)
+        // EN: Keep media-card opacity independent from vehicle-context transitions.
+        // ES: Mantén la opacidad de la tarjeta independiente de las transiciones del contexto del vehículo.
+        // 中文：音乐卡片透明度与车辆上下文切换解耦，避免连接状态变化导致闪烁。
+        let opacity: CGFloat = 0.92
         backgroundColor = tokens.cardStartColor.withAlphaComponent(0.62 * opacity)
         trackLayer.strokeColor = tokens.ambientColor.withAlphaComponent(0.32 * opacity).cgColor
         progressLayer.strokeColor = tokens.glowColor.withAlphaComponent(max(0.18, opacity)).cgColor
@@ -160,6 +169,7 @@ public class PTNowPlayingView: UIView {
         deactivatePlaybackObservers()
         NotificationCenter.default.removeObserver(self)
         lyricsTask?.cancel()
+        pendingEmptyStateWorkItem?.cancel()
         stopTimer()
     }
     
@@ -437,26 +447,24 @@ public class PTNowPlayingView: UIView {
         }
 
         guard let item = musicPlayer.nowPlayingItem else {
-            lyricsTask?.cancel()
-            currentTrackSnapshot = nil
-            currentLyricsDocument = nil
-            lyricsState = .idle
-            titleLabel.text = PTDashboardConfig.languageFunc(text: "music_not_play")
-            artistLabel.text = "--"
-            lyricLabel.text = nil
-            lyricLabel.isHidden = true
-            artworkImageView.image = nil
-            progressLayer.strokeEnd = 0
-            timeLabel.text = "-00:00" // 修改这里：归零状态
-            PTDashboardThemeEngine.shared.updateArtwork(nil, trackIdentifier: "")
+            scheduleEmptyNowPlayingState()
             return
         }
+
+        pendingEmptyStateWorkItem?.cancel()
+        pendingEmptyStateWorkItem = nil
 
         let title = item.title ?? PTDashboardConfig.languageFunc(text: "music_unknow_music")
         let artist = item.artist ?? PTDashboardConfig.languageFunc(text: "music_unknow_artist")
         let album = item.albumTitle ?? ""
+        let trackIdentifier = makeTrackIdentifier(
+            for: item,
+            title: title,
+            artist: artist,
+            album: album
+        )
         let snapshot = PTNowPlayingTrackSnapshot(
-            id: "\(item.persistentID)-\(title)-\(artist)-\(album)-\(item.playbackDuration)",
+            id: trackIdentifier,
             title: title,
             artist: artist,
             album: album,
@@ -468,11 +476,58 @@ public class PTNowPlayingView: UIView {
         titleLabel.text = title
         artistLabel.text = artist
         lyricLabel.isHidden = false
-        fetchArtwork(for: item)
+        if renderedArtworkTrackIdentifier != snapshot.id {
+            fetchArtwork(for: item, trackIdentifier: snapshot.id)
+        }
         updateProgress()
         if trackChanged {
             loadLyrics(for: snapshot)
         }
+    }
+
+    // EN: Duration and late metadata are presentation details, not track identity.
+    // ES: La duración y los metadatos tardíos son detalles de presentación, no la identidad de la pista.
+    // 中文：播放时长和延迟到达的元数据属于展示信息，不应改变歌曲身份。
+    private func makeTrackIdentifier(
+        for item: MPMediaItem,
+        title: String,
+        artist: String,
+        album: String
+    ) -> String {
+        if item.persistentID != 0 {
+            return "media-\(item.persistentID)"
+        }
+        return "metadata-\(title)|\(artist)|\(album)"
+    }
+
+    // EN: Route changes can briefly report an empty item; clear the card only after the state remains empty.
+    // ES: Los cambios de ruta pueden informar brevemente de una pista vacía; limpia la tarjeta solo si el estado persiste.
+    // 中文：音频路由变化可能短暂返回空歌曲，只有空状态持续后才清空音乐卡片。
+    private func scheduleEmptyNowPlayingState() {
+        pendingEmptyStateWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self, self.musicPlayer.nowPlayingItem == nil else { return }
+
+            let hadTrack = self.currentTrackSnapshot != nil || self.renderedArtworkTrackIdentifier != nil
+            self.lyricsTask?.cancel()
+            self.currentTrackSnapshot = nil
+            self.currentLyricsDocument = nil
+            self.lyricsState = .idle
+            self.titleLabel.text = PTDashboardConfig.languageFunc(text: "music_not_play")
+            self.artistLabel.text = "--"
+            self.lyricLabel.text = nil
+            self.lyricLabel.isHidden = true
+            self.progressLayer.strokeEnd = 0
+            self.timeLabel.text = "-00:00"
+            if hadTrack {
+                self.artworkRequestGeneration += 1
+                self.renderedArtworkTrackIdentifier = nil
+                self.artworkImageView.image = nil
+                PTDashboardThemeEngine.shared.updateArtwork(nil, trackIdentifier: "")
+            }
+        }
+        pendingEmptyStateWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: workItem)
     }
 
     private func loadLyrics(for snapshot: PTNowPlayingTrackSnapshot) {
@@ -562,10 +617,14 @@ public class PTNowPlayingView: UIView {
     }
     
     // MARK: - 增强版封面获取器
-    private func fetchArtwork(for item: MPMediaItem) {
+    private func fetchArtwork(for item: MPMediaItem, trackIdentifier: String) {
+        artworkRequestGeneration += 1
+        let requestGeneration = artworkRequestGeneration
+        renderedArtworkTrackIdentifier = trackIdentifier
+
         // 每次切歌先给个默认色/占位图，防止上一首歌的封面残留
         self.artworkImageView.backgroundColor = .darkGray
-        let themeTrackIdentifier = currentTrackSnapshot?.id ?? "\(item.persistentID)"
+        let themeTrackIdentifier = trackIdentifier
         PTDashboardThemeEngine.shared.updateArtwork(nil, trackIdentifier: themeTrackIdentifier)
         
         guard let artwork = item.artwork else {
@@ -588,8 +647,12 @@ public class PTNowPlayingView: UIView {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
                 guard let self = self else { return }
                 
-                // 确保在这 0.5 秒内用户没有再次切歌 (比对当前的播放对象)
-                guard self.musicPlayer.nowPlayingItem == item else { return }
+                // EN: A delayed artwork result must belong to the latest track request.
+                // ES: El resultado retrasado de la portada debe pertenecer a la última solicitud de pista.
+                // 中文：延迟返回的封面必须属于当前最新的歌曲请求。
+                guard self.artworkRequestGeneration == requestGeneration,
+                      self.currentTrackSnapshot?.id == trackIdentifier,
+                      self.musicPlayer.nowPlayingItem?.persistentID == item.persistentID else { return }
                 
                 if let delayedArtwork = self.musicPlayer.nowPlayingItem?.artwork,
                    let delayedImage = delayedArtwork.image(at: targetSize) ?? delayedArtwork.image(at: delayedArtwork.bounds.size) {

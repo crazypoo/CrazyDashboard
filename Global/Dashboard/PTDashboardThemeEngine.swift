@@ -120,6 +120,10 @@ public final class PTDashboardThemeEngine {
         let artworkKey = imageData.map {
             "\(trackIdentifier)|\($0.count)|\($0.hashValue)"
         } ?? trackIdentifier
+        // EN: Ignore duplicate artwork notifications so the dashboard does not re-enter its transition state.
+        // ES: Ignora las notificaciones duplicadas de portada para que el tablero no reinicie su transición.
+        // 中文：忽略重复的封面通知，避免 Dashboard 反复进入过渡状态。
+        guard currentArtworkKey != artworkKey else { return }
         currentArtworkKey = artworkKey
         lastArtworkData = imageData
 
