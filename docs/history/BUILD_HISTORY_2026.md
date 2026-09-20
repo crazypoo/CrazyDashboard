@@ -101,6 +101,10 @@ Build 76 收尾修复了 2D/3D 当前页面素材来源、2D wheel pivot/角速�
 
 主 App Debug generic build 已通过，Build 78 健康分析纯逻辑测试已接入 build-for-testing；真实 XP400/XP400 GT、iCloud、前后台/断连、长时间性能和 Release/TestFlight 验收仍在 [Build 78 真车清单](builds/BUILD_078_REAL_DATA_VALIDATION.md)。
 
+## Build 81 — Ghost Ride
+
+完成只读 Ghost Ride 路线对比层：复用既有 GPX、PTRideReplay、Ride DNA、Road Surface、统一遥测和 XP400 Twin，新增路线归一化、空间重叠、进度索引、距离/时间插值、回放地图对比、Twin 当前/历史并排对比和 Dashboard Live Ghost。Ghost 只在同车且确认路线重叠时显示；偏离路线时安全隐藏，不改变导航、不发送车辆指令。Build81 不修改 BLE、ELM327、YMOBD、OBD 或 PTTripReport schema。Debug 工程、纯数据测试和现场路线验收仍需分别完成；详细记录见 [Build 81 实施记录](builds/BUILD_081_GHOST_RIDE.md)。
+
 ## Build 80 — Ride DNA
 
 完成结构化 Ride DNA 纯计算层：从既有行程报告提取 Pace、Engine、Motion、Road、Efficiency、Coverage，生成 RPM/倾角/G 直方图、同车历史比较和高转速/强冲击/最大倾角/最长怠速/粗糙路段回放标记；列表摘要、详细分析页、JSON 分享和 Replay 共用同一份结果。Build80 不修改 PTTripReport schema，不增加任何 BLE、ELM327、YMOBD、CAN 或 UDS 传输。Debug 工程编译、静态门禁和纯数据测试已接入；真实 XP400/XP400 GT、长历史性能、UI/本地化和 Release/TestFlight 仍需验收。详细记录见 [Build 80 实施记录](builds/BUILD_080_RIDE_DNA.md)。

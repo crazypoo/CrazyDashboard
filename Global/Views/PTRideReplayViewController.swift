@@ -19,13 +19,17 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
                                          UITableViewDelegate {
     private let report: PTTripReport
     private let initialTimestamp: Date?
+    private let comparisonReport: PTTripReport?
     private var session: PTRideReplaySession?
+    private var ghostSession: PTRideGhostSession?
     private var player: PTRideReplayPlayer?
     private var loadTask: Task<Void, Never>?
     private var routeOverlay: MAPolyline?
+    private var ghostRouteOverlay: MAPolyline?
     private var eventAnnotations: [MAPointAnnotation] = []
     private var currentEventID: UUID?
     private var hasConfiguredMap = false
+    private var isGhostVisible = true
 
     private lazy var mapView: MAMapView = {
         let view = PTGlobalMapManager.shared.makeMapView()
@@ -40,6 +44,7 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
     }()
 
     private let replayAnnotation = MAPointAnnotation()
+    private let ghostAnnotation = MAPointAnnotation()
     private let summaryLabel = UILabel()
     private let stateLabel = UILabel()
     private let timeLabel = UILabel()
@@ -55,10 +60,18 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
     private let eventsTitleLabel = UILabel()
     private let eventsTableView = UITableView(frame: .zero, style: .insetGrouped)
     private let activityIndicator = UIActivityIndicatorView(style: .medium)
+    private let ghostStatusLabel = UILabel()
+    private let ghostButton = UIButton(type: .system)
+    private let currentTwinView = PTXP400TwinView()
+    private let historicalTwinView = PTXP400TwinView()
+    private let twinCompareStack = UIStackView()
 
-    init(report: PTTripReport, initialTimestamp: Date? = nil) {
+    init(report: PTTripReport,
+         initialTimestamp: Date? = nil,
+         comparisonReport: PTTripReport? = nil) {
         self.report = report
         self.initialTimestamp = initialTimestamp
+        self.comparisonReport = comparisonReport
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -104,6 +117,32 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
         eventsTitleLabel.text = PTDashboardConfig.languageFunc(text: "ride_replay_events")
         eventsTitleLabel.textColor = PTDashboardConfig.shared.appMainColor
         eventsTitleLabel.font = UIFont.monospacedSystemFont(ofSize: 15, weight: .bold)
+
+        ghostStatusLabel.textColor = .systemOrange
+        ghostStatusLabel.font = UIFont.monospacedSystemFont(ofSize: 12, weight: .medium)
+        ghostStatusLabel.numberOfLines = 2
+
+        configureControlButton(ghostButton, title: "👻", action: #selector(toggleGhost))
+        ghostButton.accessibilityLabel = PTRideGhostCopy.text(
+            isGhostVisible ? .disable : .enable
+        )
+        ghostButton.accessibilityHint = PTRideGhostCopy.text(.fallback)
+        ghostButton.isHidden = comparisonReport == nil
+
+        currentTwinView.configure(.xp400)
+        historicalTwinView.configure(.xp400)
+        twinCompareStack.axis = .horizontal
+        twinCompareStack.spacing = 8
+        twinCompareStack.distribution = .fillEqually
+        twinCompareStack.addArrangedSubview(makeTwinColumn(
+            title: PTRideGhostCopy.text(.current),
+            view: currentTwinView
+        ))
+        twinCompareStack.addArrangedSubview(makeTwinColumn(
+            title: PTRideGhostCopy.text(.historical),
+            view: historicalTwinView
+        ))
+        twinCompareStack.isHidden = comparisonReport == nil
     }
 
     private func configureControls() {
@@ -162,7 +201,7 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
         view.addSubview(timeLabel)
         view.addSubview(progressSlider)
 
-        let controls = UIStackView(arrangedSubviews: [previousButton, playButton, nextButton, photosButton])
+        let controls = UIStackView(arrangedSubviews: [previousButton, playButton, nextButton, photosButton, ghostButton])
         controls.axis = .horizontal
         controls.distribution = .fillEqually
         controls.spacing = 8
@@ -171,6 +210,8 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
         view.addSubview(eventsTitleLabel)
         view.addSubview(eventsTableView)
         view.addSubview(activityIndicator)
+        view.addSubview(ghostStatusLabel)
+        view.addSubview(twinCompareStack)
 
         mapView.snp.makeConstraints { make in
             make.top.equalTo(view.safeAreaLayoutGuide)
@@ -185,8 +226,12 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
             make.top.equalTo(summaryLabel.snp.bottom).offset(4)
             make.left.right.equalTo(summaryLabel)
         }
+        ghostStatusLabel.snp.makeConstraints { make in
+            make.top.equalTo(stateLabel.snp.bottom).offset(4)
+            make.left.right.equalTo(summaryLabel)
+        }
         metrics.snp.makeConstraints { make in
-            make.top.equalTo(stateLabel.snp.bottom).offset(10)
+            make.top.equalTo(ghostStatusLabel.snp.bottom).offset(8)
             make.left.right.equalToSuperview().inset(12)
             make.height.equalTo(56)
         }
@@ -204,8 +249,13 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
             make.left.right.equalToSuperview().inset(16)
             make.height.equalTo(38)
         }
+        twinCompareStack.snp.makeConstraints { make in
+            make.top.equalTo(controls.snp.bottom).offset(8)
+            make.left.right.equalToSuperview().inset(16)
+            make.height.equalTo(comparisonReport == nil ? 0 : 150)
+        }
         eventsTitleLabel.snp.makeConstraints { make in
-            make.top.equalTo(controls.snp.bottom).offset(10)
+            make.top.equalTo(twinCompareStack.snp.bottom).offset(10)
             make.left.right.equalToSuperview().inset(16)
             make.height.equalTo(20)
         }
@@ -230,6 +280,22 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
         stack.axis = .vertical
         stack.spacing = 4
         stack.alignment = .fill
+        return stack
+    }
+
+    // EN: Twin comparison stays compact so the event timeline remains usable on small screens.
+    // ES: La comparación Twin es compacta para mantener utilizable la línea de eventos en pantallas pequeñas.
+    // 中文：Twin 对比保持紧凑，确保小屏幕上的事件时间线仍然可操作。
+    private func makeTwinColumn(title: String, view: UIView) -> UIView {
+        let titleLabel = UILabel()
+        titleLabel.text = title
+        titleLabel.textColor = .lightGray
+        titleLabel.font = UIFont.monospacedSystemFont(ofSize: 11, weight: .semibold)
+        titleLabel.textAlignment = .center
+
+        let stack = UIStackView(arrangedSubviews: [titleLabel, view])
+        stack.axis = .vertical
+        stack.spacing = 4
         return stack
     }
 
@@ -259,22 +325,24 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
         loadTask = Task { @MainActor [weak self] in
             guard let self else { return }
             do {
-                guard let gpxFileName = self.report.gpxFileName else {
-                    throw PTRideReplayError.missingTrack
+                let session = try await self.loadSession(for: self.report)
+                var ghostSession: PTRideGhostSession?
+                if let comparisonReport = self.comparisonReport {
+                    do {
+                        let historicalSession = try await self.loadSession(for: comparisonReport)
+                        ghostSession = PTRideGhostSession(
+                            currentRoute: PTRideGhostRouteNormalizer.make(session: session),
+                            historicalRoute: PTRideGhostRouteNormalizer.make(session: historicalSession)
+                        )
+                    } catch {
+                        // EN: A missing historical file never blocks the current ride replay.
+                        // ES: Un archivo histórico ausente nunca bloquea la reproducción actual.
+                        // 中文：历史文件缺失时仍然允许当前骑行回放继续工作。
+                        ghostSession = nil
+                    }
                 }
-                let data = try await PTDataPersistenceActor.shared.readData(
-                    fileName: gpxFileName,
-                    restoreFromICloud: true
-                )
                 try Task.checkCancellation()
-                let points = try await Task.detached(priority: .utility) {
-                    try PTGPXParser.parseTrack(data: data)
-                }.value
-                let session = try PTRideReplayBuilder.makeSession(
-                    report: self.report,
-                    trackPoints: points
-                )
-                self.apply(session: session)
+                self.apply(session: session, ghostSession: ghostSession)
             } catch is CancellationError {
                 return
             } catch {
@@ -283,6 +351,21 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
                 self.eventsTableView.backgroundView = self.emptyEventsView()
             }
         }
+    }
+
+    private func loadSession(for report: PTTripReport) async throws -> PTRideReplaySession {
+        guard let gpxFileName = report.gpxFileName else {
+            throw PTRideReplayError.missingTrack
+        }
+        let data = try await PTDataPersistenceActor.shared.readData(
+            fileName: gpxFileName,
+            restoreFromICloud: true
+        )
+        try Task.checkCancellation()
+        let points = try await Task.detached(priority: .utility) {
+            try PTGPXParser.parseTrack(data: data)
+        }.value
+        return try PTRideReplayBuilder.makeSession(report: report, trackPoints: points)
     }
 
     // EN: Localize replay failures while preserving unknown persistence errors for diagnostics.
@@ -299,16 +382,21 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
         }
     }
 
-    private func apply(session: PTRideReplaySession) {
+    private func apply(session: PTRideReplaySession, ghostSession: PTRideGhostSession?) {
         self.session = session
+        self.ghostSession = ghostSession
         let player = PTRideReplayPlayer(session: session)
         player.onUpdate = { [weak self, weak player] sample, elapsed, progress in
             guard let self, let player else { return }
             self.render(sample: sample, elapsed: elapsed, progress: progress, isPlaying: player.isPlaying)
         }
         self.player = player
-        configureMap(for: session)
+        configureMap(for: session, ghostSession: ghostSession)
         summaryLabel.text = summary(for: session)
+        ghostButton.isEnabled = ghostSession?.availability == .ready
+        ghostButton.accessibilityLabel = PTRideGhostCopy.text(isGhostVisible ? .disable : .enable)
+        ghostStatusLabel.text = ghostStatusText(for: ghostSession?.availability ?? .noHistoricalRoute)
+        ghostStatusLabel.textColor = ghostSession?.availability == .ready ? .systemGreen : .systemOrange
         eventsTableView.reloadData()
         eventsTableView.backgroundView = session.events.isEmpty ? emptyEventsView() : nil
         activityIndicator.stopAnimating()
@@ -323,9 +411,11 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
         }
     }
 
-    private func configureMap(for session: PTRideReplaySession) {
+    private func configureMap(for session: PTRideReplaySession,
+                              ghostSession: PTRideGhostSession?) {
         guard let firstSample = session.samples.first else { return }
         routeOverlay = nil
+        ghostRouteOverlay = nil
         if session.samples.count > 1 {
             var coordinates = session.samples.map(\.coordinate)
             if let polyline = MAPolyline(coordinates: &coordinates, count: UInt(coordinates.count)) {
@@ -334,9 +424,26 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
             }
         }
 
+        if let ghostSession,
+           ghostSession.availability == .ready,
+           ghostSession.historicalRoute.samples.count > 1 {
+            var coordinates = ghostSession.historicalRoute.samples.map { $0.coordinate }
+            if let polyline = MAPolyline(coordinates: &coordinates, count: UInt(coordinates.count)) {
+                ghostRouteOverlay = polyline
+                mapView.add(polyline)
+            }
+        }
+
         replayAnnotation.title = "PTRideReplayPosition"
         replayAnnotation.coordinate = firstSample.coordinate
         mapView.addAnnotation(replayAnnotation)
+
+        if let ghostFirstSample = ghostSession?.historicalRoute.samples.first,
+           ghostSession?.availability == .ready {
+            ghostAnnotation.title = "PTRideGhostPosition"
+            ghostAnnotation.coordinate = ghostFirstSample.coordinate
+            mapView.addAnnotation(ghostAnnotation)
+        }
 
         eventAnnotations = session.events.map { event in
             let annotation = MAPointAnnotation()
@@ -349,8 +456,12 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
             mapView.addAnnotations(eventAnnotations)
         }
         if let routeOverlay {
+            var visibleRect = routeOverlay.boundingMapRect
+            if let ghostRouteOverlay {
+                visibleRect = MAMapRectUnion(visibleRect, ghostRouteOverlay.boundingMapRect)
+            }
             mapView.setVisibleMapRect(
-                routeOverlay.boundingMapRect,
+                visibleRect,
                 edgePadding: UIEdgeInsets(top: 28, left: 28, bottom: 28, right: 28),
                 animated: false
             )
@@ -385,6 +496,8 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
         leanValueLabel.text = String(format: "%.1f°", sample.leanAngle)
         gValueLabel.text = String(format: "X %.2f · Y %.2f · Z %.2f", sample.gForceX, sample.gForceY, sample.gForceZ)
         replayAnnotation.coordinate = sample.coordinate
+
+        renderGhost(at: elapsed)
 
         guard let session else { return }
         let activeEventID = session.events.last(where: { $0.timestamp <= sample.timestamp })?.id
@@ -428,6 +541,83 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
         }
     }
 
+    private func renderGhost(at elapsed: TimeInterval) {
+        guard let ghostSession, comparisonReport != nil else {
+            ghostStatusLabel.text = ""
+            return
+        }
+        let comparison = ghostSession.comparison(at: elapsed)
+        let status = ghostStatusText(for: comparison.availability)
+        guard isGhostVisible, comparison.availability == .ready,
+              let historicalSample = comparison.historicalSample else {
+            ghostStatusLabel.text = status
+            ghostStatusLabel.textColor = .systemOrange
+            mapView.removeAnnotation(ghostAnnotation)
+            twinCompareStack.isHidden = true
+            return
+        }
+
+        ghostAnnotation.coordinate = historicalSample.coordinate
+        if !mapView.annotations.contains(where: { ($0 as AnyObject) === ghostAnnotation }) {
+            mapView.addAnnotation(ghostAnnotation)
+        }
+        currentTwinView.update(snapshot: PTRideGhostTwinMapper.snapshot(for: sampleForTwin(at: elapsed)), animated: false)
+        historicalTwinView.update(snapshot: PTRideGhostTwinMapper.snapshot(for: historicalSample), animated: false)
+        twinCompareStack.isHidden = false
+
+        let progress = Int(((comparison.currentProgress ?? 0) * 100).rounded())
+        let timeDelta = comparison.timeDeltaSeconds ?? 0
+        let speedDelta = comparison.speedDeltaKmh ?? 0
+        let rpmDelta = comparison.rpmDelta ?? 0
+        var statusParts = [
+            status,
+            "\(PTRideGhostCopy.text(.progress)) \(progress)%",
+            "\(PTRideGhostCopy.text(.timeDelta)) \(signedSeconds(timeDelta))",
+            "\(PTRideGhostCopy.text(.speedDelta)) \(signedNumber(speedDelta, suffix: " km/h"))",
+            "\(PTRideGhostCopy.text(.rpmDelta)) \(signedNumber(Double(rpmDelta), suffix: " rpm"))"
+        ]
+        if let roadQuality = comparison.historicalRoadQuality,
+           roadQuality != .unknown {
+            statusParts.append(PTRideGhostCopy.roadSurfaceText(roadQuality))
+        }
+        ghostStatusLabel.text = statusParts.joined(separator: " · ")
+        ghostStatusLabel.textColor = .systemGreen
+    }
+
+    private func sampleForTwin(at elapsed: TimeInterval) -> PTRideReplaySample {
+        if let sample = session?.sample(at: elapsed) {
+            return sample
+        }
+        return PTRideReplaySample(
+            latitude: 0,
+            longitude: 0,
+            timestamp: report.startTime
+        )
+    }
+
+    private func ghostStatusText(for availability: PTRideGhostAvailability) -> String {
+        switch availability {
+        case .ready:
+            return PTRideGhostCopy.text(.ready)
+        case .noCurrentRoute:
+            return PTRideGhostCopy.text(.noCurrentRoute)
+        case .noHistoricalRoute:
+            return PTRideGhostCopy.text(.noHistoricalRoute)
+        case .insufficientOverlap:
+            return PTRideGhostCopy.text(.insufficientOverlap)
+        case .outsideOverlap:
+            return PTRideGhostCopy.text(.outsideOverlap)
+        }
+    }
+
+    private func signedSeconds(_ value: TimeInterval) -> String {
+        String(format: "%+.1fs", value)
+    }
+
+    private func signedNumber(_ value: Double, suffix: String) -> String {
+        String(format: "%+.0f%@", value, suffix)
+    }
+
     private func formatDuration(_ duration: TimeInterval) -> String {
         let totalSeconds = max(Int(duration.rounded()), 0)
         let hours = totalSeconds / 3_600
@@ -440,6 +630,20 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
 
     @objc private func sliderChanged() {
         player?.seek(progress: progressSlider.value)
+    }
+
+    @objc private func toggleGhost() {
+        guard ghostSession?.availability == .ready else { return }
+        isGhostVisible.toggle()
+        ghostButton.accessibilityLabel = PTRideGhostCopy.text(isGhostVisible ? .disable : .enable)
+        if !isGhostVisible {
+            mapView.removeAnnotation(ghostAnnotation)
+            twinCompareStack.isHidden = true
+            ghostStatusLabel.text = PTRideGhostCopy.text(.fallback)
+            ghostStatusLabel.textColor = .systemOrange
+        } else {
+            renderGhost(at: player?.elapsed ?? 0)
+        }
     }
 
     @objc private func togglePlayback() {
@@ -500,7 +704,9 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
         guard let polyline = overlay as? MAPolyline else { return nil }
         let renderer = MAPolylineRenderer(polyline: polyline)
         renderer?.lineWidth = 5
-        renderer?.strokeColor = PTDashboardConfig.shared.appMainColor
+        renderer?.strokeColor = (polyline === ghostRouteOverlay)
+            ? UIColor.systemPurple.withAlphaComponent(0.75)
+            : PTDashboardConfig.shared.appMainColor
         return renderer
     }
 
@@ -511,6 +717,17 @@ final class PTRideReplayViewController: PTMotoBaseViewController,
                 ?? MAPinAnnotationView(annotation: annotation, reuseIdentifier: identifier)
             view?.annotation = annotation
             view?.pinColor = .red
+            view?.animatesDrop = false
+            view?.canShowCallout = false
+            return view
+        }
+
+        if (annotation as AnyObject) === ghostAnnotation {
+            let identifier = "PTRideGhostPosition"
+            let view = (mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MAPinAnnotationView)
+                ?? MAPinAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+            view?.annotation = annotation
+            view?.pinColor = .purple
             view?.animatesDrop = false
             view?.canShowCallout = false
             return view

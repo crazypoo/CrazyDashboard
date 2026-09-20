@@ -22,6 +22,7 @@ final class PTRideAnalysisViewController: PTMotoBaseViewController {
     private var dna: PTRideDNA?
     private var eventTimestamps: [Int: Date] = [:]
     private var dnaMarkerTimestamps: [Int: Date] = [:]
+    private var ghostReports: [PTTripReport] = []
     private weak var routeImageView: UIImageView?
 
     private let scrollView = UIScrollView()
@@ -122,6 +123,7 @@ final class PTRideAnalysisViewController: PTMotoBaseViewController {
 
         contentStack.addArrangedSubview(makeHeader(snapshot))
         contentStack.addArrangedSubview(makeDNASection(dna))
+        contentStack.addArrangedSubview(makeGhostSection())
         contentStack.addArrangedSubview(makeSection(
             title: localized("ride_analysis_overview"),
             content: makeMetricGrid([
@@ -246,6 +248,58 @@ final class PTRideAnalysisViewController: PTMotoBaseViewController {
             }
         }
         return makeSection(title: localized("ride_dna_title"), content: body)
+    }
+
+    // EN: Ghost candidates are bounded to older rides of the same known vehicle, preventing misleading comparisons.
+    // ES: Los candidatos Ghost se limitan a viajes anteriores del mismo vehículo conocido para evitar comparaciones engañosas.
+    // 中文：Ghost 候选只允许同一已知车辆的历史行程，避免产生误导性对比。
+    private func makeGhostSection() -> UIView {
+        let body = UIStackView()
+        body.axis = .vertical
+        body.spacing = 8
+        ghostReports = comparisonPool
+            .filter { candidate in
+                guard candidate.id != report.id,
+                      candidate.startTime < report.startTime,
+                      candidate.gpxFileName != nil else { return false }
+                switch (report.vehicleID, candidate.vehicleID) {
+                case let (.some(current), .some(history)):
+                    return current == history
+                case (.none, .none):
+                    return true
+                default:
+                    return false
+                }
+            }
+            .sorted { $0.startTime > $1.startTime }
+            .prefix(5)
+            .map { $0 }
+
+        body.addArrangedSubview(makeBodyLabel(PTRideGhostCopy.text(.fallback)))
+        if ghostReports.isEmpty {
+            body.addArrangedSubview(makeBodyLabel(PTRideGhostCopy.text(.noHistory)))
+        } else {
+            body.addArrangedSubview(makeBodyLabel(PTRideGhostCopy.text(.selectHistory)))
+            for (index, candidate) in ghostReports.enumerated() {
+                let button = UIButton(type: .system)
+                button.tag = index
+                button.contentHorizontalAlignment = .left
+                var configuration = UIButton.Configuration.plain()
+                let title = "\(formatDate(candidate.startTime)) · \(distanceText(candidate.distanceKm))"
+                configuration.title = title
+                configuration.subtitle = PTRideGhostCopy.text(.compare)
+                configuration.baseForegroundColor = .white
+                configuration.contentInsets = NSDirectionalEdgeInsets(top: 9, leading: 12, bottom: 9, trailing: 12)
+                configuration.background.backgroundColor = UIColor(white: 0.14, alpha: 1)
+                configuration.background.cornerRadius = 10
+                button.configuration = configuration
+                button.accessibilityLabel = title
+                button.accessibilityHint = PTRideGhostCopy.text(.compare)
+                button.addTarget(self, action: #selector(openGhostComparison(_:)), for: .touchUpInside)
+                body.addArrangedSubview(button)
+            }
+        }
+        return makeSection(title: PTRideGhostCopy.text(.title), content: body)
     }
 
     private func histogramText(_ buckets: [PTRideDNAHistogramBucket]) -> String {
@@ -671,6 +725,15 @@ final class PTRideAnalysisViewController: PTMotoBaseViewController {
 
     private func openReplay(at timestamp: Date?) {
         let replay = PTRideReplayViewController(report: report, initialTimestamp: timestamp)
+        navigationController?.pushViewController(replay, animated: true)
+    }
+
+    @objc private func openGhostComparison(_ sender: UIButton) {
+        guard ghostReports.indices.contains(sender.tag) else { return }
+        let replay = PTRideReplayViewController(
+            report: report,
+            comparisonReport: ghostReports[sender.tag]
+        )
         navigationController?.pushViewController(replay, animated: true)
     }
 

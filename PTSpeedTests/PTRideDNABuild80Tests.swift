@@ -120,12 +120,12 @@ final class PTRideDNABuild80Tests: XCTestCase {
         distanceKm: Double = 12,
         gpxFileName: String? = "ride.gpx",
         distanceSource: PTTripDistanceSource = .odometer,
-        speedTrace: [Double],
-        rpmTrace: [Int],
-        leanTrace: [Double],
-        gX: [Double],
-        gY: [Double],
-        gZ: [Double]
+        speedTrace: [Double] = [0, 20, 40],
+        rpmTrace: [Int] = [0, 2_000, 4_000],
+        leanTrace: [Double] = [0, 5, 10],
+        gX: [Double] = [0, 0.1, 0.2],
+        gY: [Double] = [0, 0.1, -0.1],
+        gZ: [Double] = [0, 0.1, 0.2]
     ) -> PTTripReport {
         PTTripReport(
             id: UUID().uuidString,

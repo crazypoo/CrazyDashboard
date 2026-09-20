@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import CoreLocation
 import PooTools
 import SwifterSwift
 import SnapKit
@@ -41,6 +42,10 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
     let bumpMeter = PTBumpMeterView()
     let pitchGauge = PTPitchView()
     private var lastUnifiedSpeedKmh: Double?
+    private let ghostLiveStore = PTRideGhostLiveStore()
+    private let ghostStatusLabel = UILabel()
+    private var latestCoordinate: CLLocationCoordinate2D?
+    private var latestTelemetrySnapshot = PTUnifiedVehicleTelemetrySnapshot.empty
     
     lazy var lightControl: PTIndicatorPanel = {
         let view = PTIndicatorPanel()
@@ -67,6 +72,9 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
         PTTripManager.shared.liveStatsBlock = { [weak self] tripStats in
             self?.tripStatsView.updateStats(with: tripStats)
         }
+        ghostLiveStore.onChange = { [weak self] snapshot in
+            self?.renderGhostStatus(snapshot)
+        }
         startPootoolsEngines()
     }
     
@@ -75,6 +83,10 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
     }
 
     deinit {
+        let liveStore = ghostLiveStore
+        Task { @MainActor in
+            liveStore.stop()
+        }
         NotificationCenter.default.removeObserver(self)
     }
     
@@ -113,6 +125,9 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
         guard let tripData = notification.object as? PTTripData else { return }
         guard PTVehicleTelemetryBridge.shared.mode == .live else { return }
 
+        latestCoordinate = tripData.currentLocation?.coordinate
+        updateLiveGhost(timestamp: tripData.currentLocation?.timestamp ?? Date())
+
         // EN: Location updates only drive heading and environment; speed is rendered by the unified resolver.
         // ES: Las actualizaciones de ubicación solo alimentan rumbo y entorno; la velocidad la renderiza el resolvedor unificado.
         // 中文：定位更新只负责航向和环境数据，车速统一由 Resolver 渲染。
@@ -121,7 +136,15 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
     }
 
     func vehicleTelemetryDidUpdate(_ snapshot: PTUnifiedVehicleTelemetrySnapshot) {
+        latestTelemetrySnapshot = snapshot
         applyUnifiedTelemetry(PTVehicleTelemetryProjections.dashboard(from: snapshot))
+        if let location = snapshot.location {
+            latestCoordinate = CLLocationCoordinate2D(
+                latitude: location.latitude,
+                longitude: location.longitude
+            )
+            updateLiveGhost(timestamp: snapshot.updatedAt)
+        }
     }
 
     private func applyUnifiedTelemetry(_ projection: PTDashboardProjection) {
@@ -159,6 +182,13 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
 
     // MARK: - UI 排版
     private func setupDashboardUI() {
+        ghostStatusLabel.font = UIFont.monospacedSystemFont(ofSize: 11, weight: .semibold)
+        ghostStatusLabel.textColor = .systemOrange
+        ghostStatusLabel.textAlignment = .center
+        ghostStatusLabel.numberOfLines = 1
+        ghostStatusLabel.adjustsFontSizeToFitWidth = true
+        ghostStatusLabel.isHidden = true
+        ghostStatusLabel.accessibilityHint = PTRideGhostCopy.text(.fallback)
         
         // 1. 底层：地图
         // 2. 中层：各种仪表盘
@@ -166,7 +196,7 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
         self.addSubviews([mapView,
                           speedometer, musicNowPlaying, leanAngleGauge, compassRoller,
                           tripStatsView, gForceView,resetMotionButton, bumpMeter, pitchGauge, lightControl,
-                          crashOverlay])
+                          crashOverlay, ghostStatusLabel])
         
         // --- 1. 背景层 ---
         mapView.snp.makeConstraints { make in
@@ -194,6 +224,12 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
             make.left.equalTo(self.speedometer.snp.centerX).offset(20)
             make.right.equalTo(self.musicNowPlaying.snp.centerX).offset(-20)
             make.height.equalTo(72)
+        }
+
+        ghostStatusLabel.snp.makeConstraints { make in
+            make.top.equalTo(tripStatsView.snp.bottom).offset(2)
+            make.left.right.equalTo(compassRoller)
+            make.height.equalTo(18)
         }
         
         gForceView.snp.makeConstraints { make in
@@ -275,6 +311,7 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
         PTMotion.shared.addDelegate(self)
         
         PTBluetoothServerManager.shared.addDelegate(self)
+        ghostLiveStore.start()
     }
         
     private func showEmergencyOverlay(_ show: Bool) {
@@ -296,6 +333,58 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
     @objc func handleMotorcycleDisconnect() {
         lastUnifiedSpeedKmh = nil
         speedometer.resetToZeroWithAnimation()
+        ghostStatusLabel.isHidden = true
+        ghostLiveStore.stop()
+    }
+
+    // EN: The live Ghost is informational only and disappears when route overlap is not proven.
+    // ES: El Ghost en vivo es solo informativo y desaparece cuando no se prueba la superposición.
+    // 中文：实时 Ghost 仅用于信息展示，未确认路线重叠时立即隐藏。
+    private func updateLiveGhost(timestamp: Date) {
+        guard PTTripManager.shared.isRecordingRide,
+              let coordinate = latestCoordinate else {
+            ghostStatusLabel.isHidden = true
+            return
+        }
+        ghostLiveStore.update(
+            coordinate: coordinate,
+            speedKmh: latestTelemetrySnapshot.speedKmh ?? PTMotion.shared.currentSpeedKmh,
+            rpm: latestTelemetrySnapshot.rpm ?? 0,
+            timestamp: timestamp
+        )
+    }
+
+    private func renderGhostStatus(_ snapshot: PTRideGhostLiveSnapshot) {
+        guard PTTripManager.shared.isRecordingRide else {
+            ghostStatusLabel.isHidden = true
+            return
+        }
+        switch snapshot.availability {
+        case .ready:
+            let progress = Int(((snapshot.routeProgress ?? 0) * 100).rounded())
+            let delta = snapshot.timeDeltaSeconds ?? 0
+            let speed = snapshot.speedDeltaKmh ?? 0
+            var statusParts = [
+                "👻 \(PTRideGhostCopy.text(.live))",
+                "\(PTRideGhostCopy.text(.progress)) \(progress)%",
+                "\(PTRideGhostCopy.text(.timeDelta)) \(String(format: "%+.1fs", delta))",
+                "Δ \(String(format: "%+.0f km/h", speed))",
+                "\(PTRideGhostCopy.text(.historicalRPM)) \(snapshot.historicalRPM ?? 0)"
+            ]
+            if let roadQuality = snapshot.historicalRoadQuality,
+               roadQuality != .unknown {
+                statusParts.append(PTRideGhostCopy.roadSurfaceText(roadQuality))
+            }
+            ghostStatusLabel.text = statusParts.joined(separator: " · ")
+            ghostStatusLabel.textColor = .systemGreen
+            ghostStatusLabel.isHidden = false
+        case .outsideOverlap:
+            ghostStatusLabel.text = PTRideGhostCopy.text(.outsideOverlap)
+            ghostStatusLabel.textColor = .systemOrange
+            ghostStatusLabel.isHidden = false
+        default:
+            ghostStatusLabel.isHidden = true
+        }
     }
 }
 

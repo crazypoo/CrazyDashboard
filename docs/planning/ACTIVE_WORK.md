@@ -19,13 +19,20 @@ related_builds:
   - 78
   - 79
   - 80
+  - 81
 supersedes: []
 superseded_by:
 ---
 
 # 当前工作
 
-快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 80)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 81)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+
+## Build 81：Ghost Ride 🟨
+
+代码实现已完成：复用既有 GPX、PTRideReplay、Ride DNA、Road Surface、统一遥测和 XP400 Twin，新增路线归一化、空间重叠判断、进度索引、距离/时间插值、回放地图对比、Twin 当前/历史并排对比和 Dashboard 低干扰 Live Ghost。Ghost 只在同车且确认路线重叠时显示；偏离路线时隐藏并等待重新进入，不会修改导航或发送车辆指令。
+
+Build 81 仍需现场验收：同路线/部分重叠/反向/不同路线、真实 XP400/XP400 GT、低 GPS 精度、前后台/断连、地图与 Twin 性能、多语言/VoiceOver 和 Release/TestFlight。三个稳定核心 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift` 保持冻结；ELM327/YMOBD 连接链路没有改动。详细记录见 [Build 81 实施记录](../history/builds/BUILD_081_GHOST_RIDE.md)。
 
 ## Build 80：Ride DNA 🟨
 

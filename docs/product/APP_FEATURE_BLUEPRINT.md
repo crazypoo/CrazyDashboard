@@ -27,9 +27,9 @@ superseded_by:
 >
 > 快照日期：2026-09-20
 >
-> 仓库基线：当前工作区已进入 Build 80 Ride DNA；Build 57–69 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速、仪表协议纠偏、OBD 深诊断和协议语义证据能力继续保留，Build 78 的长期健康趋势、Build 79 的 IMU + GPS 道路体验层和 Build 80 的骑行数据 DNA 已接入，真实设备、车辆、OTA 和完整发布验证仍待补
+> 仓库基线：当前工作区已进入 Build 81 Ghost Ride；Build 57–69 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速、仪表协议纠偏、OBD 深诊断和协议语义证据能力继续保留，Build 78 的长期健康趋势、Build 79 的 IMU + GPS 道路体验层、Build 80 的骑行数据 DNA 和 Build 81 的历史路线 Ghost 对比已接入，真实设备、车辆、OTA 和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch `CURRENT_PROJECT_VERSION = 80`；Tests / UI Tests 保持各自测试版本
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch `CURRENT_PROJECT_VERSION = 81`；Tests / UI Tests 保持各自测试版本
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -658,6 +658,19 @@ Build 77 继续保持营销版本 `2.0.8`，工程 Build 为 `77`。它把统一
 | B80-09～B80-10 | 🟨 | 纯逻辑回归与有界按需计算 | PTSpeedTests / Instruments |
 
 Ride DNA 用统一结果解释一次骑行的节奏、发动机使用、姿态、路面、效率和数据覆盖；它不修改 Trip schema，不接触 BLE/ELM327/YMOBD 核心，也不把缺失来源元数据伪装成真实 ECU 证据。详细实施与现场门见 [Build 80 实施记录](../history/builds/BUILD_080_RIDE_DNA.md)。
+
+### 7.22 Build 81 Ghost Ride
+
+| 工作包 | 状态 | 产品能力 | 数据来源 |
+| --- | --- | --- | --- |
+| B81-01～B81-04 | ✅ | 路线归一化、空间重叠、进度索引、距离/时间/遥测插值 | 既有 GPX / PTRideReplay |
+| B81-05 | ✅ | 回放地图显示当前路线与历史路线，并给出时间差、速度差、RPM 差 | PTRideGhostSession |
+| B81-06 | ✅ | 复用 XP400 Twin 2D renderer 并排显示当前/历史 Replay 状态 | PTVehicleTwinSnapshot |
+| B81-07～B81-08 | ✅ | Dashboard 低干扰 Live Ghost；偏航时安全隐藏且不重算导航 | 统一遥测 + PTLocationEngine |
+| B81-09 | ✅ | 同车历史筛选、无重叠禁用、可访问性提示和明确回退文案 | PTTripReport vehicleID / UI 状态 |
+| B81-10 | 🟨 | 同路线、异路线、插值、实时偏航和归一化回归 | PTSpeedTests，真实路线仍待验证 |
+
+Ghost Ride 只在已确认路线重叠区内比较当前骑行和历史骑行，不会把历史 Replay 数据伪装成 BLE/OBD/ECU 实时数据，也不会修改导航路线或向车辆发送指令。详细实施与现场门见 [Build 81 实施记录](../history/builds/BUILD_081_GHOST_RIDE.md)。
 
 ## 8. 已退役功能
 
