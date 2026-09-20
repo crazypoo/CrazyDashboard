@@ -43,6 +43,8 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
     let pitchGauge = PTPitchView()
     private var lastUnifiedSpeedKmh: Double?
     private let ghostLiveStore = PTRideGhostLiveStore()
+    private let dashboardContextEngine = PTDashboardContextEngine.shared
+    private let contextOverlay = PTDashboardContextOverlay()
     private let ghostStatusLabel = UILabel()
     private var latestCoordinate: CLLocationCoordinate2D?
     private var latestTelemetrySnapshot = PTUnifiedVehicleTelemetrySnapshot.empty
@@ -75,6 +77,12 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
         ghostLiveStore.onChange = { [weak self] snapshot in
             self?.renderGhostStatus(snapshot)
         }
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleDashboardContextChange(_:)),
+            name: PTDashboardContextEngine.didChange,
+            object: dashboardContextEngine
+        )
         startPootoolsEngines()
     }
     
@@ -84,10 +92,12 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
 
     deinit {
         let liveStore = ghostLiveStore
+        let contextEngine = dashboardContextEngine
+        NotificationCenter.default.removeObserver(self)
         Task { @MainActor in
             liveStore.stop()
+            contextEngine.stop()
         }
-        NotificationCenter.default.removeObserver(self)
     }
     
     override func layoutSubviews() {
@@ -119,6 +129,10 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
         
         // 处理机车事故警报 UI
         showEmergencyOverlay(motionData.isTipOverDetected)
+        dashboardContextEngine.updateMotion(
+            speedKmh: PTMotion.shared.currentSpeedKmh,
+            warningActive: motionData.isTipOverDetected
+        )
     }
         
     @objc private func handleLocationUpdate(_ notification: Notification) {
@@ -196,7 +210,7 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
         self.addSubviews([mapView,
                           speedometer, musicNowPlaying, leanAngleGauge, compassRoller,
                           tripStatsView, gForceView,resetMotionButton, bumpMeter, pitchGauge, lightControl,
-                          crashOverlay, ghostStatusLabel])
+                          contextOverlay, crashOverlay, ghostStatusLabel])
         
         // --- 1. 背景层 ---
         mapView.snp.makeConstraints { make in
@@ -230,6 +244,12 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
             make.top.equalTo(tripStatsView.snp.bottom).offset(2)
             make.left.right.equalTo(compassRoller)
             make.height.equalTo(18)
+        }
+
+        contextOverlay.snp.makeConstraints { make in
+            make.top.equalTo(mapView).offset(10)
+            make.left.right.equalToSuperview().inset(18)
+            make.height.equalTo(48)
         }
         
         gForceView.snp.makeConstraints { make in
@@ -311,6 +331,8 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
         PTMotion.shared.addDelegate(self)
         
         PTBluetoothServerManager.shared.addDelegate(self)
+        dashboardContextEngine.start()
+        renderDashboardContext(dashboardContextEngine.snapshot)
         ghostLiveStore.start()
     }
         
@@ -328,6 +350,7 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
         lightControl.isHidden = false
         speedometer.playStartupSweep(duration: 1.5)
         PTMOTOParkingManager.shared.clearParkingSpot()
+        dashboardContextEngine.refresh()
     }
     
     @objc func handleMotorcycleDisconnect() {
@@ -335,6 +358,34 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
         speedometer.resetToZeroWithAnimation()
         ghostStatusLabel.isHidden = true
         ghostLiveStore.stop()
+        dashboardContextEngine.refresh()
+    }
+
+    @objc private func handleDashboardContextChange(_ notification: Notification) {
+        guard let snapshot = notification.userInfo?["snapshot"] as? PTDashboardContextSnapshot else { return }
+        renderDashboardContext(snapshot)
+    }
+
+    // EN: Existing cards stay in place; the context only changes emphasis and interruption level.
+    // ES: Las tarjetas existentes permanecen en su sitio; el contexto solo cambia el énfasis y el nivel de interrupción.
+    // 中文：现有卡片位置保持不变，上下文只调整强调程度和打扰级别。
+    private func renderDashboardContext(_ snapshot: PTDashboardContextSnapshot) {
+        contextOverlay.render(snapshot)
+
+        let speedPolicy = snapshot.presentation(for: .speedRPM)
+        speedometer.alpha = speedPolicy.isEmphasized ? 1 : 0.92
+
+        let mediaPolicy = snapshot.presentation(for: .media)
+        musicNowPlaying.isHidden = !mediaPolicy.isVisible
+        musicNowPlaying.alpha = mediaPolicy.isEmphasized ? 1 : 0.82
+        musicNowPlaying.isUserInteractionEnabled = mediaPolicy.isVisible
+
+        let navigationPolicy = snapshot.presentation(for: .navigation)
+        mapView.alpha = navigationPolicy.isEmphasized ? 1 : 0.96
+
+        if snapshot.primaryContext == .warning {
+            ghostStatusLabel.isHidden = true
+        }
     }
 
     // EN: The live Ghost is informational only and disappears when route overlap is not proven.

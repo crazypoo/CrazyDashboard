@@ -55663,6 +55663,96 @@
         }
       }
     },
+    "dashboard_context_maneuver" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Manöver" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Maneuver" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Maniobra" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Manœuvre" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Manovra" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "曲がり角" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Манёвр" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Manevra" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "即将转向" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "即將轉向" } }
+      }
+    },
+    "dashboard_context_navigation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Navigation" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Navigation" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Navegación" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Navigation" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Navigazione" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ナビゲーション" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Навигация" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Navigasyon" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导航中" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "導航中" } }
+      }
+    },
+    "dashboard_context_warning" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Warnung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Warning" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Advertencia" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Avertissement" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Avviso" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "警告" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Предупреждение" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Uyarı" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "车辆警告" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "車輛警告" } }
+      }
+    },
+    "dashboard_context_connection_degraded" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Verbindung instabil" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Connection degraded" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Conexión degradada" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Connexion dégradée" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Connessione instabile" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "接続が不安定です" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Нестабильное соединение" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Bağlantı zayıf" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "连接质量下降" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "連線品質下降" } }
+      }
+    },
+    "dashboard_context_media_changed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Medien aktualisiert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Media updated" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Multimedia actualizada" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Média mis à jour" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Media aggiornata" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メディアを更新しました" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "Медиа обновлено" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Medya güncellendi" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "媒体已更新" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "媒體已更新" } }
+      }
+    },
+    "dashboard_context_riding" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fahrt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Riding" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "En marcha" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "En conduite" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "In marcia" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "走行中" } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "В движении" } },
+        "tr" : { "stringUnit" : { "state" : "translated", "value" : "Sürüş" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "骑行中" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "騎行中" } }
+      }
+    },
     "预计抵达" : {
 
     }

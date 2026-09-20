@@ -27,9 +27,9 @@ superseded_by:
 >
 > 快照日期：2026-09-20
 >
-> 仓库基线：当前工作区已进入 Build 81 Ghost Ride；Build 57–69 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速、仪表协议纠偏、OBD 深诊断和协议语义证据能力继续保留，Build 78 的长期健康趋势、Build 79 的 IMU + GPS 道路体验层、Build 80 的骑行数据 DNA 和 Build 81 的历史路线 Ghost 对比已接入，真实设备、车辆、OTA 和完整发布验证仍待补
+> 仓库基线：当前工作区已进入 Build 82 Dynamic Dashboard；Build 57–69 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速、仪表协议纠偏、OBD 深诊断和协议语义证据能力继续保留，Build 78 的长期健康趋势、Build 79 的 IMU + GPS 道路体验层、Build 80 的骑行数据 DNA、Build 81 的历史路线 Ghost 对比和 Build 82 的动态 Dashboard 上下文已接入，真实设备、车辆、OTA 和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch `CURRENT_PROJECT_VERSION = 81`；Tests / UI Tests 保持各自测试版本
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch `CURRENT_PROJECT_VERSION = 82`；Tests / UI Tests 保持各自测试版本
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -671,6 +671,18 @@ Ride DNA 用统一结果解释一次骑行的节奏、发动机使用、姿态�
 | B81-10 | 🟨 | 同路线、异路线、插值、实时偏航和归一化回归 | PTSpeedTests，真实路线仍待验证 |
 
 Ghost Ride 只在已确认路线重叠区内比较当前骑行和历史骑行，不会把历史 Replay 数据伪装成 BLE/OBD/ECU 实时数据，也不会修改导航路线或向车辆发送指令。详细实施与现场门见 [Build 81 实施记录](../history/builds/BUILD_081_GHOST_RIDE.md)。
+
+### 7.23 Build 82 Dynamic Dashboard
+
+| 工作包 | 状态 | 产品能力 | 数据来源 |
+| --- | --- | --- | --- |
+| B82-01～B82-04 | ✅ | Dashboard Context、优先级 Resolver、模块协议和统一展示策略 | 纯值模型 + 既有状态快照 |
+| B82-05 | ✅ | XP400 Twin 2D/3D 作为 vehicleTwin 模块，按场景收缩/强调 | 既有 PTVehicleTwinSnapshot |
+| B82-06～B82-08 | ✅ | 速度/RPM、音乐、地图、警告和低干扰上下文覆盖层 | 统一遥测、导航、媒体和连接通知 |
+| B82-09 | ✅ | 20 Hz 上下文节流，降低高频遥测引起的 UI 重绘 | PTDashboardContextEngine |
+| B82-10 | 🟨 | Resolver 纯逻辑回归、真机视觉/性能和发布验证 | PTSpeedTests + 真实 XP400/XP400 GT |
+
+Build 82 的动态 Dashboard 只改变模块展示优先级，不创建新的 BLE、ELM327、YMOBD、OBD、GPS、Motion 或导航传输层。Warning 优先于 Navigation，Navigation 优先于 Vehicle，车辆 Twin 优先于 Media；缺少证据时保持不可用或降级，不伪造车辆状态。详细实施与现场门见 [Build 82 实施记录](../history/builds/BUILD_082_DYNAMIC_DASHBOARD.md)。
 
 ## 8. 已退役功能
 

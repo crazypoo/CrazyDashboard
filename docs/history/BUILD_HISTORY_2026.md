@@ -25,6 +25,7 @@ related_builds:
   - 78
   - 79
   - 80
+  - 82
 supersedes: []
 superseded_by:
 ---
@@ -104,6 +105,12 @@ Build 76 收尾修复了 2D/3D 当前页面素材来源、2D wheel pivot/角速�
 ## Build 81 — Ghost Ride
 
 完成只读 Ghost Ride 路线对比层：复用既有 GPX、PTRideReplay、Ride DNA、Road Surface、统一遥测和 XP400 Twin，新增路线归一化、空间重叠、进度索引、距离/时间插值、回放地图对比、Twin 当前/历史并排对比和 Dashboard Live Ghost。Ghost 只在同车且确认路线重叠时显示；偏离路线时安全隐藏，不改变导航、不发送车辆指令。Build81 不修改 BLE、ELM327、YMOBD、OBD 或 PTTripReport schema。Debug 工程、纯数据测试和现场路线验收仍需分别完成；详细记录见 [Build 81 实施记录](builds/BUILD_081_GHOST_RIDE.md)。
+
+## Build 82 — Dynamic Dashboard
+
+完成统一 Dashboard 上下文层：`PTDashboardContextEngine` 消费现有统一遥测、连接快照、导航会话和媒体变化，`PTDashboardContextResolver` 以 `Safety > Navigation > Vehicle > Media > Decoration` 解析主上下文和模块策略。主 Dashboard 与 XP400 Twin 2D/3D 共享同一策略，停车显示 Twin/Health，骑行强调 Speed/RPM，导航接近转向时强调导航并收缩 Twin，Warning 覆盖媒体/Ghost，连接降级提供低干扰提示。状态发布采用 20 Hz 上限，不改变底层采集。
+
+Build82 增加纯 Resolver 回归测试、九种语言上下文文案、低干扰覆盖层和模块协议；主 App、Widget、Watch 的 Build 为 `82`，营销版本保持 `2.0.8`。本轮未修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`，也没有改变 ELM327/YMOBD 连接步骤、握手、轮询或 fallback。主 App workspace Debug `build` 与 `build-for-testing`、以及独立 Widget/Watch target 编译均已完成；真实车辆状态、CarPlay、前后台、性能、Release/TestFlight 和现场安装关系仍需验收。详细记录见 [Build 82 实施记录](builds/BUILD_082_DYNAMIC_DASHBOARD.md)。
 
 ## Build 80 — Ride DNA
 

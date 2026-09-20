@@ -20,13 +20,22 @@ related_builds:
   - 79
   - 80
   - 81
+  - 82
 supersedes: []
 superseded_by:
 ---
 
 # 当前工作
 
-快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 81)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 82)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+
+## Build 82：Dynamic Dashboard 🟨
+
+代码实现已完成：新增只读 `PTDashboardContextEngine` 和纯 `PTDashboardContextResolver`，统一消费既有车辆遥测、连接快照、导航会话与媒体变化；按 `Safety > Navigation > Vehicle > Media > Decoration` 输出模块策略。主 Dashboard、XP400 Twin 2D/3D、速度/音乐/地图卡片和低干扰覆盖层均已接入，警告时降低媒体/Ghost 干扰，导航接近转向时强调导航并收缩 Twin，停车时恢复 Twin + Health。状态发布上限为 20 Hz，不改变底层采集频率。
+
+Build 82 使用营销版本 `2.0.8`，主 App、Widget 和 Watch Build 为 `82`；三个稳定核心 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift` 保持冻结，ELM327/YMOBD 连接链路没有改动。主 App workspace Debug `build` 与 `build-for-testing` 已通过，Watch target 使用正确的 watchOS SDK 可独立编译，Widget target 可独立编译；Release/归档与现场验收仍待完成。
+
+Build 82 仍需现场验收：真实 XP400/XP400 GT 的骑行、导航、转向警告、ABS/倾倒警告、断连、前后台、CarPlay、Mock/Replay、多语言、VoiceOver、Instruments、Release/TestFlight 和 Watch/Widget 嵌入。详细记录见 [Build 82 实施记录](../history/builds/BUILD_082_DYNAMIC_DASHBOARD.md)。
 
 ## Build 81：Ghost Ride 🟨
 

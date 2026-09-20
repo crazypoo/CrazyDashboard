@@ -32,6 +32,7 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
     private var currentSnapshot = PTVehicleTwinSnapshot.empty
     private var replaySource: PTReplayVehicleStateSource?
     private var roadSurfaceImpactID: UUID?
+    private let dashboardContextEngine = PTDashboardContextEngine.shared
 
     lazy var stopButton:PTBaseButton = {
         let view = PTBaseButton(type:.custom)
@@ -72,14 +73,23 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
             name: PTRoadSurfaceRepository.impactDidDetect,
             object: PTRoadSurfaceRepository.shared
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(dashboardContextDidChange(_:)),
+            name: PTDashboardContextEngine.didChange,
+            object: dashboardContextEngine
+        )
         store.onChange = { [weak self] snapshot in
             self?.render(snapshot)
         }
         render(store.snapshot)
+        applyDashboardContext(dashboardContextEngine.snapshot)
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        dashboardContextEngine.start()
+        applyDashboardContext(dashboardContextEngine.snapshot)
         store.start()
         store.refresh()
         setCustomRightButtons(buttons: [importButton,stopButton], buttonSpacing: CGFloat.GlobalItemSpacing)
@@ -87,6 +97,7 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        dashboardContextEngine.stop()
         store.stop()
     }
 
@@ -256,6 +267,24 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
 
     @objc private func healthRepositoryDidChange() {
         refreshHealthSummary()
+    }
+
+    @objc private func dashboardContextDidChange(_ notification: Notification) {
+        guard let snapshot = notification.userInfo?["snapshot"] as? PTDashboardContextSnapshot else { return }
+        applyDashboardContext(snapshot)
+    }
+
+    // EN: Twin remains visible while its size and emphasis follow the shared dashboard policy.
+    // ES: El Twin permanece visible mientras su tamaño y énfasis siguen la política común del tablero.
+    // 中文：Twin 始终保留，只根据统一仪表盘策略调整尺寸和强调程度。
+    private func applyDashboardContext(_ snapshot: PTDashboardContextSnapshot) {
+        let presentation = snapshot.presentation(for: .vehicleTwin)
+        twin2DView.applyDashboardPresentation(presentation)
+        twin3DView.applyDashboardPresentation(presentation)
+        let healthPresentation = snapshot.presentation(for: .health)
+        healthSummaryLabel.isHidden = !healthPresentation.isVisible
+        twinContainer.alpha = presentation.isEmphasized ? 1 : 0.96
+        twinContainer.accessibilityLabel = "Vehicle Twin · \(snapshot.primaryContext.rawValue)"
     }
 
     // EN: Show the latest read-only road impact briefly without opening a vehicle command path.
