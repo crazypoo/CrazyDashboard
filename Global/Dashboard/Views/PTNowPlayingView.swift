@@ -118,6 +118,21 @@ public class PTNowPlayingView: UIView {
     private(set) var lyricsState: PTLyricsDisplayState = .idle
     var currentArtwork: UIImage? { artworkImageView.image }
 
+    // EN: Only decorative music-card surfaces consume artwork theme tokens.
+    // ES: Solo las superficies decorativas de la tarjeta musical consumen los tokens de portada.
+    // 中文：只有音乐卡片的装饰表面使用封面主题令牌。
+    @MainActor
+    func applyDashboardTheme(_ tokens: PTDashboardThemeTokens) {
+        let opacity = CGFloat(tokens.decorationOpacity)
+        backgroundColor = tokens.cardStartColor.withAlphaComponent(0.62 * opacity)
+        trackLayer.strokeColor = tokens.ambientColor.withAlphaComponent(0.32 * opacity).cgColor
+        progressLayer.strokeColor = tokens.glowColor.withAlphaComponent(max(0.18, opacity)).cgColor
+        titleLabel.textColor = tokens.primaryTextColor
+        artistLabel.textColor = tokens.secondaryTextColor
+        lyricLabel.textColor = tokens.glowColor
+        timeLabel.textColor = tokens.secondaryTextColor
+    }
+
     private lazy var batteryLevel = {
         let view = PTActionLayoutButton()
         view.layoutStyle = .upImageDownTitle
@@ -433,6 +448,7 @@ public class PTNowPlayingView: UIView {
             artworkImageView.image = nil
             progressLayer.strokeEnd = 0
             timeLabel.text = "-00:00" // 修改这里：归零状态
+            PTDashboardThemeEngine.shared.updateArtwork(nil, trackIdentifier: "")
             return
         }
 
@@ -549,6 +565,8 @@ public class PTNowPlayingView: UIView {
     private func fetchArtwork(for item: MPMediaItem) {
         // 每次切歌先给个默认色/占位图，防止上一首歌的封面残留
         self.artworkImageView.backgroundColor = .darkGray
+        let themeTrackIdentifier = currentTrackSnapshot?.id ?? "\(item.persistentID)"
+        PTDashboardThemeEngine.shared.updateArtwork(nil, trackIdentifier: themeTrackIdentifier)
         
         guard let artwork = item.artwork else {
             self.artworkImageView.image = nil
@@ -559,6 +577,10 @@ public class PTNowPlayingView: UIView {
         let targetSize = CGSize(width: 300, height: 300)
         if let image = artwork.image(at: targetSize) ?? artwork.image(at: artwork.bounds.size) {
             self.artworkImageView.image = image
+            // EN: Reuse the already decoded artwork for decorative theme extraction.
+            // ES: Reutiliza la portada ya decodificada para extraer el tema decorativo.
+            // 中文：复用已经解码的封面，提取装饰主题，避免重复读取媒体资源。
+            PTDashboardThemeEngine.shared.updateArtwork(image, trackIdentifier: themeTrackIdentifier)
         } else {
             // 2. 第二波尝试 (核心黑科技)：
             // 如果走到这里，说明是流媒体歌曲，系统抛出了通知但图片还在解码。
@@ -579,8 +601,13 @@ public class PTNowPlayingView: UIView {
                                       animations: {
                                           self.artworkImageView.image = delayedImage
                                       }, completion: nil)
+                    PTDashboardThemeEngine.shared.updateArtwork(
+                        delayedImage,
+                        trackIdentifier: themeTrackIdentifier
+                    )
                 } else {
                     self.artworkImageView.image = nil
+                    PTDashboardThemeEngine.shared.updateArtwork(nil, trackIdentifier: themeTrackIdentifier)
                 }
             }
         }

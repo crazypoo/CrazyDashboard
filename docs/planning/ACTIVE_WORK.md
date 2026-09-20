@@ -21,13 +21,20 @@ related_builds:
   - 80
   - 81
   - 82
+  - 83
 supersedes: []
 superseded_by:
 ---
 
 # 当前工作
 
-快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 82)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+快照日期：2026-09-20。当前工程版本为 `2.0.8 (Build 83)`。本文件只保留仍需要完成或验收的工作；已完成 Build 的完整实施正文进入 [`history/BUILD_HISTORY_2026.md`](../history/BUILD_HISTORY_2026.md) 或对应的验收记录。
+
+## Build 83：Music × Dashboard Theme 🟨
+
+代码实现已完成：Now Playing artwork 经过有界主色提取、缓存、对比度校验和安全上下文解析后，只驱动 Dashboard 与 XP400 Twin 的背景、环境光、非语义 glow 和装饰渐变。主 Dashboard、2D Twin、3D Twin、音乐卡片和设置开关已接入同一套主题令牌；没有封面、权限受限、不可解码或 warning/maneuver 时自动回退，不阻塞仪表和导航。
+
+Build 83 使用营销版本 `2.0.8`，主 App、Widget 和 Watch Build 为 `83`。三个稳定核心 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift` 保持冻结，ELM327/YMOBD 连接链路没有改动。主 App workspace Debug `build` 与 `build-for-testing` 已通过，主题纯逻辑测试已编译；真实 Apple Music 权限、iPhone 视觉/性能、警告与导航安全上下文、CarPlay、前后台和 Release/TestFlight 仍待验收。详细记录见 [Build 83 实施记录](../history/builds/BUILD_083_MUSIC_DASHBOARD_THEME.md)。
 
 ## Build 82：Dynamic Dashboard 🟨
 

@@ -25,6 +25,7 @@ final class PTXP400Twin3DView: UIView {
     private var configuration = PTVehicleTwinConfiguration.xp400
     private var nodeReferences: PTVehicleTwin3DNodeReferences?
     private var cameraNode: SCNNode?
+    private var ambientLight: SCNLight?
     private var currentSnapshot = PTVehicleTwinSnapshot.empty
     private var lastSnapshotDate: Date?
     private var wheelRotation: Float = 0
@@ -132,6 +133,20 @@ final class PTXP400Twin3DView: UIView {
         update(snapshot: .empty, animated: false)
     }
 
+    // EN: Theme only changes the SceneKit backdrop, ambient tint and info-card decoration.
+    // ES: El tema solo cambia el fondo de SceneKit, el tinte ambiental y la decoración de la tarjeta.
+    // 中文：主题只改变 SceneKit 背景、环境光色调和信息卡装饰。
+    func applyDashboardTheme(_ tokens: PTDashboardThemeTokens) {
+        let opacity = CGFloat(tokens.decorationOpacity)
+        backgroundColor = tokens.backgroundColor
+        sceneView.backgroundColor = tokens.backgroundColor
+        ambientLight?.color = tokens.ambientColor
+        ambientLight?.intensity = 720 * max(0.55, Double(opacity))
+        overlay.backgroundColor = tokens.cardStartColor.withAlphaComponent(0.72 * max(0.35, opacity))
+        overlay.layer.borderColor = tokens.glowColor.withAlphaComponent(0.42).cgColor
+        overlay.layer.borderWidth = 1
+    }
+
     private func configureView() {
         backgroundColor = UIColor(white: 0.05, alpha: 1)
         layer.cornerRadius = 18
@@ -198,6 +213,7 @@ final class PTXP400Twin3DView: UIView {
         ambient.type = .ambient
         ambient.color = UIColor(white: 0.52, alpha: 1)
         ambient.intensity = 720
+        ambientLight = ambient
         ambientNode.light = ambient
         scene.rootNode.addChildNode(ambientNode)
 

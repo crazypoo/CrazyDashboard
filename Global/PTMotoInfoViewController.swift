@@ -60,6 +60,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
     var isFirstLoad:Bool = true
     private var isViewVisible = false
     private var infoState = PTMotoInfoViewState()
+    private let dashboardThemeEngine = PTDashboardThemeEngine.shared
 
     private lazy var telemetryScrollView: UIScrollView = {
         let view = UIScrollView()
@@ -462,6 +463,8 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
         PTRotationManager.shared.isLockOrientationWhenDeviceOrientationDidChange = true
         let telemetryBridge = PTVehicleTelemetryBridge.shared
         telemetryBridge.startIfNeeded()
+        dashboardThemeEngine.start()
+        vehicleTwinCard.applyDashboardTheme(dashboardThemeEngine.tokens)
         PTVehicleTelemetryConsumerHub.shared.register(self)
         let connectivity = PTVehicleConnectivityCoordinator.shared
         telemetryBridge.ingest(
@@ -508,6 +511,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
         PTMotoTelemetryManager.shared.removeDelegate(self)
         PTVehicleTelemetryConsumerHub.shared.unregister(self)
         PTMotoTelemetryManager.shared.onConnectionTimeout = nil
+        dashboardThemeEngine.stop()
     }
 
     @MainActor deinit {
@@ -550,7 +554,18 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
         PTMotion.shared.addDelegate(self)
         NotificationCenter.default.addObserver(self, selector: #selector(appDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(garageDidChange), name: PTMotorcycleGarageStore.didChangeNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(dashboardThemeDidChange(_:)),
+            name: PTDashboardThemeEngine.didChange,
+            object: dashboardThemeEngine
+        )
         setupMusicDashboard()
+    }
+
+    @objc private func dashboardThemeDidChange(_ notification: Notification) {
+        guard let tokens = notification.userInfo?["tokens"] as? PTDashboardThemeTokens else { return }
+        vehicleTwinCard.applyDashboardTheme(tokens)
     }
 
     private func setupMusicDashboard() {

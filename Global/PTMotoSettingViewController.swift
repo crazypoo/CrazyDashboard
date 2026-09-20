@@ -196,6 +196,21 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         view.addTarget(self, action: #selector(lyricsOnlineSwitchChanged(_:)), for: .valueChanged)
         return view
     }()
+
+    // EN: Artwork theming is opt-in at the presentation layer and never changes vehicle semantics.
+    // ES: El tema de portada es opcional en la presentación y nunca cambia la semántica del vehículo.
+    // 中文：专辑封面主题只控制展示，并且不会改变车辆语义。
+    private lazy var artworkThemeTitle: UILabel = {
+        baseTitle(value: PTDashboardConfig.languageFunc(text: "dashboard_artwork_theme_toggle"))
+    }()
+
+    private lazy var artworkThemeSwitch: UISwitch = {
+        let view = UISwitch()
+        view.isOn = PTMotoUserDefaultStruct.PTDashboardArtworkThemeEnabled
+        view.onTintColor = PTDashboardConfig.shared.appMainColor
+        view.addTarget(self, action: #selector(artworkThemeSwitchChanged(_:)), for: .valueChanged)
+        return view
+    }()
     
     private lazy var garageButton: UIButton = {
         let view = UIButton(type: .system)
@@ -330,7 +345,8 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                                         dashLanguageTitle, dashBoardLanguageButton,
                                         pttRestoreTitle, pttRestoreSwitch,
                                         dashboardNotificationTitle, dashboardNotificationButton,
-                                        lyricsOnlineTitle, lyricsOnlineSwitch])
+                                        lyricsOnlineTitle, lyricsOnlineSwitch,
+                                        artworkThemeTitle, artworkThemeSwitch])
         
         view.addSubviews([garageButton, shortCut, shortcutsButton, socialStackView, versionLabel])
         
@@ -418,6 +434,16 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         lyricsOnlineSwitch.snp.makeConstraints { make in
             make.right.equalToSuperview().inset(16)
             make.top.equalTo(dashboardNotificationButton.snp.bottom).offset(20)
+        }
+
+        artworkThemeTitle.snp.makeConstraints { make in
+            make.left.equalToSuperview().inset(16)
+            make.right.lessThanOrEqualTo(artworkThemeSwitch.snp.left).offset(-12)
+            make.centerY.equalTo(artworkThemeSwitch)
+        }
+        artworkThemeSwitch.snp.makeConstraints { make in
+            make.right.equalToSuperview().inset(16)
+            make.top.equalTo(lyricsOnlineSwitch.snp.bottom).offset(20)
             make.bottom.equalToSuperview().inset(16)
         }
         
@@ -468,6 +494,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
         dashBoardLanguageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         dashboardNotificationButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
         garageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)
+        artworkThemeSwitch.onTintColor = PTDashboardConfig.shared.appMainColor
         
         DispatchQueue.main.async {
             self.dashBoardColorButton.viewCorner(radius: 4)
@@ -486,6 +513,7 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 self.dashboardNotificationTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_notification_title")
                 self.dashboardNotificationButton.setTitle(PTDashboardConfig.languageFunc(text: "dashboard_notification_setup"), for: .normal)
                 self.lyricsOnlineTitle.text = PTDashboardConfig.languageFunc(text: "lyrics_online_toggle")
+                self.artworkThemeTitle.text = PTDashboardConfig.languageFunc(text: "dashboard_artwork_theme_toggle")
                 self.garageButton.setTitle(PTDashboardConfig.languageFunc(text: "garage_open"), for: .normal)
                 self.updateShortcutGuide()
                 self.shortcutsButton.setTitle(PTDashboardConfig.languageFunc(text: "automation_guide_open"), for: .normal)
@@ -569,6 +597,10 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
                 await PTLyricsService.shared.clearCache()
             }
         }
+    }
+
+    @objc private func artworkThemeSwitchChanged(_ sender: UISwitch) {
+        PTDashboardThemeEngine.shared.setEnabled(sender.isOn)
     }
 
     func baseTitle(value:String) -> UILabel {
@@ -1007,8 +1039,10 @@ class PTMotoSettingViewController: PTMotoBaseViewController {
             self.pttRestoreTitle.textColor = PTDashboardConfig.shared.appMainColor
             self.dashboardNotificationTitle.textColor = PTDashboardConfig.shared.appMainColor
             self.lyricsOnlineTitle.textColor = PTDashboardConfig.shared.appMainColor
+            self.artworkThemeTitle.textColor = PTDashboardConfig.shared.appMainColor
             self.pttRestoreSwitch.onTintColor = PTDashboardConfig.shared.appMainColor
             self.lyricsOnlineSwitch.onTintColor = PTDashboardConfig.shared.appMainColor
+            self.artworkThemeSwitch.onTintColor = PTDashboardConfig.shared.appMainColor
             self.garageButton.setTitle(PTDashboardConfig.languageFunc(text: "garage_open"), for: .normal)
                         
             self.garageButton.setBackgroundColor(color: PTDashboardConfig.shared.appMainColor, forState: .normal)

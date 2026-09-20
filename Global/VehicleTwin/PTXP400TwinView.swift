@@ -78,6 +78,18 @@ final class PTXP400TwinView: UIView {
         setNeedsLayout()
     }
 
+    // EN: Theme application is decorative and never recolors semantic vehicle indicators.
+    // ES: La aplicación del tema es decorativa y nunca recolorea indicadores semánticos del vehículo.
+    // 中文：主题应用只负责装饰，不会重绘车辆语义指示器。
+    func applyDashboardTheme(_ tokens: PTDashboardThemeTokens) {
+        backgroundColor = tokens.backgroundColor.withAlphaComponent(0.88)
+        shadowLayer.fillColor = tokens.ambientColor.withAlphaComponent(0.28).cgColor
+        layer.shadowColor = tokens.glowColor.cgColor
+        layer.shadowOpacity = Float(min(0.34, 0.22 * tokens.decorationOpacity))
+        layer.shadowRadius = 14
+        layer.shadowOffset = .zero
+    }
+
     func update(snapshot: PTVehicleTwinSnapshot, animated: Bool = true) {
         currentSnapshot = snapshot
         updateWheelRotation(snapshot: snapshot)
@@ -462,6 +474,14 @@ final class PTXP400TwinCardView: UIControl {
 
     func reset() {
         update(snapshot: .empty)
+    }
+
+    func applyDashboardTheme(_ tokens: PTDashboardThemeTokens) {
+        twinView.applyDashboardTheme(tokens)
+        backgroundColor = tokens.cardStartColor.withAlphaComponent(0.78)
+        titleLabel.textColor = tokens.primaryTextColor
+        statusLabel.textColor = tokens.secondaryTextColor
+        openButton.tintColor = tokens.glowColor
     }
 
     private func setupUI() {

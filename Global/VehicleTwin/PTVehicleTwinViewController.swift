@@ -33,6 +33,7 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
     private var replaySource: PTReplayVehicleStateSource?
     private var roadSurfaceImpactID: UUID?
     private let dashboardContextEngine = PTDashboardContextEngine.shared
+    private let dashboardThemeEngine = PTDashboardThemeEngine.shared
 
     lazy var stopButton:PTBaseButton = {
         let view = PTBaseButton(type:.custom)
@@ -79,17 +80,26 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
             name: PTDashboardContextEngine.didChange,
             object: dashboardContextEngine
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(dashboardThemeDidChange(_:)),
+            name: PTDashboardThemeEngine.didChange,
+            object: dashboardThemeEngine
+        )
         store.onChange = { [weak self] snapshot in
             self?.render(snapshot)
         }
         render(store.snapshot)
         applyDashboardContext(dashboardContextEngine.snapshot)
+        applyDashboardTheme(dashboardThemeEngine.tokens)
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         dashboardContextEngine.start()
+        dashboardThemeEngine.start()
         applyDashboardContext(dashboardContextEngine.snapshot)
+        applyDashboardTheme(dashboardThemeEngine.tokens)
         store.start()
         store.refresh()
         setCustomRightButtons(buttons: [importButton,stopButton], buttonSpacing: CGFloat.GlobalItemSpacing)
@@ -98,6 +108,7 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         dashboardContextEngine.stop()
+        dashboardThemeEngine.stop()
         store.stop()
     }
 
@@ -272,6 +283,20 @@ final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPic
     @objc private func dashboardContextDidChange(_ notification: Notification) {
         guard let snapshot = notification.userInfo?["snapshot"] as? PTDashboardContextSnapshot else { return }
         applyDashboardContext(snapshot)
+    }
+
+    @objc private func dashboardThemeDidChange(_ notification: Notification) {
+        guard let tokens = notification.userInfo?["tokens"] as? PTDashboardThemeTokens else { return }
+        applyDashboardTheme(tokens)
+    }
+
+    // EN: Twin theme changes stay below vehicle-state semantics and warning presentation.
+    // ES: Los cambios de tema del Twin quedan por debajo de la semántica del vehículo y las alertas.
+    // 中文：Twin 主题变化始终低于车辆状态语义和警告展示。
+    private func applyDashboardTheme(_ tokens: PTDashboardThemeTokens) {
+        twin2DView.applyDashboardTheme(tokens)
+        twin3DView.applyDashboardTheme(tokens)
+        twinContainer.backgroundColor = tokens.backgroundColor
     }
 
     // EN: Twin remains visible while its size and emphasis follow the shared dashboard policy.

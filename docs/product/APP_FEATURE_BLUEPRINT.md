@@ -17,6 +17,7 @@ related_builds:
   - 78
   - 79
   - 80
+  - 83
 supersedes: []
 superseded_by:
 ---
@@ -27,9 +28,9 @@ superseded_by:
 >
 > 快照日期：2026-09-20
 >
-> 仓库基线：当前工作区已进入 Build 82 Dynamic Dashboard；Build 57–69 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速、仪表协议纠偏、OBD 深诊断和协议语义证据能力继续保留，Build 78 的长期健康趋势、Build 79 的 IMU + GPS 道路体验层、Build 80 的骑行数据 DNA、Build 81 的历史路线 Ghost 对比和 Build 82 的动态 Dashboard 上下文已接入，真实设备、车辆、OTA 和完整发布验证仍待补
+> 仓库基线：当前工作区已进入 Build 83 Music × Dashboard Theme；Build 57–69 的 OBD、统一遥测、Instruments、Evidence/CAN/Passport、持久化、CrazyTrace 回放、协议研究、XP400 电子身份、Swift 6 Release Hardening、统一车速、仪表协议纠偏、OBD 深诊断和协议语义证据能力继续保留，Build 78 的长期健康趋势、Build 79 的 IMU + GPS 道路体验层、Build 80 的骑行数据 DNA、Build 81 的历史路线 Ghost 对比、Build 82 的动态 Dashboard 上下文和 Build 83 的音乐封面装饰主题已接入，真实设备、车辆、OTA 和完整发布验证仍待补
 >
-> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch `CURRENT_PROJECT_VERSION = 82`；Tests / UI Tests 保持各自测试版本
+> 发布版本：`MARKETING_VERSION = 2.0.8`，主 App / Widget / Watch `CURRENT_PROJECT_VERSION = 83`；Tests / UI Tests 保持各自测试版本
 >
 > 最低系统：iOS 17.0+，watchOS 10.6+
 >
@@ -683,6 +684,18 @@ Ghost Ride 只在已确认路线重叠区内比较当前骑行和历史骑行，
 | B82-10 | 🟨 | Resolver 纯逻辑回归、真机视觉/性能和发布验证 | PTSpeedTests + 真实 XP400/XP400 GT |
 
 Build 82 的动态 Dashboard 只改变模块展示优先级，不创建新的 BLE、ELM327、YMOBD、OBD、GPS、Motion 或导航传输层。Warning 优先于 Navigation，Navigation 优先于 Vehicle，车辆 Twin 优先于 Media；缺少证据时保持不可用或降级，不伪造车辆状态。详细实施与现场门见 [Build 82 实施记录](../history/builds/BUILD_082_DYNAMIC_DASHBOARD.md)。
+
+### 7.24 Build 83 Music × Dashboard Theme
+
+| 工作包 | 状态 | 产品能力 | 数据来源 |
+| --- | --- | --- | --- |
+| B83-01 | ✅ | Theme Token 与安全/装饰边界 | 纯值模型 |
+| B83-02～B83-04 | ✅ | Artwork 主色提取、有界缓存和对比度校验 | 既有 Now Playing artwork |
+| B83-05～B83-06 | ✅ | Dashboard、音乐卡片和 XP400 Twin 2D/3D 装饰适配 | 统一主题令牌 |
+| B83-07～B83-09 | ✅ | Warning/maneuver 安全回退、设置开关和无封面/权限 fallback | Dashboard Context + Media |
+| B83-10 | ✅ | 24px 采样、后台提取、缓存命中和按需刷新 | Theme Engine |
+
+Build 83 的主题只影响背景、环境光、非语义 glow 和装饰卡片渐变；TCS、ABS、Warning、车速可读性和导航关键 UI 继续由现有语义逻辑控制。没有封面、封面不可解码、媒体权限受限或安全上下文激活时，系统回到默认主题。主题不新增 BLE、ELM327、YMOBD、OBD、GPS、Motion 或车辆写入链路，三个稳定核心继续保持冻结。详细实施与现场门见 [Build 83 实施记录](../history/builds/BUILD_083_MUSIC_DASHBOARD_THEME.md)。
 
 ## 8. 已退役功能
 

@@ -44,6 +44,7 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
     private var lastUnifiedSpeedKmh: Double?
     private let ghostLiveStore = PTRideGhostLiveStore()
     private let dashboardContextEngine = PTDashboardContextEngine.shared
+    private let dashboardThemeEngine = PTDashboardThemeEngine.shared
     private let contextOverlay = PTDashboardContextOverlay()
     private let ghostStatusLabel = UILabel()
     private var latestCoordinate: CLLocationCoordinate2D?
@@ -83,6 +84,12 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
             name: PTDashboardContextEngine.didChange,
             object: dashboardContextEngine
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleDashboardThemeChange(_:)),
+            name: PTDashboardThemeEngine.didChange,
+            object: dashboardThemeEngine
+        )
         startPootoolsEngines()
     }
     
@@ -93,10 +100,12 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
     deinit {
         let liveStore = ghostLiveStore
         let contextEngine = dashboardContextEngine
+        let themeEngine = dashboardThemeEngine
         NotificationCenter.default.removeObserver(self)
         Task { @MainActor in
             liveStore.stop()
             contextEngine.stop()
+            themeEngine.stop()
         }
     }
     
@@ -332,7 +341,9 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
         
         PTBluetoothServerManager.shared.addDelegate(self)
         dashboardContextEngine.start()
+        dashboardThemeEngine.start()
         renderDashboardContext(dashboardContextEngine.snapshot)
+        renderDashboardTheme(dashboardThemeEngine.tokens)
         ghostLiveStore.start()
     }
         
@@ -364,6 +375,19 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
     @objc private func handleDashboardContextChange(_ notification: Notification) {
         guard let snapshot = notification.userInfo?["snapshot"] as? PTDashboardContextSnapshot else { return }
         renderDashboardContext(snapshot)
+    }
+
+    @objc private func handleDashboardThemeChange(_ notification: Notification) {
+        guard let tokens = notification.userInfo?["tokens"] as? PTDashboardThemeTokens else { return }
+        renderDashboardTheme(tokens)
+    }
+
+    // EN: The Dashboard adapter touches only decorative surfaces; map and safety indicators keep their semantics.
+    // ES: El adaptador del tablero solo toca superficies decorativas; el mapa y los indicadores de seguridad conservan su semántica.
+    // 中文：Dashboard 适配层只修改装饰表面，地图和安全指示器保持原有语义。
+    private func renderDashboardTheme(_ tokens: PTDashboardThemeTokens) {
+        backgroundColor = tokens.backgroundColor
+        musicNowPlaying.applyDashboardTheme(tokens)
     }
 
     // EN: Existing cards stay in place; the context only changes emphasis and interruption level.

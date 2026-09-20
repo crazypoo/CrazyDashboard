@@ -35,6 +35,11 @@ struct PTMotoUserDefaultStruct {
     // ES: La vigilancia antirrobo requiere consentimiento del usuario y nunca se arma con datos antiguos al iniciar.
     // 中文：防盗监控必须由用户主动开启，冷启动不会依据旧数据自动布防。
     @PTUserDefault(withKey: "PTAntiTheftMonitoringEnabled", defaultValue: false) public static var PTAntiTheftMonitoringEnabled:Bool
+
+    // EN: Album-art dashboard decoration is enabled by default and never changes semantic vehicle colors.
+    // ES: La decoración del tablero basada en la portada está activada por defecto y nunca cambia colores semánticos del vehículo.
+    // 中文：专辑封面仪表盘装饰默认开启，但绝不改变车辆语义颜色。
+    @PTUserDefault(withKey: "PTDashboardArtworkThemeEnabled", defaultValue: true) public static var PTDashboardArtworkThemeEnabled:Bool
     
     @PTUserDefault(withKey: "PTMotoSafteyMileValue", defaultValue: 2500) public static var PTMotoSafteyMileValue:Double
 }

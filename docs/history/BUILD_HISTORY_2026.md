@@ -26,6 +26,7 @@ related_builds:
   - 79
   - 80
   - 82
+  - 83
 supersedes: []
 superseded_by:
 ---
@@ -111,6 +112,12 @@ Build 76 收尾修复了 2D/3D 当前页面素材来源、2D wheel pivot/角速�
 完成统一 Dashboard 上下文层：`PTDashboardContextEngine` 消费现有统一遥测、连接快照、导航会话和媒体变化，`PTDashboardContextResolver` 以 `Safety > Navigation > Vehicle > Media > Decoration` 解析主上下文和模块策略。主 Dashboard 与 XP400 Twin 2D/3D 共享同一策略，停车显示 Twin/Health，骑行强调 Speed/RPM，导航接近转向时强调导航并收缩 Twin，Warning 覆盖媒体/Ghost，连接降级提供低干扰提示。状态发布采用 20 Hz 上限，不改变底层采集。
 
 Build82 增加纯 Resolver 回归测试、九种语言上下文文案、低干扰覆盖层和模块协议；主 App、Widget、Watch 的 Build 为 `82`，营销版本保持 `2.0.8`。本轮未修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`，也没有改变 ELM327/YMOBD 连接步骤、握手、轮询或 fallback。主 App workspace Debug `build` 与 `build-for-testing`、以及独立 Widget/Watch target 编译均已完成；真实车辆状态、CarPlay、前后台、性能、Release/TestFlight 和现场安装关系仍需验收。详细记录见 [Build 82 实施记录](builds/BUILD_082_DYNAMIC_DASHBOARD.md)。
+
+## Build 83 — Music × Dashboard Theme
+
+完成音乐封面驱动的 Dashboard 装饰主题：新增纯值 Theme Token、ImageIO/CoreGraphics 低分辨率 Artwork Color Extractor、有界缓存、对比度校验、主 Dashboard 适配、XP400 Twin 2D/3D 适配、安全上下文回退、设置开关和无权限/无封面 fallback。主题只影响背景、环境光、非语义 glow 和装饰卡片渐变，不影响 TCS、ABS、Warning、车速可读性、导航关键 UI 或车辆状态颜色。
+
+Build83 的主题回归测试已接入 PTSpeedTests；主 App workspace Debug `build` 与 `build-for-testing` 均通过。营销版本保持 `2.0.8`，主 App、Widget 和 Watch 工程 Build 推进到 `83`。本轮未修改 `PTBluetoothManager.swift`、`PTHiddenOBDConnector.swift`、`PTOBDCommand.swift`，没有改变 ELM327/YMOBD 连接步骤、握手、轮询或 fallback。真实 Apple Music 权限、真机视觉/性能、Warning/Navigation 安全上下文、CarPlay、前后台和 Release/TestFlight 验收仍待完成。详细记录见 [Build 83 实施记录](builds/BUILD_083_MUSIC_DASHBOARD_THEME.md)。
 
 ## Build 80 — Ride DNA
 
