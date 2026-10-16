@@ -107,7 +107,7 @@ public final class PTLiveActivityManager: NSObject {
         message: "未启动"
     )
 
-    private let logger = Logger(subsystem: "com.yd.PTSpeed", category: "LiveActivity")
+    private let logger = Logger(subsystem: "com.cxl.xp400", category: "LiveActivity")
     
     private override init() { super.init() }
     

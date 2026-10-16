@@ -15,7 +15,7 @@ public final class PTWatchConnectivityManager: NSObject, WCSessionDelegate {
     private let session = WCSession.default
     private var latestContext: [String: Any]
     private var pendingContext: [String: Any]?
-    private let logger = Logger(subsystem: "com.yd.PTSpeed", category: "WatchConnectivity")
+    private let logger = Logger(subsystem: "com.cxl.xp400", category: "WatchConnectivity")
 
     private override init() {
         latestContext = session.applicationContext

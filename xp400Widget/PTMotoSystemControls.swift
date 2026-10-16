@@ -18,7 +18,7 @@ import WidgetKit
 @available(iOS 18.0, *)
 struct PTMotoHUDControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
-        StaticControlConfiguration(kind: "com.yd.PTSpeed.control.hud") {
+        StaticControlConfiguration(kind: "com.cxl.xp400.control.hud") {
             ControlWidgetButton(action: PTMotoOpenDestinationIntent(target: .hud)) {
                 Label(
                     LocalizedStringResource("control_hud", table: "Localizable"),
@@ -35,7 +35,7 @@ struct PTMotoHUDControl: ControlWidget {
 @available(iOS 18.0, *)
 struct PTMotoReadinessControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
-        StaticControlConfiguration(kind: "com.yd.PTSpeed.control.readiness") {
+        StaticControlConfiguration(kind: "com.cxl.xp400.control.readiness") {
             ControlWidgetButton(action: PTMotoOpenDestinationIntent(target: .readiness)) {
                 Label(
                     LocalizedStringResource("control_readiness", table: "Localizable"),
@@ -52,7 +52,7 @@ struct PTMotoReadinessControl: ControlWidget {
 @available(iOS 18.0, *)
 struct PTMotoParkingControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
-        StaticControlConfiguration(kind: "com.yd.PTSpeed.control.parking") {
+        StaticControlConfiguration(kind: "com.cxl.xp400.control.parking") {
             ControlWidgetButton(action: PTMotoOpenDestinationIntent(target: .parking)) {
                 Label(
                     LocalizedStringResource("control_parking", table: "Localizable"),
@@ -69,7 +69,7 @@ struct PTMotoParkingControl: ControlWidget {
 @available(iOS 18.0, *)
 struct PTMotoAlarmsControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
-        StaticControlConfiguration(kind: "com.yd.PTSpeed.control.alarms") {
+        StaticControlConfiguration(kind: "com.cxl.xp400.control.alarms") {
             ControlWidgetButton(action: PTMotoOpenDestinationIntent(target: .alarms)) {
                 Label(
                     LocalizedStringResource("control_alarms", table: "Localizable"),

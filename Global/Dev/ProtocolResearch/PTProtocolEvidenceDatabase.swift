@@ -98,7 +98,7 @@ nonisolated public final class PTProtocolEvidenceDatabase: @unchecked Sendable {
                 fileManager: FileManager = .default) throws {
         self.url = url.standardizedFileURL
         self.fileManager = fileManager
-        self.queue = DispatchQueue(label: "com.yd.PTSpeed.protocol-evidence.sqlite", qos: .utility)
+        self.queue = DispatchQueue(label: "com.cxl.xp400.protocol-evidence.sqlite", qos: .utility)
 
         do {
             try fileManager.createDirectory(

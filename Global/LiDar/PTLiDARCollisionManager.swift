@@ -493,7 +493,7 @@ private enum PTLiDARSessionEvent: Sendable {
 // ES: El proxy mantiene los objetos de ARKit en su cola serial y solo envía tipos valor al actor principal.
 // 中文：代理把 ARKit 对象留在串行处理队列，只向主线程传递值类型结果。
 private final class PTLiDARSessionProxy: NSObject, ARSessionDelegate, @unchecked Sendable {
-    private let processingQueue = DispatchQueue(label: "com.yd.PTSpeed.lidar.processing", qos: .userInitiated)
+    private let processingQueue = DispatchQueue(label: "com.cxl.xp400.lidar.processing", qos: .userInitiated)
     private let resultHandler: @Sendable (PTLiDARRawFrame) -> Void
     private let eventHandler: @Sendable (PTLiDARSessionEvent) -> Void
     private let projectionLock = NSLock()
@@ -634,7 +634,7 @@ public final class PTLiDARCollisionManager: NSObject {
         self.arSession = ARSession()
         super.init()
         arSession.delegate = sessionProxy
-        arSession.delegateQueue = DispatchQueue(label: "com.yd.PTSpeed.lidar.delegate", qos: .userInitiated)
+        arSession.delegateQueue = DispatchQueue(label: "com.cxl.xp400.lidar.delegate", qos: .userInitiated)
         backgroundObserver = NotificationCenter.default.addObserver(
             forName: UIApplication.didEnterBackgroundNotification,
             object: nil,

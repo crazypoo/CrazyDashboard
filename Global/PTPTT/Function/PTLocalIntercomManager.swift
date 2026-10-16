@@ -348,7 +348,7 @@ public class PTLocalIntercomManager: NSObject {
 
     private let myAvatarFileName = "PT_MyCustomAvatar.jpg"
     
-    private let appGroupID = "group.com.yd.PTSpeed.xp400"
+    private let appGroupID = "group.com.cxl.xp400"
     
     private var peerAvatars: [MCPeerID: UIImage] = [:]
     

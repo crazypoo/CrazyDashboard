@@ -22,7 +22,7 @@ public final class PTPitWallManager: NSObject, PTVehicleTelemetryConsumer {
     public private(set) var pairingURL: URL?
     public private(set) var lastError: String?
 
-    private let listenerQueue = DispatchQueue(label: "com.yd.PTSpeed.pitwall.listener")
+    private let listenerQueue = DispatchQueue(label: "com.cxl.xp400.pitwall.listener")
     private var listener: NWListener?
     private var servicePort: UInt16?
     private var token: String?

@@ -80,7 +80,7 @@ public actor PTYMOBDFirmwareAPI {
     private let configuration: PTYMOBDFirmwareAPIConfiguration
     private let session: URLSession
     private let downloader: PTYMOBDFirmwareDownloader
-    private let logger = Logger(subsystem: "com.yd.PTSpeed", category: "YMOBD.FirmwareAPI")
+    private let logger = Logger(subsystem: "com.cxl.xp400", category: "YMOBD.FirmwareAPI")
 
     public init(
         configuration: PTYMOBDFirmwareAPIConfiguration,

@@ -100,7 +100,7 @@ public final class PTJieliSDKOTAEngine: NSObject, PTJieliOTAEngine, @preconcurre
     private let transferTimeout: TimeInterval = 20 * 60
     private let maximumReconnectAttempts = 3
     private static let maximumFirmwareBytes = 64 * 1024 * 1024
-    private let logger = Logger(subsystem: "com.yd.PTSpeed", category: "Jieli.OTA")
+    private let logger = Logger(subsystem: "com.cxl.xp400", category: "Jieli.OTA")
 
     public init(sdkManager: JL_OTAManager = .getOTAManager()) {
         self.sdkManager = sdkManager

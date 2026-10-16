@@ -36,7 +36,7 @@ public enum PTYMOBDFirmwareServiceError: Error, Equatable, LocalizedError, Senda
 public actor PTYMOBDFirmwareService {
     private let api: PTYMOBDFirmwareAPI
     private let versionParser = PTYMOBDVersionParser()
-    private let logger = Logger(subsystem: "com.yd.PTSpeed", category: "YMOBD.FirmwareService")
+    private let logger = Logger(subsystem: "com.cxl.xp400", category: "YMOBD.FirmwareService")
 
     public init(api: PTYMOBDFirmwareAPI) {
         self.api = api

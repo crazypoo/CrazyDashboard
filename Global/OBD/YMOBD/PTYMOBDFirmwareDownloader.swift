@@ -48,7 +48,7 @@ public actor PTYMOBDFirmwareDownloader {
 
     private let session: URLSession
     private let maximumFileSize: Int
-    private let logger = Logger(subsystem: "com.yd.PTSpeed", category: "YMOBD.Firmware")
+    private let logger = Logger(subsystem: "com.cxl.xp400", category: "YMOBD.Firmware")
 
     public init(
         session: URLSession = .shared,

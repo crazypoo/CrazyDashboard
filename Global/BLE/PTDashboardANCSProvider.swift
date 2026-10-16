@@ -167,7 +167,7 @@ public final class PTDashboardANCSProvider: NSObject {
             title: title,
             message: message,
             category: category,
-            appId: appIdentifier ?? Bundle.main.bundleIdentifier ?? "com.yd.PTSpeed"
+            appId: appIdentifier ?? Bundle.main.bundleIdentifier ?? "com.cxl.xp400"
         )
         activeNotifications[uid] = notification
 

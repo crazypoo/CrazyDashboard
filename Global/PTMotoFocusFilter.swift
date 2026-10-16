@@ -60,7 +60,7 @@ public struct PTRidingFocusFilterIntent: SetFocusFilterIntent {
     public var appContext: FocusFilterAppContext {
         FocusFilterAppContext(
             notificationFilterPredicate: NSPredicate(value: true),
-            targetContentIdentifierPrefix: "com.yd.PTSpeed.riding"
+            targetContentIdentifierPrefix: "com.cxl.xp400.riding"
         )
     }
 

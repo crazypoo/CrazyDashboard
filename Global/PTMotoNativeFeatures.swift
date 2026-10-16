@@ -24,7 +24,7 @@ public enum PTMotoSpotlightDestination: Equatable, Sendable {
 }
 
 public enum PTMotoSpotlightIdentifier {
-    nonisolated public static let domain = "com.yd.PTSpeed.records"
+    nonisolated public static let domain = "com.cxl.xp400.records"
 
     nonisolated public static func vehicle(_ id: UUID) -> String {
         "vehicle:\(id.uuidString)"

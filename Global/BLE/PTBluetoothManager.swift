@@ -25,7 +25,7 @@ class PTBluetoothServerManager: NSObject, CBPeripheralManagerDelegate {
     // ES: Persiste solo la intención explícita del usuario y el identificador estable de restauración.
     // 中文：只持久化用户明确的外设意图和稳定的恢复标识。
     static let advertisingIntentKey = "PTBluetoothServerManager.advertisingIntent"
-    static let restorationIdentifier = "com.yd.PTSpeed.xp400.dashboard.peripheral"
+    static let restorationIdentifier = "com.cxl.xp400.xp400.dashboard.peripheral"
 
     // EN: Peripheral infrastructure state is separate from a subscribed dashboard session.
     // ES: El estado de la infraestructura periférica está separado de la sesión suscrita del tablero.

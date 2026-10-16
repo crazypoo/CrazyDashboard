@@ -64,7 +64,7 @@ class SceneDelegate: PTWindowSceneDelegate {
                 let configuration =
                     try PTTelemetryConfiguration(
                         cloudKitContainerIdentifier:
-                            "iCloud.com.yd.PTSpeed.telemetry",
+                            "iCloud.com.cxl.xp400.telemetry",
                         serverPublicKeyBase64:
                             "k6jSFSpg1rn3aPM6YdO/cfpLgnO6OiGFES3z5S/hgD4="
                     )

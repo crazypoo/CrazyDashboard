@@ -74,7 +74,7 @@ public actor PTOBDSessionTrace {
     public static let shared = PTOBDSessionTrace()
 
     private let maximumEventCount: Int
-    private let logger = Logger(subsystem: "com.yd.PTSpeed", category: "OBD.Session")
+    private let logger = Logger(subsystem: "com.cxl.xp400", category: "OBD.Session")
     private var identifiers: PTOBDSessionIdentifiers?
     private var events: [PTOBDSessionTraceEvent] = []
 

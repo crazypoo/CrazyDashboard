@@ -18,7 +18,7 @@ import os.signpost
 public final class PTPerformanceMonitor: NSObject, MXMetricManagerSubscriber {
     public static let shared = PTPerformanceMonitor()
 
-    private let log = OSLog(subsystem: "com.yd.PTSpeed", category: "Performance")
+    private let log = OSLog(subsystem: "com.cxl.xp400", category: "Performance")
     private let stateLock = NSLock()
     private var isRegistered = false
 
