@@ -8,8 +8,6 @@
 import UIKit
 import PooTools
 import SnapKit
-import SwifterSwift
-import SafeSFSymbols
 
 class PTPeugeotLEDDashBoard: UIView {
     
@@ -28,12 +26,12 @@ class PTPeugeotLEDDashBoard: UIView {
     }()
     
     lazy var fuelIcon:UIImageView = {
-        let view = UIImageView(image: UIImage(.fuelpump.fill))
+        let view = UIImageView(image: UIImage(systemName: "fuelpump.fill"))
         return view
     }()
     
     lazy var therIcon:UIImageView = {
-        let view = UIImageView(image: UIImage(.thermometer))
+        let view = UIImageView(image: UIImage(systemName: "thermometer"))
         return view
     }()
     

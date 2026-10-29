@@ -5,7 +5,6 @@
 
 import UIKit
 import PooTools
-import SwifterSwift
 import SnapKit
 
 @MainActor

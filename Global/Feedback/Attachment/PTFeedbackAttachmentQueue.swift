@@ -30,8 +30,9 @@ public actor PTFeedbackAttachmentQueue {
         if let directory {
             self.directory = directory
         } else {
-            let base = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-                ?? fm.temporaryDirectory
+            let fileManager = FileManager.default
+            let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+                ?? fileManager.temporaryDirectory
             self.directory = base
                 .appendingPathComponent("CrazyDashboard", isDirectory: true)
                 .appendingPathComponent("Feedback", isDirectory: true)

@@ -7,8 +7,6 @@
 
 import UIKit
 import SnapKit
-import SafeSFSymbols
-import SwifterSwift
 import PooTools
 
 @objcMembers
@@ -22,13 +20,13 @@ public class PTIndicatorPanel: PTDashboardBaseView {
     // MARK: - UI 组件 (指示灯图标)
     
     private let leftTurnIcon = UIImageView(image: UIImage(.arrow.left))
-    private let lowBeamIcon = UIImageView(image: UIImage(.headlight.daytime))
-    private let highBeamIcon = UIImageView(image: UIImage(.headlight.highBeamFill))
-    private let tcsIcon = UIImageView(image: UIImage(.car._2Fill)) // 用车身带滑痕图标代替 TCS
-    private let absIcon = UIImageView(image: UIImage(.abs.circleFill)) // ABS 专属图标
+    private let lowBeamIcon = UIImageView(image: UIImage(systemName: "headlight.daytime"))
+    private let highBeamIcon = UIImageView(image: UIImage(systemName: "headlight.high.beam.fill"))
+    private let tcsIcon = UIImageView(image: UIImage(systemName: "car.2.fill")) // 用车身带滑痕图标代替 TCS
+    private let absIcon = UIImageView(image: UIImage(systemName: "abs.circle.fill")) // ABS 专属图标
     private let kickstandIcon = UIImageView(image: UIImage(.exclamationmark.triangleFill)) // 边撑警告
     private let rightTurnIcon = UIImageView(image: UIImage(.arrow.right))
-    private let tcsModeIcon = UIImageView(image: UIImage(.gauge.withDotsNeedle_0percent))
+    private let tcsModeIcon = UIImageView(image: UIImage(systemName: "gauge.with.dots.needle.0percent"))
     private let backlightIcon = UIImageView(image: UIImage(.moon.fill))
     
     // 承载所有图标的横向容器
@@ -135,13 +133,13 @@ public class PTIndicatorPanel: PTDashboardBaseView {
         
         switch control.tcsMode {
         case .mode1:
-            tcsModeIcon.image = UIImage(.gauge.withDotsNeedle_50percent)
+            tcsModeIcon.image = UIImage(systemName: "gauge.with.dots.needle.50percent")
         case .mode2:
-            tcsModeIcon.image = UIImage(.gauge.withDotsNeedle_100percent)
+            tcsModeIcon.image = UIImage(systemName: "gauge.with.dots.needle.100percent")
         case .off:
-            tcsModeIcon.image = UIImage(.gauge.withDotsNeedle_0percent)
+            tcsModeIcon.image = UIImage(systemName: "gauge.with.dots.needle.0percent")
         case .unknown:
-            tcsModeIcon.image = UIImage(.gauge.withDotsNeedle_0percent)
+            tcsModeIcon.image = UIImage(systemName: "gauge.with.dots.needle.0percent")
         }
     }
     
@@ -186,7 +184,7 @@ public class PTIndicatorPanel: PTDashboardBaseView {
     }
     
     func updateTCS(tcsShow: String) {
-        toggleGlow(for: tcsIcon, isOn: tcsShow.bool ?? false, activeColor: .systemOrange)
+        toggleGlow(for: tcsIcon, isOn: tcsShow.bool, activeColor: .systemOrange)
     }
     
     private func setBlinkingGlow(for imageView: UIImageView, isBlinking: Bool, activeColor: UIColor) {
@@ -248,7 +246,7 @@ extension PTIndicatorPanel:PTBLEDashboardDelegate {
             // 3. 结合我们之前写的状态标签工具，更新到主线程的 UI 上
             DispatchQueue.main.async { [weak self] in
                 guard let self, self.isActive else { return }
-                self.updateTCS(tcsShow: control.isTcsSystemReady.string)
+                self.updateTCS(tcsShow: control.isTcsSystemReady ? "true" : "false")
                 self.updateControl(control: control)
             }
         } else if let abs = data as? PTAbsStatus {

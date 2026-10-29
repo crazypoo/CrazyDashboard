@@ -12,7 +12,6 @@ import MapKit
 import UniformTypeIdentifiers
 import PooTools
 import SnapKit
-import SafeSFSymbols
 
 @MainActor
 final class PTRoadbookViewController: PTListViewController, UIDocumentPickerDelegate {

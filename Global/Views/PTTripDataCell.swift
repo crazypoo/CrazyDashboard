@@ -7,12 +7,8 @@
 
 import UIKit
 import PooTools
-import SwifterSwift
 import SnapKit
-import SwiftDate
-import AttributedString
 import AMapNaviKit
-import SafeSFSymbols
 import ImageIO
 import UniformTypeIdentifiers
 
@@ -211,8 +207,12 @@ class PTTripDataCell: PTBaseSwipeCell {
     // MARK: - 🧠 数据绑定与更新逻辑
     private func bindData() {
         // 时间标题
-        let startTime = cellModel.startTime.convertTo(region: .local).toFormat("MM-dd HH:mm")
-        let endTime = cellModel.endTime.convertTo(region: .local).toFormat("HH:mm")
+        let startFormatter = DateFormatter()
+        startFormatter.dateFormat = "MM-dd HH:mm"
+        let endFormatter = DateFormatter()
+        endFormatter.dateFormat = "HH:mm"
+        let startTime = startFormatter.string(from: cellModel.startTime)
+        let endTime = endFormatter.string(from: cellModel.endTime)
         timeTitleLabel.text = "🏁 \(startTime) -> \(endTime)"
         let reviewTitles = cellModel.reviewEvents.prefix(3).map { localizedReviewTitle(for: $0.type) }
         reviewSummaryLabel.text = reviewTitles.isEmpty
@@ -239,15 +239,15 @@ class PTTripDataCell: PTBaseSwipeCell {
         
         // 第一行：里程 & 极速
         let row1 = UIStackView(arrangedSubviews: [
-            createStatItem(icon: UIImage(.road.lanes), value: PTDashboardConfig.shared.appShowMileageValueString(cellModel.distanceKm), unit: PTDashboardConfig.shared.appShowUniLabel),
-            createStatItem(icon: UIImage(.gauge.withDotsNeedle_100percent), value: PTDashboardConfig.shared.appShowMileageValueString(cellModel.maxSpeedKmh), unit: PTDashboardConfig.shared.appShowUniLabel + "/h")
+            createStatItem(icon: UIImage(systemName: "road.lanes") ?? UIImage(), value: PTDashboardConfig.shared.appShowMileageValueString(cellModel.distanceKm), unit: PTDashboardConfig.shared.appShowUniLabel),
+            createStatItem(icon: UIImage(systemName: "gauge.with.dots.needle.100percent") ?? UIImage(), value: PTDashboardConfig.shared.appShowMileageValueString(cellModel.maxSpeedKmh), unit: PTDashboardConfig.shared.appShowUniLabel + "/h")
         ])
         row1.axis = .horizontal
         row1.distribution = .fillEqually
         
         // 第二行：均速 & 最大转速
         let row2 = UIStackView(arrangedSubviews: [
-            createStatItem(icon: UIImage(.gauge.withDotsNeedle_50percent), value: PTDashboardConfig.shared.appShowMileageValueString(cellModel.gpsAvgSpeedKmh), unit: PTDashboardConfig.shared.appShowUniLabel + "/h"),
+            createStatItem(icon: UIImage(systemName: "gauge.with.dots.needle.50percent") ?? UIImage(), value: PTDashboardConfig.shared.appShowMileageValueString(cellModel.gpsAvgSpeedKmh), unit: PTDashboardConfig.shared.appShowUniLabel + "/h"),
             createStatItem(icon: UIImage(.arrow.counterclockwiseCircle), value: "\(cellModel.maxRpm)", unit: "rpm")
         ])
         row2.axis = .horizontal
@@ -255,7 +255,7 @@ class PTTripDataCell: PTBaseSwipeCell {
         
         // 第三行：油耗
         let row3 = UIStackView(arrangedSubviews: [
-            createStatItem(icon: UIImage(.fuelpump), value: String(format: "%.1f", cellModel.avgConsumption), unit: "L/100" + PTDashboardConfig.shared.appShowUniLabel),
+            createStatItem(icon: UIImage(systemName: "fuelpump") ?? UIImage(), value: String(format: "%.1f", cellModel.avgConsumption), unit: "L/100" + PTDashboardConfig.shared.appShowUniLabel),
             UIView() // 占位空 View，保持网格对齐
         ])
         row3.axis = .horizontal

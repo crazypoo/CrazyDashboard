@@ -7,7 +7,6 @@
 
 import UIKit
 import SnapKit
-import SwifterSwift
 import PooTools
 
 @objcMembers

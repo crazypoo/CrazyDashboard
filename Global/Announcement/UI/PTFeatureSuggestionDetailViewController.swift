@@ -6,7 +6,6 @@
 import UIKit
 import PooTools
 import SnapKit
-import SwifterSwift
 
 @MainActor
 final class PTFeatureSuggestionDetailViewController: PTMotoBaseViewController {

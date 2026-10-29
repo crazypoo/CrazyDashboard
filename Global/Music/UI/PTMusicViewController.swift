@@ -7,7 +7,6 @@ import UIKit
 import Combine
 import MusicKit
 import PooTools
-import SafeSFSymbols
 
 @MainActor
 class PTMusicViewController: PTMotoBaseViewController {
@@ -40,7 +39,7 @@ class PTMusicViewController: PTMotoBaseViewController {
     
     lazy var libButton:PTBaseButton = {
         let view = PTBaseButton(type: .custom)
-        view.setImage(UIImage(.music.noteList), for: .normal)
+        view.setImage(UIImage(systemName: "music.note.list"), for: .normal)
         view.addActionHandlers(handler: { _ in
             self.openLibrary()
         })

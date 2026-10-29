@@ -7,10 +7,7 @@
 
 import UIKit
 import PooTools
-import SwifterSwift
 import SnapKit
-import SafeSFSymbols
-import SwiftDate
 
 class PTDataCollectedViewController: PTMotoBaseViewController {
 

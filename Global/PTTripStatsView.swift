@@ -8,8 +8,6 @@
 import UIKit
 import SnapKit
 import PooTools
-import SwifterSwift
-import SafeSFSymbols
 
 @objcMembers
 public class PTTripStatsView: UIView {
@@ -21,15 +19,15 @@ public class PTTripStatsView: UIView {
     // 各项数据的展示 Label
     private let timeLabel = UILabel()       // 当前时间
     private lazy var runTimeLabel = {
-        let view = baseLabel(image: UIImage(.stopwatch.fill).withTintColor(.white, renderingMode: .alwaysOriginal))
+        let view = baseLabel(image: (UIImage(systemName: "stopwatch.fill") ?? UIImage()).withTintColor(.white, renderingMode: .alwaysOriginal))
         return view
     }()  // 运行时长
     private lazy var distanceLabel = {
-        let view = baseLabel(image: UIImage(.road.lanes).withTintColor(.white, renderingMode: .alwaysOriginal))
+        let view = baseLabel(image: (UIImage(systemName: "road.lanes") ?? UIImage()).withTintColor(.white, renderingMode: .alwaysOriginal))
         return view
     }()   // 总距离
     private lazy var avgSpeedLabel = {
-        let view = baseLabel(image: UIImage(.brakesignal.dashed).withTintColor(.white, renderingMode: .alwaysOriginal))
+        let view = baseLabel(image: (UIImage(systemName: "brakesignal.dashed") ?? UIImage()).withTintColor(.white, renderingMode: .alwaysOriginal))
         return view
     }()   // 平均速度
     private lazy var maxSpeedLabel = {
@@ -37,12 +35,12 @@ public class PTTripStatsView: UIView {
         return view
     }()   // 最高速度
     private lazy var minSpeedLabel = {
-        let view = baseLabel(image: UIImage(.brakesignal).withTintColor(.white, renderingMode: .alwaysOriginal))
+        let view = baseLabel(image: (UIImage(systemName: "brakesignal") ?? UIImage()).withTintColor(.white, renderingMode: .alwaysOriginal))
         return view
     }()   // 最低速度
     
     private lazy var idleLabel = {
-        let view = baseLabel(image: UIImage(.parkingsign.circle).withTintColor(.white, renderingMode: .alwaysOriginal))
+        let view = baseLabel(image: (UIImage(systemName: "parkingsign.circle") ?? UIImage()).withTintColor(.white, renderingMode: .alwaysOriginal))
         return view
     }()   // 怠速时间
     private lazy var bestLabel = {

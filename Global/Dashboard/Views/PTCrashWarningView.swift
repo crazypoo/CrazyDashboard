@@ -8,7 +8,6 @@
 import UIKit
 import SnapKit
 import PooTools
-import SafeSFSymbols
 
 @objcMembers
 public class PTCrashWarningView: UIView {

@@ -7,8 +7,6 @@
 
 import UIKit
 import PooTools
-import SwifterSwift
-import AttributedString
 import SnapKit
 
 class PTRoutePlantCell: PTBaseNormalCell {
@@ -22,13 +20,13 @@ class PTRoutePlantCell: PTBaseNormalCell {
                 self.viewCorner(radius: 4,borderWidth: 2.5,borderColor: .clear)
             }
             
-            let infoText: ASAttributedString = """
+            let infoText: PTRichText = """
                         \(wrap: .embedding("""
                         \(info.title,.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 14)))
                         \(info.subTitle,.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 10)))
                         """),.paragraph(.alignment(.left),.lineSpacing(1)))
                         """
-            infoLabel.attributed.text = infoText
+            infoLabel.pt_apply(richText: infoText)
         }
     }
     

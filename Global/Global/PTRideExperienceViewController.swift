@@ -10,7 +10,6 @@
 import UIKit
 import SnapKit
 import PooTools
-import SafeSFSymbols
 
 final class PTRideExperienceViewController: PTMotoBaseViewController {
     private let scrollView = UIScrollView()
@@ -85,7 +84,7 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
     
     lazy var exportButton:PTBaseButton = {
         let view = PTBaseButton(type:.custom)
-        view.setImage(UIImage(.shared.withYouCircleFill).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
+        view.setImage((UIImage(systemName: "shared.with.you.circle.fill") ?? UIImage()).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
         view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
         view.accessibilityLabel = PTDashboardConfig.languageFunc(text: "ride_black_box_export")
         view.addActionHandlers(handler: { sender in
@@ -99,7 +98,7 @@ final class PTRideExperienceViewController: PTMotoBaseViewController {
     // 中文：从骑行中心打开主动式提醒中心。
     lazy var alarmButton: PTBaseButton = {
         let view = PTBaseButton(type: .custom)
-        view.setImage(UIImage(.bell.badgeFill).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
+        view.setImage((UIImage(systemName: "bell.badge.fill") ?? UIImage()).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
         view.tintColor = .white
         view.bounds = .init(
             origin: .zero,

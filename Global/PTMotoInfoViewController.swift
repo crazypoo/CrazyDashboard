@@ -7,10 +7,7 @@
 
 import UIKit
 import PooTools
-import SafeSFSymbols
-import SwifterSwift
 import SnapKit
-import Instructions
 import Combine
 
 fileprivate extension String {
@@ -41,18 +38,7 @@ struct PTMotoInfoViewState: Equatable, Sendable {
 }
 
 class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryConsumer {
-    
-    fileprivate var instructionsModels:[PTInstructionsModel] = {
-        
-        let fitstTime = PTInstructionsModel()
-        fitstTime.infoString = "If you first time to use this app tap here"
-        fitstTime.buttonName = "ok"
-        
-        return [fitstTime]
-    }()
-    
-    let coachMarksController = CoachMarksController()
-    
+
     let buttonCount:Int = 4
     let stackHeight:CGFloat = 54.adapter
     let headerHeight:CGFloat = 32
@@ -193,7 +179,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
     
     lazy var bleConnectStatusLabel:PTBaseButton = {
         
-        let baseImage = UIImage(.dot.radiowavesLeftAndRight)
+        let baseImage = UIImage(systemName: "dot.radiowaves.left.and.right") ?? UIImage()
         let view = PTBaseButton()
         view.setImage(baseImage.withTintColor(.systemRed, renderingMode: .alwaysOriginal), for: .normal)
         view.setImage(baseImage.withTintColor(.systemGreen, renderingMode: .alwaysOriginal), for: .selected)
@@ -248,7 +234,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
     
     lazy var tripItem:PTStatusItemView = {
         let view = PTStatusItemView()
-        view.configure(systemIcon: UIImage(.point.topleftDownToPointBottomrightCurvepath),
+        view.configure(systemIcon: UIImage(systemName: "point.topleft.down.to.point.bottomright.curvepath") ?? UIImage(),
                        iconColor: PTDashboardConfig.shared.appMainColor,
                        title: PTDashboardConfig.languageFunc(text: "casa_card_little_trip"),
                        value: "0\(PTDashboardConfig.shared.appShowUniLabel)")
@@ -266,7 +252,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
     
     lazy var engineItem:PTStatusItemView = {
         let view = PTStatusItemView()
-        view.configure(systemIcon: UIImage(.engine.combustion),
+        view.configure(systemIcon: UIImage(systemName: "engine.combustion") ?? UIImage(),
                        iconColor: PTDashboardConfig.shared.appMainColor,
                        title: PTDashboardConfig.languageFunc(text: "casa_card_engine"),
                        value: "-")
@@ -275,7 +261,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
     
     lazy var temItem:PTStatusItemView = {
         let view = PTStatusItemView()
-        view.configure(systemIcon: UIImage(.thermometer),
+        view.configure(systemIcon: UIImage(systemName: "thermometer") ?? UIImage(),
                        iconColor: PTDashboardConfig.shared.appMainColor,
                        title: PTDashboardConfig.languageFunc(text: "casa_card_tem"),
                        value: "0°C")
@@ -299,7 +285,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
     private var musicCancellable: AnyCancellable?
     
     lazy var obdButton:PTBaseButton = {
-        let baseImage = UIImage(.engine.combustionBadgeExclamationmarkFill)
+        let baseImage = UIImage(systemName: "engine.combustion.badge.exclamationmark.fill") ?? UIImage()
         let view = PTBaseButton()
         view.setImage(baseImage.withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
         view.setImage(baseImage.withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal), for: .selected)
@@ -419,7 +405,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
     }()
     
     lazy var dashboardButton:PTBaseButton = {
-        let baseImage = UIImage(.gauge.withDotsNeedleBottom_0percent)
+        let baseImage = UIImage(systemName: "gauge.with.dots.needle.bottom.0percent") ?? UIImage()
         let view = PTBaseButton()
         view.setImage(baseImage.withTintColor(.systemRed, renderingMode: .alwaysOriginal), for: .normal)
         view.setImage(baseImage.withTintColor(.systemGreen, renderingMode: .alwaysOriginal), for: .selected)
@@ -538,16 +524,15 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
         }
         
         if PTMotoUserDefaultStruct.CoachFirst {
-            coachMarksController.overlay.isUserInteractionEnabled = true
-            coachMarksController.delegate = self
-            coachMarksController.dataSource = self
-            coachMarksController.animationDelegate = self
-            PTGCDManager.shared.delayOnMain(time: 0.5) {
-                self.coachMarksController.start(in: .window(over: self))
+            PTGCDManager.shared.delayOnMain(time: 0.5) { [weak self] in
+                guard let self else { return }
+                Task { @MainActor [weak self] in
+                    self?.presentFirstUseInstruction()
+                }
             }
         } else {
-            PTGCDManager.shared.delayOnMain(time: 0.5) {
-                self.showWahtsnews()
+            PTGCDManager.shared.delayOnMain(time: 0.5) { [weak self] in
+                self?.showWahtsnews()
             }
         }
         
@@ -561,6 +546,48 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
             object: dashboardThemeEngine
         )
         setupMusicDashboard()
+    }
+
+    // EN: Keep the first-use hint on PTools' current async instruction surface.
+    // ES: Mantiene la ayuda inicial en la API asíncrona actual de instrucciones de PTools.
+    // 中文：首次使用提示统一迁移到 PTools 当前的异步引导 API。
+    @MainActor
+    private func presentFirstUseInstruction() {
+        let step = PTInstructionStep(
+            id: "moto_info_first_use_connection",
+            target: .view(bleConnectStatusLabel),
+            content: .message(PTInstructionMessage(
+                message: "If you first time to use this app tap here",
+                nextTitle: "ok",
+                skipTitle: nil
+            )),
+            spotlight: PTInstructionSpotlight(
+                shape: .roundedRectangle(cornerRadius: 12),
+                insets: UIEdgeInsets(top: -8, left: -8, bottom: -8, right: -8)
+            ),
+            placement: .automatic,
+            advancePolicy: .nextButton,
+            touchForwarding: .none,
+            targetWaitPolicy: .wait(seconds: 2),
+            isSkippable: false
+        )
+        let tour = PTInstructionTour(
+            id: "moto_info_first_use",
+            version: "1",
+            steps: [step],
+            presentationPolicy: .always
+        )
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                _ = try await presentInstructions(tour)
+            } catch {
+                PTNSLogConsole("[PTInstructions] first-use tour failed: \(error.localizedDescription)")
+            }
+            PTMotoUserDefaultStruct.CoachFirst = false
+            showWahtsnews()
+        }
     }
 
     @objc private func dashboardThemeDidChange(_ notification: Notification) {
@@ -681,7 +708,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
                     ? "\(PTDashboardConfig.shared.appShowMileageValueString(data1.odoKm))\(PTDashboardConfig.shared.appShowUniLabel)"
                     : unavailable
                 
-                self.tripItem.configure(systemIcon: UIImage(.point.topleftDownToPointBottomrightCurvepath),
+                self.tripItem.configure(systemIcon: UIImage(systemName: "point.topleft.down.to.point.bottomright.curvepath") ?? UIImage(),
                                            iconColor: PTDashboardConfig.shared.appMainColor,
                                            title: PTDashboardConfig.languageFunc(text: "casa_card_little_trip"),
                                            value: newTripDesc)
@@ -712,12 +739,12 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
                     isAvailable: data2.batteryAvailability.isAvailable
                 )
                 
-                self.engineItem.configure(systemIcon: UIImage(.engine.combustion),
+                self.engineItem.configure(systemIcon: UIImage(systemName: "engine.combustion") ?? UIImage(),
                                            iconColor: PTDashboardConfig.shared.appMainColor,
                                            title: PTDashboardConfig.languageFunc(text: "casa_card_engine"),
                                            value: newEngineDesc)
                 
-                self.temItem.configure(systemIcon: UIImage(.thermometer),
+                self.temItem.configure(systemIcon: UIImage(systemName: "thermometer") ?? UIImage(),
                                            iconColor: PTDashboardConfig.shared.appMainColor,
                                            title: PTDashboardConfig.languageFunc(text: "casa_card_tem"),
                                            value: newTempDesc)
@@ -937,7 +964,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
                     isAvailable: latestData3?.maintenanceDistanceAvailability.isAvailable ?? false
                 )
                 
-                self.tripItem.configure(systemIcon: UIImage(.point.topleftDownToPointBottomrightCurvepath),
+                self.tripItem.configure(systemIcon: UIImage(systemName: "point.topleft.down.to.point.bottomright.curvepath") ?? UIImage(),
                                            iconColor: PTDashboardConfig.shared.appMainColor,
                                            title: PTDashboardConfig.languageFunc(text: "casa_card_little_trip"),
                                            value: latestData1?.tripAvailability.isAvailable == true
@@ -956,12 +983,12 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
                    latestData2?.engineAvailability.isAvailable == true {
                     engineStatus = PTDashboardLabels.engineStatusLabel(raw: engineStatusValue)
                 }
-                self.engineItem.configure(systemIcon: UIImage(.engine.combustion),
+                self.engineItem.configure(systemIcon: UIImage(systemName: "engine.combustion") ?? UIImage(),
                                            iconColor: PTDashboardConfig.shared.appMainColor,
                                            title: PTDashboardConfig.languageFunc(text: "casa_card_engine"),
                                            value: engineStatus)
                 
-                self.temItem.configure(systemIcon: UIImage(.thermometer),
+                self.temItem.configure(systemIcon: UIImage(systemName: "thermometer") ?? UIImage(),
                                            iconColor: PTDashboardConfig.shared.appMainColor,
                                            title: PTDashboardConfig.languageFunc(text: "casa_card_tem"),
                                            value: latestData2?.outsideTemperatureAvailability.isAvailable == true
@@ -1029,7 +1056,7 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
             self.fuelModelView.viewModel = nil
             self.fuelModelView.fuelTripModel = nil
             self.tripItem.configure(
-                systemIcon: UIImage(.point.topleftDownToPointBottomrightCurvepath),
+                systemIcon: UIImage(systemName: "point.topleft.down.to.point.bottomright.curvepath") ?? UIImage(),
                 iconColor: PTDashboardConfig.shared.appMainColor,
                 title: PTDashboardConfig.languageFunc(text: "casa_card_little_trip"),
                 value: unavailable
@@ -1041,13 +1068,13 @@ class PTMotoInfoViewController: PTMotoBaseViewController, PTVehicleTelemetryCons
                 value: unavailable
             )
             self.engineItem.configure(
-                systemIcon: UIImage(.engine.combustion),
+                systemIcon: UIImage(systemName: "engine.combustion") ?? UIImage(),
                 iconColor: PTDashboardConfig.shared.appMainColor,
                 title: PTDashboardConfig.languageFunc(text: "casa_card_engine"),
                 value: unavailable
             )
             self.temItem.configure(
-                systemIcon: UIImage(.thermometer),
+                systemIcon: UIImage(systemName: "thermometer") ?? UIImage(),
                 iconColor: PTDashboardConfig.shared.appMainColor,
                 title: PTDashboardConfig.languageFunc(text: "casa_card_tem"),
                 value: unavailable
@@ -1196,90 +1223,6 @@ extension PTMotoInfoViewController {
                 }
             }
         }
-    }
-}
-
-extension PTMotoInfoViewController:CoachMarksControllerDataSource {
-    func numberOfCoachMarks(for coachMarksController: CoachMarksController) -> Int {
-        return instructionsModels.count
-    }
-    
-    func coachMarksController(_ coachMarksController: CoachMarksController,
-                              coachMarkAt index: Int) -> CoachMark {
-        return coachMarksController.helper.makeCoachMark(for: bleConnectStatusLabel)
-    }
-    
-    func coachMarksController(_ coachMarksController: CoachMarksController, coachMarkViewsAt index: Int, madeFrom coachMark: CoachMark) -> (bodyView: UIView & CoachMarkBodyView, arrowView: (UIView & CoachMarkArrowView)?) {
-        let coachViews = coachMarksController.helper.makeDefaultCoachViews(
-            withArrow: true,
-            arrowOrientation: coachMark.arrowOrientation
-        )
-
-        coachViews.bodyView.hintLabel.font = .appfont(size: 16)
-        coachViews.bodyView.hintLabel.text = instructionsModels[index].infoString
-        coachViews.bodyView.nextLabel.font = .appfont(size: 16)
-        coachViews.bodyView.nextLabel.text = instructionsModels[index].buttonName
-
-        return (bodyView: coachViews.bodyView, arrowView: coachViews.arrowView)
-    }
-}
-
-extension PTMotoInfoViewController: CoachMarksControllerAnimationDelegate {
-    public func coachMarksController(_ coachMarksController: CoachMarksController,
-                                     fetchAppearanceTransitionOfCoachMark coachMarkView: UIView,
-                                     at index: Int,
-                                     using manager: CoachMarkTransitionManager) {
-        manager.parameters.options = [.beginFromCurrentState]
-        manager.animate(.regular, animations: { _ in
-            coachMarkView.transform = .identity
-            coachMarkView.alpha = 1
-        }, fromInitialState: {
-            coachMarkView.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
-            coachMarkView.alpha = 0
-        })
-    }
-
-    public func coachMarksController(_ coachMarksController: CoachMarksController,
-                                     fetchDisappearanceTransitionOfCoachMark coachMarkView: UIView,
-                                     at index: Int,
-                                     using manager: CoachMarkTransitionManager) {
-        manager.parameters.keyframeOptions = [.beginFromCurrentState]
-        manager.animate(.keyframe, animations: { _ in
-            UIView.addKeyframe(withRelativeStartTime: 0.0, relativeDuration: 1.0, animations: {
-                coachMarkView.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
-            })
-
-            UIView.addKeyframe(withRelativeStartTime: 0.5, relativeDuration: 0.5, animations: {
-                coachMarkView.alpha = 0
-            })
-        })
-    }
-
-    public func coachMarksController(_ coachMarksController: CoachMarksController,
-                                     fetchIdleAnimationOfCoachMark coachMarkView: UIView,
-                                     at index: Int,
-                                     using manager: CoachMarkAnimationManager) {
-        manager.parameters.options = [.repeat, .autoreverse, .allowUserInteraction]
-        manager.parameters.duration = 0.7
-
-        manager.animate(.regular, animations: { context in
-            let offset: CGFloat = context.coachMark.arrowOrientation == .top ? 10 : -10
-            coachMarkView.transform = CGAffineTransform(translationX: 0, y: offset)
-        })
-    }
-}
-
-extension PTMotoInfoViewController : CoachMarksControllerDelegate {
-    func coachMarksController(_ coachMarksController: CoachMarksController, didHide coachMark: CoachMark, at index: Int) {
-        if index == (instructionsModels.count - 1) {
-            PTMotoUserDefaultStruct.CoachFirst = false
-            showWahtsnews()
-        }
-    }
-    
-    func coachMarksController(_ coachMarksController: CoachMarksController, didEndShowingBySkipping skipped: Bool) {
-        PTMotoUserDefaultStruct.CoachFirst = false
-        showWahtsnews()
     }
 }
 

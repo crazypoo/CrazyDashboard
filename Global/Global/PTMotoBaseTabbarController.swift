@@ -7,7 +7,6 @@
 
 import UIKit
 import PooTools
-import SafeSFSymbols
 
 class PTMotoBaseTabbarController: PTBaseTabBarViewController {
     
@@ -26,8 +25,8 @@ class PTMotoBaseTabbarController: PTBaseTabBarViewController {
 
 //    text.document
     func tabbarItems() -> [PTTabBarItemConfig] {
-        let homeNormalImage = UIImage(.bicycle).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
-        let homeSelectedImage = UIImage(.bicycle).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
+        let homeNormalImage = (UIImage(systemName: "bicycle") ?? UIImage()).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
+        let homeSelectedImage = (UIImage(systemName: "bicycle") ?? UIImage()).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
         let homeTitle = "Moto"
         let homeTab = PTTabBarItemConfig(title: homeTitle, content: PTTabBarImageContent(normal: homeNormalImage, selected: homeSelectedImage),viewController: tabbarViewControllers[0])
         
@@ -36,18 +35,18 @@ class PTMotoBaseTabbarController: PTBaseTabBarViewController {
         let navigationTitle = PTDashboardConfig.languageFunc(text: "tab_navigation")
         let navigationTab = PTTabBarItemConfig(title: navigationTitle, content: PTTabBarImageContent(normal: navigationNormalImage, selected: navigationSelectedImage),viewController: tabbarViewControllers[1])
                 
-        let collectedNormalImage = UIImage(.folder).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
-        let collectedSelectedImage = UIImage(.folder).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
+        let collectedNormalImage = (UIImage(systemName: "folder") ?? UIImage()).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
+        let collectedSelectedImage = (UIImage(systemName: "folder") ?? UIImage()).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
         let collectedTitle = PTDashboardConfig.languageFunc(text: "Data")
         let collectedTab = PTTabBarItemConfig(title: collectedTitle, content: PTTabBarImageContent(normal: collectedNormalImage, selected: collectedSelectedImage),viewController: tabbarViewControllers[2])
         
-        let pttNormalImage = UIImage(.radio).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
-        let pttSelectedImage = UIImage(.radio).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
+        let pttNormalImage = (UIImage(systemName: "radio") ?? UIImage()).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
+        let pttSelectedImage = (UIImage(systemName: "radio") ?? UIImage()).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
         let pttTitle = PTDashboardConfig.languageFunc(text: "PTT")
         let pttTab = PTTabBarItemConfig(title: pttTitle, content: PTTabBarImageContent(normal: pttNormalImage, selected: pttSelectedImage),viewController: tabbarViewControllers[3])
 
-        let settingNormalImage = UIImage(.gear).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
-        let settingSelectedImage = UIImage(.gear).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
+        let settingNormalImage = (UIImage(systemName: "gearshape") ?? UIImage()).withTintColor(.grayCA, renderingMode: .alwaysOriginal)
+        let settingSelectedImage = (UIImage(systemName: "gearshape") ?? UIImage()).withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal)
         let settingTitle = PTDashboardConfig.languageFunc(text: "tab_setting")
         let settingTab = PTTabBarItemConfig(title: settingTitle, content: PTTabBarImageContent(normal: settingNormalImage, selected: settingSelectedImage),viewController: tabbarViewControllers[4])
 

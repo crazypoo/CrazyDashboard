@@ -8,9 +8,7 @@
 import UIKit
 import CoreLocation
 import PooTools
-import SwifterSwift
 import SnapKit
-import SafeSFSymbols
 
 @MainActor
 class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
@@ -58,7 +56,7 @@ class PTDashBoardView: UIView, PTVehicleTelemetryConsumer {
     
     private lazy var resetMotionButton: PTBaseButton = {
         let view = PTBaseButton(type: .system)
-        view.setImage(UIImage(.figure.walkMotion).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
+        view.setImage((UIImage(systemName: "figure.walk.motion") ?? UIImage()).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
         view.addActionHandlers(handler: { _ in
             PTMotion.shared.calibrateZeroPoint()
             PTMotion.shared.resetLeanAngles()

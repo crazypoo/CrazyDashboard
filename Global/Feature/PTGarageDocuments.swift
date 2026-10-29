@@ -11,7 +11,6 @@ import UIKit
 import UniformTypeIdentifiers
 import VisionKit
 import PooTools
-import SafeSFSymbols
 import SnapKit
 
 nonisolated public enum PTGarageAttachmentKind: String, Codable, Sendable {

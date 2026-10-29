@@ -7,11 +7,8 @@
 
 import UIKit
 import PooTools
-import AttributedString
 import FlagKit
-import SwifterSwift
 import SnapKit
-import SafeSFSymbols
 
 let RPMUnit = "x1000 r/min"
 
@@ -120,14 +117,14 @@ class PTDashboardConfig: NSObject,@unchecked Sendable  {
                                               name:String = "",
                                               nameFont:UIFont = .appfont(size: 13),
                                               nameColor:DynamicColor? = .gray,
-                                              nameAtt:ASAttributedString? = nil,
+                                              nameAtt:PTRichText? = nil,
                                               desc:String = "",
                                               descTextColor:DynamicColor = .white,
                                               descFont:UIFont = .appfont(size: 16),
                                               content:String = "",
                                               contentTextColor:DynamicColor = .lightGray,
                                               contentFont:UIFont = .appfont(size: 16),
-                                              contentAtt:ASAttributedString? = nil,
+                                              contentAtt:PTRichText? = nil,
                                               leftIcon:Any? = nil,
                                               imageTopOffset:CGFloat = 0,
                                               imageBottomOffset:CGFloat = 0,

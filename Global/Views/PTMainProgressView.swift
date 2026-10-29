@@ -7,10 +7,7 @@
 
 import UIKit
 import PooTools
-import SwifterSwift
 import SnapKit
-import AttributedString
-import SafeSFSymbols
 
 class PTMainProgressViewModel:NSObject {
     var name:String = ""
@@ -32,13 +29,13 @@ class PTMainProgressView: UIView {
             let currentValue = modelSet.isValueAvailable
                 ? String(format: "%.2f", modelSet.currentValue)
                 : PTDashboardConfig.languageFunc(text: "ride_not_available")
-            let nameAtt: ASAttributedString = """
+            let nameAtt: PTRichText = """
                         \(wrap: .embedding("""
                         \(modelSet.name,.foreground(.lightGray),.font(.appfont(size: 13)))
                         \(currentValue,.foreground(.white),.font(.appfont(size: 16,bold:true)))\(modelSet.isValueAvailable ? modelSet.uni : "",.foreground(.white),.font(.appfont(size: 16,bold:true)))
                         """),.paragraph(.alignment(.left)))
                         """
-            infoLabel.attributed.text = nameAtt
+            infoLabel.pt_apply(richText: nameAtt)
             let progress = modelSet.isValueAvailable && modelSet.maxValue > 0
                 ? modelSet.currentValue / modelSet.maxValue
                 : 0
@@ -111,7 +108,7 @@ class PTMotoFuelInfoView:UIView {
     
     lazy var fuelImage:UIImageView = {
         let view = UIImageView()
-        view.image = UIImage(.fuelpump).withTintColor(.white, renderingMode: .alwaysOriginal).transformImage(size: .init(width: 34, height: 34))
+        view.image = (UIImage(systemName: "fuelpump") ?? UIImage()).withTintColor(.white, renderingMode: .alwaysOriginal).transformImage(size: .init(width: 34, height: 34))
         view.contentMode = .scaleAspectFit
         return view
     }()

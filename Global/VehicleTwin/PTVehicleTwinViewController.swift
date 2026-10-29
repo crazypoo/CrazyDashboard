@@ -11,7 +11,6 @@ import UIKit
 import UniformTypeIdentifiers
 import PooTools
 import SnapKit
-import SafeSFSymbols
 
 @MainActor
 final class PTVehicleTwinViewController: PTMotoBaseViewController, UIDocumentPickerDelegate {

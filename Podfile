@@ -48,7 +48,7 @@ def shared_pods
   pod 'AMapSearch-NO-IDFA'
   pod 'AMapLocation-NO-IDFA'
   pod 'AMapNavi-NO-IDFA'
-  
+  pod 'FlagKit'
 end
 
 target 'PTSpeed' do

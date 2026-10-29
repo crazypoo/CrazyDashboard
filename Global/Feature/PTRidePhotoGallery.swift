@@ -12,7 +12,6 @@ import PhotosUI
 import UIKit
 import UniformTypeIdentifiers
 import PooTools
-import SafeSFSymbols
 import SnapKit
 
 nonisolated public struct PTRidePhotoAttachment: Codable, Equatable, Identifiable, Sendable {

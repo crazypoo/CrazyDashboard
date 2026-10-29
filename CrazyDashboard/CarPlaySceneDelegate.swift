@@ -9,7 +9,6 @@ import UIKit
 import CarPlay
 import PooTools
 import SnapKit
-import SwifterSwift
 
 class CarPlaySceneDelegate: UIResponder,CPTemplateApplicationSceneDelegate {
     var interfaceController: CPInterfaceController?

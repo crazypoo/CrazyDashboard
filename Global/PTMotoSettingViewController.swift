@@ -8,9 +8,7 @@
 import UIKit
 import UserNotifications
 import PooTools
-import SwifterSwift
 import SnapKit
-import SafeSFSymbols
 
 // EN: Describes the dashboard values that must be echoed by Data3 before a setting is considered applied.
 // ES: Describe los valores del tablero que Data3 debe devolver antes de considerar aplicada la configuración.

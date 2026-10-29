@@ -8,8 +8,6 @@
 import UIKit
 import PooTools
 import SnapKit
-import SwifterSwift
-import SafeSFSymbols
 
 // EN: This controller is UI-bound; main-actor isolation is safer than pretending UIKit state is freely Sendable.
 // ES: Este controlador pertenece a la UI; el aislamiento del actor principal es más seguro que declarar Sendable para el estado de UIKit.

@@ -8,6 +8,7 @@ PODS:
   - AMapSearch-NO-IDFA (9.8.1):
     - AMapFoundation-NO-IDFA (>= 1.9.0)
   - Bugly (2.6.1)
+  - FlagKit (2.2)
   - IQKeyboardCore (1.0.9)
   - IQKeyboardManagerSwift (8.0.3):
     - IQKeyboardManagerSwift/Appearance (= 8.0.3)
@@ -54,11 +55,11 @@ PODS:
   - LookinServer/Swift (1.2.8):
     - LookinServer/Core
   - lottie-ios (4.6.1)
-  - PooTools/BackgroundTasks (5.65.1)
-  - PooTools/CameraPermission (5.65.1):
+  - PooTools/BackgroundTasks (5.65.4)
+  - PooTools/CameraPermission (5.65.4):
     - PooTools/PToolsPermissionCore
-  - PooTools/Connectivity (5.65.1)
-  - PooTools/Core (5.65.1):
+  - PooTools/Connectivity (5.65.4)
+  - PooTools/Core (5.65.4):
     - IQKeyboardManagerSwift
     - IQKeyboardToolbarManager
     - Kingfisher
@@ -70,10 +71,10 @@ PODS:
     - PooTools/PToolsUIFoundation
     - PooTools/Symbols
     - SnapKit
-  - PooTools/CustomerLabel (5.65.1):
+  - PooTools/CustomerLabel (5.65.4):
     - PooTools/Core
-  - PooTools/Date (5.65.1)
-  - PooTools/DEBUG (5.65.1):
+  - PooTools/Date (5.65.4)
+  - PooTools/DEBUG (5.65.4):
     - PooTools/BackgroundTasks
     - PooTools/Connectivity
     - PooTools/Core
@@ -87,51 +88,51 @@ PODS:
     - PooTools/Share
     - PooTools/Storage
     - PooTools/Symbols
-  - PooTools/DeepLink (5.65.1):
+  - PooTools/DeepLink (5.65.4):
     - PooTools/RouteCore
-  - PooTools/Device (5.65.1)
-  - PooTools/Flag (5.65.1):
+  - PooTools/Device (5.65.4)
+  - PooTools/Flag (5.65.4):
     - PooTools/Core
-  - PooTools/Hud (5.65.1):
+  - PooTools/Hud (5.65.4):
     - PooTools/Core
     - PooTools/ProgressBar
-  - PooTools/ImagePicker (5.65.1):
+  - PooTools/ImagePicker (5.65.4):
     - PooTools/CameraPermission
     - PooTools/Core
-  - PooTools/Instructions (5.65.1):
+  - PooTools/Instructions (5.65.4):
     - PooTools/Core
     - PooTools/Overlay
-  - PooTools/KeyChain (5.65.1)
-  - PooTools/LivePhoto (5.65.1):
+  - PooTools/KeyChain (5.65.4)
+  - PooTools/LivePhoto (5.65.4):
     - PooTools/Core
-  - PooTools/Loading (5.65.1):
+  - PooTools/Loading (5.65.4):
     - PooTools/Core
-  - PooTools/LocationPermission (5.65.1):
+  - PooTools/LocationPermission (5.65.4):
     - PooTools/PToolsPermissionCore
-  - PooTools/Logging (5.65.1)
-  - PooTools/MediaCore (5.65.1)
-  - PooTools/MediaViewer (5.65.1):
+  - PooTools/Logging (5.65.4)
+  - PooTools/MediaCore (5.65.4)
+  - PooTools/MediaViewer (5.65.4):
     - PooTools/Core
     - PooTools/LivePhoto
     - PooTools/MediaCore
     - PooTools/PageControl
     - PooTools/ProgressBar
-  - PooTools/MicPermission (5.65.1):
+  - PooTools/MicPermission (5.65.4):
     - PooTools/PToolsPermissionCore
-  - PooTools/ModelCore (5.65.1)
-  - PooTools/ModelLegacyKakaJSON (5.65.1):
+  - PooTools/ModelCore (5.65.4)
+  - PooTools/ModelLegacyKakaJSON (5.65.4):
     - KakaJSON
     - PooTools/Core
-  - PooTools/ModelLegacySmartCodable (5.65.1):
+  - PooTools/ModelLegacySmartCodable (5.65.4):
     - SmartCodable
-  - PooTools/Motion (5.65.1):
+  - PooTools/Motion (5.65.4):
     - PooTools/Core
     - PooTools/MotionPermission
-  - PooTools/MotionPermission (5.65.1):
+  - PooTools/MotionPermission (5.65.4):
     - PooTools/PToolsPermissionCore
-  - PooTools/NetWork (5.65.1):
+  - PooTools/NetWork (5.65.4):
     - PooTools/Network
-  - PooTools/Network (5.65.1):
+  - PooTools/Network (5.65.4):
     - Alamofire
     - PooTools/Connectivity
     - PooTools/Core
@@ -139,49 +140,49 @@ PODS:
     - PooTools/ModelCore
     - PooTools/ModelLegacyKakaJSON
     - PooTools/ModelLegacySmartCodable
-  - PooTools/NotificationPermission (5.65.1):
+  - PooTools/NotificationPermission (5.65.4):
     - PooTools/PToolsPermissionCore
-  - PooTools/Notifications (5.65.1):
+  - PooTools/Notifications (5.65.4):
     - PooTools/NotificationPermission
     - PooTools/RouteCore
-  - PooTools/Overlay (5.65.1):
+  - PooTools/Overlay (5.65.4):
     - PooTools/Logging
     - PooTools/PToolsCore
     - PooTools/PToolsUIFoundation
-  - PooTools/PageControl (5.65.1):
+  - PooTools/PageControl (5.65.4):
     - PooTools/Core
-  - PooTools/PDF (5.65.1):
+  - PooTools/PDF (5.65.4):
     - PooTools/Core
-  - PooTools/PhotoPicker (5.65.1):
+  - PooTools/PhotoPicker (5.65.4):
     - PooTools/Core
     - PooTools/ImagePicker
     - PooTools/Loading
     - PooTools/MediaCore
     - PooTools/Symbols
-  - PooTools/Picker (5.65.1):
+  - PooTools/Picker (5.65.4):
     - PooTools/Core
-  - PooTools/ProgressBar (5.65.1):
+  - PooTools/ProgressBar (5.65.4):
     - PooTools/Core
-  - PooTools/PToolsCore (5.65.1)
-  - PooTools/PToolsPermissionCore (5.65.1)
-  - PooTools/PToolsUIFoundation (5.65.1):
+  - PooTools/PToolsCore (5.65.4)
+  - PooTools/PToolsPermissionCore (5.65.4)
+  - PooTools/PToolsUIFoundation (5.65.4):
     - PooTools/PToolsCore
     - SnapKit
-  - PooTools/RouteCore (5.65.1)
-  - PooTools/SearchBar (5.65.1):
+  - PooTools/RouteCore (5.65.4)
+  - PooTools/SearchBar (5.65.4):
     - PooTools/Core
-  - PooTools/Share (5.65.1):
+  - PooTools/Share (5.65.4):
     - PooTools/Core
     - PooTools/CustomerLabel
     - SnapKit
-  - PooTools/Storage (5.65.1):
+  - PooTools/Storage (5.65.4):
     - PooTools/KeyChain
     - PooTools/StorageCore
-  - PooTools/StorageCore (5.65.1)
-  - PooTools/Symbols (5.65.1)
-  - PooTools/Vision (5.65.1):
+  - PooTools/StorageCore (5.65.4)
+  - PooTools/Symbols (5.65.4)
+  - PooTools/Vision (5.65.4):
     - PooTools/Core
-  - PooTools/WhatsNewsKit (5.65.1):
+  - PooTools/WhatsNewsKit (5.65.4):
     - PooTools/Core
   - SmartCodable (6.0.8):
     - SmartCodable/Core (= 6.0.8)
@@ -193,6 +194,7 @@ DEPENDENCIES:
   - AMapNavi-NO-IDFA
   - AMapSearch-NO-IDFA
   - Bugly
+  - FlagKit
   - LookinServer/Swift
   - PooTools/Core (from `https://github.com/crazypoo/PTools.git`)
   - PooTools/CustomerLabel (from `https://github.com/crazypoo/PTools.git`)
@@ -219,6 +221,7 @@ SPEC REPOS:
     - AMapNavi-NO-IDFA
     - AMapSearch-NO-IDFA
     - Bugly
+    - FlagKit
     - IQKeyboardCore
     - IQKeyboardManagerSwift
     - IQKeyboardNotification
@@ -240,7 +243,7 @@ EXTERNAL SOURCES:
 
 CHECKOUT OPTIONS:
   PooTools:
-    :commit: 572d47945fc3e7f7006539a8975811bc86ffbb59
+    :commit: 006e0ce7bc03d83a9975c28592ab72db02d84f0c
     :git: https://github.com/crazypoo/PTools.git
 
 SPEC CHECKSUMS:
@@ -250,6 +253,7 @@ SPEC CHECKSUMS:
   AMapNavi-NO-IDFA: b53821d99883050512eb0ccf2b1df0964c06c74c
   AMapSearch-NO-IDFA: 53362696f039f2266f727477f8d8b4401a648079
   Bugly: 217ac2ce5f0f2626d43dbaa4f70764c953a26a31
+  FlagKit: eca7dc89064b0c986302ba9acefad1bf80a435b1
   IQKeyboardCore: 250a88dfc713b2ecbe1dce250811d054fc016959
   IQKeyboardManagerSwift: 7f6a9a1e2285732d3ff5f485ff921215253ea77e
   IQKeyboardNotification: 3b9bc812a5af2cf97df08a363d9daa9fc0dc1848
@@ -262,10 +266,10 @@ SPEC CHECKSUMS:
   Kingfisher: 260f690679115e70aac534e18cf1f3cd70814d5c
   LookinServer: 1b2b61c6402ae29fa22182d48f5cd067b4e99e80
   lottie-ios: 6467ca7035120c5b0e0acee58bb679cf15875686
-  PooTools: 54b222019a039c56526f9f9b1e5c01868055fc80
+  PooTools: 2cfe8b97ed4956ae617f7e300ccd318e309b5c35
   SmartCodable: db7f9dc94eb9022ede18adf5052772432c5286c7
   SnapKit: d612e99e678a2d3b95bf60b0705ed0a35c03484a
 
-PODFILE CHECKSUM: dc763edaa7306c2b741e16f1e84a5499efbbf500
+PODFILE CHECKSUM: 737a9fe803fc3073b20af8912230dce3aa486806
 
 COCOAPODS: 1.16.2

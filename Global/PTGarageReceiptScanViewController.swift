@@ -12,7 +12,6 @@ import PhotosUI
 import UniformTypeIdentifiers
 import Vision
 import PooTools
-import SwifterSwift
 
 // EN: This draft is editable and never writes to the garage by itself.
 // ES: Este borrador se puede editar y nunca escribe en el garaje por sí solo.

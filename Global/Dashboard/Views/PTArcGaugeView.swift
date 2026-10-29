@@ -7,8 +7,6 @@
 
 import UIKit
 import SnapKit
-import SwifterSwift
-import SafeSFSymbols
 import PooTools
 
 public enum PTGaugeType {

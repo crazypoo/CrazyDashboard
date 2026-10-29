@@ -7,7 +7,6 @@
 
 import UIKit
 import PooTools
-import SwifterSwift
 import SnapKit
 import CoreLocation
 import MapKit
@@ -15,8 +14,6 @@ import AMapNaviKit
 import AMapLocationKit
 import AMapSearchKit
 import CoreMotion
-import SafeSFSymbols
-import AttributedString
 import CarPlay
 import MultipeerConnectivity
 
@@ -174,12 +171,12 @@ class PreferenceView: UIView {
     private func buttonForTitle(_ title: String) -> PTBaseButton {
         let reBtn = PTBaseButton(type: .custom)
         
-        let nameAttNormal: ASAttributedString = """
+        let nameAttNormal: PTRichText = """
                     \(wrap: .embedding("""
                     \(title,.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 10)))
                     """),.paragraph(.alignment(.left),.lineSpacing(1)))
                     """
-        let nameAttSelected: ASAttributedString = """
+        let nameAttSelected: PTRichText = """
                     \(wrap: .embedding("""
                     \(title,.foreground(PTDashboardConfig.shared.appMainColor),.font(.appfont(size: 10)))
                     """),.paragraph(.alignment(.left),.lineSpacing(1)))
@@ -298,7 +295,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     }()
     private lazy var homeButton:PTBaseButton = {
         let view = PTBaseButton(type: .system)
-        view.setImage(UIImage(.house.fill), for: .normal)
+        view.setImage(UIImage(systemName: "house.fill"), for: .normal)
         view.addActionHandlers(handler: { _ in
             self.routeToSavedLocation(key: "PT_HomeLocation")
         })
@@ -307,7 +304,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     }()
     private lazy var officeButton:PTBaseButton = {
         let view = PTBaseButton(type: .system)
-        view.setImage(UIImage(.briefcase.fill), for: .normal)
+        view.setImage(UIImage(systemName: "briefcase.fill"), for: .normal)
         view.addActionHandlers(handler: { _ in
             self.routeToSavedLocation(key: "PT_OfficeLocation")
         })
@@ -343,7 +340,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     
     private lazy var globalMicStatusButton: PTBaseButton = {
         let view = PTBaseButton(type: .system)
-        view.setImage(UIImage(.mic.slashFill).withTintColor(.gray, renderingMode: .alwaysOriginal), for: .normal)
+        view.setImage((UIImage(systemName: "mic.slash.fill") ?? UIImage()).withTintColor(.gray, renderingMode: .alwaysOriginal), for: .normal)
         view.bounds = .init(origin: .zero, size: .init(width: self.homeSize, height: self.homeSize))
         return view
     }()
@@ -373,7 +370,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
 
     private func presentRoadbook() {
         let roadbookViewController = PTRoadbookViewController()
-        self.navigationController?.pushViewController(roadbookViewController)
+        self.navigationController?.pushViewController(roadbookViewController, animated: true)
     }
 
     private lazy var startNavigationButton:UIButton = {
@@ -461,7 +458,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     }()
     
     lazy var testButton:UIButton = {
-        let baseImage = UIImage(.testtube._2)
+        let baseImage = UIImage(systemName: "testtube.2") ?? UIImage()
         let view = UIButton(type: .custom)
         view.setImage(baseImage.withTintColor(.lightGray, renderingMode: .alwaysOriginal), for: .normal)
         view.setImage(baseImage.withTintColor(PTDashboardConfig.shared.appMainColor, renderingMode: .alwaysOriginal), for: .selected)
@@ -548,7 +545,7 @@ class PTMotoNavigationViewController: PTMotoBaseViewController {
     
     private lazy var resetMotionButton: PTBaseButton = {
         let view = PTBaseButton(type: .system)
-        view.setImage(UIImage(.figure.walkMotion).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
+        view.setImage((UIImage(systemName: "figure.walk.motion") ?? UIImage()).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
         view.bounds = .init(origin: .zero, size: .init(width: self.homeSize, height: self.homeSize))
         view.addActionHandlers(handler: { _ in
             PTMotion.shared.calibrateZeroPoint()
@@ -1384,7 +1381,7 @@ extension PTMotoNavigationViewController {
             
             //更新CollectonView的信息
             let title = String(format: "Plant:%d", preferenceView.strategy(isMultiple: isMultipleRoutePlan).rawValue)
-            let subtitle = String(format: "Distance:%dKm | Time:%@", aRoute.routeLength / 1000, aRoute.routeTime.timeString)
+            let subtitle = String(format: "Distance:%dKm | Time:%02d:%02d", aRoute.routeLength / 1000, aRoute.routeTime / 60, aRoute.routeTime % 60)
             let info = RouteCollectionViewInfo(
                 routeID: Int(truncating: aNumber),
                 title: title,

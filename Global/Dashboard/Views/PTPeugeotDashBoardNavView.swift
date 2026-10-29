@@ -9,9 +9,6 @@ import UIKit
 import AMapNaviKit
 import PooTools
 import SnapKit
-import SwifterSwift
-import SafeSFSymbols
-import AttributedString
 
 class PTPeugeotDashBoardNavView: UIView {
     
@@ -187,48 +184,48 @@ extension PTPeugeotDashBoardNavView {
         let segmentRemainDistance = CGFloat(naviInfo.segmentRemainDistance) / 1000
         let segmentRemainDistanceString = String(format: "%.1f", segmentRemainDistance)
 
-        let att: ASAttributedString = """
+        let att: PTRichText = """
                     \(wrap: .embedding("""
                     \(segmentRemainDistanceString,.foreground(.white),.font(.appfont(size: 24,bold:true)))\(" km",.foreground(.white),.font(.appfont(size: 12)))
                     """),.paragraph(.alignment(.right)))
                     """
-        segmentRemainDistanceLabel.attributed.text = att
+        segmentRemainDistanceLabel.pt_apply(richText: att)
     }
     
     func routeNameSet(naviInfo: AMapNaviInfo) {
-        var att: ASAttributedString = """
+        var att: PTRichText = """
         """
 
         if naviInfo.segmentRemainDistance > 100 {
-            let top: ASAttributedString = """
+            let top: PTRichText = """
                         \(wrap: .embedding("""
                         \(PTDashboardConfig.languageFunc(text: "navigation_in_progress"),.foreground(.white),.font(.appfont(size: 12)))
                         """),.paragraph(.alignment(.center)))
                         """
             att += top
         } else {
-            let top: ASAttributedString = """
+            let top: PTRichText = """
                         \(wrap: .embedding("""
                         \(PTDashboardConfig.languageFunc(text: "next_road_name_prefix") + naviInfo.nextRoadName,.foreground(.white),.font(.appfont(size: 12)))
                         """),.paragraph(.alignment(.center)))
                         """
             att += top
         }
-        let current: ASAttributedString = """
+            let current: PTRichText = """
                     \(wrap: .embedding("""
                     \("\n" + PTDashboardConfig.languageFunc(text: "current_road_name_prefix") + naviInfo.currentRoadName,.foreground(.white),.font(.appfont(size: 12)))
                     """),.paragraph(.alignment(.center)))
                     """
         att += current
-        routeNameLabel.attributed.text = att
+        routeNameLabel.pt_apply(richText: att)
     }
     
     func errorRouteNameSet(value:String) {
-        let att: ASAttributedString = """
+        let att: PTRichText = """
                     \(wrap: .embedding("""
                     \(value,.foreground(.white),.font(.appfont(size: 12)))
                     """),.paragraph(.alignment(.center)))
                     """
-        routeNameLabel.attributed.text = att
+        routeNameLabel.pt_apply(richText: att)
     }
 }

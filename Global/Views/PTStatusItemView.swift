@@ -7,9 +7,7 @@
 
 import UIKit
 import SnapKit
-import SafeSFSymbols
 import PooTools
-import AttributedString
 
 /// 仪表盘状态数据基础条目组件
 class PTStatusItemView: UIView {
@@ -71,12 +69,12 @@ class PTStatusItemView: UIView {
         iconImageView.image = systemIcon
         iconContainer.backgroundColor = iconColor
         
-        let infoText: ASAttributedString = """
+        let infoText: PTRichText = """
                     \(wrap: .embedding("""
                     \(title,.foreground(.white),.font(.appfont(size: 16,bold: true)))
                     \(value,.foreground(.systemGray),.font(.appfont(size: 16)))
                     """),.paragraph(.alignment(.left),.lineSpacing(1)))
                     """
-        titleLabel.attributed.text = infoText
+        titleLabel.pt_apply(richText: infoText)
     }
 }

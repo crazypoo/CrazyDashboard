@@ -8,7 +8,6 @@
 import UIKit
 import PooTools
 import SnapKit
-import SwifterSwift
 
 class PTOBDDataBaseViewController:PTMotoBaseViewController {
     let gridView = PTOBDDataView()

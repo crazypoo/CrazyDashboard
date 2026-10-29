@@ -9,7 +9,6 @@
 
 import UIKit
 import PooTools
-import SafeSFSymbols
 
 @MainActor
 class PTProtocolEvidenceV2ViewController: PTMotoBaseViewController {

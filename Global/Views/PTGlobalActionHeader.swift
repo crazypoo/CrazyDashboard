@@ -7,7 +7,6 @@
 
 import UIKit
 import PooTools
-import SwifterSwift
 import SnapKit
 
 class PTGlobalActionHeader: PTBaseCollectionReusableView {

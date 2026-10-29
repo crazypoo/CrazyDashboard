@@ -12,7 +12,6 @@ import UIKit
 import UniformTypeIdentifiers
 import PooTools
 import SnapKit
-import SafeSFSymbols
 
 public struct PTXP400EvidenceRecord: Codable, Equatable, Identifiable, Sendable {
     public let id: UUID
@@ -883,7 +882,7 @@ final class PTXP400EvidenceViewController: PTListViewController, UIDocumentPicke
     
     lazy var exportButton:PTBaseButton = {
         let view = PTBaseButton(type:.custom)
-        view.setImage(UIImage(.shared.withYou).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
+        view.setImage((UIImage(systemName: "shared.with.you") ?? UIImage()).withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
         view.bounds = .init(origin: .zero, size: .init(width: PTAppBaseConfig.share.navBarButtonSize, height: PTAppBaseConfig.share.navBarButtonSize))
         view.addActionHandlers(handler: { _ in
             self.exportAction()

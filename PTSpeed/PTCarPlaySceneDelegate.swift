@@ -9,7 +9,6 @@ import UIKit
 import CarPlay
 import PooTools
 import SnapKit
-import SwifterSwift
 
 let CarPlayDidDisconnectNotification = NSNotification.Name("CarPlayDidDisconnectNotification")
 let CarPlayDidConnectNotification = NSNotification.Name("CarPlayDidConnectNotification")

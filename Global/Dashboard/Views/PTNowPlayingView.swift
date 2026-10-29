@@ -8,9 +8,7 @@
 import UIKit
 import MediaPlayer
 import SnapKit 
-import SwifterSwift
 import PooTools
-import SafeSFSymbols
 
 @objcMembers
 public class PTMarqueeLabel: UIView {

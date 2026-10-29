@@ -7,8 +7,6 @@
 
 import UIKit
 import SnapKit
-import SwifterSwift
-import SafeSFSymbols
 import PooTools
 
 @objcMembers
@@ -46,7 +44,7 @@ public class PTPitchView: UIView {
         groundLine.backgroundColor = UIColor.white.withAlphaComponent(0.3)
         
         // ⚠️ 这里用了系统的自行车图标作为默认值，如果你有自己的透明背景机车图片，直接替换 image 即可
-        bikeIcon.image = UIImage(.bicycle)
+        bikeIcon.image = UIImage(systemName: "bicycle")
         bikeIcon.tintColor = .white
         bikeIcon.contentMode = .scaleAspectFit
         

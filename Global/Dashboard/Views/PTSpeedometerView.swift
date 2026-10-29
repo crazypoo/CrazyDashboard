@@ -8,7 +8,6 @@
 import UIKit
 import SnapKit
 import PooTools
-import SwifterSwift
 
 /// 赛道风格专属仪表盘指针
 public class PTNeedleView: UIView {

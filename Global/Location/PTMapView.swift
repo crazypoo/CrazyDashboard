@@ -9,7 +9,6 @@ import UIKit
 import AMapNaviKit
 import SnapKit
 import PooTools
-import SwifterSwift
 import MultipeerConnectivity
 import AMapLocationKit
 

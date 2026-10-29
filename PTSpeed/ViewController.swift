@@ -7,7 +7,6 @@
 
 import UIKit
 import SnapKit
-import SwifterSwift
 import PooTools
 import CarPlay
 import AMapNaviKit

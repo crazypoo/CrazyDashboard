@@ -7,10 +7,8 @@
 
 import UIKit
 import PooTools
-import SwifterSwift
 import SnapKit
 import MultipeerConnectivity
-import SafeSFSymbols
 
 class PTPeerAvatarView: UIView {
     let peerID: MCPeerID

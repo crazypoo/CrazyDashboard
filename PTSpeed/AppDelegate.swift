@@ -13,9 +13,7 @@ import IQKeyboardToolbarManager
 import IQKeyboardManagerSwift
 import PooTools
 import IQKeyboardToolbar
-import DeviceKit
 import Bugly
-import SafeSFSymbols
 import QWeatherSDK
 import TipKit
 
